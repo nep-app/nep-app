@@ -98,6 +98,21 @@
             const [timeFilter, setTimeFilter] = useState('all');
             const [currentCycleId, setCurrentCycleId] = useState(null);
 
+            // Modal states
+            const [showDailyLogModal, setShowDailyLogModal] = useState(false);
+            const [showWellbeingModal, setShowWellbeingModal] = useState(false);
+            const [showReflectionModal, setShowReflectionModal] = useState(false);
+            const [showCycleModal, setShowCycleModal] = useState(false);
+            const [showGoalModal, setShowGoalModal] = useState(false);
+            const [patternView, setPatternView] = useState('intervals');
+
+            // Form states
+            const [dailyForm, setDailyForm] = useState({ times: 1, mg: 30, notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 5, mood: 5, energy: 5, notes: '' });
+            const [reflectionAnswer, setReflectionAnswer] = useState('');
+            const [cycleForm, setCycleForm] = useState({ mood: 5, triggers: [], notes: '' });
+            const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '' });
+
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
             const getCurrentCycleIndex = () => {
                 if (cycles.length === 0) return 0;
@@ -133,6 +148,47 @@
             const markConsumption = async () => { const now = new Date(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
 
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
+
+            const submitDailyLog = async () => {
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: parseInt(dailyForm.times), mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                setDailyLogs(prev => [item, ...prev]);
+                await saveToFirebase('dailyLogs', item);
+                setDailyForm({ times: 1, mg: 30, notes: '' });
+                setShowDailyLogModal(false);
+            };
+
+            const submitWellbeing = async () => {
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), notes: wellbeingForm.notes };
+                setWellbeingLogs(prev => [item, ...prev]);
+                await saveToFirebase('wellbeingLogs', item);
+                setWellbeingForm({ sleep: 5, mood: 5, energy: 5, notes: '' });
+                setShowWellbeingModal(false);
+            };
+
+            const submitReflection = async () => {
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
+                setReflections(prev => [item, ...prev]);
+                await saveToFirebase('reflections', item);
+                setReflectionAnswer('');
+                setShowReflectionModal(false);
+            };
+
+            const submitCycle = async () => {
+                const item = { id: genId(), timestamp: new Date().toISOString(), mood: parseInt(cycleForm.mood), triggers: cycleForm.triggers, notes: cycleForm.notes };
+                setCycles(prev => [item, ...prev]);
+                await saveToFirebase('cycles', item);
+                setCycleForm({ mood: 5, triggers: [], notes: '' });
+                setShowCycleModal(false);
+            };
+
+            const submitGoal = async () => {
+                const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
+                const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                setGoals(prev => [...prev, item]);
+                await saveToFirebase('goals', item);
+                setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
+                setShowGoalModal(false);
+            };
 
             // ALTERAÇÃO 1: Média de intervalos (últimos 20 consumos)
             const getIntervalStats = () => {
@@ -256,9 +312,29 @@
                                         <div className="flex items-start gap-3 mb-3"><Brain /><p className="text-purple-900 font-medium leading-relaxed">{currentReflection}</p></div>
                                     </div>
 
-                                    <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Clock /><div className="mt-2">Marcar Consumo Agora</div></button>
+                                    <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Clock className="w-6 h-6" /><div className="mt-2">Marcar Consumo Agora</div></button>
 
-                                    <button onClick={async () => { const now = new Date(); const item = { id: genId(), timestamp: now.toISOString(), mood: 5, sleep: 'bem', triggers: [], notes: '' }; setCycles(prev => [item, ...prev]); await saveToFirebase('cycles', item); }} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl p-6 text-lg font-semibold hover:from-indigo-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl">🌙 Novo Ciclo</button>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+                                            <BarChart3 className="w-5 h-5 mb-2" />
+                                            <div className="text-sm">Registar Dosagem do Dia</div>
+                                        </button>
+                                        <button onClick={() => setShowWellbeingModal(true)} className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4 font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+                                            <Heart className="w-5 h-5 mb-2" />
+                                            <div className="text-sm">Check-in Bem-Estar</div>
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-purple-500 to-indigo-500 text-white rounded-xl p-4 font-medium hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+                                            <Brain className="w-5 h-5 mb-2" />
+                                            <div className="text-sm">Reflexão DBT</div>
+                                        </button>
+                                        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-xl p-4 font-medium hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+                                            <div className="text-xl mb-1">🌙</div>
+                                            <div className="text-sm">Novo Ciclo</div>
+                                        </button>
+                                    </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-white rounded-xl p-4 border border-gray-200"><div className="text-gray-600 text-sm mb-1">Hoje</div><div className="text-3xl font-bold text-purple-600">{todayCount}x</div></div>
@@ -271,6 +347,16 @@
                             {currentView === 'patterns' && (
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-gray-800">Padrões</h2>
+
+                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                        {['intervals', 'trends', 'calendar'].map(view => (
+                                            <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
+                                                {view === 'intervals' && '⏱️ Intervalos'}
+                                                {view === 'trends' && '📈 Tendências'}
+                                                {view === 'calendar' && '📅 Calendário'}
+                                            </button>
+                                        ))}
+                                    </div>
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {['today', 'week', 'month', 'all'].map(filter => (
@@ -295,56 +381,129 @@
 
                                         if (filteredConsumptions.length < 2) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem dados suficientes para análise de padrões neste período</div>);
 
-                                        const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                                        const intervals = [];
-                                        for (let i = 1; i < sorted.length; i++) {
-                                            const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                            intervals.push({ hours: diff, date: sorted[i].date, timestamp: sorted[i].timestamp });
-                                        }
-                                        const avgHours = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
-                                        const shortIntervals = intervals.filter(i => i.hours < 2);
-                                        const shortByDay = {};
-                                        shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
+                                        // Intervalos view
+                                        if (patternView === 'intervals') {
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push({ hours: diff, date: sorted[i].date, timestamp: sorted[i].timestamp });
+                                            }
+                                            const avgHours = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+                                            const shortIntervals = intervals.filter(i => i.hours < 2);
+                                            const shortByDay = {};
+                                            shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
 
-                                        return (
-                                            <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                                <h3 className="font-semibold text-gray-800 mb-4">⏱️ Análise de Intervalos</h3>
-                                                <div className="bg-purple-50 rounded-lg p-4 mb-4">
-                                                    <div className="text-center">
-                                                        <div className="text-4xl font-bold text-purple-600">{avgHours.toFixed(1)}h</div>
-                                                        <div className="text-sm text-gray-600 mt-1">Média entre consumos</div>
+                                            return (
+                                                <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                    <h3 className="font-semibold text-gray-800 mb-4">⏱️ Análise de Intervalos</h3>
+                                                    <div className="bg-purple-50 rounded-lg p-4 mb-4">
+                                                        <div className="text-center">
+                                                            <div className="text-4xl font-bold text-purple-600">{avgHours.toFixed(1)}h</div>
+                                                            <div className="text-sm text-gray-600 mt-1">Média entre consumos</div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div className="mb-4">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-sm font-medium text-gray-700">Intervalos curtos (&lt;2h):</span>
-                                                        <span className="text-sm font-bold text-orange-600">{shortIntervals.length}</span>
+                                                    <div className="mb-4">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-sm font-medium text-gray-700">Intervalos curtos (&lt;2h):</span>
+                                                            <span className="text-sm font-bold text-orange-600">{shortIntervals.length}</span>
+                                                        </div>
+                                                        {Object.keys(shortByDay).length > 0 && (
+                                                            <div className="text-xs text-gray-600 mt-2">
+                                                                <strong>Por dia:</strong>
+                                                                {Object.entries(shortByDay).map(([date, count]) => (
+                                                                    <div key={date} className="flex justify-between py-1">
+                                                                        <span>{new Date(date).toLocaleDateString('pt-PT')}</span>
+                                                                        <span className="font-medium text-orange-600">{count}x</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    {Object.keys(shortByDay).length > 0 && (
-                                                        <div className="text-xs text-gray-600 mt-2">
-                                                            <strong>Por dia:</strong>
-                                                            {Object.entries(shortByDay).map(([date, count]) => (
-                                                                <div key={date} className="flex justify-between py-1">
-                                                                    <span>{new Date(date).toLocaleDateString('pt-PT')}</span>
-                                                                    <span className="font-medium text-orange-600">{count}x</span>
+                                                    <div>
+                                                        <h4 className="text-sm font-medium text-gray-700 mb-2">Últimos 10 intervalos:</h4>
+                                                        <div className="space-y-1">
+                                                            {intervals.slice(-10).reverse().map((interval, i) => (
+                                                                <div key={i} className="flex justify-between text-sm py-1 border-b border-gray-100">
+                                                                    <span className="text-gray-600">{new Date(interval.timestamp).toLocaleDateString('pt-PT')} {new Date(interval.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
+                                                                    <span className={'font-medium ' + (interval.hours < 2 ? 'text-orange-600' : 'text-green-600')}>{interval.hours.toFixed(1)}h</span>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-medium text-gray-700 mb-2">Últimos 10 intervalos:</h4>
-                                                    <div className="space-y-1">
-                                                        {intervals.slice(-10).reverse().map((interval, i) => (
-                                                            <div key={i} className="flex justify-between text-sm py-1 border-b border-gray-100">
-                                                                <span className="text-gray-600">{new Date(interval.timestamp).toLocaleDateString('pt-PT')} {new Date(interval.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
-                                                                <span className={'font-medium ' + (interval.hours < 2 ? 'text-orange-600' : 'text-green-600')}>{interval.hours.toFixed(1)}h</span>
-                                                            </div>
-                                                        ))}
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
+                                            );
+                                        }
+
+                                        // Tendências view
+                                        if (patternView === 'trends') {
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            const dates = Object.keys(byDate).sort();
+                                            const avgPerDay = filteredConsumptions.length / dates.length;
+
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                        <h3 className="font-semibold text-gray-800 mb-4">📈 Tendências</h3>
+                                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                                            <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                                                <div className="text-3xl font-bold text-blue-600">{avgPerDay.toFixed(1)}</div>
+                                                                <div className="text-sm text-gray-600">Média/dia</div>
+                                                            </div>
+                                                            <div className="bg-green-50 rounded-lg p-4 text-center">
+                                                                <div className="text-3xl font-bold text-green-600">{dates.length}</div>
+                                                                <div className="text-sm text-gray-600">Dias com registo</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {dates.slice(-7).reverse().map(date => (
+                                                                <div key={date} className="flex items-center gap-2">
+                                                                    <div className="text-sm text-gray-600 w-24">{new Date(date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
+                                                                    <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (byDate[date] / Math.max(...Object.values(byDate))) * 100) + '%'}}>
+                                                                            {byDate[date]}x
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Calendário view
+                                        if (patternView === 'calendar') {
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            const dates = Object.keys(byDate).sort();
+
+                                            return (
+                                                <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                    <h3 className="font-semibold text-gray-800 mb-4">📅 Calendário de Consumos</h3>
+                                                    <div className="space-y-3">
+                                                        {dates.slice(-14).reverse().map(date => {
+                                                            const count = byDate[date];
+                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                                            return (
+                                                                <div key={date} className="border border-gray-200 rounded-lg p-3">
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <div className="font-medium text-gray-800">{new Date(date).toLocaleDateString('pt-PT', {weekday: 'short', day: '2-digit', month: 'short'})}</div>
+                                                                        <div className={'text-lg font-bold ' + (count > 5 ? 'text-red-600' : count > 3 ? 'text-orange-600' : 'text-green-600')}>{count}x</div>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {dayConsumptions.map((c, i) => (
+                                                                            <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
                                     })()}
                                 </div>
                             )}
@@ -484,7 +643,7 @@
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-2xl font-bold text-gray-800">Metas</h2>
-                                        <button onClick={async () => { const goalType = prompt('Tipo: reduce_frequency, reduce_quantity, delay_first, increase_interval, limit_last'); const target = prompt('Meta (número ou hora HH:MM)'); const deadline = prompt('Prazo (YYYY-MM-DD)'); if (goalType && target && deadline) { const item = { id: genId(), type: goalType, target: goalType.includes('delay') || goalType.includes('limit') ? target : parseFloat(target), deadline, createdAt: new Date().toISOString(), completed: false }; setGoals(prev => [...prev, item]); await saveToFirebase('goals', item); } }} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">+ Nova Meta</button>
+                                        <button onClick={() => setShowGoalModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">+ Nova Meta</button>
                                     </div>
 
                                     {goals.length === 0 ? (
@@ -540,6 +699,142 @@
                                 </div>
                             )}
                         </div>
+
+                        {/* Modals */}
+                        {showDailyLogModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowDailyLogModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Registar Dosagem do Dia</h3>
+                                        <button onClick={() => setShowDailyLogModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantas vezes consumiste hoje?</label>
+                                            <input type="number" value={dailyForm.times} onChange={(e) => setDailyForm({...dailyForm, times: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" min="1" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Total aproximado (mg)</label>
+                                            <input type="number" value={dailyForm.mg} onChange={(e) => setDailyForm({...dailyForm, mg: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" min="0" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
+                                            <textarea value={dailyForm.notes} onChange={(e) => setDailyForm({...dailyForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-20" placeholder="Como te sentiste? Contexto..."></textarea>
+                                        </div>
+                                        <button onClick={submitDailyLog} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all font-medium">Guardar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showWellbeingModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowWellbeingModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Check-in Bem-Estar</h3>
+                                        <button onClick={() => setShowWellbeingModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Qualidade do sono: {wellbeingForm.sleep}/10</label>
+                                            <input type="range" min="1" max="10" value={wellbeingForm.sleep} onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})} className="w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Humor: {wellbeingForm.mood}/10</label>
+                                            <input type="range" min="1" max="10" value={wellbeingForm.mood} onChange={(e) => setWellbeingForm({...wellbeingForm, mood: e.target.value})} className="w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Energia: {wellbeingForm.energy}/10</label>
+                                            <input type="range" min="1" max="10" value={wellbeingForm.energy} onChange={(e) => setWellbeingForm({...wellbeingForm, energy: e.target.value})} className="w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
+                                            <textarea value={wellbeingForm.notes} onChange={(e) => setWellbeingForm({...wellbeingForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 h-20" placeholder="Como te sentes hoje?"></textarea>
+                                        </div>
+                                        <button onClick={submitWellbeing} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-medium">Guardar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showReflectionModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowReflectionModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Reflexão DBT</h3>
+                                        <button onClick={() => setShowReflectionModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                            <p className="text-purple-900 font-medium">{currentDbtQuestion}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">A tua reflexão</label>
+                                            <textarea value={reflectionAnswer} onChange={(e) => setReflectionAnswer(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-32" placeholder="Escreve os teus pensamentos..."></textarea>
+                                        </div>
+                                        <button onClick={submitReflection} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium">Guardar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showCycleModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowCycleModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">🌙 Novo Ciclo</h3>
+                                        <button onClick={() => setShowCycleModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-600">Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Como te sentes? {cycleForm.mood}/10</label>
+                                            <input type="range" min="1" max="10" value={cycleForm.mood} onChange={(e) => setCycleForm({...cycleForm, mood: e.target.value})} className="w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notas sobre este ciclo (opcional)</label>
+                                            <textarea value={cycleForm.notes} onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-24" placeholder="O que mudou? Novos gatilhos ou padrões?"></textarea>
+                                        </div>
+                                        <button onClick={submitCycle} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">Iniciar Novo Ciclo</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showGoalModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowGoalModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-gray-800">Nova Meta</h3>
+                                        <button onClick={() => setShowGoalModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Meta</label>
+                                            <select value={goalForm.type} onChange={(e) => setGoalForm({...goalForm, type: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400">
+                                                <option value="reduce_frequency">Reduzir Frequência (x/dia)</option>
+                                                <option value="reduce_quantity">Reduzir Quantidade (mg/dia)</option>
+                                                <option value="delay_first">Adiar Primeiro Consumo (hora)</option>
+                                                <option value="increase_interval">Aumentar Intervalo (horas)</option>
+                                                <option value="limit_last">Hora do Último Consumo (hora)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Meta {goalForm.type.includes('delay') || goalForm.type.includes('limit') ? '(HH:MM)' : '(número)'}
+                                            </label>
+                                            <input type={goalForm.type.includes('delay') || goalForm.type.includes('limit') ? 'time' : 'number'} value={goalForm.target} onChange={(e) => setGoalForm({...goalForm, target: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Prazo</label>
+                                            <input type="date" value={goalForm.deadline} onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
+                                        </div>
+                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">Criar Meta</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-xl rounded-t-3xl p-4">
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
