@@ -149,9 +149,15 @@
 
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
 
+            const getCurrentCycleId = () => {
+                if (cycles.length === 0) return null;
+                return cycles[0].id; // Most recent cycle (sorted by timestamp desc)
+            };
+
             const submitDailyLog = async () => {
+                const currentCycle = getCurrentCycleId();
                 const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
                 setDailyLogs(prev => [item, ...prev]);
                 await saveToFirebase('dailyLogs', item);
                 setDailyForm({ mg: 30, notes: '' });
@@ -159,7 +165,8 @@
             };
 
             const submitWellbeing = async () => {
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
+                const currentCycle = getCurrentCycleId();
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
                 setWellbeingLogs(prev => [item, ...prev]);
                 await saveToFirebase('wellbeingLogs', item);
                 setWellbeingForm({ sleep: 5, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
