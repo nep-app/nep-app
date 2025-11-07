@@ -108,9 +108,9 @@
 
             // Form states
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
-            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 5, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ mood: 5, triggers: [], notes: '' });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
@@ -166,10 +166,10 @@
 
             const submitWellbeing = async () => {
                 const currentCycle = getCurrentCycleId();
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
                 setWellbeingLogs(prev => [item, ...prev]);
                 await saveToFirebase('wellbeingLogs', item);
-                setWellbeingForm({ sleep: 5, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
+                setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
                 setShowWellbeingModal(false);
             };
 
@@ -182,10 +182,10 @@
             };
 
             const submitCycle = async () => {
-                const item = { id: genId(), timestamp: new Date().toISOString(), mood: parseInt(cycleForm.mood), triggers: cycleForm.triggers, notes: cycleForm.notes };
+                const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
                 setCycles(prev => [item, ...prev]);
                 await saveToFirebase('cycles', item);
-                setCycleForm({ mood: 5, triggers: [], notes: '' });
+                setCycleForm({ bedtime: '', triggers: [], notes: '' });
                 setShowCycleModal(false);
             };
 
@@ -215,8 +215,6 @@
                 return { avgHours: avgHours.toFixed(1), intervals: intervals.slice(-10).reverse(), shortIntervals: shortIntervals.length, shortByDay };
             };
 
-            const getTimeSinceLastConsumption = () => { if (consumptions.length === 0) return null; const last = new Date(consumptions[0].timestamp); const now = new Date(); const diffMs = now - last; const hours = Math.floor(diffMs / (1000 * 60 * 60)); const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)); return { hours, minutes, total: diffMs }; };
-
             const getLastInterval = () => {
                 if (consumptions.length < 2) return null;
                 const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
@@ -225,6 +223,26 @@
                 const diffMs = last - secondLast;
                 const hours = diffMs / (1000 * 60 * 60);
                 return { hours: hours.toFixed(1), isShort: hours < 2 };
+            };
+
+            const getTimeSinceLastConsumption = () => {
+                if (consumptions.length === 0) return null;
+                const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+                const last = new Date(sorted[0].timestamp);
+                const now = new Date();
+                const diffMs = now - last;
+                const hours = diffMs / (1000 * 60 * 60);
+
+                if (hours < 1) {
+                    const minutes = Math.floor((diffMs / (1000 * 60)));
+                    return { value: minutes, unit: 'min', hours: hours };
+                } else if (hours < 24) {
+                    return { value: hours.toFixed(1), unit: 'h', hours: hours };
+                } else {
+                    const days = Math.floor(hours / 24);
+                    const remainingHours = Math.floor(hours % 24);
+                    return { value: days, unit: days === 1 ? 'dia' : 'dias', subValue: remainingHours, subUnit: 'h', hours: hours };
+                }
             };
 
             const getTodayConsumptions = () => consumptions.filter(c => c.date === getTodayKey());
@@ -288,6 +306,48 @@
                 }
                 
                 return 0;
+            };
+
+            // Streak calculation
+            const getStreaks = () => {
+                if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
+
+                const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
+                const today = getTodayKey();
+
+                let currentStreak = 0;
+                let maxStreak = 1;
+                let streak = 1;
+
+                // Calculate max streak
+                for (let i = 1; i < allDates.length; i++) {
+                    const prev = new Date(allDates[i-1]);
+                    const curr = new Date(allDates[i]);
+                    const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+                    if (diffDays === 1) {
+                        streak++;
+                        maxStreak = Math.max(maxStreak, streak);
+                    } else {
+                        streak = 1;
+                    }
+                }
+
+                // Calculate current streak (working backwards from today)
+                if (allDates.includes(today)) {
+                    currentStreak = 1;
+                    let checkDate = new Date(today);
+                    for (let i = allDates.length - 2; i >= 0; i--) {
+                        checkDate.setDate(checkDate.getDate() - 1);
+                        const checkKey = checkDate.toISOString().split('T')[0];
+                        if (allDates[i] === checkKey) {
+                            currentStreak++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                return { current: currentStreak, max: maxStreak };
             };
 
             // Badge/Achievement system
@@ -370,6 +430,7 @@
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
             const last7 = getLast7Days();
+            const streaks = getStreaks();
             const badges = getBadges();
 
             // Render
@@ -383,17 +444,36 @@
                     <div className="max-w-2xl mx-auto">
                         <div className="bg-white rounded-3xl shadow-xl p-6 mb-6">
                             <div className="flex justify-between items-start">
-                                <div>
-                                    <h1 className="text-3xl font-bold mb-2">
-                                        <span className="font-bold text-black">N</span><span className="text-gray-700">otas de </span>
-                                        <span className="font-bold text-black">E</span><span className="text-gray-700">xperiências e </span>
-                                        <span className="font-bold text-black">P</span><span className="text-gray-700">adrões</span>
-                                    </h1>
-                                    <p className="text-gray-600 text-sm">
-                                        <span className="font-bold text-black">N</span>ote it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it. <span className="font-bold text-black">N</span>ão <span className="font-bold text-black">E</span>stás <span className="font-bold text-black">P</span>erdida.
-                                    </p>
+                                <div className="flex-1">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h1 className="text-3xl font-bold mb-1">
+                                                <span className="font-bold text-black">N</span><span className="text-gray-700">otas de </span>
+                                                <span className="font-bold text-black">E</span><span className="text-gray-700">xperiências e </span>
+                                                <span className="font-bold text-black">P</span><span className="text-gray-700">adrões</span>
+                                            </h1>
+                                            <p className="text-gray-600 text-sm mb-1">
+                                                <span className="font-bold text-black">N</span>ote it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it.
+                                            </p>
+                                            <p className="text-gray-600 text-sm font-semibold">
+                                                <span className="font-bold text-black">N</span>ão <span className="font-bold text-black">E</span>stás <span className="font-bold text-black">P</span>erdida.
+                                            </p>
+                                        </div>
+                                        {streaks.current > 0 && (
+                                            <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg px-3 py-2 ml-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-2xl">🔥</span>
+                                                    <div>
+                                                        <div className="text-xs text-orange-600 font-medium">Streak Atual</div>
+                                                        <div className="text-lg font-bold text-orange-700">{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</div>
+                                                        <div className="text-xs text-gray-500">Máx: {streaks.max}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 ml-3">
                                     <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
                                     <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
                                     <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
@@ -437,7 +517,39 @@
                                         <div className="bg-white rounded-xl p-4 border border-gray-200"><div className="text-gray-600 text-sm mb-1">Média 7 dias</div><div className="text-3xl font-bold text-pink-600">{last7.avgTimes}x</div><div className="text-sm text-gray-500">{last7.avgMg}mg/dia</div></div>
                                     </div>
 
-                                    {(() => { const lastInterval = getLastInterval(); if (lastInterval) return (<div className={'bg-gradient-to-r rounded-xl p-3 border ' + (lastInterval.isShort ? 'from-orange-50 to-red-50 border-orange-200' : 'from-green-50 to-blue-50 border-green-200')}><div className="flex items-center justify-between"><span className={'text-sm font-medium ' + (lastInterval.isShort ? 'text-orange-700' : 'text-green-700')}>Último intervalo</span><span className={'text-lg font-bold ' + (lastInterval.isShort ? 'text-orange-900' : 'text-green-900')}>{lastInterval.hours}h</span></div></div>); return null; })()}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {(() => {
+                                            const lastInterval = getLastInterval();
+                                            if (lastInterval) return (
+                                                <div className={'bg-gradient-to-r rounded-xl p-3 border ' + (lastInterval.isShort ? 'from-orange-50 to-red-50 border-orange-200' : 'from-green-50 to-blue-50 border-green-200')}>
+                                                    <div className="flex flex-col">
+                                                        <span className={'text-xs font-medium mb-1 ' + (lastInterval.isShort ? 'text-orange-700' : 'text-green-700')}>Último intervalo</span>
+                                                        <span className={'text-2xl font-bold ' + (lastInterval.isShort ? 'text-orange-900' : 'text-green-900')}>{lastInterval.hours}h</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                            return null;
+                                        })()}
+
+                                        {(() => {
+                                            const timeSince = getTimeSinceLastConsumption();
+                                            if (timeSince) {
+                                                const isLong = timeSince.hours >= 2;
+                                                return (
+                                                    <div className={'bg-gradient-to-r rounded-xl p-3 border ' + (isLong ? 'from-green-50 to-blue-50 border-green-200' : 'from-yellow-50 to-orange-50 border-yellow-200')}>
+                                                        <div className="flex flex-col">
+                                                            <span className={'text-xs font-medium mb-1 ' + (isLong ? 'text-green-700' : 'text-yellow-700')}>Sem consumir há</span>
+                                                            <span className={'text-2xl font-bold ' + (isLong ? 'text-green-900' : 'text-yellow-900')}>
+                                                                {timeSince.value}{timeSince.unit}
+                                                                {timeSince.subValue && <span className="text-sm ml-1">{timeSince.subValue}{timeSince.subUnit}</span>}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
 
                                     {badges.length > 0 && (
                                         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
@@ -1248,8 +1360,8 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Qualidade do sono: {wellbeingForm.sleep}/10</label>
-                                            <input type="range" min="1" max="10" value={wellbeingForm.sleep} onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})} className="w-full" />
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Horas de sono</label>
+                                            <input type="number" min="0" max="24" step="0.5" value={wellbeingForm.sleep} onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Ex: 7.5" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">Humor: {wellbeingForm.mood}/10</label>
@@ -1321,12 +1433,29 @@
                                     <div className="space-y-4">
                                         <p className="text-sm text-gray-600">Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Como te sentes? {cycleForm.mood}/10</label>
-                                            <input type="range" min="1" max="10" value={cycleForm.mood} onChange={(e) => setCycleForm({...cycleForm, mood: e.target.value})} className="w-full" />
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Hora a que te deitaste</label>
+                                            <input type="time" value={cycleForm.bedtime} onChange={(e) => setCycleForm({...cycleForm, bedtime: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Gatilhos identificados</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência'].map(trigger => (
+                                                    <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
+                                                        <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setCycleForm({...cycleForm, triggers: [...cycleForm.triggers, trigger]});
+                                                            } else {
+                                                                setCycleForm({...cycleForm, triggers: cycleForm.triggers.filter(t => t !== trigger)});
+                                                            }
+                                                        }} className="rounded text-indigo-600 focus:ring-indigo-500" />
+                                                        <span className="text-sm text-gray-700">{trigger}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Notas sobre este ciclo (opcional)</label>
-                                            <textarea value={cycleForm.notes} onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-24" placeholder="O que mudou? Novos gatilhos ou padrões?"></textarea>
+                                            <textarea value={cycleForm.notes} onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-20" placeholder="Como foi o ciclo? O que observaste?"></textarea>
                                         </div>
                                         <button onClick={submitCycle} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">Iniciar Novo Ciclo</button>
                                     </div>
