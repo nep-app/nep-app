@@ -1377,6 +1377,117 @@
                                                             <div className="text-center text-gray-500 py-4">Sem notas escritas ainda</div>
                                                         )}
                                                     </div>
+
+                                                    {/* Trigger Analysis */}
+                                                    {filteredCycles.length > 0 && (
+                                                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                            <h3 className="font-semibold text-gray-800 mb-4">🎯 Análise de Gatilhos</h3>
+                                                            <div className="text-xs text-gray-500 mb-3">Gatilhos identificados nos ciclos</div>
+                                                            {(() => {
+                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
+                                                                if (allTriggers.length === 0) return <div className="text-center text-gray-500 py-4">Nenhum gatilho registado ainda</div>;
+
+                                                                const triggerCount = {};
+                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
+                                                                const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
+
+                                                                // Analyze consumption after cycles with specific triggers
+                                                                const triggerConsumptionAnalysis = {};
+                                                                filteredCycles.forEach(cycle => {
+                                                                    if (!cycle.triggers || cycle.triggers.length === 0) return;
+                                                                    const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                    const consumptionsOnDay = filteredConsumptions.filter(c => c.date === cycleDate).length;
+                                                                    cycle.triggers.forEach(trigger => {
+                                                                        if (!triggerConsumptionAnalysis[trigger]) {
+                                                                            triggerConsumptionAnalysis[trigger] = { total: 0, count: 0 };
+                                                                        }
+                                                                        triggerConsumptionAnalysis[trigger].total += consumptionsOnDay;
+                                                                        triggerConsumptionAnalysis[trigger].count++;
+                                                                    });
+                                                                });
+
+                                                                return (
+                                                                    <div className="space-y-4">
+                                                                        <div className="space-y-2">
+                                                                            {sortedTriggers.map(([trigger, count]) => {
+                                                                                const avgConsumptions = triggerConsumptionAnalysis[trigger]
+                                                                                    ? (triggerConsumptionAnalysis[trigger].total / triggerConsumptionAnalysis[trigger].count).toFixed(1)
+                                                                                    : 'N/A';
+                                                                                return (
+                                                                                    <div key={trigger} className="border border-gray-200 rounded-lg p-3">
+                                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                                            <div className="text-sm font-medium text-gray-800 flex-1">{trigger}</div>
+                                                                                            <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{count}x</div>
+                                                                                        </div>
+                                                                                        <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
+                                                                                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full" style={{width: Math.min(100, (count / sortedTriggers[0][1]) * 100) + '%'}}></div>
+                                                                                        </div>
+                                                                                        {avgConsumptions !== 'N/A' && (
+                                                                                            <div className="text-xs text-gray-600 mt-2">
+                                                                                                Média de {avgConsumptions} consumos/dia quando presente
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Bedtime Analysis */}
+                                                    {filteredCycles.filter(c => c.bedtime).length > 0 && (
+                                                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                            <h3 className="font-semibold text-gray-800 mb-4">🌙 Análise de Hora de Deitar</h3>
+                                                            <div className="text-xs text-gray-500 mb-3">Relação entre hora de deitar e consumo</div>
+                                                            {(() => {
+                                                                const bedtimeData = [];
+                                                                filteredCycles.forEach(cycle => {
+                                                                    if (!cycle.bedtime) return;
+                                                                    const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                    const consumptionsOnDay = filteredConsumptions.filter(c => c.date === cycleDate).length;
+                                                                    const [hours, minutes] = cycle.bedtime.split(':').map(Number);
+                                                                    const bedtimeInHours = hours + minutes / 60;
+                                                                    bedtimeData.push({ bedtime: bedtimeInHours, consumptions: consumptionsOnDay });
+                                                                });
+
+                                                                const avgBedtime = bedtimeData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeData.length;
+                                                                const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
+
+                                                                // Calculate correlation
+                                                                const bedtimeCorr = getCorrelation(bedtimeData, 'bedtime', 'consumptions');
+                                                                const corrInfo = interpretCorr(bedtimeCorr);
+
+                                                                return (
+                                                                    <div className="space-y-3">
+                                                                        <div className="bg-indigo-50 rounded-lg p-4">
+                                                                            <div className="text-sm text-gray-600 mb-1">Hora média de deitar</div>
+                                                                            <div className="text-2xl font-bold text-indigo-600">{avgBedtimeFormatted}</div>
+                                                                        </div>
+                                                                        <div className="border border-gray-200 rounded-lg p-4">
+                                                                            <div className="flex justify-between items-start mb-2">
+                                                                                <div>
+                                                                                    <div className="font-medium text-gray-800">Hora de Deitar vs Consumo</div>
+                                                                                    <div className="text-xs text-gray-500">Correlação entre hora de deitar e consumo</div>
+                                                                                </div>
+                                                                                <div className={'text-right font-bold text-' + corrInfo.color + '-600'}>
+                                                                                    <div className="text-lg">{bedtimeCorr !== null ? bedtimeCorr.toFixed(2) : 'N/A'}</div>
+                                                                                    <div className="text-xs">{corrInfo.text}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            {bedtimeCorr !== null && Math.abs(bedtimeCorr) > 0.3 && (
+                                                                                <div className={'text-xs p-2 rounded mt-2 ' + (bedtimeCorr > 0 ? 'text-orange-600 bg-orange-50' : 'text-green-600 bg-green-50')}>
+                                                                                    💡 {bedtimeCorr > 0 ? 'Deitar tarde pode estar associado a mais consumo' : 'Deitar cedo pode estar associado a menos consumo'}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         }
@@ -1414,11 +1525,11 @@
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div className="bg-blue-50 rounded-lg p-4 text-center">
                                                                 <div className="text-sm text-gray-600 mb-1">Média Geral</div>
-                                                                <div className="text-3xl font-bold text-blue-600">{avgSleep.toFixed(1)}/10</div>
+                                                                <div className="text-3xl font-bold text-blue-600">{avgSleep.toFixed(1)}h</div>
                                                             </div>
                                                             <div className="bg-purple-50 rounded-lg p-4 text-center">
                                                                 <div className="text-sm text-gray-600 mb-1">Últimos 7 dias</div>
-                                                                <div className="text-3xl font-bold text-purple-600">{sleepTrend.toFixed(1)}/10</div>
+                                                                <div className="text-3xl font-bold text-purple-600">{sleepTrend.toFixed(1)}h</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -1426,8 +1537,8 @@
                                                                 <div key={w.id} className="flex items-center gap-2">
                                                                     <div className="text-xs text-gray-600 w-20">{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
                                                                     <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                                                                        <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (w.sleep >= 7 ? 'bg-green-500' : w.sleep >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: (w.sleep * 10) + '%'}}>
-                                                                            {w.sleep}/10
+                                                                        <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (w.sleep >= 7 ? 'bg-green-500' : w.sleep >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: Math.min(100, (w.sleep / 12) * 100) + '%'}}>
+                                                                            {w.sleep}h
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1648,7 +1759,7 @@
                                                                     <div className="grid grid-cols-3 gap-2 text-sm">
                                                                         <div className="text-center">
                                                                             <div className="text-xs text-gray-600">Sono</div>
-                                                                            <div className="text-lg font-bold text-blue-600">{w.sleep}/10</div>
+                                                                            <div className="text-lg font-bold text-blue-600">{w.sleep}h</div>
                                                                         </div>
                                                                         <div className="text-center">
                                                                             <div className="text-xs text-gray-600">Humor</div>
