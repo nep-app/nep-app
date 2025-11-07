@@ -1359,31 +1359,92 @@
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-gray-800">Histórico</h2>
 
+                                    {/* Temporal Filters */}
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex gap-2 flex-wrap">
+                                                {['hoje', 'semana', 'mes', 'tudo'].map(period => (
+                                                    <button key={period} onClick={() => { setHistoryPeriod(period); setHistoryPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (historyPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
+                                                        {period === 'hoje' && '📅 Hoje'}
+                                                        {period === 'semana' && '📊 Semana'}
+                                                        {period === 'mes' && '📈 Mês'}
+                                                        {period === 'tudo' && '🌐 Tudo'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {historyPeriod !== 'tudo' && (
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))} disabled={historyPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (historyPeriodOffset === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-purple-600 hover:bg-purple-50')}>
+                                                        <ChevronLeft className="w-5 h-5" />
+                                                    </button>
+                                                    <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">{getPeriodLabel(historyPeriod, historyPeriodOffset)}</span>
+                                                    <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className="text-purple-600 hover:bg-purple-50 p-2 rounded-lg transition-colors">
+                                                        <ChevronRight className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Topic Filters */}
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['today', 'week', 'month', 'all'].map(filter => (
-                                            <button key={filter} onClick={() => setTimeFilter(filter)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (timeFilter === filter ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
-                                                {filter === 'today' && 'Hoje'}
-                                                {filter === 'week' && 'Esta Semana'}
-                                                {filter === 'month' && 'Este Mês'}
-                                                {filter === 'all' && 'Tudo'}
+                                        {[
+                                            { id: 'todos', label: '📋 Todos', icon: '' },
+                                            { id: 'consumo', label: '💊 Consumos', icon: '' },
+                                            { id: 'reflexoes', label: '🧠 Reflexões', icon: '' },
+                                            { id: 'ciclos', label: '🌙 Ciclos', icon: '' },
+                                            { id: 'bem-estar', label: '💚 Bem-estar', icon: '' },
+                                            { id: 'dbt', label: '🎯 DBT', icon: '' }
+                                        ].map(topic => (
+                                            <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}>
+                                                {topic.label}
                                             </button>
                                         ))}
                                     </div>
 
                                     {(() => {
-                                        const now = new Date();
-                                        let startDate;
-                                        if (timeFilter === 'today') startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                                        else if (timeFilter === 'week') { startDate = new Date(now); startDate.setDate(now.getDate() - 7); }
-                                        else if (timeFilter === 'month') { startDate = new Date(now); startDate.setDate(now.getDate() - 30); }
-                                        else startDate = new Date(0);
+                                        // Apply temporal filter
+                                        const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
+                                        const tempFilteredReflections = filterByDateRange(reflections, dateRange);
+                                        const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
+                                        const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
+                                        const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
+                                        const tempFilteredCycles = filterByDateRange(cycles, dateRange);
 
-                                        const filteredReflections = reflections.filter(r => new Date(r.timestamp || r.date) >= startDate);
-                                        const filteredWellbeing = wellbeingLogs.filter(w => new Date(w.timestamp || w.date) >= startDate);
-                                        const filteredDailyLogs = dailyLogs.filter(l => new Date(l.timestamp || l.date) >= startDate);
-                                        const filteredConsumptions = consumptions.filter(c => new Date(c.timestamp) >= startDate);
+                                        // Apply topic filter
+                                        let filteredReflections = tempFilteredReflections;
+                                        let filteredWellbeing = tempFilteredWellbeing;
+                                        let filteredDailyLogs = tempFilteredDailyLogs;
+                                        let filteredConsumptions = tempFilteredConsumptions;
+                                        let filteredCycles = tempFilteredCycles;
 
-                                        const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0;
+                                        if (historyTopic === 'consumo') {
+                                            filteredReflections = [];
+                                            filteredWellbeing = [];
+                                            filteredCycles = [];
+                                        } else if (historyTopic === 'reflexoes') {
+                                            filteredConsumptions = [];
+                                            filteredWellbeing = [];
+                                            filteredDailyLogs = [];
+                                            filteredCycles = [];
+                                        } else if (historyTopic === 'ciclos') {
+                                            filteredConsumptions = [];
+                                            filteredWellbeing = [];
+                                            filteredDailyLogs = [];
+                                            filteredReflections = [];
+                                        } else if (historyTopic === 'bem-estar') {
+                                            filteredConsumptions = [];
+                                            filteredReflections = [];
+                                            filteredDailyLogs = [];
+                                            filteredCycles = [];
+                                        } else if (historyTopic === 'dbt') {
+                                            filteredConsumptions = [];
+                                            filteredWellbeing = [];
+                                            filteredDailyLogs = [];
+                                            filteredCycles = [];
+                                        }
+
+                                        const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0;
 
                                         if (!hasData) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos neste período</div>);
 
@@ -1477,6 +1538,35 @@
                                                                         </div>
                                                                         <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
                                                                     </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {filteredCycles.length > 0 && (
+                                                    <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">🌙 Ciclos ({filteredCycles.length})</h3>
+                                                        <div className="space-y-3">
+                                                            {filteredCycles.map(cycle => (
+                                                                <div key={cycle.id} className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                                                    <div className="flex justify-between items-center mb-2">
+                                                                        <div className="text-sm font-medium text-gray-800">{new Date(cycle.timestamp).toLocaleDateString('pt-PT')} {new Date(cycle.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                                        <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
+                                                                    </div>
+                                                                    {cycle.bedtime && (
+                                                                        <div className="text-sm text-gray-700 mb-1">
+                                                                            <span className="text-gray-600">Hora de deitar: </span>
+                                                                            <span className="font-medium">{cycle.bedtime}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {cycle.triggers && cycle.triggers.length > 0 && (
+                                                                        <div className="text-sm text-gray-700 mb-1">
+                                                                            <span className="text-gray-600">Gatilhos: </span>
+                                                                            <span className="font-medium">{cycle.triggers.join(', ')}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {cycle.notes && <div className="text-sm text-gray-600 mt-2 italic">💭 {cycle.notes}</div>}
                                                                 </div>
                                                             ))}
                                                         </div>
