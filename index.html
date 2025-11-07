@@ -606,16 +606,16 @@
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <h1 className="text-3xl font-bold mb-1">
-                                                <span className="font-bold text-black">N</span><span className="text-gray-700">otas de </span>
-                                                <span className="font-bold text-black">E</span><span className="text-gray-700">xperiências e </span>
-                                                <span className="font-bold text-black">P</span><span className="text-gray-700">adrões</span>
+                                                <span className="font-bold text-purple-600">N</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>otas de </span>
+                                                <span className="font-bold text-pink-600">E</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>xperiências e </span>
+                                                <span className="font-bold text-blue-600">P</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>adrões</span>
                                             </h1>
-                                            <p className="text-gray-600 text-sm mb-1">
-                                                <span className="font-bold text-black">N</span>otice it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it.
+                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs mb-1'}>
+                                                <span className="font-bold text-purple-600">N</span>otice it. <span className="font-bold text-pink-600">E</span>xplore it. <span className="font-bold text-blue-600">P</span>lan it.
                                                 {streaks.current > 0 && <span className="ml-2 text-xs text-orange-600">🔥{streaks.current}</span>}
                                             </p>
-                                            <p className="text-gray-600 text-sm font-semibold">
-                                                <span className="font-bold text-black">N</span>ão <span className="font-bold text-black">E</span>stás <span className="font-bold text-black">P</span>erdida.
+                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs font-semibold'}>
+                                                <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
                                             </p>
                                         </div>
                                     </div>
@@ -631,9 +631,50 @@
                         <div className="bg-white rounded-3xl shadow-xl p-6 mb-6">
                             {currentView === 'home' && (
                                 <div className="space-y-6">
-                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
-                                        <div className="flex items-start gap-3 mb-3"><Brain /><p className="text-purple-900 font-medium leading-relaxed">{currentReflection}</p></div>
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200') + ' rounded-2xl p-4 border'}>
+                                        <div className="flex items-start gap-2"><Brain className="w-4 h-4 flex-shrink-0 mt-0.5" /><p className={(darkMode ? 'text-gray-300' : 'text-purple-900') + ' text-xs leading-relaxed'}>{currentReflection}</p></div>
                                     </div>
+
+                                    {(() => {
+                                        const alerts = [];
+
+                                        // Check last interval < 2h
+                                        const lastInterval = getLastInterval();
+                                        if (lastInterval && lastInterval.isShort) {
+                                            alerts.push({
+                                                text: `Intervalo curto: ${lastInterval.hours}h (< 2h)`,
+                                                emoji: '⚠️',
+                                                color: 'orange'
+                                            });
+                                        }
+
+                                        // Check dosage above average - use previous day's real consumption
+                                        if (dailyLogs.length > 0) {
+                                            const sortedLogs = [...dailyLogs].sort((a, b) => b.date.localeCompare(a.date));
+                                            const yesterdayLog = sortedLogs[1]; // Previous day
+                                            const todayLog = dailyLogs.find(l => l.date === getTodayKey());
+                                            if (yesterdayLog && todayLog && todayLog.mg > yesterdayLog.mg) {
+                                                alerts.push({
+                                                    text: `Dosagem acima do ciclo anterior (${yesterdayLog.mg}mg)`,
+                                                    emoji: '📊',
+                                                    color: 'red'
+                                                });
+                                            }
+                                        }
+
+                                        return alerts.length > 0 && (
+                                            <div className="space-y-2">
+                                                {alerts.map((alert, i) => (
+                                                    <div key={i} className={'bg-gradient-to-r rounded-lg p-2 border ' + (alert.color === 'orange' ? 'from-orange-50 to-yellow-50 border-orange-200' : 'from-red-50 to-pink-50 border-red-200')}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm">{alert.emoji}</span>
+                                                            <span className={'text-xs font-medium ' + (alert.color === 'orange' ? 'text-orange-700' : 'text-red-700')}>{alert.text}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
 
                                     <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Clock className="w-6 h-6" /><div className="mt-2">Marcar Consumo Agora</div></button>
 
@@ -659,9 +700,9 @@
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}><div className={(darkMode ? 'text-gray-300' : 'text-gray-600') + ' text-sm mb-1'}>Hoje</div><div className="text-3xl font-bold text-purple-600">{todayCount}x</div></div>
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}><div className={(darkMode ? 'text-gray-300' : 'text-gray-600') + ' text-sm mb-1'}>Média 7 dias</div><div className="text-3xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-sm'}>{last7.avgMg}mg/dia</div></div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Hoje</div><div className="text-2xl font-bold text-purple-600">{todayCount}x</div></div>
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Média 7 dias</div><div className="text-2xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-500' : 'text-gray-400') + ' text-xs'}>{last7.avgMg}mg/dia</div></div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -698,80 +739,19 @@
                                         })()}
                                     </div>
 
-                                    {(() => {
-                                        const alerts = [];
 
-                                        // Check last interval < 2h
-                                        const lastInterval = getLastInterval();
-                                        if (lastInterval && lastInterval.isShort) {
-                                            alerts.push({
-                                                text: `Intervalo curto: ${lastInterval.hours}h (< 2h)`,
-                                                emoji: '⚠️',
-                                                color: 'orange'
-                                            });
-                                        }
-
-                                        // Check dosage above average
-                                        if (dailyLogs.length > 0) {
-                                            const avgMg = dailyLogs.reduce((sum, l) => sum + l.mg, 0) / dailyLogs.length;
-                                            const todayLog = dailyLogs.find(l => l.date === getTodayKey());
-                                            if (todayLog && todayLog.mg > avgMg) {
-                                                alerts.push({
-                                                    text: `Dosagem acima da média (${Math.round(avgMg)}mg)`,
-                                                    emoji: '📊',
-                                                    color: 'red'
-                                                });
-                                            }
-                                        }
-
-                                        return alerts.length > 0 && (
-                                            <div className="space-y-2">
-                                                {alerts.map((alert, i) => (
-                                                    <div key={i} className={'bg-gradient-to-r rounded-xl p-3 border ' + (alert.color === 'orange' ? 'from-orange-50 to-yellow-50 border-orange-200' : 'from-red-50 to-pink-50 border-red-200')}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xl">{alert.emoji}</span>
-                                                            <span className={'text-sm font-medium ' + (alert.color === 'orange' ? 'text-orange-700' : 'text-red-700')}>{alert.text}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    })()}
-
-                                    {badges.length > 0 && (
-                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + '">🏆 Conquistas</h3>
-                                                <span className="text-sm text-yellow-700 font-medium">{badges.length}</span>
-                                            </div>
-                                            <div className="flex gap-2 overflow-x-auto pb-1">
-                                                {badges.slice(0, 6).map(badge => (
-                                                    <div key={badge.id} className="flex-shrink-0 text-3xl" title={badge.title}>
-                                                        {badge.icon}
-                                                    </div>
-                                                ))}
-                                                {streaks.current >= 3 && (
-                                                    <div className="flex-shrink-0 text-3xl" title={`💪 Mantém o ritmo! ${streaks.current} dias seguidos!`}>
-                                                        💪
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="text-xs text-gray-600 mt-2">Ver todas em Padrões</div>
-                                        </div>
-                                    )}
-
-                                    <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-4 border'}>
                                         <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-2">💡 Estratégias para Hoje</h3>
                                         <div className="space-y-2">
                                             {copingStrategies.map((strategy, i) => (
-                                                <div key={i} className="flex items-start gap-2 text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' bg-white p-2 rounded-lg">
-                                                    <span className="text-blue-600 font-bold">•</span>
+                                                <div key={i} className={'flex items-start gap-2 text-sm p-2 rounded-lg ' + (darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-white')}>
+                                                    <span className="text-blue-500 font-bold">•</span>
                                                     <span>{strategy}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         {cycles.length > 0 && cycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                            <div className="text-xs text-blue-600 mt-2">Baseado nos teus gatilhos identificados</div>
+                                            <div className={'text-xs mt-2 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>Baseado nos teus gatilhos identificados</div>
                                         )}
                                     </div>
 
@@ -780,14 +760,14 @@
                                             <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3">Consumos Recentes</h3>
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
                                                 {consumptions.slice(0, 10).map(c => (
-                                                    <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                                    <div key={c.id} className={'flex items-center justify-between py-2 px-3 rounded-lg ' + (darkMode ? 'bg-gray-700' : 'bg-gray-50')}>
                                                         <div className="flex-1">
-                                                            <div className="text-sm font-medium text-gray-800">{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
-                                                            {c.notes && <div className="text-xs text-gray-500 mt-1">{c.notes}</div>}
+                                                            <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                            {c.notes && <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{c.notes}</div>}
                                                         </div>
                                                         <div className="flex gap-2 ml-2">
-                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-600 hover:text-blue-700"><Edit className="w-4 h-4" /></button>
-                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Edit className="w-4 h-4" /></button>
+                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-500 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -827,25 +807,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Badges Section */}
-                                    {badges.length > 0 && (
-                                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-200">
-                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🏆 Conquistas ({badges.length})</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {badges.map(badge => (
-                                                    <div key={badge.id} className={'bg-white rounded-lg p-3 border-2 border-' + badge.color + '-200'}>
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="text-3xl flex-shrink-0">{badge.icon}</div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className={'font-semibold text-' + badge.color + '-700 text-sm'}>{badge.title}</div>
-                                                                <div className="text-xs text-gray-600 mt-1">{badge.description}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {['comparisons', 'analyses', 'others'].map(view => (
@@ -1179,28 +1140,24 @@
                                                     </div>
 
                                                     {/* By part of day */}
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🌅 Por Parte do Dia</h3>
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <div className="bg-yellow-50 rounded-lg p-3 text-center">
-                                                                <div className="text-2xl mb-1">🌅</div>
-                                                                <div className="text-xs text-gray-600">Manhã (6-12h)</div>
-                                                                <div className="text-2xl font-bold text-yellow-600">{byPartOfDay.manha}</div>
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                                        <h3 className={'font-semibold text-sm mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período</h3>
+                                                        <div className="grid grid-cols-4 gap-2">
+                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-2 text-center border'}>
+                                                                <div className="text-sm mb-0.5">🌅</div>
+                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{byPartOfDay.manha}</div>
                                                             </div>
-                                                            <div className="bg-orange-50 rounded-lg p-3 text-center">
-                                                                <div className="text-2xl mb-1">☀️</div>
-                                                                <div className="text-xs text-gray-600">Tarde (12-18h)</div>
-                                                                <div className="text-2xl font-bold text-orange-600">{byPartOfDay.tarde}</div>
+                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-2 text-center border'}>
+                                                                <div className="text-sm mb-0.5">☀️</div>
+                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{byPartOfDay.tarde}</div>
                                                             </div>
-                                                            <div className="bg-indigo-50 rounded-lg p-3 text-center">
-                                                                <div className="text-2xl mb-1">🌙</div>
-                                                                <div className="text-xs text-gray-600">Noite (18-24h)</div>
-                                                                <div className="text-2xl font-bold text-indigo-600">{byPartOfDay.noite}</div>
+                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-2 text-center border'}>
+                                                                <div className="text-sm mb-0.5">🌙</div>
+                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{byPartOfDay.noite}</div>
                                                             </div>
-                                                            <div className="bg-purple-50 rounded-lg p-3 text-center">
-                                                                <div className="text-2xl mb-1">⭐</div>
-                                                                <div className="text-xs text-gray-600">Madrugada (0-6h)</div>
-                                                                <div className="text-2xl font-bold text-purple-600">{byPartOfDay.madrugada}</div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-2 text-center border'}>
+                                                                <div className="text-sm mb-0.5">⭐</div>
+                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{byPartOfDay.madrugada}</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1224,9 +1181,8 @@
 
                                                     {/* Cycle Analysis */}
                                                     {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🌙 Análise de Ciclos</h3>
-                                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-3">Gatilhos mais comuns:</div>
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                                            <h3 className={'font-semibold text-sm mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌙 Gatilhos Comuns</h3>
                                                             {(() => {
                                                                 const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
                                                                 const triggerCount = {};
@@ -1234,11 +1190,11 @@
                                                                 const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
 
                                                                 return (
-                                                                    <div className="space-y-2">
-                                                                        {sortedTriggers.map(([trigger, count]) => (
-                                                                            <div key={trigger} className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                                                                                <span className="text-sm font-medium text-gray-800">{trigger}</span>
-                                                                                <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded font-bold">{count}x</span>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {sortedTriggers.slice(0,5).map(([trigger, count]) => (
+                                                                            <div key={trigger} className={'inline-flex items-center gap-1 px-2 py-1 rounded text-xs ' + (darkMode ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-800')}>
+                                                                                <span>{trigger}</span>
+                                                                                <span className={'font-bold ' + (darkMode ? 'text-indigo-300' : 'text-indigo-600')}>{count}x</span>
                                                                             </div>
                                                                         ))}
                                                                     </div>
@@ -1989,6 +1945,36 @@
                                         <button onClick={() => setShowGoalModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">+ Nova Meta</button>
                                     </div>
 
+                                    {/* Achievements Section */}
+                                    {badges.length > 0 && (
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200') + ' rounded-xl p-4 border'}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>🏆 Conquistas</h3>
+                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-400' : 'text-yellow-700')}>{badges.length}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                {badges.map(badge => (
+                                                    <div key={badge.id} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-' + badge.color + '-200') + ' rounded-lg p-3 border-2'}>
+                                                        <div className="flex flex-col items-center text-center">
+                                                            <div className="text-2xl mb-1">{badge.icon}</div>
+                                                            <div className={'font-medium text-xs ' + (darkMode ? 'text-gray-200' : 'text-' + badge.color + '-700')}>{badge.title}</div>
+                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{badge.description}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {streaks.current >= 3 && (
+                                                    <div className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-orange-200') + ' rounded-lg p-3 border-2'}>
+                                                        <div className="flex flex-col items-center text-center">
+                                                            <div className="text-2xl mb-1">💪</div>
+                                                            <div className={'font-medium text-xs ' + (darkMode ? 'text-gray-200' : 'text-orange-700')}>Streak!</div>
+                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{streaks.current} dias seguidos!</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {goals.length === 0 ? (
                                         <div className={'text-center py-8 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}><Target className={'w-12 h-12 mx-auto mb-3 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')} /><p>Ainda não tens metas definidas</p></div>
                                     ) : (
@@ -2003,6 +1989,7 @@
                                                                 {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
                                                                 {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
                                                                 {goal.type === 'limit_last' && 'Hora do Último Consumo'}
+                                                                {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
                                                             </h3>
                                                             <p className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">
                                                                 Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
@@ -2010,6 +1997,7 @@
                                                                 {goal.type === 'delay_first' && 'após ' + goal.target}
                                                                 {goal.type === 'increase_interval' && goal.target + 'h entre consumos'}
                                                                 {goal.type === 'limit_last' && 'antes de ' + goal.target}
+                                                                {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
                                                             </p>
                                                             <p className="text-sm text-gray-500">Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
                                                         </div>
@@ -2194,6 +2182,7 @@
                                                 <option value="delay_first">Adiar Primeiro Consumo</option>
                                                 <option value="increase_interval">Aumentar Intervalo (horas)</option>
                                                 <option value="limit_last">Hora do Último Consumo</option>
+                                                <option value="sleep_hours">Horas de Sono por Dia</option>
                                             </select>
                                         </div>
                                         <div>
