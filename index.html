@@ -896,8 +896,101 @@
                                             shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
                                             const avgShortPerDay = Object.keys(shortByDay).length > 0 ? Object.values(shortByDay).reduce((sum, v) => sum + v, 0) / Object.keys(shortByDay).length : 0;
 
+                                            // Generate insights
+                                            const insights = [];
+
+                                            // Weekly trend insight
+                                            if (thisWeek.length > 0 && lastWeek.length > 0) {
+                                                const change = thisWeek.length - lastWeek.length;
+                                                const percentChange = Math.abs((change / lastWeek.length) * 100).toFixed(0);
+                                                if (change < 0) {
+                                                    insights.push({
+                                                        text: `Esta semana consumiste ${thisWeek.length}x (redução de ${percentChange}% vs semana passada). Progresso notável! 📉`,
+                                                        type: 'positive'
+                                                    });
+                                                } else if (change > 0) {
+                                                    insights.push({
+                                                        text: `Esta semana consumiste ${thisWeek.length}x (aumento de ${percentChange}% vs semana passada). Lembra-te: recaídas fazem parte do processo. 💪`,
+                                                        type: 'neutral'
+                                                    });
+                                                }
+                                            }
+
+                                            // Best day insight
+                                            if (dates.length > 0) {
+                                                const sortedDates = dates.sort((a, b) => byDate[a] - byDate[b]);
+                                                const bestDate = sortedDates[0];
+                                                const bestCount = byDate[bestDate];
+                                                const bestDayName = new Date(bestDate).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
+                                                if (bestCount <= 2) {
+                                                    insights.push({
+                                                        text: `Teu melhor dia foi ${bestDayName} com apenas ${bestCount} ${bestCount === 1 ? 'consumo' : 'consumos'}. Identifica o que funcionou! ⭐`,
+                                                        type: 'positive'
+                                                    });
+                                                }
+                                            }
+
+                                            // Time pattern insight
+                                            const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                                            if (maxPartOfDay[1] > 0) {
+                                                const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
+                                                const percentage = ((maxPartOfDay[1] / filteredConsumptions.length) * 100).toFixed(0);
+                                                insights.push({
+                                                    text: `Padrão identificado: ${percentage}% dos consumos ocorrem à ${partNames[maxPartOfDay[0]]}. Prepara estratégias para esse período. 🎯`,
+                                                    type: 'info'
+                                                });
+                                            }
+
+                                            // Short intervals insight
+                                            if (intervals.length > 0) {
+                                                const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
+                                                if (shortPercent < 30) {
+                                                    insights.push({
+                                                        text: `Apenas ${shortPercent}% dos intervalos são curtos (<2h). Estás a espaçar bem os consumos! 🌟`,
+                                                        type: 'positive'
+                                                    });
+                                                } else if (shortPercent > 60) {
+                                                    insights.push({
+                                                        text: `${shortPercent}% dos intervalos são curtos (<2h). Foca-te em aumentar o tempo entre consumos. Cada hora conta. ⏱️`,
+                                                        type: 'info'
+                                                    });
+                                                }
+                                            }
+
+                                            // Day of week pattern
+                                            const maxWeekday = Object.entries(byWeekday).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                                            if (maxWeekday[1] > 0 && filteredConsumptions.length > 7) {
+                                                const dayName = weekdayNames[parseInt(maxWeekday[0])];
+                                                const percentage = ((maxWeekday[1] / filteredConsumptions.length) * 100).toFixed(0);
+                                                if (percentage > 20) {
+                                                    insights.push({
+                                                        text: `${dayName} representa ${percentage}% dos consumos. Planeia atividades alternativas para este dia. 📅`,
+                                                        type: 'info'
+                                                    });
+                                                }
+                                            }
+
                                             return (
                                                 <div className="space-y-4">
+                                                    {/* Insights Summary */}
+                                                    {insights.length > 0 && (
+                                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                                                            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                                <span className="text-xl">💡</span>
+                                                                Resumo e Padrões
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {insights.map((insight, i) => (
+                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
+                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
+                                                                            {insight.text}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {/* Weekly comparison */}
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                                                         <h3 className="font-semibold text-gray-800 mb-4">📅 Comparação Semanal</h3>
