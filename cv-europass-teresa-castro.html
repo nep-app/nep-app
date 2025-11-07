@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curriculum Vitae - Teresa Castro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 50px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            border-bottom: 3px solid #003399;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #003399;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            color: #003399;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #003399;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            color: #0066cc;
+            font-size: 14px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .personal-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            min-width: 150px;
+            color: #003399;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .experience-item, .education-item {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .period {
+            font-weight: bold;
+            color: #003399;
+            margin-bottom: 5px;
+        }
+
+        .position {
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+
+        .employer {
+            font-style: italic;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .activities {
+            margin-left: 20px;
+        }
+
+        .activities ul {
+            list-style-type: disc;
+            margin-left: 20px;
+        }
+
+        .activities li {
+            margin-bottom: 5px;
+        }
+
+        .sector {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .skills-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .skills-table th,
+        .skills-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .skills-table th {
+            background-color: #003399;
+            color: white;
+            font-weight: bold;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .skill-item {
+            margin-bottom: 15px;
+        }
+
+        .skill-title {
+            font-weight: bold;
+            color: #003399;
+            margin-bottom: 5px;
+        }
+
+        .skill-description {
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .publications-list {
+            margin: 15px 0;
+        }
+
+        .publication-item {
+            margin-bottom: 10px;
+            padding-left: 15px;
+            border-left: 3px solid #003399;
+        }
+
+        .memberships-list {
+            margin: 15px 0;
+        }
+
+        .membership-item {
+            margin-bottom: 8px;
+            padding-left: 15px;
+        }
+
+        .membership-item::before {
+            content: "▪ ";
+            color: #003399;
+            font-weight: bold;
+        }
+
+        .training-item {
+            margin-bottom: 10px;
+            padding-left: 15px;
+        }
+
+        .training-item::before {
+            content: "• ";
+            color: #003399;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #003399;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .print-button:hover {
+            background-color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">Print / Save as PDF</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>Curriculum Vitae</h1>
+            <p style="color: #666; font-size: 14px; margin-top: 5px;">Europass Format</p>
+        </div>
+
+        <h2>1. Personal Information</h2>
+
+        <div class="personal-info">
+            <div>
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">Teresa Castro</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value">Lisbon, Portugal</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Telephone:</span>
+                    <span class="info-value">+351 916 025 666 (Mobile)</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">teresa.almeidacastro@gmail.com</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">LinkedIn:</span>
+                    <span class="info-value">/teresaalmeidacastro/</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date of Birth:</span>
+                    <span class="info-value">29 September 1994</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Nationality:</span>
+                    <span class="info-value">Portuguese</span>
+                </div>
+            </div>
+        </div>
+
+        <h2>2. Work Experience</h2>
+
+        <div class="experience-item">
+            <div class="period">04/2025 – Present</div>
+            <div class="position">Project Coordinator</div>
+            <div class="employer">NIALP - Nepalese Intercultural Association</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Planning, implementation, and management of the "Healthy Beginnings" project (migrant communities), ensuring activity delivery and funder compliance.</li>
+                    <li>Facilitation of participatory educational sessions with the project team and external partners.</li>
+                    <li>Systematic evidence collection, monitoring, and evaluation (M&E) for continuous improvement and accountability.</li>
+                    <li>Drafting technical reports, proposals, and institutional coordination with external entities.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Social Intervention and Public Health</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">08/2024 – Present (Freelancer)</div>
+            <div class="position">International Working Group Member</div>
+            <div class="employer">Youth RISE</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Representation and advocacy for local/regional communities of Young People Who Use Drugs (YPWUD) in high-level international drug policy arenas (e.g., UN, CND, webinars).</li>
+                    <li>Promoting youth-led, evidence-based drug policies and supporting advocacy and capacity-building efforts.</li>
+                    <li>Sole editor of the organisation's 2023 and 2024 Biannual Report.</li>
+                    <li>Contributor to key publications and projects.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Human Rights, Drug Policy, and Peer Advocacy</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">2018 – Present (Freelancer)</div>
+            <div class="position">Peer Collaborator (Harm Reduction Specialist)</div>
+            <div class="employer">Kosmicare</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Provided specialized support in harm reduction interventions at nightlife and recreational contexts (e.g., drug checking, info hubs, and peer-led psychological care - psycare).</li>
+                    <li>Institutional representation at national and international events.</li>
+                    <li>Active contribution to grant applications and operational planning.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Public Health and Community Peer Advocacy</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">03/2023 – 02/2025</div>
+            <div class="position">Social Worker & Member of the Investigation Committee</div>
+            <div class="employer">G.A.T - Grupo de Ativistas em Tratamentos</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Provided comprehensive case management, social support, and referrals at the GAT IN Mouraria harm reduction drop-in centre.</li>
+                    <li>Supported project management (funding applications, implementation, and evaluation).</li>
+                    <li>Co-led research efforts, submitted abstracts to conferences, and conducted institutional representation.</li>
+                    <li>Articulation with stakeholders nationally and internationally.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Social Intervention and Harm Reduction</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">10/2020 – 03/2023</div>
+            <div class="position">Social Worker</div>
+            <div class="employer">SER+, Associação Portuguesa para a Prevenção e Desafio à SIDA</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Specialized intervention and case management for people experiencing homelessness (Cascais Sai à Rua project).</li>
+                    <li>Needs assessment and facilitating access to health and social support services.</li>
+                    <li>Liaison with external stakeholders and support for project reporting and development.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Social Intervention and Public Health</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">03/2020 – 10/2020</div>
+            <div class="position">Business Support / Administrative & Paralegal Assistant</div>
+            <div class="employer">Belion Portugal LLP / LVP Advogados</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Managed client records and follow-up; maintained physical and digital filing systems.</li>
+                    <li>Created, edited, and formatted legal documents (e.g., wills, affidavits, contracts, complaints).</li>
+                    <li>Coordinated schedules, meetings, and travel arrangements for legal staff.</li>
+                    <li>Handled document translation (ENG-PT/PT-ENG).</li>
+                    <li>Supported marketing, accounting, and partnership departments.</li>
+                    <li>Oversaw database, email, and correspondence.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Legal Services and Business Support</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">09/2019 – 02/2020</div>
+            <div class="position">Social Worker</div>
+            <div class="employer">G.A.T - Grupo de Ativistas em Tratamentos</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Case management for migrants (mainly African community) in the GAT Afrik project (screening and linkage/retention to health).</li>
+                    <li>Assessment of needs and support in accessing services.</li>
+                    <li>Institutional representation and support for project reporting and development.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Social Intervention and Public Health</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">12/2018 – 12/2019</div>
+            <div class="position">Public Relations Assistant</div>
+            <div class="employer">Casino de Lisboa</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Customer registration, front desk reception, and remote support (phone and email).</li>
+                    <li>Administrative and database support, including reservations.</li>
+                    <li>Ensured client satisfaction and handled queries.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Tourism and Entertainment</div>
+        </div>
+
+        <div class="experience-item">
+            <div class="period">06/2016 – 10/2018</div>
+            <div class="position">Social Worker</div>
+            <div class="employer">G.A.T - Grupo de Ativistas em Tratamentos</div>
+            <div class="activities">
+                <strong>Main Activities and Responsibilities:</strong>
+                <ul>
+                    <li>Provided case management and individualized social accompaniment.</li>
+                    <li>Facilitated referrals to other services and liaised with partners.</li>
+                </ul>
+            </div>
+            <div class="sector"><strong>Business or Sector:</strong> Social Intervention</div>
+        </div>
+
+        <h2>3. Education and Training</h2>
+
+        <div class="education-item">
+            <div class="period">2019</div>
+            <div class="position">Specialized Course in Supervision in Social Work</div>
+            <div class="employer">ISCSP - Universidade de Lisboa</div>
+            <div class="activities">
+                <strong>Level:</strong> Postgraduate (40 ECTS)<br>
+                <strong>Principal Subjects Covered:</strong> Clinical and pedagogical supervision, professional ethics, team management.
+            </div>
+        </div>
+
+        <div class="education-item">
+            <div class="period">2019</div>
+            <div class="position">Short Term Program, European Drugs Summer School (Grade 18/20)</div>
+            <div class="employer">ISCTE - Instituto Universitário de Lisboa & EMCDDA (European Monitoring Centre for Drugs and Drug Addiction)</div>
+            <div class="activities">
+                <strong>Level:</strong> Specialized Training<br>
+                <strong>Principal Subjects Covered:</strong> European drug policies, monitoring of new substance use phenomena, data analysis.
+            </div>
+        </div>
+
+        <div class="education-item">
+            <div class="period">2017</div>
+            <div class="position">Licentiate (BSc equivalent) in Social Work</div>
+            <div class="employer">ISCSP - Universidade de Lisboa</div>
+            <div class="activities">
+                <strong>Level:</strong> ISCED Level 6 (Licentiate)<br>
+                <strong>Principal Subjects Covered:</strong> Social Intervention Methodology, Social Policies, Community Social Work.<br>
+                <strong>Note:</strong> Master's in Social Work (ISCTE, 2019) incomplete (1st year only).
+            </div>
+        </div>
+
+        <h2>4. Personal Skills</h2>
+
+        <h3>Mother Tongue</h3>
+        <p>Portuguese</p>
+
+        <h3>Other Languages</h3>
+        <table class="skills-table">
+            <thead>
+                <tr>
+                    <th>Language</th>
+                    <th colspan="2">Understanding</th>
+                    <th colspan="2">Speaking</th>
+                    <th>Writing</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th>Listening</th>
+                    <th>Reading</th>
+                    <th>Spoken Interaction</th>
+                    <th>Spoken Production</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>English</strong></td>
+                    <td>C2</td>
+                    <td>C2</td>
+                    <td>C1</td>
+                    <td>C1</td>
+                    <td>C1</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+            <em>Levels: A1/A2: Basic user - B1/B2: Independent user - C1/C2: Proficient user<br>
+            Common European Framework of Reference for Languages</em>
+        </p>
+        <p style="margin-top: 10px;"><strong>Note:</strong> Full professional proficiency demonstrated through international publications and public speaking.</p>
+
+        <h3>Communication Skills</h3>
+        <div class="skill-item">
+            <div class="skill-title">Negotiation & Advocacy</div>
+            <div class="skill-description">High-level institutional representation and rights defence in global forums (e.g., VNGOC, CND), translating Peers' Lived Experience (LE) into concrete policy proposals.</div>
+        </div>
+        <div class="skill-item">
+            <div class="skill-title">Intercultural Mediation</div>
+            <div class="skill-description">Proven experience working with migrant and vulnerable communities, facilitating communication and access to essential social and health services.</div>
+        </div>
+
+        <h3>Organisational / Managerial Skills</h3>
+        <div class="skill-item">
+            <div class="skill-title">Project and People Management</div>
+            <div class="skill-description">Experienced in planning, implementation, and M&E of social and health projects (NIALP, GAT), including leading volunteer teams and interdisciplinary groups (Kosmicare).</div>
+        </div>
+        <div class="skill-item">
+            <div class="skill-title">Documentation and Compliance</div>
+            <div class="skill-description">Rigorous approach to drafting funding applications, accountability reports, and producing legal and administrative documents.</div>
+        </div>
+
+        <h3>Job-Related Skills</h3>
+        <div class="skill-item">
+            <div class="skill-title">Critical Policy Analysis</div>
+            <div class="skill-description">In-depth knowledge and practice of action research in drug policy, human rights, and social justice, adopting a feminist and anti-paternalistic perspective.</div>
+        </div>
+        <div class="skill-item">
+            <div class="skill-title">Harm Reduction (HR) Expert</div>
+            <div class="skill-description">Practical and theoretical expertise in diverse intervention models (street-based, drop-in, recreational), including drug-checking, psycare, and peer support (PAR).</div>
+        </div>
+        <div class="skill-item">
+            <div class="skill-title">Research and Dissemination</div>
+            <div class="skill-description">Regular contribution to international reports and publications (IDPC, Youth RISE, UNAIDS), abstract submission, and public speaking at major conferences (e.g., INHSU, CND).</div>
+        </div>
+
+        <h3>Digital Competence</h3>
+        <table class="skills-table">
+            <thead>
+                <tr>
+                    <th>Information Processing</th>
+                    <th>Communication</th>
+                    <th>Content Creation</th>
+                    <th>Safety</th>
+                    <th>Problem Solving</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Proficient user</td>
+                    <td>Proficient user</td>
+                    <td>Independent user</td>
+                    <td>Independent user</td>
+                    <td>Independent user</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="font-size: 12px; color: #666; margin-top: 5px;">
+            <em>Levels: Basic user - Independent user - Proficient user<br>
+            Digital competences - Self-assessment grid</em>
+        </p>
+        <p style="margin-top: 10px;"><strong>Other Computer Skills:</strong> Proficient in Microsoft 365, Client Management Platforms, Basic knowledge of SPSS for data analysis.</p>
+
+        <h3>Driving Licence</h3>
+        <p>Category B (Driver's Licence and private car)</p>
+
+        <h2>5. Additional Information</h2>
+
+        <h3>Publications and Public Speaking</h3>
+        <p>Extensive list of publications, reports, and interventions at relevant conferences including:</p>
+        <div class="publications-list">
+            <div class="publication-item">68th Commission on Narcotic Drugs (CND)</div>
+            <div class="publication-item">International Network on Health and Hepatitis in Substance Users (INHSU)</div>
+            <div class="publication-item">Lisbon Addictions Conferences</div>
+            <div class="publication-item">Various international drug policy and harm reduction forums</div>
+        </div>
+
+        <h3>Memberships and Affiliations</h3>
+        <div class="memberships-list">
+            <div class="membership-item"><strong>Youth RISE</strong> - International Working Group Member</div>
+            <div class="membership-item"><strong>Kosmicare</strong> - Peer Collaborator</div>
+            <div class="membership-item"><strong>EATG (European AIDS Treatment Group)</strong> - Supporting Member & Quality of Life Committee</div>
+            <div class="membership-item"><strong>IDPC (International Drug Policy Consortium)</strong> - Peer Review Group Member</div>
+            <div class="membership-item"><strong>Correlation - European Harm Reduction Network</strong> - Member</div>
+            <div class="membership-item"><strong>NUUA (Rede de Utentes Utilizadores Ativos)</strong> - Member</div>
+            <div class="membership-item"><strong>R3 - Redução de Riscos em Rede</strong> - Member</div>
+            <div class="membership-item"><strong>FEANTSA</strong> - Member of the FEANTSA Youth</div>
+        </div>
+
+        <h3>Selected Trainings and Certifications</h3>
+        <div class="memberships-list">
+            <div class="training-item">Training for Tutors: Human Rights Education for Youth Program - North-South Centre, Council of Europe</div>
+            <div class="training-item">"Community in Scope: A Workshop on HIV Combination Prevention" - European AIDS Treatment Group</div>
+            <div class="training-item">Human Rights Education for Youth-Tutored Course on Media and Information Literacy</div>
+            <div class="training-item">Synthetic Cathinones and Harm Reduction Strategies</div>
+            <div class="training-item">Youth Exchange: Dismantling Hate Speech, Understanding Intersectionality</div>
+            <div class="training-item">Drug Checking and Adulterants</div>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+            <p>This CV is formatted according to the Europass standard.</p>
+            <p>Last updated: November 2025</p>
+        </div>
+    </div>
+
+    <script>
+        // Optional: Add print functionality
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>
