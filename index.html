@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEP app</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        window.firebaseModules = { initializeApp, getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence, getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut };
+        window.firebaseReady = true;
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <style>
+        body { margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
+        .dark { background-color: #1a1a1a; color: #e5e5e5; }
+        .dark .bg-white { background-color: #2d2d2d !important; }
+        .dark .text-gray-800 { color: #e5e5e5 !important; }
+        .dark .text-gray-700 { color: #d1d1d1 !important; }
+        .dark .text-gray-600 { color: #b0b0b0 !important; }
+        .dark .text-gray-500 { color: #909090 !important; }
+        .dark .border-gray-200 { border-color: #404040 !important; }
+        .dark .bg-gray-50 { background-color: #252525 !important; }
+        .dark .bg-gray-100 { background-color: #333333 !important; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+function waitForFirebase() { return new Promise((resolve) => { if (window.firebaseReady) { resolve(); } else { window.addEventListener('firebase-ready', resolve, { once: true }); } }); }
+const firebaseConfig = { apiKey: "AIzaSyDH8-OZZQPHzWOnkcABi0tWbeFpxSrnc0w", authDomain: "harm-reduction-d4f7d.firebaseapp.com", projectId: "harm-reduction-d4f7d", storageBucket: "harm-reduction-d4f7d.firebasestorage.app", messagingSenderId: "732077932839", appId: "1:732077932839:web:894f098ab346d79e462902" };
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">A carregar... 🔄</div></div>);
+    </script>
+</body>
+</html>
