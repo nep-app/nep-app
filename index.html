@@ -107,11 +107,11 @@
             const [patternView, setPatternView] = useState('intervals');
 
             // Form states
-            const [dailyForm, setDailyForm] = useState({ times: 1, mg: 30, notes: '' });
-            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 5, mood: 5, energy: 5, notes: '' });
+            const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 5, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ mood: 5, triggers: [], notes: '' });
-            const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '' });
+            const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
             const getCurrentCycleIndex = () => {
@@ -150,18 +150,19 @@
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
 
             const submitDailyLog = async () => {
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: parseInt(dailyForm.times), mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
                 setDailyLogs(prev => [item, ...prev]);
                 await saveToFirebase('dailyLogs', item);
-                setDailyForm({ times: 1, mg: 30, notes: '' });
+                setDailyForm({ mg: 30, notes: '' });
                 setShowDailyLogModal(false);
             };
 
             const submitWellbeing = async () => {
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), notes: wellbeingForm.notes };
+                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), sleep: parseInt(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
                 setWellbeingLogs(prev => [item, ...prev]);
                 await saveToFirebase('wellbeingLogs', item);
-                setWellbeingForm({ sleep: 5, mood: 5, energy: 5, notes: '' });
+                setWellbeingForm({ sleep: 5, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
                 setShowWellbeingModal(false);
             };
 
@@ -208,6 +209,16 @@
             };
 
             const getTimeSinceLastConsumption = () => { if (consumptions.length === 0) return null; const last = new Date(consumptions[0].timestamp); const now = new Date(); const diffMs = now - last; const hours = Math.floor(diffMs / (1000 * 60 * 60)); const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)); return { hours, minutes, total: diffMs }; };
+
+            const getLastInterval = () => {
+                if (consumptions.length < 2) return null;
+                const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+                const last = new Date(sorted[0].timestamp);
+                const secondLast = new Date(sorted[1].timestamp);
+                const diffMs = last - secondLast;
+                const hours = diffMs / (1000 * 60 * 60);
+                return { hours: hours.toFixed(1), isShort: hours < 2 };
+            };
 
             const getTodayConsumptions = () => consumptions.filter(c => c.date === getTodayKey());
 
@@ -289,12 +300,12 @@
                             <div className="flex justify-between items-start">
                                 <div>
                                     <h1 className="text-3xl font-bold mb-2">
-                                        <span className="font-bold text-purple-600">N</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">otas de </span>
-                                        <span className="font-bold text-pink-600">E</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">xperiências e </span>
-                                        <span className="font-bold text-blue-600">P</span><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">adrões</span>
+                                        <span className="font-bold text-black">N</span><span className="text-gray-700">otas de </span>
+                                        <span className="font-bold text-black">E</span><span className="text-gray-700">xperiências e </span>
+                                        <span className="font-bold text-black">P</span><span className="text-gray-700">adrões</span>
                                     </h1>
                                     <p className="text-gray-600 text-sm">
-                                        <span className="font-bold text-purple-600">N</span>ote it. <span className="font-bold text-pink-600">E</span>xplore it. <span className="font-bold text-blue-600">P</span>lan it. <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
+                                        <span className="font-bold text-black">N</span>ote it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it. <span className="font-bold text-black">N</span>ão <span className="font-bold text-black">E</span>stás <span className="font-bold text-black">P</span>erdida.
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
@@ -341,7 +352,24 @@
                                         <div className="bg-white rounded-xl p-4 border border-gray-200"><div className="text-gray-600 text-sm mb-1">Média 7 dias</div><div className="text-3xl font-bold text-pink-600">{last7.avgTimes}x</div><div className="text-sm text-gray-500">{last7.avgMg}mg/dia</div></div>
                                     </div>
 
-                                    {(() => { const timeSince = getTimeSinceLastConsumption(); if (timeSince && consumptions.length > 0) return (<div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-3 border border-blue-200"><div className="flex items-center justify-between"><span className="text-sm text-blue-700">Último consumo</span><span className="text-lg font-bold text-blue-900">{timeSince.hours > 0 ? timeSince.hours + 'h ' : ''}{timeSince.minutes}min</span></div></div>); return null; })()}
+                                    {(() => { const lastInterval = getLastInterval(); if (lastInterval) return (<div className={'bg-gradient-to-r rounded-xl p-3 border ' + (lastInterval.isShort ? 'from-orange-50 to-red-50 border-orange-200' : 'from-green-50 to-blue-50 border-green-200')}><div className="flex items-center justify-between"><span className={'text-sm font-medium ' + (lastInterval.isShort ? 'text-orange-700' : 'text-green-700')}>Último intervalo</span><span className={'text-lg font-bold ' + (lastInterval.isShort ? 'text-orange-900' : 'text-green-900')}>{lastInterval.hours}h</span></div></div>); return null; })()}
+
+                                    {consumptions.length > 0 && (
+                                        <div className="bg-white rounded-xl p-4 border border-gray-200">
+                                            <h3 className="font-semibold text-gray-800 mb-3">Consumos Recentes</h3>
+                                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                {consumptions.slice(0, 10).map(c => (
+                                                    <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium text-gray-800">{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                            {c.notes && <div className="text-xs text-gray-500 mt-1">{c.notes}</div>}
+                                                        </div>
+                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700 ml-2"><Trash2 className="w-4 h-4" /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {currentView === 'patterns' && (
@@ -543,7 +571,7 @@
                                             <div className="space-y-6">
                                                 {filteredReflections.length > 0 && (
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Brain className="text-purple-600" /> Reflexões DBT ({filteredReflections.length})</h3>
+                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Brain className="w-4 h-4 text-purple-600" /> Reflexões DBT ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredReflections.map(r => (
                                                                 <div key={r.id} className="border-l-4 border-purple-400 pl-4 py-2 bg-purple-50 rounded-r-lg">
@@ -561,7 +589,7 @@
 
                                                 {filteredWellbeing.length > 0 && (
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Heart className="text-blue-600" /> Bem-Estar ({filteredWellbeing.length})</h3>
+                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Heart className="w-4 h-4 text-blue-600" /> Bem-Estar ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredWellbeing.map(w => (
                                                                 <div key={w.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -618,7 +646,7 @@
 
                                                 {filteredConsumptions.length > 0 && (
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Clock className="text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
+                                                        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredConsumptions.map(c => (
                                                                 <div key={c.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -710,10 +738,6 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantas vezes consumiste hoje?</label>
-                                            <input type="number" value={dailyForm.times} onChange={(e) => setDailyForm({...dailyForm, times: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" min="1" />
-                                        </div>
-                                        <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Total aproximado (mg)</label>
                                             <input type="number" value={dailyForm.mg} onChange={(e) => setDailyForm({...dailyForm, mg: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" min="0" />
                                         </div>
@@ -729,7 +753,7 @@
 
                         {showWellbeingModal && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowWellbeingModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-xl font-bold text-gray-800">Check-in Bem-Estar</h3>
                                         <button onClick={() => setShowWellbeingModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
@@ -746,6 +770,27 @@
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">Energia: {wellbeingForm.energy}/10</label>
                                             <input type="range" min="1" max="10" value={wellbeingForm.energy} onChange={(e) => setWellbeingForm({...wellbeingForm, energy: e.target.value})} className="w-full" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Autocuidado hoje</label>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="checkbox" checked={wellbeingForm.water} onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                                                    <span className="text-sm text-gray-700">💧 Bebi água suficiente</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="checkbox" checked={wellbeingForm.rest} onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                                                    <span className="text-sm text-gray-700">😴 Descansei o suficiente</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="checkbox" checked={wellbeingForm.social} onChange={(e) => setWellbeingForm({...wellbeingForm, social: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                                                    <span className="text-sm text-gray-700">👥 Tive contacto social</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="checkbox" checked={wellbeingForm.food} onChange={(e) => setWellbeingForm({...wellbeingForm, food: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
+                                                    <span className="text-sm text-gray-700">🍽️ Comi refeições nutritivas</span>
+                                                </label>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
