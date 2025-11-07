@@ -1405,27 +1405,111 @@
                                                         </div>
                                                     </div>
 
-                                                    {/* Word frequency */}
-                                                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                                                        <h3 className="font-semibold text-gray-800 mb-4">💭 Palavras Mais Usadas</h3>
-                                                        <div className="text-xs text-gray-500 mb-3">Análise das notas dos teus registos</div>
-                                                        {topWords.length > 0 ? (
-                                                            <div className="space-y-2">
-                                                                {topWords.map(([word, count], i) => (
-                                                                    <div key={i} className="flex items-center gap-2">
-                                                                        <div className="text-sm text-gray-700 w-24 truncate">{word}</div>
-                                                                        <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
-                                                                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / topWords[0][1]) * 100) + '%'}}>
-                                                                                {count}x
-                                                                            </div>
+                                                    {/* Wellbeing & Dosage Analysis */}
+                                                    {(filteredWellbeingLogs.length > 0 || filteredDailyLogs.length > 0 || filteredCycles.some(c => c.bedtime)) && (
+                                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                                                            <h3 className="font-semibold text-gray-800 mb-4">📊 Análise de Bem-Estar e Padrões</h3>
+                                                            <div className="space-y-3 text-sm text-gray-800">
+                                                                {(() => {
+                                                                    const insights = [];
+
+                                                                    // Sleep analysis
+                                                                    if (filteredWellbeingLogs.length > 0) {
+                                                                        const avgSleep = filteredWellbeingLogs.reduce((sum, w) => sum + w.sleep, 0) / filteredWellbeingLogs.length;
+                                                                        if (avgSleep >= 7) {
+                                                                            insights.push(`😴 Dormiste em média ${avgSleep.toFixed(1)}h por noite. Excelente! O sono adequado (7-9h) melhora a tomada de decisões e reduz impulsividade.`);
+                                                                        } else if (avgSleep >= 6) {
+                                                                            insights.push(`😴 Dormiste em média ${avgSleep.toFixed(1)}h por noite. Perto do ideal! Tenta dormir mais 1h - o sono influencia diretamente os padrões de consumo.`);
+                                                                        } else {
+                                                                            insights.push(`😴 Dormiste em média ${avgSleep.toFixed(1)}h por noite. Atenção: sono insuficiente (<6h) está correlacionado com maior consumo. Prioriza descanso.`);
+                                                                        }
+                                                                    }
+
+                                                                    // Mood analysis
+                                                                    if (filteredWellbeingLogs.length > 0) {
+                                                                        const avgMood = filteredWellbeingLogs.reduce((sum, w) => sum + w.mood, 0) / filteredWellbeingLogs.length;
+                                                                        if (avgMood >= 7) {
+                                                                            insights.push(`😊 Humor médio: ${avgMood.toFixed(1)}/10. Estado emocional positivo! Continua as práticas que te fazem bem.`);
+                                                                        } else if (avgMood >= 5) {
+                                                                            insights.push(`😐 Humor médio: ${avgMood.toFixed(1)}/10. Humor moderado. Identifica o que te ajuda a sentir melhor e integra no dia-a-dia.`);
+                                                                        } else {
+                                                                            insights.push(`😔 Humor médio: ${avgMood.toFixed(1)}/10. Humor baixo persistente merece atenção. Considera falar com alguém de confiança ou profissional.`);
+                                                                        }
+                                                                    }
+
+                                                                    // Energy analysis
+                                                                    if (filteredWellbeingLogs.filter(w => w.energy).length > 0) {
+                                                                        const logsWithEnergy = filteredWellbeingLogs.filter(w => w.energy);
+                                                                        const avgEnergy = logsWithEnergy.reduce((sum, w) => sum + w.energy, 0) / logsWithEnergy.length;
+                                                                        if (avgEnergy >= 7) {
+                                                                            insights.push(`⚡ Energia média: ${avgEnergy.toFixed(1)}/10. Boa vitalidade!`);
+                                                                        } else if (avgEnergy < 5) {
+                                                                            insights.push(`⚡ Energia média: ${avgEnergy.toFixed(1)}/10. Fadiga pode aumentar vulnerabilidade. Verifica sono, alimentação e hidratação.`);
+                                                                        }
+                                                                    }
+
+                                                                    // Self-care analysis
+                                                                    if (filteredWellbeingLogs.length > 0) {
+                                                                        const selfCare = { water: 0, rest: 0, social: 0, food: 0 };
+                                                                        filteredWellbeingLogs.forEach(w => {
+                                                                            if (w.water) selfCare.water++;
+                                                                            if (w.rest) selfCare.rest++;
+                                                                            if (w.social) selfCare.social++;
+                                                                            if (w.food) selfCare.food++;
+                                                                        });
+                                                                        const waterPercent = Math.round((selfCare.water / filteredWellbeingLogs.length) * 100);
+                                                                        const restPercent = Math.round((selfCare.rest / filteredWellbeingLogs.length) * 100);
+                                                                        const socialPercent = Math.round((selfCare.social / filteredWellbeingLogs.length) * 100);
+                                                                        const foodPercent = Math.round((selfCare.food / filteredWellbeingLogs.length) * 100);
+
+                                                                        const careItems = [];
+                                                                        if (waterPercent >= 70) careItems.push(`água ${waterPercent}%`);
+                                                                        if (restPercent >= 70) careItems.push(`descanso ${restPercent}%`);
+                                                                        if (socialPercent >= 70) careItems.push(`social ${socialPercent}%`);
+                                                                        if (foodPercent >= 70) careItems.push(`alimentação ${foodPercent}%`);
+
+                                                                        if (careItems.length > 0) {
+                                                                            insights.push(`💚 Autocuidado consistente: ${careItems.join(', ')}. Excelente! Estes hábitos são protetores.`);
+                                                                        } else {
+                                                                            insights.push(`💚 Autocuidado abaixo de 70% em várias áreas. Pequenos hábitos diários fazem diferença - começa por água e alimentação regular.`);
+                                                                        }
+                                                                    }
+
+                                                                    // Bedtime analysis
+                                                                    if (filteredCycles.filter(c => c.bedtime).length > 0) {
+                                                                        const bedtimes = filteredCycles.filter(c => c.bedtime).map(c => {
+                                                                            const [h, m] = c.bedtime.split(':').map(Number);
+                                                                            return h + m / 60;
+                                                                        });
+                                                                        const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
+
+                                                                        if (avgBedtime >= 22 && avgBedtime <= 23.5) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-23h30 favorece ciclos de sono saudáveis.`);
+                                                                        } else if (avgBedtime > 23.5 || avgBedtime < 6) {
+                                                                            const lateHour = avgBedtime > 23.5 ? avgBedtime : avgBedtime + 24;
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar tarde (>23h30) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
+                                                                        } else {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Rotina de sono estabelecida.`);
+                                                                        }
+                                                                    }
+
+                                                                    // Daily dosage analysis
+                                                                    if (filteredDailyLogs.length > 0) {
+                                                                        const avgMg = filteredDailyLogs.reduce((sum, l) => sum + l.mg, 0) / filteredDailyLogs.length;
+                                                                        const avgTimes = filteredDailyLogs.reduce((sum, l) => sum + l.times, 0) / filteredDailyLogs.length;
+                                                                        insights.push(`💊 Dosagem média: ${Math.round(avgMg)}mg/dia (${avgTimes.toFixed(1)}x). Estes dados são importantes para identificar padrões e ajustar estratégias.`);
+                                                                    }
+
+                                                                    return insights.map((insight, i) => (
+                                                                        <div key={i} className="p-3 bg-white rounded-lg border border-blue-100">
+                                                                            <p className="leading-relaxed">{insight}</p>
                                                                         </div>
-                                                                    </div>
-                                                                ))}
+                                                                    ));
+                                                                })()}
                                                             </div>
-                                                        ) : (
-                                                            <div className="text-center text-gray-500 py-4">Sem notas escritas ainda</div>
-                                                        )}
-                                                    </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* Trigger Analysis */}
                                                     {filteredCycles.length > 0 && (
