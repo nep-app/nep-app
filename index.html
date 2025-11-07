@@ -611,24 +611,13 @@
                                                 <span className="font-bold text-black">P</span><span className="text-gray-700">adrões</span>
                                             </h1>
                                             <p className="text-gray-600 text-sm mb-1">
-                                                <span className="font-bold text-black">N</span>ote it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it.
+                                                <span className="font-bold text-black">N</span>otice it. <span className="font-bold text-black">E</span>xplore it. <span className="font-bold text-black">P</span>lan it.
+                                                {streaks.current > 0 && <span className="ml-2 text-xs text-orange-600">🔥{streaks.current}</span>}
                                             </p>
                                             <p className="text-gray-600 text-sm font-semibold">
                                                 <span className="font-bold text-black">N</span>ão <span className="font-bold text-black">E</span>stás <span className="font-bold text-black">P</span>erdida.
                                             </p>
                                         </div>
-                                        {streaks.current > 0 && (
-                                            <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg px-3 py-2 ml-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-2xl">🔥</span>
-                                                    <div>
-                                                        <div className="text-xs text-orange-600 font-medium">Streak Atual</div>
-                                                        <div className="text-lg font-bold text-orange-700">{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</div>
-                                                        <div className="text-xs text-gray-500">Máx: {streaks.max}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                                 <div className="flex gap-2 ml-3">
@@ -709,6 +698,46 @@
                                         })()}
                                     </div>
 
+                                    {(() => {
+                                        const alerts = [];
+
+                                        // Check last interval < 2h
+                                        const lastInterval = getLastInterval();
+                                        if (lastInterval && lastInterval.isShort) {
+                                            alerts.push({
+                                                text: `Intervalo curto: ${lastInterval.hours}h (< 2h)`,
+                                                emoji: '⚠️',
+                                                color: 'orange'
+                                            });
+                                        }
+
+                                        // Check dosage above average
+                                        if (dailyLogs.length > 0) {
+                                            const avgMg = dailyLogs.reduce((sum, l) => sum + l.mg, 0) / dailyLogs.length;
+                                            const todayLog = dailyLogs.find(l => l.date === getTodayKey());
+                                            if (todayLog && todayLog.mg > avgMg) {
+                                                alerts.push({
+                                                    text: `Dosagem acima da média (${Math.round(avgMg)}mg)`,
+                                                    emoji: '📊',
+                                                    color: 'red'
+                                                });
+                                            }
+                                        }
+
+                                        return alerts.length > 0 && (
+                                            <div className="space-y-2">
+                                                {alerts.map((alert, i) => (
+                                                    <div key={i} className={'bg-gradient-to-r rounded-xl p-3 border ' + (alert.color === 'orange' ? 'from-orange-50 to-yellow-50 border-orange-200' : 'from-red-50 to-pink-50 border-red-200')}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xl">{alert.emoji}</span>
+                                                            <span className={'text-sm font-medium ' + (alert.color === 'orange' ? 'text-orange-700' : 'text-red-700')}>{alert.text}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
+
                                     {badges.length > 0 && (
                                         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">
                                             <div className="flex items-center justify-between mb-2">
@@ -721,19 +750,15 @@
                                                         {badge.icon}
                                                     </div>
                                                 ))}
+                                                {streaks.current >= 3 && (
+                                                    <div className="flex-shrink-0 text-3xl" title={`💪 Mantém o ritmo! ${streaks.current} dias seguidos!`}>
+                                                        💪
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="text-xs text-gray-600 mt-2">Ver todas em Padrões</div>
                                         </div>
                                     )}
-
-                                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-                                        <div className="flex items-start gap-3">
-                                            <div className="text-2xl">✨</div>
-                                            <div className="flex-1">
-                                                <p className="text-gray-800 font-medium">{positiveFeedback}</p>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
                                         <h3 className="font-semibold text-gray-800 mb-2">💡 Estratégias para Hoje</h3>
@@ -1013,6 +1038,7 @@
                                                     </div>
 
                                                     {/* 30-day trend */}
+                                                    {(patternsPeriod === 'mes' || patternsPeriod === 'tudo') && (
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                                                         <h3 className="font-semibold text-gray-800 mb-4">📈 Tendência (30 dias)</h3>
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1109,6 +1135,7 @@
                                                             );
                                                         })()}
                                                     </div>
+                                                    )}
 
                                                     {/* Calendar */}
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -1195,6 +1222,31 @@
                                                         </div>
                                                     </div>
 
+                                                    {/* Cycle Analysis */}
+                                                    {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
+                                                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                                                            <h3 className="font-semibold text-gray-800 mb-4">🌙 Análise de Ciclos</h3>
+                                                            <div className="text-sm text-gray-600 mb-3">Gatilhos mais comuns:</div>
+                                                            {(() => {
+                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
+                                                                const triggerCount = {};
+                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
+                                                                const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
+
+                                                                return (
+                                                                    <div className="space-y-2">
+                                                                        {sortedTriggers.map(([trigger, count]) => (
+                                                                            <div key={trigger} className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                                                                <span className="text-sm font-medium text-gray-800">{trigger}</span>
+                                                                                <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded font-bold">{count}x</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    )}
+
                                                     {/* Total and short intervals */}
                                                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                                                         <h3 className="font-semibold text-gray-800 mb-4">📊 Resumo Geral</h3>
@@ -1213,10 +1265,7 @@
                                                                 <span className="text-sm font-medium text-orange-700">Intervalos curtos (&lt;2h)</span>
                                                                 <span className="text-lg font-bold text-orange-600">{shortIntervals.length}</span>
                                                             </div>
-                                                            <div className="flex gap-4 text-xs text-orange-600 mb-1">
-                                                                <div>Percentagem: <span className="font-bold">{intervals.length > 0 ? ((shortIntervals.length / intervals.length) * 100).toFixed(1) : 0}%</span></div>
-                                                                <div>Média/dia: <span className="font-bold">{avgShortPerDay.toFixed(1)}x</span></div>
-                                                            </div>
+                                                            <div className="text-xs text-orange-600 mb-1">Média/dia: <span className="font-bold">{avgShortPerDay.toFixed(1)}x</span></div>
                                                             {Object.keys(shortByDay).length > 0 && (
                                                                 <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
                                                                     {Object.entries(shortByDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 10).map(([date, count]) => (
@@ -1669,7 +1718,6 @@
                                         {[
                                             { id: 'todos', label: '📋 Todos', icon: '' },
                                             { id: 'consumo', label: '💊 Consumos', icon: '' },
-                                            { id: 'reflexoes', label: '🧠 Reflexões', icon: '' },
                                             { id: 'ciclos', label: '🌙 Ciclos', icon: '' },
                                             { id: 'bem-estar', label: '💚 Bem-estar', icon: '' },
                                             { id: 'dbt', label: '🎯 DBT', icon: '' }
@@ -1699,11 +1747,6 @@
                                         if (historyTopic === 'consumo') {
                                             filteredReflections = [];
                                             filteredWellbeing = [];
-                                            filteredCycles = [];
-                                        } else if (historyTopic === 'reflexoes') {
-                                            filteredConsumptions = [];
-                                            filteredWellbeing = [];
-                                            filteredDailyLogs = [];
                                             filteredCycles = [];
                                         } else if (historyTopic === 'ciclos') {
                                             filteredConsumptions = [];
