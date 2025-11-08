@@ -126,9 +126,9 @@
 
             // Form states
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
-            const [wellbeingForm, setWellbeingForm] = useState({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '' });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
@@ -2925,3 +2925,6 @@
     </script>
 </body>
 </html>
+
+
+
