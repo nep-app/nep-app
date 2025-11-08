@@ -145,6 +145,20 @@
 
             useEffect(() => { if (!user || !db) return; const { collection, onSnapshot } = window.firebaseModules; const unsubs = [onSnapshot(collection(db, `users/${user.uid}/consumptions`), snap => setConsumptions(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), snap => setDailyLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), snap => setWellbeingLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/reflections`), snap => setReflections(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/cycles`), snap => setCycles(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/goals`), snap => setGoals(snap.docs.map(d => d.data())))]; return () => unsubs.forEach(u => u()); }, [user, db]);
 
+            // Migrate consumptions without cycleId to current cycle
+            useEffect(() => {
+                if (!user || !db || cycles.length === 0 || consumptions.length === 0) return;
+                const currentCycleId = cycles[0].id;
+                const consumptionsToMigrate = consumptions.filter(c => !c.cycleId);
+                if (consumptionsToMigrate.length === 0) return;
+
+                const { doc, setDoc } = window.firebaseModules;
+                consumptionsToMigrate.forEach(async (consumption) => {
+                    const updated = { ...consumption, cycleId: currentCycleId };
+                    await setDoc(doc(db, `users/${user.uid}/consumptions`, consumption.id), updated);
+                });
+            }, [user, db, cycles, consumptions]);
+
             const toggleDarkMode = () => { const newMode = !darkMode; setDarkMode(newMode); localStorage.setItem('darkMode', newMode); document.body.classList.toggle('dark', newMode); };
 
             const handleAuth = async (e) => { e.preventDefault(); setAuthError(''); if (!auth) return; const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.firebaseModules; try { if (isLogin) await signInWithEmailAndPassword(auth, email, password); else await createUserWithEmailAndPassword(auth, email, password); } catch (error) { if (error.code === 'auth/user-not-found') setAuthError('Email não encontrado. Cria conta primeiro.'); else if (error.code === 'auth/wrong-password') setAuthError('Password errada.'); else if (error.code === 'auth/email-already-in-use') setAuthError('Email já existe. Faz login.'); else if (error.code === 'auth/weak-password') setAuthError('Password fraca (mínimo 6 caracteres).'); else if (error.code === 'auth/invalid-email') setAuthError('Email inválido.'); else if (error.code === 'auth/invalid-credential') setAuthError('Email ou password incorretos.'); else setAuthError('Erro: ' + error.message); } };
