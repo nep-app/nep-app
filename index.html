@@ -398,6 +398,7 @@
 
             const getGoalAchievementCount = (goal) => {
                 let achievedDays = 0;
+                console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
                     // Count days where consumptions <= target
@@ -458,6 +459,7 @@
                     });
                 }
 
+                console.log('🎯 Resultado:', achievedDays, 'dias atingidos');
                 return achievedDays;
             };
 
