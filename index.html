@@ -2038,13 +2038,16 @@
                                                         <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredConsumptions.map(c => (
-                                                                <div key={c.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                <div key={c.id} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center">
                                                                         <div>
-                                                                            <div className="font-medium text-gray-800">{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
-                                                                            {c.notes && <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mt-1">💭 {c.notes}</div>}
+                                                                            <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                                            {c.notes && <div className={'text-sm mt-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {c.notes}</div>}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                                        <div className="flex gap-2 ml-2">
+                                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Edit className="w-4 h-4" /></button>
+                                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
