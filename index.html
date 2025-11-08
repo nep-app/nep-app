@@ -500,6 +500,7 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
+            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[0].id).length : 0;
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
@@ -604,19 +605,26 @@
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                     <div className="flex items-start justify-between">
-                                        <div>
-                                            <h1 className="text-3xl font-bold mb-1">
-                                                <span className="font-bold text-purple-600">N</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>otas de </span>
-                                                <span className="font-bold text-pink-600">E</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>xperiências e </span>
-                                                <span className="font-bold text-blue-600">P</span><span className={(darkMode ? 'text-gray-300' : 'text-gray-700')}>adrões</span>
-                                            </h1>
-                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs mb-1'}>
-                                                <span className="font-bold text-purple-600">N</span>otice it. <span className="font-bold text-pink-600">E</span>xplore it. <span className="font-bold text-blue-600">P</span>lan it.
-                                                {streaks.current > 0 && <span className="ml-2 text-xs text-orange-600">🔥{streaks.current}</span>}
-                                            </p>
-                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs font-semibold'}>
-                                                <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
-                                            </p>
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-purple-200') + ' rounded-2xl p-6 border-2 shadow-lg'}>
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className={(darkMode ? 'bg-gradient-to-br from-purple-600 to-pink-600' : 'bg-gradient-to-br from-purple-500 to-pink-500') + ' w-12 h-12 rounded-xl flex items-center justify-center shadow-md'}>
+                                                    <span className="text-2xl">✨</span>
+                                                </div>
+                                                <h1 className="text-3xl font-bold tracking-tight">
+                                                    <span className="font-extrabold text-purple-600">N</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de </span>
+                                                    <span className="font-extrabold text-pink-600">E</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e </span>
+                                                    <span className="font-extrabold text-blue-600">P</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span>
+                                                </h1>
+                                            </div>
+                                            <div className="ml-15 space-y-1">
+                                                <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm font-medium'}>
+                                                    <span className="font-extrabold text-purple-600">N</span>otice it. <span className="font-extrabold text-pink-600">E</span>xplore it. <span className="font-extrabold text-blue-600">P</span>lan it.
+                                                    {streaks.current > 0 && <span className="ml-3 text-sm px-2 py-0.5 bg-orange-500 text-white rounded-full font-bold shadow-sm">🔥 {streaks.current} dias</span>}
+                                                </p>
+                                                <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm italic'}>
+                                                    <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -638,37 +646,46 @@
                                     {(() => {
                                         const alerts = [];
 
-                                        // Check last interval < 2h
+                                        // Check last interval
                                         const lastInterval = getLastInterval();
-                                        if (lastInterval && lastInterval.isShort) {
-                                            alerts.push({
-                                                text: `Intervalo curto: ${lastInterval.hours}h (< 2h)`,
-                                                emoji: '⚠️',
-                                                color: 'orange'
-                                            });
-                                        }
-
-                                        // Check dosage above average - use previous day's real consumption
-                                        if (dailyLogs.length > 0) {
-                                            const sortedLogs = [...dailyLogs].sort((a, b) => b.date.localeCompare(a.date));
-                                            const yesterdayLog = sortedLogs[1]; // Previous day
-                                            const todayLog = dailyLogs.find(l => l.date === getTodayKey());
-                                            if (yesterdayLog && todayLog && todayLog.mg > yesterdayLog.mg) {
+                                        if (lastInterval) {
+                                            if (lastInterval.isShort) {
+                                                // Negative alert for <2h
                                                 alerts.push({
-                                                    text: `Dosagem acima do ciclo anterior (${yesterdayLog.mg}mg)`,
-                                                    emoji: '📊',
-                                                    color: 'red'
+                                                    text: `Intervalo curto: ${lastInterval.hours}h`,
+                                                    emoji: '⚠️',
+                                                    color: 'orange',
+                                                    type: 'negative'
+                                                });
+                                            } else if (lastInterval.hours >= 2) {
+                                                // Positive alert for >=2h
+                                                alerts.push({
+                                                    text: `Bom intervalo! ${lastInterval.hours}h`,
+                                                    emoji: '✨',
+                                                    color: 'green',
+                                                    type: 'positive'
                                                 });
                                             }
+                                        }
+
+                                        // Check high dosage (fixed threshold >200mg)
+                                        const todayLog = dailyLogs.find(l => l.date === getTodayKey());
+                                        if (todayLog && todayLog.mg > 200) {
+                                            alerts.push({
+                                                text: `Dosagem alta! (+${todayLog.mg}mg)`,
+                                                emoji: '📊',
+                                                color: 'red',
+                                                type: 'negative'
+                                            });
                                         }
 
                                         return alerts.length > 0 && (
                                             <div className="space-y-2">
                                                 {alerts.map((alert, i) => (
-                                                    <div key={i} className={'bg-gradient-to-r rounded-lg p-2 border ' + (alert.color === 'orange' ? 'from-orange-50 to-yellow-50 border-orange-200' : 'from-red-50 to-pink-50 border-red-200')}>
+                                                    <div key={i} className={'bg-gradient-to-r rounded-lg p-2 border ' + (alert.type === 'positive' ? (darkMode ? 'from-green-900/30 to-emerald-900/30 border-green-700/50' : 'from-green-50 to-emerald-50 border-green-200') : alert.color === 'orange' ? (darkMode ? 'from-orange-900/30 to-yellow-900/30 border-orange-700/50' : 'from-orange-50 to-yellow-50 border-orange-200') : (darkMode ? 'from-red-900/30 to-pink-900/30 border-red-700/50' : 'from-red-50 to-pink-50 border-red-200'))}>
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm">{alert.emoji}</span>
-                                                            <span className={'text-xs font-medium ' + (alert.color === 'orange' ? 'text-orange-700' : 'text-red-700')}>{alert.text}</span>
+                                                            <span className={'text-xs font-medium ' + (alert.type === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-700') : alert.color === 'orange' ? (darkMode ? 'text-orange-400' : 'text-orange-700') : (darkMode ? 'text-red-400' : 'text-red-700'))}>{alert.text}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -701,7 +718,7 @@
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Hoje</div><div className="text-2xl font-bold text-purple-600">{todayCount}x</div></div>
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Este Ciclo</div><div className="text-2xl font-bold text-purple-600">{currentCycleCount}x</div></div>
                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Média 7 dias</div><div className="text-2xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-500' : 'text-gray-400') + ' text-xs'}>{last7.avgMg}mg/dia</div></div>
                                     </div>
 
@@ -813,7 +830,7 @@
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'comparisons' && '📊 Comparações'}
                                                 {view === 'analyses' && '🔬 Análises'}
-                                                {view === 'others' && '📋 Outros'}
+                                                {view === 'others' && '💚 Bem-Estar'}
                                             </button>
                                         ))}
                                     </div>
@@ -1106,14 +1123,14 @@
                                                                 const count = byDate[date];
                                                                 const dayConsumptions = consumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                                                 return (
-                                                                    <div key={date} className="border border-gray-200 rounded-lg p-3">
+                                                                    <div key={date} className={(darkMode ? 'border-gray-700' : 'border-gray-200') + ' border rounded-lg p-3'}>
                                                                         <div className="flex justify-between items-center mb-2">
-                                                                            <div className="text-sm font-medium text-gray-800">{new Date(date).toLocaleDateString('pt-PT', {weekday: 'short', day: '2-digit', month: 'short'})}</div>
-                                                                            <div className={'text-lg font-bold ' + (count > 5 ? 'text-red-600' : count > 3 ? 'text-orange-600' : 'text-green-600')}>{count}x</div>
+                                                                            <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-800')}>{new Date(date).toLocaleDateString('pt-PT', {weekday: 'short', day: '2-digit', month: 'short'})}</div>
+                                                                            <div className={'text-lg font-bold ' + (count > 10 ? (darkMode ? 'text-red-400' : 'text-red-600') : count > 6 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : count > 3 ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{count}x</div>
                                                                         </div>
                                                                         <div className="flex flex-wrap gap-1">
                                                                             {dayConsumptions.map((c, i) => (
-                                                                                <span key={i} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
+                                                                                <span key={i} className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700')}>{new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
                                                                             ))}
                                                                         </div>
                                                                     </div>
@@ -1142,24 +1159,34 @@
                                                     {/* By part of day */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
                                                         <h3 className={'font-semibold text-sm mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período</h3>
-                                                        <div className="grid grid-cols-4 gap-2">
-                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-2 text-center border'}>
-                                                                <div className="text-sm mb-0.5">🌅</div>
-                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{byPartOfDay.manha}</div>
-                                                            </div>
-                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-2 text-center border'}>
-                                                                <div className="text-sm mb-0.5">☀️</div>
-                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{byPartOfDay.tarde}</div>
-                                                            </div>
-                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-2 text-center border'}>
-                                                                <div className="text-sm mb-0.5">🌙</div>
-                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{byPartOfDay.noite}</div>
-                                                            </div>
-                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-2 text-center border'}>
-                                                                <div className="text-sm mb-0.5">⭐</div>
-                                                                <div className={'text-xs font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{byPartOfDay.madrugada}</div>
-                                                            </div>
-                                                        </div>
+                                                        {(() => {
+                                                            const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
+                                                            const manhaPercent = total > 0 ? Math.round((byPartOfDay.manha / total) * 100) : 0;
+                                                            const tardePercent = total > 0 ? Math.round((byPartOfDay.tarde / total) * 100) : 0;
+                                                            const noitePercent = total > 0 ? Math.round((byPartOfDay.noite / total) * 100) : 0;
+                                                            const madrugadaPercent = total > 0 ? Math.round((byPartOfDay.madrugada / total) * 100) : 0;
+
+                                                            return (
+                                                                <div className="grid grid-cols-4 gap-2">
+                                                                    <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-2 text-center border'}>
+                                                                        <div className="text-sm mb-0.5">🌅 Manhã</div>
+                                                                        <div className={'text-xs font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-2 text-center border'}>
+                                                                        <div className="text-sm mb-0.5">☀️ Tarde</div>
+                                                                        <div className={'text-xs font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-2 text-center border'}>
+                                                                        <div className="text-sm mb-0.5">🌙 Noite</div>
+                                                                        <div className={'text-xs font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-2 text-center border'}>
+                                                                        <div className="text-sm mb-0.5">⭐ Madrugada</div>
+                                                                        <div className={'text-xs font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
 
                                                     {/* By weekday */}
@@ -1634,6 +1661,43 @@
                                                             ))}
                                                         </div>
                                                     </div>
+
+                                                    {/* Bedtime patterns */}
+                                                    {filteredCycles.filter(c => c.bedtime).length > 0 && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🌙 Padrões de Hora de Deitar</h3>
+                                                            {(() => {
+                                                                const cyclesWithBedtime = filteredCycles.filter(c => c.bedtime);
+                                                                const bedtimes = cyclesWithBedtime.map(c => {
+                                                                    const [h, m] = c.bedtime.split(':').map(Number);
+                                                                    return h + m / 60;
+                                                                });
+                                                                const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                const avgBedtimeHour = Math.floor(avgBedtime);
+                                                                const avgBedtimeMin = Math.round((avgBedtime % 1) * 60);
+                                                                const avgBedtimeFormatted = `${avgBedtimeHour}:${String(avgBedtimeMin).padStart(2, '0')}`;
+
+                                                                return (
+                                                                    <>
+                                                                        <div className="bg-indigo-50 rounded-lg p-4 text-center mb-4">
+                                                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Hora Média de Deitar</div>
+                                                                            <div className="text-3xl font-bold text-indigo-600">{avgBedtimeFormatted}</div>
+                                                                        </div>
+                                                                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                                            {cyclesWithBedtime.slice(0, 14).map(c => (
+                                                                                <div key={c.id} className="flex items-center gap-2">
+                                                                                    <div className="text-xs text-gray-600 w-20">{new Date(c.timestamp).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'px-3 py-1 rounded-full text-xs font-medium ' + (darkMode ? 'bg-indigo-900/30 text-indigo-300' : 'bg-indigo-100 text-indigo-700')}>{c.bedtime}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    )}
 
                                                     {/* Mood patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
