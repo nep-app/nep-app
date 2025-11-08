@@ -500,7 +500,7 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
-            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[cycles.length - 1].id).length : 0;
+            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[0].id).length : 0;
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
