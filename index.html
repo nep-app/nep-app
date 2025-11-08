@@ -379,6 +379,59 @@
                 return 0;
             };
 
+            // Goal achievement counter
+            const getGoalAchievementCount = (goal) => {
+                if (goal.type === 'reduce_frequency') {
+                    return dailyLogs.filter(log => log.times <= goal.target).length;
+                }
+
+                if (goal.type === 'reduce_quantity') {
+                    return dailyLogs.filter(log => log.mg <= goal.target).length;
+                }
+
+                if (goal.type === 'delay_first') {
+                    const firstOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
+                            firstOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    let successDays = 0;
+                    Object.values(firstOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (firstMinutes >= targetMinutes) successDays++;
+                    });
+                    return successDays;
+                }
+
+                if (goal.type === 'limit_last') {
+                    const lastOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) {
+                            lastOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    let successDays = 0;
+                    Object.values(lastOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (lastMinutes <= targetMinutes) successDays++;
+                    });
+                    return successDays;
+                }
+
+                if (goal.type === 'sleep_hours') {
+                    return wellbeingLogs.filter(log => log.sleep >= goal.target).length;
+                }
+
+                return 0;
+            };
+
             // Streak calculation
             const getStreaks = () => {
                 if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
@@ -500,9 +553,14 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
-            const currentCycleCount = cycles.length > 0
-                ? consumptions.filter(c => c.cycleId === cycles[0].id || (!c.cycleId && c.timestamp >= cycles[0].timestamp)).length
-                : consumptions.length;
+            // Use the LAST cycle (most recent), not the first one
+            const currentCycle = cycles.length > 0 ? cycles[cycles.length - 1] : null;
+            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
+            console.log('🔄 Ciclo Atual:', {
+                cycleId: currentCycle?.id,
+                totalCycles: cycles.length,
+                consumosNesteCiclo: currentCycleCount
+            });
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
@@ -604,39 +662,37 @@
                 <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
                     <div className="max-w-2xl mx-auto">
                         <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 via-pink-900/10 to-blue-900/20' : 'bg-gradient-to-br from-purple-50/50 via-pink-50/50 to-blue-50/50') + ' rounded-2xl p-6 flex items-center justify-between gap-6'}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={(darkMode ? 'bg-gradient-to-br from-purple-600 to-pink-600' : 'bg-gradient-to-br from-purple-500 to-pink-500') + ' w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg'}>
-                                                <span className="text-3xl">✨</span>
-                                            </div>
-                                            <div>
-                                                <h1 className="text-4xl font-black tracking-tight leading-none mb-1">
-                                                    <span className="text-purple-600">N</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de </span>
-                                                    <span className="text-pink-600">E</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e </span>
-                                                    <span className="text-blue-600">P</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span>
-                                                </h1>
-                                            </div>
-                                        </div>
-                                        <div className="text-right space-y-0.5">
-                                            <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm font-semibold tracking-wide'}>
-                                                <span className="text-purple-600">N</span>otice it. <span className="text-pink-600">E</span>xplore it. <span className="text-blue-600">P</span>lan it.
-                                            </p>
-                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm font-medium italic'}>
-                                                <span className="text-purple-600">N</span>ão <span className="text-pink-600">E</span>stás <span className="text-blue-600">P</span>erdida.
-                                            </p>
-                                            {streaks.current > 0 && (
-                                                <div className="flex justify-end mt-2">
-                                                    <span className="text-xs px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold shadow-md">
-                                                        🔥 {streaks.current} dias
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                            <div className="flex justify-between items-start gap-4">
+                                <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 via-pink-900/10 to-blue-900/20' : 'bg-gradient-to-br from-purple-50/50 via-pink-50/50 to-blue-50/50') + ' rounded-2xl p-6 flex items-center gap-4 flex-1'}>
+                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-600 to-pink-600' : 'bg-gradient-to-br from-purple-500 to-pink-500') + ' w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg'}>
+                                        <span className="text-3xl">✨</span>
+                                    </div>
+                                    <div>
+                                        <h1 className="text-4xl font-black tracking-tight leading-none mb-1">
+                                            <span className="text-purple-600">N</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de </span>
+                                            <span className="text-pink-600">E</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e </span>
+                                            <span className="text-blue-600">P</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span>
+                                        </h1>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 ml-3">
+                                <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 via-pink-900/10 to-blue-900/20' : 'bg-gradient-to-br from-purple-50/50 via-pink-50/50 to-blue-50/50') + ' rounded-2xl p-6 flex flex-col justify-center'}>
+                                    <div className="text-right space-y-0.5">
+                                        <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm font-semibold tracking-wide'}>
+                                            <span className="text-purple-600">N</span>otice it. <span className="text-pink-600">E</span>xplore it. <span className="text-blue-600">P</span>lan it.
+                                        </p>
+                                        <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm font-medium italic'}>
+                                            <span className="text-purple-600">N</span>ão <span className="text-pink-600">E</span>stás <span className="text-blue-600">P</span>erdida.
+                                        </p>
+                                        {streaks.current > 0 && (
+                                            <div className="flex justify-end mt-2">
+                                                <span className="text-xs px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold shadow-md">
+                                                    🔥 {streaks.current} dias
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
                                     <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
                                     <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
                                     <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
@@ -820,11 +876,11 @@
                                             </div>
                                             {patternsPeriod !== 'tudo' && (
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
+                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
                                                         <ChevronLeft className="w-5 h-5" />
                                                     </button>
                                                     <span className={'text-sm font-medium min-w-[120px] text-center ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
-                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
+                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
                                                         <ChevronRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
@@ -1813,11 +1869,11 @@
                                             </div>
                                             {historyPeriod !== 'tudo' && (
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))} disabled={historyPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (historyPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
+                                                    <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
                                                         <ChevronLeft className="w-5 h-5" />
                                                     </button>
                                                     <span className={'text-sm font-medium min-w-[120px] text-center ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{getPeriodLabel(historyPeriod, historyPeriodOffset)}</span>
-                                                    <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
+                                                    <button onClick={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))} disabled={historyPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (historyPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
                                                         <ChevronRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
@@ -2072,6 +2128,11 @@
                                                                 {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
                                                             </p>
                                                             <p className="text-sm text-gray-500">Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
+                                                            {getGoalAchievementCount(goal) > 0 && (
+                                                                <p className="text-sm font-medium text-green-600 mt-1">
+                                                                    ✓ Atingida {getGoalAchievementCount(goal)}x
+                                                                </p>
+                                                            )}
                                                         </div>
                                                         <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
                                                     </div>
