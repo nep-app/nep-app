@@ -155,7 +155,7 @@
 
             const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return; const { doc, setDoc, collection } = window.firebaseModules; await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
 
-            const markConsumption = async () => { const now = new Date(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
+            const markConsumption = async () => { const now = new Date(); const currentCycle = getCurrentCycleId(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
 
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
 
@@ -628,42 +628,41 @@
                         <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                    <div className="flex items-start gap-4 justify-between">
+                                    <div className="flex items-end gap-3 justify-between">
                                         {/* Quadrado Esquerdo - Título */}
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-purple-200') + ' rounded-2xl p-6 border-2 shadow-lg flex-1'}>
-                                            <div className="flex items-center gap-3">
-                                                <div>
-                                                    <div className="text-2xl font-bold"><span className="text-purple-600">N</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de</span></div>
-                                                    <div className="text-2xl font-bold"><span className="text-pink-600">E</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e</span></div>
-                                                    <div className="text-2xl font-bold"><span className="text-blue-600">P</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span></div>
-                                                </div>
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-purple-200') + ' rounded-2xl p-6 border-2 shadow-lg'}>
+                                            <div>
+                                                <div className="text-3xl font-bold"><span className="text-purple-600">N </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de</span></div>
+                                                <div className="text-3xl font-bold"><span className="text-pink-600">E </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e</span></div>
+                                                <div className="text-3xl font-bold"><span className="text-blue-600">P </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span></div>
                                             </div>
                                         </div>
 
-                                        {/* Quadrado Direito - Mensagens */}
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-2xl p-6 border-2 shadow-lg flex-1'}>
-                                            <div className="space-y-2">
-                                                <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm font-medium'}>
+                                        {/* Quadrado Direito - Mensagens (menor, alinhado ao fundo) */}
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-2xl p-4 border-2 shadow-lg flex flex-col justify-end max-w-[200px]'}>
+                                            <div className="space-y-1">
+                                                <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs font-medium'}>
                                                     <span className="font-extrabold text-purple-600">N</span>otice it. <span className="font-extrabold text-pink-600">E</span>xplore it. <span className="font-extrabold text-blue-600">P</span>lan it.
                                                 </p>
-                                                <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm italic'}>
+                                                <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs italic'}>
                                                     <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
                                                 </p>
-                                                {streaks.current > 0 && (
-                                                    <div className="mt-3 flex justify-center">
-                                                        <span className={(darkMode ? 'bg-gray-700/50 text-gray-400' : 'bg-gray-100 text-gray-600') + ' px-2 py-1 rounded-full text-xs'}>
-                                                            🔥 {streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}
-                                                        </span>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 ml-3">
-                                    <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
-                                    <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
-                                    <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
+                                <div className="flex flex-col gap-2 ml-3 items-end">
+                                    <div className="flex gap-2">
+                                        <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
+                                        <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
+                                        <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
+                                    </div>
+                                    {streaks.current > 0 && (
+                                        <div className={(darkMode ? 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-700/50' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200') + ' px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1'}>
+                                            <span>🔥</span>
+                                            <span className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -741,6 +740,25 @@
 
                                     <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Clock className="w-6 h-6" /><div className="mt-2">Marcar Consumo Agora</div></button>
 
+                                    {(() => {
+                                        const timeSince = getTimeSinceLastConsumption();
+                                        if (timeSince) {
+                                            const isLong = timeSince.hours >= 2;
+                                            return (
+                                                <div className="flex justify-center -mt-2">
+                                                    <div className={'bg-gradient-to-r rounded-full px-4 py-1.5 border inline-flex items-center gap-2 ' + (isLong ? (darkMode ? 'from-green-900/40 to-blue-900/40 border-green-700/50' : 'from-green-50 to-blue-50 border-green-200') : (darkMode ? 'from-yellow-900/40 to-orange-900/40 border-yellow-700/50' : 'from-yellow-50 to-orange-50 border-yellow-200'))}>
+                                                        <span className={'text-xs font-medium ' + (isLong ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-yellow-400' : 'text-yellow-700'))}>Sem consumir há</span>
+                                                        <span className={'text-sm font-bold ' + (isLong ? (darkMode ? 'text-green-300' : 'text-green-900') : (darkMode ? 'text-yellow-300' : 'text-yellow-900'))}>
+                                                            {timeSince.value}{timeSince.unit}
+                                                            {timeSince.subValue && <span className="text-xs ml-0.5">{timeSince.subValue}{timeSince.subUnit}</span>}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
                                             <BarChart3 className="w-5 h-5 mb-2" />
@@ -767,25 +785,6 @@
                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-2 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Este Ciclo</div><div className="text-xl font-bold text-purple-600">{currentCycleCount}x</div></div>
                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-2 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Média 7 dias</div><div className="text-xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-500' : 'text-gray-400') + ' text-xs'}>{last7.avgMg}mg/dia</div></div>
                                     </div>
-
-                                    {(() => {
-                                        const timeSince = getTimeSinceLastConsumption();
-                                        if (timeSince) {
-                                            const isLong = timeSince.hours >= 2;
-                                            return (
-                                                <div className={'bg-gradient-to-r rounded-lg p-2 border ' + (isLong ? 'from-green-50 to-blue-50 border-green-200' : 'from-yellow-50 to-orange-50 border-yellow-200')}>
-                                                    <div className="flex flex-col">
-                                                        <span className={'text-xs font-medium mb-0.5 ' + (isLong ? 'text-green-700' : 'text-yellow-700')}>Sem consumir há</span>
-                                                        <span className={'text-xl font-bold ' + (isLong ? 'text-green-900' : 'text-yellow-900')}>
-                                                            {timeSince.value}{timeSince.unit}
-                                                            {timeSince.subValue && <span className="text-sm ml-1">{timeSince.subValue}{timeSince.subUnit}</span>}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
 
 
                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-4 border'}>
