@@ -517,9 +517,9 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
-            // Use the LAST cycle (most recent), not the first one
-            const currentCycle = cycles.length > 0 ? cycles[cycles.length - 1] : null;
-            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
+            // Use the FIRST cycle (most recent, since sorted by timestamp desc)
+            const currentCycle = cycles.length > 0 ? cycles[0] : null;
+            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
             console.log('🔄 Ciclo Atual:', {
                 cycleId: currentCycle?.id,
                 totalCycles: cycles.length,
