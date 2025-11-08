@@ -425,6 +425,17 @@
                     return successDays;
                 }
 
+                if (goal.type === 'increase_interval') {
+                    const intervals = [];
+                    const sorted = [...consumptions].sort((a, b) => a.timestamp - b.timestamp);
+                    for (let i = 1; i < sorted.length; i++) {
+                        const diff = sorted[i].timestamp - sorted[i-1].timestamp;
+                        const hours = diff / (1000 * 60 * 60);
+                        if (hours >= goal.target) intervals.push(hours);
+                    }
+                    return intervals.length;
+                }
+
                 if (goal.type === 'sleep_hours') {
                     return wellbeingLogs.filter(log => log.sleep >= goal.target).length;
                 }
