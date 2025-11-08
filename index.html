@@ -2726,19 +2726,19 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Horas de sono</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Horas de sono</label>
                                             <input type="number" min="0" max="24" step="0.5" value={wellbeingForm.sleep} onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400" placeholder="Ex: 7.5" />
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-2">Humor: {wellbeingForm.mood}/10</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Humor: {wellbeingForm.mood}/10</label>
                                             <input type="range" min="1" max="10" value={wellbeingForm.mood} onChange={(e) => setWellbeingForm({...wellbeingForm, mood: e.target.value})} className="w-full" />
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-2">Energia: {wellbeingForm.energy}/10</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Energia: {wellbeingForm.energy}/10</label>
                                             <input type="range" min="1" max="10" value={wellbeingForm.energy} onChange={(e) => setWellbeingForm({...wellbeingForm, energy: e.target.value})} className="w-full" />
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-2">Autocuidado hoje</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Autocuidado hoje</label>
                                             <div className="space-y-2">
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.water} onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
@@ -2776,7 +2776,7 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Notas (opcional)</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Notas (opcional)</label>
                                             <textarea value={wellbeingForm.notes} onChange={(e) => setWellbeingForm({...wellbeingForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 h-20" placeholder="Como te sentes hoje?"></textarea>
                                         </div>
                                         <button onClick={submitWellbeing} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-medium">Guardar</button>
@@ -2797,7 +2797,7 @@
                                             <p className="text-purple-900 font-medium">{currentDbtQuestion}</p>
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">A tua reflexão</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>A tua reflexão</label>
                                             <textarea value={reflectionAnswer} onChange={(e) => setReflectionAnswer(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-32" placeholder="Escreve os teus pensamentos..."></textarea>
                                         </div>
                                         <button onClick={submitReflection} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium">Guardar</button>
@@ -2816,11 +2816,11 @@
                                     <div className="space-y-4">
                                         <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Hora a que te deitaste</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Hora a que te deitaste</label>
                                             <input type="time" value={cycleForm.bedtime} onChange={(e) => setCycleForm({...cycleForm, bedtime: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400" />
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-2">Gatilhos identificados</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência'].map(trigger => (
                                                     <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
@@ -2867,7 +2867,7 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Tipo de Meta</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Tipo de Meta</label>
                                             <select value={goalForm.type} onChange={(e) => setGoalForm({...goalForm, type: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400">
                                                 <option value="reduce_frequency">Reduzir Frequência</option>
                                                 <option value="reduce_quantity">Reduzir Quantidade (mg)</option>
@@ -2878,7 +2878,7 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Período</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Período</label>
                                             <select value={goalForm.period} onChange={(e) => setGoalForm({...goalForm, period: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400">
                                                 <option value="daily">Diário</option>
                                                 <option value="weekly">Semanal</option>
@@ -2886,13 +2886,13 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
                                                 Meta {goalForm.type.includes('delay') || goalForm.type.includes('limit') ? '(HH:MM)' : '(número)'}
                                             </label>
                                             <input type={goalForm.type.includes('delay') || goalForm.type.includes('limit') ? 'time' : 'number'} value={goalForm.target} onChange={(e) => setGoalForm({...goalForm, target: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') mb-1">Prazo</label>
+                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
                                             <input type="date" value={goalForm.deadline} onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
                                         </div>
                                         <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">Criar Meta</button>
