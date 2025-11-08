@@ -765,7 +765,7 @@
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-3xl shadow-xl p-6 mb-6">
+                        <div className={(darkMode ? 'bg-gray-800/50' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
                             {currentView === 'home' && (
                                 <div className="space-y-6">
                                     {/* Mensagem Motivacional */}
@@ -905,34 +905,37 @@
                                     </div>
 
 
-                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-4 border'}>
-                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-2'}>💡 Estratégias para Hoje</h3>
+                                    <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20' : 'bg-gradient-to-r from-blue-50 to-cyan-50') + ' rounded-xl p-4'}>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="text-xl">💡</span>
+                                            <h3 className={'font-semibold ' + (darkMode ? 'text-blue-300' : 'text-gray-800')}>Estratégias para Hoje</h3>
+                                        </div>
                                         <div className="space-y-2">
                                             {copingStrategies.map((strategy, i) => (
-                                                <div key={i} className={'flex items-start gap-2 text-sm p-2 rounded-lg ' + (darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-white')}>
-                                                    <span className="text-blue-500 font-bold">•</span>
+                                                <div key={i} className={'flex items-start gap-2 text-sm p-2.5 rounded-lg ' + (darkMode ? 'text-gray-200 bg-blue-950/30' : 'text-gray-700 bg-white/80')}>
+                                                    <span className={(darkMode ? 'text-cyan-400' : 'text-blue-500') + ' font-bold'}>•</span>
                                                     <span>{strategy}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         {cycles.length > 0 && cycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                            <div className={'text-xs mt-2 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>Baseado nos teus gatilhos identificados</div>
+                                            <div className={'text-xs mt-3 italic ' + (darkMode ? 'text-cyan-400' : 'text-blue-600')}>Baseado nos teus gatilhos identificados</div>
                                         )}
                                     </div>
 
                                     {consumptions.length > 0 && (
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
-                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>Consumos Recentes</h3>
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
+                                            <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>Consumos Recentes</h3>
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
                                                 {consumptions.slice(0, 10).map(c => (
-                                                    <div key={c.id} className={'flex items-center justify-between py-2 px-3 rounded-lg ' + (darkMode ? 'bg-gray-700' : 'bg-gray-50')}>
+                                                    <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
                                                         <div className="flex-1">
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
                                                             {c.notes && <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{c.notes}</div>}
                                                         </div>
                                                         <div className="flex gap-2 ml-2">
-                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Edit className="w-4 h-4" /></button>
-                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-500 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                                                            <button onClick={() => openEditConsumption(c)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Edit className="w-4 h-4" /></button>
+                                                            <button onClick={() => deleteItem('consumptions', c.id)} className={(darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600')}><Trash2 className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -2389,21 +2392,21 @@
                         {/* Modals */}
                         {showDailyLogModal && (
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowDailyLogModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                                <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' rounded-2xl p-6 max-w-md w-full shadow-2xl'} onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-xl font-bold text-gray-800">Registar Dosagem do Dia</h3>
-                                        <button onClick={() => setShowDailyLogModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Registar Dosagem do Dia</h3>
+                                        <button onClick={() => setShowDailyLogModal(false)} className={(darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')}><X /></button>
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Total aproximado (mg)</label>
-                                            <input type="number" value={dailyForm.mg} onChange={(e) => setDailyForm({...dailyForm, mg: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" min="0" />
+                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Total aproximado (mg)</label>
+                                            <input type="number" value={dailyForm.mg} onChange={(e) => setDailyForm({...dailyForm, mg: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'} min="0" />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
-                                            <textarea value={dailyForm.notes} onChange={(e) => setDailyForm({...dailyForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-20" placeholder="Como te sentiste? Contexto..."></textarea>
+                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas (opcional)</label>
+                                            <textarea value={dailyForm.notes} onChange={(e) => setDailyForm({...dailyForm, notes: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-20'} placeholder="Como te sentiste? Contexto..."></textarea>
                                         </div>
-                                        <button onClick={submitDailyLog} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all font-medium">Guardar</button>
+                                        <button onClick={submitDailyLog} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all font-medium shadow-lg">Guardar</button>
                                     </div>
                                 </div>
                             </div>
