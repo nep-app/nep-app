@@ -260,6 +260,7 @@
             const getTodayConsumptions = () => consumptions.filter(c => c.date === getTodayKey());
 
             const getDateRangeForPeriod = (period, offset = 0) => {
+                console.log('🕐 getDateRangeForPeriod called:', { period, offset });
                 const now = new Date();
                 now.setHours(23, 59, 59, 999); // End of today
                 let start, end;
@@ -286,9 +287,11 @@
                     start.setHours(0, 0, 0, 0);
                 } else {
                     // tudo (all time)
+                    console.log('⚠️ Returning null range (period = tudo)');
                     return { start: null, end: null };
                 }
 
+                console.log('✅ Returning date range:', { start, end });
                 return { start, end };
             };
 
