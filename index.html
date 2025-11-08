@@ -1375,61 +1375,6 @@
 
                                             return (
                                                 <div className="space-y-4">
-                                                    {/* Correlations */}
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🔗 Correlações</h3>
-
-                                                        <div className="space-y-4">
-                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono vs Consumo</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {sleepConsCorr !== null && sleepConsCorr < -0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = menos consumo</div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Sono</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {moodSleepCorr !== null && moodSleepCorr > 0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = melhor humor</div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Consumo</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {moodConsCorr !== null && moodConsCorr < -0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor humor = menos consumo</div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
                                                     {/* Wellbeing & Dosage Analysis */}
                                                     {(filteredWellbeingLogs.length > 0 || filteredDailyLogs.length > 0 || filteredCycles.some(c => c.bedtime)) && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -1527,7 +1472,7 @@
                                                                     }
 
                                                                     return insights.map((insight, i) => (
-                                                                        <div key={i} className="p-3 bg-white rounded-lg border border-blue-100">
+                                                                        <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-blue-100') + ' p-3 rounded-lg border'}>
                                                                             <p className="leading-relaxed">{insight}</p>
                                                                         </div>
                                                                     ));
@@ -1535,6 +1480,61 @@
                                                             </div>
                                                         </div>
                                                     )}
+
+                                                    {/* Correlations */}
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🔗 Correlações</h3>
+
+                                                        <div className="space-y-4">
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono vs Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {sleepConsCorr !== null && sleepConsCorr < -0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = menos consumo</div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Sono</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
+                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {moodSleepCorr !== null && moodSleepCorr > 0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = melhor humor</div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {moodConsCorr !== null && moodConsCorr < -0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor humor = menos consumo</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     {/* Trigger Analysis */}
                                                     {filteredCycles.length > 0 && (
