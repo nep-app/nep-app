@@ -718,44 +718,49 @@
             return (
                 <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
                     <div className="max-w-2xl mx-auto">
-                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
-                            <div className="flex justify-between items-start">
+                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-8 mb-6'}>
+                            <div className="flex justify-between items-center gap-8">
+                                {/* Título - Esquerda */}
                                 <div className="flex-1">
-                                    <div className="flex items-end gap-3 justify-between">
-                                        {/* Quadrado Esquerdo - Título */}
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-purple-200') + ' rounded-2xl p-6 border-2 shadow-lg'}>
-                                            <div>
-                                                <div className="text-3xl font-bold"><span className="text-purple-600">N </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de</span></div>
-                                                <div className="text-3xl font-bold"><span className="text-pink-600">E </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e</span></div>
-                                                <div className="text-3xl font-bold"><span className="text-blue-600">P </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span></div>
-                                            </div>
+                                    <div className="space-y-1">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-5xl font-black text-purple-600 leading-none">N</span>
+                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>otas de</span>
                                         </div>
-
-                                        {/* Quadrado Direito - Mensagens (menor, alinhado ao fundo) */}
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-2xl p-4 border-2 shadow-lg flex flex-col justify-end max-w-[200px]'}>
-                                            <div className="space-y-1">
-                                                <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs font-medium'}>
-                                                    <span className="font-extrabold text-purple-600">N</span>otice it. <span className="font-extrabold text-pink-600">E</span>xplore it. <span className="font-extrabold text-blue-600">P</span>lan it.
-                                                </p>
-                                                <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs italic'}>
-                                                    <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
-                                                </p>
-                                            </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-5xl font-black text-pink-600 leading-none">E</span>
+                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>xperiências e</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-5xl font-black text-blue-600 leading-none">P</span>
+                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>adrões</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2 ml-3 items-end">
-                                    <div className="flex gap-2">
-                                        <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
-                                        <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
-                                        <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
+
+                                {/* Subtítulo e Slogan - Direita */}
+                                <div className="flex flex-col items-end gap-3">
+                                    <div className="text-right space-y-1">
+                                        <p className={'text-sm font-medium tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                            <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
+                                        </p>
+                                        <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
+                                            <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
+                                        </p>
                                     </div>
+
                                     {streaks.current > 0 && (
-                                        <div className={(darkMode ? 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-700/50' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200') + ' px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1'}>
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
                                             <span>🔥</span>
-                                            <span className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                            <span>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
                                         </div>
                                     )}
+
+                                    <div className="flex gap-1">
+                                        <button onClick={toggleDarkMode} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
+                                        <button onClick={exportToCSV} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Exportar dados"><Download className="w-4 h-4" /></button>
+                                        <button onClick={handleLogout} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Sair"><LogOut className="w-4 h-4" /></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
