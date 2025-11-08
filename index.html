@@ -78,6 +78,8 @@
         const Sun = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>);
         const Download = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>);
         const Target = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>);
+        const ChevronLeft = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>);
+        const ChevronRight = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>);
 
         function HarmReductionTracker() {
             const [firebaseInitialized, setFirebaseInitialized] = useState(false);
@@ -118,7 +120,7 @@
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastConsumptionBefore00: false });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
@@ -153,7 +155,7 @@
 
             const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return; const { doc, setDoc, collection } = window.firebaseModules; await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
 
-            const markConsumption = async () => { const now = new Date(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
+            const markConsumption = async () => { const now = new Date(); const currentCycle = getCurrentCycleId(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
 
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
 
@@ -260,6 +262,7 @@
             const getTodayConsumptions = () => consumptions.filter(c => c.date === getTodayKey());
 
             const getDateRangeForPeriod = (period, offset = 0) => {
+                console.log('🕐 getDateRangeForPeriod called:', { period, offset });
                 const now = new Date();
                 now.setHours(23, 59, 59, 999); // End of today
                 let start, end;
@@ -286,18 +289,32 @@
                     start.setHours(0, 0, 0, 0);
                 } else {
                     // tudo (all time)
+                    console.log('⚠️ Returning null range (period = tudo)');
                     return { start: null, end: null };
                 }
 
+                console.log('✅ Returning date range:', { start, end });
                 return { start, end };
             };
 
             const filterByDateRange = (items, dateRange, dateField = 'timestamp') => {
-                if (!dateRange.start || !dateRange.end) return items;
-                return items.filter(item => {
+                if (!dateRange.start || !dateRange.end) {
+                    console.log('⚠️ filterByDateRange: Sem range definido, retornando todos os items:', items.length);
+                    return items;
+                }
+
+                const filtered = items.filter(item => {
                     const itemDate = new Date(item[dateField]);
-                    return itemDate >= dateRange.start && itemDate <= dateRange.end;
+                    const isInRange = itemDate >= dateRange.start && itemDate <= dateRange.end;
+                    return isInRange;
                 });
+
+                console.log(`🔎 filterByDateRange: ${items.length} items → ${filtered.length} filtrados (campo: ${dateField})`, {
+                    start: dateRange.start,
+                    end: dateRange.end
+                });
+
+                return filtered;
             };
 
             const getPeriodLabel = (period, offset) => {
@@ -377,6 +394,84 @@
                 }
                 
                 return 0;
+            };
+
+            const getGoalAchievementCount = (goal) => {
+                let achievedDays = 0;
+                console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
+
+                if (goal.type === 'reduce_frequency') {
+                    // Count days where consumptions <= target
+                    const consumptionsByDate = {};
+                    consumptions.forEach(c => {
+                        consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                    });
+                    Object.values(consumptionsByDate).forEach(count => {
+                        if (count <= goal.target) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'reduce_quantity') {
+                    // Count days where mg <= target
+                    dailyLogs.forEach(log => {
+                        if (log.mg <= goal.target) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'delay_first') {
+                    // Count days where first consumption >= target time
+                    const firstOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
+                            firstOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    Object.values(firstOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (firstMinutes >= targetMinutes) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'limit_last') {
+                    // Count days where last consumption <= target time
+                    const lastOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) {
+                            lastOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    Object.values(lastOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (lastMinutes <= targetMinutes) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'increase_interval') {
+                    // Count intervals between consumptions >= target hours
+                    if (consumptions.length >= 2) {
+                        const sorted = [...consumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                        for (let i = 1; i < sorted.length; i++) {
+                            const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                            if (diff >= goal.target) achievedDays++;
+                        }
+                    }
+                }
+
+                if (goal.type === 'sleep_hours') {
+                    // Count days where sleep hours >= target
+                    wellbeingLogs.forEach(log => {
+                        if (log.sleepHours && log.sleepHours >= goal.target) achievedDays++;
+                    });
+                }
+
+                console.log('🎯 Resultado:', achievedDays, 'dias atingidos');
+                return achievedDays;
             };
 
             // Streak calculation
@@ -500,7 +595,29 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
-            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[0].id).length : 0;
+            // Use the FIRST cycle (most recent, since sorted by timestamp desc)
+            const currentCycle = cycles.length > 0 ? cycles[0] : null;
+            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
+            console.log('🔄 Ciclo Atual:', {
+                cycleId: currentCycle?.id,
+                cycleTimestamp: currentCycle?.timestamp,
+                cycleDate: currentCycle ? new Date(currentCycle.timestamp).toLocaleString('pt-PT') : null,
+                totalCycles: cycles.length,
+                consumosNesteCiclo: currentCycleCount,
+                totalConsumptions: consumptions.length,
+                consumptionsWithCycleId: consumptions.filter(c => c.cycleId).length,
+                consumptionsWithMatchingCycleId: consumptions.filter(c => c.cycleId === currentCycle?.id).length,
+                consumptionsWithoutCycleId: consumptions.filter(c => !c.cycleId).length,
+                consumptionsWithoutCycleIdAfterCycleStart: currentCycle ? consumptions.filter(c => !c.cycleId && c.timestamp >= currentCycle.timestamp).length : 0,
+                first5Consumptions: consumptions.slice(0, 5).map(c => ({
+                    id: c.id.substring(0, 8),
+                    cycleId: c.cycleId ? c.cycleId.substring(0, 8) : 'SEM CYCLEID',
+                    timestamp: c.timestamp,
+                    date: new Date(c.timestamp).toLocaleString('pt-PT'),
+                    matchesCycle: c.cycleId === currentCycle?.id,
+                    isAfterCycleStart: currentCycle ? c.timestamp >= currentCycle.timestamp : false
+                }))
+            });
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
@@ -604,40 +721,41 @@
                         <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 via-pink-900/10 to-blue-900/20' : 'bg-gradient-to-br from-purple-50/50 via-pink-50/50 to-blue-50/50') + ' rounded-2xl p-6 flex items-center justify-between gap-6'}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={(darkMode ? 'bg-gradient-to-br from-purple-600 to-pink-600' : 'bg-gradient-to-br from-purple-500 to-pink-500') + ' w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg'}>
-                                                <span className="text-3xl">✨</span>
-                                            </div>
+                                    <div className="flex items-end gap-3 justify-between">
+                                        {/* Quadrado Esquerdo - Título */}
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-purple-200') + ' rounded-2xl p-6 border-2 shadow-lg'}>
                                             <div>
-                                                <h1 className="text-4xl font-black tracking-tight leading-none mb-1">
-                                                    <span className="text-purple-600">N</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de </span>
-                                                    <span className="text-pink-600">E</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e </span>
-                                                    <span className="text-blue-600">P</span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span>
-                                                </h1>
+                                                <div className="text-3xl font-bold"><span className="text-purple-600">N </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>otas de</span></div>
+                                                <div className="text-3xl font-bold"><span className="text-pink-600">E </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>xperiências e</span></div>
+                                                <div className="text-3xl font-bold"><span className="text-blue-600">P </span><span className={(darkMode ? 'text-gray-200' : 'text-gray-800')}>adrões</span></div>
                                             </div>
                                         </div>
-                                        <div className="text-right space-y-0.5">
-                                            <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-sm font-semibold tracking-wide'}>
-                                                <span className="text-purple-600">N</span>otice it. <span className="text-pink-600">E</span>xplore it. <span className="text-blue-600">P</span>lan it.
-                                            </p>
-                                            <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-sm font-medium italic'}>
-                                                <span className="text-purple-600">N</span>ão <span className="text-pink-600">E</span>stás <span className="text-blue-600">P</span>erdida.
-                                            </p>
-                                            {streaks.current > 0 && (
-                                                <div className="flex justify-end mt-2">
-                                                    <span className="text-xs px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full font-bold shadow-md">
-                                                        🔥 {streaks.current} dias
-                                                    </span>
-                                                </div>
-                                            )}
+
+                                        {/* Quadrado Direito - Mensagens (menor, alinhado ao fundo) */}
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-2xl p-4 border-2 shadow-lg flex flex-col justify-end max-w-[200px]'}>
+                                            <div className="space-y-1">
+                                                <p className={(darkMode ? 'text-gray-300' : 'text-gray-700') + ' text-xs font-medium'}>
+                                                    <span className="font-extrabold text-purple-600">N</span>otice it. <span className="font-extrabold text-pink-600">E</span>xplore it. <span className="font-extrabold text-blue-600">P</span>lan it.
+                                                </p>
+                                                <p className={(darkMode ? 'text-gray-400' : 'text-gray-600') + ' text-xs italic'}>
+                                                    <span className="font-bold text-purple-600">N</span>ão <span className="font-bold text-pink-600">E</span>stás <span className="font-bold text-blue-600">P</span>erdida.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 ml-3">
-                                    <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
-                                    <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
-                                    <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
+                                <div className="flex flex-col gap-2 ml-3 items-end">
+                                    <div className="flex gap-2">
+                                        <button onClick={toggleDarkMode} className="text-gray-400 hover:text-gray-600 p-2" title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Sun /> : <Moon />}</button>
+                                        <button onClick={exportToCSV} className="text-gray-400 hover:text-gray-600 p-2" title="Exportar dados"><Download /></button>
+                                        <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600 p-2" title="Sair"><LogOut /></button>
+                                    </div>
+                                    {streaks.current > 0 && (
+                                        <div className={(darkMode ? 'bg-gradient-to-r from-orange-900/40 to-red-900/40 border-orange-700/50' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200') + ' px-3 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1'}>
+                                            <span>🔥</span>
+                                            <span className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -674,13 +792,27 @@
                                             }
                                         }
 
-                                        // Check high dosage (fixed threshold >200mg)
+                                        // Check high dosage (fixed threshold >200mg) for today and yesterday
                                         const todayLog = dailyLogs.find(l => l.date === getTodayKey());
                                         if (todayLog && todayLog.mg > 200) {
                                             alerts.push({
-                                                text: `Dosagem alta! (+${todayLog.mg}mg)`,
+                                                text: `Dosagem alta hoje! (+200mg)`,
                                                 emoji: '📊',
                                                 color: 'red',
+                                                type: 'negative'
+                                            });
+                                        }
+
+                                        // Check yesterday's dosage
+                                        const yesterday = new Date();
+                                        yesterday.setDate(yesterday.getDate() - 1);
+                                        const yesterdayKey = yesterday.toISOString().split('T')[0];
+                                        const yesterdayLog = dailyLogs.find(l => l.date === yesterdayKey);
+                                        if (yesterdayLog && yesterdayLog.mg > 200) {
+                                            alerts.push({
+                                                text: `Dosagem alta ontem! (+200mg)`,
+                                                emoji: '⚠️',
+                                                color: 'orange',
                                                 type: 'negative'
                                             });
                                         }
@@ -700,6 +832,25 @@
                                     })()}
 
                                     <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Clock className="w-6 h-6" /><div className="mt-2">Marcar Consumo Agora</div></button>
+
+                                    {(() => {
+                                        const timeSince = getTimeSinceLastConsumption();
+                                        if (timeSince) {
+                                            const isLong = timeSince.hours >= 2;
+                                            return (
+                                                <div className="flex justify-center -mt-2">
+                                                    <div className={'bg-gradient-to-r rounded-full px-4 py-1.5 border inline-flex items-center gap-2 ' + (isLong ? (darkMode ? 'from-green-900/40 to-blue-900/40 border-green-700/50' : 'from-green-50 to-blue-50 border-green-200') : (darkMode ? 'from-yellow-900/40 to-orange-900/40 border-yellow-700/50' : 'from-yellow-50 to-orange-50 border-yellow-200'))}>
+                                                        <span className={'text-xs font-medium ' + (isLong ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-yellow-400' : 'text-yellow-700'))}>Sem consumir há</span>
+                                                        <span className={'text-sm font-bold ' + (isLong ? (darkMode ? 'text-green-300' : 'text-green-900') : (darkMode ? 'text-yellow-300' : 'text-yellow-900'))}>
+                                                            {timeSince.value}{timeSince.unit}
+                                                            {timeSince.subValue && <span className="text-xs ml-0.5">{timeSince.subValue}{timeSince.subUnit}</span>}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
@@ -723,48 +874,14 @@
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Este Ciclo</div><div className="text-2xl font-bold text-purple-600">{currentCycleCount}x</div></div>
-                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Média 7 dias</div><div className="text-2xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-500' : 'text-gray-400') + ' text-xs'}>{last7.avgMg}mg/dia</div></div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {(() => {
-                                            const lastInterval = getLastInterval();
-                                            if (lastInterval) return (
-                                                <div className={'bg-gradient-to-r rounded-xl p-3 border ' + (lastInterval.isShort ? 'from-orange-50 to-red-50 border-orange-200' : 'from-green-50 to-blue-50 border-green-200')}>
-                                                    <div className="flex flex-col">
-                                                        <span className={'text-xs font-medium mb-1 ' + (lastInterval.isShort ? 'text-orange-700' : 'text-green-700')}>Último intervalo</span>
-                                                        <span className={'text-2xl font-bold ' + (lastInterval.isShort ? 'text-orange-900' : 'text-green-900')}>{lastInterval.hours}h</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                            return null;
-                                        })()}
-
-                                        {(() => {
-                                            const timeSince = getTimeSinceLastConsumption();
-                                            if (timeSince) {
-                                                const isLong = timeSince.hours >= 2;
-                                                return (
-                                                    <div className={'bg-gradient-to-r rounded-xl p-3 border ' + (isLong ? 'from-green-50 to-blue-50 border-green-200' : 'from-yellow-50 to-orange-50 border-yellow-200')}>
-                                                        <div className="flex flex-col">
-                                                            <span className={'text-xs font-medium mb-1 ' + (isLong ? 'text-green-700' : 'text-yellow-700')}>Sem consumir há</span>
-                                                            <span className={'text-2xl font-bold ' + (isLong ? 'text-green-900' : 'text-yellow-900')}>
-                                                                {timeSince.value}{timeSince.unit}
-                                                                {timeSince.subValue && <span className="text-sm ml-1">{timeSince.subValue}{timeSince.subUnit}</span>}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-2 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Este Ciclo</div><div className="text-xl font-bold text-purple-600">{currentCycleCount}x</div></div>
+                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-lg p-2 border'}><div className={(darkMode ? 'text-gray-400' : 'text-gray-500') + ' text-xs mb-0.5'}>Média 7 dias</div><div className="text-xl font-bold text-pink-600">{last7.avgTimes}x</div><div className={(darkMode ? 'text-gray-500' : 'text-gray-400') + ' text-xs'}>{last7.avgMg}mg/dia</div></div>
                                     </div>
 
 
                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-4 border'}>
-                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-2">💡 Estratégias para Hoje</h3>
+                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-2'}>💡 Estratégias para Hoje</h3>
                                         <div className="space-y-2">
                                             {copingStrategies.map((strategy, i) => (
                                                 <div key={i} className={'flex items-start gap-2 text-sm p-2 rounded-lg ' + (darkMode ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-white')}>
@@ -780,7 +897,7 @@
 
                                     {consumptions.length > 0 && (
                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
-                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3">Consumos Recentes</h3>
+                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>Consumos Recentes</h3>
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
                                                 {consumptions.slice(0, 10).map(c => (
                                                     <div key={c.id} className={'flex items-center justify-between py-2 px-3 rounded-lg ' + (darkMode ? 'bg-gray-700' : 'bg-gray-50')}>
@@ -818,11 +935,11 @@
                                             </div>
                                             {patternsPeriod !== 'tudo' && (
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
+                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
                                                         <ChevronLeft className="w-5 h-5" />
                                                     </button>
                                                     <span className={'text-sm font-medium min-w-[120px] text-center ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
-                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
+                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
                                                         <ChevronRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
@@ -844,9 +961,22 @@
                                     {(() => {
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                                        console.log('🔬 Análises - Filtro Temporal:', {
+                                            period: patternsPeriod,
+                                            offset: patternsPeriodOffset,
+                                            dateRange: dateRange,
+                                            view: patternView
+                                        });
+
                                         const filteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
+
+                                        console.log('📊 Análises - Dados filtrados:', {
+                                            consumos: filteredConsumptions.length,
+                                            bemEstar: filteredWellbeingLogs.length,
+                                            ciclos: filteredCycles.length
+                                        });
 
                                         // COMPARAÇÕES E TENDÊNCIAS
                                         if (patternView === 'comparisons') {
@@ -983,15 +1113,15 @@
                                                 <div className="space-y-4">
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
-                                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2">
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>
                                                                 <span className="text-xl">💡</span>
                                                                 Resumo e Padrões
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {insights.map((insight, i) => (
-                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
-                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
+                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (darkMode ? 'bg-gray-700/50 border-gray-600' : insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
+                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
                                                                             {insight.text}
                                                                         </div>
                                                                     </div>
@@ -1002,15 +1132,15 @@
 
                                                     {/* Weekly comparison */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📅 Comparação Semanal</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📅 Comparação Semanal</h3>
                                                         <div className="grid grid-cols-2 gap-4">
-                                                            <div className="bg-purple-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Esta Semana</div>
-                                                                <div className="text-3xl font-bold text-purple-600">{thisWeek.length}x</div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Esta Semana</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{thisWeek.length}x</div>
                                                             </div>
-                                                            <div className="bg-gray-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Semana Passada</div>
-                                                                <div className="text-3xl font-bold text-gray-600">{lastWeek.length}x</div>
+                                                            <div className={(darkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Semana Passada</div>
+                                                                <div className={(darkMode ? 'text-gray-300' : 'text-gray-600') + ' text-3xl font-bold'}>{lastWeek.length}x</div>
                                                             </div>
                                                         </div>
                                                         {thisWeek.length !== lastWeek.length && (
@@ -1024,15 +1154,15 @@
                                                     {/* 30-day trend */}
                                                     {(patternsPeriod === 'mes' || patternsPeriod === 'tudo') && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📈 Tendência (30 dias)</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📈 Tendência (30 dias)</h3>
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div className="bg-blue-50 rounded-lg p-4 text-center">
-                                                                <div className="text-3xl font-bold text-blue-600">{avgPerDay.toFixed(1)}</div>
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Média/dia</div>
+                                                            <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{avgPerDay.toFixed(1)}</div>
+                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média/dia</div>
                                                             </div>
-                                                            <div className="bg-green-50 rounded-lg p-4 text-center">
-                                                                <div className="text-3xl font-bold text-green-600">{last30Days.length}</div>
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Total</div>
+                                                            <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-3xl font-bold'}>{last30Days.length}</div>
+                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total</div>
                                                             </div>
                                                         </div>
                                                         {(() => {
@@ -1123,7 +1253,7 @@
 
                                                     {/* Calendar */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📅 Calendário</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📅 Calendário</h3>
                                                         <div className="space-y-2 max-h-64 overflow-y-auto">
                                                             {dates.slice(-10).reverse().map(date => {
                                                                 const count = byDate[date];
@@ -1132,7 +1262,7 @@
                                                                     <div key={date} className={(darkMode ? 'border-gray-700' : 'border-gray-200') + ' border rounded-lg p-3'}>
                                                                         <div className="flex justify-between items-center mb-2">
                                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-800')}>{new Date(date).toLocaleDateString('pt-PT', {weekday: 'short', day: '2-digit', month: 'short'})}</div>
-                                                                            <div className={'text-lg font-bold ' + (count > 10 ? (darkMode ? 'text-red-400' : 'text-red-600') : count > 6 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : count > 3 ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{count}x</div>
+                                                                            <div className={'text-lg font-bold ' + (count >= 10 ? (darkMode ? 'text-red-400' : 'text-red-600') : count > 6 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : count > 3 ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{count}x</div>
                                                                         </div>
                                                                         <div className="flex flex-wrap gap-1">
                                                                             {dayConsumptions.map((c, i) => (
@@ -1147,7 +1277,7 @@
 
                                                     {/* By hour */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🕐 Consumo por Horário</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🕐 Consumo por Horário</h3>
                                                         <div className="space-y-1 max-h-48 overflow-y-auto">
                                                             {Object.entries(byHour).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([hour, count]) => (
                                                                 <div key={hour} className="flex items-center gap-2">
@@ -1175,19 +1305,23 @@
                                                             return (
                                                                 <div className="grid grid-cols-4 gap-2">
                                                                     <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-2 text-center border'}>
-                                                                        <div className="text-sm mb-0.5">🌅 Manhã</div>
+                                                                        <div className="text-lg mb-1">🌅</div>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã | <span className={(darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</span></div>
                                                                         <div className={'text-xs font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
                                                                     </div>
                                                                     <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-2 text-center border'}>
-                                                                        <div className="text-sm mb-0.5">☀️ Tarde</div>
+                                                                        <div className="text-lg mb-1">☀️</div>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde | <span className={(darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</span></div>
                                                                         <div className={'text-xs font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
                                                                     </div>
                                                                     <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-2 text-center border'}>
-                                                                        <div className="text-sm mb-0.5">🌙 Noite</div>
+                                                                        <div className="text-lg mb-1">🌙</div>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite | <span className={(darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</span></div>
                                                                         <div className={'text-xs font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
                                                                     </div>
                                                                     <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-2 text-center border'}>
-                                                                        <div className="text-sm mb-0.5">⭐ Madrugada</div>
+                                                                        <div className="text-lg mb-1">⭐</div>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada | <span className={(darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</span></div>
                                                                         <div className={'text-xs font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
                                                                     </div>
                                                                 </div>
@@ -1197,11 +1331,11 @@
 
                                                     {/* By weekday */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📅 Por Dia da Semana</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📅 Por Dia da Semana</h3>
                                                         <div className="space-y-2">
                                                             {Object.entries(byWeekday).map(([day, count]) => (
                                                                 <div key={day} className="flex items-center gap-2">
-                                                                    <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' w-12">{weekdayNames[parseInt(day)]}</div>
+                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' w-12'}>{weekdayNames[parseInt(day)]}</div>
                                                                     <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
                                                                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
                                                                             {count}x
@@ -1238,27 +1372,27 @@
 
                                                     {/* Total and short intervals */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📊 Resumo Geral</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📊 Resumo Geral</h3>
                                                         <div className="grid grid-cols-2 gap-3 mb-4">
-                                                            <div className="bg-purple-50 rounded-lg p-3 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Total Registos</div>
-                                                                <div className="text-2xl font-bold text-purple-600">{consumptions.length}</div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-3 text-center'}>
+                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total Registos</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-2xl font-bold'}>{consumptions.length}</div>
                                                             </div>
-                                                            <div className="bg-blue-50 rounded-lg p-3 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Média Geral</div>
-                                                                <div className="text-2xl font-bold text-blue-600">{(consumptions.length / Math.max(1, new Set(consumptions.map(c => c.date)).size)).toFixed(1)}/dia</div>
+                                                            <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-3 text-center'}>
+                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-2xl font-bold'}>{(consumptions.length / Math.max(1, new Set(consumptions.map(c => c.date)).size)).toFixed(1)}/dia</div>
                                                             </div>
                                                         </div>
-                                                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                                                        <div className={(darkMode ? 'bg-orange-900/30 border border-orange-700/50' : 'bg-orange-50 border border-orange-200') + ' rounded-lg p-4'}>
                                                             <div className="flex justify-between items-center mb-2">
-                                                                <span className="text-sm font-medium text-orange-700">Intervalos curtos (&lt;2h)</span>
-                                                                <span className="text-lg font-bold text-orange-600">{shortIntervals.length}</span>
+                                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-orange-400' : 'text-orange-700')}>Intervalos curtos (&lt;2h)</span>
+                                                                <span className={'text-lg font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{shortIntervals.length}</span>
                                                             </div>
-                                                            <div className="text-xs text-orange-600 mb-1">Média/dia: <span className="font-bold">{avgShortPerDay.toFixed(1)}x</span></div>
+                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>Média/dia: <span className="font-bold">{avgShortPerDay.toFixed(1)}x</span></div>
                                                             {Object.keys(shortByDay).length > 0 && (
                                                                 <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
                                                                     {Object.entries(shortByDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 10).map(([date, count]) => (
-                                                                        <div key={date} className="flex justify-between text-xs">
+                                                                        <div key={date} className={'flex justify-between text-xs ' + (darkMode ? 'text-gray-300' : '')}>
                                                                             <span>{new Date(date).toLocaleDateString('pt-PT')}</span>
                                                                             <span className="font-medium">{count}x</span>
                                                                         </div>
@@ -1339,66 +1473,11 @@
 
                                             return (
                                                 <div className="space-y-4">
-                                                    {/* Correlations */}
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🔗 Correlações</h3>
-
-                                                        <div className="space-y-4">
-                                                            <div className="border border-gray-200 rounded-lg p-4">
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className="font-medium text-gray-800">Sono vs Consumo</div>
-                                                                        <div className="text-xs text-gray-500">Como o sono afeta o consumo</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {sleepConsCorr !== null && sleepConsCorr < -0.3 && (
-                                                                    <div className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">💡 Melhor sono = menos consumo</div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="border border-gray-200 rounded-lg p-4">
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className="font-medium text-gray-800">Humor vs Sono</div>
-                                                                        <div className="text-xs text-gray-500">Como o sono afeta o humor</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {moodSleepCorr !== null && moodSleepCorr > 0.3 && (
-                                                                    <div className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">💡 Melhor sono = melhor humor</div>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="border border-gray-200 rounded-lg p-4">
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <div>
-                                                                        <div className="font-medium text-gray-800">Humor vs Consumo</div>
-                                                                        <div className="text-xs text-gray-500">Como o humor afeta o consumo</div>
-                                                                    </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
-                                                                    </div>
-                                                                </div>
-                                                                {moodConsCorr !== null && moodConsCorr < -0.3 && (
-                                                                    <div className="text-xs text-green-600 bg-green-50 p-2 rounded mt-2">💡 Melhor humor = menos consumo</div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
                                                     {/* Wellbeing & Dosage Analysis */}
                                                     {(filteredWellbeingLogs.length > 0 || filteredDailyLogs.length > 0 || filteredCycles.some(c => c.bedtime)) && (
-                                                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">📊 Análise de Bem-Estar e Padrões</h3>
-                                                            <div className="space-y-3 text-sm ' + (darkMode ? 'text-gray-200' : 'text-gray-800') + '">
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📊 Análise de Bem-Estar e Padrões</h3>
+                                                            <div className={'space-y-3 text-sm ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
                                                                 {(() => {
                                                                     const insights = [];
 
@@ -1491,7 +1570,7 @@
                                                                     }
 
                                                                     return insights.map((insight, i) => (
-                                                                        <div key={i} className="p-3 bg-white rounded-lg border border-blue-100">
+                                                                        <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-blue-100') + ' p-3 rounded-lg border'}>
                                                                             <p className="leading-relaxed">{insight}</p>
                                                                         </div>
                                                                     ));
@@ -1500,10 +1579,151 @@
                                                         </div>
                                                     )}
 
+                                                    {/* Goals Analysis */}
+                                                    {goals.length > 0 && (() => {
+                                                        // Calculate goal achievements per day
+                                                        const goalAchievementsByDate = {};
+                                                        const consumptionsByDate = {};
+                                                        consumptions.forEach(c => {
+                                                            consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                                                        });
+
+                                                        // For each goal, check which days it was achieved
+                                                        goals.forEach(goal => {
+                                                            if (goal.type === 'reduce_frequency') {
+                                                                Object.keys(consumptionsByDate).forEach(date => {
+                                                                    if (consumptionsByDate[date] <= goal.target) {
+                                                                        if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                        goalAchievementsByDate[date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            if (goal.type === 'reduce_quantity') {
+                                                                dailyLogs.forEach(log => {
+                                                                    if (log.mg <= goal.target) {
+                                                                        if (!goalAchievementsByDate[log.date]) goalAchievementsByDate[log.date] = [];
+                                                                        goalAchievementsByDate[log.date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+
+                                                        const dates = Object.keys(goalAchievementsByDate).sort().reverse().slice(0, 10);
+                                                        const totalDaysWithAchievements = Object.keys(goalAchievementsByDate).length;
+                                                        const avgAchievementsPerDay = totalDaysWithAchievements > 0
+                                                            ? Object.values(goalAchievementsByDate).reduce((sum, arr) => sum + arr.length, 0) / totalDaysWithAchievements
+                                                            : 0;
+
+                                                        return (
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🎯 Análise de Metas</h3>
+
+                                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                    <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50') + ' rounded-lg p-4 text-center'}>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com metas atingidas</div>
+                                                                        <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-3xl font-bold'}>{totalDaysWithAchievements}</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média por dia</div>
+                                                                        <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{avgAchievementsPerDay.toFixed(1)}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {dates.length > 0 && (
+                                                                    <div>
+                                                                        <div className={'text-sm font-medium mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Últimos 10 dias com metas atingidas</div>
+                                                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                                            {dates.map(date => (
+                                                                                <div key={date} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' p-3 rounded-lg border'}>
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(date).toLocaleDateString('pt-PT')}</div>
+                                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{goalAchievementsByDate[date].length} {goalAchievementsByDate[date].length === 1 ? 'meta' : 'metas'}</div>
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                        {goalAchievementsByDate[date].map(g => {
+                                                                                            if (g.type === 'reduce_frequency') return 'Reduzir Frequência';
+                                                                                            if (g.type === 'reduce_quantity') return 'Reduzir Quantidade';
+                                                                                            if (g.type === 'delay_first') return 'Adiar 1º Consumo';
+                                                                                            if (g.type === 'limit_last') return 'Limitar Último';
+                                                                                            if (g.type === 'sleep_hours') return 'Horas de Sono';
+                                                                                            return g.type;
+                                                                                        }).join(', ')}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {dates.length === 0 && (
+                                                                    <div className={'text-center py-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        <p>Ainda não atingiste nenhuma meta. Continua a tentar! 💪</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Correlations */}
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🔗 Correlações</h3>
+
+                                                        <div className="space-y-4">
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono vs Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {sleepConsCorr !== null && sleepConsCorr < -0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = menos consumo</div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Sono</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
+                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {moodSleepCorr !== null && moodSleepCorr > 0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = melhor humor</div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {moodConsCorr !== null && moodConsCorr < -0.3 && (
+                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor humor = menos consumo</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Trigger Analysis */}
                                                     {filteredCycles.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🎯 Análise de Gatilhos</h3>
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🎯 Análise de Gatilhos</h3>
                                                             <div className="text-xs text-gray-500 mb-3">Gatilhos identificados nos ciclos</div>
                                                             {(() => {
                                                                 const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
@@ -1562,7 +1782,7 @@
                                                     {/* Bedtime Analysis */}
                                                     {filteredCycles.filter(c => c.bedtime).length > 0 && (
                                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🌙 Análise de Hora de Deitar</h3>
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🌙 Análise de Hora de Deitar</h3>
                                                             <div className="text-xs text-gray-500 mb-3">Relação entre hora de deitar e consumo</div>
                                                             {(() => {
                                                                 const bedtimeData = [];
@@ -1585,7 +1805,7 @@
                                                                 return (
                                                                     <div className="space-y-3">
                                                                         <div className="bg-indigo-50 rounded-lg p-4">
-                                                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Hora média de deitar</div>
+                                                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1'}>Hora média de deitar</div>
                                                                             <div className="text-2xl font-bold text-indigo-600">{avgBedtimeFormatted}</div>
                                                                         </div>
                                                                         <div className="border border-gray-200 rounded-lg p-4">
@@ -1639,19 +1859,25 @@
                                                 if (w.food) selfCareData.food++;
                                             });
 
+                                            console.log('💚 Padrões de Autocuidado:', {
+                                                totalWellbeingLogs: filteredWellbeingLogs.length,
+                                                selfCareData: selfCareData,
+                                                sampleLog: filteredWellbeingLogs[0]
+                                            });
+
                                             return (
                                                 <div className="space-y-4">
                                                     {/* Sleep patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">😴 Padrões de Sono</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>😴 Padrões de Sono</h3>
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div className="bg-blue-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Média Geral</div>
-                                                                <div className="text-3xl font-bold text-blue-600">{avgSleep.toFixed(1)}h</div>
+                                                            <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{avgSleep.toFixed(1)}h</div>
                                                             </div>
-                                                            <div className="bg-purple-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Últimos 7 dias</div>
-                                                                <div className="text-3xl font-bold text-purple-600">{sleepTrend.toFixed(1)}h</div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{sleepTrend.toFixed(1)}h</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -1671,7 +1897,7 @@
                                                     {/* Bedtime patterns */}
                                                     {filteredCycles.filter(c => c.bedtime).length > 0 && (
                                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">🌙 Padrões de Hora de Deitar</h3>
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🌙 Padrões de Hora de Deitar</h3>
                                                             {(() => {
                                                                 const cyclesWithBedtime = filteredCycles.filter(c => c.bedtime);
                                                                 const bedtimes = cyclesWithBedtime.map(c => {
@@ -1685,9 +1911,9 @@
 
                                                                 return (
                                                                     <>
-                                                                        <div className="bg-indigo-50 rounded-lg p-4 text-center mb-4">
-                                                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Hora Média de Deitar</div>
-                                                                            <div className="text-3xl font-bold text-indigo-600">{avgBedtimeFormatted}</div>
+                                                                        <div className={(darkMode ? 'bg-indigo-900/30 border border-indigo-700/50' : 'bg-indigo-50') + ' rounded-lg p-4 text-center mb-4'}>
+                                                                            <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Hora Média de Deitar</div>
+                                                                            <div className={(darkMode ? 'text-indigo-400' : 'text-indigo-600') + ' text-3xl font-bold'}>{avgBedtimeFormatted}</div>
                                                                         </div>
                                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                             {cyclesWithBedtime.slice(0, 14).map(c => (
@@ -1707,15 +1933,15 @@
 
                                                     {/* Mood patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">😊 Padrões de Humor</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>😊 Padrões de Humor</h3>
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div className="bg-pink-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Média Geral</div>
-                                                                <div className="text-3xl font-bold text-pink-600">{avgMood.toFixed(1)}/10</div>
+                                                            <div className={(darkMode ? 'bg-pink-900/30 border border-pink-700/50' : 'bg-pink-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
+                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-3xl font-bold'}>{avgMood.toFixed(1)}/10</div>
                                                             </div>
-                                                            <div className="bg-purple-50 rounded-lg p-4 text-center">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Últimos 7 dias</div>
-                                                                <div className="text-3xl font-bold text-purple-600">{moodTrend.toFixed(1)}/10</div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{moodTrend.toFixed(1)}/10</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -1735,10 +1961,10 @@
                                                     {/* Energy patterns */}
                                                     {logsWithEnergy.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">⚡ Padrões de Energia</h3>
-                                                            <div className="bg-yellow-50 rounded-lg p-4 text-center mb-4">
-                                                                <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Média Geral</div>
-                                                                <div className="text-3xl font-bold text-yellow-600">{avgEnergy.toFixed(1)}/10</div>
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>⚡ Padrões de Energia</h3>
+                                                            <div className={(darkMode ? 'bg-yellow-900/30 border border-yellow-700/50' : 'bg-yellow-50') + ' rounded-lg p-4 text-center mb-4'}>
+                                                                <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
+                                                                <div className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-3xl font-bold'}>{avgEnergy.toFixed(1)}/10</div>
                                                             </div>
                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                 {logsWithEnergy.slice(0, 14).map(w => (
@@ -1757,32 +1983,32 @@
 
                                                     {/* Self-care patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4">💚 Padrões de Autocuidado</h3>
-                                                        <div className="text-xs text-gray-500 mb-3">Frequência nos últimos {wellbeingLogs.length} registos</div>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>💚 Padrões de Autocuidado</h3>
+                                                        <div className={'text-xs mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Frequência nos últimos {filteredWellbeingLogs.length} registos</div>
                                                         <div className="grid grid-cols-2 gap-3">
-                                                            <div className="bg-blue-50 rounded-lg p-3 text-center">
+                                                            <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-3 text-center'}>
                                                                 <div className="text-2xl mb-1">💧</div>
-                                                                <div className="text-xs text-gray-600">Água</div>
-                                                                <div className="text-2xl font-bold text-blue-600">{selfCareData.water}</div>
-                                                                <div className="text-xs text-gray-500">{((selfCareData.water / wellbeingLogs.length) * 100).toFixed(0)}%</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Água</div>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-2xl font-bold'}>{selfCareData.water}</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{filteredWellbeingLogs.length > 0 ? ((selfCareData.water / filteredWellbeingLogs.length) * 100).toFixed(0) : 0}%</div>
                                                             </div>
-                                                            <div className="bg-purple-50 rounded-lg p-3 text-center">
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-3 text-center'}>
                                                                 <div className="text-2xl mb-1">😴</div>
-                                                                <div className="text-xs text-gray-600">Descanso</div>
-                                                                <div className="text-2xl font-bold text-purple-600">{selfCareData.rest}</div>
-                                                                <div className="text-xs text-gray-500">{((selfCareData.rest / wellbeingLogs.length) * 100).toFixed(0)}%</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Descanso</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-2xl font-bold'}>{selfCareData.rest}</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{filteredWellbeingLogs.length > 0 ? ((selfCareData.rest / filteredWellbeingLogs.length) * 100).toFixed(0) : 0}%</div>
                                                             </div>
-                                                            <div className="bg-pink-50 rounded-lg p-3 text-center">
+                                                            <div className={(darkMode ? 'bg-pink-900/30 border border-pink-700/50' : 'bg-pink-50') + ' rounded-lg p-3 text-center'}>
                                                                 <div className="text-2xl mb-1">👥</div>
-                                                                <div className="text-xs text-gray-600">Social</div>
-                                                                <div className="text-2xl font-bold text-pink-600">{selfCareData.social}</div>
-                                                                <div className="text-xs text-gray-500">{((selfCareData.social / wellbeingLogs.length) * 100).toFixed(0)}%</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Social</div>
+                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-2xl font-bold'}>{selfCareData.social}</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{filteredWellbeingLogs.length > 0 ? ((selfCareData.social / filteredWellbeingLogs.length) * 100).toFixed(0) : 0}%</div>
                                                             </div>
-                                                            <div className="bg-orange-50 rounded-lg p-3 text-center">
+                                                            <div className={(darkMode ? 'bg-orange-900/30 border border-orange-700/50' : 'bg-orange-50') + ' rounded-lg p-3 text-center'}>
                                                                 <div className="text-2xl mb-1">🍽️</div>
-                                                                <div className="text-xs text-gray-600">Alimentação</div>
-                                                                <div className="text-2xl font-bold text-orange-600">{selfCareData.food}</div>
-                                                                <div className="text-xs text-gray-500">{((selfCareData.food / wellbeingLogs.length) * 100).toFixed(0)}%</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Alimentação</div>
+                                                                <div className={(darkMode ? 'text-orange-400' : 'text-orange-600') + ' text-2xl font-bold'}>{selfCareData.food}</div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{filteredWellbeingLogs.length > 0 ? ((selfCareData.food / filteredWellbeingLogs.length) * 100).toFixed(0) : 0}%</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1826,11 +2052,12 @@
                                     {/* Topic Filters */}
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {[
-                                            { id: 'todos', label: '📋 Todos', icon: '' },
-                                            { id: 'consumo', label: '💊 Consumos', icon: '' },
-                                            { id: 'ciclos', label: '🌙 Ciclos', icon: '' },
-                                            { id: 'bem-estar', label: '💚 Bem-estar', icon: '' },
-                                            { id: 'dbt', label: '🎯 DBT', icon: '' }
+                                            { id: 'todos', label: '📋 Todos' },
+                                            { id: 'consumo', label: '💊 Consumos' },
+                                            { id: 'ciclos', label: '🌙 Ciclos' },
+                                            { id: 'bem-estar', label: '💚 Bem-estar' },
+                                            { id: 'registos', label: '📝 Registos Diários' },
+                                            { id: 'dbt', label: '🎯 DBT' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {topic.label}
@@ -1841,11 +2068,26 @@
                                     {(() => {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
+                                        console.log('🔍 Histórico - Filtro Temporal:', {
+                                            period: historyPeriod,
+                                            offset: historyPeriodOffset,
+                                            dateRange: dateRange,
+                                            topic: historyTopic
+                                        });
+
                                         const tempFilteredReflections = filterByDateRange(reflections, dateRange);
                                         const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
                                         const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
                                         const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
+
+                                        console.log('📊 Dados após filtro temporal:', {
+                                            reflexões: tempFilteredReflections.length,
+                                            bemEstar: tempFilteredWellbeing.length,
+                                            registosDiarios: tempFilteredDailyLogs.length,
+                                            consumos: tempFilteredConsumptions.length,
+                                            ciclos: tempFilteredCycles.length
+                                        });
 
                                         // Apply topic filter
                                         let filteredReflections = tempFilteredReflections;
@@ -1857,6 +2099,7 @@
                                         if (historyTopic === 'consumo') {
                                             filteredReflections = [];
                                             filteredWellbeing = [];
+                                            filteredDailyLogs = [];
                                             filteredCycles = [];
                                         } else if (historyTopic === 'ciclos') {
                                             filteredConsumptions = [];
@@ -1873,7 +2116,20 @@
                                             filteredWellbeing = [];
                                             filteredDailyLogs = [];
                                             filteredCycles = [];
+                                        } else if (historyTopic === 'registos') {
+                                            filteredConsumptions = [];
+                                            filteredReflections = [];
+                                            filteredWellbeing = [];
+                                            filteredCycles = [];
                                         }
+
+                                        console.log('✅ Dados após filtro de tópico:', {
+                                            reflexões: filteredReflections.length,
+                                            bemEstar: filteredWellbeing.length,
+                                            registosDiarios: filteredDailyLogs.length,
+                                            consumos: filteredConsumptions.length,
+                                            ciclos: filteredCycles.length
+                                        });
 
                                         const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0;
 
@@ -1883,16 +2139,16 @@
                                             <div className="space-y-6">
                                                 {filteredReflections.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2"><Brain className="w-4 h-4 text-purple-600" /> Reflexões DBT ({filteredReflections.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões DBT ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredReflections.map(r => (
-                                                                <div key={r.id} className="border-l-4 border-purple-400 pl-4 py-2 bg-purple-50 rounded-r-lg">
+                                                                <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
-                                                                        <div className="text-xs text-gray-500">{new Date(r.timestamp || r.date).toLocaleDateString('pt-PT')} {r.timestamp && new Date(r.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{new Date(r.timestamp || r.date).toLocaleDateString('pt-PT')} {r.timestamp && new Date(r.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
                                                                         <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className="text-sm text-purple-700 font-medium mb-1">{r.question}</div>
-                                                                    <div className="text-gray-700 text-sm">{r.answer}</div>
+                                                                    <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>{r.question}</div>
+                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{r.answer}</div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1901,26 +2157,26 @@
 
                                                 {filteredWellbeing.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2"><Heart className="w-4 h-4 text-blue-600" /> Bem-Estar ({filteredWellbeing.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Heart className={'w-4 h-4 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')} /> Bem-Estar ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredWellbeing.map(w => (
-                                                                <div key={w.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                                <div key={w.id} className={(darkMode ? 'bg-blue-900/30 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
-                                                                        <div className="text-sm font-medium text-gray-800">{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT')}</div>
+                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT')}</div>
                                                                         <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className="grid grid-cols-3 gap-2 text-sm">
                                                                         <div className="text-center">
-                                                                            <div className="text-xs text-gray-600">Sono</div>
-                                                                            <div className="text-lg font-bold text-blue-600">{w.sleep}h</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Sono</div>
+                                                                            <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.sleep}h</div>
                                                                         </div>
                                                                         <div className="text-center">
-                                                                            <div className="text-xs text-gray-600">Humor</div>
-                                                                            <div className="text-lg font-bold text-blue-600">{w.mood}/10</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Humor</div>
+                                                                            <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.mood}/10</div>
                                                                         </div>
                                                                         <div className="text-center">
-                                                                            <div className="text-xs text-gray-600">Energia</div>
-                                                                            <div className="text-lg font-bold text-blue-600">{w.energy || '-'}/10</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Energia</div>
+                                                                            <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.energy || '-'}/10</div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1931,25 +2187,25 @@
 
                                                 {filteredDailyLogs.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2">📊 Registos Diários ({filteredDailyLogs.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>📊 Registos Diários ({filteredDailyLogs.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredDailyLogs.map(l => (
-                                                                <div key={l.id} className="p-3 bg-pink-50 rounded-lg border border-pink-200">
+                                                                <div key={l.id} className={(darkMode ? 'bg-pink-900/30 border-pink-700/50' : 'bg-pink-50 border-pink-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
-                                                                        <div className="text-sm font-medium text-gray-800">{new Date(l.timestamp || l.date).toLocaleDateString('pt-PT')}</div>
+                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(l.timestamp || l.date).toLocaleDateString('pt-PT')}</div>
                                                                         <button onClick={() => deleteItem('dailyLogs', l.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className="flex gap-4 text-sm">
                                                                         <div>
-                                                                            <span className="text-gray-600">Frequência: </span>
-                                                                            <span className="font-bold text-pink-600">{l.times}x</span>
+                                                                            <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>Frequência: </span>
+                                                                            <span className={'font-bold ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>{l.times}x</span>
                                                                         </div>
                                                                         <div>
-                                                                            <span className="text-gray-600">Quantidade: </span>
-                                                                            <span className="font-bold text-pink-600">{l.mg}mg</span>
+                                                                            <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>Quantidade: </span>
+                                                                            <span className={'font-bold ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>{l.mg}mg</span>
                                                                         </div>
                                                                     </div>
-                                                                    {l.notes && <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mt-2 italic">💭 {l.notes}</div>}
+                                                                    {l.notes && <div className={'text-sm mt-2 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {l.notes}</div>}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1958,16 +2214,19 @@
 
                                                 {filteredConsumptions.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2"><Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredConsumptions.map(c => (
-                                                                <div key={c.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                                <div key={c.id} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center">
                                                                         <div>
-                                                                            <div className="font-medium text-gray-800">{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
-                                                                            {c.notes && <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mt-1">💭 {c.notes}</div>}
+                                                                            <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                                            {c.notes && <div className={'text-sm mt-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {c.notes}</div>}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                                        <div className="flex gap-2 ml-2">
+                                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Edit className="w-4 h-4" /></button>
+                                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1977,27 +2236,27 @@
 
                                                 {filteredCycles.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2">🌙 Ciclos ({filteredCycles.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>🌙 Ciclos ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.map(cycle => (
-                                                                <div key={cycle.id} className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                                                <div key={cycle.id} className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
-                                                                        <div className="text-sm font-medium text-gray-800">{new Date(cycle.timestamp).toLocaleDateString('pt-PT')} {new Date(cycle.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(cycle.timestamp).toLocaleDateString('pt-PT')} {new Date(cycle.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
                                                                         <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     {cycle.bedtime && (
-                                                                        <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1">
-                                                                            <span className="text-gray-600">Hora de deitar: </span>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Hora de deitar: </span>
                                                                             <span className="font-medium">{cycle.bedtime}</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.triggers && cycle.triggers.length > 0 && (
-                                                                        <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1">
-                                                                            <span className="text-gray-600">Gatilhos: </span>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Gatilhos: </span>
                                                                             <span className="font-medium">{cycle.triggers.join(', ')}</span>
                                                                         </div>
                                                                     )}
-                                                                    {cycle.notes && <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mt-2 italic">💭 {cycle.notes}</div>}
+                                                                    {cycle.notes && <div className={'text-sm mt-2 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {cycle.notes}</div>}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -2053,7 +2312,7 @@
                                                 <div key={goal.id} className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div>
-                                                            <h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + '">
+                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ''}>
                                                                 {goal.type === 'reduce_frequency' && 'Reduzir Frequência'}
                                                                 {goal.type === 'reduce_quantity' && 'Reduzir Quantidade'}
                                                                 {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
@@ -2061,7 +2320,7 @@
                                                                 {goal.type === 'limit_last' && 'Hora do Último Consumo'}
                                                                 {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
                                                             </h3>
-                                                            <p className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">
+                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
                                                                 Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
                                                                 {goal.type === 'reduce_quantity' && goal.target + 'mg/dia'}
                                                                 {goal.type === 'delay_first' && 'após ' + goal.target}
@@ -2069,7 +2328,8 @@
                                                                 {goal.type === 'limit_last' && 'antes de ' + goal.target}
                                                                 {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
                                                             </p>
-                                                            <p className="text-sm text-gray-500">Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
+                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
+                                                            <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
                                                         </div>
                                                         <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
                                                     </div>
@@ -2093,7 +2353,7 @@
                                 <div className="space-y-6">
                                     <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Recursos</h2>
                                     <div className="bg-red-50 rounded-xl p-6 border border-red-200"><h3 className="font-semibold text-red-800 mb-3">🚨 Emergência</h3><div className="space-y-2 text-red-700"><p><strong>INEM:</strong> 112</p><p><strong>Linha Vida:</strong> 1414</p></div></div>
-                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}><h3 className="font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3">📞 Linhas de Apoio</h3><div className={'space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}><p><strong>SOS Droga:</strong> 1414 (24h)</p><p><strong>SNS 24:</strong> 808 24 24 24</p></div></div>
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}><h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>📞 Linhas de Apoio</h3><div className={'space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}><p><strong>SOS Droga:</strong> 1414 (24h)</p><p><strong>SNS 24:</strong> 808 24 24 24</p></div></div>
                                     {educationalResources.map((resource, i) => (
                                         <div key={i} className="bg-purple-50 rounded-xl p-4 border border-purple-200"><h4 className="font-medium text-purple-800 mb-2">{resource.title}</h4><p className="text-sm text-purple-700">{resource.content}</p></div>
                                     ))}
@@ -2149,19 +2409,19 @@
                                             <div className="space-y-2">
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.water} onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">💧 Bebi água suficiente</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>💧 Bebi água suficiente</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.rest} onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">😴 Descansei o suficiente</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>😴 Descansei o suficiente</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.social} onChange={(e) => setWellbeingForm({...wellbeingForm, social: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">👥 Tive contacto social</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>👥 Tive contacto social</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.food} onChange={(e) => setWellbeingForm({...wellbeingForm, food: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">🍽️ Comi refeições nutritivas</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>🍽️ Comi refeições nutritivas</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -2204,7 +2464,7 @@
                                         <button onClick={() => setShowCycleModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
                                     </div>
                                     <div className="space-y-4">
-                                        <p className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
+                                        <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Hora a que te deitaste</label>
                                             <input type="time" value={cycleForm.bedtime} onChange={(e) => setCycleForm({...cycleForm, bedtime: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400" />
@@ -2221,7 +2481,7 @@
                                                                 setCycleForm({...cycleForm, triggers: cycleForm.triggers.filter(t => t !== trigger)});
                                                             }
                                                         }} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                                        <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">{trigger}</span>
+                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{trigger}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -2229,12 +2489,6 @@
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Notas sobre este ciclo (opcional)</label>
                                             <textarea value={cycleForm.notes} onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-20" placeholder="Como foi o ciclo? O que observaste?"></textarea>
-                                        </div>
-                                        <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input type="checkbox" checked={cycleForm.lastConsumptionBefore00} onChange={(e) => setCycleForm({...cycleForm, lastConsumptionBefore00: e.target.checked})} className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
-                                                <span className="text-sm font-medium text-gray-700">Último consumo foi antes das 00h?</span>
-                                            </label>
                                         </div>
                                         <button onClick={submitCycle} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">Iniciar Novo Ciclo</button>
                                     </div>
@@ -2294,7 +2548,7 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-3 rounded-lg">
-                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Data e Hora</div>
+                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Data e Hora</div>
                                             <div className="text-lg font-medium text-gray-800">{new Date(editingConsumption.timestamp).toLocaleDateString('pt-PT')} - {new Date(editingConsumption.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
                                         </div>
                                         <div>
