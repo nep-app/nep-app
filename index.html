@@ -396,6 +396,71 @@
                 return 0;
             };
 
+            const getGoalAchievementCount = (goal) => {
+                let achievedDays = 0;
+
+                if (goal.type === 'reduce_frequency') {
+                    // Count days where consumptions <= target
+                    const consumptionsByDate = {};
+                    consumptions.forEach(c => {
+                        consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                    });
+                    Object.values(consumptionsByDate).forEach(count => {
+                        if (count <= goal.target) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'reduce_quantity') {
+                    // Count days where mg <= target
+                    dailyLogs.forEach(log => {
+                        if (log.mg <= goal.target) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'delay_first') {
+                    // Count days where first consumption >= target time
+                    const firstOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
+                            firstOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    Object.values(firstOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (firstMinutes >= targetMinutes) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'limit_last') {
+                    // Count days where last consumption <= target time
+                    const lastOfDays = {};
+                    consumptions.forEach(c => {
+                        if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) {
+                            lastOfDays[c.date] = c.timestamp;
+                        }
+                    });
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    Object.values(lastOfDays).forEach(timestamp => {
+                        const d = new Date(timestamp);
+                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (lastMinutes <= targetMinutes) achievedDays++;
+                    });
+                }
+
+                if (goal.type === 'sleep_hours') {
+                    // Count days where sleep hours >= target
+                    wellbeingLogs.forEach(log => {
+                        if (log.sleepHours && log.sleepHours >= goal.target) achievedDays++;
+                    });
+                }
+
+                return achievedDays;
+            };
+
             // Streak calculation
             const getStreaks = () => {
                 if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
@@ -2149,7 +2214,8 @@
                                                                 {goal.type === 'limit_last' && 'antes de ' + goal.target}
                                                                 {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
                                                             </p>
-                                                            <p className="text-sm text-gray-500">Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
+                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
+                                                            <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
                                                         </div>
                                                         <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
                                                     </div>
