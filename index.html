@@ -506,7 +506,7 @@
                 if (goal.type === 'sleep_hours') {
                     // Count days where sleep hours >= target
                     wellbeingLogs.forEach(log => {
-                        if (log.sleepHours && log.sleepHours >= goal.target) achievedDays++;
+                        if (log.sleep != null && log.sleep >= parseFloat(goal.target)) achievedDays++;
                     });
                 }
 
@@ -2925,6 +2925,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
