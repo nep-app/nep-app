@@ -1242,7 +1242,7 @@
                                                         <div className="space-y-2">
                                                             {Object.entries(byWeekday).map(([day, count]) => (
                                                                 <div key={day} className="flex items-center gap-2">
-                                                                    <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' w-12">{weekdayNames[parseInt(day)]}</div>
+                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' w-12'}>{weekdayNames[parseInt(day)]}</div>
                                                                     <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
                                                                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
                                                                             {count}x
@@ -1626,7 +1626,7 @@
                                                                 return (
                                                                     <div className="space-y-3">
                                                                         <div className="bg-indigo-50 rounded-lg p-4">
-                                                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1">Hora média de deitar</div>
+                                                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ' mb-1'}>Hora média de deitar</div>
                                                                             <div className="text-2xl font-bold text-indigo-600">{avgBedtimeFormatted}</div>
                                                                         </div>
                                                                         <div className="border border-gray-200 rounded-lg p-4">
@@ -2141,7 +2141,7 @@
                                                                 {goal.type === 'limit_last' && 'Hora do Último Consumo'}
                                                                 {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
                                                             </h3>
-                                                            <p className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">
+                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
                                                                 Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
                                                                 {goal.type === 'reduce_quantity' && goal.target + 'mg/dia'}
                                                                 {goal.type === 'delay_first' && 'após ' + goal.target}
@@ -2229,19 +2229,19 @@
                                             <div className="space-y-2">
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.water} onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">💧 Bebi água suficiente</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>💧 Bebi água suficiente</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.rest} onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">😴 Descansei o suficiente</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>😴 Descansei o suficiente</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.social} onChange={(e) => setWellbeingForm({...wellbeingForm, social: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">👥 Tive contacto social</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>👥 Tive contacto social</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <input type="checkbox" checked={wellbeingForm.food} onChange={(e) => setWellbeingForm({...wellbeingForm, food: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">🍽️ Comi refeições nutritivas</span>
+                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>🍽️ Comi refeições nutritivas</span>
                                                 </label>
                                             </div>
                                         </div>
@@ -2284,7 +2284,7 @@
                                         <button onClick={() => setShowCycleModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
                                     </div>
                                     <div className="space-y-4">
-                                        <p className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
+                                        <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Hora a que te deitaste</label>
                                             <input type="time" value={cycleForm.bedtime} onChange={(e) => setCycleForm({...cycleForm, bedtime: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400" />
@@ -2301,7 +2301,7 @@
                                                                 setCycleForm({...cycleForm, triggers: cycleForm.triggers.filter(t => t !== trigger)});
                                                             }
                                                         }} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                                        <span className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + '">{trigger}</span>
+                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{trigger}</span>
                                                     </label>
                                                 ))}
                                             </div>
@@ -2368,7 +2368,7 @@
                                     </div>
                                     <div className="space-y-4">
                                         <div className="bg-gray-50 p-3 rounded-lg">
-                                            <div className="text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + '">Data e Hora</div>
+                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Data e Hora</div>
                                             <div className="text-lg font-medium text-gray-800">{new Date(editingConsumption.timestamp).toLocaleDateString('pt-PT')} - {new Date(editingConsumption.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
                                         </div>
                                         <div>
