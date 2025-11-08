@@ -977,10 +977,11 @@
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['comparisons', 'analyses', 'others'].map(view => (
+                                        {['comparisons', 'analyses', 'reports', 'others'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'comparisons' && '📊 Comparações'}
                                                 {view === 'analyses' && '🔬 Análises'}
+                                                {view === 'reports' && '📋 Relatórios'}
                                                 {view === 'others' && '💚 Bem-Estar'}
                                             </button>
                                         ))}
@@ -1856,6 +1857,216 @@
                                                                     </div>
                                                                 );
                                                             })()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        // RELATÓRIOS (Weekly/monthly reports)
+                                        if (patternView === 'reports') {
+                                            // Calculate weekly data
+                                            const now = new Date();
+                                            const last7Days = filteredConsumptions.filter(c => {
+                                                const cDate = new Date(c.timestamp);
+                                                const diffDays = Math.floor((now - cDate) / (1000 * 60 * 60 * 24));
+                                                return diffDays < 7;
+                                            });
+                                            const previous7Days = filteredConsumptions.filter(c => {
+                                                const cDate = new Date(c.timestamp);
+                                                const diffDays = Math.floor((now - cDate) / (1000 * 60 * 60 * 24));
+                                                return diffDays >= 7 && diffDays < 14;
+                                            });
+
+                                            const last30Days = filteredConsumptions.filter(c => {
+                                                const cDate = new Date(c.timestamp);
+                                                const diffDays = Math.floor((now - cDate) / (1000 * 60 * 60 * 24));
+                                                return diffDays < 30;
+                                            });
+                                            const previous30Days = filteredConsumptions.filter(c => {
+                                                const cDate = new Date(c.timestamp);
+                                                const diffDays = Math.floor((now - cDate) / (1000 * 60 * 60 * 24));
+                                                return diffDays >= 30 && diffDays < 60;
+                                            });
+
+                                            const weeklyChange = previous7Days.length > 0 ? ((last7Days.length - previous7Days.length) / previous7Days.length * 100) : 0;
+                                            const monthlyChange = previous30Days.length > 0 ? ((last30Days.length - previous30Days.length) / previous30Days.length * 100) : 0;
+
+                                            // Best/worst days analysis
+                                            const dailyCounts = {};
+                                            filteredConsumptions.forEach(c => {
+                                                const dateStr = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
+                                            });
+                                            const sortedDays = Object.entries(dailyCounts).sort((a, b) => a[1] - b[1]);
+                                            const bestDays = sortedDays.slice(0, 3);
+                                            const worstDays = sortedDays.slice(-3).reverse();
+
+                                            // Peak hours
+                                            const hourCounts = {};
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+                                            });
+                                            const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+
+                                            // Top triggers
+                                            const triggerCounts = {};
+                                            filteredConsumptions.forEach(c => {
+                                                if (c.trigger) {
+                                                    triggerCounts[c.trigger] = (triggerCounts[c.trigger] || 0) + 1;
+                                                }
+                                            });
+                                            const topTriggers = Object.entries(triggerCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+                                            // Sleep correlation
+                                            const consumptionsWithSleep = filteredConsumptions.filter(c => {
+                                                const wellbeing = filteredWellbeingLogs.find(w => {
+                                                    const wDate = new Date(w.timestamp || w.date).toLocaleDateString('pt-PT');
+                                                    const cDate = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                    return wDate === cDate;
+                                                });
+                                                return wellbeing && wellbeing.sleep;
+                                            });
+
+                                            let sleepInsight = null;
+                                            if (consumptionsWithSleep.length > 3) {
+                                                const lowSleepDays = consumptionsWithSleep.filter(c => {
+                                                    const wellbeing = filteredWellbeingLogs.find(w => {
+                                                        const wDate = new Date(w.timestamp || w.date).toLocaleDateString('pt-PT');
+                                                        const cDate = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                        return wDate === cDate;
+                                                    });
+                                                    return wellbeing.sleep < 6;
+                                                });
+                                                const highSleepDays = consumptionsWithSleep.filter(c => {
+                                                    const wellbeing = filteredWellbeingLogs.find(w => {
+                                                        const wDate = new Date(w.timestamp || w.date).toLocaleDateString('pt-PT');
+                                                        const cDate = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                        return wDate === cDate;
+                                                    });
+                                                    return wellbeing.sleep >= 7;
+                                                });
+
+                                                if (lowSleepDays.length > highSleepDays.length) {
+                                                    sleepInsight = `Quando dormes <6h, o consumo tende a aumentar`;
+                                                } else if (highSleepDays.length > lowSleepDays.length * 1.5) {
+                                                    sleepInsight = `Dormir 7h+ parece estar associado a menos consumo`;
+                                                }
+                                            }
+
+                                            return (
+                                                <div className="space-y-4">
+                                                    {/* Weekly summary */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-bold text-lg mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📊 Resumo Semanal (Últimos 7 dias)</h3>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="text-center">
+                                                                <div className={'text-4xl font-black mb-2 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{last7Days.length}</div>
+                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Consumos</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className={'text-4xl font-black mb-2 ' + (weeklyChange < 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : weeklyChange > 0 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                    {weeklyChange > 0 ? '+' : ''}{weeklyChange.toFixed(0)}%
+                                                                </div>
+                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>vs semana anterior</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Monthly summary */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-bold text-lg mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Resumo Mensal (Últimos 30 dias)</h3>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="text-center">
+                                                                <div className={'text-4xl font-black mb-2 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{last30Days.length}</div>
+                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Consumos</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className={'text-4xl font-black mb-2 ' + (monthlyChange < 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : monthlyChange > 0 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                    {monthlyChange > 0 ? '+' : ''}{monthlyChange.toFixed(0)}%
+                                                                </div>
+                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>vs mês anterior</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Best/Worst days */}
+                                                    {bestDays.length > 0 && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Melhores & Piores Dias</h3>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <div className={'text-sm font-medium mb-2 flex items-center gap-2 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                        <span>✨</span> Melhores
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        {bestDays.map(([date, count]) => (
+                                                                            <div key={date} className={(darkMode ? 'bg-green-900/20' : 'bg-green-50') + ' rounded-lg p-2 flex justify-between items-center'}>
+                                                                                <span className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{date}</span>
+                                                                                <span className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{count}x</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <div className={'text-sm font-medium mb-2 flex items-center gap-2 ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>
+                                                                        <span>⚠️</span> Piores
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        {worstDays.map(([date, count]) => (
+                                                                            <div key={date} className={(darkMode ? 'bg-orange-900/20' : 'bg-orange-50') + ' rounded-lg p-2 flex justify-between items-center'}>
+                                                                                <span className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{date}</span>
+                                                                                <span className={'text-sm font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{count}x</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Insights */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>💡 Insights</h3>
+                                                        <div className="space-y-3">
+                                                            {peakHour && (
+                                                                <div className={(darkMode ? 'bg-indigo-900/30' : 'bg-indigo-100') + ' rounded-lg p-3'}>
+                                                                    <div className={'text-sm font-medium ' + (darkMode ? 'text-indigo-300' : 'text-indigo-700')}>
+                                                                        🕐 Hora de pico: {peakHour[0]}h-{parseInt(peakHour[0]) + 1}h ({peakHour[1]} consumos)
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {sleepInsight && (
+                                                                <div className={(darkMode ? 'bg-purple-900/30' : 'bg-purple-100') + ' rounded-lg p-3'}>
+                                                                    <div className={'text-sm font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                        😴 {sleepInsight}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Top triggers */}
+                                                    {topTriggers.length > 0 && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Gatilhos Mais Frequentes</h3>
+                                                            <div className="space-y-2">
+                                                                {topTriggers.map(([trigger, count], idx) => (
+                                                                    <div key={trigger} className="flex items-center gap-3">
+                                                                        <div className={'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + (darkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600')}>
+                                                                            {idx + 1}
+                                                                        </div>
+                                                                        <div className="flex-1">
+                                                                            <div className={(darkMode ? 'text-gray-200' : 'text-gray-800') + ' font-medium'}>{trigger}</div>
+                                                                            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+                                                                                <div className="bg-purple-500 h-2 rounded-full" style={{width: `${(count / topTriggers[0][1]) * 100}%`}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{count}x</div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
