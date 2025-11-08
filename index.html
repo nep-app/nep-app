@@ -1551,6 +1551,92 @@
                                                         </div>
                                                     )}
 
+                                                    {/* Goals Analysis */}
+                                                    {goals.length > 0 && (() => {
+                                                        // Calculate goal achievements per day
+                                                        const goalAchievementsByDate = {};
+                                                        const consumptionsByDate = {};
+                                                        consumptions.forEach(c => {
+                                                            consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                                                        });
+
+                                                        // For each goal, check which days it was achieved
+                                                        goals.forEach(goal => {
+                                                            if (goal.type === 'reduce_frequency') {
+                                                                Object.keys(consumptionsByDate).forEach(date => {
+                                                                    if (consumptionsByDate[date] <= goal.target) {
+                                                                        if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                        goalAchievementsByDate[date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            if (goal.type === 'reduce_quantity') {
+                                                                dailyLogs.forEach(log => {
+                                                                    if (log.mg <= goal.target) {
+                                                                        if (!goalAchievementsByDate[log.date]) goalAchievementsByDate[log.date] = [];
+                                                                        goalAchievementsByDate[log.date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+
+                                                        const dates = Object.keys(goalAchievementsByDate).sort().reverse().slice(0, 10);
+                                                        const totalDaysWithAchievements = Object.keys(goalAchievementsByDate).length;
+                                                        const avgAchievementsPerDay = totalDaysWithAchievements > 0
+                                                            ? Object.values(goalAchievementsByDate).reduce((sum, arr) => sum + arr.length, 0) / totalDaysWithAchievements
+                                                            : 0;
+
+                                                        return (
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🎯 Análise de Metas</h3>
+
+                                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                    <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50') + ' rounded-lg p-4 text-center'}>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com metas atingidas</div>
+                                                                        <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-3xl font-bold'}>{totalDaysWithAchievements}</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média por dia</div>
+                                                                        <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{avgAchievementsPerDay.toFixed(1)}</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {dates.length > 0 && (
+                                                                    <div>
+                                                                        <div className={'text-sm font-medium mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Últimos 10 dias com metas atingidas</div>
+                                                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                                            {dates.map(date => (
+                                                                                <div key={date} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' p-3 rounded-lg border'}>
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(date).toLocaleDateString('pt-PT')}</div>
+                                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{goalAchievementsByDate[date].length} {goalAchievementsByDate[date].length === 1 ? 'meta' : 'metas'}</div>
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                        {goalAchievementsByDate[date].map(g => {
+                                                                                            if (g.type === 'reduce_frequency') return 'Reduzir Frequência';
+                                                                                            if (g.type === 'reduce_quantity') return 'Reduzir Quantidade';
+                                                                                            if (g.type === 'delay_first') return 'Adiar 1º Consumo';
+                                                                                            if (g.type === 'limit_last') return 'Limitar Último';
+                                                                                            if (g.type === 'sleep_hours') return 'Horas de Sono';
+                                                                                            return g.type;
+                                                                                        }).join(', ')}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {dates.length === 0 && (
+                                                                    <div className={'text-center py-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        <p>Ainda não atingiste nenhuma meta. Continua a tentar! 💪</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+
                                                     {/* Correlations */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🔗 Correlações</h3>
