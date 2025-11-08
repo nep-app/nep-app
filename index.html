@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
@@ -2759,9 +2759,9 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emo��es do dia (opcional)</label>
+                                            <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['?? Feliz', '?? Triste', '?? Ansioso/a', '?? Calmo/a', '?? Irritado/a', '?? Motivado/a', '?? Cansado/a', '?? Grato/a', '?? Frustrado/a', '?? Esperan�oso/a', '?? Entediado/a', '?? Stressado/a', '?? Confiante', '?? Inseguro/a', '?? Solit�rio/a', '?? Amado/a'].map(emotion => (
+                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a'].map(emotion => (
                                                     <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={wellbeingForm.emotions.includes(emotion)} onChange={(e) => {
                                                             if (e.target.checked) {
@@ -2843,13 +2843,13 @@
                                         <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border'}>
                                             <label className="flex items-center space-x-2 cursor-pointer">
                                                 <input type="checkbox" checked={cycleForm.lastBefore00} onChange={(e) => setCycleForm({...cycleForm, lastBefore00: e.target.checked})} className="rounded text-green-600 focus:ring-green-500 w-5 h-5" />
-                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-green-300' : 'text-green-800')}>? �ltimo consumo antes das 00h</span>
+                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-green-300' : 'text-green-800')}>? �ltimo consumo antes das 00h</span>
                                             </label>
                                         </div>
                                         <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border'}>
                                             <label className="flex items-center space-x-2 cursor-pointer">
                                                 <input type="checkbox" checked={cycleForm.lastBefore00} onChange={(e) => setCycleForm({...cycleForm, lastBefore00: e.target.checked})} className="rounded text-green-600 focus:ring-green-500 w-5 h-5" />
-                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-green-300' : 'text-green-800')}>? �ltimo consumo antes das 00h</span>
+                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-green-300' : 'text-green-800')}>? �ltimo consumo antes das 00h</span>
                                             </label>
                                         </div>
                                         <button onClick={submitCycle} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">Iniciar Novo Ciclo</button>
