@@ -492,6 +492,11 @@
                     });
                 }
 
+                    // Also count cycles with lastBefore00 = true
+                    cycles.forEach(cycle => {
+                        if (cycle.lastBefore00) achievedDays++;
+                    });
+
                 if (goal.type === 'increase_interval') {
                     // Count intervals between consumptions >= target hours
                     if (consumptions.length >= 2) {
@@ -2925,6 +2930,7 @@
     </script>
 </body>
 </html>
+
 
 
 
