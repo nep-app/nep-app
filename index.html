@@ -153,7 +153,7 @@
 
             const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return; const { doc, setDoc, collection } = window.firebaseModules; await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
 
-            const markConsumption = async () => { const now = new Date(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
+            const markConsumption = async () => { const now = new Date(); const currentCycle = getCurrentCycleId(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '', cycleId: currentCycle }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
 
             const deleteItem = async (collectionName, id) => { if (!user || !db) return; const { doc, deleteDoc } = window.firebaseModules; try { await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id)); } catch (error) { console.error('Erro ao apagar:', error); } };
 
@@ -194,10 +194,10 @@
             };
 
             const submitCycle = async () => {
-                const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
+                const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastConsumptionBefore00: cycleForm.lastConsumptionBefore00 };
                 setCycles(prev => [item, ...prev]);
                 await saveToFirebase('cycles', item);
-                setCycleForm({ bedtime: '', triggers: [], notes: '' });
+                setCycleForm({ bedtime: '', triggers: [], notes: '', lastConsumptionBefore00: false });
                 setShowCycleModal(false);
             };
 
@@ -500,7 +500,7 @@
 
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
-            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[cycles.length - 1].id).length : 0;
+            const currentCycleCount = cycles.length > 0 ? consumptions.filter(c => c.cycleId === cycles[0].id).length : 0;
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
