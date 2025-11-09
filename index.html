@@ -196,17 +196,33 @@
                     return;
                 }
 
+                // Check current permission state
+                if (Notification.permission === 'denied') {
+                    showToast('✗ Notificações bloqueadas. Vai às definições do browser para permitir', 'error');
+                    return;
+                }
+
+                if (Notification.permission === 'granted') {
+                    setNotificationsEnabled(true);
+                    localStorage.setItem('notificationsEnabled', 'true');
+                    showToast('✓ Notificações já estavam ativadas', 'success');
+                    return;
+                }
+
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         setNotificationsEnabled(true);
                         localStorage.setItem('notificationsEnabled', 'true');
-                        showToast('✓ Notificações ativadas', 'success');
+                        showToast('✓ Notificações ativadas com sucesso', 'success');
+                    } else if (permission === 'denied') {
+                        showToast('✗ Negaste a permissão. Vai às definições do browser para ativar', 'error');
                     } else {
-                        showToast('✗ Permissão de notificações negada', 'error');
+                        showToast('✗ Permissão não concedida', 'error');
                     }
                 } catch (error) {
                     console.error('Error requesting notification permission:', error);
+                    showToast('✗ Erro ao pedir permissão de notificações', 'error');
                 }
             };
 
@@ -1775,10 +1791,41 @@
                                                                 {(() => {
                                                                     const insights = [];
 
-                                                                    // Sleep analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.sleep && !isNaN(w.sleep)).length > 0) {
-                                                                        const logsWithSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(w.sleep));
-                                                                        const avgSleep = logsWithSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / logsWithSleep.length;
+                                                                    // Group wellbeing logs by day first
+                                                                    const wellbeingByDay = {};
+                                                                    filteredWellbeingLogs.forEach(log => {
+                                                                        const day = log.date;
+                                                                        if (!wellbeingByDay[day]) {
+                                                                            wellbeingByDay[day] = { sleep: [], mood: [], energy: [] };
+                                                                        }
+                                                                        // Parse and validate sleep (sum per day)
+                                                                        const sleepVal = parseFloat(log.sleep);
+                                                                        if (log.sleep !== undefined && log.sleep !== null && log.sleep !== '' && !isNaN(sleepVal) && sleepVal > 0) {
+                                                                            wellbeingByDay[day].sleep.push(sleepVal);
+                                                                        }
+                                                                        // Parse and validate mood (average per day)
+                                                                        const moodVal = parseInt(log.mood);
+                                                                        if (log.mood !== undefined && log.mood !== null && log.mood !== '' && !isNaN(moodVal) && moodVal > 0) {
+                                                                            wellbeingByDay[day].mood.push(moodVal);
+                                                                        }
+                                                                        // Parse and validate energy (average per day)
+                                                                        const energyVal = parseInt(log.energy);
+                                                                        if (log.energy !== undefined && log.energy !== null && log.energy !== '' && !isNaN(energyVal) && energyVal > 0) {
+                                                                            wellbeingByDay[day].energy.push(energyVal);
+                                                                        }
+                                                                    });
+
+                                                                    // Calculate daily aggregates: sum sleep, average mood/energy per day
+                                                                    const dailyAggregates = Object.values(wellbeingByDay).map(day => ({
+                                                                        sleep: day.sleep.length > 0 ? day.sleep.reduce((a, b) => a + b, 0) : null,
+                                                                        mood: day.mood.length > 0 ? day.mood.reduce((a, b) => a + b, 0) / day.mood.length : null,
+                                                                        energy: day.energy.length > 0 ? day.energy.reduce((a, b) => a + b, 0) / day.energy.length : null
+                                                                    }));
+
+                                                                    // Sleep analysis (average of daily totals)
+                                                                    const daysWithSleep = dailyAggregates.filter(d => d.sleep !== null);
+                                                                    if (daysWithSleep.length > 0) {
+                                                                        const avgSleep = daysWithSleep.reduce((sum, d) => sum + d.sleep, 0) / daysWithSleep.length;
                                                                         if (avgSleep >= 7) {
                                                                             insights.push(`😴 Dormiste em média ${avgSleep.toFixed(1)}h por noite. Excelente! O sono adequado (7-9h) melhora a tomada de decisões e reduz impulsividade.`);
                                                                         } else if (avgSleep >= 6) {
@@ -1788,10 +1835,10 @@
                                                                         }
                                                                     }
 
-                                                                    // Mood analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.mood && !isNaN(w.mood)).length > 0) {
-                                                                        const logsWithMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(w.mood));
-                                                                        const avgMood = logsWithMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / logsWithMood.length;
+                                                                    // Mood analysis (average of daily averages)
+                                                                    const daysWithMood = dailyAggregates.filter(d => d.mood !== null);
+                                                                    if (daysWithMood.length > 0) {
+                                                                        const avgMood = daysWithMood.reduce((sum, d) => sum + d.mood, 0) / daysWithMood.length;
                                                                         if (avgMood >= 7) {
                                                                             insights.push(`😊 Humor médio: ${avgMood.toFixed(1)}/10. Estado emocional positivo! Continua as práticas que te fazem bem.`);
                                                                         } else if (avgMood >= 5) {
@@ -1801,10 +1848,10 @@
                                                                         }
                                                                     }
 
-                                                                    // Energy analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.energy).length > 0) {
-                                                                        const logsWithEnergy = filteredWellbeingLogs.filter(w => w.energy);
-                                                                        const avgEnergy = logsWithEnergy.reduce((sum, w) => sum + w.energy, 0) / logsWithEnergy.length;
+                                                                    // Energy analysis (average of daily averages)
+                                                                    const daysWithEnergy = dailyAggregates.filter(d => d.energy !== null);
+                                                                    if (daysWithEnergy.length > 0) {
+                                                                        const avgEnergy = daysWithEnergy.reduce((sum, d) => sum + d.energy, 0) / daysWithEnergy.length;
                                                                         if (avgEnergy >= 7) {
                                                                             insights.push(`⚡ Energia média: ${avgEnergy.toFixed(1)}/10. Boa vitalidade!`);
                                                                         } else if (avgEnergy < 5) {
@@ -2344,17 +2391,51 @@
                                         if (patternView === 'others') {
                                             if (filteredWellbeingLogs.length === 0) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos de bem-estar neste período</div>);
 
-                                            // Sleep patterns
-                                            const avgSleep = filteredWellbeingLogs.reduce((sum, w) => sum + w.sleep, 0) / filteredWellbeingLogs.length;
-                                            const sleepTrend = filteredWellbeingLogs.slice(0, 7).reduce((sum, w) => sum + w.sleep, 0) / Math.min(7, filteredWellbeingLogs.length);
+                                            // Group by day and aggregate
+                                            const wellbeingByDay = {};
+                                            filteredWellbeingLogs.forEach(log => {
+                                                const day = log.date;
+                                                if (!wellbeingByDay[day]) {
+                                                    wellbeingByDay[day] = { sleep: [], mood: [], energy: [] };
+                                                }
+                                                // Parse and validate sleep (sum per day)
+                                                const sleepVal = parseFloat(log.sleep);
+                                                if (log.sleep !== undefined && log.sleep !== null && log.sleep !== '' && !isNaN(sleepVal) && sleepVal > 0) {
+                                                    wellbeingByDay[day].sleep.push(sleepVal);
+                                                }
+                                                // Parse and validate mood (average per day)
+                                                const moodVal = parseInt(log.mood);
+                                                if (log.mood !== undefined && log.mood !== null && log.mood !== '' && !isNaN(moodVal) && moodVal > 0) {
+                                                    wellbeingByDay[day].mood.push(moodVal);
+                                                }
+                                                // Parse and validate energy (average per day)
+                                                const energyVal = parseInt(log.energy);
+                                                if (log.energy !== undefined && log.energy !== null && log.energy !== '' && !isNaN(energyVal) && energyVal > 0) {
+                                                    wellbeingByDay[day].energy.push(energyVal);
+                                                }
+                                            });
 
-                                            // Mood patterns
-                                            const avgMood = filteredWellbeingLogs.reduce((sum, w) => sum + w.mood, 0) / filteredWellbeingLogs.length;
-                                            const moodTrend = filteredWellbeingLogs.slice(0, 7).reduce((sum, w) => sum + w.mood, 0) / Math.min(7, filteredWellbeingLogs.length);
+                                            const dailyValues = Object.values(wellbeingByDay).map(day => ({
+                                                sleep: day.sleep.length > 0 ? day.sleep.reduce((a, b) => a + b, 0) : 0,
+                                                mood: day.mood.length > 0 ? day.mood.reduce((a, b) => a + b, 0) / day.mood.length : 0,
+                                                energy: day.energy.length > 0 ? day.energy.reduce((a, b) => a + b, 0) / day.energy.length : 0
+                                            }));
 
-                                            // Energy patterns
-                                            const logsWithEnergy = filteredWellbeingLogs.filter(w => w.energy);
-                                            const avgEnergy = logsWithEnergy.length > 0 ? logsWithEnergy.reduce((sum, w) => sum + w.energy, 0) / logsWithEnergy.length : 0;
+                                            // Sleep patterns (average of daily sums)
+                                            const daysWithSleep = dailyValues.filter(d => d.sleep > 0);
+                                            const avgSleep = daysWithSleep.length > 0 ? daysWithSleep.reduce((sum, d) => sum + d.sleep, 0) / daysWithSleep.length : 0;
+                                            const recentDays = dailyValues.slice(-7).filter(d => d.sleep > 0);
+                                            const sleepTrend = recentDays.length > 0 ? recentDays.reduce((sum, d) => sum + d.sleep, 0) / recentDays.length : 0;
+
+                                            // Mood patterns (average of daily averages)
+                                            const daysWithMood = dailyValues.filter(d => d.mood > 0);
+                                            const avgMood = daysWithMood.length > 0 ? daysWithMood.reduce((sum, d) => sum + d.mood, 0) / daysWithMood.length : 0;
+                                            const recentDaysM = dailyValues.slice(-7).filter(d => d.mood > 0);
+                                            const moodTrend = recentDaysM.length > 0 ? recentDaysM.reduce((sum, d) => sum + d.mood, 0) / recentDaysM.length : 0;
+
+                                            // Energy patterns (average of daily averages)
+                                            const daysWithEnergy = dailyValues.filter(d => d.energy > 0);
+                                            const avgEnergy = daysWithEnergy.length > 0 ? daysWithEnergy.reduce((sum, d) => sum + d.energy, 0) / daysWithEnergy.length : 0;
 
                                             // Self-care patterns
                                             const selfCareData = { water: 0, rest: 0, social: 0, food: 0 };
@@ -2379,24 +2460,31 @@
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{avgSleep.toFixed(1)}h</div>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{(isNaN(avgSleep) || avgSleep === 0) ? '-' : avgSleep.toFixed(1) + 'h'}</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
-                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{sleepTrend.toFixed(1)}h</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{(isNaN(sleepTrend) || sleepTrend === 0) ? '-' : sleepTrend.toFixed(1) + 'h'}</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                            {filteredWellbeingLogs.slice(0, 14).map(w => (
-                                                                <div key={w.id} className="flex items-center gap-2">
-                                                                    <div className="text-xs text-gray-600 w-20">{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
-                                                                    <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                                                                        <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (w.sleep >= 7 ? 'bg-green-500' : w.sleep >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: Math.min(100, (w.sleep / 12) * 100) + '%'}}>
-                                                                            {w.sleep}h
+                                                            {Object.entries(wellbeingByDay)
+                                                                .filter(([date, day]) => day.sleep.length > 0)
+                                                                .sort((a, b) => b[0].localeCompare(a[0]))
+                                                                .slice(0, 14)
+                                                                .map(([date, day]) => {
+                                                                    const totalSleep = day.sleep.reduce((a, b) => a + b, 0);
+                                                                    return (
+                                                                        <div key={date} className="flex items-center gap-2">
+                                                                            <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{new Date(date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</div>
+                                                                            <div className={'flex-1 rounded-full h-4 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (totalSleep >= 7 ? 'bg-green-500' : totalSleep >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: Math.min(100, (totalSleep / 12) * 100) + '%'}}>
+                                                                                    {totalSleep.toFixed(1)}h
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                                    );
+                                                                })}
                                                         </div>
                                                     </div>
 
@@ -2443,46 +2531,60 @@
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div className={(darkMode ? 'bg-pink-900/30 border border-pink-700/50' : 'bg-pink-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-3xl font-bold'}>{avgMood.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-3xl font-bold'}>{(isNaN(avgMood) || avgMood === 0) ? '-' : avgMood.toFixed(1) + '/10'}</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
-                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{moodTrend.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{(isNaN(moodTrend) || moodTrend === 0) ? '-' : moodTrend.toFixed(1) + '/10'}</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                            {filteredWellbeingLogs.slice(0, 14).map(w => (
-                                                                <div key={w.id} className="flex items-center gap-2">
-                                                                    <div className="text-xs text-gray-600 w-20">{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
-                                                                    <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                                                                        <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (w.mood >= 7 ? 'bg-green-500' : w.mood >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: (w.mood * 10) + '%'}}>
-                                                                            {w.mood}/10
+                                                            {Object.entries(wellbeingByDay)
+                                                                .filter(([date, day]) => day.mood.length > 0)
+                                                                .sort((a, b) => b[0].localeCompare(a[0]))
+                                                                .slice(0, 14)
+                                                                .map(([date, day]) => {
+                                                                    const avgDailyMood = day.mood.reduce((a, b) => a + b, 0) / day.mood.length;
+                                                                    return (
+                                                                        <div key={date} className="flex items-center gap-2">
+                                                                            <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{new Date(date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</div>
+                                                                            <div className={'flex-1 rounded-full h-4 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (avgDailyMood >= 7 ? 'bg-green-500' : avgDailyMood >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: (avgDailyMood * 10) + '%'}}>
+                                                                                    {avgDailyMood.toFixed(1)}/10
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                                    );
+                                                                })}
                                                         </div>
                                                     </div>
 
                                                     {/* Energy patterns */}
-                                                    {logsWithEnergy.length > 0 && (
+                                                    {daysWithEnergy.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                             <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>⚡ Padrões de Energia</h3>
                                                             <div className={(darkMode ? 'bg-yellow-900/30 border border-yellow-700/50' : 'bg-yellow-50') + ' rounded-lg p-4 text-center mb-4'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-3xl font-bold'}>{avgEnergy.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-3xl font-bold'}>{(isNaN(avgEnergy) || avgEnergy === 0) ? '-' : avgEnergy.toFixed(1) + '/10'}</div>
                                                             </div>
                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                                {logsWithEnergy.slice(0, 14).map(w => (
-                                                                    <div key={w.id} className="flex items-center gap-2">
-                                                                        <div className="text-xs text-gray-600 w-20">{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit'})}</div>
-                                                                        <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                                                                            <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (w.energy >= 7 ? 'bg-green-500' : w.energy >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: (w.energy * 10) + '%'}}>
-                                                                                {w.energy}/10
+                                                                {Object.entries(wellbeingByDay)
+                                                                    .filter(([date, day]) => day.energy.length > 0)
+                                                                    .sort((a, b) => b[0].localeCompare(a[0]))
+                                                                    .slice(0, 14)
+                                                                    .map(([date, day]) => {
+                                                                        const avgDailyEnergy = day.energy.reduce((a, b) => a + b, 0) / day.energy.length;
+                                                                        return (
+                                                                            <div key={date} className="flex items-center gap-2">
+                                                                                <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{new Date(date).toLocaleDateString('pt-PT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</div>
+                                                                                <div className={'flex-1 rounded-full h-4 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                    <div className={'h-full flex items-center justify-end pr-2 text-white text-xs font-medium ' + (avgDailyEnergy >= 7 ? 'bg-green-500' : avgDailyEnergy >= 5 ? 'bg-yellow-500' : 'bg-red-500')} style={{width: (avgDailyEnergy * 10) + '%'}}>
+                                                                                        {avgDailyEnergy.toFixed(1)}/10
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                                                        );
+                                                                    })}
                                                             </div>
                                                         </div>
                                                     )}
