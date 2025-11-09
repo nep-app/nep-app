@@ -802,10 +802,15 @@
                                         </p>
                                     </div>
 
-                                    {streaks.current > 0 && (
+                                    {streaks.current > 0 ? (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
                                             <span>🔥</span>
                                             <span>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                        </div>
+                                    ) : streaks.max > 0 && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
+                                            <span>💪</span>
+                                            <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
                                         </div>
                                     )}
 
