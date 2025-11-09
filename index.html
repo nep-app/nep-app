@@ -3211,9 +3211,35 @@
                                         <button onClick={() => setShowEditConsumptionModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
                                     </div>
                                     <div className="space-y-4">
-                                        <div className="bg-gray-50 p-3 rounded-lg">
-                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Data e Hora</div>
-                                            <div className="text-lg font-medium text-gray-800">{new Date(editingConsumption.timestamp).toLocaleDateString('pt-PT')} - {new Date(editingConsumption.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Data</label>
+                                                <input
+                                                    type="date"
+                                                    value={editingConsumption.timestamp.split('T')[0]}
+                                                    onChange={(e) => {
+                                                        const currentDate = new Date(editingConsumption.timestamp);
+                                                        const newDate = new Date(e.target.value);
+                                                        newDate.setHours(currentDate.getHours(), currentDate.getMinutes(), 0, 0);
+                                                        setEditingConsumption({...editingConsumption, timestamp: newDate.toISOString(), date: e.target.value});
+                                                    }}
+                                                    className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-400'}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Hora</label>
+                                                <input
+                                                    type="time"
+                                                    value={new Date(editingConsumption.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
+                                                    onChange={(e) => {
+                                                        const currentDate = new Date(editingConsumption.timestamp);
+                                                        const [hours, minutes] = e.target.value.split(':');
+                                                        currentDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+                                                        setEditingConsumption({...editingConsumption, timestamp: currentDate.toISOString()});
+                                                    }}
+                                                    className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-400'}
+                                                />
+                                            </div>
                                         </div>
                                         <div>
                                             <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas</label>
