@@ -138,6 +138,12 @@
             const [editingConsumption, setEditingConsumption] = useState(null);
             const [patternView, setPatternView] = useState('comparisons');
 
+            // Pagination states
+            const [consumptionsToShow, setConsumptionsToShow] = useState(20);
+            const [reflectionsToShow, setReflectionsToShow] = useState(10);
+            const [wellbeingToShow, setWellbeingToShow] = useState(14);
+            const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
+
             // Form states
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
@@ -1174,7 +1180,7 @@
                                         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
                                             <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>Consumos Recentes</h3>
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                {consumptions.slice(0, 10).map(c => (
+                                                {consumptions.slice(0, consumptionsToShow).map(c => (
                                                     <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
                                                         <div className="flex-1">
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
@@ -1187,6 +1193,11 @@
                                                     </div>
                                                 ))}
                                             </div>
+                                            {consumptions.length > consumptionsToShow && (
+                                                <button onClick={() => setConsumptionsToShow(prev => prev + 20)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                    Ver mais ({consumptions.length - consumptionsToShow} restantes)
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -2629,7 +2640,7 @@
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões DBT ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
-                                                            {filteredReflections.map(r => (
+                                                            {filteredReflections.slice(0, reflectionsToShow).map(r => (
                                                                 <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{new Date(r.timestamp || r.date).toLocaleDateString('pt-PT')} {r.timestamp && new Date(r.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
@@ -2640,6 +2651,11 @@
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        {filteredReflections.length > reflectionsToShow && (
+                                                            <button onClick={() => setReflectionsToShow(prev => prev + 10)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                                Ver mais ({filteredReflections.length - reflectionsToShow} restantes)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -2647,7 +2663,7 @@
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Heart className={'w-4 h-4 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')} /> Bem-Estar ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
-                                                            {filteredWellbeing.map(w => (
+                                                            {filteredWellbeing.slice(0, wellbeingToShow).map(w => (
                                                                 <div key={w.id} className={(darkMode ? 'bg-blue-900/30 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT')}</div>
@@ -2670,6 +2686,11 @@
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        {filteredWellbeing.length > wellbeingToShow && (
+                                                            <button onClick={() => setWellbeingToShow(prev => prev + 14)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                                Ver mais ({filteredWellbeing.length - wellbeingToShow} restantes)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
 
