@@ -145,6 +145,16 @@
             const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
+            // Toast notification system
+            const [toasts, setToasts] = useState([]);
+            const showToast = (message, type = 'success') => {
+                const id = genId();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== id));
+                }, 3000);
+            };
+
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
             const getCurrentCycleIndex = () => {
                 if (cycles.length === 0) return 0;
@@ -185,7 +195,19 @@
 
             const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return; const { doc, setDoc, collection } = window.firebaseModules; await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
 
-            const markConsumption = async () => { const now = new Date(); const currentCycle = getCurrentCycleId(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
+            const markConsumption = async () => {
+                try {
+                    const now = new Date();
+                    const currentCycle = getCurrentCycleId();
+                    const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
+                    setConsumptions(prev => [item, ...prev]);
+                    await saveToFirebase('consumptions', item);
+                    showToast('✓ Consumo registado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar consumo', 'error');
+                    console.error(error);
+                }
+            };
 
             const deleteItem = async (collectionName, id) => {
                 if (!user || !db) return;
@@ -208,14 +230,29 @@
                 const { doc, deleteDoc } = window.firebaseModules;
                 try {
                     await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id));
+                    showToast('✓ Item apagado', 'success');
                 } catch (error) {
+                    showToast('✗ Erro ao apagar item', 'error');
                     console.error('Erro ao apagar:', error);
                 }
             };
 
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
-            const saveEditedConsumption = async () => { if (!editingConsumption || !user || !db) return; const { doc, setDoc } = window.firebaseModules; try { await setDoc(doc(db, `users/${user.uid}/consumptions`, editingConsumption.id), editingConsumption); setConsumptions(prev => prev.map(c => c.id === editingConsumption.id ? editingConsumption : c)); setShowEditConsumptionModal(false); setEditingConsumption(null); } catch (error) { console.error('Erro ao editar:', error); } };
+            const saveEditedConsumption = async () => {
+                if (!editingConsumption || !user || !db) return;
+                const { doc, setDoc } = window.firebaseModules;
+                try {
+                    await setDoc(doc(db, `users/${user.uid}/consumptions`, editingConsumption.id), editingConsumption);
+                    setConsumptions(prev => prev.map(c => c.id === editingConsumption.id ? editingConsumption : c));
+                    setShowEditConsumptionModal(false);
+                    setEditingConsumption(null);
+                    showToast('✓ Consumo editado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao editar consumo', 'error');
+                    console.error('Erro ao editar:', error);
+                }
+            };
 
             const getCurrentCycleId = () => {
                 if (cycles.length === 0) return null;
@@ -223,47 +260,77 @@
             };
 
             const submitDailyLog = async () => {
-                const currentCycle = getCurrentCycleId();
-                const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
-                setDailyLogs(prev => [item, ...prev]);
-                await saveToFirebase('dailyLogs', item);
-                setDailyForm({ mg: 30, notes: '' });
-                setShowDailyLogModal(false);
+                try {
+                    const currentCycle = getCurrentCycleId();
+                    const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    setDailyLogs(prev => [item, ...prev]);
+                    await saveToFirebase('dailyLogs', item);
+                    setDailyForm({ mg: 30, notes: '' });
+                    setShowDailyLogModal(false);
+                    showToast('✓ Registo diário guardado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar registo', 'error');
+                    console.error(error);
+                }
             };
 
             const submitWellbeing = async () => {
-                const currentCycle = getCurrentCycleId();
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
-                setWellbeingLogs(prev => [item, ...prev]);
-                await saveToFirebase('wellbeingLogs', item);
-                setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
-                setShowWellbeingModal(false);
+                try {
+                    const currentCycle = getCurrentCycleId();
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
+                    setWellbeingLogs(prev => [item, ...prev]);
+                    await saveToFirebase('wellbeingLogs', item);
+                    setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
+                    setShowWellbeingModal(false);
+                    showToast('✓ Bem-estar guardado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar bem-estar', 'error');
+                    console.error(error);
+                }
             };
 
             const submitReflection = async () => {
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
-                setReflections(prev => [item, ...prev]);
-                await saveToFirebase('reflections', item);
-                setReflectionAnswer('');
-                setShowReflectionModal(false);
+                try {
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
+                    setReflections(prev => [item, ...prev]);
+                    await saveToFirebase('reflections', item);
+                    setReflectionAnswer('');
+                    setShowReflectionModal(false);
+                    showToast('✓ Reflexão guardada', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar reflexão', 'error');
+                    console.error(error);
+                }
             };
 
             const submitCycle = async () => {
-                const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
-                setCycles(prev => [item, ...prev]);
-                await saveToFirebase('cycles', item);
-                setCycleForm({ bedtime: '', triggers: [], notes: '' });
-                setShowCycleModal(false);
+                try {
+                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
+                    setCycles(prev => [item, ...prev]);
+                    await saveToFirebase('cycles', item);
+                    setCycleForm({ bedtime: '', triggers: [], notes: '' });
+                    setShowCycleModal(false);
+                    showToast('✓ Novo ciclo criado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao criar ciclo', 'error');
+                    console.error(error);
+                }
             };
 
             const submitGoal = async () => {
-                const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
-                const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
-                setGoals(prev => [...prev, item]);
-                await saveToFirebase('goals', item);
-                setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
-                setShowGoalModal(false);
+                try {
+                    const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
+                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                    setGoals(prev => [...prev, item]);
+                    await saveToFirebase('goals', item);
+                    setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
+                    setShowGoalModal(false);
+                    showToast('✓ Meta criada', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao criar meta', 'error');
+                    console.error(error);
+                }
             };
 
             // ALTERAÇÃO 1: Média de intervalos (últimos 20 consumos)
@@ -2958,6 +3025,15 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Toast Notifications */}
+                    <div className="fixed bottom-20 left-0 right-0 flex flex-col items-center gap-2 px-4 pointer-events-none z-50">
+                        {toasts.map(toast => (
+                            <div key={toast.id} className={'px-4 py-3 rounded-lg shadow-lg font-medium text-sm pointer-events-auto transform transition-all ' + (toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white')}>
+                                {toast.message}
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
