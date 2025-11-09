@@ -2460,11 +2460,11 @@
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{avgSleep.toFixed(1)}h</div>
+                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{(isNaN(avgSleep) || avgSleep === 0) ? '-' : avgSleep.toFixed(1) + 'h'}</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
-                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{sleepTrend.toFixed(1)}h</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{(isNaN(sleepTrend) || sleepTrend === 0) ? '-' : sleepTrend.toFixed(1) + 'h'}</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -2531,11 +2531,11 @@
                                                         <div className="grid grid-cols-2 gap-4 mb-4">
                                                             <div className={(darkMode ? 'bg-pink-900/30 border border-pink-700/50' : 'bg-pink-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-3xl font-bold'}>{avgMood.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-3xl font-bold'}>{(isNaN(avgMood) || avgMood === 0) ? '-' : avgMood.toFixed(1) + '/10'}</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-4 text-center'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Últimos 7 dias</div>
-                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{moodTrend.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-3xl font-bold'}>{(isNaN(moodTrend) || moodTrend === 0) ? '-' : moodTrend.toFixed(1) + '/10'}</div>
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -2565,7 +2565,7 @@
                                                             <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>⚡ Padrões de Energia</h3>
                                                             <div className={(darkMode ? 'bg-yellow-900/30 border border-yellow-700/50' : 'bg-yellow-50') + ' rounded-lg p-4 text-center mb-4'}>
                                                                 <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média Geral</div>
-                                                                <div className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-3xl font-bold'}>{avgEnergy.toFixed(1)}/10</div>
+                                                                <div className={(darkMode ? 'text-yellow-400' : 'text-yellow-600') + ' text-3xl font-bold'}>{(isNaN(avgEnergy) || avgEnergy === 0) ? '-' : avgEnergy.toFixed(1) + '/10'}</div>
                                                             </div>
                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                 {Object.entries(wellbeingByDay)
