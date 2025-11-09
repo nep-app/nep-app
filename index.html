@@ -96,6 +96,8 @@
         const ChevronRight = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>);
 
         function HarmReductionTracker() {
+            // ===== 2. STATE MANAGEMENT =====
+            // 2.1 Firebase & Auth State
             const [firebaseInitialized, setFirebaseInitialized] = useState(false);
             const [db, setDb] = useState(null);
             const [auth, setAuth] = useState(null);
@@ -104,7 +106,11 @@
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [authError, setAuthError] = useState('');
+
+            // 2.2 UI Navigation State
             const [currentView, setCurrentView] = useState('home');
+
+            // 2.3 Data State (from Firebase)
             const [consumptions, setConsumptions] = useState([]);
             const [dailyLogs, setDailyLogs] = useState([]);
             const [wellbeingLogs, setWellbeingLogs] = useState([]);
@@ -138,14 +144,111 @@
             const [editingConsumption, setEditingConsumption] = useState(null);
             const [patternView, setPatternView] = useState('comparisons');
 
-            // Form states
+            // 2.4 Pagination States
+            const [consumptionsToShow, setConsumptionsToShow] = useState(20);
+            const [reflectionsToShow, setReflectionsToShow] = useState(10);
+            const [wellbeingToShow, setWellbeingToShow] = useState(14);
+            const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
+
+            // 2.5 Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
-            // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
+            // ===== 3. TOAST & NOTIFICATION SYSTEM =====
+            const [toasts, setToasts] = useState([]);
+            const showToast = (message, type = 'success') => {
+                const id = genId();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== id));
+                }, 3000);
+            };
+
+            // Reminder/notification system
+            const [reminderDismissed, setReminderDismissed] = useState(() => {
+                const dismissed = localStorage.getItem('reminderDismissed');
+                return dismissed ? JSON.parse(dismissed) : {};
+            });
+
+            const dismissReminder = (type) => {
+                const today = getTodayKey();
+                const updated = { ...reminderDismissed, [type]: today };
+                setReminderDismissed(updated);
+                localStorage.setItem('reminderDismissed', JSON.stringify(updated));
+            };
+
+            const shouldShowReminder = (type) => {
+                const today = getTodayKey();
+                return reminderDismissed[type] !== today;
+            };
+
+            // Browser notification support
+            const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+                return localStorage.getItem('notificationsEnabled') === 'true';
+            });
+
+            const requestNotificationPermission = async () => {
+                if (!('Notification' in window)) {
+                    showToast('✗ Notificações não suportadas no teu browser', 'error');
+                    return;
+                }
+
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        setNotificationsEnabled(true);
+                        localStorage.setItem('notificationsEnabled', 'true');
+                        showToast('✓ Notificações ativadas', 'success');
+                    } else {
+                        showToast('✗ Permissão de notificações negada', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error requesting notification permission:', error);
+                }
+            };
+
+            const showBrowserNotification = (title, body) => {
+                if (notificationsEnabled && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body,
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico'
+                    });
+                }
+            };
+
+            // Check for reminders every minute
+            useEffect(() => {
+                if (!user) return;
+
+                const checkReminders = () => {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const today = getTodayKey();
+
+                    // Only show reminders between 10h and 22h
+                    if (hour < 10 || hour > 22) return;
+
+                    // Check if user hasn't logged wellbeing today
+                    const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+                    if (!hasWellbeingToday && shouldShowReminder('wellbeing') && hour >= 18) {
+                        showToast('💭 Lembrete: Ainda não registaste bem-estar hoje', 'info');
+                        showBrowserNotification('Lembrete - NEP', 'Ainda não registaste bem-estar hoje');
+                        dismissReminder('wellbeing');
+                    }
+                };
+
+                // Check immediately and then every hour
+                checkReminders();
+                const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
+
+                return () => clearInterval(interval);
+            }, [user, wellbeingLogs, notificationsEnabled]);
+
+            // ===== 4. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
                 if (cycles.length === 0) return 0;
                 return cycles.length - 1;
@@ -185,7 +288,19 @@
 
             const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return; const { doc, setDoc, collection } = window.firebaseModules; await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
 
-            const markConsumption = async () => { const now = new Date(); const currentCycle = getCurrentCycleId(); const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' }; setConsumptions(prev => [item, ...prev]); await saveToFirebase('consumptions', item); };
+            const markConsumption = async () => {
+                try {
+                    const now = new Date();
+                    const currentCycle = getCurrentCycleId();
+                    const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
+                    setConsumptions(prev => [item, ...prev]);
+                    await saveToFirebase('consumptions', item);
+                    showToast('✓ Consumo registado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar consumo', 'error');
+                    console.error(error);
+                }
+            };
 
             const deleteItem = async (collectionName, id) => {
                 if (!user || !db) return;
@@ -208,14 +323,29 @@
                 const { doc, deleteDoc } = window.firebaseModules;
                 try {
                     await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id));
+                    showToast('✓ Item apagado', 'success');
                 } catch (error) {
+                    showToast('✗ Erro ao apagar item', 'error');
                     console.error('Erro ao apagar:', error);
                 }
             };
 
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
-            const saveEditedConsumption = async () => { if (!editingConsumption || !user || !db) return; const { doc, setDoc } = window.firebaseModules; try { await setDoc(doc(db, `users/${user.uid}/consumptions`, editingConsumption.id), editingConsumption); setConsumptions(prev => prev.map(c => c.id === editingConsumption.id ? editingConsumption : c)); setShowEditConsumptionModal(false); setEditingConsumption(null); } catch (error) { console.error('Erro ao editar:', error); } };
+            const saveEditedConsumption = async () => {
+                if (!editingConsumption || !user || !db) return;
+                const { doc, setDoc } = window.firebaseModules;
+                try {
+                    await setDoc(doc(db, `users/${user.uid}/consumptions`, editingConsumption.id), editingConsumption);
+                    setConsumptions(prev => prev.map(c => c.id === editingConsumption.id ? editingConsumption : c));
+                    setShowEditConsumptionModal(false);
+                    setEditingConsumption(null);
+                    showToast('✓ Consumo editado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao editar consumo', 'error');
+                    console.error('Erro ao editar:', error);
+                }
+            };
 
             const getCurrentCycleId = () => {
                 if (cycles.length === 0) return null;
@@ -223,50 +353,80 @@
             };
 
             const submitDailyLog = async () => {
-                const currentCycle = getCurrentCycleId();
-                const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
-                setDailyLogs(prev => [item, ...prev]);
-                await saveToFirebase('dailyLogs', item);
-                setDailyForm({ mg: 30, notes: '' });
-                setShowDailyLogModal(false);
+                try {
+                    const currentCycle = getCurrentCycleId();
+                    const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    setDailyLogs(prev => [item, ...prev]);
+                    await saveToFirebase('dailyLogs', item);
+                    setDailyForm({ mg: 30, notes: '' });
+                    setShowDailyLogModal(false);
+                    showToast('✓ Registo diário guardado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar registo', 'error');
+                    console.error(error);
+                }
             };
 
             const submitWellbeing = async () => {
-                const currentCycle = getCurrentCycleId();
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
-                setWellbeingLogs(prev => [item, ...prev]);
-                await saveToFirebase('wellbeingLogs', item);
-                setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
-                setShowWellbeingModal(false);
+                try {
+                    const currentCycle = getCurrentCycleId();
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, notes: wellbeingForm.notes };
+                    setWellbeingLogs(prev => [item, ...prev]);
+                    await saveToFirebase('wellbeingLogs', item);
+                    setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, notes: '' });
+                    setShowWellbeingModal(false);
+                    showToast('✓ Bem-estar guardado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar bem-estar', 'error');
+                    console.error(error);
+                }
             };
 
             const submitReflection = async () => {
-                const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
-                setReflections(prev => [item, ...prev]);
-                await saveToFirebase('reflections', item);
-                setReflectionAnswer('');
-                setShowReflectionModal(false);
+                try {
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
+                    setReflections(prev => [item, ...prev]);
+                    await saveToFirebase('reflections', item);
+                    setReflectionAnswer('');
+                    setShowReflectionModal(false);
+                    showToast('✓ Reflexão guardada', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar reflexão', 'error');
+                    console.error(error);
+                }
             };
 
             const submitCycle = async () => {
-                const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
-                setCycles(prev => [item, ...prev]);
-                await saveToFirebase('cycles', item);
-                setCycleForm({ bedtime: '', triggers: [], notes: '' });
-                setShowCycleModal(false);
+                try {
+                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
+                    setCycles(prev => [item, ...prev]);
+                    await saveToFirebase('cycles', item);
+                    setCycleForm({ bedtime: '', triggers: [], notes: '' });
+                    setShowCycleModal(false);
+                    showToast('✓ Novo ciclo criado', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao criar ciclo', 'error');
+                    console.error(error);
+                }
             };
 
             const submitGoal = async () => {
-                const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
-                const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
-                setGoals(prev => [...prev, item]);
-                await saveToFirebase('goals', item);
-                setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
-                setShowGoalModal(false);
+                try {
+                    const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
+                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                    setGoals(prev => [...prev, item]);
+                    await saveToFirebase('goals', item);
+                    setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
+                    setShowGoalModal(false);
+                    showToast('✓ Meta criada', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao criar meta', 'error');
+                    console.error(error);
+                }
             };
 
-            // ALTERAÇÃO 1: Média de intervalos (últimos 20 consumos)
+            // ===== 5. DATA PROCESSING & ANALYTICS =====
             const getIntervalStats = () => {
                 if (consumptions.length < 2) return null;
                 const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
@@ -569,7 +729,7 @@
                 return { current: currentStreak, max: maxStreak };
             };
 
-            // Badge/Achievement system
+            // ===== 7. BADGES & ACHIEVEMENTS =====
             const getBadges = () => {
                 const badges = [];
 
@@ -671,6 +831,7 @@
                     isAfterCycleStart: currentCycle ? c.timestamp >= currentCycle.timestamp : false
                 }))
             });
+            // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = getLast7Days();
             const streaks = getStreaks();
             const badges = getBadges();
@@ -1026,7 +1187,7 @@
                                         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
                                             <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>Consumos Recentes</h3>
                                             <div className="space-y-2 max-h-64 overflow-y-auto">
-                                                {consumptions.slice(0, 10).map(c => (
+                                                {consumptions.slice(0, consumptionsToShow).map(c => (
                                                     <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
                                                         <div className="flex-1">
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
@@ -1039,6 +1200,11 @@
                                                     </div>
                                                 ))}
                                             </div>
+                                            {consumptions.length > consumptionsToShow && (
+                                                <button onClick={() => setConsumptionsToShow(prev => prev + 20)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                    Ver mais ({consumptions.length - consumptionsToShow} restantes)
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -2481,7 +2647,7 @@
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões DBT ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
-                                                            {filteredReflections.map(r => (
+                                                            {filteredReflections.slice(0, reflectionsToShow).map(r => (
                                                                 <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{new Date(r.timestamp || r.date).toLocaleDateString('pt-PT')} {r.timestamp && new Date(r.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</div>
@@ -2492,6 +2658,11 @@
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        {filteredReflections.length > reflectionsToShow && (
+                                                            <button onClick={() => setReflectionsToShow(prev => prev + 10)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                                Ver mais ({filteredReflections.length - reflectionsToShow} restantes)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -2499,7 +2670,7 @@
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Heart className={'w-4 h-4 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')} /> Bem-Estar ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
-                                                            {filteredWellbeing.map(w => (
+                                                            {filteredWellbeing.slice(0, wellbeingToShow).map(w => (
                                                                 <div key={w.id} className={(darkMode ? 'bg-blue-900/30 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>{new Date(w.timestamp || w.date).toLocaleDateString('pt-PT')}</div>
@@ -2522,6 +2693,11 @@
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        {filteredWellbeing.length > wellbeingToShow && (
+                                                            <button onClick={() => setWellbeingToShow(prev => prev + 14)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                                Ver mais ({filteredWellbeing.length - wellbeingToShow} restantes)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -2702,6 +2878,21 @@
                                     <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Recursos</h2>
                                     <div className="bg-red-50 rounded-xl p-6 border border-red-200"><h3 className="font-semibold text-red-800 mb-3">🚨 Emergência</h3><div className="space-y-2 text-red-700"><p><strong>INEM:</strong> 112</p><p><strong>Linha Vida:</strong> 1414</p></div></div>
                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}><h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>📞 Linhas de Apoio</h3><div className={'space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}><p><strong>SOS Droga:</strong> 1414 (24h)</p><p><strong>SNS 24:</strong> 808 24 24 24</p></div></div>
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>🔔 Notificações & Lembretes</h3>
+                                        <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                            <p className="text-sm">Recebe lembretes para registar bem-estar diariamente (às 18h).</p>
+                                            {notificationsEnabled ? (
+                                                <div className="flex items-center gap-2 text-green-600">
+                                                    <span>✓ Notificações ativadas</span>
+                                                </div>
+                                            ) : (
+                                                <button onClick={requestNotificationPermission} className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium">
+                                                    Ativar Notificações
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                     {educationalResources.map((resource, i) => (
                                         <div key={i} className="bg-purple-50 rounded-xl p-4 border border-purple-200"><h4 className="font-medium text-purple-800 mb-2">{resource.title}</h4><p className="text-sm text-purple-700">{resource.content}</p></div>
                                     ))}
@@ -2958,6 +3149,15 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Toast Notifications */}
+                    <div className="fixed bottom-20 left-0 right-0 flex flex-col items-center gap-2 px-4 pointer-events-none z-50">
+                        {toasts.map(toast => (
+                            <div key={toast.id} className={'px-4 py-3 rounded-lg shadow-lg font-medium text-sm pointer-events-auto transform transition-all ' + (toast.type === 'success' ? 'bg-green-500 text-white' : toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white')}>
+                                {toast.message}
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
