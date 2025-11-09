@@ -1775,10 +1775,29 @@
                                                                 {(() => {
                                                                     const insights = [];
 
-                                                                    // Sleep analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.sleep && !isNaN(w.sleep)).length > 0) {
-                                                                        const logsWithSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(w.sleep));
-                                                                        const avgSleep = logsWithSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / logsWithSleep.length;
+                                                                    // Group wellbeing logs by day first
+                                                                    const wellbeingByDay = {};
+                                                                    filteredWellbeingLogs.forEach(log => {
+                                                                        const day = log.date;
+                                                                        if (!wellbeingByDay[day]) {
+                                                                            wellbeingByDay[day] = { sleep: [], mood: [], energy: [] };
+                                                                        }
+                                                                        if (log.sleep && !isNaN(log.sleep)) wellbeingByDay[day].sleep.push(parseFloat(log.sleep));
+                                                                        if (log.mood && !isNaN(log.mood)) wellbeingByDay[day].mood.push(parseInt(log.mood));
+                                                                        if (log.energy && !isNaN(log.energy)) wellbeingByDay[day].energy.push(parseInt(log.energy));
+                                                                    });
+
+                                                                    // Calculate daily aggregates: sum sleep, average mood/energy per day
+                                                                    const dailyAggregates = Object.values(wellbeingByDay).map(day => ({
+                                                                        sleep: day.sleep.length > 0 ? day.sleep.reduce((a, b) => a + b, 0) : null,
+                                                                        mood: day.mood.length > 0 ? day.mood.reduce((a, b) => a + b, 0) / day.mood.length : null,
+                                                                        energy: day.energy.length > 0 ? day.energy.reduce((a, b) => a + b, 0) / day.energy.length : null
+                                                                    }));
+
+                                                                    // Sleep analysis (average of daily totals)
+                                                                    const daysWithSleep = dailyAggregates.filter(d => d.sleep !== null);
+                                                                    if (daysWithSleep.length > 0) {
+                                                                        const avgSleep = daysWithSleep.reduce((sum, d) => sum + d.sleep, 0) / daysWithSleep.length;
                                                                         if (avgSleep >= 7) {
                                                                             insights.push(`😴 Dormiste em média ${avgSleep.toFixed(1)}h por noite. Excelente! O sono adequado (7-9h) melhora a tomada de decisões e reduz impulsividade.`);
                                                                         } else if (avgSleep >= 6) {
@@ -1788,10 +1807,10 @@
                                                                         }
                                                                     }
 
-                                                                    // Mood analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.mood && !isNaN(w.mood)).length > 0) {
-                                                                        const logsWithMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(w.mood));
-                                                                        const avgMood = logsWithMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / logsWithMood.length;
+                                                                    // Mood analysis (average of daily averages)
+                                                                    const daysWithMood = dailyAggregates.filter(d => d.mood !== null);
+                                                                    if (daysWithMood.length > 0) {
+                                                                        const avgMood = daysWithMood.reduce((sum, d) => sum + d.mood, 0) / daysWithMood.length;
                                                                         if (avgMood >= 7) {
                                                                             insights.push(`😊 Humor médio: ${avgMood.toFixed(1)}/10. Estado emocional positivo! Continua as práticas que te fazem bem.`);
                                                                         } else if (avgMood >= 5) {
@@ -1801,10 +1820,10 @@
                                                                         }
                                                                     }
 
-                                                                    // Energy analysis
-                                                                    if (filteredWellbeingLogs.filter(w => w.energy).length > 0) {
-                                                                        const logsWithEnergy = filteredWellbeingLogs.filter(w => w.energy);
-                                                                        const avgEnergy = logsWithEnergy.reduce((sum, w) => sum + w.energy, 0) / logsWithEnergy.length;
+                                                                    // Energy analysis (average of daily averages)
+                                                                    const daysWithEnergy = dailyAggregates.filter(d => d.energy !== null);
+                                                                    if (daysWithEnergy.length > 0) {
+                                                                        const avgEnergy = daysWithEnergy.reduce((sum, d) => sum + d.energy, 0) / daysWithEnergy.length;
                                                                         if (avgEnergy >= 7) {
                                                                             insights.push(`⚡ Energia média: ${avgEnergy.toFixed(1)}/10. Boa vitalidade!`);
                                                                         } else if (avgEnergy < 5) {
@@ -2344,17 +2363,39 @@
                                         if (patternView === 'others') {
                                             if (filteredWellbeingLogs.length === 0) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos de bem-estar neste período</div>);
 
-                                            // Sleep patterns
-                                            const avgSleep = filteredWellbeingLogs.reduce((sum, w) => sum + w.sleep, 0) / filteredWellbeingLogs.length;
-                                            const sleepTrend = filteredWellbeingLogs.slice(0, 7).reduce((sum, w) => sum + w.sleep, 0) / Math.min(7, filteredWellbeingLogs.length);
+                                            // Group by day and aggregate
+                                            const wellbeingByDay = {};
+                                            filteredWellbeingLogs.forEach(log => {
+                                                const day = log.date;
+                                                if (!wellbeingByDay[day]) {
+                                                    wellbeingByDay[day] = { sleep: [], mood: [], energy: [] };
+                                                }
+                                                if (log.sleep && !isNaN(log.sleep)) wellbeingByDay[day].sleep.push(parseFloat(log.sleep));
+                                                if (log.mood && !isNaN(log.mood)) wellbeingByDay[day].mood.push(parseInt(log.mood));
+                                                if (log.energy && !isNaN(log.energy)) wellbeingByDay[day].energy.push(parseInt(log.energy));
+                                            });
 
-                                            // Mood patterns
-                                            const avgMood = filteredWellbeingLogs.reduce((sum, w) => sum + w.mood, 0) / filteredWellbeingLogs.length;
-                                            const moodTrend = filteredWellbeingLogs.slice(0, 7).reduce((sum, w) => sum + w.mood, 0) / Math.min(7, filteredWellbeingLogs.length);
+                                            const dailyValues = Object.values(wellbeingByDay).map(day => ({
+                                                sleep: day.sleep.length > 0 ? day.sleep.reduce((a, b) => a + b, 0) : 0,
+                                                mood: day.mood.length > 0 ? day.mood.reduce((a, b) => a + b, 0) / day.mood.length : 0,
+                                                energy: day.energy.length > 0 ? day.energy.reduce((a, b) => a + b, 0) / day.energy.length : 0
+                                            }));
 
-                                            // Energy patterns
-                                            const logsWithEnergy = filteredWellbeingLogs.filter(w => w.energy);
-                                            const avgEnergy = logsWithEnergy.length > 0 ? logsWithEnergy.reduce((sum, w) => sum + w.energy, 0) / logsWithEnergy.length : 0;
+                                            // Sleep patterns (average of daily sums)
+                                            const daysWithSleep = dailyValues.filter(d => d.sleep > 0);
+                                            const avgSleep = daysWithSleep.length > 0 ? daysWithSleep.reduce((sum, d) => sum + d.sleep, 0) / daysWithSleep.length : 0;
+                                            const recentDays = dailyValues.slice(-7).filter(d => d.sleep > 0);
+                                            const sleepTrend = recentDays.length > 0 ? recentDays.reduce((sum, d) => sum + d.sleep, 0) / recentDays.length : 0;
+
+                                            // Mood patterns (average of daily averages)
+                                            const daysWithMood = dailyValues.filter(d => d.mood > 0);
+                                            const avgMood = daysWithMood.length > 0 ? daysWithMood.reduce((sum, d) => sum + d.mood, 0) / daysWithMood.length : 0;
+                                            const recentDaysM = dailyValues.slice(-7).filter(d => d.mood > 0);
+                                            const moodTrend = recentDaysM.length > 0 ? recentDaysM.reduce((sum, d) => sum + d.mood, 0) / recentDaysM.length : 0;
+
+                                            // Energy patterns (average of daily averages)
+                                            const daysWithEnergy = dailyValues.filter(d => d.energy > 0);
+                                            const avgEnergy = daysWithEnergy.length > 0 ? daysWithEnergy.reduce((sum, d) => sum + d.energy, 0) / daysWithEnergy.length : 0;
 
                                             // Self-care patterns
                                             const selfCareData = { water: 0, rest: 0, social: 0, food: 0 };
