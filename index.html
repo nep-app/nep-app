@@ -499,26 +499,11 @@
                 }
 
                 if (goal.type === 'limit_last') {
-                    // Count days where last consumption <= target time
-                    const lastOfDays = {};
-                    consumptions.forEach(c => {
-                        if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) {
-                            lastOfDays[c.date] = c.timestamp;
-                        }
-                    });
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-                    Object.values(lastOfDays).forEach(timestamp => {
-                        const d = new Date(timestamp);
-                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (lastMinutes <= targetMinutes) achievedDays++;
-                    });
-                }
-
-                    // Also count cycles with lastBefore00 = true
+                    // Count cycles where user manually marked last consumption before target time
                     cycles.forEach(cycle => {
                         if (cycle.lastBefore00) achievedDays++;
                     });
+                }
 
                 if (goal.type === 'increase_interval') {
                     // Count intervals between consumptions >= target hours
@@ -817,10 +802,15 @@
                                         </p>
                                     </div>
 
-                                    {streaks.current > 0 && (
+                                    {streaks.current > 0 ? (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
                                             <span>🔥</span>
                                             <span>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                        </div>
+                                    ) : streaks.max > 0 && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
+                                            <span>💪</span>
+                                            <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
                                         </div>
                                     )}
 
