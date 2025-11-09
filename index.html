@@ -196,17 +196,33 @@
                     return;
                 }
 
+                // Check current permission state
+                if (Notification.permission === 'denied') {
+                    showToast('✗ Notificações bloqueadas. Vai às definições do browser para permitir', 'error');
+                    return;
+                }
+
+                if (Notification.permission === 'granted') {
+                    setNotificationsEnabled(true);
+                    localStorage.setItem('notificationsEnabled', 'true');
+                    showToast('✓ Notificações já estavam ativadas', 'success');
+                    return;
+                }
+
                 try {
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         setNotificationsEnabled(true);
                         localStorage.setItem('notificationsEnabled', 'true');
-                        showToast('✓ Notificações ativadas', 'success');
+                        showToast('✓ Notificações ativadas com sucesso', 'success');
+                    } else if (permission === 'denied') {
+                        showToast('✗ Negaste a permissão. Vai às definições do browser para ativar', 'error');
                     } else {
-                        showToast('✗ Permissão de notificações negada', 'error');
+                        showToast('✗ Permissão não concedida', 'error');
                     }
                 } catch (error) {
                     console.error('Error requesting notification permission:', error);
+                    showToast('✗ Erro ao pedir permissão de notificações', 'error');
                 }
             };
 
