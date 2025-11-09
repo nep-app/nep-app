@@ -499,26 +499,11 @@
                 }
 
                 if (goal.type === 'limit_last') {
-                    // Count days where last consumption <= target time
-                    const lastOfDays = {};
-                    consumptions.forEach(c => {
-                        if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) {
-                            lastOfDays[c.date] = c.timestamp;
-                        }
-                    });
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-                    Object.values(lastOfDays).forEach(timestamp => {
-                        const d = new Date(timestamp);
-                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (lastMinutes <= targetMinutes) achievedDays++;
-                    });
-                }
-
-                    // Also count cycles with lastBefore00 = true
+                    // Count cycles where user manually marked last consumption before target time
                     cycles.forEach(cycle => {
                         if (cycle.lastBefore00) achievedDays++;
                     });
+                }
 
                 if (goal.type === 'increase_interval') {
                     // Count intervals between consumptions >= target hours
