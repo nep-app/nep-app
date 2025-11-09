@@ -155,6 +155,87 @@
                 }, 3000);
             };
 
+            // Reminder/notification system
+            const [reminderDismissed, setReminderDismissed] = useState(() => {
+                const dismissed = localStorage.getItem('reminderDismissed');
+                return dismissed ? JSON.parse(dismissed) : {};
+            });
+
+            const dismissReminder = (type) => {
+                const today = getTodayKey();
+                const updated = { ...reminderDismissed, [type]: today };
+                setReminderDismissed(updated);
+                localStorage.setItem('reminderDismissed', JSON.stringify(updated));
+            };
+
+            const shouldShowReminder = (type) => {
+                const today = getTodayKey();
+                return reminderDismissed[type] !== today;
+            };
+
+            // Browser notification support
+            const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+                return localStorage.getItem('notificationsEnabled') === 'true';
+            });
+
+            const requestNotificationPermission = async () => {
+                if (!('Notification' in window)) {
+                    showToast('✗ Notificações não suportadas no teu browser', 'error');
+                    return;
+                }
+
+                try {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        setNotificationsEnabled(true);
+                        localStorage.setItem('notificationsEnabled', 'true');
+                        showToast('✓ Notificações ativadas', 'success');
+                    } else {
+                        showToast('✗ Permissão de notificações negada', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error requesting notification permission:', error);
+                }
+            };
+
+            const showBrowserNotification = (title, body) => {
+                if (notificationsEnabled && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body,
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico'
+                    });
+                }
+            };
+
+            // Check for reminders every minute
+            useEffect(() => {
+                if (!user) return;
+
+                const checkReminders = () => {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const today = getTodayKey();
+
+                    // Only show reminders between 10h and 22h
+                    if (hour < 10 || hour > 22) return;
+
+                    // Check if user hasn't logged wellbeing today
+                    const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+                    if (!hasWellbeingToday && shouldShowReminder('wellbeing') && hour >= 18) {
+                        showToast('💭 Lembrete: Ainda não registaste bem-estar hoje', 'info');
+                        showBrowserNotification('Lembrete - NEP', 'Ainda não registaste bem-estar hoje');
+                        dismissReminder('wellbeing');
+                    }
+                };
+
+                // Check immediately and then every hour
+                checkReminders();
+                const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
+
+                return () => clearInterval(interval);
+            }, [user, wellbeingLogs, notificationsEnabled]);
+
             // ALTERAÇÃO 5: Sistema de ciclos para controlar mudança de frase/reflexão
             const getCurrentCycleIndex = () => {
                 if (cycles.length === 0) return 0;
@@ -2769,6 +2850,21 @@
                                     <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Recursos</h2>
                                     <div className="bg-red-50 rounded-xl p-6 border border-red-200"><h3 className="font-semibold text-red-800 mb-3">🚨 Emergência</h3><div className="space-y-2 text-red-700"><p><strong>INEM:</strong> 112</p><p><strong>Linha Vida:</strong> 1414</p></div></div>
                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}><h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>📞 Linhas de Apoio</h3><div className={'space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}><p><strong>SOS Droga:</strong> 1414 (24h)</p><p><strong>SNS 24:</strong> 808 24 24 24</p></div></div>
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>🔔 Notificações & Lembretes</h3>
+                                        <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                            <p className="text-sm">Recebe lembretes para registar bem-estar diariamente (às 18h).</p>
+                                            {notificationsEnabled ? (
+                                                <div className="flex items-center gap-2 text-green-600">
+                                                    <span>✓ Notificações ativadas</span>
+                                                </div>
+                                            ) : (
+                                                <button onClick={requestNotificationPermission} className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium">
+                                                    Ativar Notificações
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                     {educationalResources.map((resource, i) => (
                                         <div key={i} className="bg-purple-50 rounded-xl p-4 border border-purple-200"><h4 className="font-medium text-purple-800 mb-2">{resource.title}</h4><p className="text-sm text-purple-700">{resource.content}</p></div>
                                     ))}
@@ -3030,7 +3126,7 @@
                     {/* Toast Notifications */}
                     <div className="fixed bottom-20 left-0 right-0 flex flex-col items-center gap-2 px-4 pointer-events-none z-50">
                         {toasts.map(toast => (
-                            <div key={toast.id} className={'px-4 py-3 rounded-lg shadow-lg font-medium text-sm pointer-events-auto transform transition-all ' + (toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white')}>
+                            <div key={toast.id} className={'px-4 py-3 rounded-lg shadow-lg font-medium text-sm pointer-events-auto transform transition-all ' + (toast.type === 'success' ? 'bg-green-500 text-white' : toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white')}>
                                 {toast.message}
                             </div>
                         ))}
