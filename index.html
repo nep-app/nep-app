@@ -3013,6 +3013,212 @@
                                                 <div className="space-y-6">
                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Análise automática dos teus registos para identificar padrões emocionais e comportamentais</p>
 
+                                                    {/* O Teu Coach Pessoal */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-indigo-900/40 border-purple-600/50' : 'bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 border-purple-300') + ' rounded-xl p-8 border-2 shadow-lg'}>
+                                                        <div className="flex items-center gap-3 mb-6">
+                                                            <div className="text-4xl">🎯</div>
+                                                            <div>
+                                                                <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>O Teu Coach Pessoal</h3>
+                                                                <p className={'text-sm ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>Resumão completo dos teus padrões e progresso</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            {(() => {
+                                                                const coachMessages = [];
+
+                                                                // 1. PROGRESSO COM METAS
+                                                                if (goals.length > 0) {
+                                                                    const completedGoals = goals.filter(g => g.completed).length;
+                                                                    const activeGoals = goals.filter(g => !g.completed).length;
+
+                                                                    if (completedGoals > 0) {
+                                                                        coachMessages.push({
+                                                                            section: 'Progresso',
+                                                                            icon: '🏆',
+                                                                            text: `Já completaste ${completedGoals} ${completedGoals === 1 ? 'meta' : 'metas'}! Isso é incrível e mostra que és capaz de mudança.`,
+                                                                            tone: 'celebration'
+                                                                        });
+                                                                    }
+
+                                                                    if (activeGoals > 0) {
+                                                                        coachMessages.push({
+                                                                            section: 'Foco',
+                                                                            icon: '🎯',
+                                                                            text: `Tens ${activeGoals} ${activeGoals === 1 ? 'meta ativa' : 'metas ativas'}. Foca-te numa de cada vez - pequenos passos somam grandes mudanças.`,
+                                                                            tone: 'motivation'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 2. ANÁLISE DE SENTIMENTO
+                                                                if (sentimentAnalysis && sentimentAnalysis.totalReflections > 0) {
+                                                                    const diff = sentimentAnalysis.avgSentimentLowConsumption - sentimentAnalysis.avgSentimentHighConsumption;
+
+                                                                    if (diff > 0.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Descoberta',
+                                                                            icon: '💡',
+                                                                            text: `As tuas reflexões mostram que te sentes significativamente melhor nos dias em que consomes menos. O teu corpo e mente estão-te a dar um sinal claro: reduzir traz-te bem-estar.`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    } else if (sentimentAnalysis.avgSentimentHighConsumption < -0.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Atenção',
+                                                                            icon: '💙',
+                                                                            text: `Nos dias de maior consumo, as tuas palavras refletem mais sofrimento. Isto pode significar que estás a usar substâncias para lidar com dor emocional. Considera falar com alguém - não tens que lidar com isso sozinho.`,
+                                                                            tone: 'care'
+                                                                        });
+                                                                    } else {
+                                                                        coachMessages.push({
+                                                                            section: 'Autoconhecimento',
+                                                                            icon: '📝',
+                                                                            text: `Estás a registar as tuas reflexões de forma consistente - isso já é um passo enorme no autoconhecimento. Continua a escrever, os padrões vão-se tornando mais claros com o tempo.`,
+                                                                            tone: 'encouragement'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 3. CORRELAÇÕES TEMPORAIS
+                                                                if (temporalCorrelations) {
+                                                                    const sleepCorr = temporalCorrelations.sleepLag1.correlation;
+                                                                    const moodCorr = temporalCorrelations.moodLag1.correlation;
+
+                                                                    if (sleepCorr !== null && sleepCorr < -0.4) {
+                                                                        coachMessages.push({
+                                                                            section: 'Padrão Identificado',
+                                                                            icon: '😴',
+                                                                            text: `Há uma correlação forte: quando dormes mal, consumis mais no dia seguinte. O sono não é luxo - é uma das tuas melhores ferramentas de redução de danos. Prioriza-o!`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    }
+
+                                                                    if (moodCorr !== null && moodCorr < -0.4) {
+                                                                        coachMessages.push({
+                                                                            section: 'Conexão Emocional',
+                                                                            icon: '🎭',
+                                                                            text: `Humor baixo num dia tende a levar a mais consumo no dia seguinte. Isto é importante: identifica estratégias alternativas para dias difíceis - caminhada, respiração, ligar a alguém. Cria um plano de ação para esses momentos.`,
+                                                                            tone: 'strategy'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 4. EMOÇÕES DE RISCO E PROTEÇÃO
+                                                                if (emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0) {
+                                                                    if (emotionalPatterns.riskEmotions.length > 0 && emotionalPatterns.protectiveEmotions.length > 0) {
+                                                                        const topRisk = emotionalPatterns.riskEmotions[0].emotion;
+                                                                        const topProtective = emotionalPatterns.protectiveEmotions[0].emotion;
+
+                                                                        coachMessages.push({
+                                                                            section: 'O Teu Mapa Emocional',
+                                                                            icon: '🗺️',
+                                                                            text: `Identificaste os teus gatilhos e as tuas forças: "${topRisk}" está associado a maior risco, enquanto "${topProtective}" funciona como proteção. Usa este conhecimento a teu favor - quando sentires ${topRisk}, tenta fazer algo que te traga ${topProtective}.`,
+                                                                            tone: 'empowerment'
+                                                                        });
+                                                                    } else if (emotionalPatterns.riskEmotions.length > 0) {
+                                                                        const topRisk = emotionalPatterns.riskEmotions[0].emotion;
+                                                                        coachMessages.push({
+                                                                            section: 'Alerta de Gatilho',
+                                                                            icon: '⚠️',
+                                                                            text: `"${topRisk}" é uma emoção de alto risco para ti. Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.`,
+                                                                            tone: 'alert'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 5. PADRÃO DE CONSUMO GERAL
+                                                                const last7Days = consumptions.filter(c => {
+                                                                    const date = new Date(c.timestamp);
+                                                                    const daysDiff = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+                                                                    return daysDiff <= 7;
+                                                                });
+
+                                                                const last14Days = consumptions.filter(c => {
+                                                                    const date = new Date(c.timestamp);
+                                                                    const daysDiff = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+                                                                    return daysDiff > 7 && daysDiff <= 14;
+                                                                });
+
+                                                                if (last7Days.length > 0 && last14Days.length > 0) {
+                                                                    const avgLast7 = last7Days.length / 7;
+                                                                    const avgLast14 = last14Days.length / 7;
+                                                                    const change = ((avgLast7 - avgLast14) / avgLast14) * 100;
+
+                                                                    if (change < -15) {
+                                                                        coachMessages.push({
+                                                                            section: 'Tendência',
+                                                                            icon: '📉',
+                                                                            text: `Nos últimos 7 dias, reduziste ${Math.abs(change).toFixed(0)}% em relação à semana anterior. Isto é ENORME! O que funcionou? Identifica e repete essas estratégias.`,
+                                                                            tone: 'celebration'
+                                                                        });
+                                                                    } else if (change > 15) {
+                                                                        coachMessages.push({
+                                                                            section: 'Tendência',
+                                                                            icon: '📈',
+                                                                            text: `O consumo aumentou ${change.toFixed(0)}% na última semana comparado à anterior. Sem julgamento - só dados. O que mudou? Stress? Menos sono? Identifica o trigger e ajusta o plano.`,
+                                                                            tone: 'reflection'
+                                                                        });
+                                                                    } else {
+                                                                        coachMessages.push({
+                                                                            section: 'Consistência',
+                                                                            icon: '📊',
+                                                                            text: `O teu padrão tem-se mantido estável nas últimas semanas. Estabilidade é o primeiro passo antes da redução. Bom trabalho em manter o controlo.`,
+                                                                            tone: 'acknowledgment'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 6. MENSAGEM FINAL DE ENCORAJAMENTO
+                                                                if (consumptions.length > 10 || reflections.length > 5 || wellbeingLogs.length > 5) {
+                                                                    coachMessages.push({
+                                                                        section: 'Compromisso',
+                                                                        icon: '✨',
+                                                                        text: `O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança. Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.`,
+                                                                        tone: 'inspiration'
+                                                                    });
+                                                                }
+
+                                                                // Se não há dados suficientes
+                                                                if (coachMessages.length === 0) {
+                                                                    coachMessages.push({
+                                                                        section: 'Começo',
+                                                                        icon: '🌱',
+                                                                        text: `Estás no início da tua jornada de autoconhecimento. Cada registo que fazes é uma semente plantada. Continua - em breve vais começar a ver os padrões e isso vai-te dar poder para mudar.`,
+                                                                        tone: 'encouragement'
+                                                                    });
+                                                                }
+
+                                                                return coachMessages.map((msg, i) => (
+                                                                    <div key={i} className={(darkMode ? 'bg-gray-800/60 border-gray-600/50' : 'bg-white/80 border-gray-200') + ' rounded-lg p-5 border-2'}>
+                                                                        <div className="flex items-start gap-4">
+                                                                            <div className="text-3xl flex-shrink-0 mt-1">{msg.icon}</div>
+                                                                            <div className="flex-1">
+                                                                                <div className={'font-bold text-lg mb-2 ' + (
+                                                                                    msg.tone === 'celebration' ? (darkMode ? 'text-green-400' : 'text-green-700') :
+                                                                                    msg.tone === 'insight' ? (darkMode ? 'text-blue-400' : 'text-blue-700') :
+                                                                                    msg.tone === 'care' ? (darkMode ? 'text-pink-400' : 'text-pink-700') :
+                                                                                    msg.tone === 'alert' ? (darkMode ? 'text-orange-400' : 'text-orange-700') :
+                                                                                    (darkMode ? 'text-purple-400' : 'text-purple-700')
+                                                                                )}>{msg.section}</div>
+                                                                                <div className={'leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{msg.text}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ));
+                                                            })()}
+
+                                                            {/* Call to Action */}
+                                                            <div className={(darkMode ? 'bg-gradient-to-r from-purple-800/50 to-pink-800/50 border-purple-500/50' : 'bg-gradient-to-r from-purple-200/50 to-pink-200/50 border-purple-400') + ' rounded-lg p-6 border-2 text-center'}>
+                                                                <div className="text-3xl mb-3">💪</div>
+                                                                <div className={'font-bold text-lg mb-2 ' + (darkMode ? 'text-white' : 'text-gray-900')}>Tu tens o controlo</div>
+                                                                <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                    Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
+                                                                    Continua a usar esta app, continua a refletir, continua a crescer. 🚀
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Sentiment Analysis */}
                                                     {sentimentAnalysis && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
