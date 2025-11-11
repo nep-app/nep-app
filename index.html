@@ -469,10 +469,10 @@
             const submitGoal = async () => {
                 try {
                     const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
-                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, period: goalForm.period, createdAt: new Date().toISOString(), completed: false };
                     setGoals(prev => [...prev, item]);
                     await saveToFirebase('goals', item);
-                    setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
+                    setGoalForm({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
                     setShowGoalModal(false);
                     showToast('✓ Meta criada', 'success');
                 } catch (error) {
@@ -3003,8 +3003,8 @@
                                                                 {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
                                                             </h3>
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
-                                                                Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
-                                                                {goal.type === 'reduce_quantity' && goal.target + 'mg/dia'}
+                                                                Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/' + (goal.period === 'weekly' ? 'semana' : goal.period === 'monthly' ? 'mês' : 'dia')}
+                                                                {goal.type === 'reduce_quantity' && goal.target + 'mg/' + (goal.period === 'weekly' ? 'semana' : goal.period === 'monthly' ? 'mês' : 'dia')}
                                                                 {goal.type === 'delay_first' && 'após ' + goal.target}
                                                                 {goal.type === 'increase_interval' && goal.target + 'h entre consumos'}
                                                                 {goal.type === 'limit_last' && 'antes de ' + goal.target}
