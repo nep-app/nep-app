@@ -494,33 +494,40 @@
             const getDateRangeForPeriod = (period, offset = 0) => {
                 console.log('🕐 getDateRangeForPeriod called:', { period, offset });
                 const now = new Date();
-                now.setHours(23, 59, 59, 999); // End of today
+                // Para análises gerais, usar até ontem (excluir dia atual se ainda não terminou)
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(23, 59, 59, 999);
+
                 let start, end;
 
                 if (period === 'hoje') {
                     // Today
                     end = new Date(now);
                     end.setDate(end.getDate() - offset);
+                    end.setHours(23, 59, 59, 999);
                     start = new Date(end);
                     start.setHours(0, 0, 0, 0);
                 } else if (period === 'semana') {
-                    // Week (last 7 days)
-                    end = new Date(now);
+                    // Week (last 7 COMPLETE days, excluding today)
+                    end = new Date(yesterday);
                     end.setDate(end.getDate() - (offset * 7));
                     start = new Date(end);
                     start.setDate(start.getDate() - 6);
                     start.setHours(0, 0, 0, 0);
                 } else if (period === 'mes') {
-                    // Month (last 30 days)
-                    end = new Date(now);
+                    // Month (last 30 COMPLETE days, excluding today)
+                    end = new Date(yesterday);
                     end.setDate(end.getDate() - (offset * 30));
                     start = new Date(end);
                     start.setDate(start.getDate() - 29);
                     start.setHours(0, 0, 0, 0);
                 } else {
-                    // tudo (all time)
-                    console.log('⚠️ Returning null range (period = tudo)');
-                    return { start: null, end: null };
+                    // tudo (all time, excluding today)
+                    end = new Date(yesterday);
+                    start = new Date('2020-01-01');
+                    console.log('✅ Returning all time range (excluding today):', { start, end });
+                    return { start, end };
                 }
 
                 console.log('✅ Returning date range:', { start, end });
@@ -1722,21 +1729,33 @@
                                             // Sleep vs consumption correlation
                                             const sleepConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
+                                                const sleepVal = parseFloat(w.sleep);
                                                 const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                if (dayConsumptions > 0) {
-                                                    sleepConsumptionData.push({ sleep: w.sleep, consumptions: dayConsumptions });
+                                                // Only include if sleep is valid and there are consumptions
+                                                if (!isNaN(sleepVal) && sleepVal > 0 && dayConsumptions > 0) {
+                                                    sleepConsumptionData.push({ sleep: sleepVal, consumptions: dayConsumptions });
                                                 }
                                             });
 
                                             // Mood vs sleep correlation
-                                            const moodSleepData = filteredWellbeingLogs.map(w => ({ mood: w.mood, sleep: w.sleep }));
+                                            const moodSleepData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                const moodVal = parseInt(w.mood);
+                                                const sleepVal = parseFloat(w.sleep);
+                                                // Only include if both values are valid
+                                                if (!isNaN(moodVal) && moodVal > 0 && !isNaN(sleepVal) && sleepVal > 0) {
+                                                    moodSleepData.push({ mood: moodVal, sleep: sleepVal });
+                                                }
+                                            });
 
                                             // Mood vs consumption correlation
                                             const moodConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
+                                                const moodVal = parseInt(w.mood);
                                                 const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                if (dayConsumptions > 0) {
-                                                    moodConsumptionData.push({ mood: w.mood, consumptions: dayConsumptions });
+                                                // Only include if mood is valid and there are consumptions
+                                                if (!isNaN(moodVal) && moodVal > 0 && dayConsumptions > 0) {
+                                                    moodConsumptionData.push({ mood: moodVal, consumptions: dayConsumptions });
                                                 }
                                             });
 
@@ -1890,16 +1909,21 @@
                                                                     if (filteredCycles.filter(c => c.bedtime).length > 0) {
                                                                         const bedtimes = filteredCycles.filter(c => c.bedtime).map(c => {
                                                                             const [h, m] = c.bedtime.split(':').map(Number);
-                                                                            return h + m / 60;
+                                                                            let hour = h + m / 60;
+                                                                            // Convert early morning hours (0-12) to 24-36 for proper averaging
+                                                                            // This handles bedtimes after midnight correctly (e.g., 2 AM, 6 AM)
+                                                                            if (hour < 12) hour += 24;
+                                                                            return hour;
                                                                         });
-                                                                        const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        let avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        // Convert back to 0-23 range
+                                                                        if (avgBedtime >= 24) avgBedtime -= 24;
                                                                         const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
 
-                                                                        if (avgBedtime >= 22 && avgBedtime <= 23.5) {
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-23h30 favorece ciclos de sono saudáveis.`);
-                                                                        } else if (avgBedtime > 23.5 || avgBedtime < 6) {
-                                                                            const lateHour = avgBedtime > 23.5 ? avgBedtime : avgBedtime + 24;
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar tarde (>23h30) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
+                                                                        if (avgBedtime >= 22 || avgBedtime <= 0.5) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-0h30 favorece ciclos de sono saudáveis.`);
+                                                                        } else if (avgBedtime > 0.5 && avgBedtime < 10) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar muito tarde (madrugada) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
                                                                         } else {
                                                                             insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Rotina de sono estabelecida.`);
                                                                         }
@@ -2092,30 +2116,23 @@
                                                                 });
 
                                                                 return (
-                                                                    <div className="space-y-4">
-                                                                        <div className="space-y-2">
-                                                                            {sortedTriggers.map(([trigger, count]) => {
-                                                                                const avgConsumptions = triggerConsumptionAnalysis[trigger]
-                                                                                    ? (triggerConsumptionAnalysis[trigger].total / triggerConsumptionAnalysis[trigger].count).toFixed(1)
-                                                                                    : 'N/A';
-                                                                                return (
-                                                                                    <div key={trigger} className="border border-gray-200 rounded-lg p-3">
-                                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                                            <div className="text-sm font-medium text-gray-800 flex-1">{trigger}</div>
-                                                                                            <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">{count}x</div>
+                                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                                        {sortedTriggers.map(([trigger, count]) => {
+                                                                            const avgConsumptions = triggerConsumptionAnalysis[trigger]
+                                                                                ? (triggerConsumptionAnalysis[trigger].total / triggerConsumptionAnalysis[trigger].count).toFixed(1)
+                                                                                : 'N/A';
+                                                                            return (
+                                                                                <div key={trigger} className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-50') + ' border rounded-lg p-3 text-center'}>
+                                                                                    <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>{trigger}</div>
+                                                                                    <div className={'text-xs mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{count}x registado</div>
+                                                                                    {avgConsumptions !== 'N/A' && (
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            ~{avgConsumptions} consumos/dia
                                                                                         </div>
-                                                                                        <div className="flex-1 bg-gray-100 rounded-full h-4 overflow-hidden">
-                                                                                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full" style={{width: Math.min(100, (count / sortedTriggers[0][1]) * 100) + '%'}}></div>
-                                                                                        </div>
-                                                                                        {avgConsumptions !== 'N/A' && (
-                                                                                            <div className="text-xs text-gray-600 mt-2">
-                                                                                                Média de {avgConsumptions} consumos/dia quando presente
-                                                                                            </div>
-                                                                                        )}
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 );
                                                             })()}
