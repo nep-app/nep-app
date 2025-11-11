@@ -1505,11 +1505,12 @@
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['comparisons', 'analyses', 'reports', 'others'].map(view => (
+                                        {['comparisons', 'analyses', 'reports', 'insights', 'others'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'comparisons' && '📊 Comparações'}
                                                 {view === 'analyses' && '🔬 Análises'}
                                                 {view === 'reports' && '📋 Relatórios'}
+                                                {view === 'insights' && '🧠 Insights'}
                                                 {view === 'others' && '💚 Bem-Estar'}
                                             </button>
                                         ))}
@@ -2870,6 +2871,288 @@
                                                 </div>
                                             );
                                         }
+
+                                        // INSIGHTS (Intelligent analysis)
+                                        if (patternView === 'insights') {
+                                            const sentimentAnalysis = getSentimentAnalysis();
+                                            const temporalCorrelations = getTemporalCorrelations();
+                                            const emotionalPatterns = getEmotionalPatterns();
+
+                                            // Check if we have enough data
+                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns;
+
+                                            if (!hasData) {
+                                                return (
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                        <div className="text-6xl mb-4">🔍</div>
+                                                        <h3 className={'text-lg font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Ainda não há dados suficientes</h3>
+                                                        <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Continua a registar consumos, reflexões DBT e bem-estar para receber insights personalizados sobre os teus padrões.</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <div className="space-y-6">
+                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Análise automática dos teus registos para identificar padrões emocionais e comportamentais</p>
+
+                                                    {/* Sentiment Analysis */}
+                                                    {sentimentAnalysis && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">💭</span>
+                                                                Análise de Sentimento nas Reflexões
+                                                            </h3>
+                                                            <div className="space-y-4">
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div className={(darkMode ? 'bg-purple-900/50 border-purple-700/50' : 'bg-purple-100 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com Consumo Elevado</div>
+                                                                        <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                            {sentimentAnalysis.avgSentimentHighConsumption > 0 ? '😊' : sentimentAnalysis.avgSentimentHighConsumption < -0.5 ? '😔' : '😐'}
+                                                                            <span className="text-lg ml-2">
+                                                                                {sentimentAnalysis.avgSentimentHighConsumption > 0 ? 'Positivo' : sentimentAnalysis.avgSentimentHighConsumption < -0.5 ? 'Negativo' : 'Neutro'}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sentimento médio: {sentimentAnalysis.avgSentimentHighConsumption.toFixed(2)}</div>
+                                                                    </div>
+                                                                    <div className={(darkMode ? 'bg-green-900/50 border-green-700/50' : 'bg-green-100 border-green-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com Consumo Baixo</div>
+                                                                        <div className={'text-2xl font-bold ' + (darkMode ? 'text-green-300' : 'text-green-700')}>
+                                                                            {sentimentAnalysis.avgSentimentLowConsumption > 0 ? '😊' : sentimentAnalysis.avgSentimentLowConsumption < -0.5 ? '😔' : '😐'}
+                                                                            <span className="text-lg ml-2">
+                                                                                {sentimentAnalysis.avgSentimentLowConsumption > 0 ? 'Positivo' : sentimentAnalysis.avgSentimentLowConsumption < -0.5 ? 'Negativo' : 'Neutro'}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sentimento médio: {sentimentAnalysis.avgSentimentLowConsumption.toFixed(2)}</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                        {(() => {
+                                                                            const diff = sentimentAnalysis.avgSentimentLowConsumption - sentimentAnalysis.avgSentimentHighConsumption;
+                                                                            if (Math.abs(diff) < 0.3) {
+                                                                                return `💡 O tom das tuas reflexões é similar em dias de alto e baixo consumo. Continua a escrever para identificarmos padrões mais claros.`;
+                                                                            } else if (diff > 0) {
+                                                                                return `✨ Descoberta: As tuas reflexões são mais positivas em dias de consumo baixo (+${diff.toFixed(1)} pontos). Isto sugere que menor consumo está associado a um estado emocional mais positivo.`;
+                                                                            } else {
+                                                                                return `⚠️ Atenção: As tuas reflexões são mais negativas em dias de consumo baixo (${diff.toFixed(1)} pontos). Pode indicar que estás a usar substâncias para lidar com emoções difíceis. Considera falar com alguém sobre isto.`;
+                                                                            }
+                                                                        })()}
+                                                                    </div>
+                                                                </div>
+                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                    Analisados {sentimentAnalysis.totalReflections} reflexões DBT e {sentimentAnalysis.totalNotes} notas de bem-estar em {sentimentAnalysis.daysAnalyzed} dias diferentes
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Temporal Correlations with Lag */}
+                                                    {temporalCorrelations && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">⏰</span>
+                                                                Correlações Temporais (Ontem → Hoje)
+                                                            </h3>
+                                                            <div className="space-y-4">
+                                                                {temporalCorrelations.sleepLag1.correlation !== null && (
+                                                                    <div className={(darkMode ? 'bg-blue-900/50 border-blue-700/50' : 'bg-blue-100 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className={'font-medium ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>😴 Sono de Ontem → Consumo de Hoje</div>
+                                                                            <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                                {temporalCorrelations.sleepLag1.correlation.toFixed(2)}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            {(() => {
+                                                                                const corr = temporalCorrelations.sleepLag1.correlation;
+                                                                                if (corr < -0.4) {
+                                                                                    return `⚠️ Correlação negativa forte: Quando dormes MENOS ontem, tendes a consumir MAIS hoje. O sono é um fator de proteção importante!`;
+                                                                                } else if (corr < -0.2) {
+                                                                                    return `📊 Correlação negativa moderada: Menos sono ontem está associado a mais consumo hoje. Prioriza o descanso.`;
+                                                                                } else if (corr > 0.2) {
+                                                                                    return `📊 Correlação positiva: Mais sono ontem está associado a mais consumo hoje. Pode haver outros fatores em jogo.`;
+                                                                                } else {
+                                                                                    return `📊 Correlação fraca: O sono de ontem não parece ter impacto direto no consumo de hoje.`;
+                                                                                }
+                                                                            })()}
+                                                                        </div>
+                                                                        <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            Baseado em {temporalCorrelations.sleepLag1.dataPoints} pares de dias consecutivos
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {temporalCorrelations.moodLag1.correlation !== null && (
+                                                                    <div className={(darkMode ? 'bg-cyan-900/50 border-cyan-700/50' : 'bg-cyan-100 border-cyan-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className={'font-medium ' + (darkMode ? 'text-cyan-300' : 'text-cyan-700')}>😊 Humor de Ontem → Consumo de Hoje</div>
+                                                                            <div className={'text-lg font-bold ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}>
+                                                                                {temporalCorrelations.moodLag1.correlation.toFixed(2)}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            {(() => {
+                                                                                const corr = temporalCorrelations.moodLag1.correlation;
+                                                                                if (corr < -0.4) {
+                                                                                    return `⚠️ Correlação negativa forte: Humor BAIXO ontem está fortemente associado a MAIS consumo hoje. Considera estratégias alternativas para lidar com humor baixo.`;
+                                                                                } else if (corr < -0.2) {
+                                                                                    return `📊 Correlação negativa moderada: Humor mais baixo ontem tende a levar a mais consumo hoje.`;
+                                                                                } else if (corr > 0.2) {
+                                                                                    return `📊 Correlação positiva: Humor alto ontem está associado a mais consumo hoje. Pode indicar consumo social/recreativo.`;
+                                                                                } else {
+                                                                                    return `📊 Correlação fraca: O humor de ontem não parece prever o consumo de hoje de forma clara.`;
+                                                                                }
+                                                                            })()}
+                                                                        </div>
+                                                                        <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            Baseado em {temporalCorrelations.moodLag1.dataPoints} pares de dias consecutivos
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Emotional Patterns */}
+                                                    {emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0 && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-pink-900/30 to-rose-900/30 border-pink-700/50' : 'bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">💝</span>
+                                                                Padrões Emocionais
+                                                            </h3>
+                                                            <div className="space-y-4">
+                                                                {emotionalPatterns.riskEmotions.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-red-400' : 'text-red-700')}>⚠️ Emoções de Risco (aparecem mais em dias de consumo elevado):</h4>
+                                                                        <div className="space-y-2">
+                                                                            {emotionalPatterns.riskEmotions.map((item, i) => (
+                                                                                <div key={i} className={(darkMode ? 'bg-red-900/50 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div className={'font-medium ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{item.emotion}</div>
+                                                                                        <div className={'text-sm ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{(item.ratio * 100).toFixed(0)}% em dias de alto consumo</div>
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Aparece {item.highCount}x em dias de alto consumo vs {item.lowCount}x em dias de baixo consumo
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border mt-3'}>
+                                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                💡 <strong>Sugestão:</strong> Quando sentires estas emoções, tenta usar estratégias de coping alternativas (respiração, caminhada, falar com alguém) antes de consumir.
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {emotionalPatterns.protectiveEmotions.length > 0 && (
+                                                                    <div>
+                                                                        <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-green-400' : 'text-green-700')}>✨ Emoções Protetoras (aparecem mais em dias de consumo baixo):</h4>
+                                                                        <div className="space-y-2">
+                                                                            {emotionalPatterns.protectiveEmotions.map((item, i) => (
+                                                                                <div key={i} className={(darkMode ? 'bg-green-900/50 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border'}>
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div className={'font-medium ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{item.emotion}</div>
+                                                                                        <div className={'text-sm ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{((1 - item.ratio) * 100).toFixed(0)}% em dias de baixo consumo</div>
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Aparece {item.lowCount}x em dias de baixo consumo vs {item.highCount}x em dias de alto consumo
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border mt-3'}>
+                                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                💡 <strong>Celebra:</strong> Estas emoções parecem funcionar como fatores de proteção. Tenta cultivá-las através de atividades que te tragam estas sensações.
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {emotionalPatterns.riskEmotions.length === 0 && emotionalPatterns.protectiveEmotions.length === 0 && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border text-center'}>
+                                                                        <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            Continue a registar as tuas emoções para identificarmos padrões claros. São necessárias pelo menos 3 ocorrências de cada emoção.
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Summary & Recommendations */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-indigo-900/30 to-violet-900/30 border-indigo-700/50' : 'bg-gradient-to-r from-indigo-50 to-violet-50 border-indigo-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                            <span className="text-xl">🎯</span>
+                                                            Recomendações Personalizadas
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            {(() => {
+                                                                const recommendations = [];
+
+                                                                // Based on temporal correlations
+                                                                if (temporalCorrelations && temporalCorrelations.sleepLag1.correlation !== null && temporalCorrelations.sleepLag1.correlation < -0.3) {
+                                                                    recommendations.push({
+                                                                        icon: '😴',
+                                                                        title: 'Prioriza o Sono',
+                                                                        description: 'Os dados mostram que dormir mal está correlacionado com maior consumo no dia seguinte. Tenta manter 7-9h de sono consistentes.'
+                                                                    });
+                                                                }
+
+                                                                // Based on emotional patterns
+                                                                if (emotionalPatterns && emotionalPatterns.riskEmotions.length > 0) {
+                                                                    const topRiskEmotion = emotionalPatterns.riskEmotions[0].emotion;
+                                                                    recommendations.push({
+                                                                        icon: '🛡️',
+                                                                        title: 'Cria um Plano para Emoções de Risco',
+                                                                        description: `Quando sentires "${topRiskEmotion}", tem alternativas preparadas: respiração profunda, caminhada, ligar a alguém, ou usar uma técnica DBT.`
+                                                                    });
+                                                                }
+
+                                                                // Based on sentiment
+                                                                if (sentimentAnalysis && sentimentAnalysis.avgSentimentHighConsumption < -0.5) {
+                                                                    recommendations.push({
+                                                                        icon: '💬',
+                                                                        title: 'Considera Falar com Alguém',
+                                                                        description: 'As tuas reflexões mostram sentimentos mais negativos em dias de alto consumo. Considera falar com um profissional sobre o que sentes.'
+                                                                    });
+                                                                }
+
+                                                                // Based on protective emotions
+                                                                if (emotionalPatterns && emotionalPatterns.protectiveEmotions.length > 0) {
+                                                                    const topProtectiveEmotion = emotionalPatterns.protectiveEmotions[0].emotion;
+                                                                    recommendations.push({
+                                                                        icon: '✨',
+                                                                        title: 'Cultiva Emoções Protetoras',
+                                                                        description: `"${topProtectiveEmotion}" está associado a menor consumo. Identifica atividades que te trazem essa emoção e faz mais delas.`
+                                                                    });
+                                                                }
+
+                                                                // General recommendation if we have data
+                                                                if (recommendations.length === 0 && hasData) {
+                                                                    recommendations.push({
+                                                                        icon: '📊',
+                                                                        title: 'Continua a Registar',
+                                                                        description: 'Os teus dados ainda não mostram padrões fortes. Continua a registar consistentemente para insights mais precisos.'
+                                                                    });
+                                                                }
+
+                                                                return recommendations.map((rec, i) => (
+                                                                    <div key={i} className={(darkMode ? 'bg-indigo-900/50 border-indigo-700/50' : 'bg-white border-indigo-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-start gap-3">
+                                                                            <div className="text-2xl flex-shrink-0">{rec.icon}</div>
+                                                                            <div>
+                                                                                <div className={'font-medium mb-1 ' + (darkMode ? 'text-indigo-300' : 'text-indigo-700')}>{rec.title}</div>
+                                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{rec.description}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return null;
                                     })()}
                                 </div>
                             )}
@@ -3265,289 +3548,6 @@
                                 </div>
                             )}
 
-                            {currentView === 'insights' && (
-                                <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>🧠 Insights Inteligentes</h2>
-                                    <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Análise automática dos teus registos para identificar padrões emocionais e comportamentais</p>
-
-                                    {(() => {
-                                        const sentimentAnalysis = getSentimentAnalysis();
-                                        const temporalCorrelations = getTemporalCorrelations();
-                                        const emotionalPatterns = getEmotionalPatterns();
-
-                                        // Check if we have enough data
-                                        const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns;
-
-                                        if (!hasData) {
-                                            return (
-                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
-                                                    <div className="text-6xl mb-4">🔍</div>
-                                                    <h3 className={'text-lg font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Ainda não há dados suficientes</h3>
-                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Continua a registar consumos, reflexões DBT e bem-estar para receber insights personalizados sobre os teus padrões.</p>
-                                                </div>
-                                            );
-                                        }
-
-                                        return (
-                                            <div className="space-y-6">
-                                                {/* Sentiment Analysis */}
-                                                {sentimentAnalysis && (
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                            <span className="text-xl">💭</span>
-                                                            Análise de Sentimento nas Reflexões
-                                                        </h3>
-                                                        <div className="space-y-4">
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div className={(darkMode ? 'bg-purple-900/50 border-purple-700/50' : 'bg-purple-100 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com Consumo Elevado</div>
-                                                                    <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
-                                                                        {sentimentAnalysis.avgSentimentHighConsumption > 0 ? '😊' : sentimentAnalysis.avgSentimentHighConsumption < -0.5 ? '😔' : '😐'}
-                                                                        <span className="text-lg ml-2">
-                                                                            {sentimentAnalysis.avgSentimentHighConsumption > 0 ? 'Positivo' : sentimentAnalysis.avgSentimentHighConsumption < -0.5 ? 'Negativo' : 'Neutro'}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sentimento médio: {sentimentAnalysis.avgSentimentHighConsumption.toFixed(2)}</div>
-                                                                </div>
-                                                                <div className={(darkMode ? 'bg-green-900/50 border-green-700/50' : 'bg-green-100 border-green-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dias com Consumo Baixo</div>
-                                                                    <div className={'text-2xl font-bold ' + (darkMode ? 'text-green-300' : 'text-green-700')}>
-                                                                        {sentimentAnalysis.avgSentimentLowConsumption > 0 ? '😊' : sentimentAnalysis.avgSentimentLowConsumption < -0.5 ? '😔' : '😐'}
-                                                                        <span className="text-lg ml-2">
-                                                                            {sentimentAnalysis.avgSentimentLowConsumption > 0 ? 'Positivo' : sentimentAnalysis.avgSentimentLowConsumption < -0.5 ? 'Negativo' : 'Neutro'}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sentimento médio: {sentimentAnalysis.avgSentimentLowConsumption.toFixed(2)}</div>
-                                                                </div>
-                                                            </div>
-                                                            <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                                    {(() => {
-                                                                        const diff = sentimentAnalysis.avgSentimentLowConsumption - sentimentAnalysis.avgSentimentHighConsumption;
-                                                                        if (Math.abs(diff) < 0.3) {
-                                                                            return `💡 O tom das tuas reflexões é similar em dias de alto e baixo consumo. Continua a escrever para identificarmos padrões mais claros.`;
-                                                                        } else if (diff > 0) {
-                                                                            return `✨ Descoberta: As tuas reflexões são mais positivas em dias de consumo baixo (+${diff.toFixed(1)} pontos). Isto sugere que menor consumo está associado a um estado emocional mais positivo.`;
-                                                                        } else {
-                                                                            return `⚠️ Atenção: As tuas reflexões são mais negativas em dias de consumo baixo (${diff.toFixed(1)} pontos). Pode indicar que estás a usar substâncias para lidar com emoções difíceis. Considera falar com alguém sobre isto.`;
-                                                                        }
-                                                                    })()}
-                                                                </div>
-                                                            </div>
-                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                Analisados {sentimentAnalysis.totalReflections} reflexões DBT e {sentimentAnalysis.totalNotes} notas de bem-estar em {sentimentAnalysis.daysAnalyzed} dias diferentes
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Temporal Correlations with Lag */}
-                                                {temporalCorrelations && (
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                            <span className="text-xl">⏰</span>
-                                                            Correlações Temporais (Ontem → Hoje)
-                                                        </h3>
-                                                        <div className="space-y-4">
-                                                            {temporalCorrelations.sleepLag1.correlation !== null && (
-                                                                <div className={(darkMode ? 'bg-blue-900/50 border-blue-700/50' : 'bg-blue-100 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>😴 Sono de Ontem → Consumo de Hoje</div>
-                                                                        <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
-                                                                            {temporalCorrelations.sleepLag1.correlation.toFixed(2)}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
-                                                                        {(() => {
-                                                                            const corr = temporalCorrelations.sleepLag1.correlation;
-                                                                            if (corr < -0.4) {
-                                                                                return `⚠️ Correlação negativa forte: Quando dormes MENOS ontem, tendes a consumir MAIS hoje. O sono é um fator de proteção importante!`;
-                                                                            } else if (corr < -0.2) {
-                                                                                return `📊 Correlação negativa moderada: Menos sono ontem está associado a mais consumo hoje. Prioriza o descanso.`;
-                                                                            } else if (corr > 0.2) {
-                                                                                return `📊 Correlação positiva: Mais sono ontem está associado a mais consumo hoje. Pode haver outros fatores em jogo.`;
-                                                                            } else {
-                                                                                return `📊 Correlação fraca: O sono de ontem não parece ter impacto direto no consumo de hoje.`;
-                                                                            }
-                                                                        })()}
-                                                                    </div>
-                                                                    <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                        Baseado em {temporalCorrelations.sleepLag1.dataPoints} pares de dias consecutivos
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {temporalCorrelations.moodLag1.correlation !== null && (
-                                                                <div className={(darkMode ? 'bg-cyan-900/50 border-cyan-700/50' : 'bg-cyan-100 border-cyan-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-cyan-300' : 'text-cyan-700')}>😊 Humor de Ontem → Consumo de Hoje</div>
-                                                                        <div className={'text-lg font-bold ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}>
-                                                                            {temporalCorrelations.moodLag1.correlation.toFixed(2)}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
-                                                                        {(() => {
-                                                                            const corr = temporalCorrelations.moodLag1.correlation;
-                                                                            if (corr < -0.4) {
-                                                                                return `⚠️ Correlação negativa forte: Humor BAIXO ontem está fortemente associado a MAIS consumo hoje. Considera estratégias alternativas para lidar com humor baixo.`;
-                                                                            } else if (corr < -0.2) {
-                                                                                return `📊 Correlação negativa moderada: Humor mais baixo ontem tende a levar a mais consumo hoje.`;
-                                                                            } else if (corr > 0.2) {
-                                                                                return `📊 Correlação positiva: Humor alto ontem está associado a mais consumo hoje. Pode indicar consumo social/recreativo.`;
-                                                                            } else {
-                                                                                return `📊 Correlação fraca: O humor de ontem não parece prever o consumo de hoje de forma clara.`;
-                                                                            }
-                                                                        })()}
-                                                                    </div>
-                                                                    <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                        Baseado em {temporalCorrelations.moodLag1.dataPoints} pares de dias consecutivos
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Emotional Patterns */}
-                                                {emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0 && (
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-pink-900/30 to-rose-900/30 border-pink-700/50' : 'bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                            <span className="text-xl">💝</span>
-                                                            Padrões Emocionais
-                                                        </h3>
-                                                        <div className="space-y-4">
-                                                            {emotionalPatterns.riskEmotions.length > 0 && (
-                                                                <div>
-                                                                    <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-red-400' : 'text-red-700')}>⚠️ Emoções de Risco (aparecem mais em dias de consumo elevado):</h4>
-                                                                    <div className="space-y-2">
-                                                                        {emotionalPatterns.riskEmotions.map((item, i) => (
-                                                                            <div key={i} className={(darkMode ? 'bg-red-900/50 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <div className={'font-medium ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{item.emotion}</div>
-                                                                                    <div className={'text-sm ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{(item.ratio * 100).toFixed(0)}% em dias de alto consumo</div>
-                                                                                </div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Aparece {item.highCount}x em dias de alto consumo vs {item.lowCount}x em dias de baixo consumo
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border mt-3'}>
-                                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                                            💡 <strong>Sugestão:</strong> Quando sentires estas emoções, tenta usar estratégias de coping alternativas (respiração, caminhada, falar com alguém) antes de consumir.
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {emotionalPatterns.protectiveEmotions.length > 0 && (
-                                                                <div>
-                                                                    <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-green-400' : 'text-green-700')}>✨ Emoções Protetoras (aparecem mais em dias de consumo baixo):</h4>
-                                                                    <div className="space-y-2">
-                                                                        {emotionalPatterns.protectiveEmotions.map((item, i) => (
-                                                                            <div key={i} className={(darkMode ? 'bg-green-900/50 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border'}>
-                                                                                <div className="flex items-center justify-between">
-                                                                                    <div className={'font-medium ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{item.emotion}</div>
-                                                                                    <div className={'text-sm ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{((1 - item.ratio) * 100).toFixed(0)}% em dias de baixo consumo</div>
-                                                                                </div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Aparece {item.lowCount}x em dias de baixo consumo vs {item.highCount}x em dias de alto consumo
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                    <div className={(darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border mt-3'}>
-                                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                                            💡 <strong>Celebra:</strong> Estas emoções parecem funcionar como fatores de proteção. Tenta cultivá-las através de atividades que te tragam estas sensações.
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            {emotionalPatterns.riskEmotions.length === 0 && emotionalPatterns.protectiveEmotions.length === 0 && (
-                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border text-center'}>
-                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
-                                                                        Continue a registar as tuas emoções para identificarmos padrões claros. São necessárias pelo menos 3 ocorrências de cada emoção.
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Summary & Recommendations */}
-                                                <div className={(darkMode ? 'bg-gradient-to-r from-indigo-900/30 to-violet-900/30 border-indigo-700/50' : 'bg-gradient-to-r from-indigo-50 to-violet-50 border-indigo-200') + ' rounded-xl p-6 border'}>
-                                                    <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                        <span className="text-xl">🎯</span>
-                                                        Recomendações Personalizadas
-                                                    </h3>
-                                                    <div className="space-y-3">
-                                                        {(() => {
-                                                            const recommendations = [];
-
-                                                            // Based on temporal correlations
-                                                            if (temporalCorrelations && temporalCorrelations.sleepLag1.correlation !== null && temporalCorrelations.sleepLag1.correlation < -0.3) {
-                                                                recommendations.push({
-                                                                    icon: '😴',
-                                                                    title: 'Prioriza o Sono',
-                                                                    description: 'Os dados mostram que dormir mal está correlacionado com maior consumo no dia seguinte. Tenta manter 7-9h de sono consistentes.'
-                                                                });
-                                                            }
-
-                                                            // Based on emotional patterns
-                                                            if (emotionalPatterns && emotionalPatterns.riskEmotions.length > 0) {
-                                                                const topRiskEmotion = emotionalPatterns.riskEmotions[0].emotion;
-                                                                recommendations.push({
-                                                                    icon: '🛡️',
-                                                                    title: 'Cria um Plano para Emoções de Risco',
-                                                                    description: `Quando sentires "${topRiskEmotion}", tem alternativas preparadas: respiração profunda, caminhada, ligar a alguém, ou usar uma técnica DBT.`
-                                                                });
-                                                            }
-
-                                                            // Based on sentiment
-                                                            if (sentimentAnalysis && sentimentAnalysis.avgSentimentHighConsumption < -0.5) {
-                                                                recommendations.push({
-                                                                    icon: '💬',
-                                                                    title: 'Considera Falar com Alguém',
-                                                                    description: 'As tuas reflexões mostram sentimentos mais negativos em dias de alto consumo. Considera falar com um profissional sobre o que sentes.'
-                                                                });
-                                                            }
-
-                                                            // Based on protective emotions
-                                                            if (emotionalPatterns && emotionalPatterns.protectiveEmotions.length > 0) {
-                                                                const topProtectiveEmotion = emotionalPatterns.protectiveEmotions[0].emotion;
-                                                                recommendations.push({
-                                                                    icon: '✨',
-                                                                    title: 'Cultiva Emoções Protetoras',
-                                                                    description: `"${topProtectiveEmotion}" está associado a menor consumo. Identifica atividades que te trazem essa emoção e faz mais delas.`
-                                                                });
-                                                            }
-
-                                                            // General recommendation if we have data
-                                                            if (recommendations.length === 0 && hasData) {
-                                                                recommendations.push({
-                                                                    icon: '📊',
-                                                                    title: 'Continua a Registar',
-                                                                    description: 'Os teus dados ainda não mostram padrões fortes. Continua a registar consistentemente para insights mais precisos.'
-                                                                });
-                                                            }
-
-                                                            return recommendations.map((rec, i) => (
-                                                                <div key={i} className={(darkMode ? 'bg-indigo-900/50 border-indigo-700/50' : 'bg-white border-indigo-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className="flex items-start gap-3">
-                                                                        <div className="text-2xl flex-shrink-0">{rec.icon}</div>
-                                                                        <div>
-                                                                            <div className={'font-medium mb-1 ' + (darkMode ? 'text-indigo-300' : 'text-indigo-700')}>{rec.title}</div>
-                                                                            <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{rec.description}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ));
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
-                            )}
                         </div>
 
                         {/* Modals */}
@@ -3801,7 +3801,7 @@
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
-                                <div className="grid grid-cols-6 gap-1">
+                                <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
@@ -3809,10 +3809,6 @@
                                     <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <BarChart3 className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Padrões</div>
-                                    </button>
-                                    <button onClick={() => setCurrentView('insights')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'insights' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                                        <Brain className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Insights</div>
                                     </button>
                                     <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <BookOpen className="w-5 h-5" />
