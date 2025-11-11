@@ -1668,6 +1668,23 @@
 
                                             return (
                                                 <div className="space-y-4">
+                                                    {/* Mini-Resumo Conversacional */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/40 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200') + ' rounded-xl p-4 border'}>
+                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            💬 <span className="font-semibold">Nos últimos 7 dias</span> registaste <span className="font-bold">{thisWeek.length} consumos</span> (média {(thisWeek.length / 7).toFixed(1)}/dia).
+                                                            {byPartOfDay.noite + byPartOfDay.madrugada > filteredConsumptions.length * 0.6 && (
+                                                                <> A maioria acontece durante a <span className="font-bold">noite/madrugada</span> ({Math.round(((byPartOfDay.noite + byPartOfDay.madrugada) / filteredConsumptions.length) * 100)}%).</>
+                                                            )}
+                                                            {filteredCycles.filter(c => c.triggers && c.triggers.length > 0).length > 0 && (() => {
+                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
+                                                                const triggerCount = {};
+                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
+                                                                const topTrigger = Object.entries(triggerCount).sort((a, b) => b[1] - a[1])[0];
+                                                                return topTrigger ? <> O teu gatilho principal é <span className="font-bold">{topTrigger[0].toLowerCase()}</span> ({topTrigger[1]}x).</> : null;
+                                                            })()}
+                                                        </div>
+                                                    </div>
+
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -2030,6 +2047,29 @@
 
                                             return (
                                                 <div className="space-y-4">
+                                                    {/* Mini-Resumo Conversacional */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200') + ' rounded-xl p-4 border'}>
+                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            💬 {(() => {
+                                                                const parts = [];
+                                                                const sleepCorr = interpretCorr(sleepConsCorr);
+                                                                const moodCorr = interpretCorr(moodConsCorr);
+
+                                                                if (sleepConsCorr !== null && Math.abs(sleepConsCorr) > 0.4) {
+                                                                    parts.push(<>O teu <span className="font-bold">sono está a afetar o consumo</span> - correlação {sleepCorr.text.toLowerCase()} ({sleepConsCorr > 0 ? 'mais sono → mais consumo' : 'menos sono → mais consumo'}).</>);
+                                                                }
+                                                                if (moodConsCorr !== null && Math.abs(moodConsCorr) > 0.4) {
+                                                                    parts.push(<>O <span className="font-bold">humor também correlaciona</span>: {moodCorr.text.toLowerCase()} ({moodConsCorr > 0 ? 'melhor humor → mais consumo' : 'pior humor → mais consumo'}).</>);
+                                                                }
+                                                                if (parts.length === 0) {
+                                                                    parts.push(<>Analisei as correlações entre sono, humor e consumo. Continua a registar para identificar padrões mais claros!</>);
+                                                                }
+
+                                                                return parts.map((part, i) => <span key={i}>{i > 0 ? ' ' : ''}{part}</span>);
+                                                            })()}
+                                                        </div>
+                                                    </div>
+
                                                     {/* Wellbeing & Dosage Analysis */}
                                                     {(filteredWellbeingLogs.length > 0 || filteredDailyLogs.length > 0 || filteredCycles.some(c => c.bedtime)) && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -2701,6 +2741,20 @@
 
                                             return (
                                                 <div className="space-y-4">
+                                                    {/* Mini-Resumo Conversacional */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-green-900/40 to-teal-900/40 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-teal-50 border-green-200') + ' rounded-xl p-4 border'}>
+                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            💬 {avgSleep > 0 && <>Tens dormido em média <span className="font-bold">{avgSleep.toFixed(1)}h</span> {avgSleep >= 7 ? '(excelente! ✨)' : avgSleep >= 6 ? '(perto do ideal!)' : '(atenção: muito pouco)'}.{' '}</>}
+                                                            {avgMood > 0 && <>O teu humor está em <span className="font-bold">{avgMood.toFixed(1)}/10</span>.{' '}</>}
+                                                            {moodTrend > avgMood && avgMood > 0 && <>Boa notícia: tem melhorado nos últimos 7 dias! 📈</>}
+                                                            {selfCareData.water + selfCareData.rest + selfCareData.social + selfCareData.food > 0 && (() => {
+                                                                const totalLogs = filteredWellbeingLogs.length;
+                                                                const avgCare = Math.round(((selfCareData.water + selfCareData.rest + selfCareData.social + selfCareData.food) / (totalLogs * 4)) * 100);
+                                                                return avgCare >= 70 ? <> Autocuidado em {avgCare}% - continua assim! 💚</> : <> Autocuidado em {avgCare}% - há espaço para melhorar.</>;
+                                                            })()}
+                                                        </div>
+                                                    </div>
+
                                                     {/* Sleep patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>😴 Padrões de Sono</h3>
