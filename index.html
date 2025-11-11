@@ -454,10 +454,10 @@
 
             const submitCycle = async () => {
                 try {
-                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes };
+                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastBefore00: cycleForm.lastBefore00 };
                     setCycles(prev => [item, ...prev]);
                     await saveToFirebase('cycles', item);
-                    setCycleForm({ bedtime: '', triggers: [], notes: '' });
+                    setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
@@ -3125,7 +3125,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a'].map(emotion => (
+                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🌫️ Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
                                                     <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={wellbeingForm.emotions.includes(emotion)} onChange={(e) => {
                                                             if (e.target.checked) {
