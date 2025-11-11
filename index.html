@@ -617,11 +617,50 @@
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
 
+            // Helper: Get average frequency with new rules (2h+ intervals)
+            const getAvgFrequencyLast7Days = () => {
+                const last7Dates = [...Array(7)].map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    return d.toISOString().split('T')[0];
+                });
+
+                let validDaysCount = 0;
+                let totalConsumptions = 0;
+
+                last7Dates.forEach(date => {
+                    const dayConsumptions = consumptions.filter(c => c.date === date);
+                    if (dayConsumptions.length === 0) return;
+
+                    // Check interval rule if more than 1 consumption
+                    if (dayConsumptions.length === 1) {
+                        validDaysCount++;
+                        totalConsumptions += 1;
+                        return;
+                    }
+
+                    const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                    let longIntervals = 0;
+                    for (let i = 1; i < sorted.length; i++) {
+                        const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                        if (intervalHours >= 2) longIntervals++;
+                    }
+
+                    const totalIntervals = sorted.length - 1;
+                    if (longIntervals >= totalIntervals / 2) {
+                        validDaysCount++;
+                        totalConsumptions += dayConsumptions.length;
+                    }
+                });
+
+                return validDaysCount > 0 ? (totalConsumptions / validDaysCount) : 0;
+            };
+
             // ALTERAÇÃO 2 e 7: Corrigir progresso de metas + adicionar meta "hora do último consumo"
             const getGoalProgress = (goal) => {
                 if (goal.type === 'reduce_frequency') {
-                    const avgLast7 = parseFloat(getLast7Days().avgTimes);
-                    if (avgLast7 === 0) return 0;
+                    const avgLast7 = getAvgFrequencyLast7Days();
+                    if (avgLast7 === 0) return 100; // No consumptions = goal achieved
                     if (avgLast7 <= goal.target) return 100;
                     const baseline = Math.max(avgLast7, goal.target * 2);
                     const progress = ((baseline - avgLast7) / (baseline - goal.target)) * 100;
@@ -679,13 +718,42 @@
                 console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
-                    // Count days where consumptions <= target
+                    // REGRA: Conta o dia quando:
+                    // 1. Número de consumos <= target
+                    // 2. Pelo menos metade dos intervalos >= 2h
                     const consumptionsByDate = {};
+
+                    // Group all consumptions by date
                     consumptions.forEach(c => {
-                        consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                        consumptionsByDate[c.date].push(c);
                     });
-                    Object.values(consumptionsByDate).forEach(count => {
-                        if (count <= goal.target) achievedDays++;
+
+                    // Check each day
+                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+                        const count = dayConsumptions.length;
+                        if (count === 0 || count > goal.target) return;
+
+                        // Check interval rule: at least half of intervals must be 2h+
+                        if (dayConsumptions.length <= 1) {
+                            // Only 1 consumption = always passes interval rule
+                            achievedDays++;
+                            return;
+                        }
+
+                        // Sort by timestamp
+                        const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                        let longIntervals = 0;
+                        for (let i = 1; i < sorted.length; i++) {
+                            const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                            if (intervalHours >= 2) longIntervals++;
+                        }
+
+                        // At least half of intervals must be 2h+
+                        const totalIntervals = sorted.length - 1;
+                        if (longIntervals >= totalIntervals / 2) {
+                            achievedDays++;
+                        }
                     });
                 }
 
@@ -2219,7 +2287,9 @@
                                                 const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
                                                 const numerator = n * sumXY - sumX * sumY;
                                                 const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                return denominator === 0 ? null : numerator / denominator;
+                                                if (denominator === 0) return null;
+                                                const result = numerator / denominator;
+                                                return isNaN(result) ? null : result;
                                             };
 
                                             const sleepConsCorr = getCorrelation(sleepConsumptionData, 'sleep', 'consumptions');
@@ -2227,7 +2297,7 @@
                                             const moodConsCorr = getCorrelation(moodConsumptionData, 'mood', 'consumptions');
 
                                             const interpretCorr = (corr) => {
-                                                if (corr === null) return { text: 'Sem dados', color: 'gray' };
+                                                if (corr === null || isNaN(corr)) return { text: 'Sem dados suficientes', color: 'gray' };
                                                 const abs = Math.abs(corr);
                                                 if (abs > 0.7) return { text: 'Forte ' + (corr > 0 ? 'positiva' : 'negativa'), color: corr > 0 ? 'green' : 'red' };
                                                 if (abs > 0.4) return { text: 'Moderada ' + (corr > 0 ? 'positiva' : 'negativa'), color: corr > 0 ? 'blue' : 'orange' };
@@ -2366,16 +2436,20 @@
                                                                     if (filteredCycles.filter(c => c.bedtime).length > 0) {
                                                                         const bedtimes = filteredCycles.filter(c => c.bedtime).map(c => {
                                                                             const [h, m] = c.bedtime.split(':').map(Number);
-                                                                            return h + m / 60;
+                                                                            let hour = h + m / 60;
+                                                                            // Convert early morning hours (0-6) to 24-30 for proper averaging
+                                                                            if (hour < 6) hour += 24;
+                                                                            return hour;
                                                                         });
-                                                                        const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        let avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        // Convert back to 0-23 range if needed
+                                                                        if (avgBedtime >= 24) avgBedtime -= 24;
                                                                         const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
 
-                                                                        if (avgBedtime >= 22 && avgBedtime <= 23.5) {
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-23h30 favorece ciclos de sono saudáveis.`);
-                                                                        } else if (avgBedtime > 23.5 || avgBedtime < 6) {
-                                                                            const lateHour = avgBedtime > 23.5 ? avgBedtime : avgBedtime + 24;
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar tarde (>23h30) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
+                                                                        if (avgBedtime >= 22 || avgBedtime <= 0.5) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-0h30 favorece ciclos de sono saudáveis.`);
+                                                                        } else if (avgBedtime > 0.5 && avgBedtime < 10) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar muito tarde (madrugada) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
                                                                         } else {
                                                                             insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Rotina de sono estabelecida.`);
                                                                         }
@@ -2410,8 +2484,31 @@
                                                         // For each goal, check which days it was achieved
                                                         goals.forEach(goal => {
                                                             if (goal.type === 'reduce_frequency') {
-                                                                Object.keys(consumptionsByDate).forEach(date => {
-                                                                    if (consumptionsByDate[date] <= goal.target) {
+                                                                // REGRA: Conta o dia quando número de consumos <= target E pelo menos metade dos intervalos >= 2h
+                                                                const consumptionsByDateFiltered = {};
+                                                                consumptions.forEach(c => {
+                                                                    if (!consumptionsByDateFiltered[c.date]) consumptionsByDateFiltered[c.date] = [];
+                                                                    consumptionsByDateFiltered[c.date].push(c);
+                                                                });
+
+                                                                Object.entries(consumptionsByDateFiltered).forEach(([date, dayConsumptions]) => {
+                                                                    if (dayConsumptions.length > goal.target) return;
+
+                                                                    // Check interval rule
+                                                                    if (dayConsumptions.length <= 1) {
+                                                                        if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                        goalAchievementsByDate[date].push(goal);
+                                                                        return;
+                                                                    }
+
+                                                                    const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                                                                    let longIntervals = 0;
+                                                                    for (let i = 1; i < sorted.length; i++) {
+                                                                        const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                                                                        if (intervalHours >= 2) longIntervals++;
+                                                                    }
+
+                                                                    if (longIntervals >= (sorted.length - 1) / 2) {
                                                                         if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
                                                                         goalAchievementsByDate[date].push(goal);
                                                                     }
@@ -2496,7 +2593,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{sleepConsCorr !== null && !isNaN(sleepConsCorr) ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2512,7 +2609,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{moodSleepCorr !== null && !isNaN(moodSleepCorr) ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2528,7 +2625,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{moodConsCorr !== null && !isNaN(moodConsCorr) ? moodConsCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2585,7 +2682,7 @@
                                                                                         </div>
                                                                                         {avgConsumptions !== 'N/A' && (
                                                                                             <div className="text-xs text-gray-600 mt-2">
-                                                                                                Média de {avgConsumptions} consumos/dia quando presente
+                                                                                                💡 Nos dias em que identificaste <strong>{trigger.toLowerCase()}</strong> como gatilho, tiveste em média <strong>{avgConsumptions} consumos</strong>
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
@@ -2610,11 +2707,19 @@
                                                                     const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
                                                                     const consumptionsOnDay = filteredConsumptions.filter(c => c.date === cycleDate).length;
                                                                     const [hours, minutes] = cycle.bedtime.split(':').map(Number);
-                                                                    const bedtimeInHours = hours + minutes / 60;
+                                                                    let bedtimeInHours = hours + minutes / 60;
+                                                                    // Keep original bedtime for correlation (not converted)
                                                                     bedtimeData.push({ bedtime: bedtimeInHours, consumptions: consumptionsOnDay });
                                                                 });
 
-                                                                const avgBedtime = bedtimeData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeData.length;
+                                                                // For display average, convert early morning to 24+ range
+                                                                const bedtimesForAvg = bedtimeData.map(d => {
+                                                                    let hour = d.bedtime;
+                                                                    if (hour < 6) hour += 24;
+                                                                    return hour;
+                                                                });
+                                                                let avgBedtime = bedtimesForAvg.reduce((sum, t) => sum + t, 0) / bedtimesForAvg.length;
+                                                                if (avgBedtime >= 24) avgBedtime -= 24;
                                                                 const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
 
                                                                 // Calculate correlation
@@ -2634,7 +2739,7 @@
                                                                                     <div className="text-xs text-gray-500">Correlação entre hora de deitar e consumo</div>
                                                                                 </div>
                                                                                 <div className={'text-right font-bold text-' + corrInfo.color + '-600'}>
-                                                                                    <div className="text-lg">{bedtimeCorr !== null ? bedtimeCorr.toFixed(2) : 'N/A'}</div>
+                                                                                    <div className="text-lg">{bedtimeCorr !== null && !isNaN(bedtimeCorr) ? bedtimeCorr.toFixed(2) : 'N/A'}</div>
                                                                                     <div className="text-xs">{corrInfo.text}</div>
                                                                                 </div>
                                                                             </div>
