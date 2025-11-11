@@ -1086,6 +1086,62 @@
                 };
             };
 
+            // Intra-day variation analysis
+            const getIntraDayVariation = () => {
+                // Group wellbeing logs by date
+                const logsByDate = {};
+                wellbeingLogs.forEach(log => {
+                    if (!logsByDate[log.date]) logsByDate[log.date] = [];
+                    logsByDate[log.date].push(log);
+                });
+
+                // Find days with multiple entries
+                const multiEntryDays = Object.entries(logsByDate)
+                    .filter(([_, logs]) => logs.length > 1)
+                    .map(([date, logs]) => {
+                        // Sort by timestamp to get chronological order
+                        const sorted = logs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                        const first = sorted[0];
+                        const last = sorted[sorted.length - 1];
+
+                        return {
+                            date,
+                            entries: sorted.length,
+                            moodChange: (last.mood || 0) - (first.mood || 0),
+                            energyChange: (last.energy || 0) - (first.energy || 0),
+                            firstMood: first.mood,
+                            lastMood: last.mood,
+                            firstEnergy: first.energy,
+                            lastEnergy: last.energy
+                        };
+                    });
+
+                if (multiEntryDays.length === 0) return null;
+
+                // Calculate average changes
+                const avgMoodChange = multiEntryDays.reduce((sum, d) => sum + d.moodChange, 0) / multiEntryDays.length;
+                const avgEnergyChange = multiEntryDays.reduce((sum, d) => sum + d.energyChange, 0) / multiEntryDays.length;
+
+                // Count improvement vs worsening days
+                const moodImproving = multiEntryDays.filter(d => d.moodChange > 0).length;
+                const moodWorsening = multiEntryDays.filter(d => d.moodChange < 0).length;
+                const energyImproving = multiEntryDays.filter(d => d.energyChange > 0).length;
+                const energyWorsening = multiEntryDays.filter(d => d.energyChange < 0).length;
+
+                return {
+                    totalDaysTracked: multiEntryDays.length,
+                    avgMoodChange: avgMoodChange,
+                    avgEnergyChange: avgEnergyChange,
+                    moodImproving: moodImproving,
+                    moodWorsening: moodWorsening,
+                    moodStable: multiEntryDays.length - moodImproving - moodWorsening,
+                    energyImproving: energyImproving,
+                    energyWorsening: energyWorsening,
+                    energyStable: multiEntryDays.length - energyImproving - energyWorsening,
+                    daysData: multiEntryDays
+                };
+            };
+
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
@@ -2964,9 +3020,10 @@
                                             const sentimentAnalysis = getSentimentAnalysis();
                                             const temporalCorrelations = getTemporalCorrelations();
                                             const emotionalPatterns = getEmotionalPatterns();
+                                            const intraDayVariation = getIntraDayVariation();
 
                                             // Check if we have enough data
-                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns;
+                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns || intraDayVariation;
 
                                             if (!hasData) {
                                                 return (
@@ -3160,6 +3217,83 @@
                                                                         </div>
                                                                     </div>
                                                                 )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Intra-Day Variation Analysis */}
+                                                    {intraDayVariation && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-cyan-900/30 to-teal-900/30 border-cyan-700/50' : 'bg-gradient-to-r from-cyan-50 to-teal-50 border-cyan-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">📈</span>
+                                                                Variação Intra-Dia (Humor e Energia ao Longo do Dia)
+                                                            </h3>
+                                                            <div className="space-y-4">
+                                                                <div className={(darkMode ? 'bg-cyan-900/50 border-cyan-700/50' : 'bg-cyan-100 border-cyan-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-sm leading-relaxed mb-3 ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                        💬 <strong>Descoberta:</strong> Analisaste {intraDayVariation.totalDaysTracked} dias em que registaste o teu estado várias vezes ao longo do dia.
+                                                                        {intraDayVariation.avgMoodChange !== 0 && (
+                                                                            <> O teu humor {intraDayVariation.avgMoodChange > 0 ? 'tende a melhorar' : 'tende a piorar'} ao longo do dia ({intraDayVariation.avgMoodChange > 0 ? '+' : ''}{intraDayVariation.avgMoodChange.toFixed(1)} pontos em média).</>
+                                                                        )}
+                                                                        {intraDayVariation.avgEnergyChange !== 0 && (
+                                                                            <> A tua energia {intraDayVariation.avgEnergyChange > 0 ? 'aumenta' : 'diminui'} ({intraDayVariation.avgEnergyChange > 0 ? '+' : ''}{intraDayVariation.avgEnergyChange.toFixed(1)} pontos).</>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    {/* Mood patterns */}
+                                                                    <div className={(darkMode ? 'bg-purple-900/50 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className={'font-medium mb-2 ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>😊 Padrão de Humor</div>
+                                                                        <div className={'text-xs space-y-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            <div className="flex justify-between">
+                                                                                <span>📈 Melhorou:</span>
+                                                                                <span className="font-bold">{intraDayVariation.moodImproving} dias ({Math.round((intraDayVariation.moodImproving / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span>📉 Piorou:</span>
+                                                                                <span className="font-bold">{intraDayVariation.moodWorsening} dias ({Math.round((intraDayVariation.moodWorsening / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span>➡️ Estável:</span>
+                                                                                <span className="font-bold">{intraDayVariation.moodStable} dias ({Math.round((intraDayVariation.moodStable / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Energy patterns */}
+                                                                    <div className={(darkMode ? 'bg-orange-900/50 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className={'font-medium mb-2 ' + (darkMode ? 'text-orange-300' : 'text-orange-700')}>⚡ Padrão de Energia</div>
+                                                                        <div className={'text-xs space-y-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            <div className="flex justify-between">
+                                                                                <span>📈 Aumentou:</span>
+                                                                                <span className="font-bold">{intraDayVariation.energyImproving} dias ({Math.round((intraDayVariation.energyImproving / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span>📉 Diminuiu:</span>
+                                                                                <span className="font-bold">{intraDayVariation.energyWorsening} dias ({Math.round((intraDayVariation.energyWorsening / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between">
+                                                                                <span>➡️ Estável:</span>
+                                                                                <span className="font-bold">{intraDayVariation.energyStable} dias ({Math.round((intraDayVariation.energyStable / intraDayVariation.totalDaysTracked) * 100)}%)</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className={(darkMode ? 'bg-teal-900/30 border-teal-700/50' : 'bg-teal-50 border-teal-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                        💡 <strong>Sugestão:</strong> {(() => {
+                                                                            if (intraDayVariation.moodWorsening > intraDayVariation.moodImproving) {
+                                                                                return 'O teu humor tende a piorar ao longo do dia. Planeia atividades de autocuidado para o fim do dia (exercício suave, meditação, contacto social).';
+                                                                            } else if (intraDayVariation.moodImproving > intraDayVariation.moodWorsening) {
+                                                                                return 'Boa notícia! O teu humor tende a melhorar ao longo do dia. Se começares o dia em baixo, lembra-te que é provável que melhore.';
+                                                                            } else {
+                                                                                return 'O teu humor varia de forma equilibrada. Continua a registar para identificarmos padrões mais específicos.';
+                                                                            }
+                                                                        })()}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
