@@ -617,7 +617,7 @@
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
 
-            // Helper: Get average frequency with new rules (< 200mg + 2h+ intervals)
+            // Helper: Get average frequency with new rules (2h+ intervals)
             const getAvgFrequencyLast7Days = () => {
                 const last7Dates = [...Array(7)].map((_, i) => {
                     const d = new Date();
@@ -629,7 +629,7 @@
                 let totalConsumptions = 0;
 
                 last7Dates.forEach(date => {
-                    const dayConsumptions = consumptions.filter(c => c.date === date && c.mg < 200);
+                    const dayConsumptions = consumptions.filter(c => c.date === date);
                     if (dayConsumptions.length === 0) return;
 
                     // Check interval rule if more than 1 consumption
@@ -718,17 +718,15 @@
                 console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
-                    // NOVAS REGRAS:
-                    // 1. Só conta consumos ABAIXO de 200mg (exclusive)
-                    // 2. Só conta o dia quando pelo menos metade dos consumos têm intervalo 2h+
+                    // REGRA: Conta o dia quando:
+                    // 1. Número de consumos <= target
+                    // 2. Pelo menos metade dos intervalos >= 2h
                     const consumptionsByDate = {};
 
-                    // Group consumptions by date (only < 200mg)
+                    // Group all consumptions by date
                     consumptions.forEach(c => {
-                        if (c.mg < 200) {
-                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
-                            consumptionsByDate[c.date].push(c);
-                        }
+                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                        consumptionsByDate[c.date].push(c);
                     });
 
                     // Check each day
@@ -736,7 +734,7 @@
                         const count = dayConsumptions.length;
                         if (count === 0 || count > goal.target) return;
 
-                        // Check interval rule: at least half of consumptions must have 2h+ interval
+                        // Check interval rule: at least half of intervals must be 2h+
                         if (dayConsumptions.length <= 1) {
                             // Only 1 consumption = always passes interval rule
                             achievedDays++;
@@ -2258,13 +2256,11 @@
                                                         // For each goal, check which days it was achieved
                                                         goals.forEach(goal => {
                                                             if (goal.type === 'reduce_frequency') {
-                                                                // NOVAS REGRAS: < 200mg + intervalo 2h+
+                                                                // REGRA: Conta o dia quando número de consumos <= target E pelo menos metade dos intervalos >= 2h
                                                                 const consumptionsByDateFiltered = {};
                                                                 consumptions.forEach(c => {
-                                                                    if (c.mg < 200) {
-                                                                        if (!consumptionsByDateFiltered[c.date]) consumptionsByDateFiltered[c.date] = [];
-                                                                        consumptionsByDateFiltered[c.date].push(c);
-                                                                    }
+                                                                    if (!consumptionsByDateFiltered[c.date]) consumptionsByDateFiltered[c.date] = [];
+                                                                    consumptionsByDateFiltered[c.date].push(c);
                                                                 });
 
                                                                 Object.entries(consumptionsByDateFiltered).forEach(([date, dayConsumptions]) => {
