@@ -3678,7 +3678,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência'].map(trigger => (
+                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor', 'Insónia', 'Frustração', 'Sem razão aparente'].map(trigger => (
                                                     <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
                                                             if (e.target.checked) {
