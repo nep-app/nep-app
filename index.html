@@ -3139,6 +3139,128 @@
                                                 <div className="space-y-6">
                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Análise automática dos teus registos para identificar padrões emocionais e comportamentais</p>
 
+                                                    {/* COMPREHENSIVE COACH-STYLE SUMMARY */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-indigo-900/50 via-purple-900/50 to-pink-900/50 border-indigo-700/50' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-indigo-300') + ' rounded-xl p-6 border-2'}>
+                                                        <div className="flex items-start gap-3 mb-4">
+                                                            <div className="text-3xl">🧠</div>
+                                                            <div>
+                                                                <h3 className={'font-bold text-lg mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>O Teu Coach Pessoal</h3>
+                                                                <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Análise completa dos teus padrões e recomendações personalizadas</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={'leading-relaxed space-y-4 ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            {/* Greeting and overview */}
+                                                            <div className={(darkMode ? 'bg-indigo-900/50 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
+                                                                <p className="text-sm">
+                                                                    👋 <strong>Olá!</strong> Analisei {(() => {
+                                                                        const dataPoints = [];
+                                                                        if (sentimentAnalysis) dataPoints.push(`${sentimentAnalysis.totalTexts} textos escritos`);
+                                                                        if (temporalCorrelations) dataPoints.push('padrões temporais');
+                                                                        if (emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0) dataPoints.push(`${emotionalPatterns.totalEmotionsTracked} emoções registadas`);
+                                                                        if (intraDayVariation) dataPoints.push(`${intraDayVariation.totalDaysTracked} dias com múltiplos registos`);
+                                                                        if (bidirectionalAnalysis && bidirectionalAnalysis.sameDay) dataPoints.push(`${bidirectionalAnalysis.sameDay.consumptionDays.count + bidirectionalAnalysis.sameDay.nonConsumptionDays.count} dias de bem-estar`);
+                                                                        return dataPoints.length > 0 ? dataPoints.slice(0, 3).join(', ') : 'os teus dados';
+                                                                    })()} para perceber os teus padrões. Vamos ver o que descobri! ✨
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Key insights synthesis */}
+                                                            <div className="space-y-3">
+                                                                {/* Sentiment insight */}
+                                                                {sentimentAnalysis && Math.abs(sentimentAnalysis.avgSentimentHighConsumption - sentimentAnalysis.avgSentimentLowConsumption) > 0.3 && (
+                                                                    <div className={(darkMode ? 'bg-purple-900/40 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-purple-600 dark:text-purple-400">💭 Padrão Emocional:</span>{' '}
+                                                                            {(() => {
+                                                                                const diff = sentimentAnalysis.avgSentimentLowConsumption - sentimentAnalysis.avgSentimentHighConsumption;
+                                                                                if (diff > 0) {
+                                                                                    return `Os teus textos são mais positivos em dias de menor consumo. Isto é um sinal importante de que o consumo pode estar relacionado com estados emocionais mais difíceis. Considera explorar outras formas de lidar com essas emoções.`;
+                                                                                } else {
+                                                                                    return `Os teus textos mostram sentimentos mais negativos em dias de menor consumo. Isto pode indicar que usas substâncias para lidar com emoções difíceis. É importante desenvolver estratégias alternativas de coping.`;
+                                                                                }
+                                                                            })()}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Temporal insight */}
+                                                                {temporalCorrelations && temporalCorrelations.sleepLag1.correlation !== null && Math.abs(temporalCorrelations.sleepLag1.correlation) > 0.3 && (
+                                                                    <div className={(darkMode ? 'bg-blue-900/40 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-blue-600 dark:text-blue-400">😴 Sono e Consumo:</span>{' '}
+                                                                            {temporalCorrelations.sleepLag1.correlation < 0
+                                                                                ? 'Descobri uma ligação forte: dormir mal está a afetar o teu consumo no dia seguinte. O sono é uma peça-chave! Priorizar descanso de qualidade pode fazer uma diferença significativa na tua jornada.'
+                                                                                : 'O teu padrão de sono tem uma relação interessante com o consumo. Continua a monitorizar e a cuidar do teu descanso.'}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Emotional patterns insight */}
+                                                                {emotionalPatterns && emotionalPatterns.riskEmotions && emotionalPatterns.riskEmotions.length > 0 && (
+                                                                    <div className={(darkMode ? 'bg-red-900/40 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-red-600 dark:text-red-400">⚠️ Emoções Gatilho:</span>{' '}
+                                                                            Identifiquei que <strong>{emotionalPatterns.riskEmotions[0].emotion.toLowerCase()}</strong>
+                                                                            {emotionalPatterns.riskEmotions.length > 1 && <> e <strong>{emotionalPatterns.riskEmotions[1].emotion.toLowerCase()}</strong></>}
+                                                                            {' '}aparecem mais em dias de maior consumo. Reconhecer estas emoções é o primeiro passo! Quando as sentires, é o momento de ativar as tuas estratégias de coping.
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Protective emotions insight */}
+                                                                {emotionalPatterns && emotionalPatterns.protectiveEmotions && emotionalPatterns.protectiveEmotions.length > 0 && (
+                                                                    <div className={(darkMode ? 'bg-green-900/40 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-green-600 dark:text-green-400">✨ Forças Protetoras:</span>{' '}
+                                                                            Boa notícia! <strong>{emotionalPatterns.protectiveEmotions[0].emotion.toLowerCase()}</strong> está associado a dias de menor consumo. Procura cultivar mais momentos que te tragam esta emoção - podem ser a tua âncora nos dias difíceis.
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Intra-day variation insight */}
+                                                                {intraDayVariation && (
+                                                                    <div className={(darkMode ? 'bg-cyan-900/40 border-cyan-700/50' : 'bg-cyan-50 border-cyan-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-cyan-600 dark:text-cyan-400">📈 Padrão Diário:</span>{' '}
+                                                                            {intraDayVariation.moodImproving > intraDayVariation.moodWorsening
+                                                                                ? `O teu humor tende a melhorar ao longo do dia em ${Math.round((intraDayVariation.moodImproving / intraDayVariation.totalDaysTracked) * 100)}% dos dias. Quando acordares em baixo, lembra-te: é provável que melhore! Aguenta firme. 💪`
+                                                                                : intraDayVariation.moodWorsening > intraDayVariation.moodImproving
+                                                                                ? `Reparo que o teu humor tende a piorar ao longo do dia. Isto é importante! Planeia atividades de autocuidado para o fim do dia antes que o cansaço acumule.`
+                                                                                : `O teu humor varia de forma equilibrada ao longo do dia. Continua atento aos teus padrões!`}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Bidirectional insight */}
+                                                                {bidirectionalAnalysis && bidirectionalAnalysis.sameDay && bidirectionalAnalysis.sameDay.nonConsumptionDays.count > 0 && (
+                                                                    <div className={(darkMode ? 'bg-amber-900/40 border-amber-700/50' : 'bg-amber-50 border-amber-200') + ' rounded-lg p-4 border'}>
+                                                                        <p className="text-sm">
+                                                                            <span className="font-bold text-amber-600 dark:text-amber-400">🔄 Impacto no Bem-Estar:</span>{' '}
+                                                                            {(() => {
+                                                                                const moodDiff = bidirectionalAnalysis.sameDay.nonConsumptionDays.avgMood - bidirectionalAnalysis.sameDay.consumptionDays.avgMood;
+                                                                                const sleepDiff = bidirectionalAnalysis.sameDay.nonConsumptionDays.avgSleep - bidirectionalAnalysis.sameDay.consumptionDays.avgSleep;
+
+                                                                                if (moodDiff > 0.5 || sleepDiff > 0.5) {
+                                                                                    return `Comparei dias com e sem consumo: em dias sem consumo, o teu bem-estar é claramente melhor (${moodDiff > 0.5 ? `humor +${moodDiff.toFixed(1)} pontos` : ''}${moodDiff > 0.5 && sleepDiff > 0.5 ? ', ' : ''}${sleepDiff > 0.5 ? `sono +${sleepDiff.toFixed(1)}h` : ''}). Os dados não mentem - o teu corpo e mente agradecem os dias de pausa! 🌟`;
+                                                                                } else {
+                                                                                    return `O impacto direto do consumo no teu bem-estar não é muito claro nos dados. Continua a registar para identificarmos padrões mais evidentes.`;
+                                                                                }
+                                                                            })()}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Motivational closing */}
+                                                            <div className={(darkMode ? 'bg-gradient-to-r from-pink-900/50 to-rose-900/50 border-pink-700/50' : 'bg-gradient-to-r from-pink-50 to-rose-50 border-pink-200') + ' rounded-lg p-4 border'}>
+                                                                <p className="text-sm font-medium">
+                                                                    🌟 <strong>Lembra-te:</strong> Cada dia que registas é um ato de coragem e autocuidado. Estás a construir conhecimento sobre ti próprio/a que é PODER. Os padrões que identifico aqui são ferramentas para te ajudar - não julgamentos. Continua nesta jornada, um dia de cada vez. Estou aqui para te apoiar! 💜
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {/* Sentiment Analysis */}
                                                     {sentimentAnalysis && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
