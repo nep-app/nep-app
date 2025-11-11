@@ -143,6 +143,7 @@
             const [showGoalModal, setShowGoalModal] = useState(false);
             const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
             const [editingConsumption, setEditingConsumption] = useState(null);
+            const [editingGoal, setEditingGoal] = useState(null);
             const [patternView, setPatternView] = useState('comparisons');
 
             // 2.4 Pagination States
@@ -469,14 +470,26 @@
             const submitGoal = async () => {
                 try {
                     const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
-                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
-                    setGoals(prev => [...prev, item]);
-                    await saveToFirebase('goals', item);
+
+                    if (editingGoal) {
+                        // Update existing goal
+                        const updatedGoal = { ...editingGoal, type: goalForm.type, target, deadline: goalForm.deadline };
+                        setGoals(prev => prev.map(g => g.id === editingGoal.id ? updatedGoal : g));
+                        await saveToFirebase('goals', updatedGoal);
+                        setEditingGoal(null);
+                        showToast('✓ Meta atualizada', 'success');
+                    } else {
+                        // Create new goal
+                        const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                        setGoals(prev => [...prev, item]);
+                        await saveToFirebase('goals', item);
+                        showToast('✓ Meta criada', 'success');
+                    }
+
                     setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
                     setShowGoalModal(false);
-                    showToast('✓ Meta criada', 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao criar meta', 'error');
+                    showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');
                     console.error(error);
                 }
             };
@@ -617,11 +630,50 @@
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
 
+            // Helper: Get average frequency with new rules (2h+ intervals)
+            const getAvgFrequencyLast7Days = () => {
+                const last7Dates = [...Array(7)].map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    return d.toISOString().split('T')[0];
+                });
+
+                let validDaysCount = 0;
+                let totalConsumptions = 0;
+
+                last7Dates.forEach(date => {
+                    const dayConsumptions = consumptions.filter(c => c.date === date);
+                    if (dayConsumptions.length === 0) return;
+
+                    // Check interval rule if more than 1 consumption
+                    if (dayConsumptions.length === 1) {
+                        validDaysCount++;
+                        totalConsumptions += 1;
+                        return;
+                    }
+
+                    const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                    let longIntervals = 0;
+                    for (let i = 1; i < sorted.length; i++) {
+                        const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                        if (intervalHours >= 2) longIntervals++;
+                    }
+
+                    const totalIntervals = sorted.length - 1;
+                    if (longIntervals >= totalIntervals / 2) {
+                        validDaysCount++;
+                        totalConsumptions += dayConsumptions.length;
+                    }
+                });
+
+                return validDaysCount > 0 ? (totalConsumptions / validDaysCount) : 0;
+            };
+
             // ALTERAÇÃO 2 e 7: Corrigir progresso de metas + adicionar meta "hora do último consumo"
             const getGoalProgress = (goal) => {
                 if (goal.type === 'reduce_frequency') {
-                    const avgLast7 = parseFloat(getLast7Days().avgTimes);
-                    if (avgLast7 === 0) return 0;
+                    const avgLast7 = getAvgFrequencyLast7Days();
+                    if (avgLast7 === 0) return 100; // No consumptions = goal achieved
                     if (avgLast7 <= goal.target) return 100;
                     const baseline = Math.max(avgLast7, goal.target * 2);
                     const progress = ((baseline - avgLast7) / (baseline - goal.target)) * 100;
@@ -679,13 +731,42 @@
                 console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
-                    // Count days where consumptions <= target
+                    // REGRA: Conta o dia quando:
+                    // 1. Número de consumos <= target
+                    // 2. Pelo menos metade dos intervalos >= 2h
                     const consumptionsByDate = {};
+
+                    // Group all consumptions by date
                     consumptions.forEach(c => {
-                        consumptionsByDate[c.date] = (consumptionsByDate[c.date] || 0) + 1;
+                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                        consumptionsByDate[c.date].push(c);
                     });
-                    Object.values(consumptionsByDate).forEach(count => {
-                        if (count <= goal.target) achievedDays++;
+
+                    // Check each day
+                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+                        const count = dayConsumptions.length;
+                        if (count === 0 || count > goal.target) return;
+
+                        // Check interval rule: at least half of intervals must be 2h+
+                        if (dayConsumptions.length <= 1) {
+                            // Only 1 consumption = always passes interval rule
+                            achievedDays++;
+                            return;
+                        }
+
+                        // Sort by timestamp
+                        const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                        let longIntervals = 0;
+                        for (let i = 1; i < sorted.length; i++) {
+                            const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                            if (intervalHours >= 2) longIntervals++;
+                        }
+
+                        // At least half of intervals must be 2h+
+                        const totalIntervals = sorted.length - 1;
+                        if (longIntervals >= totalIntervals / 2) {
+                            achievedDays++;
+                        }
                     });
                 }
 
@@ -1505,12 +1586,13 @@
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['comparisons', 'analyses', 'others', 'reports'].map(view => (
+                                        {['comparisons', 'analyses', 'reports', 'insights', 'others'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                                                {view === 'comparisons' && '📊 Visão Geral'}
-                                                {view === 'analyses' && '🔬 Análise'}
+                                                {view === 'comparisons' && '📊 Comparações'}
+                                                {view === 'analyses' && '🔬 Análises'}
+                                                {view === 'reports' && '📋 Relatórios'}
+                                                {view === 'insights' && '🧠 Insights'}
                                                 {view === 'others' && '💚 Bem-Estar'}
-                                                {view === 'reports' && '🧠 Insights'}
                                             </button>
                                         ))}
                                     </div>
@@ -1668,23 +1750,6 @@
 
                                             return (
                                                 <div className="space-y-4">
-                                                    {/* Mini-Resumo Conversacional */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/40 to-blue-900/40 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200') + ' rounded-xl p-4 border'}>
-                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                            💬 <span className="font-semibold">Nos últimos 7 dias</span> registaste <span className="font-bold">{thisWeek.length} consumos</span> (média {(thisWeek.length / 7).toFixed(1)}/dia).
-                                                            {byPartOfDay.noite + byPartOfDay.madrugada > filteredConsumptions.length * 0.6 && (
-                                                                <> A maioria acontece durante a <span className="font-bold">noite/madrugada</span> ({Math.round(((byPartOfDay.noite + byPartOfDay.madrugada) / filteredConsumptions.length) * 100)}%).</>
-                                                            )}
-                                                            {filteredCycles.filter(c => c.triggers && c.triggers.length > 0).length > 0 && (() => {
-                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
-                                                                const triggerCount = {};
-                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
-                                                                const topTrigger = Object.entries(triggerCount).sort((a, b) => b[1] - a[1])[0];
-                                                                return topTrigger ? <> O teu gatilho principal é <span className="font-bold">{topTrigger[0].toLowerCase()}</span> ({topTrigger[1]}x).</> : null;
-                                                            })()}
-                                                        </div>
-                                                    </div>
-
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -2030,7 +2095,9 @@
                                                 const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
                                                 const numerator = n * sumXY - sumX * sumY;
                                                 const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                return denominator === 0 ? null : numerator / denominator;
+                                                if (denominator === 0) return null;
+                                                const result = numerator / denominator;
+                                                return isNaN(result) ? null : result;
                                             };
 
                                             const sleepConsCorr = getCorrelation(sleepConsumptionData, 'sleep', 'consumptions');
@@ -2038,7 +2105,7 @@
                                             const moodConsCorr = getCorrelation(moodConsumptionData, 'mood', 'consumptions');
 
                                             const interpretCorr = (corr) => {
-                                                if (corr === null) return { text: 'Sem dados', color: 'gray' };
+                                                if (corr === null || isNaN(corr)) return { text: 'Sem dados suficientes', color: 'gray' };
                                                 const abs = Math.abs(corr);
                                                 if (abs > 0.7) return { text: 'Forte ' + (corr > 0 ? 'positiva' : 'negativa'), color: corr > 0 ? 'green' : 'red' };
                                                 if (abs > 0.4) return { text: 'Moderada ' + (corr > 0 ? 'positiva' : 'negativa'), color: corr > 0 ? 'blue' : 'orange' };
@@ -2047,29 +2114,6 @@
 
                                             return (
                                                 <div className="space-y-4">
-                                                    {/* Mini-Resumo Conversacional */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200') + ' rounded-xl p-4 border'}>
-                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                            💬 {(() => {
-                                                                const parts = [];
-                                                                const sleepCorr = interpretCorr(sleepConsCorr);
-                                                                const moodCorr = interpretCorr(moodConsCorr);
-
-                                                                if (sleepConsCorr !== null && Math.abs(sleepConsCorr) > 0.4) {
-                                                                    parts.push(<>O teu <span className="font-bold">sono está a afetar o consumo</span> - correlação {sleepCorr.text.toLowerCase()} ({sleepConsCorr > 0 ? 'mais sono → mais consumo' : 'menos sono → mais consumo'}).</>);
-                                                                }
-                                                                if (moodConsCorr !== null && Math.abs(moodConsCorr) > 0.4) {
-                                                                    parts.push(<>O <span className="font-bold">humor também correlaciona</span>: {moodCorr.text.toLowerCase()} ({moodConsCorr > 0 ? 'melhor humor → mais consumo' : 'pior humor → mais consumo'}).</>);
-                                                                }
-                                                                if (parts.length === 0) {
-                                                                    parts.push(<>Analisei as correlações entre sono, humor e consumo. Continua a registar para identificar padrões mais claros!</>);
-                                                                }
-
-                                                                return parts.map((part, i) => <span key={i}>{i > 0 ? ' ' : ''}{part}</span>);
-                                                            })()}
-                                                        </div>
-                                                    </div>
-
                                                     {/* Wellbeing & Dosage Analysis */}
                                                     {(filteredWellbeingLogs.length > 0 || filteredDailyLogs.length > 0 || filteredCycles.some(c => c.bedtime)) && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -2177,16 +2221,20 @@
                                                                     if (filteredCycles.filter(c => c.bedtime).length > 0) {
                                                                         const bedtimes = filteredCycles.filter(c => c.bedtime).map(c => {
                                                                             const [h, m] = c.bedtime.split(':').map(Number);
-                                                                            return h + m / 60;
+                                                                            let hour = h + m / 60;
+                                                                            // Convert early morning hours (0-6) to 24-30 for proper averaging
+                                                                            if (hour < 6) hour += 24;
+                                                                            return hour;
                                                                         });
-                                                                        const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        let avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        // Convert back to 0-23 range if needed
+                                                                        if (avgBedtime >= 24) avgBedtime -= 24;
                                                                         const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
 
-                                                                        if (avgBedtime >= 22 && avgBedtime <= 23.5) {
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-23h30 favorece ciclos de sono saudáveis.`);
-                                                                        } else if (avgBedtime > 23.5 || avgBedtime < 6) {
-                                                                            const lateHour = avgBedtime > 23.5 ? avgBedtime : avgBedtime + 24;
-                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar tarde (>23h30) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
+                                                                        if (avgBedtime >= 22 || avgBedtime <= 0.5) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-0h30 favorece ciclos de sono saudáveis.`);
+                                                                        } else if (avgBedtime > 0.5 && avgBedtime < 10) {
+                                                                            insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Deitar muito tarde (madrugada) pode afetar qualidade do sono e aumentar consumo. Tenta antecipar gradualmente.`);
                                                                         } else {
                                                                             insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Rotina de sono estabelecida.`);
                                                                         }
@@ -2221,8 +2269,31 @@
                                                         // For each goal, check which days it was achieved
                                                         goals.forEach(goal => {
                                                             if (goal.type === 'reduce_frequency') {
-                                                                Object.keys(consumptionsByDate).forEach(date => {
-                                                                    if (consumptionsByDate[date] <= goal.target) {
+                                                                // REGRA: Conta o dia quando número de consumos <= target E pelo menos metade dos intervalos >= 2h
+                                                                const consumptionsByDateFiltered = {};
+                                                                consumptions.forEach(c => {
+                                                                    if (!consumptionsByDateFiltered[c.date]) consumptionsByDateFiltered[c.date] = [];
+                                                                    consumptionsByDateFiltered[c.date].push(c);
+                                                                });
+
+                                                                Object.entries(consumptionsByDateFiltered).forEach(([date, dayConsumptions]) => {
+                                                                    if (dayConsumptions.length > goal.target) return;
+
+                                                                    // Check interval rule
+                                                                    if (dayConsumptions.length <= 1) {
+                                                                        if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                        goalAchievementsByDate[date].push(goal);
+                                                                        return;
+                                                                    }
+
+                                                                    const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+                                                                    let longIntervals = 0;
+                                                                    for (let i = 1; i < sorted.length; i++) {
+                                                                        const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                                                                        if (intervalHours >= 2) longIntervals++;
+                                                                    }
+
+                                                                    if (longIntervals >= (sorted.length - 1) / 2) {
                                                                         if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
                                                                         goalAchievementsByDate[date].push(goal);
                                                                     }
@@ -2307,7 +2378,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{sleepConsCorr !== null ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{sleepConsCorr !== null && !isNaN(sleepConsCorr) ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2323,7 +2394,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodSleepCorr !== null ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{moodSleepCorr !== null && !isNaN(moodSleepCorr) ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2339,7 +2410,7 @@
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
                                                                     </div>
                                                                     <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodConsCorr !== null ? moodConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-lg">{moodConsCorr !== null && !isNaN(moodConsCorr) ? moodConsCorr.toFixed(2) : 'N/A'}</div>
                                                                         <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
                                                                     </div>
                                                                 </div>
@@ -2396,7 +2467,7 @@
                                                                                         </div>
                                                                                         {avgConsumptions !== 'N/A' && (
                                                                                             <div className="text-xs text-gray-600 mt-2">
-                                                                                                Média de {avgConsumptions} consumos/dia quando presente
+                                                                                                💡 Nos dias em que identificaste <strong>{trigger.toLowerCase()}</strong> como gatilho, tiveste em média <strong>{avgConsumptions} consumos</strong>
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
@@ -2421,11 +2492,19 @@
                                                                     const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
                                                                     const consumptionsOnDay = filteredConsumptions.filter(c => c.date === cycleDate).length;
                                                                     const [hours, minutes] = cycle.bedtime.split(':').map(Number);
-                                                                    const bedtimeInHours = hours + minutes / 60;
+                                                                    let bedtimeInHours = hours + minutes / 60;
+                                                                    // Keep original bedtime for correlation (not converted)
                                                                     bedtimeData.push({ bedtime: bedtimeInHours, consumptions: consumptionsOnDay });
                                                                 });
 
-                                                                const avgBedtime = bedtimeData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeData.length;
+                                                                // For display average, convert early morning to 24+ range
+                                                                const bedtimesForAvg = bedtimeData.map(d => {
+                                                                    let hour = d.bedtime;
+                                                                    if (hour < 6) hour += 24;
+                                                                    return hour;
+                                                                });
+                                                                let avgBedtime = bedtimesForAvg.reduce((sum, t) => sum + t, 0) / bedtimesForAvg.length;
+                                                                if (avgBedtime >= 24) avgBedtime -= 24;
                                                                 const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
 
                                                                 // Calculate correlation
@@ -2445,7 +2524,7 @@
                                                                                     <div className="text-xs text-gray-500">Correlação entre hora de deitar e consumo</div>
                                                                                 </div>
                                                                                 <div className={'text-right font-bold text-' + corrInfo.color + '-600'}>
-                                                                                    <div className="text-lg">{bedtimeCorr !== null ? bedtimeCorr.toFixed(2) : 'N/A'}</div>
+                                                                                    <div className="text-lg">{bedtimeCorr !== null && !isNaN(bedtimeCorr) ? bedtimeCorr.toFixed(2) : 'N/A'}</div>
                                                                                     <div className="text-xs">{corrInfo.text}</div>
                                                                                 </div>
                                                                             </div>
@@ -2741,20 +2820,6 @@
 
                                             return (
                                                 <div className="space-y-4">
-                                                    {/* Mini-Resumo Conversacional */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-green-900/40 to-teal-900/40 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-teal-50 border-green-200') + ' rounded-xl p-4 border'}>
-                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                            💬 {avgSleep > 0 && <>Tens dormido em média <span className="font-bold">{avgSleep.toFixed(1)}h</span> {avgSleep >= 7 ? '(excelente! ✨)' : avgSleep >= 6 ? '(perto do ideal!)' : '(atenção: muito pouco)'}.{' '}</>}
-                                                            {avgMood > 0 && <>O teu humor está em <span className="font-bold">{avgMood.toFixed(1)}/10</span>.{' '}</>}
-                                                            {moodTrend > avgMood && avgMood > 0 && <>Boa notícia: tem melhorado nos últimos 7 dias! 📈</>}
-                                                            {selfCareData.water + selfCareData.rest + selfCareData.social + selfCareData.food > 0 && (() => {
-                                                                const totalLogs = filteredWellbeingLogs.length;
-                                                                const avgCare = Math.round(((selfCareData.water + selfCareData.rest + selfCareData.social + selfCareData.food) / (totalLogs * 4)) * 100);
-                                                                return avgCare >= 70 ? <> Autocuidado em {avgCare}% - continua assim! 💚</> : <> Autocuidado em {avgCare}% - há espaço para melhorar.</>;
-                                                            })()}
-                                                        </div>
-                                                    </div>
-
                                                     {/* Sleep patterns */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>😴 Padrões de Sono</h3>
@@ -2947,6 +3012,212 @@
                                             return (
                                                 <div className="space-y-6">
                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Análise automática dos teus registos para identificar padrões emocionais e comportamentais</p>
+
+                                                    {/* O Teu Coach Pessoal */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-indigo-900/40 border-purple-600/50' : 'bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-100 border-purple-300') + ' rounded-xl p-8 border-2 shadow-lg'}>
+                                                        <div className="flex items-center gap-3 mb-6">
+                                                            <div className="text-4xl">🎯</div>
+                                                            <div>
+                                                                <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>O Teu Coach Pessoal</h3>
+                                                                <p className={'text-sm ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>Resumão completo dos teus padrões e progresso</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            {(() => {
+                                                                const coachMessages = [];
+
+                                                                // 1. PROGRESSO COM METAS
+                                                                if (goals.length > 0) {
+                                                                    const completedGoals = goals.filter(g => g.completed).length;
+                                                                    const activeGoals = goals.filter(g => !g.completed).length;
+
+                                                                    if (completedGoals > 0) {
+                                                                        coachMessages.push({
+                                                                            section: 'Progresso',
+                                                                            icon: '🏆',
+                                                                            text: `Já completaste ${completedGoals} ${completedGoals === 1 ? 'meta' : 'metas'}! Isso é incrível e mostra que és capaz de mudança.`,
+                                                                            tone: 'celebration'
+                                                                        });
+                                                                    }
+
+                                                                    if (activeGoals > 0) {
+                                                                        coachMessages.push({
+                                                                            section: 'Foco',
+                                                                            icon: '🎯',
+                                                                            text: `Tens ${activeGoals} ${activeGoals === 1 ? 'meta ativa' : 'metas ativas'}. Foca-te numa de cada vez - pequenos passos somam grandes mudanças.`,
+                                                                            tone: 'motivation'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 2. ANÁLISE DE SENTIMENTO
+                                                                if (sentimentAnalysis && sentimentAnalysis.totalReflections > 0) {
+                                                                    const diff = sentimentAnalysis.avgSentimentLowConsumption - sentimentAnalysis.avgSentimentHighConsumption;
+
+                                                                    if (diff > 0.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Descoberta',
+                                                                            icon: '💡',
+                                                                            text: `As tuas reflexões mostram que te sentes significativamente melhor nos dias em que consomes menos. O teu corpo e mente estão-te a dar um sinal claro: reduzir traz-te bem-estar.`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    } else if (sentimentAnalysis.avgSentimentHighConsumption < -0.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Atenção',
+                                                                            icon: '💙',
+                                                                            text: `Nos dias de maior consumo, as tuas palavras refletem mais sofrimento. Isto pode significar que estás a usar substâncias para lidar com dor emocional. Considera falar com alguém - não tens que lidar com isso sozinho.`,
+                                                                            tone: 'care'
+                                                                        });
+                                                                    } else {
+                                                                        coachMessages.push({
+                                                                            section: 'Autoconhecimento',
+                                                                            icon: '📝',
+                                                                            text: `Estás a registar as tuas reflexões de forma consistente - isso já é um passo enorme no autoconhecimento. Continua a escrever, os padrões vão-se tornando mais claros com o tempo.`,
+                                                                            tone: 'encouragement'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 3. CORRELAÇÕES TEMPORAIS
+                                                                if (temporalCorrelations) {
+                                                                    const sleepCorr = temporalCorrelations.sleepLag1.correlation;
+                                                                    const moodCorr = temporalCorrelations.moodLag1.correlation;
+
+                                                                    if (sleepCorr !== null && sleepCorr < -0.4) {
+                                                                        coachMessages.push({
+                                                                            section: 'Padrão Identificado',
+                                                                            icon: '😴',
+                                                                            text: `Há uma correlação forte: quando dormes mal, consumis mais no dia seguinte. O sono não é luxo - é uma das tuas melhores ferramentas de redução de danos. Prioriza-o!`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    }
+
+                                                                    if (moodCorr !== null && moodCorr < -0.4) {
+                                                                        coachMessages.push({
+                                                                            section: 'Conexão Emocional',
+                                                                            icon: '🎭',
+                                                                            text: `Humor baixo num dia tende a levar a mais consumo no dia seguinte. Isto é importante: identifica estratégias alternativas para dias difíceis - caminhada, respiração, ligar a alguém. Cria um plano de ação para esses momentos.`,
+                                                                            tone: 'strategy'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 4. EMOÇÕES DE RISCO E PROTEÇÃO
+                                                                if (emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0) {
+                                                                    if (emotionalPatterns.riskEmotions.length > 0 && emotionalPatterns.protectiveEmotions.length > 0) {
+                                                                        const topRisk = emotionalPatterns.riskEmotions[0].emotion;
+                                                                        const topProtective = emotionalPatterns.protectiveEmotions[0].emotion;
+
+                                                                        coachMessages.push({
+                                                                            section: 'O Teu Mapa Emocional',
+                                                                            icon: '🗺️',
+                                                                            text: `Identificaste os teus gatilhos e as tuas forças: "${topRisk}" está associado a maior risco, enquanto "${topProtective}" funciona como proteção. Usa este conhecimento a teu favor - quando sentires ${topRisk}, tenta fazer algo que te traga ${topProtective}.`,
+                                                                            tone: 'empowerment'
+                                                                        });
+                                                                    } else if (emotionalPatterns.riskEmotions.length > 0) {
+                                                                        const topRisk = emotionalPatterns.riskEmotions[0].emotion;
+                                                                        coachMessages.push({
+                                                                            section: 'Alerta de Gatilho',
+                                                                            icon: '⚠️',
+                                                                            text: `"${topRisk}" é uma emoção de alto risco para ti. Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.`,
+                                                                            tone: 'alert'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 5. PADRÃO DE CONSUMO GERAL
+                                                                const last7Days = consumptions.filter(c => {
+                                                                    const date = new Date(c.timestamp);
+                                                                    const daysDiff = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+                                                                    return daysDiff <= 7;
+                                                                });
+
+                                                                const last14Days = consumptions.filter(c => {
+                                                                    const date = new Date(c.timestamp);
+                                                                    const daysDiff = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+                                                                    return daysDiff > 7 && daysDiff <= 14;
+                                                                });
+
+                                                                if (last7Days.length > 0 && last14Days.length > 0) {
+                                                                    const avgLast7 = last7Days.length / 7;
+                                                                    const avgLast14 = last14Days.length / 7;
+                                                                    const change = ((avgLast7 - avgLast14) / avgLast14) * 100;
+
+                                                                    if (change < -15) {
+                                                                        coachMessages.push({
+                                                                            section: 'Tendência',
+                                                                            icon: '📉',
+                                                                            text: `Nos últimos 7 dias, reduziste ${Math.abs(change).toFixed(0)}% em relação à semana anterior. Isto é ENORME! O que funcionou? Identifica e repete essas estratégias.`,
+                                                                            tone: 'celebration'
+                                                                        });
+                                                                    } else if (change > 15) {
+                                                                        coachMessages.push({
+                                                                            section: 'Tendência',
+                                                                            icon: '📈',
+                                                                            text: `O consumo aumentou ${change.toFixed(0)}% na última semana comparado à anterior. Sem julgamento - só dados. O que mudou? Stress? Menos sono? Identifica o trigger e ajusta o plano.`,
+                                                                            tone: 'reflection'
+                                                                        });
+                                                                    } else {
+                                                                        coachMessages.push({
+                                                                            section: 'Consistência',
+                                                                            icon: '📊',
+                                                                            text: `O teu padrão tem-se mantido estável nas últimas semanas. Estabilidade é o primeiro passo antes da redução. Bom trabalho em manter o controlo.`,
+                                                                            tone: 'acknowledgment'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 6. MENSAGEM FINAL DE ENCORAJAMENTO
+                                                                if (consumptions.length > 10 || reflections.length > 5 || wellbeingLogs.length > 5) {
+                                                                    coachMessages.push({
+                                                                        section: 'Compromisso',
+                                                                        icon: '✨',
+                                                                        text: `O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança. Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.`,
+                                                                        tone: 'inspiration'
+                                                                    });
+                                                                }
+
+                                                                // Se não há dados suficientes
+                                                                if (coachMessages.length === 0) {
+                                                                    coachMessages.push({
+                                                                        section: 'Começo',
+                                                                        icon: '🌱',
+                                                                        text: `Estás no início da tua jornada de autoconhecimento. Cada registo que fazes é uma semente plantada. Continua - em breve vais começar a ver os padrões e isso vai-te dar poder para mudar.`,
+                                                                        tone: 'encouragement'
+                                                                    });
+                                                                }
+
+                                                                return coachMessages.map((msg, i) => (
+                                                                    <div key={i} className={(darkMode ? 'bg-gray-800/60 border-gray-600/50' : 'bg-white/80 border-gray-200') + ' rounded-lg p-5 border-2'}>
+                                                                        <div className="flex items-start gap-4">
+                                                                            <div className="text-3xl flex-shrink-0 mt-1">{msg.icon}</div>
+                                                                            <div className="flex-1">
+                                                                                <div className={'font-bold text-lg mb-2 ' + (
+                                                                                    msg.tone === 'celebration' ? (darkMode ? 'text-green-400' : 'text-green-700') :
+                                                                                    msg.tone === 'insight' ? (darkMode ? 'text-blue-400' : 'text-blue-700') :
+                                                                                    msg.tone === 'care' ? (darkMode ? 'text-pink-400' : 'text-pink-700') :
+                                                                                    msg.tone === 'alert' ? (darkMode ? 'text-orange-400' : 'text-orange-700') :
+                                                                                    (darkMode ? 'text-purple-400' : 'text-purple-700')
+                                                                                )}>{msg.section}</div>
+                                                                                <div className={'leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{msg.text}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ));
+                                                            })()}
+
+                                                            {/* Call to Action */}
+                                                            <div className={(darkMode ? 'bg-gradient-to-r from-purple-800/50 to-pink-800/50 border-purple-500/50' : 'bg-gradient-to-r from-purple-200/50 to-pink-200/50 border-purple-400') + ' rounded-lg p-6 border-2 text-center'}>
+                                                                <div className="text-3xl mb-3">💪</div>
+                                                                <div className={'font-bold text-lg mb-2 ' + (darkMode ? 'text-white' : 'text-gray-900')}>Tu tens o controlo</div>
+                                                                <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                    Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
+                                                                    Continua a usar esta app, continua a refletir, continua a crescer. 🚀
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     {/* Sentiment Analysis */}
                                                     {sentimentAnalysis && (
@@ -3557,7 +3828,18 @@
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
                                                             <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
                                                         </div>
-                                                        <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => {
+                                                                setEditingGoal(goal);
+                                                                setGoalForm({
+                                                                    type: goal.type,
+                                                                    target: goal.target.toString(),
+                                                                    deadline: goal.deadline
+                                                                });
+                                                                setShowGoalModal(true);
+                                                            }} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700')}><Edit2 className="w-4 h-4" /></button>
+                                                            <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                        </div>
                                                     </div>
                                                     <div className="mt-3">
                                                         <div className="flex justify-between text-sm mb-1">
@@ -3731,7 +4013,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor', 'Insónia', 'Frustração', 'Sem razão aparente'].map(trigger => (
+                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência'].map(trigger => (
                                                     <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
                                                             if (e.target.checked) {
@@ -3765,8 +4047,8 @@
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowGoalModal(false)}>
                                 <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Nova Meta</h3>
-                                        <button onClick={() => setShowGoalModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{editingGoal ? 'Editar Meta' : 'Nova Meta'}</h3>
+                                        <button onClick={() => { setShowGoalModal(false); setEditingGoal(null); }} className="text-gray-400 hover:text-gray-600"><X /></button>
                                     </div>
                                     <div className="space-y-4">
                                         <div>
@@ -3798,7 +4080,7 @@
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
                                             <input type="date" value={goalForm.deadline} onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
                                         </div>
-                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">Criar Meta</button>
+                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">{editingGoal ? 'Atualizar Meta' : 'Criar Meta'}</button>
                                     </div>
                                 </div>
                             </div>
