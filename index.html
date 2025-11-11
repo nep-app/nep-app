@@ -2611,6 +2611,64 @@
                                                                     }
                                                                 });
                                                             }
+
+                                                            if (goal.type === 'delay_first') {
+                                                                // Find first consumption of each day and check if >= target time
+                                                                const firstOfDays = {};
+                                                                consumptions.forEach(c => {
+                                                                    if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
+                                                                        firstOfDays[c.date] = { timestamp: c.timestamp, date: c.date };
+                                                                    }
+                                                                });
+                                                                const targetParts = goal.target.split(':');
+                                                                const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                                                                Object.values(firstOfDays).forEach(day => {
+                                                                    const d = new Date(day.timestamp);
+                                                                    const firstMinutes = d.getHours() * 60 + d.getMinutes();
+                                                                    if (firstMinutes >= targetMinutes) {
+                                                                        if (!goalAchievementsByDate[day.date]) goalAchievementsByDate[day.date] = [];
+                                                                        goalAchievementsByDate[day.date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            if (goal.type === 'increase_interval') {
+                                                                // Count days with at least one interval >= target hours
+                                                                const intervalsByDate = {};
+                                                                const sorted = [...consumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                                                                for (let i = 1; i < sorted.length; i++) {
+                                                                    const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                                    if (diff >= goal.target) {
+                                                                        const date = sorted[i].date;
+                                                                        if (!intervalsByDate[date]) intervalsByDate[date] = true;
+                                                                    }
+                                                                }
+                                                                Object.keys(intervalsByDate).forEach(date => {
+                                                                    if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                    goalAchievementsByDate[date].push(goal);
+                                                                });
+                                                            }
+
+                                                            if (goal.type === 'limit_last') {
+                                                                // Count days from cycles where user marked last consumption before target
+                                                                cycles.forEach(cycle => {
+                                                                    if (cycle.lastBefore00) {
+                                                                        const date = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                        if (!goalAchievementsByDate[date]) goalAchievementsByDate[date] = [];
+                                                                        goalAchievementsByDate[date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
+
+                                                            if (goal.type === 'sleep_hours') {
+                                                                // Count days where sleep hours >= target
+                                                                wellbeingLogs.forEach(log => {
+                                                                    if (log.sleep != null && log.sleep >= parseFloat(goal.target)) {
+                                                                        if (!goalAchievementsByDate[log.date]) goalAchievementsByDate[log.date] = [];
+                                                                        goalAchievementsByDate[log.date].push(goal);
+                                                                    }
+                                                                });
+                                                            }
                                                         });
 
                                                         const dates = Object.keys(goalAchievementsByDate).sort().reverse().slice(0, 10);
