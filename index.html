@@ -1011,8 +1011,12 @@
             const getSentimentAnalysis = () => {
                 const allReflections = reflections.filter(r => r.answer && r.answer.trim().length > 0);
                 const allWellbeingNotes = wellbeingLogs.filter(w => w.notes && w.notes.trim().length > 0);
+                const allConsumptionNotes = consumptions.filter(c => c.notes && c.notes.trim().length > 0);
+                const allDailyNotes = dailyLogs.filter(d => d.notes && d.notes.trim().length > 0);
+                const allCycleNotes = cycles.filter(c => c.notes && c.notes.trim().length > 0);
 
-                if (allReflections.length === 0 && allWellbeingNotes.length === 0) return null;
+                const totalTexts = allReflections.length + allWellbeingNotes.length + allConsumptionNotes.length + allDailyNotes.length + allCycleNotes.length;
+                if (totalTexts === 0) return null;
 
                 // Analyze sentiment per entry with consumption data
                 const sentimentByDay = {};
@@ -1033,6 +1037,32 @@
                     sentimentByDay[w.date].sentiments.push({ ...sentiment, type: 'wellbeing', text: w.notes.substring(0, 100) });
                 });
 
+                allConsumptionNotes.forEach(c => {
+                    const sentiment = analyzeSentiment(c.notes);
+                    const date = new Date(c.timestamp).toISOString().split('T')[0];
+                    const dayConsumptions = consumptions.filter(cons => cons.date === date || new Date(cons.timestamp).toISOString().split('T')[0] === date).length;
+
+                    if (!sentimentByDay[date]) sentimentByDay[date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[date].sentiments.push({ ...sentiment, type: 'consumption', text: c.notes.substring(0, 100) });
+                });
+
+                allDailyNotes.forEach(d => {
+                    const sentiment = analyzeSentiment(d.notes);
+                    const dayConsumptions = consumptions.filter(c => c.date === d.date).length;
+
+                    if (!sentimentByDay[d.date]) sentimentByDay[d.date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[d.date].sentiments.push({ ...sentiment, type: 'daily', text: d.notes.substring(0, 100) });
+                });
+
+                allCycleNotes.forEach(cy => {
+                    const sentiment = analyzeSentiment(cy.notes);
+                    const date = new Date(cy.timestamp).toISOString().split('T')[0];
+                    const dayConsumptions = consumptions.filter(c => c.date === date || new Date(c.timestamp).toISOString().split('T')[0] === date).length;
+
+                    if (!sentimentByDay[date]) sentimentByDay[date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[date].sentiments.push({ ...sentiment, type: 'cycle', text: cy.notes.substring(0, 100) });
+                });
+
                 // Calculate average sentiment by consumption level
                 const highConsumptionDays = Object.entries(sentimentByDay).filter(([_, data]) => data.consumptions > 3);
                 const lowConsumptionDays = Object.entries(sentimentByDay).filter(([_, data]) => data.consumptions <= 3);
@@ -1048,6 +1078,10 @@
                     avgSentimentLowConsumption: getAvgSentiment(lowConsumptionDays),
                     totalReflections: allReflections.length,
                     totalNotes: allWellbeingNotes.length,
+                    totalConsumptionNotes: allConsumptionNotes.length,
+                    totalDailyNotes: allDailyNotes.length,
+                    totalCycleNotes: allCycleNotes.length,
+                    totalTexts: totalTexts,
                     daysAnalyzed: Object.keys(sentimentByDay).length
                 };
             };
@@ -2993,7 +3027,7 @@
                                                                     </div>
                                                                 </div>
                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                    Analisados {sentimentAnalysis.totalReflections} reflexões DBT e {sentimentAnalysis.totalNotes} notas de bem-estar em {sentimentAnalysis.daysAnalyzed} dias diferentes
+                                                                    Analisados {sentimentAnalysis.totalTexts} textos: {sentimentAnalysis.totalReflections} reflexões DBT, {sentimentAnalysis.totalNotes} notas de bem-estar, {sentimentAnalysis.totalConsumptionNotes} notas de consumo, {sentimentAnalysis.totalDailyNotes} notas diárias, {sentimentAnalysis.totalCycleNotes} notas de ciclos — em {sentimentAnalysis.daysAnalyzed} dias diferentes
                                                                 </div>
                                                             </div>
                                                         </div>
