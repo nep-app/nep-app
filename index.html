@@ -143,6 +143,7 @@
             const [showGoalModal, setShowGoalModal] = useState(false);
             const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
             const [editingConsumption, setEditingConsumption] = useState(null);
+            const [editingGoal, setEditingGoal] = useState(null);
             const [patternView, setPatternView] = useState('comparisons');
 
             // 2.4 Pagination States
@@ -469,14 +470,26 @@
             const submitGoal = async () => {
                 try {
                     const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
-                    const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
-                    setGoals(prev => [...prev, item]);
-                    await saveToFirebase('goals', item);
+
+                    if (editingGoal) {
+                        // Update existing goal
+                        const updatedGoal = { ...editingGoal, type: goalForm.type, target, deadline: goalForm.deadline };
+                        setGoals(prev => prev.map(g => g.id === editingGoal.id ? updatedGoal : g));
+                        await saveToFirebase('goals', updatedGoal);
+                        setEditingGoal(null);
+                        showToast('✓ Meta atualizada', 'success');
+                    } else {
+                        // Create new goal
+                        const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                        setGoals(prev => [...prev, item]);
+                        await saveToFirebase('goals', item);
+                        showToast('✓ Meta criada', 'success');
+                    }
+
                     setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
                     setShowGoalModal(false);
-                    showToast('✓ Meta criada', 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao criar meta', 'error');
+                    showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');
                     console.error(error);
                 }
             };
@@ -3609,7 +3622,18 @@
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
                                                             <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
                                                         </div>
-                                                        <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => {
+                                                                setEditingGoal(goal);
+                                                                setGoalForm({
+                                                                    type: goal.type,
+                                                                    target: goal.target.toString(),
+                                                                    deadline: goal.deadline
+                                                                });
+                                                                setShowGoalModal(true);
+                                                            }} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700')}><Edit2 className="w-4 h-4" /></button>
+                                                            <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>
+                                                        </div>
                                                     </div>
                                                     <div className="mt-3">
                                                         <div className="flex justify-between text-sm mb-1">
@@ -3817,8 +3841,8 @@
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowGoalModal(false)}>
                                 <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Nova Meta</h3>
-                                        <button onClick={() => setShowGoalModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{editingGoal ? 'Editar Meta' : 'Nova Meta'}</h3>
+                                        <button onClick={() => { setShowGoalModal(false); setEditingGoal(null); }} className="text-gray-400 hover:text-gray-600"><X /></button>
                                     </div>
                                     <div className="space-y-4">
                                         <div>
@@ -3850,7 +3874,7 @@
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
                                             <input type="date" value={goalForm.deadline} onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
                                         </div>
-                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">Criar Meta</button>
+                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">{editingGoal ? 'Atualizar Meta' : 'Criar Meta'}</button>
                                     </div>
                                 </div>
                             </div>
