@@ -617,8 +617,16 @@
                 return 'Todo o período';
             };
 
+            // Helper: Exclude today from general analyses (since day is not complete)
+            const excludeToday = (items, dateField = 'date') => {
+                const today = getTodayKey();
+                return items.filter(item => item[dateField] !== today);
+            };
+
             const getLast7Days = () => {
-                const logs = dailyLogs.slice(0, 7);
+                // Exclude today since the day is not complete yet
+                const completedLogs = excludeToday(dailyLogs);
+                const logs = completedLogs.slice(0, 7);
                 if (logs.length === 0) return { avgTimes: 0, avgMg: 0 };
                 const logsWithTimes = logs.filter(l => l.times !== undefined && !isNaN(l.times));
                 const logsWithMg = logs.filter(l => l.mg !== undefined && !isNaN(l.mg));
@@ -632,9 +640,10 @@
 
             // Helper: Get average frequency with new rules (2h+ intervals)
             const getAvgFrequencyLast7Days = () => {
+                // Exclude today (day 0) and get last 7 completed days (days 1-7)
                 const last7Dates = [...Array(7)].map((_, i) => {
                     const d = new Date();
-                    d.setDate(d.getDate() - i);
+                    d.setDate(d.getDate() - (i + 1)); // Start from yesterday
                     return d.toISOString().split('T')[0];
                 });
 
@@ -1043,6 +1052,206 @@
                 };
             };
 
+            // Analyze bidirectional impact: Consumo → Bem-estar (same day + next day)
+            const getBidirectionalAnalysis = () => {
+                if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
+
+                // Create daily data structure
+                const dailyData = {};
+
+                // Add wellbeing data
+                wellbeingLogs.forEach(w => {
+                    if (!dailyData[w.date]) dailyData[w.date] = {};
+                    const sleep = parseFloat(w.sleep);
+                    const mood = parseInt(w.mood);
+                    const energy = parseInt(w.energy);
+                    if (!isNaN(sleep) && sleep > 0) dailyData[w.date].sleep = sleep;
+                    if (!isNaN(mood) && mood > 0) dailyData[w.date].mood = mood;
+                    if (!isNaN(energy) && energy > 0) dailyData[w.date].energy = energy;
+                });
+
+                // Add consumption counts
+                consumptions.forEach(c => {
+                    if (!dailyData[c.date]) dailyData[c.date] = {};
+                    dailyData[c.date].consumptions = (dailyData[c.date].consumptions || 0) + 1;
+                });
+
+                // Get sorted dates
+                const dates = Object.keys(dailyData).sort();
+
+                // Helper: correlation coefficient
+                const getCorrelation = (data, xKey, yKey) => {
+                    if (data.length < 2) return null;
+                    const n = data.length;
+                    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                    const numerator = n * sumXY - sumX * sumY;
+                    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                    return denominator === 0 ? null : numerator / denominator;
+                };
+
+                // Same Day Impact: Today's consumption → Tonight's sleep
+                const consumptionToSleepSameDay = [];
+                dates.forEach(date => {
+                    const day = dailyData[date];
+                    if (day.consumptions && day.sleep) {
+                        consumptionToSleepSameDay.push({ consumptions: day.consumptions, sleep: day.sleep });
+                    }
+                });
+
+                // Same Day Impact: Morning consumption → Evening mood
+                const consumptionToMoodSameDay = [];
+                dates.forEach(date => {
+                    const day = dailyData[date];
+                    if (day.consumptions && day.mood) {
+                        consumptionToMoodSameDay.push({ consumptions: day.consumptions, mood: day.mood });
+                    }
+                });
+
+                // Same Day Impact: Consumption → Energy
+                const consumptionToEnergySameDay = [];
+                dates.forEach(date => {
+                    const day = dailyData[date];
+                    if (day.consumptions && day.energy) {
+                        consumptionToEnergySameDay.push({ consumptions: day.consumptions, energy: day.energy });
+                    }
+                });
+
+                // Next Day Impact: Today's consumption → Tomorrow's sleep
+                const consumptionToSleepNextDay = [];
+                for (let i = 0; i < dates.length - 1; i++) {
+                    const today = dailyData[dates[i]];
+                    const tomorrow = dailyData[dates[i + 1]];
+
+                    if (today.consumptions && tomorrow.sleep) {
+                        consumptionToSleepNextDay.push({ consumptions: today.consumptions, sleep: tomorrow.sleep });
+                    }
+                }
+
+                // Next Day Impact: Today's consumption → Tomorrow's mood
+                const consumptionToMoodNextDay = [];
+                for (let i = 0; i < dates.length - 1; i++) {
+                    const today = dailyData[dates[i]];
+                    const tomorrow = dailyData[dates[i + 1]];
+
+                    if (today.consumptions && tomorrow.mood) {
+                        consumptionToMoodNextDay.push({ consumptions: today.consumptions, mood: tomorrow.mood });
+                    }
+                }
+
+                // Next Day Impact: Today's consumption → Tomorrow's energy
+                const consumptionToEnergyNextDay = [];
+                for (let i = 0; i < dates.length - 1; i++) {
+                    const today = dailyData[dates[i]];
+                    const tomorrow = dailyData[dates[i + 1]];
+
+                    if (today.consumptions && tomorrow.energy) {
+                        consumptionToEnergyNextDay.push({ consumptions: today.consumptions, energy: tomorrow.energy });
+                    }
+                }
+
+                return {
+                    sameDay: {
+                        sleep: {
+                            correlation: getCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
+                            dataPoints: consumptionToSleepSameDay.length
+                        },
+                        mood: {
+                            correlation: getCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
+                            dataPoints: consumptionToMoodSameDay.length
+                        },
+                        energy: {
+                            correlation: getCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
+                            dataPoints: consumptionToEnergySameDay.length
+                        }
+                    },
+                    nextDay: {
+                        sleep: {
+                            correlation: getCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
+                            dataPoints: consumptionToSleepNextDay.length
+                        },
+                        mood: {
+                            correlation: getCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
+                            dataPoints: consumptionToMoodNextDay.length
+                        },
+                        energy: {
+                            correlation: getCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
+                            dataPoints: consumptionToEnergyNextDay.length
+                        }
+                    }
+                };
+            };
+
+            // Analyze intra-day variation (how mood/energy change throughout the same day)
+            const getIntraDayVariation = () => {
+                if (wellbeingLogs.length < 2) return null;
+
+                // Group by date
+                const logsByDate = {};
+                wellbeingLogs.forEach(log => {
+                    if (!logsByDate[log.date]) logsByDate[log.date] = [];
+                    logsByDate[log.date].push(log);
+                });
+
+                // Filter days with multiple entries
+                const daysWithMultipleEntries = Object.entries(logsByDate).filter(([_, logs]) => logs.length > 1);
+
+                if (daysWithMultipleEntries.length === 0) return null;
+
+                const variations = [];
+
+                daysWithMultipleEntries.forEach(([date, logs]) => {
+                    // Sort by timestamp
+                    const sorted = logs.sort((a, b) => new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime());
+
+                    const first = sorted[0];
+                    const last = sorted[sorted.length - 1];
+
+                    // Calculate variations
+                    const moodChange = last.mood && first.mood ? parseInt(last.mood) - parseInt(first.mood) : null;
+                    const energyChange = last.energy && first.energy ? parseInt(last.energy) - parseInt(first.energy) : null;
+                    const sleepTotal = sorted.reduce((sum, log) => sum + (parseFloat(log.sleep) || 0), 0);
+
+                    if (moodChange !== null || energyChange !== null) {
+                        variations.push({
+                            date,
+                            moodChange,
+                            energyChange,
+                            sleepTotal,
+                            entriesCount: sorted.length,
+                            firstMood: first.mood ? parseInt(first.mood) : null,
+                            lastMood: last.mood ? parseInt(last.mood) : null,
+                            firstEnergy: first.energy ? parseInt(first.energy) : null,
+                            lastEnergy: last.energy ? parseInt(last.energy) : null
+                        });
+                    }
+                });
+
+                if (variations.length === 0) return null;
+
+                // Calculate averages
+                const avgMoodChange = variations.filter(v => v.moodChange !== null).reduce((sum, v) => sum + v.moodChange, 0) / variations.filter(v => v.moodChange !== null).length;
+                const avgEnergyChange = variations.filter(v => v.energyChange !== null).reduce((sum, v) => sum + v.energyChange, 0) / variations.filter(v => v.energyChange !== null).length;
+
+                // Find patterns
+                const improvingDays = variations.filter(v => (v.moodChange && v.moodChange > 1) || (v.energyChange && v.energyChange > 1)).length;
+                const decliningDays = variations.filter(v => (v.moodChange && v.moodChange < -1) || (v.energyChange && v.energyChange < -1)).length;
+                const stableDays = variations.length - improvingDays - decliningDays;
+
+                return {
+                    variations,
+                    avgMoodChange: isNaN(avgMoodChange) ? null : avgMoodChange,
+                    avgEnergyChange: isNaN(avgEnergyChange) ? null : avgEnergyChange,
+                    improvingDays,
+                    decliningDays,
+                    stableDays,
+                    totalDays: variations.length
+                };
+            };
+
             // Analyze emotional patterns (which emotions correlate with consumption)
             const getEmotionalPatterns = () => {
                 if (wellbeingLogs.length === 0) return null;
@@ -1092,12 +1301,17 @@
             const getSentimentAnalysis = () => {
                 const allReflections = reflections.filter(r => r.answer && r.answer.trim().length > 0);
                 const allWellbeingNotes = wellbeingLogs.filter(w => w.notes && w.notes.trim().length > 0);
+                const allConsumptionNotes = consumptions.filter(c => c.notes && c.notes.trim().length > 0);
+                const allDailyNotes = dailyLogs.filter(d => d.notes && d.notes.trim().length > 0);
+                const allCycleNotes = cycles.filter(cy => cy.notes && cy.notes.trim().length > 0);
 
-                if (allReflections.length === 0 && allWellbeingNotes.length === 0) return null;
+                const totalTexts = allReflections.length + allWellbeingNotes.length + allConsumptionNotes.length + allDailyNotes.length + allCycleNotes.length;
+                if (totalTexts === 0) return null;
 
                 // Analyze sentiment per entry with consumption data
                 const sentimentByDay = {};
 
+                // DBT Reflections
                 allReflections.forEach(r => {
                     const sentiment = analyzeSentiment(r.answer);
                     const dayConsumptions = consumptions.filter(c => c.date === r.date).length;
@@ -1106,12 +1320,39 @@
                     sentimentByDay[r.date].sentiments.push({ ...sentiment, type: 'reflection', text: r.answer.substring(0, 100) });
                 });
 
+                // Wellbeing Notes
                 allWellbeingNotes.forEach(w => {
                     const sentiment = analyzeSentiment(w.notes);
                     const dayConsumptions = consumptions.filter(c => c.date === w.date).length;
 
                     if (!sentimentByDay[w.date]) sentimentByDay[w.date] = { sentiments: [], consumptions: dayConsumptions };
                     sentimentByDay[w.date].sentiments.push({ ...sentiment, type: 'wellbeing', text: w.notes.substring(0, 100) });
+                });
+
+                // Consumption Notes
+                allConsumptionNotes.forEach(c => {
+                    const sentiment = analyzeSentiment(c.notes);
+                    const dayConsumptions = consumptions.filter(cons => cons.date === c.date).length;
+
+                    if (!sentimentByDay[c.date]) sentimentByDay[c.date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[c.date].sentiments.push({ ...sentiment, type: 'consumption', text: c.notes.substring(0, 100) });
+                });
+
+                // Daily Log Notes
+                allDailyNotes.forEach(d => {
+                    const dayConsumptions = consumptions.filter(c => c.date === d.date).length;
+
+                    if (!sentimentByDay[d.date]) sentimentByDay[d.date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[d.date].sentiments.push({ ...analyzeSentiment(d.notes), type: 'daily', text: d.notes.substring(0, 100) });
+                });
+
+                // Cycle Notes
+                allCycleNotes.forEach(cy => {
+                    const date = new Date(cy.timestamp).toISOString().split('T')[0];
+                    const dayConsumptions = consumptions.filter(c => c.date === date).length;
+
+                    if (!sentimentByDay[date]) sentimentByDay[date] = { sentiments: [], consumptions: dayConsumptions };
+                    sentimentByDay[date].sentiments.push({ ...analyzeSentiment(cy.notes), type: 'cycle', text: cy.notes.substring(0, 100) });
                 });
 
                 // Calculate average sentiment by consumption level
@@ -1128,7 +1369,11 @@
                     avgSentimentHighConsumption: getAvgSentiment(highConsumptionDays),
                     avgSentimentLowConsumption: getAvgSentiment(lowConsumptionDays),
                     totalReflections: allReflections.length,
-                    totalNotes: allWellbeingNotes.length,
+                    totalWellbeingNotes: allWellbeingNotes.length,
+                    totalConsumptionNotes: allConsumptionNotes.length,
+                    totalDailyNotes: allDailyNotes.length,
+                    totalCycleNotes: allCycleNotes.length,
+                    totalTexts: totalTexts,
                     daysAnalyzed: Object.keys(sentimentByDay).length
                 };
             };
@@ -3100,10 +3345,12 @@
                                         if (patternView === 'insights') {
                                             const sentimentAnalysis = getSentimentAnalysis();
                                             const temporalCorrelations = getTemporalCorrelations();
+                                            const bidirectionalAnalysis = getBidirectionalAnalysis();
+                                            const intraDayVariation = getIntraDayVariation();
                                             const emotionalPatterns = getEmotionalPatterns();
 
                                             // Check if we have enough data
-                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns;
+                                            const hasData = sentimentAnalysis || temporalCorrelations || bidirectionalAnalysis || intraDayVariation || emotionalPatterns;
 
                                             if (!hasData) {
                                                 return (
@@ -3209,6 +3456,73 @@
                                                                     }
                                                                 }
 
+                                                                // 3.5. IMPACTO BIDIRECIONAL (Consumo → Bem-estar)
+                                                                if (bidirectionalAnalysis) {
+                                                                    const sameDaySleep = bidirectionalAnalysis.sameDay.sleep.correlation;
+                                                                    const nextDaySleep = bidirectionalAnalysis.nextDay.sleep.correlation;
+                                                                    const sameDayMood = bidirectionalAnalysis.sameDay.mood.correlation;
+                                                                    const nextDayMood = bidirectionalAnalysis.nextDay.mood.correlation;
+                                                                    const sameDayEnergy = bidirectionalAnalysis.sameDay.energy.correlation;
+                                                                    const nextDayEnergy = bidirectionalAnalysis.nextDay.energy.correlation;
+
+                                                                    // Sleep impact
+                                                                    if (sameDaySleep !== null && sameDaySleep < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Impacto Imediato',
+                                                                            icon: '🌙',
+                                                                            text: `Reparei que em dias de maior consumo, dormes significativamente menos NESSA NOITE (correlação ${sameDaySleep.toFixed(2)}). O consumo está a roubar-te sono no mesmo dia. Experimenta reduzir ou parar mais cedo.`,
+                                                                            tone: 'alert'
+                                                                        });
+                                                                    }
+
+                                                                    if (nextDaySleep !== null && nextDaySleep < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Impacto no Dia Seguinte',
+                                                                            icon: '💤',
+                                                                            text: `O consumo de hoje afeta o sono de AMANHÃ (correlação ${nextDaySleep.toFixed(2)}). É um ciclo: consumo → menos sono → mais consumo. Quebra este padrão priorizando dias de menor consumo.`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    }
+
+                                                                    // Mood impact
+                                                                    if (sameDayMood !== null && sameDayMood < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Efeito no Humor',
+                                                                            icon: '😔',
+                                                                            text: `Consumo alto piora o teu humor NO MESMO DIA (correlação ${sameDayMood.toFixed(2)}). Estás a usar para te sentires melhor, mas o efeito é o contrário. Considera alternativas mais saudáveis.`,
+                                                                            tone: 'care'
+                                                                        });
+                                                                    }
+
+                                                                    if (nextDayMood !== null && nextDayMood < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Ressaca Emocional',
+                                                                            icon: '📉',
+                                                                            text: `Dias de maior consumo resultam em humor mais baixo NO DIA SEGUINTE (correlação ${nextDayMood.toFixed(2)}). A "ressaca emocional" é real. Planeia apoio extra para o dia seguinte a consumos altos.`,
+                                                                            tone: 'strategy'
+                                                                        });
+                                                                    }
+
+                                                                    // Energy impact
+                                                                    if (sameDayEnergy !== null && sameDayEnergy < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Energia Roubada',
+                                                                            icon: '⚡',
+                                                                            text: `Mais consumo = menos energia NO MESMO DIA (correlação ${sameDayEnergy.toFixed(2)}). Parece dar energia no momento, mas o saldo líquido é negativo. Os teus níveis energéticos agradecem dias de menos consumo.`,
+                                                                            tone: 'insight'
+                                                                        });
+                                                                    }
+
+                                                                    if (nextDayEnergy !== null && nextDayEnergy < -0.3) {
+                                                                        coachMessages.push({
+                                                                            section: 'Cansaço Acumulado',
+                                                                            icon: '😴',
+                                                                            text: `Consumo de hoje drena a energia de AMANHÃ (correlação ${nextDayEnergy.toFixed(2)}). Estás a "pedir emprestado" energia do futuro. Dias de descanso são investimento, não luxo.`,
+                                                                            tone: 'alert'
+                                                                        });
+                                                                    }
+                                                                }
+
                                                                 // 4. EMOÇÕES DE RISCO E PROTEÇÃO
                                                                 if (emotionalPatterns && emotionalPatterns.totalEmotionsTracked > 0) {
                                                                     if (emotionalPatterns.riskEmotions.length > 0 && emotionalPatterns.protectiveEmotions.length > 0) {
@@ -3228,6 +3542,46 @@
                                                                             icon: '⚠️',
                                                                             text: `"${topRisk}" é uma emoção de alto risco para ti. Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.`,
                                                                             tone: 'alert'
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // 4.5. VARIAÇÃO INTRA-DIA (Como te sentes ao longo do dia)
+                                                                if (intraDayVariation && intraDayVariation.totalDays > 0) {
+                                                                    const avgMood = intraDayVariation.avgMoodChange;
+                                                                    const avgEnergy = intraDayVariation.avgEnergyChange;
+                                                                    const improving = intraDayVariation.improvingDays;
+                                                                    const declining = intraDayVariation.decliningDays;
+
+                                                                    if (avgMood !== null && avgMood > 1.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Padrão Positivo',
+                                                                            icon: '🌅',
+                                                                            text: `Em ${improving} de ${intraDayVariation.totalDays} dias com múltiplos registos, o teu humor melhorou ao longo do dia (média +${avgMood.toFixed(1)} pontos). Isto é EXCELENTE! Significa que tens estratégias que funcionam durante o dia. Identifica o que fazes que ajuda.`,
+                                                                            tone: 'celebration'
+                                                                        });
+                                                                    } else if (avgMood !== null && avgMood < -1.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Padrão a Observar',
+                                                                            icon: '📉',
+                                                                            text: `O teu humor tende a piorar ao longo do dia (média ${avgMood.toFixed(1)} pontos em ${intraDayVariation.totalDays} dias). Isto pode indicar fadiga acumulada ou consumo que piora o estado. Considera pausas, descanso e técnicas DBT ao longo do dia.`,
+                                                                            tone: 'care'
+                                                                        });
+                                                                    }
+
+                                                                    if (avgEnergy !== null && avgEnergy > 1.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Energia Crescente',
+                                                                            icon: '⚡',
+                                                                            text: `Boa notícia: a tua energia geralmente aumenta ao longo do dia (+${avgEnergy.toFixed(1)} pontos). Isto sugere que acordas devagar mas vais ganhando força. Aproveita os períodos de maior energia para tarefas importantes.`,
+                                                                            tone: 'encouragement'
+                                                                        });
+                                                                    } else if (avgEnergy !== null && avgEnergy < -1.5) {
+                                                                        coachMessages.push({
+                                                                            section: 'Gestão de Energia',
+                                                                            icon: '🔋',
+                                                                            text: `A tua energia tende a diminuir ao longo do dia (${avgEnergy.toFixed(1)} pontos). Normal até certo ponto, mas se for muito acentuado pode indicar falta de pausas, má alimentação ou impacto do consumo. Experimenta micro-pausas de 5min a cada 2h.`,
+                                                                            tone: 'strategy'
                                                                         });
                                                                     }
                                                                 }
@@ -3370,7 +3724,7 @@
                                                                     </div>
                                                                 </div>
                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                    Analisados {sentimentAnalysis.totalReflections} reflexões DBT e {sentimentAnalysis.totalNotes} notas de bem-estar em {sentimentAnalysis.daysAnalyzed} dias diferentes
+                                                                    Analisados {sentimentAnalysis.totalTexts} textos ({sentimentAnalysis.totalReflections} reflexões DBT, {sentimentAnalysis.totalWellbeingNotes} notas bem-estar, {sentimentAnalysis.totalConsumptionNotes} notas consumo, {sentimentAnalysis.totalDailyNotes} notas diárias, {sentimentAnalysis.totalCycleNotes} notas ciclo) em {sentimentAnalysis.daysAnalyzed} dias
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -4119,7 +4473,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência'].map(trigger => (
+                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor física', 'Insónia', 'Conflito', 'Celebração'].map(trigger => (
                                                     <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
                                                             if (e.target.checked) {
