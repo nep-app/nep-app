@@ -1142,6 +1142,105 @@
                 };
             };
 
+            // Bidirectional analysis: Consumption → Wellbeing
+            const getBidirectionalAnalysis = () => {
+                // Group data by date
+                const consumptionsByDate = {};
+                consumptions.forEach(c => {
+                    const date = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                    if (!consumptionsByDate[date]) consumptionsByDate[date] = 0;
+                    consumptionsByDate[date]++;
+                });
+
+                const wellbeingByDate = {};
+                wellbeingLogs.forEach(w => {
+                    if (!wellbeingByDate[w.date]) {
+                        wellbeingByDate[w.date] = { sleep: w.sleep, mood: w.mood, energy: w.energy };
+                    } else {
+                        // If multiple entries, take average
+                        wellbeingByDate[w.date].sleep = (wellbeingByDate[w.date].sleep + w.sleep) / 2;
+                        wellbeingByDate[w.date].mood = (wellbeingByDate[w.date].mood + w.mood) / 2;
+                        wellbeingByDate[w.date].energy = ((wellbeingByDate[w.date].energy || 0) + (w.energy || 0)) / 2;
+                    }
+                });
+
+                // Same-day impact: consumption day vs non-consumption day
+                const consumptionDays = [];
+                const nonConsumptionDays = [];
+
+                Object.keys(wellbeingByDate).forEach(date => {
+                    const hasConsumption = consumptionsByDate[date] && consumptionsByDate[date] > 0;
+                    const wellbeing = wellbeingByDate[date];
+
+                    if (hasConsumption) {
+                        consumptionDays.push({
+                            date,
+                            consumptions: consumptionsByDate[date],
+                            sleep: wellbeing.sleep,
+                            mood: wellbeing.mood,
+                            energy: wellbeing.energy
+                        });
+                    } else {
+                        nonConsumptionDays.push({
+                            date,
+                            sleep: wellbeing.sleep,
+                            mood: wellbeing.mood,
+                            energy: wellbeing.energy
+                        });
+                    }
+                });
+
+                // Next-day impact: consumption today → wellbeing tomorrow
+                const nextDayImpacts = [];
+                Object.keys(consumptionsByDate).forEach(date => {
+                    const nextDate = new Date(date);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    const nextDateStr = nextDate.toISOString().split('T')[0];
+
+                    if (wellbeingByDate[nextDateStr]) {
+                        nextDayImpacts.push({
+                            consumptionDate: date,
+                            consumptions: consumptionsByDate[date],
+                            nextDayWellbeing: wellbeingByDate[nextDateStr]
+                        });
+                    }
+                });
+
+                if (consumptionDays.length === 0 && nonConsumptionDays.length === 0 && nextDayImpacts.length === 0) {
+                    return null;
+                }
+
+                // Calculate averages
+                const avg = (arr, key) => arr.length > 0 ? arr.reduce((sum, item) => sum + (item[key] || 0), 0) / arr.length : 0;
+
+                const sameDayResults = {
+                    consumptionDays: {
+                        count: consumptionDays.length,
+                        avgSleep: avg(consumptionDays, 'sleep'),
+                        avgMood: avg(consumptionDays, 'mood'),
+                        avgEnergy: avg(consumptionDays, 'energy')
+                    },
+                    nonConsumptionDays: {
+                        count: nonConsumptionDays.length,
+                        avgSleep: avg(nonConsumptionDays, 'sleep'),
+                        avgMood: avg(nonConsumptionDays, 'mood'),
+                        avgEnergy: avg(nonConsumptionDays, 'energy')
+                    }
+                };
+
+                const nextDayResults = nextDayImpacts.length > 0 ? {
+                    count: nextDayImpacts.length,
+                    avgNextDaySleep: avg(nextDayImpacts.map(i => ({ sleep: i.nextDayWellbeing.sleep })), 'sleep'),
+                    avgNextDayMood: avg(nextDayImpacts.map(i => ({ mood: i.nextDayWellbeing.mood })), 'mood'),
+                    avgNextDayEnergy: avg(nextDayImpacts.map(i => ({ energy: i.nextDayWellbeing.energy })), 'energy')
+                } : null;
+
+                return {
+                    sameDay: sameDayResults,
+                    nextDay: nextDayResults
+                };
+            };
+
             const intervalStats = getIntervalStats();
             const todayCount = getTodayConsumptions().length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
@@ -3021,9 +3120,10 @@
                                             const temporalCorrelations = getTemporalCorrelations();
                                             const emotionalPatterns = getEmotionalPatterns();
                                             const intraDayVariation = getIntraDayVariation();
+                                            const bidirectionalAnalysis = getBidirectionalAnalysis();
 
                                             // Check if we have enough data
-                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns || intraDayVariation;
+                                            const hasData = sentimentAnalysis || temporalCorrelations || emotionalPatterns || intraDayVariation || bidirectionalAnalysis;
 
                                             if (!hasData) {
                                                 return (
@@ -3294,6 +3394,132 @@
                                                                         })()}
                                                                     </div>
                                                                 </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Bidirectional Analysis: Consumption → Wellbeing */}
+                                                    {bidirectionalAnalysis && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-amber-700/50' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">🔄</span>
+                                                                Impacto do Consumo no Bem-Estar
+                                                            </h3>
+                                                            <div className="space-y-4">
+                                                                {/* Same-day impact */}
+                                                                {bidirectionalAnalysis.sameDay && (bidirectionalAnalysis.sameDay.consumptionDays.count > 0 || bidirectionalAnalysis.sameDay.nonConsumptionDays.count > 0) && (
+                                                                    <div>
+                                                                        <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-amber-400' : 'text-amber-700')}>📊 Impacto no Mesmo Dia:</h4>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            {/* Consumption days */}
+                                                                            <div className={(darkMode ? 'bg-red-900/50 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-4 border'}>
+                                                                                <div className={'font-medium mb-2 text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>Com Consumo ({bidirectionalAnalysis.sameDay.consumptionDays.count} dias)</div>
+                                                                                <div className={'text-xs space-y-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>😴 Sono:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.consumptionDays.avgSleep.toFixed(1)}h</span>
+                                                                                    </div>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>😊 Humor:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.consumptionDays.avgMood.toFixed(1)}/10</span>
+                                                                                    </div>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>⚡ Energia:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.consumptionDays.avgEnergy.toFixed(1)}/10</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Non-consumption days */}
+                                                                            <div className={(darkMode ? 'bg-green-900/50 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
+                                                                                <div className={'font-medium mb-2 text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>Sem Consumo ({bidirectionalAnalysis.sameDay.nonConsumptionDays.count} dias)</div>
+                                                                                <div className={'text-xs space-y-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>😴 Sono:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.nonConsumptionDays.avgSleep.toFixed(1)}h</span>
+                                                                                    </div>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>😊 Humor:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.nonConsumptionDays.avgMood.toFixed(1)}/10</span>
+                                                                                    </div>
+                                                                                    <div className="flex justify-between">
+                                                                                        <span>⚡ Energia:</span>
+                                                                                        <span className="font-bold">{bidirectionalAnalysis.sameDay.nonConsumptionDays.avgEnergy.toFixed(1)}/10</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Insight about same-day differences */}
+                                                                        <div className={(darkMode ? 'bg-amber-900/30 border-amber-700/50' : 'bg-amber-50 border-amber-200') + ' rounded-lg p-4 border mt-3'}>
+                                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                💡 {(() => {
+                                                                                    const moodDiff = bidirectionalAnalysis.sameDay.nonConsumptionDays.avgMood - bidirectionalAnalysis.sameDay.consumptionDays.avgMood;
+                                                                                    const sleepDiff = bidirectionalAnalysis.sameDay.nonConsumptionDays.avgSleep - bidirectionalAnalysis.sameDay.consumptionDays.avgSleep;
+                                                                                    const energyDiff = bidirectionalAnalysis.sameDay.nonConsumptionDays.avgEnergy - bidirectionalAnalysis.sameDay.consumptionDays.avgEnergy;
+
+                                                                                    const insights = [];
+                                                                                    if (Math.abs(moodDiff) > 0.5) {
+                                                                                        insights.push(`humor ${moodDiff > 0 ? 'melhor' : 'pior'} (${moodDiff > 0 ? '+' : ''}${moodDiff.toFixed(1)} pontos)`);
+                                                                                    }
+                                                                                    if (Math.abs(sleepDiff) > 0.5) {
+                                                                                        insights.push(`sono ${sleepDiff > 0 ? 'melhor' : 'pior'} (${sleepDiff > 0 ? '+' : ''}${sleepDiff.toFixed(1)}h)`);
+                                                                                    }
+                                                                                    if (Math.abs(energyDiff) > 0.5) {
+                                                                                        insights.push(`energia ${energyDiff > 0 ? 'superior' : 'inferior'} (${energyDiff > 0 ? '+' : ''}${energyDiff.toFixed(1)} pontos)`);
+                                                                                    }
+
+                                                                                    if (insights.length === 0) {
+                                                                                        return 'Em dias sem consumo, o teu bem-estar é similar. Continua a registar para identificar padrões mais claros.';
+                                                                                    }
+                                                                                    return `Em dias sem consumo, tens: ${insights.join(', ')}.`;
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Next-day impact */}
+                                                                {bidirectionalAnalysis.nextDay && bidirectionalAnalysis.nextDay.count > 0 && (
+                                                                    <div>
+                                                                        <h4 className={'font-medium mb-3 text-sm ' + (darkMode ? 'text-orange-400' : 'text-orange-700')}>🌅 Impacto no Dia Seguinte:</h4>
+                                                                        <div className={(darkMode ? 'bg-orange-900/50 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border'}>
+                                                                            <div className={'text-sm mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                Analisados {bidirectionalAnalysis.nextDay.count} dias em que consumiste e registaste bem-estar no dia seguinte:
+                                                                            </div>
+                                                                            <div className="grid grid-cols-3 gap-3">
+                                                                                <div className={'text-center ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                    <div className="text-xs mb-1">😴 Sono</div>
+                                                                                    <div className="font-bold text-lg">{bidirectionalAnalysis.nextDay.avgNextDaySleep.toFixed(1)}h</div>
+                                                                                </div>
+                                                                                <div className={'text-center ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                    <div className="text-xs mb-1">😊 Humor</div>
+                                                                                    <div className="font-bold text-lg">{bidirectionalAnalysis.nextDay.avgNextDayMood.toFixed(1)}/10</div>
+                                                                                </div>
+                                                                                <div className={'text-center ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                    <div className="text-xs mb-1">⚡ Energia</div>
+                                                                                    <div className="font-bold text-lg">{bidirectionalAnalysis.nextDay.avgNextDayEnergy.toFixed(1)}/10</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border mt-3'}>
+                                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                                💡 <strong>Atenção ao Dia Seguinte:</strong> {(() => {
+                                                                                    const avgMood = bidirectionalAnalysis.nextDay.avgNextDayMood;
+                                                                                    const avgSleep = bidirectionalAnalysis.nextDay.avgNextDaySleep;
+
+                                                                                    if (avgMood < 5 || avgSleep < 6) {
+                                                                                        return 'Os dados mostram que o dia seguinte ao consumo tende a ser mais difícil. Planeia autocuidado extra nesses dias.';
+                                                                                    } else if (avgMood >= 7 && avgSleep >= 7) {
+                                                                                        return 'O teu bem-estar no dia seguinte parece estar razoável. Continua a monitorizar e cuida-te sempre.';
+                                                                                    } else {
+                                                                                        return 'Há impacto moderado no dia seguinte. Mantém-te atento às tuas necessidades de autocuidado.';
+                                                                                    }
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     )}
