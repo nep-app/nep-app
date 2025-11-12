@@ -2535,10 +2535,18 @@
                                                 ...filteredReflections.map(r => r.answer || '')
                                             ].join(' ').toLowerCase();
 
-                                            const words = allNotes.split(/\s+/).filter(w => w.length > 3);
+                                            // Portuguese stop words to filter out
+                                            const stopWords = new Set(['que', 'para', 'com', 'por', 'uma', 'como', 'mais', 'mas', 'foi', 'dos', 'das', 'tem', 'está', 'este', 'esse', 'isso', 'esta', 'essa', 'isso', 'muito', 'hoje', 'também', 'quando', 'onde', 'ainda', 'sobre', 'seu', 'sua', 'seus', 'suas', 'pelo', 'pela', 'nos', 'nas', 'aos', 'ter', 'são', 'essa', 'pode', 'tinha', 'era', 'foram', 'todas', 'todos', 'dela', 'dele', 'sem', 'mesmo', 'mesma', 'depois', 'antes', 'fazer', 'fica', 'fiquei', 'ficar', 'porque']);
+
+                                            const words = allNotes.split(/\s+/)
+                                                .map(w => w.replace(/[.,!?;:()""]/g, '')) // Remove pontuação
+                                                .filter(w => w.length > 3 && !stopWords.has(w)); // Filtra palavras curtas e stop words
                                             const wordFreq = {};
                                             words.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
-                                            const topWords = Object.entries(wordFreq).sort((a,b) => b[1] - a[1]).slice(0, 15);
+                                            const topWords = Object.entries(wordFreq)
+                                                .filter(([word, count]) => count >= 2) // Só palavras que aparecem pelo menos 2x
+                                                .sort((a,b) => b[1] - a[1])
+                                                .slice(0, 12);
 
                                             // Simple correlation coefficient calculation
                                             const getCorrelation = (data, xKey, yKey) => {
@@ -3386,6 +3394,54 @@
                                                                     </div>
                                                                 );
                                                             })()}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Word Frequency Analysis */}
+                                                    {topWords.length > 0 && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-cyan-900/30 to-blue-900/30 border-cyan-700/50' : 'bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-2 flex items-center gap-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                <span className="text-xl">💬</span>
+                                                                Palavras Mais Usadas nas Tuas Reflexões
+                                                            </h3>
+                                                            <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                Análise das {words.length} palavras nos teus textos (notas, reflexões DBT, etc.)
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {topWords.map(([word, count], idx) => {
+                                                                    // Calculate size based on frequency (bigger = more frequent)
+                                                                    const maxCount = topWords[0][1];
+                                                                    const minSize = 0.8;
+                                                                    const maxSize = 1.8;
+                                                                    const size = minSize + (maxSize - minSize) * (count / maxCount);
+
+                                                                    // Color gradient based on position
+                                                                    const colors = [
+                                                                        darkMode ? 'bg-cyan-900/50 border-cyan-700 text-cyan-300' : 'bg-cyan-100 border-cyan-300 text-cyan-800',
+                                                                        darkMode ? 'bg-blue-900/50 border-blue-700 text-blue-300' : 'bg-blue-100 border-blue-300 text-blue-800',
+                                                                        darkMode ? 'bg-indigo-900/50 border-indigo-700 text-indigo-300' : 'bg-indigo-100 border-indigo-300 text-indigo-800',
+                                                                        darkMode ? 'bg-purple-900/50 border-purple-700 text-purple-300' : 'bg-purple-100 border-purple-300 text-purple-800'
+                                                                    ];
+                                                                    const colorClass = colors[idx % colors.length];
+
+                                                                    return (
+                                                                        <div
+                                                                            key={word}
+                                                                            className={'px-3 py-2 rounded-lg border font-medium transition-all hover:scale-105 ' + colorClass}
+                                                                            style={{ fontSize: size + 'rem' }}
+                                                                            title={`Aparece ${count} vezes`}
+                                                                        >
+                                                                            {word}
+                                                                            <span className="text-xs ml-1 opacity-70">({count})</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <div className={'mt-4 p-3 rounded-lg text-xs ' + (darkMode ? 'bg-gray-700/50 text-gray-300' : 'bg-white/50 text-gray-700')}>
+                                                                <p className="leading-relaxed">
+                                                                    💡 <strong>Dica:</strong> As palavras que mais usas podem revelar temas recorrentes nos teus pensamentos e preocupações. Se vires palavras negativas a aparecer frequentemente, pode ser útil falar sobre isso com alguém de confiança.
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
