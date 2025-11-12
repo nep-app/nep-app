@@ -1898,31 +1898,6 @@
                                             // Generate insights
                                             const insights = [];
 
-                                            // Weekly trend insight
-                                            if (thisWeek.length > 0 && lastWeek.length > 0) {
-                                                const change = thisWeek.length - lastWeek.length;
-                                                const percentChange = Math.abs((change / lastWeek.length) * 100).toFixed(0);
-                                                if (change < 0) {
-                                                    insights.push({
-                                                        text: `Esta semana consumiste ${thisWeek.length}x (redução de ${percentChange}% vs semana passada). Progresso notável! 📉`,
-                                                        type: 'positive'
-                                                    });
-                                                } else if (change > 0) {
-                                                    // Se aumento muito grande (>300%), mostrar números absolutos em vez de %
-                                                    if (percentChange > 300) {
-                                                        insights.push({
-                                                            text: `Esta semana: ${thisWeek.length} consumos vs semana passada: ${lastWeek.length}. Aumento significativo - vamos identificar os gatilhos principais. 💪`,
-                                                            type: 'neutral'
-                                                        });
-                                                    } else {
-                                                        insights.push({
-                                                            text: `Esta semana consumiste ${thisWeek.length}x (aumento de ${percentChange}% vs semana passada). Lembra-te: recaídas fazem parte do processo. 💪`,
-                                                            type: 'neutral'
-                                                        });
-                                                    }
-                                                }
-                                            }
-
                                             // Best day insight
                                             if (dates.length > 0) {
                                                 const sortedDates = dates.sort((a, b) => byDate[a] - byDate[b]);
@@ -1946,35 +1921,6 @@
                                                     text: `Padrão identificado: ${percentage}% dos consumos ocorrem à ${partNames[maxPartOfDay[0]]}. Prepara estratégias para esse período. 🎯`,
                                                     type: 'info'
                                                 });
-                                            }
-
-                                            // Short intervals insight
-                                            if (intervals.length > 0) {
-                                                const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
-                                                if (shortPercent < 30) {
-                                                    insights.push({
-                                                        text: `Apenas ${shortPercent}% dos intervalos são curtos (<2h). Estás a espaçar bem os consumos! 🌟`,
-                                                        type: 'positive'
-                                                    });
-                                                } else if (shortPercent > 60) {
-                                                    insights.push({
-                                                        text: `${shortPercent}% dos intervalos são curtos (<2h). Foca-te em aumentar o tempo entre consumos. Cada hora conta. ⏱️`,
-                                                        type: 'info'
-                                                    });
-                                                }
-                                            }
-
-                                            // Day of week pattern
-                                            const maxWeekday = Object.entries(byWeekday).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                                            if (maxWeekday[1] > 0 && filteredConsumptions.length > 7) {
-                                                const dayName = weekdayNames[parseInt(maxWeekday[0])];
-                                                const percentage = ((maxWeekday[1] / filteredConsumptions.length) * 100).toFixed(0);
-                                                if (percentage > 20) {
-                                                    insights.push({
-                                                        text: `${dayName} representa ${percentage}% dos consumos. Planeia atividades alternativas para este dia. 📅`,
-                                                        type: 'info'
-                                                    });
-                                                }
                                             }
 
                                             return (
