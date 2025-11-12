@@ -2559,15 +2559,12 @@
                                                                     if (filteredCycles.filter(c => c.bedtime).length > 0) {
                                                                         const bedtimes = filteredCycles.filter(c => c.bedtime).map(c => {
                                                                             const [h, m] = c.bedtime.split(':').map(Number);
-                                                                            let hour = h + m / 60;
-                                                                            // Convert early morning hours (0-6) to 24-30 for proper averaging
-                                                                            if (hour < 6) hour += 24;
-                                                                            return hour;
+                                                                            return h + m / 60;
                                                                         });
-                                                                        let avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
-                                                                        // Convert back to 0-23 range if needed
-                                                                        if (avgBedtime >= 24) avgBedtime -= 24;
-                                                                        const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
+                                                                        const avgBedtime = bedtimes.reduce((sum, t) => sum + t, 0) / bedtimes.length;
+                                                                        const avgBedtimeHour = Math.floor(avgBedtime);
+                                                                        const avgBedtimeMin = Math.round((avgBedtime % 1) * 60);
+                                                                        const avgBedtimeFormatted = `${avgBedtimeHour}:${String(avgBedtimeMin).padStart(2, '0')}`;
 
                                                                         if (avgBedtime >= 22 || avgBedtime <= 0.5) {
                                                                             insights.push(`🌙 Hora média de deitar: ${avgBedtimeFormatted}. Timing ideal! Deitar entre 22h-0h30 favorece ciclos de sono saudáveis.`);
@@ -2893,15 +2890,12 @@
                                                                     bedtimeData.push({ bedtime: bedtimeInHours, consumptions: consumptionsOnDay });
                                                                 });
 
-                                                                // For display average, convert early morning to 24+ range
-                                                                const bedtimesForAvg = bedtimeData.map(d => {
-                                                                    let hour = d.bedtime;
-                                                                    if (hour < 6) hour += 24;
-                                                                    return hour;
-                                                                });
-                                                                let avgBedtime = bedtimesForAvg.reduce((sum, t) => sum + t, 0) / bedtimesForAvg.length;
-                                                                if (avgBedtime >= 24) avgBedtime -= 24;
-                                                                const avgBedtimeFormatted = `${Math.floor(avgBedtime)}:${String(Math.round((avgBedtime % 1) * 60)).padStart(2, '0')}`;
+                                                                // Calculate average bedtime
+                                                                const bedtimesForAvg = bedtimeData.map(d => d.bedtime);
+                                                                const avgBedtime = bedtimesForAvg.reduce((sum, t) => sum + t, 0) / bedtimesForAvg.length;
+                                                                const avgBedtimeHour = Math.floor(avgBedtime);
+                                                                const avgBedtimeMin = Math.round((avgBedtime % 1) * 60);
+                                                                const avgBedtimeFormatted = `${avgBedtimeHour}:${String(avgBedtimeMin).padStart(2, '0')}`;
 
                                                                 // Calculate correlation
                                                                 const bedtimeCorr = getCorrelation(bedtimeData, 'bedtime', 'consumptions');
