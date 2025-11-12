@@ -2376,15 +2376,18 @@
 
                                             // 3. Consumo → Humor do dia seguinte
                                             const consumptionToNextDayMoodData = [];
-                                            for (let i = 0; i < filteredWellbeingLogs.length - 1; i++) {
-                                                const today = filteredWellbeingLogs[i];
-                                                const tomorrow = filteredWellbeingLogs[i + 1];
+                                            // First, sort logs by date to ensure correct order
+                                            const sortedLogs = [...filteredWellbeingLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+                                            for (let i = 0; i < sortedLogs.length - 1; i++) {
+                                                const today = sortedLogs[i];
+                                                const tomorrow = sortedLogs[i + 1];
                                                 // Only include if tomorrow has valid mood
                                                 if (tomorrow.mood !== undefined && tomorrow.mood !== null && tomorrow.mood !== '' && !isNaN(parseInt(tomorrow.mood))) {
                                                     const todayDate = new Date(today.date);
                                                     const tomorrowDate = new Date(tomorrow.date);
-                                                    // Check if tomorrow is actually the next day
-                                                    if ((tomorrowDate - todayDate) === 86400000) { // 24 hours in ms
+                                                    // Check if tomorrow is actually the next day (allow for date-only comparison)
+                                                    const dayDiff = Math.round((tomorrowDate - todayDate) / 86400000); // Days difference
+                                                    if (dayDiff === 1) {
                                                         const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
                                                         consumptionToNextDayMoodData.push({ consumptions: todayConsumptions, mood: parseInt(tomorrow.mood) });
                                                     }
@@ -3926,13 +3929,17 @@
 
                                             // 3. Consumo → Humor dia seguinte
                                             const consToNextMoodData = [];
-                                            for (let i = 0; i < filteredWellbeingLogs.length - 1; i++) {
-                                                const today = filteredWellbeingLogs[i];
-                                                const tomorrow = filteredWellbeingLogs[i + 1];
+                                            // First, sort logs by date to ensure correct order
+                                            const sortedLogsForNextDay = [...filteredWellbeingLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+                                            for (let i = 0; i < sortedLogsForNextDay.length - 1; i++) {
+                                                const today = sortedLogsForNextDay[i];
+                                                const tomorrow = sortedLogsForNextDay[i + 1];
                                                 if (tomorrow.mood !== undefined && tomorrow.mood !== null && tomorrow.mood !== '' && !isNaN(parseInt(tomorrow.mood))) {
                                                     const todayDate = new Date(today.date);
                                                     const tomorrowDate = new Date(tomorrow.date);
-                                                    if ((tomorrowDate - todayDate) === 86400000) {
+                                                    // Check if tomorrow is actually the next day (allow for date-only comparison)
+                                                    const dayDiff = Math.round((tomorrowDate - todayDate) / 86400000); // Days difference
+                                                    if (dayDiff === 1) {
                                                         const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
                                                         consToNextMoodData.push({ consumptions: todayConsumptions, mood: parseInt(tomorrow.mood) });
                                                     }
