@@ -1416,15 +1416,21 @@
                 const topTriggers = Object.entries(triggerCount).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
 
                 const strategies = {
-                    'Stress': ['Pratica respiração profunda (4-7-8)', 'Faz uma caminhada de 10 minutos', 'Ouve música relaxante'],
-                    'Ansiedade': ['Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas', 'Pratica grounding: pés no chão, respira fundo', 'Escreve os teus pensamentos num papel'],
-                    'Solidão': ['Liga a alguém de confiança', 'Vai a um espaço público (café, biblioteca)', 'Participa numa atividade de grupo'],
-                    'Festa': ['Define limite antes de sair', 'Leva alguém de confiança contigo', 'Planeia transporte seguro de volta'],
-                    'Trabalho': ['Faz pausas regulares (técnica pomodoro)', 'Define prioridades claras para o dia', 'Conversa com supervisor sobre carga de trabalho'],
-                    'Família': ['Estabelece limites saudáveis', 'Pratica auto-compaixão', 'Procura apoio externo (amigos, terapeuta)'],
-                    'Hábito': ['Muda a tua rotina habitual', 'Substitui o comportamento (chá, exercício)', 'Identifica o gatilho antes do hábito'],
-                    'Tristeza': ['Permite-te sentir sem julgamento', 'Pratica auto-cuidado básico', 'Liga para linha de apoio se necessário'],
-                    'Dependência': ['Liga para linha de apoio: SOS Voz Amiga (21 354 45 45)', 'Pratica técnica HALT (com fome/zangado/sozinho/cansado?)', 'Adia 15 minutos e reavalia']
+                    '😰 Stress': ['Pratica respiração profunda (4-7-8)', 'Faz uma caminhada de 10 minutos', 'Ouve música relaxante'],
+                    '😟 Ansiedade': ['Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas', 'Pratica grounding: pés no chão, respira fundo', 'Escreve os teus pensamentos num papel'],
+                    '😔 Solidão': ['Liga a alguém de confiança', 'Vai a um espaço público (café, biblioteca)', 'Participa numa atividade de grupo'],
+                    '🎉 Festa': ['Define limite antes de sair', 'Leva alguém de confiança contigo', 'Planeia transporte seguro de volta'],
+                    '💼 Trabalho': ['Faz pausas regulares (técnica pomodoro)', 'Define prioridades claras para o dia', 'Conversa com supervisor sobre carga de trabalho'],
+                    '👨‍👩‍👧‍👦 Família': ['Estabelece limites saudáveis', 'Pratica auto-compaixão', 'Procura apoio externo (amigos, terapeuta)'],
+                    '🔄 Hábito': ['Muda a tua rotina habitual', 'Substitui o comportamento (chá, exercício)', 'Identifica o gatilho antes do hábito'],
+                    '😢 Tristeza': ['Permite-te sentir sem julgamento', 'Pratica auto-cuidado básico', 'Liga para linha de apoio se necessário'],
+                    '⛓️ Dependência': ['Liga para linha de apoio: SOS Voz Amiga (21 354 45 45)', 'Pratica técnica HALT (com fome/zangado/sozinho/cansado?)', 'Adia 15 minutos e reavalia'],
+                    '🥱 Tédio': ['Encontra uma atividade alternativa', 'Faz uma lista de hobbies e experimenta um', 'Sai para dar uma volta'],
+                    '😴 Cansaço': ['Descansa! O sono é fundamental', 'Faz uma pausa de 20 minutos', 'Avalia se precisas de mais horas de sono'],
+                    '🤕 Dor física': ['Consulta um médico se a dor persistir', 'Pratica relaxamento muscular progressivo', 'Considera alternativas não-farmacológicas'],
+                    '🌙 Insónia': ['Cria uma rotina de sono consistente', 'Evita ecrãs 1h antes de dormir', 'Experimenta meditação guiada para adormecer'],
+                    '😤 Conflito': ['Faz uma pausa antes de reagir', 'Usa comunicação não-violenta', 'Procura pontos em comum'],
+                    '🎊 Celebração': ['Define limites antes do evento', 'Combina código de segurança com amigo', 'Planeia atividade alternativa no dia seguinte']
                 };
 
                 if (topTriggers.length === 0) {
@@ -1442,7 +1448,7 @@
                     }
                 });
 
-                return selectedStrategies.length > 0 ? selectedStrategies : strategies['Stress'];
+                return selectedStrategies.length > 0 ? selectedStrategies : strategies['😰 Stress'];
             };
 
             const copingStrategies = getCopingStrategies();
@@ -1866,16 +1872,20 @@
                                             if (filteredConsumptions.length < 2) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados suficientes para comparações neste período</div>);
 
                                             const now = new Date();
+                                            const todayKey = getTodayKey();
                                             const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
                                             const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
                                             const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
 
+                                            // Excluir o dia atual das análises (só contar dias completos)
+                                            const consumptionsExcludingToday = filteredConsumptions.filter(c => c.date !== todayKey);
+
                                             // Weekly comparison
-                                            const thisWeek = filteredConsumptions.filter(c => new Date(c.timestamp) >= weekAgo);
-                                            const lastWeek = filteredConsumptions.filter(c => new Date(c.timestamp) >= twoWeeksAgo && new Date(c.timestamp) < weekAgo);
+                                            const thisWeek = consumptionsExcludingToday.filter(c => new Date(c.timestamp) >= weekAgo);
+                                            const lastWeek = consumptionsExcludingToday.filter(c => new Date(c.timestamp) >= twoWeeksAgo && new Date(c.timestamp) < weekAgo);
 
                                             // 30-day trend
-                                            const last30Days = filteredConsumptions.filter(c => new Date(c.timestamp) >= thirtyDaysAgo);
+                                            const last30Days = consumptionsExcludingToday.filter(c => new Date(c.timestamp) >= thirtyDaysAgo);
                                             const byDate = {};
                                             last30Days.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
                                             const dates = Object.keys(byDate).sort();
@@ -1883,14 +1893,14 @@
 
                                             // By hour
                                             const byHour = {};
-                                            filteredConsumptions.forEach(c => {
+                                            consumptionsExcludingToday.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 byHour[hour] = (byHour[hour] || 0) + 1;
                                             });
 
                                             // By part of day
                                             const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            filteredConsumptions.forEach(c => {
+                                            consumptionsExcludingToday.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 if (hour >= 6 && hour < 12) byPartOfDay.manha++;
                                                 else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
@@ -1901,13 +1911,13 @@
                                             // By weekday
                                             const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
                                             const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                            filteredConsumptions.forEach(c => {
+                                            consumptionsExcludingToday.forEach(c => {
                                                 const day = new Date(c.timestamp).getDay();
                                                 byWeekday[day]++;
                                             });
 
                                             // Short intervals
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const sorted = [...consumptionsExcludingToday].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
@@ -1956,7 +1966,7 @@
                                             const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
                                             if (maxPartOfDay[1] > 0) {
                                                 const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
-                                                const percentage = ((maxPartOfDay[1] / filteredConsumptions.length) * 100).toFixed(0);
+                                                const percentage = ((maxPartOfDay[1] / consumptionsExcludingToday.length) * 100).toFixed(0);
                                                 insights.push({
                                                     text: `Padrão identificado: ${percentage}% dos consumos ocorrem à ${partNames[maxPartOfDay[0]]}. Prepara estratégias para esse período. 🎯`,
                                                     type: 'info'
@@ -1981,9 +1991,9 @@
 
                                             // Day of week pattern
                                             const maxWeekday = Object.entries(byWeekday).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                                            if (maxWeekday[1] > 0 && filteredConsumptions.length > 7) {
+                                            if (maxWeekday[1] > 0 && consumptionsExcludingToday.length > 7) {
                                                 const dayName = weekdayNames[parseInt(maxWeekday[0])];
-                                                const percentage = ((maxWeekday[1] / filteredConsumptions.length) * 100).toFixed(0);
+                                                const percentage = ((maxWeekday[1] / consumptionsExcludingToday.length) * 100).toFixed(0);
                                                 if (percentage > 20) {
                                                     insights.push({
                                                         text: `${dayName} representa ${percentage}% dos consumos. Planeia atividades alternativas para este dia. 📅`,
@@ -1998,14 +2008,14 @@
                                                     <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
                                                         <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
                                                             {(() => {
-                                                                const last7 = filteredConsumptions.filter(c => {
+                                                                const last7 = consumptionsExcludingToday.filter(c => {
                                                                     const daysDiff = (Date.now() - new Date(c.timestamp).getTime()) / (1000 * 60 * 60 * 24);
                                                                     return daysDiff <= 7;
                                                                 });
                                                                 const avgPerDay7 = (last7.length / 7).toFixed(1);
                                                                 const mainPeriod = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
                                                                 const periodNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
-                                                                const mainPercentage = ((mainPeriod[1] / filteredConsumptions.length) * 100).toFixed(0);
+                                                                const mainPercentage = ((mainPeriod[1] / consumptionsExcludingToday.length) * 100).toFixed(0);
 
                                                                 let bestDay = 'N/A';
                                                                 let bestCount = 999;
@@ -2318,34 +2328,39 @@
                                         if (patternView === 'analyses') {
                                             if (filteredConsumptions.length < 2 || filteredWellbeingLogs.length < 2) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem dados suficientes para análises neste período. Precisa de pelo menos 2 consumos e 2 registos de bem-estar.</div>);
 
+                                            // Excluir o dia atual das análises (só contar dias completos)
+                                            const todayKey = getTodayKey();
+                                            const consumptionsExcludingToday = filteredConsumptions.filter(c => c.date !== todayKey);
+                                            const wellbeingExcludingToday = filteredWellbeingLogs.filter(w => w.date !== todayKey);
+
                                             // Sleep vs consumption correlation
                                             const sleepConsumptionData = [];
-                                            filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                            wellbeingExcludingToday.forEach(w => {
+                                                const dayConsumptions = consumptionsExcludingToday.filter(c => c.date === w.date).length;
                                                 if (dayConsumptions > 0) {
                                                     sleepConsumptionData.push({ sleep: w.sleep, consumptions: dayConsumptions });
                                                 }
                                             });
 
                                             // Mood vs sleep correlation
-                                            const moodSleepData = filteredWellbeingLogs.map(w => ({ mood: w.mood, sleep: w.sleep }));
+                                            const moodSleepData = wellbeingExcludingToday.map(w => ({ mood: w.mood, sleep: w.sleep }));
 
                                             // Mood vs consumption correlation
                                             const moodConsumptionData = [];
-                                            filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                            wellbeingExcludingToday.forEach(w => {
+                                                const dayConsumptions = consumptionsExcludingToday.filter(c => c.date === w.date).length;
                                                 if (dayConsumptions > 0) {
                                                     moodConsumptionData.push({ mood: w.mood, consumptions: dayConsumptions });
                                                 }
                                             });
 
                                             // Word frequency analysis (for filtered period)
-                                            const filteredReflections = filterByDateRange(reflections, dateRange);
-                                            const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
+                                            const filteredReflections = filterByDateRange(reflections, dateRange).filter(r => r.date !== todayKey);
+                                            const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date').filter(l => l.date !== todayKey);
                                             const allNotes = [
-                                                ...filteredConsumptions.map(c => c.notes || ''),
+                                                ...consumptionsExcludingToday.map(c => c.notes || ''),
                                                 ...filteredDailyLogs.map(l => l.notes || ''),
-                                                ...filteredWellbeingLogs.map(w => w.notes || ''),
+                                                ...wellbeingExcludingToday.map(w => w.notes || ''),
                                                 ...filteredReflections.map(r => r.answer || '')
                                             ].join(' ').toLowerCase();
 
@@ -2425,9 +2440,9 @@
                                                                 {(() => {
                                                                     const insights = [];
 
-                                                                    // Group wellbeing logs by day first
+                                                                    // Group wellbeing logs by day first (excluindo o dia atual)
                                                                     const wellbeingByDay = {};
-                                                                    filteredWellbeingLogs.forEach(log => {
+                                                                    wellbeingExcludingToday.forEach(log => {
                                                                         const day = log.date;
                                                                         if (!wellbeingByDay[day]) {
                                                                             wellbeingByDay[day] = { sleep: [], mood: [], energy: [] };
@@ -4531,7 +4546,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor física', 'Insónia', 'Conflito', 'Celebração'].map(trigger => (
+                                                {['😰 Stress', '😟 Ansiedade', '😔 Solidão', '🎉 Festa', '💼 Trabalho', '👨‍👩‍👧‍👦 Família', '🔄 Hábito', '😢 Tristeza', '⛓️ Dependência', '🥱 Tédio', '😴 Cansaço', '🤕 Dor física', '🌙 Insónia', '😤 Conflito', '🎊 Celebração'].map(trigger => (
                                                     <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
                                                             if (e.target.checked) {
