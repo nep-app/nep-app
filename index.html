@@ -3043,10 +3043,7 @@
                                             const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
 
                                             // Sentiment analysis (if we have notes)
-                                            const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...(dailyLogs || []).filter(d => {
-                                                const inRange = filteredConsumptions.some(c => c.date === d.date);
-                                                return inRange && d.note;
-                                            }).map(d => d.note)].filter(n => n.length > 0).join(' ');
+                                            const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...filteredCycles.map(c => c.notes || '')].filter(n => n.length > 0).join(' ');
 
                                             const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
                                             const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
@@ -3125,7 +3122,7 @@
                                                             {(avgMood || avgEnergy || avgSleep) && (
                                                                 <p>
                                                                     Sobre o teu bem-estar geral:
-                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{avgSleep < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : avgSleep > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : ' - um valor razoável'}.</>}
+                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : ' - um valor razoável'}.</>}
                                                                     {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
                                                                     {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
                                                                 </p>
