@@ -3137,11 +3137,11 @@
                                                                     <>
                                                                         Ao ler as tuas reflexões, percebo que tens usado palavras
                                                                         {sentimentScore > 5 ? (
-                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> maioritariamente positivas</strong> + ' - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!'
+                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>maioritariamente positivas</strong> - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!</>
                                                                         ) : sentimentScore < -5 ? (
-                                                                            <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}> que sugerem alguma dificuldade emocional</strong> + '. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.'
+                                                                            <> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>que sugerem alguma dificuldade emocional</strong>. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
                                                                         ) : (
-                                                                            ' neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.'
+                                                                            <> neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
                                                                         )}
                                                                     </>
                                                                 ) : (
