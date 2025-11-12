@@ -1931,10 +1931,18 @@
                                                         type: 'positive'
                                                     });
                                                 } else if (change > 0) {
-                                                    insights.push({
-                                                        text: `Esta semana consumiste ${thisWeek.length}x (aumento de ${percentChange}% vs semana passada). Lembra-te: recaídas fazem parte do processo. 💪`,
-                                                        type: 'neutral'
-                                                    });
+                                                    // Se aumento muito grande (>300%), mostrar números absolutos em vez de %
+                                                    if (percentChange > 300) {
+                                                        insights.push({
+                                                            text: `Esta semana: ${thisWeek.length} consumos vs semana passada: ${lastWeek.length}. Aumento significativo - vamos identificar os gatilhos principais. 💪`,
+                                                            type: 'neutral'
+                                                        });
+                                                    } else {
+                                                        insights.push({
+                                                            text: `Esta semana consumiste ${thisWeek.length}x (aumento de ${percentChange}% vs semana passada). Lembra-te: recaídas fazem parte do processo. 💪`,
+                                                            type: 'neutral'
+                                                        });
+                                                    }
                                                 }
                                             }
 
