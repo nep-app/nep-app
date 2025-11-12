@@ -2732,9 +2732,13 @@
                                                                         if (avgTimes >= 10) {
                                                                             freqMsg = 'Frequência muito alta - foca em reduzir o número de consumos';
                                                                         } else if (avgTimes >= 7) {
-                                                                            freqMsg = 'Boa! Mas consegues melhorar reduzindo para 6 ou menos consumos/dia';
+                                                                            freqMsg = 'Frequência moderada. Tenta reduzir para 6 ou menos consumos/dia';
+                                                                        } else if (avgTimes >= 5) {
+                                                                            freqMsg = 'Frequência controlada! Próximo objetivo: reduzir para 3-4 consumos/dia';
+                                                                        } else if (avgTimes >= 3) {
+                                                                            freqMsg = 'Muito bom! Frequência baixa. Próximo passo: espaçar ainda mais os consumos';
                                                                         } else {
-                                                                            freqMsg = 'PARABÉNS! Continua no bom caminho a reduzir mais';
+                                                                            freqMsg = 'Excelente! Frequência muito baixa. Mantém o controlo';
                                                                         }
 
                                                                         // Avaliar dosagem
@@ -2742,9 +2746,15 @@
                                                                         if (avgMg >= 200) {
                                                                             doseMsg = 'Dosagem muito alta - reduz a quantidade de mg por consumo';
                                                                         } else if (avgMg >= 150) {
-                                                                            doseMsg = 'Boa! Mas consegues melhorar reduzindo para menos de 150mg/dia';
+                                                                            doseMsg = 'Dosagem moderada-alta. Tenta reduzir para menos de 150mg/dia';
+                                                                        } else if (avgMg >= 100) {
+                                                                            doseMsg = 'Dosagem moderada. Próximo objetivo: menos de 100mg/dia';
+                                                                        } else if (avgMg >= 60) {
+                                                                            doseMsg = 'Boa dosagem! Próximo passo: reduzir para menos de 60mg/dia';
+                                                                        } else if (avgMg >= 30) {
+                                                                            doseMsg = 'Muito bom! Dosagem baixa. Mantém ou reduz ainda mais';
                                                                         } else {
-                                                                            doseMsg = 'PARABÉNS! Continua no bom caminho a reduzir mais';
+                                                                            doseMsg = 'Excelente! Dosagem muito baixa. Ótimo controlo';
                                                                         }
 
                                                                         // Adicionar análise de frequência
