@@ -4029,17 +4029,270 @@
 
                                         // PADRÕES & ANÁLISES (NOVA - EM DESENVOLVIMENTO)
                                         if (patternView === 'patterns') {
+                                            if (filteredConsumptions.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+
+                                            // Calculate all needed data
+                                            const byHour = {};
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                byHour[hour] = (byHour[hour] || 0) + 1;
+                                            });
+
+                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+                                                else byPartOfDay.madrugada++;
+                                            });
+
+                                            const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+                                            const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                            filteredConsumptions.forEach(c => {
+                                                const day = new Date(c.timestamp).getDay();
+                                                byWeekday[day]++;
+                                            });
+
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push({ hours: diff, date: sorted[i].date });
+                                            }
+
                                             return (
                                                 <div className="space-y-4">
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
-                                                        <div className="text-6xl mb-4">🚧</div>
-                                                        <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                            Padrões & Análises
-                                                        </h3>
-                                                        <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                            Esta secção está a ser reorganizada. Em breve terás acesso a análises temporais, estruturais e correlações.
-                                                        </p>
+                                                    {/* Sub-tab navigation */}
+                                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                                        {['temporal', 'estrutural', 'correlacoes'].map(subView => (
+                                                            <button
+                                                                key={subView}
+                                                                onClick={() => setPatternsSubView(subView)}
+                                                                className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
+                                                            >
+                                                                {subView === 'temporal' && '⏰ Temporal'}
+                                                                {subView === 'estrutural' && '📊 Estrutural'}
+                                                                {subView === 'correlacoes' && '🔗 Correlações'}
+                                                            </button>
+                                                        ))}
                                                     </div>
+
+                                                    {/* TEMPORAL */}
+                                                    {patternsSubView === 'temporal' && (
+                                                        <div className="space-y-4">
+                                                            {/* Análise de Intervalos Simplificada */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>⏱️ Intervalos Entre Consumos</h3>
+                                                                {intervals.length === 0 ? (
+                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        Sem intervalos (necessário ≥2 consumos)
+                                                                    </div>
+                                                                ) : (() => {
+                                                                    const goodIntervals = intervals.filter(i => i.hours >= 2);
+                                                                    const shortIntervals = intervals.filter(i => i.hours < 2);
+                                                                    const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+                                                                    const maxInterval = Math.max(...intervals.map(i => i.hours));
+                                                                    const goodPercent = ((goodIntervals.length / intervals.length) * 100).toFixed(0);
+                                                                    const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
+
+                                                                    return (
+                                                                        <>
+                                                                            <div className="grid grid-cols-3 gap-3 mb-4">
+                                                                                <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-3 text-center border'}>
+                                                                                    <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{intervals.length}</div>
+                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total</div>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 text-center border'}>
+                                                                                    <div className={'text-2xl font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval.toFixed(1)}h</div>
+                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média</div>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 text-center border'}>
+                                                                                    <div className={'text-2xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600'}}>{maxInterval.toFixed(1)}h</div>
+                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Máximo</div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className="space-y-3">
+                                                                                {/* Bons intervalos (≥2h) */}
+                                                                                <div className={(darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200') + ' rounded-lg p-4'}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                            <span>✅</span>
+                                                                                            <span>Intervalos Bons (≥2h)</span>
+                                                                                        </div>
+                                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                            {goodIntervals.length} ({goodPercent}%)
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-3 overflow-hidden'}>
+                                                                                        <div className="bg-green-500 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {/* Intervalos curtos (<2h) */}
+                                                                                <div className={(darkMode ? 'bg-orange-900/20 border border-orange-700/50' : 'bg-orange-50 border border-orange-200') + ' rounded-lg p-4'}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-orange-400' : 'text-orange-700')}>
+                                                                                            <span>⚠️</span>
+                                                                                            <span>Intervalos Curtos (&lt;2h)</span>
+                                                                                        </div>
+                                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-700')}>
+                                                                                            {shortIntervals.length} ({shortPercent}%)
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-3 overflow-hidden'}>
+                                                                                        <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <div className={(darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-3 mt-4 border'}>
+                                                                                <p className={'text-xs leading-relaxed ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                    {goodPercent >= 50
+                                                                                        ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
+                                                                                        : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
+                                                                                </p>
+                                                                            </div>
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Gatilhos */}
+                                                            {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
+                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Gatilhos Identificados</h3>
+                                                                    {(() => {
+                                                                        const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
+                                                                        const triggerCount = {};
+                                                                        allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
+                                                                        const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
+
+                                                                        return (
+                                                                            <div className="space-y-2">
+                                                                                {sortedTriggers.map(([trigger, count]) => (
+                                                                                    <div key={trigger} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border flex justify-between items-center'}>
+                                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{trigger}</span>
+                                                                                        <span className={'text-lg font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{count}x</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* ESTRUTURAL */}
+                                                    {patternsSubView === 'estrutural' && (
+                                                        <div className="space-y-4">
+                                                            {/* Por horário */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
+                                                                <div className="space-y-1">
+                                                                    {Object.keys(byHour).length === 0 ? (
+                                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                                    ) : (
+                                                                        Object.entries(byHour).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).map(([hour, count]) => (
+                                                                            <div key={hour} className="flex items-center gap-2">
+                                                                                <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{hour}h</div>
+                                                                                <div className={'flex-1 rounded-full h-5 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / Math.max(...Object.values(byHour))) * 100) + '%'}}>
+                                                                                        {count}x
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Por período do dia */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
+                                                                {(() => {
+                                                                    const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
+                                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
+
+                                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
+                                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
+                                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
+                                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
+
+                                                                    return (
+                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">🌅</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">☀️</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">🌙</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">⭐</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Por dia da semana */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
+                                                                <div className="space-y-2">
+                                                                    {Object.values(byWeekday).every(v => v === 0) ? (
+                                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                                    ) : (
+                                                                        Object.entries(byWeekday).map(([day, count]) => (
+                                                                            <div key={day} className="flex items-center gap-2">
+                                                                                <div className={'text-sm w-12 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
+                                                                                <div className={'flex-1 rounded-full h-5 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-end pr-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
+                                                                                        {count}x
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* CORRELAÇÕES */}
+                                                    {patternsSubView === 'correlacoes' && (
+                                                        <div className="space-y-4">
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                <div className="text-6xl mb-4">🔗</div>
+                                                                <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                    Correlações
+                                                                </h3>
+                                                                <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    Em breve: análise de correlações entre consumo, sono, humor e energia.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         }
