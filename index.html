@@ -144,7 +144,8 @@
             const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
             const [editingConsumption, setEditingConsumption] = useState(null);
             const [editingGoal, setEditingGoal] = useState(null);
-            const [patternView, setPatternView] = useState('comparisons');
+            const [patternView, setPatternView] = useState('dashboard');
+            const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
 
             // 2.4 Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
@@ -1831,13 +1832,12 @@
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['comparisons', 'analyses', 'progress', 'others', 'insights'].map(view => (
+                                        {['dashboard', 'progress', 'patterns', 'coach'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                                                {view === 'comparisons' && '📊 Visão Geral'}
-                                                {view === 'analyses' && '🔬 Análise'}
+                                                {view === 'dashboard' && '📊 Dashboard'}
                                                 {view === 'progress' && '📈 Progresso'}
-                                                {view === 'others' && '💚 Bem-Estar'}
-                                                {view === 'insights' && '🧠 Insights'}
+                                                {view === 'patterns' && '🔍 Padrões & Análises'}
+                                                {view === 'coach' && '💬 Coach'}
                                             </button>
                                         ))}
                                     </div>
@@ -1862,10 +1862,27 @@
                                             ciclos: filteredCycles.length
                                         });
 
-                                        // COMPARAÇÕES E TENDÊNCIAS
-                                        if (patternView === 'comparisons') {
-                                            if (filteredConsumptions.length < 2) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados suficientes para comparações neste período</div>);
+                                        // DASHBOARD (COMPACTO)
+                                        if (patternView === 'dashboard') {
+                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
+                                            // Calculate metrics
+                                            const totalConsumptions = filteredConsumptions.length;
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            const uniqueDays = Object.keys(byDate).length;
+                                            const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
+
+                                            // Calculate average interval
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push(diff);
+                                            }
+                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
+
+                                            // Get last 7 days for mini calendar
                                             const now = new Date();
                                             const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
                                             const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
