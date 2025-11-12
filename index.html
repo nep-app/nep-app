@@ -804,7 +804,7 @@
                 }
 
                 if (goal.type === 'limit_last') {
-                    // Count cycles where user manually marked last consumption before target time
+                    // Count days from cycles where user marked last consumption before target
                     cycles.forEach(cycle => {
                         if (cycle.lastBefore00) achievedDays++;
                     });
