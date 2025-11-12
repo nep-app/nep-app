@@ -2068,105 +2068,132 @@
                                                         )}
                                                     </div>
 
-                                                    {/* 30-day trend */}
-                                                    {(patternsPeriod === 'mes' || patternsPeriod === 'tudo') && (
+                                                    {/* Análise de Intervalos */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📈 Tendência (30 dias)</h3>
-                                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-4 text-center'}>
-                                                                <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-3xl font-bold'}>{avgPerDay.toFixed(1)}</div>
-                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média/dia</div>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>⏱️ Análise de Intervalos entre Consumos</h3>
+                                                        {intervals.length === 0 ? (
+                                                            <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                Sem intervalos calculados (necessário pelo menos 2 consumos)
                                                             </div>
-                                                            <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50') + ' rounded-lg p-4 text-center'}>
-                                                                <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-3xl font-bold'}>{last30Days.length}</div>
-                                                                <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total</div>
-                                                            </div>
-                                                        </div>
-                                                        {(() => {
-                                                            // Prepare data for line chart - fill missing days with 0
-                                                            const chartData = [];
-                                                            const now = new Date();
-                                                            for (let i = 29; i >= 0; i--) {
-                                                                const date = new Date(now);
-                                                                date.setDate(date.getDate() - i);
-                                                                const dateKey = date.toISOString().split('T')[0];
-                                                                chartData.push({
-                                                                    date: dateKey,
-                                                                    label: date.getDate(),
-                                                                    count: byDate[dateKey] || 0
-                                                                });
-                                                            }
+                                                        ) : (() => {
+                                                            // Calcular estatísticas dos intervalos
+                                                            const longIntervals = intervals.filter(i => i.hours >= 2);
+                                                            const veryShortIntervals = intervals.filter(i => i.hours < 1);
+                                                            const shortIntervals = intervals.filter(i => i.hours >= 1 && i.hours < 2);
+                                                            const mediumIntervals = intervals.filter(i => i.hours >= 2 && i.hours < 4);
+                                                            const longIntervals4h = intervals.filter(i => i.hours >= 4);
 
-                                                            const maxCount = Math.max(...chartData.map(d => d.count), 1);
-                                                            const chartHeight = 150;
-                                                            const chartWidth = 600;
-                                                            const padding = 20;
-                                                            const pointWidth = (chartWidth - padding * 2) / (chartData.length - 1);
+                                                            const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+                                                            const maxInterval = Math.max(...intervals.map(i => i.hours));
+                                                            const minInterval = Math.min(...intervals.map(i => i.hours));
 
-                                                            // Generate SVG path
-                                                            const points = chartData.map((d, i) => ({
-                                                                x: padding + i * pointWidth,
-                                                                y: chartHeight - padding - (d.count / maxCount) * (chartHeight - padding * 2)
-                                                            }));
-
-                                                            const pathD = points.map((p, i) =>
-                                                                `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-                                                            ).join(' ');
+                                                            const longPercent = ((longIntervals.length / intervals.length) * 100).toFixed(0);
+                                                            const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
+                                                            const veryShortPercent = ((veryShortIntervals.length / intervals.length) * 100).toFixed(0);
+                                                            const long4hPercent = ((longIntervals4h.length / intervals.length) * 100).toFixed(0);
 
                                                             return (
-                                                                <div className="relative" style={{height: chartHeight + 'px'}}>
-                                                                    <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full">
-                                                                        {/* Grid lines */}
-                                                                        {[0, 1, 2, 3, 4].map(i => {
-                                                                            const y = padding + (i * (chartHeight - padding * 2) / 4);
-                                                                            return (
-                                                                                <line key={i} x1={padding} y1={y} x2={chartWidth - padding} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-                                                                            );
-                                                                        })}
+                                                                <>
+                                                                    {/* Métricas principais */}
+                                                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                                                        <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50') + ' rounded-lg p-3 text-center'}>
+                                                                            <div className={'text-2xl font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{intervals.length}</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total intervalos</div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50') + ' rounded-lg p-3 text-center'}>
+                                                                            <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgInterval.toFixed(1)}h</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Intervalo médio</div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50') + ' rounded-lg p-3 text-center'}>
+                                                                            <div className={'text-2xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{maxInterval.toFixed(1)}h</div>
+                                                                            <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Maior intervalo</div>
+                                                                        </div>
+                                                                    </div>
 
-                                                                        {/* Line path */}
-                                                                        <path d={pathD} fill="none" stroke="url(#lineGradient)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                                                    {/* Distribuição por tamanho */}
+                                                                    <div className="space-y-3">
+                                                                        <h4 className={'text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Distribuição por Duração</h4>
 
-                                                                        {/* Area under line */}
-                                                                        <path d={`${pathD} L ${points[points.length-1].x} ${chartHeight - padding} L ${padding} ${chartHeight - padding} Z`} fill="url(#areaGradient)" opacity="0.2" />
+                                                                        {/* Intervalos >= 4h (EXCELENTE) */}
+                                                                        <div className={(darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200') + ' rounded-lg p-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                    <span>🎯</span>
+                                                                                    <span>≥ 4h (Excelente)</span>
+                                                                                </div>
+                                                                                <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                    {longIntervals4h.length} ({long4hPercent}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                <div className="bg-green-500 h-full transition-all duration-500" style={{width: long4hPercent + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
 
-                                                                        {/* Points */}
-                                                                        {points.map((p, i) => (
-                                                                            <g key={i}>
-                                                                                <circle cx={p.x} cy={p.y} r="4" fill="#8b5cf6" stroke="white" strokeWidth="2" />
-                                                                                {chartData[i].count > 0 && (
-                                                                                    <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize="10" fill="#6b7280" fontWeight="600">{chartData[i].count}</text>
-                                                                                )}
-                                                                            </g>
-                                                                        ))}
+                                                                        {/* Intervalos 2-4h (BOM) */}
+                                                                        <div className={(darkMode ? 'bg-blue-900/20 border border-blue-700/50' : 'bg-blue-50 border border-blue-200') + ' rounded-lg p-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                                    <span>✅</span>
+                                                                                    <span>2-4h (Bom)</span>
+                                                                                </div>
+                                                                                <div className={'text-sm font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                                    {mediumIntervals.length} ({((mediumIntervals.length / intervals.length) * 100).toFixed(0)}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                <div className="bg-blue-500 h-full transition-all duration-500" style={{width: ((mediumIntervals.length / intervals.length) * 100) + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
 
-                                                                        {/* X-axis labels (show every 5 days) */}
-                                                                        {chartData.map((d, i) => {
-                                                                            if (i % 5 === 0 || i === chartData.length - 1) {
-                                                                                return (
-                                                                                    <text key={i} x={points[i].x} y={chartHeight - 5} textAnchor="middle" fontSize="10" fill="#9ca3af">{d.label}</text>
-                                                                                );
+                                                                        {/* Intervalos 1-2h (ATENÇÃO) */}
+                                                                        <div className={(darkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200') + ' rounded-lg p-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>
+                                                                                    <span>⚠️</span>
+                                                                                    <span>1-2h (Atenção)</span>
+                                                                                </div>
+                                                                                <div className={'text-sm font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>
+                                                                                    {shortIntervals.length} ({shortPercent}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                <div className="bg-yellow-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Intervalos < 1h (CRÍTICO) */}
+                                                                        <div className={(darkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200') + ' rounded-lg p-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={'text-sm font-medium flex items-center gap-2 ' + (darkMode ? 'text-red-400' : 'text-red-700')}>
+                                                                                    <span>🚨</span>
+                                                                                    <span>&lt; 1h (Crítico)</span>
+                                                                                </div>
+                                                                                <div className={'text-sm font-bold ' + (darkMode ? 'text-red-400' : 'text-red-700')}>
+                                                                                    {veryShortIntervals.length} ({veryShortPercent}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-white') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                <div className="bg-red-500 h-full transition-all duration-500" style={{width: veryShortPercent + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Insight adicional */}
+                                                                    <div className={(darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-3 mt-4 border'}>
+                                                                        <p className={'text-xs leading-relaxed ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            {longIntervals4h.length > intervals.length / 2
+                                                                                ? '🌟 Parabéns! Mais de metade dos teus intervalos são ≥4h. Continua assim!'
+                                                                                : veryShortIntervals.length > intervals.length * 0.3
+                                                                                ? '💪 Foca-te em aumentar o tempo entre consumos. Pequenas melhorias fazem grande diferença!'
+                                                                                : '📈 Bom progresso! Tenta aumentar os intervalos gradualmente, focando em atingir pelo menos 2h entre consumos.'
                                                                             }
-                                                                            return null;
-                                                                        })}
-
-                                                                        {/* Gradients */}
-                                                                        <defs>
-                                                                            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                                                <stop offset="0%" stopColor="#a855f7" />
-                                                                                <stop offset="100%" stopColor="#ec4899" />
-                                                                            </linearGradient>
-                                                                            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                                                <stop offset="0%" stopColor="#a855f7" />
-                                                                                <stop offset="100%" stopColor="#ec4899" />
-                                                                            </linearGradient>
-                                                                        </defs>
-                                                                    </svg>
-                                                                </div>
+                                                                        </p>
+                                                                    </div>
+                                                                </>
                                                             );
                                                         })()}
                                                     </div>
-                                                    )}
 
                                                     {/* Calendar */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
