@@ -2400,6 +2400,33 @@
                                                 }
                                             });
 
+                                            // 6. Consumo → Humor (mesmo dia)
+                                            const consumptionToSameDayMoodData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                if (w.mood !== undefined && w.mood !== null && w.mood !== '') {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    consumptionToSameDayMoodData.push({ consumptions: dayConsumptions, mood: w.mood });
+                                                }
+                                            });
+
+                                            // 7. Consumo → Energia (mesmo dia)
+                                            const consumptionToEnergyData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '') {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    consumptionToEnergyData.push({ consumptions: dayConsumptions, energy: w.energy });
+                                                }
+                                            });
+
+                                            // 8. Energia → Consumo (mesmo dia)
+                                            const energyToConsumptionData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '') {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    energyToConsumptionData.push({ energy: w.energy, consumptions: dayConsumptions });
+                                                }
+                                            });
+
                                             // Word frequency analysis (for filtered period)
                                             const filteredReflections = filterByDateRange(reflections, dateRange);
                                             const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
@@ -2437,6 +2464,9 @@
                                             const consToNextMoodCorr = getCorrelation(consumptionToNextDayMoodData, 'consumptions', 'mood');
                                             const moodToConsCorr = getCorrelation(moodToConsumptionData, 'mood', 'consumptions');
                                             const lastHourToSleepCorr = getCorrelation(lastConsumptionToSleepData, 'lastHour', 'sleep');
+                                            const consToSameDayMoodCorr = getCorrelation(consumptionToSameDayMoodData, 'consumptions', 'mood');
+                                            const consToEnergyCorr = getCorrelation(consumptionToEnergyData, 'consumptions', 'energy');
+                                            const energyToConsCorr = getCorrelation(energyToConsumptionData, 'energy', 'consumptions');
 
                                             const interpretCorr = (corr) => {
                                                 if (corr === null || isNaN(corr)) return { text: 'Sem dados suficientes', color: 'gray' };
@@ -2923,6 +2953,63 @@
                                                                 {lastHourToSleepCorr !== null && Math.abs(lastHourToSleepCorr) > 0.3 && (
                                                                     <div className={(lastHourToSleepCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
                                                                         💡 {lastHourToSleepCorr < 0 ? 'Consumir mais tarde está associado a pior sono' : 'Consumir mais tarde está associado a melhor sono (incomum)'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 6. Consumo → Humor (mesmo dia) */}
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>😊 Consumo → Humor (mesmo dia)</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Consumir afeta o teu humor no mesmo dia?</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(consToSameDayMoodCorr).color + '-600'}>
+                                                                        <div className="text-lg">{consToSameDayMoodCorr !== null && !isNaN(consToSameDayMoodCorr) ? consToSameDayMoodCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(consToSameDayMoodCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {consToSameDayMoodCorr !== null && Math.abs(consToSameDayMoodCorr) > 0.3 && (
+                                                                    <div className={(consToSameDayMoodCorr < 0 ? (darkMode ? 'text-red-400 bg-red-900/30' : 'text-red-600 bg-red-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {consToSameDayMoodCorr < 0 ? 'Mais consumo está associado a pior humor no mesmo dia' : 'Mais consumo está associado a melhor humor no mesmo dia'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 7. Consumo → Energia (mesmo dia) */}
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>⚡ Consumo → Energia (mesmo dia)</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Consumir te dá ou tira energia?</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(consToEnergyCorr).color + '-600'}>
+                                                                        <div className="text-lg">{consToEnergyCorr !== null && !isNaN(consToEnergyCorr) ? consToEnergyCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(consToEnergyCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {consToEnergyCorr !== null && Math.abs(consToEnergyCorr) > 0.3 && (
+                                                                    <div className={(consToEnergyCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {consToEnergyCorr < 0 ? 'Mais consumo está associado a menos energia' : 'Mais consumo está associado a mais energia'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 8. Energia → Consumo (mesmo dia) */}
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>⚡ Energia → Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Baixa energia leva a mais consumo?</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(energyToConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{energyToConsCorr !== null && !isNaN(energyToConsCorr) ? energyToConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(energyToConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {energyToConsCorr !== null && Math.abs(energyToConsCorr) > 0.3 && (
+                                                                    <div className={(energyToConsCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {energyToConsCorr < 0 ? 'Menos energia está associado a mais consumo - pode ser um gatilho!' : 'Mais energia está associado a mais consumo'}
                                                                     </div>
                                                                 )}
                                                             </div>
