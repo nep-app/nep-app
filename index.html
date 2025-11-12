@@ -2638,7 +2638,11 @@
                                                                             doseMsg = 'PARABÉNS! Continua no bom caminho a reduzir mais';
                                                                         }
 
-                                                                        insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de NEP distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}. ${doseMsg}.`);
+                                                                        // Adicionar análise de frequência
+                                                                        insights.push(`🔢 Frequência média: ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}`);
+
+                                                                        // Adicionar análise de dosagem
+                                                                        insights.push(`💊 Dosagem média: ${Math.round(avgMg)}mg de NEP/dia. ${doseMsg}`);
                                                                     }
 
                                                                     return insights.map((insight, i) => (
