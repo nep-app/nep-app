@@ -2353,24 +2353,50 @@
                                         if (patternView === 'analyses') {
                                             if (filteredConsumptions.length < 2 || filteredWellbeingLogs.length < 2) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem dados suficientes para análises neste período. Precisa de pelo menos 2 consumos e 2 registos de bem-estar.</div>);
 
-                                            // Sleep vs consumption correlation
-                                            const sleepConsumptionData = [];
+                                            // Build correlation data arrays
+                                            // 1. Sono → Consumo (sono de ontem afeta consumo de hoje)
+                                            const sleepToConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
                                                 const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                if (dayConsumptions > 0) {
-                                                    sleepConsumptionData.push({ sleep: w.sleep, consumptions: dayConsumptions });
-                                                }
+                                                sleepToConsumptionData.push({ sleep: w.sleep, consumptions: dayConsumptions });
                                             });
 
-                                            // Mood vs sleep correlation
-                                            const moodSleepData = filteredWellbeingLogs.map(w => ({ mood: w.mood, sleep: w.sleep }));
-
-                                            // Mood vs consumption correlation
-                                            const moodConsumptionData = [];
+                                            // 2. Consumo → Sono (consumo de hoje afeta sono de hoje)
+                                            const consumptionToSleepData = [];
                                             filteredWellbeingLogs.forEach(w => {
                                                 const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                if (dayConsumptions > 0) {
-                                                    moodConsumptionData.push({ mood: w.mood, consumptions: dayConsumptions });
+                                                consumptionToSleepData.push({ consumptions: dayConsumptions, sleep: w.sleep });
+                                            });
+
+                                            // 3. Consumo → Humor do dia seguinte
+                                            const consumptionToNextDayMoodData = [];
+                                            for (let i = 0; i < filteredWellbeingLogs.length - 1; i++) {
+                                                const today = filteredWellbeingLogs[i];
+                                                const tomorrow = filteredWellbeingLogs[i + 1];
+                                                const todayDate = new Date(today.date);
+                                                const tomorrowDate = new Date(tomorrow.date);
+                                                // Check if tomorrow is actually the next day
+                                                if ((tomorrowDate - todayDate) === 86400000) { // 24 hours in ms
+                                                    const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
+                                                    consumptionToNextDayMoodData.push({ consumptions: todayConsumptions, mood: tomorrow.mood });
+                                                }
+                                            }
+
+                                            // 4. Humor → Consumo (humor de hoje afeta consumo de hoje)
+                                            const moodToConsumptionData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                moodToConsumptionData.push({ mood: w.mood, consumptions: dayConsumptions });
+                                            });
+
+                                            // 5. Hora do último consumo → Qualidade do sono
+                                            const lastConsumptionToSleepData = [];
+                                            filteredWellbeingLogs.forEach(w => {
+                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                                                if (dayConsumptions.length > 0) {
+                                                    const lastCons = dayConsumptions[0];
+                                                    const lastHour = new Date(lastCons.timestamp).getHours() + new Date(lastCons.timestamp).getMinutes() / 60;
+                                                    lastConsumptionToSleepData.push({ lastHour: lastHour, sleep: w.sleep });
                                                 }
                                             });
 
@@ -2405,9 +2431,12 @@
                                                 return isNaN(result) ? null : result;
                                             };
 
-                                            const sleepConsCorr = getCorrelation(sleepConsumptionData, 'sleep', 'consumptions');
-                                            const moodSleepCorr = getCorrelation(moodSleepData, 'mood', 'sleep');
-                                            const moodConsCorr = getCorrelation(moodConsumptionData, 'mood', 'consumptions');
+                                            // Calculate all correlations
+                                            const sleepToConsCorr = getCorrelation(sleepToConsumptionData, 'sleep', 'consumptions');
+                                            const consToSleepCorr = getCorrelation(consumptionToSleepData, 'consumptions', 'sleep');
+                                            const consToNextMoodCorr = getCorrelation(consumptionToNextDayMoodData, 'consumptions', 'mood');
+                                            const moodToConsCorr = getCorrelation(moodToConsumptionData, 'mood', 'consumptions');
+                                            const lastHourToSleepCorr = getCorrelation(lastConsumptionToSleepData, 'lastHour', 'sleep');
 
                                             const interpretCorr = (corr) => {
                                                 if (corr === null || isNaN(corr)) return { text: 'Sem dados suficientes', color: 'gray' };
@@ -2425,26 +2454,35 @@
                                                             {(() => {
                                                                 const parts = [];
 
-                                                                // Sono vs Consumo
-                                                                if (sleepConsCorr !== null && !isNaN(sleepConsCorr)) {
-                                                                    if (sleepConsCorr < -0.4) {
-                                                                        parts.push(`O teu sono está a afetar bastante o consumo - correlação negativa forte (${sleepConsCorr.toFixed(2)}). Menos sono = mais consumo.`);
-                                                                    } else if (sleepConsCorr < -0.2) {
-                                                                        parts.push(`Há alguma correlação entre sono e consumo (${sleepConsCorr.toFixed(2)}). Menos sono tende a aumentar consumo.`);
-                                                                    } else if (sleepConsCorr > 0.2) {
-                                                                        parts.push(`Padrão interessante: mais sono correlaciona com mais consumo (${sleepConsCorr.toFixed(2)}). Pode indicar consumo recreativo.`);
-                                                                    } else {
-                                                                        parts.push(`Sono e consumo têm correlação fraca (${sleepConsCorr.toFixed(2)}).`);
+                                                                // Sono → Consumo
+                                                                if (sleepToConsCorr !== null && !isNaN(sleepToConsCorr)) {
+                                                                    if (sleepToConsCorr < -0.4) {
+                                                                        parts.push(`Dormir menos está fortemente associado a mais consumo (${sleepToConsCorr.toFixed(2)}). Prioriza o sono!`);
+                                                                    } else if (sleepToConsCorr < -0.2) {
+                                                                        parts.push(`Há correlação entre menos sono e mais consumo (${sleepToConsCorr.toFixed(2)}).`);
                                                                     }
                                                                 }
 
-                                                                // Humor vs Consumo
-                                                                if (moodConsCorr !== null && !isNaN(moodConsCorr)) {
-                                                                    if (moodConsCorr < -0.3) {
-                                                                        parts.push(`Humor baixo correlaciona com mais consumo (${moodConsCorr.toFixed(2)}) - pode indicar uso para lidar com emoções.`);
-                                                                    } else if (moodConsCorr > 0.3) {
-                                                                        parts.push(`Humor melhor correlaciona com mais consumo (${moodConsCorr.toFixed(2)}) - pode ser consumo social/recreativo.`);
+                                                                // Consumo → Sono
+                                                                if (consToSleepCorr !== null && !isNaN(consToSleepCorr) && consToSleepCorr < -0.3) {
+                                                                    parts.push(`Mais consumo está associado a pior qualidade de sono (${consToSleepCorr.toFixed(2)}).`);
+                                                                }
+
+                                                                // Humor → Consumo
+                                                                if (moodToConsCorr !== null && !isNaN(moodToConsCorr)) {
+                                                                    if (moodToConsCorr < -0.3) {
+                                                                        parts.push(`Pior humor está associado a mais consumo (${moodToConsCorr.toFixed(2)}) - pode indicar uso emocional.`);
                                                                     }
+                                                                }
+
+                                                                // Consumo → Humor dia seguinte
+                                                                if (consToNextMoodCorr !== null && !isNaN(consToNextMoodCorr) && consToNextMoodCorr < -0.3) {
+                                                                    parts.push(`Mais consumo hoje está associado a pior humor amanhã (${consToNextMoodCorr.toFixed(2)}).`);
+                                                                }
+
+                                                                // Hora último consumo → Sono
+                                                                if (lastHourToSleepCorr !== null && !isNaN(lastHourToSleepCorr) && lastHourToSleepCorr < -0.3) {
+                                                                    parts.push(`Consumir mais tarde está associado a pior sono (${lastHourToSleepCorr.toFixed(2)}).`);
                                                                 }
 
                                                                 return parts.length > 0 ? parts.join(' ') : 'Continua a registar dados para identificarmos correlações mais fortes entre bem-estar e consumo.';
@@ -2582,12 +2620,12 @@
 
                                                                         // Avaliar frequência
                                                                         let freqMsg = '';
-                                                                        if (avgTimes >= 9) {
+                                                                        if (avgTimes >= 10) {
                                                                             freqMsg = 'Frequência muito alta - foca em reduzir o número de consumos';
-                                                                        } else if (avgTimes >= 6) {
-                                                                            freqMsg = 'Boa! Mas consegues melhorar reduzindo para 5 ou menos consumos/dia';
+                                                                        } else if (avgTimes >= 7) {
+                                                                            freqMsg = 'Boa! Mas consegues melhorar reduzindo para 6 ou menos consumos/dia';
                                                                         } else {
-                                                                            freqMsg = 'PARABÉNS! Frequência excelente (≤5/dia) - continua assim';
+                                                                            freqMsg = 'PARABÉNS! Continua no bom caminho a reduzir mais';
                                                                         }
 
                                                                         // Avaliar dosagem
@@ -2597,7 +2635,7 @@
                                                                         } else if (avgMg >= 150) {
                                                                             doseMsg = 'Boa! Mas consegues melhorar reduzindo para menos de 150mg/dia';
                                                                         } else {
-                                                                            doseMsg = 'PARABÉNS! Dosagem excelente (<150mg/dia) - continua assim';
+                                                                            doseMsg = 'PARABÉNS! Continua no bom caminho a reduzir mais';
                                                                         }
 
                                                                         insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de NEP distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}. ${doseMsg}.`);
@@ -2784,53 +2822,104 @@
                                                     {/* Correlations */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🔗 Correlações</h3>
+                                                        <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                            Valores entre -1 e +1. Negativo significa relação inversa, positivo significa relação direta.
+                                                            Quanto mais próximo de -1 ou +1, mais forte a relação.
+                                                        </p>
 
-                                                        <div className="space-y-4">
+                                                        <div className="space-y-3">
+                                                            {/* 1. Sono → Consumo */}
                                                             <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono vs Consumo</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o consumo</div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>😴 Sono → Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Dormir mais horas reduz consumo no mesmo dia?</div>
                                                                     </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{sleepConsCorr !== null && !isNaN(sleepConsCorr) ? sleepConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(sleepConsCorr).text}</div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(sleepToConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{sleepToConsCorr !== null && !isNaN(sleepToConsCorr) ? sleepToConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(sleepToConsCorr).text}</div>
                                                                     </div>
                                                                 </div>
-                                                                {sleepConsCorr !== null && sleepConsCorr < -0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = menos consumo</div>
+                                                                {sleepToConsCorr !== null && Math.abs(sleepToConsCorr) > 0.3 && (
+                                                                    <div className={(sleepToConsCorr < 0 ? (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') : (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {sleepToConsCorr < 0 ? 'Dormir mais está associado a menos consumo' : 'Dormir mais está associado a mais consumo (incomum)'}
+                                                                    </div>
                                                                 )}
                                                             </div>
 
+                                                            {/* 2. Consumo → Sono */}
                                                             <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Sono</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o sono afeta o humor</div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>💨 Consumo → Sono</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Consumir mais afeta qualidade do sono?</div>
                                                                     </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodSleepCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodSleepCorr !== null && !isNaN(moodSleepCorr) ? moodSleepCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodSleepCorr).text}</div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(consToSleepCorr).color + '-600'}>
+                                                                        <div className="text-lg">{consToSleepCorr !== null && !isNaN(consToSleepCorr) ? consToSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(consToSleepCorr).text}</div>
                                                                     </div>
                                                                 </div>
-                                                                {moodSleepCorr !== null && moodSleepCorr > 0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor sono = melhor humor</div>
+                                                                {consToSleepCorr !== null && Math.abs(consToSleepCorr) > 0.3 && (
+                                                                    <div className={(consToSleepCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {consToSleepCorr < 0 ? 'Mais consumo está associado a pior sono' : 'Mais consumo está associado a melhor sono (incomum)'}
+                                                                    </div>
                                                                 )}
                                                             </div>
 
+                                                            {/* 3. Consumo → Humor do dia seguinte */}
                                                             <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>Humor vs Consumo</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Como o humor afeta o consumo</div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>💨 Consumo → Humor (dia seguinte)</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Consumir hoje afeta humor de amanhã?</div>
                                                                     </div>
-                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodConsCorr).color + '-600'}>
-                                                                        <div className="text-lg">{moodConsCorr !== null && !isNaN(moodConsCorr) ? moodConsCorr.toFixed(2) : 'N/A'}</div>
-                                                                        <div className="text-xs">{interpretCorr(moodConsCorr).text}</div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(consToNextMoodCorr).color + '-600'}>
+                                                                        <div className="text-lg">{consToNextMoodCorr !== null && !isNaN(consToNextMoodCorr) ? consToNextMoodCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(consToNextMoodCorr).text}</div>
                                                                     </div>
                                                                 </div>
-                                                                {moodConsCorr !== null && moodConsCorr < -0.3 && (
-                                                                    <div className={(darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') + ' text-xs p-2 rounded mt-2'}>💡 Melhor humor = menos consumo</div>
+                                                                {consToNextMoodCorr !== null && Math.abs(consToNextMoodCorr) > 0.3 && (
+                                                                    <div className={(consToNextMoodCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {consToNextMoodCorr < 0 ? 'Mais consumo hoje está associado a pior humor amanhã' : 'Mais consumo hoje está associado a melhor humor amanhã (incomum)'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 4. Humor → Consumo */}
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>😊 Humor → Consumo</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Pior humor leva a mais consumo?</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(moodToConsCorr).color + '-600'}>
+                                                                        <div className="text-lg">{moodToConsCorr !== null && !isNaN(moodToConsCorr) ? moodToConsCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(moodToConsCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {moodToConsCorr !== null && Math.abs(moodToConsCorr) > 0.3 && (
+                                                                    <div className={(moodToConsCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {moodToConsCorr < 0 ? 'Pior humor está associado a mais consumo' : 'Melhor humor está associado a mais consumo (incomum)'}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 5. Hora do último consumo → Sono */}
+                                                            <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Hora Último Consumo → Sono</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Consumir tarde afeta qualidade do sono?</div>
+                                                                    </div>
+                                                                    <div className={'text-right font-bold text-' + interpretCorr(lastHourToSleepCorr).color + '-600'}>
+                                                                        <div className="text-lg">{lastHourToSleepCorr !== null && !isNaN(lastHourToSleepCorr) ? lastHourToSleepCorr.toFixed(2) : 'N/A'}</div>
+                                                                        <div className="text-xs">{interpretCorr(lastHourToSleepCorr).text}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {lastHourToSleepCorr !== null && Math.abs(lastHourToSleepCorr) > 0.3 && (
+                                                                    <div className={(lastHourToSleepCorr < 0 ? (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50') : (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50')) + ' text-xs p-2 rounded mt-2'}>
+                                                                        💡 {lastHourToSleepCorr < 0 ? 'Consumir mais tarde está associado a pior sono' : 'Consumir mais tarde está associado a melhor sono (incomum)'}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
