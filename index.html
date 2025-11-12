@@ -2456,57 +2456,54 @@
                                                 .sort((a, b) => new Date(a.date) - new Date(b.date));
                                             const energyTrend = getTrend(energyTrendData, 'energy');
 
-                                            // Variação Intra-dia: Regressão linear em TODOS os registos do dia (não só primeiro/último)
-                                            const byDate = {};
+                                            // Variação Intra-CICLO: Regressão linear em TODOS os registos do ciclo (acordar → dormir)
+                                            const byCycle = {};
                                             filteredWellbeingLogs.forEach(log => {
-                                                if (!byDate[log.date]) byDate[log.date] = [];
-                                                byDate[log.date].push(log);
+                                                if (!log.cycleId) return; // Skip logs without cycle
+                                                if (!byCycle[log.cycleId]) byCycle[log.cycleId] = [];
+                                                byCycle[log.cycleId].push(log);
                                             });
 
-                                            const intraDayMoodSlopes = [];
-                                            const intraDayEnergySlopes = [];
+                                            const intraCycleMoodSlopes = [];
+                                            const intraCycleEnergySlopes = [];
 
-                                            Object.entries(byDate).forEach(([date, logs]) => {
-                                                // Filter out early morning logs (00:00-05:59) to avoid including late night hours
-                                                const dayLogs = logs.filter(log => {
-                                                    const time = log.timestamp || '12:00';
-                                                    const [hour] = time.split(':').map(Number);
-                                                    return hour >= 6 && hour < 24; // Only 06:00-23:59
-                                                }).sort((a, b) => {
-                                                    const timeA = a.timestamp || '12:00';
-                                                    const timeB = b.timestamp || '12:00';
-                                                    return timeA.localeCompare(timeB);
+                                            Object.entries(byCycle).forEach(([cycleId, logs]) => {
+                                                // Sort by timestamp (chronological order within the cycle)
+                                                const cycleLogs = logs.sort((a, b) => {
+                                                    const timeA = new Date(a.timestamp).getTime();
+                                                    const timeB = new Date(b.timestamp).getTime();
+                                                    return timeA - timeB;
                                                 });
 
-                                                if (dayLogs.length < 2) return;
+                                                if (cycleLogs.length < 2) return;
 
-                                                // Linear regression for mood using ALL logs of the day
-                                                const moodData = dayLogs
+                                                // Linear regression for mood using ALL logs of the cycle
+                                                const moodData = cycleLogs
                                                     .filter(log => log.mood !== undefined && log.mood !== null && log.mood !== '')
                                                     .map((log, index) => ({ x: index, y: parseInt(log.mood) }));
 
                                                 if (moodData.length >= 2) {
                                                     const moodSlope = getTrend(moodData, 'y');
-                                                    if (moodSlope !== null) intraDayMoodSlopes.push(moodSlope);
+                                                    if (moodSlope !== null) intraCycleMoodSlopes.push(moodSlope);
                                                 }
 
-                                                // Linear regression for energy using ALL logs of the day
-                                                const energyData = dayLogs
+                                                // Linear regression for energy using ALL logs of the cycle
+                                                const energyData = cycleLogs
                                                     .filter(log => log.energy !== undefined && log.energy !== null && log.energy !== '')
                                                     .map((log, index) => ({ x: index, y: parseInt(log.energy) }));
 
                                                 if (energyData.length >= 2) {
                                                     const energySlope = getTrend(energyData, 'y');
-                                                    if (energySlope !== null) intraDayEnergySlopes.push(energySlope);
+                                                    if (energySlope !== null) intraCycleEnergySlopes.push(energySlope);
                                                 }
                                             });
 
-                                            // Average slope across all days (positive = increases during day, negative = decreases)
-                                            const avgIntraDayMoodChange = intraDayMoodSlopes.length > 0
-                                                ? intraDayMoodSlopes.reduce((a, b) => a + b, 0) / intraDayMoodSlopes.length
+                                            // Average slope across all cycles (positive = increases during cycle, negative = decreases)
+                                            const avgIntraDayMoodChange = intraCycleMoodSlopes.length > 0
+                                                ? intraCycleMoodSlopes.reduce((a, b) => a + b, 0) / intraCycleMoodSlopes.length
                                                 : null;
-                                            const avgIntraDayEnergyChange = intraDayEnergySlopes.length > 0
-                                                ? intraDayEnergySlopes.reduce((a, b) => a + b, 0) / intraDayEnergySlopes.length
+                                            const avgIntraDayEnergyChange = intraCycleEnergySlopes.length > 0
+                                                ? intraCycleEnergySlopes.reduce((a, b) => a + b, 0) / intraCycleEnergySlopes.length
                                                 : null;
 
                                             // Word frequency analysis (for filtered period)
@@ -3165,8 +3162,8 @@
                                                             <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Variação de Humor (manhã → noite)</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>O teu humor melhora ou piora ao longo do dia?</div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Variação de Humor (ao longo do ciclo)</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>O teu humor melhora ou piora desde que acordas até deitares?</div>
                                                                     </div>
                                                                     <div className="text-right">
                                                                         {avgIntraDayMoodChange !== null && !isNaN(avgIntraDayMoodChange) ? (
@@ -3185,7 +3182,7 @@
                                                                 </div>
                                                                 {avgIntraDayMoodChange !== null && !isNaN(avgIntraDayMoodChange) && Math.abs(avgIntraDayMoodChange) > 0.3 && (
                                                                     <div className={(avgIntraDayMoodChange > 0 ? (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') : (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50')) + ' text-xs p-2 rounded mt-2'}>
-                                                                        💡 {avgIntraDayMoodChange > 0 ? 'O teu humor tende a melhorar durante o dia - as manhãs são mais difíceis.' : 'O teu humor tende a piorar durante o dia - as tardes/noites são mais difíceis.'}
+                                                                        💡 {avgIntraDayMoodChange > 0 ? 'O teu humor tende a melhorar ao longo do ciclo - início do ciclo mais difícil.' : 'O teu humor tende a piorar ao longo do ciclo - final do ciclo mais difícil.'}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -3193,8 +3190,8 @@
                                                             <div className={(darkMode ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200') + ' border rounded-lg p-4'}>
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div>
-                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>⚡ Variação de Energia (manhã → noite)</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>A tua energia aumenta ou diminui ao longo do dia?</div>
+                                                                        <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>⚡ Variação de Energia (ao longo do ciclo)</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>A tua energia aumenta ou diminui desde que acordas até deitares?</div>
                                                                     </div>
                                                                     <div className="text-right">
                                                                         {avgIntraDayEnergyChange !== null && !isNaN(avgIntraDayEnergyChange) ? (
@@ -3213,7 +3210,7 @@
                                                                 </div>
                                                                 {avgIntraDayEnergyChange !== null && !isNaN(avgIntraDayEnergyChange) && Math.abs(avgIntraDayEnergyChange) > 0.3 && (
                                                                     <div className={(avgIntraDayEnergyChange > 0 ? (darkMode ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50') : (darkMode ? 'text-orange-400 bg-orange-900/30' : 'text-orange-600 bg-orange-50')) + ' text-xs p-2 rounded mt-2'}>
-                                                                        💡 {avgIntraDayEnergyChange > 0 ? 'A tua energia aumenta durante o dia - usa as manhãs para descanso.' : 'A tua energia diminui durante o dia - normal! Usa as manhãs para tarefas importantes.'}
+                                                                        💡 {avgIntraDayEnergyChange > 0 ? 'A tua energia aumenta ao longo do ciclo - usa início do ciclo para descanso.' : 'A tua energia diminui ao longo do ciclo - normal! Usa início do ciclo para tarefas importantes.'}
                                                                     </div>
                                                                 )}
                                                             </div>
