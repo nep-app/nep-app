@@ -2579,7 +2579,28 @@
                                                                     if (filteredDailyLogs.length > 0) {
                                                                         const avgMg = filteredDailyLogs.reduce((sum, l) => sum + l.mg, 0) / filteredDailyLogs.length;
                                                                         const avgTimes = filteredDailyLogs.reduce((sum, l) => sum + l.times, 0) / filteredDailyLogs.length;
-                                                                        insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de NEP distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${avgTimes >= 5 ? 'Foca em reduzir a frequência (número de consumos) para diminuir dependência física.' : avgMg >= 150 ? 'Considera reduzir a dosagem por consumo (mg) para atenuar efeitos.' : 'Padrão de consumo moderado - monitoriza tendências ao longo do tempo.'}`);
+
+                                                                        // Avaliar frequência
+                                                                        let freqMsg = '';
+                                                                        if (avgTimes >= 9) {
+                                                                            freqMsg = 'Frequência muito alta - foca em reduzir o número de consumos';
+                                                                        } else if (avgTimes >= 6) {
+                                                                            freqMsg = 'Boa! Mas consegues melhorar reduzindo para 5 ou menos consumos/dia';
+                                                                        } else {
+                                                                            freqMsg = 'PARABÉNS! Frequência excelente (≤5/dia) - continua assim';
+                                                                        }
+
+                                                                        // Avaliar dosagem
+                                                                        let doseMsg = '';
+                                                                        if (avgMg >= 200) {
+                                                                            doseMsg = 'Dosagem muito alta - reduz a quantidade de mg por consumo';
+                                                                        } else if (avgMg >= 150) {
+                                                                            doseMsg = 'Boa! Mas consegues melhorar reduzindo para menos de 150mg/dia';
+                                                                        } else {
+                                                                            doseMsg = 'PARABÉNS! Dosagem excelente (<150mg/dia) - continua assim';
+                                                                        }
+
+                                                                        insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de NEP distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}. ${doseMsg}.`);
                                                                     }
 
                                                                     return insights.map((insight, i) => (
