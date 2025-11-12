@@ -2722,10 +2722,25 @@
                                                                         }
                                                                     }
 
-                                                                    // Daily dosage analysis
-                                                                    if (filteredDailyLogs.length > 0) {
-                                                                        const avgMg = filteredDailyLogs.reduce((sum, l) => sum + l.mg, 0) / filteredDailyLogs.length;
-                                                                        const avgTimes = filteredDailyLogs.reduce((sum, l) => sum + l.times, 0) / filteredDailyLogs.length;
+                                                                    // Daily dosage and frequency analysis (from REAL consumptions, not daily logs)
+                                                                    if (filteredConsumptions.length > 0) {
+                                                                        // Group consumptions by date
+                                                                        const consumptionsByDate = {};
+                                                                        filteredConsumptions.forEach(c => {
+                                                                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                            consumptionsByDate[c.date]++;
+                                                                        });
+
+                                                                        // Calculate average frequency from REAL consumption data
+                                                                        const datesWithConsumptions = Object.keys(consumptionsByDate);
+                                                                        const totalConsumptions = filteredConsumptions.length;
+                                                                        const avgTimes = totalConsumptions / datesWithConsumptions.length;
+
+                                                                        // Calculate average dosage from daily logs (if available)
+                                                                        let avgMg = null;
+                                                                        if (filteredDailyLogs.length > 0) {
+                                                                            avgMg = filteredDailyLogs.reduce((sum, l) => sum + l.mg, 0) / filteredDailyLogs.length;
+                                                                        }
 
                                                                         // Avaliar frequência
                                                                         let freqMsg = '';
@@ -2763,8 +2778,10 @@
                                                                         // Adicionar análise de frequência
                                                                         insights.push(`🔢 Frequência média (${periodLabel}): ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}`);
 
-                                                                        // Adicionar análise de dosagem
-                                                                        insights.push(`💊 Dosagem média (${periodLabel}): ${Math.round(avgMg)}mg de NEP/dia. ${doseMsg}`);
+                                                                        // Adicionar análise de dosagem (only if daily logs exist)
+                                                                        if (avgMg !== null) {
+                                                                            insights.push(`💊 Dosagem média (${periodLabel}): ${Math.round(avgMg)}mg de NEP/dia. ${doseMsg}`);
+                                                                        }
                                                                     }
 
                                                                     return insights.map((insight, i) => (
