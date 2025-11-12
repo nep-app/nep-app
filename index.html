@@ -3648,27 +3648,168 @@
                                                             {(() => {
                                                                 const coachMessages = [];
 
-                                                                // 1. PROGRESSO COM METAS
+                                                                // 1. ANÁLISE INTELIGENTE DE METAS
                                                                 if (goals.length > 0) {
-                                                                    const completedGoals = goals.filter(g => g.completed).length;
-                                                                    const activeGoals = goals.filter(g => !g.completed).length;
+                                                                    const completedGoals = goals.filter(g => g.completed);
+                                                                    const activeGoals = goals.filter(g => !g.completed);
+                                                                    const today = new Date();
 
-                                                                    if (completedGoals > 0) {
+                                                                    // Celebrar metas completadas
+                                                                    if (completedGoals.length > 0) {
                                                                         coachMessages.push({
-                                                                            section: 'Progresso',
+                                                                            section: 'Conquista',
                                                                             icon: '🏆',
-                                                                            text: `Já completaste ${completedGoals} ${completedGoals === 1 ? 'meta' : 'metas'}! Isso é incrível e mostra que és capaz de mudança.`,
+                                                                            text: `Já completaste ${completedGoals.length} ${completedGoals.length === 1 ? 'meta' : 'metas'}! Isso é incrível e mostra que és capaz de mudança real.`,
                                                                             tone: 'celebration'
                                                                         });
                                                                     }
 
-                                                                    if (activeGoals > 0) {
+                                                                    // Analisar cada meta ativa
+                                                                    activeGoals.forEach(goal => {
+                                                                        const progress = getGoalProgress(goal);
+                                                                        const deadline = new Date(goal.deadline);
+                                                                        const daysUntilDeadline = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+                                                                        const achievedCount = getGoalAchievementCount(goal);
+
+                                                                        const goalTypeNames = {
+                                                                            'reduce_frequency': 'Reduzir Frequência',
+                                                                            'reduce_quantity': 'Reduzir Quantidade',
+                                                                            'delay_first': 'Adiar Primeiro Consumo',
+                                                                            'increase_interval': 'Aumentar Intervalo',
+                                                                            'limit_last': 'Limitar Último Consumo',
+                                                                            'sleep_hours': 'Horas de Sono'
+                                                                        };
+
+                                                                        // ALERTA: Meta a ficar para trás
+                                                                        if (progress < 30 && daysUntilDeadline > 0 && daysUntilDeadline < 14) {
+                                                                            coachMessages.push({
+                                                                                section: 'Atenção',
+                                                                                icon: '⚠️',
+                                                                                text: `A tua meta "${goalTypeNames[goal.type]}" está a ficar para trás (${progress.toFixed(0)}% de progresso) e tens apenas ${daysUntilDeadline} dias até ao deadline. Considera ajustar a meta ou criar um plano de ação mais específico.`,
+                                                                                tone: 'alert'
+                                                                            });
+                                                                        }
+
+                                                                        // URGENTE: Deadline próximo
+                                                                        if (daysUntilDeadline > 0 && daysUntilDeadline <= 7 && progress < 80) {
+                                                                            coachMessages.push({
+                                                                                section: 'Urgente',
+                                                                                icon: '⏰',
+                                                                                text: `URGENTE: Faltam apenas ${daysUntilDeadline} ${daysUntilDeadline === 1 ? 'dia' : 'dias'} para a tua meta "${goalTypeNames[goal.type]}" e estás a ${progress.toFixed(0)}%. Foca toda a tua energia nesta meta agora!`,
+                                                                                tone: 'urgent'
+                                                                            });
+                                                                        }
+
+                                                                        // CELEBRAR: Bom progresso
+                                                                        if (progress >= 70 && progress < 100) {
+                                                                            coachMessages.push({
+                                                                                section: 'Excelente',
+                                                                                icon: '🌟',
+                                                                                text: `Estás a ir muito bem na meta "${goalTypeNames[goal.type]}" (${progress.toFixed(0)}%)! Continua assim - estás quase lá. ${daysUntilDeadline > 0 ? `Tens ${daysUntilDeadline} dias para consolidar.` : ''}`,
+                                                                                tone: 'encouragement'
+                                                                            });
+                                                                        }
+
+                                                                        // META ATINGIDA mas não marcada como completa
+                                                                        if (progress >= 100) {
+                                                                            coachMessages.push({
+                                                                                section: 'Parabéns',
+                                                                                icon: '🎉',
+                                                                                text: `PARABÉNS! Atingiste 100% na meta "${goalTypeNames[goal.type]}"! Marca-a como completa e define uma nova meta mais desafiante para continuar a progredir.`,
+                                                                                tone: 'celebration'
+                                                                            });
+                                                                        }
+
+                                                                        // DEADLINE PASSADO
+                                                                        if (daysUntilDeadline < 0) {
+                                                                            const daysOverdue = Math.abs(daysUntilDeadline);
+                                                                            if (progress >= 80) {
+                                                                                coachMessages.push({
+                                                                                    section: 'Quase lá',
+                                                                                    icon: '💪',
+                                                                                    text: `A meta "${goalTypeNames[goal.type]}" passou o deadline há ${daysOverdue} ${daysOverdue === 1 ? 'dia' : 'dias'}, mas estás a ${progress.toFixed(0)}% - muito perto! Estende o deadline ou faz um sprint final.`,
+                                                                                    tone: 'motivation'
+                                                                                });
+                                                                            } else {
+                                                                                coachMessages.push({
+                                                                                    section: 'Reavaliação',
+                                                                                    icon: '🔄',
+                                                                                    text: `A meta "${goalTypeNames[goal.type]}" passou o deadline e está a ${progress.toFixed(0)}%. Sem problema! Reavalia: esta meta ainda faz sentido? Precisa de ser ajustada? O importante é aprender, não ser perfeito.`,
+                                                                                    tone: 'care'
+                                                                                });
+                                                                            }
+                                                                        }
+
+                                                                        // SUGESTÕES ESPECÍFICAS POR TIPO DE META
+                                                                        if (goal.type === 'reduce_frequency' && achievedCount < 3 && daysUntilDeadline > 0) {
+                                                                            coachMessages.push({
+                                                                                section: 'Dica',
+                                                                                icon: '💡',
+                                                                                text: `Para atingir a meta de frequência: foca em aumentar intervalos entre consumos (mínimo 2h), identifica os gatilhos principais, e substitui alguns consumos por alternativas (água, caminhada, respiração).`,
+                                                                                tone: 'strategy'
+                                                                            });
+                                                                        }
+
+                                                                        if (goal.type === 'delay_first' && achievedCount < 3 && daysUntilDeadline > 0) {
+                                                                            coachMessages.push({
+                                                                                section: 'Dica',
+                                                                                icon: '💡',
+                                                                                text: `Para adiar o primeiro consumo: cria uma rotina matinal (hidratação, pequeno-almoço, exercício), evita gatilhos logo ao acordar, e define um "horário de abertura" para o primeiro consumo.`,
+                                                                                tone: 'strategy'
+                                                                            });
+                                                                        }
+
+                                                                        if (goal.type === 'sleep_hours' && achievedCount < 3 && daysUntilDeadline > 0) {
+                                                                            coachMessages.push({
+                                                                                section: 'Dica',
+                                                                                icon: '💡',
+                                                                                text: `Para dormir mais: evita consumos 3-4h antes de dormir, cria rotina de deitar (mesma hora todos os dias), remove ecrãs 1h antes, e prepara o quarto (escuro, fresco, silencioso).`,
+                                                                                tone: 'strategy'
+                                                                            });
+                                                                        }
+                                                                    });
+
+                                                                    // PADRÕES GERAIS
+                                                                    if (activeGoals.length > 3) {
                                                                         coachMessages.push({
                                                                             section: 'Foco',
                                                                             icon: '🎯',
-                                                                            text: `Tens ${activeGoals} ${activeGoals === 1 ? 'meta ativa' : 'metas ativas'}. Foca-te numa de cada vez - pequenos passos somam grandes mudanças.`,
-                                                                            tone: 'motivation'
+                                                                            text: `Tens ${activeGoals.length} metas ativas - pode ser demasiado! Foca-te em 1-2 metas de cada vez. Qualidade > Quantidade. Marca as menos importantes como completas ou ajusta os deadlines.`,
+                                                                            tone: 'strategy'
                                                                         });
+                                                                    }
+
+                                                                    // Identificar tipo de meta mais difícil
+                                                                    if (activeGoals.length >= 3) {
+                                                                        const progressByType = {};
+                                                                        activeGoals.forEach(g => {
+                                                                            if (!progressByType[g.type]) progressByType[g.type] = [];
+                                                                            progressByType[g.type].push(getGoalProgress(g));
+                                                                        });
+
+                                                                        const avgByType = Object.entries(progressByType).map(([type, progressArr]) => ({
+                                                                            type,
+                                                                            avg: progressArr.reduce((a,b) => a+b, 0) / progressArr.length,
+                                                                            count: progressArr.length
+                                                                        })).filter(x => x.count >= 2);
+
+                                                                        const hardestType = avgByType.sort((a,b) => a.avg - b.avg)[0];
+                                                                        if (hardestType && hardestType.avg < 40) {
+                                                                            const goalTypeNames = {
+                                                                                'reduce_frequency': 'reduzir frequência',
+                                                                                'reduce_quantity': 'reduzir quantidade',
+                                                                                'delay_first': 'adiar primeiro consumo',
+                                                                                'increase_interval': 'aumentar intervalos',
+                                                                                'limit_last': 'limitar último consumo',
+                                                                                'sleep_hours': 'dormir mais'
+                                                                            };
+                                                                            coachMessages.push({
+                                                                                section: 'Padrão Identificado',
+                                                                                icon: '🔍',
+                                                                                text: `Reparei que tens mais dificuldade em "${goalTypeNames[hardestType.type]}" (${hardestType.avg.toFixed(0)}% de progresso médio). Isto é normal! Algumas metas são mais desafiadoras. Considera pedir ajuda específica para esta área ou dividir em passos mais pequenos.`,
+                                                                                tone: 'insight'
+                                                                            });
+                                                                        }
                                                                     }
                                                                 }
 
