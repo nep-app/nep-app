@@ -4259,6 +4259,44 @@
                                             );
                                         }
 
+                                        // PADRÕES & ANÁLISES (NOVA - EM DESENVOLVIMENTO)
+                                        if (patternView === 'patterns') {
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                        <div className="text-6xl mb-4">🚧</div>
+                                                        <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                            Padrões & Análises
+                                                        </h3>
+                                                        <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                            Esta secção está a ser reorganizada. Em breve terás acesso a análises temporais, estruturais e correlações.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // COACH (NOVA - EM DESENVOLVIMENTO)
+                                        if (patternView === 'coach') {
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-8 border text-center'}>
+                                                        <div className="text-6xl mb-4">💬</div>
+                                                        <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                            O Teu Coach Pessoal
+                                                        </h3>
+                                                        <p className={'text-sm mb-4 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                            Em breve terás aqui um resumo narrativo personalizado, escrito num tom acolhedor e empático,
+                                                            como se fosse uma sessão com um terapeuta.
+                                                        </p>
+                                                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                            Seleciona o período: Diário / Semanal / Mensal / Total
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
                                         // OUTROS (Sleep, mood, energy patterns)
                                         if (patternView === 'others') {
                                             if (filteredWellbeingLogs.length === 0) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos de bem-estar neste período</div>);
