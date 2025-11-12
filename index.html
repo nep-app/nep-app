@@ -2983,10 +2983,16 @@
                                                     {/* Correlations */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>🔗 Correlações</h3>
-                                                        <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                            Valores entre -1 e +1. Negativo significa relação inversa, positivo significa relação direta.
-                                                            Quanto mais próximo de -1 ou +1, mais forte a relação.
-                                                        </p>
+                                                        <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mb-4 border'}>
+                                                            <p className={'text-xs font-medium mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>Como interpretar os valores:</p>
+                                                            <div className={'text-xs space-y-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                <div>• <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>-1.0 a -0.7</strong>: Relação inversa forte (ex: mais sono = muito menos consumo)</div>
+                                                                <div>• <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>-0.6 a -0.4</strong>: Relação inversa moderada</div>
+                                                                <div>• <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>-0.3 a +0.3</strong>: Relação fraca ou sem padrão claro</div>
+                                                                <div>• <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>+0.4 a +0.6</strong>: Relação direta moderada</div>
+                                                                <div>• <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>+0.7 a +1.0</strong>: Relação direta forte (ex: mais consumo = muito pior sono)</div>
+                                                            </div>
+                                                        </div>
 
                                                         <div className="space-y-3">
                                                             {/* 1. Sono → Consumo */}
