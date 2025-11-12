@@ -1831,10 +1831,11 @@
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['comparisons', 'analyses', 'others', 'insights'].map(view => (
+                                        {['comparisons', 'analyses', 'progress', 'others', 'insights'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'comparisons' && '📊 Visão Geral'}
                                                 {view === 'analyses' && '🔬 Análise'}
+                                                {view === 'progress' && '📈 Progresso'}
                                                 {view === 'others' && '💚 Bem-Estar'}
                                                 {view === 'insights' && '🧠 Insights'}
                                             </button>
@@ -3597,6 +3598,590 @@
                                                             </div>
                                                         </div>
                                                     )}
+                                                </div>
+                                            );
+                                        }
+
+                                        // ANÁLISE DE PROGRESSO TEMPORAL
+                                        if (patternView === 'progress') {
+                                            // Define two periods to compare: recent vs previous
+                                            const now = new Date();
+                                            const periodDays = 30; // Compare last 30 days vs previous 30 days
+
+                                            const recentStart = new Date(now);
+                                            recentStart.setDate(now.getDate() - periodDays);
+                                            const recentEnd = now;
+
+                                            const previousStart = new Date(now);
+                                            previousStart.setDate(now.getDate() - (periodDays * 2));
+                                            const previousEnd = recentStart;
+
+                                            // Filter data for both periods
+                                            const recentConsumptions = consumptions.filter(c => {
+                                                const d = new Date(c.timestamp);
+                                                return d >= recentStart && d <= recentEnd;
+                                            });
+                                            const previousConsumptions = consumptions.filter(c => {
+                                                const d = new Date(c.timestamp);
+                                                return d >= previousStart && d < previousEnd;
+                                            });
+
+                                            const recentWellbeing = wellbeingLogs.filter(w => {
+                                                const d = new Date(w.timestamp);
+                                                return d >= recentStart && d <= recentEnd;
+                                            });
+                                            const previousWellbeing = wellbeingLogs.filter(w => {
+                                                const d = new Date(w.timestamp);
+                                                return d >= previousStart && d < previousEnd;
+                                            });
+
+                                            const recentCycles = cycles.filter(c => {
+                                                const d = new Date(c.bedtime);
+                                                return d >= recentStart && d <= recentEnd;
+                                            });
+                                            const previousCycles = cycles.filter(c => {
+                                                const d = new Date(c.bedtime);
+                                                return d >= previousStart && d < previousEnd;
+                                            });
+
+                                            // Helper to calculate change percentage and direction
+                                            const calculateChange = (recent, previous, lowerIsBetter = true) => {
+                                                if (previous === 0) return { percent: 0, direction: 'stable', isImprovement: false };
+                                                const change = ((recent - previous) / previous) * 100;
+                                                const direction = change > 5 ? 'up' : change < -5 ? 'down' : 'stable';
+                                                const isImprovement = lowerIsBetter ? change < 0 : change > 0;
+                                                return { percent: Math.abs(change), direction, isImprovement, rawChange: change };
+                                            };
+
+                                            const progressData = {};
+
+                                            // 1. CONSUMO - Frequência
+                                            if (recentConsumptions.length > 0 || previousConsumptions.length > 0) {
+                                                // Group by date to get daily frequency
+                                                const recentByDate = {};
+                                                recentConsumptions.forEach(c => { recentByDate[c.date] = (recentByDate[c.date] || 0) + 1; });
+                                                const previousByDate = {};
+                                                previousConsumptions.forEach(c => { previousByDate[c.date] = (previousByDate[c.date] || 0) + 1; });
+
+                                                const recentAvgFreq = Object.keys(recentByDate).length > 0 ? recentConsumptions.length / Object.keys(recentByDate).length : 0;
+                                                const previousAvgFreq = Object.keys(previousByDate).length > 0 ? previousConsumptions.length / Object.keys(previousByDate).length : 0;
+
+                                                progressData.frequency = {
+                                                    recent: recentAvgFreq,
+                                                    previous: previousAvgFreq,
+                                                    change: calculateChange(recentAvgFreq, previousAvgFreq, true),
+                                                    label: 'Frequência média diária'
+                                                };
+                                            }
+
+                                            // 2. CONSUMO - Dosagem (from dailyLogs)
+                                            const recentDailyLogs = dailyLogs.filter(d => {
+                                                const date = new Date(d.date);
+                                                return date >= recentStart && date <= recentEnd;
+                                            });
+                                            const previousDailyLogs = dailyLogs.filter(d => {
+                                                const date = new Date(d.date);
+                                                return date >= previousStart && date < previousEnd;
+                                            });
+
+                                            if (recentDailyLogs.length > 0 || previousDailyLogs.length > 0) {
+                                                const recentLogsWithDosage = recentDailyLogs.filter(d => d.totalMg && d.totalMg > 0);
+                                                const previousLogsWithDosage = previousDailyLogs.filter(d => d.totalMg && d.totalMg > 0);
+
+                                                const recentAvgDosage = recentLogsWithDosage.length > 0
+                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.totalMg, 0) / recentLogsWithDosage.length
+                                                    : 0;
+                                                const previousAvgDosage = previousLogsWithDosage.length > 0
+                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.totalMg, 0) / previousLogsWithDosage.length
+                                                    : 0;
+
+                                                progressData.dosage = {
+                                                    recent: recentAvgDosage,
+                                                    previous: previousAvgDosage,
+                                                    change: calculateChange(recentAvgDosage, previousAvgDosage, true),
+                                                    label: 'Dosagem média diária'
+                                                };
+                                            }
+
+                                            // 3. BEM-ESTAR - Sono
+                                            const recentSleepLogs = recentWellbeing.filter(w => w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep)));
+                                            const previousSleepLogs = previousWellbeing.filter(w => w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep)));
+
+                                            if (recentSleepLogs.length > 0 || previousSleepLogs.length > 0) {
+                                                const recentAvgSleep = recentSleepLogs.length > 0
+                                                    ? recentSleepLogs.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / recentSleepLogs.length
+                                                    : 0;
+                                                const previousAvgSleep = previousSleepLogs.length > 0
+                                                    ? previousSleepLogs.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / previousSleepLogs.length
+                                                    : 0;
+
+                                                progressData.sleep = {
+                                                    recent: recentAvgSleep,
+                                                    previous: previousAvgSleep,
+                                                    change: calculateChange(recentAvgSleep, previousAvgSleep, false), // Higher sleep is better
+                                                    label: 'Horas de sono médias'
+                                                };
+                                            }
+
+                                            // 4. BEM-ESTAR - Humor
+                                            const recentMoodLogs = recentWellbeing.filter(w => w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood)));
+                                            const previousMoodLogs = previousWellbeing.filter(w => w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood)));
+
+                                            if (recentMoodLogs.length > 0 || previousMoodLogs.length > 0) {
+                                                const recentAvgMood = recentMoodLogs.length > 0
+                                                    ? recentMoodLogs.reduce((sum, w) => sum + parseInt(w.mood), 0) / recentMoodLogs.length
+                                                    : 0;
+                                                const previousAvgMood = previousMoodLogs.length > 0
+                                                    ? previousMoodLogs.reduce((sum, w) => sum + parseInt(w.mood), 0) / previousMoodLogs.length
+                                                    : 0;
+
+                                                progressData.mood = {
+                                                    recent: recentAvgMood,
+                                                    previous: previousAvgMood,
+                                                    change: calculateChange(recentAvgMood, previousAvgMood, false), // Higher mood is better
+                                                    label: 'Humor médio'
+                                                };
+                                            }
+
+                                            // 5. BEM-ESTAR - Energia
+                                            const recentEnergyLogs = recentWellbeing.filter(w => w.energy !== undefined && w.energy !== null && w.energy !== '' && !isNaN(parseInt(w.energy)));
+                                            const previousEnergyLogs = previousWellbeing.filter(w => w.energy !== undefined && w.energy !== null && w.energy !== '' && !isNaN(parseInt(w.energy)));
+
+                                            if (recentEnergyLogs.length > 0 || previousEnergyLogs.length > 0) {
+                                                const recentAvgEnergy = recentEnergyLogs.length > 0
+                                                    ? recentEnergyLogs.reduce((sum, w) => sum + parseInt(w.energy), 0) / recentEnergyLogs.length
+                                                    : 0;
+                                                const previousAvgEnergy = previousEnergyLogs.length > 0
+                                                    ? previousEnergyLogs.reduce((sum, w) => sum + parseInt(w.energy), 0) / previousEnergyLogs.length
+                                                    : 0;
+
+                                                progressData.energy = {
+                                                    recent: recentAvgEnergy,
+                                                    previous: previousAvgEnergy,
+                                                    change: calculateChange(recentAvgEnergy, previousAvgEnergy, false), // Higher energy is better
+                                                    label: 'Energia média'
+                                                };
+                                            }
+
+                                            // 6. CICLOS - Consistência da hora de deitar
+                                            if (recentCycles.length > 0 || previousCycles.length > 0) {
+                                                const getBedtimeMinutes = (bedtime) => {
+                                                    const [hours, minutes] = bedtime.split(':').map(Number);
+                                                    return hours * 60 + minutes;
+                                                };
+
+                                                const recentBedtimes = recentCycles.filter(c => c.bedtime).map(c => getBedtimeMinutes(c.bedtime));
+                                                const previousBedtimes = previousCycles.filter(c => c.bedtime).map(c => getBedtimeMinutes(c.bedtime));
+
+                                                if (recentBedtimes.length > 0 || previousBedtimes.length > 0) {
+                                                    // Calculate standard deviation (lower is better = more consistent)
+                                                    const getStdDev = (arr) => {
+                                                        if (arr.length === 0) return 0;
+                                                        const mean = arr.reduce((sum, v) => sum + v, 0) / arr.length;
+                                                        const variance = arr.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / arr.length;
+                                                        return Math.sqrt(variance);
+                                                    };
+
+                                                    const recentStdDev = getStdDev(recentBedtimes);
+                                                    const previousStdDev = getStdDev(previousBedtimes);
+
+                                                    progressData.bedtimeConsistency = {
+                                                        recent: recentStdDev,
+                                                        previous: previousStdDev,
+                                                        change: calculateChange(recentStdDev, previousStdDev, true), // Lower std dev is better
+                                                        label: 'Consistência da hora de deitar'
+                                                    };
+                                                }
+                                            }
+
+                                            // 7. AUTOCUIDADO - Frequência de atividades
+                                            const recentSelfCareActivities = recentCycles.flatMap(c => c.selfCareActivities || []);
+                                            const previousSelfCareActivities = previousCycles.flatMap(c => c.selfCareActivities || []);
+
+                                            if (recentSelfCareActivities.length > 0 || previousSelfCareActivities.length > 0) {
+                                                const recentAvgSelfCare = recentCycles.length > 0 ? recentSelfCareActivities.length / recentCycles.length : 0;
+                                                const previousAvgSelfCare = previousCycles.length > 0 ? previousSelfCareActivities.length / previousCycles.length : 0;
+
+                                                progressData.selfCare = {
+                                                    recent: recentAvgSelfCare,
+                                                    previous: previousAvgSelfCare,
+                                                    change: calculateChange(recentAvgSelfCare, previousAvgSelfCare, false), // More is better
+                                                    label: 'Atividades de autocuidado por ciclo'
+                                                };
+                                            }
+
+                                            // 8. EMOÇÕES E TRIGGERS
+                                            const recentEmotions = recentCycles.flatMap(c => c.emotions || []);
+                                            const previousEmotions = previousCycles.flatMap(c => c.emotions || []);
+                                            const recentTriggers = recentCycles.flatMap(c => c.triggers || []);
+                                            const previousTriggers = previousCycles.flatMap(c => c.triggers || []);
+
+                                            // Count negative emotions
+                                            const negativeEmotions = ['Ansioso/a', 'Triste', 'Irritado/a', 'Stressado/a', 'Frustrado/a', 'Sozinho/a'];
+                                            const recentNegativeCount = recentEmotions.filter(e => negativeEmotions.includes(e)).length;
+                                            const previousNegativeCount = previousEmotions.filter(e => negativeEmotions.includes(e)).length;
+
+                                            if (recentEmotions.length > 0 || previousEmotions.length > 0) {
+                                                const recentNegativePercent = recentEmotions.length > 0 ? (recentNegativeCount / recentEmotions.length) * 100 : 0;
+                                                const previousNegativePercent = previousEmotions.length > 0 ? (previousNegativeCount / previousEmotions.length) * 100 : 0;
+
+                                                progressData.negativeEmotions = {
+                                                    recent: recentNegativePercent,
+                                                    previous: previousNegativePercent,
+                                                    change: calculateChange(recentNegativePercent, previousNegativePercent, true), // Lower is better
+                                                    label: 'Emoções negativas (% do total)'
+                                                };
+                                            }
+
+                                            if (recentTriggers.length > 0 || previousTriggers.length > 0) {
+                                                const recentAvgTriggers = recentCycles.length > 0 ? recentTriggers.length / recentCycles.length : 0;
+                                                const previousAvgTriggers = previousCycles.length > 0 ? previousTriggers.length / previousCycles.length : 0;
+
+                                                progressData.triggers = {
+                                                    recent: recentAvgTriggers,
+                                                    previous: previousAvgTriggers,
+                                                    change: calculateChange(recentAvgTriggers, previousAvgTriggers, true), // Lower is better
+                                                    label: 'Gatilhos por ciclo'
+                                                };
+                                            }
+
+                                            // Calculate overall progress score (0-100)
+                                            const scorableMetrics = Object.values(progressData).filter(m => m.change && m.change.direction !== 'stable');
+                                            const improvements = scorableMetrics.filter(m => m.change.isImprovement).length;
+                                            const total = scorableMetrics.length;
+                                            const progressScore = total > 0 ? Math.round((improvements / total) * 100) : 50;
+
+                                            return (
+                                                <div className="space-y-4">
+                                                    {/* Period comparison header */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                📈 Análise de Progresso Temporal
+                                                            </h3>
+                                                            <div className={'text-4xl font-black ' + (progressScore >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : progressScore >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                {progressScore}%
+                                                            </div>
+                                                        </div>
+                                                        <p className={'text-sm mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                            Comparação entre os últimos {periodDays} dias vs os {periodDays} dias anteriores
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-200')}>
+                                                                <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
+                                                            </div>
+                                                            <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                {improvements} de {total} métricas em melhoria
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Consumption metrics */}
+                                                    {(progressData.frequency || progressData.dosage) && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                💊 Consumo
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {progressData.frequency && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.frequency.label}
+                                                                            </span>
+                                                                            {progressData.frequency.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.frequency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.frequency.change.direction === 'up' ? '↑' : '↓'} {progressData.frequency.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.frequency.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                consumos/dia
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.frequency.previous.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.dosage && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.dosage.label}
+                                                                            </span>
+                                                                            {progressData.dosage.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.dosage.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.dosage.change.direction === 'up' ? '↑' : '↓'} {progressData.dosage.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.dosage.recent.toFixed(0)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                mg/dia
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.dosage.previous.toFixed(0)} mg
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Wellbeing metrics */}
+                                                    {(progressData.sleep || progressData.mood || progressData.energy) && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                💚 Bem-Estar
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {progressData.sleep && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.sleep.label}
+                                                                            </span>
+                                                                            {progressData.sleep.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.sleep.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.sleep.change.direction === 'up' ? '↑' : '↓'} {progressData.sleep.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.sleep.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                horas
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.sleep.previous.toFixed(1)}h
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.mood && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.mood.label}
+                                                                            </span>
+                                                                            {progressData.mood.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.mood.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.mood.change.direction === 'up' ? '↑' : '↓'} {progressData.mood.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.mood.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                /10
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.mood.previous.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.energy && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.energy.label}
+                                                                            </span>
+                                                                            {progressData.energy.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.energy.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.energy.change.direction === 'up' ? '↑' : '↓'} {progressData.energy.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.energy.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                /10
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.energy.previous.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Lifestyle metrics */}
+                                                    {(progressData.bedtimeConsistency || progressData.selfCare) && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                🌙 Rotinas e Autocuidado
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {progressData.bedtimeConsistency && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.bedtimeConsistency.label}
+                                                                            </span>
+                                                                            {progressData.bedtimeConsistency.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.bedtimeConsistency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.bedtimeConsistency.change.isImprovement ? 'Melhor' : 'Pior'} {progressData.bedtimeConsistency.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.bedtimeConsistency.recent < 30 ? 'Muito consistente' : progressData.bedtimeConsistency.recent < 60 ? 'Consistente' : 'Variável'}
+                                                                            </span>
+                                                                            <span className={'text-xs ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                variação: ±{(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.selfCare && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.selfCare.label}
+                                                                            </span>
+                                                                            {progressData.selfCare.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.selfCare.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.selfCare.change.direction === 'up' ? '↑' : '↓'} {progressData.selfCare.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.selfCare.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                atividades/ciclo
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.selfCare.previous.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Emotional metrics */}
+                                                    {(progressData.negativeEmotions || progressData.triggers) && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                🧠 Estado Emocional
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {progressData.negativeEmotions && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.negativeEmotions.label}
+                                                                            </span>
+                                                                            {progressData.negativeEmotions.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.negativeEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.negativeEmotions.change.direction === 'up' ? '↑' : '↓'} {progressData.negativeEmotions.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.negativeEmotions.recent.toFixed(0)}%
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.negativeEmotions.previous.toFixed(0)}%
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.triggers && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.triggers.label}
+                                                                            </span>
+                                                                            {progressData.triggers.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.triggers.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.triggers.change.direction === 'up' ? '↑' : '↓'} {progressData.triggers.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.triggers.recent.toFixed(1)}
+                                                                            </span>
+                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                gatilhos/ciclo
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                antes: {progressData.triggers.previous.toFixed(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Summary insights */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50' : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'text-lg font-semibold mb-3 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                            💡 Resumo do Progresso
+                                                        </h3>
+                                                        <div className={'text-sm leading-relaxed space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                            {progressScore >= 70 && (
+                                                                <p>🎉 <strong>Excelente progresso!</strong> A maioria das métricas mostra melhoria clara. Continua neste caminho!</p>
+                                                            )}
+                                                            {progressScore >= 40 && progressScore < 70 && (
+                                                                <p>👍 <strong>Progresso moderado.</strong> Algumas áreas melhoraram, outras mantiveram-se estáveis. Identifica o que funcionou nas áreas positivas.</p>
+                                                            )}
+                                                            {progressScore < 40 && (
+                                                                <p>💪 <strong>Momento desafiante.</strong> Os dados mostram dificuldades em várias áreas. Lembra-te: recaídas fazem parte da recuperação. Foca-te em pequenas vitórias.</p>
+                                                            )}
+                                                            <div className={'mt-3 pt-3 border-t ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                                <p className="text-xs font-medium mb-1">Áreas com maior melhoria:</p>
+                                                                <ul className="text-xs space-y-1">
+                                                                    {Object.entries(progressData)
+                                                                        .filter(([_, data]) => data.change && data.change.isImprovement)
+                                                                        .sort((a, b) => b[1].change.percent - a[1].change.percent)
+                                                                        .slice(0, 3)
+                                                                        .map(([key, data], i) => (
+                                                                            <li key={i}>✅ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
+                                                                        ))}
+                                                                </ul>
+                                                            </div>
+                                                            {Object.entries(progressData).filter(([_, data]) => data.change && !data.change.isImprovement).length > 0 && (
+                                                                <div className={'mt-3 pt-3 border-t ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                                    <p className="text-xs font-medium mb-1">Áreas que precisam de atenção:</p>
+                                                                    <ul className="text-xs space-y-1">
+                                                                        {Object.entries(progressData)
+                                                                            .filter(([_, data]) => data.change && !data.change.isImprovement)
+                                                                            .sort((a, b) => b[1].change.percent - a[1].change.percent)
+                                                                            .slice(0, 3)
+                                                                            .map(([key, data], i) => (
+                                                                                <li key={i}>⚠️ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
+                                                                            ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             );
                                         }
