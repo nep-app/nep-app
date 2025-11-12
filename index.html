@@ -1882,22 +1882,8 @@
                                             }
                                             const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
 
-                                            // Get last 7 days for mini calendar
-                                            const now = new Date();
-                                            const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
-                                            const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
-                                            const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 30);
-
-                                            // Weekly comparison
-                                            const thisWeek = filteredConsumptions.filter(c => new Date(c.timestamp) >= weekAgo);
-                                            const lastWeek = filteredConsumptions.filter(c => new Date(c.timestamp) >= twoWeeksAgo && new Date(c.timestamp) < weekAgo);
-
-                                            // 30-day trend
-                                            const last30Days = filteredConsumptions.filter(c => new Date(c.timestamp) >= thirtyDaysAgo);
-                                            const byDate = {};
-                                            last30Days.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            // Get dates for calendar
                                             const dates = Object.keys(byDate).sort();
-                                            const avgPerDay = last30Days.length / Math.max(1, dates.length);
 
                                             // By hour
                                             const byHour = {};
