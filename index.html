@@ -2357,15 +2357,21 @@
                                             // 1. Sono → Consumo (sono de ontem afeta consumo de hoje)
                                             const sleepToConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                sleepToConsumptionData.push({ sleep: w.sleep, consumptions: dayConsumptions });
+                                                // Only include if sleep is valid
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    sleepToConsumptionData.push({ sleep: parseFloat(w.sleep), consumptions: dayConsumptions });
+                                                }
                                             });
 
                                             // 2. Consumo → Sono (consumo de hoje afeta sono de hoje)
                                             const consumptionToSleepData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                consumptionToSleepData.push({ consumptions: dayConsumptions, sleep: w.sleep });
+                                                // Only include if sleep is valid
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    consumptionToSleepData.push({ consumptions: dayConsumptions, sleep: parseFloat(w.sleep) });
+                                                }
                                             });
 
                                             // 3. Consumo → Humor do dia seguinte
@@ -2373,57 +2379,66 @@
                                             for (let i = 0; i < filteredWellbeingLogs.length - 1; i++) {
                                                 const today = filteredWellbeingLogs[i];
                                                 const tomorrow = filteredWellbeingLogs[i + 1];
-                                                const todayDate = new Date(today.date);
-                                                const tomorrowDate = new Date(tomorrow.date);
-                                                // Check if tomorrow is actually the next day
-                                                if ((tomorrowDate - todayDate) === 86400000) { // 24 hours in ms
-                                                    const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
-                                                    consumptionToNextDayMoodData.push({ consumptions: todayConsumptions, mood: tomorrow.mood });
+                                                // Only include if tomorrow has valid mood
+                                                if (tomorrow.mood !== undefined && tomorrow.mood !== null && tomorrow.mood !== '' && !isNaN(parseInt(tomorrow.mood))) {
+                                                    const todayDate = new Date(today.date);
+                                                    const tomorrowDate = new Date(tomorrow.date);
+                                                    // Check if tomorrow is actually the next day
+                                                    if ((tomorrowDate - todayDate) === 86400000) { // 24 hours in ms
+                                                        const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
+                                                        consumptionToNextDayMoodData.push({ consumptions: todayConsumptions, mood: parseInt(tomorrow.mood) });
+                                                    }
                                                 }
                                             }
 
                                             // 4. Humor → Consumo (humor de hoje afeta consumo de hoje)
                                             const moodToConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                moodToConsumptionData.push({ mood: w.mood, consumptions: dayConsumptions });
+                                                // Only include if mood is valid
+                                                if (w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    moodToConsumptionData.push({ mood: parseInt(w.mood), consumptions: dayConsumptions });
+                                                }
                                             });
 
                                             // 5. Hora do último consumo → Qualidade do sono
                                             const lastConsumptionToSleepData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-                                                if (dayConsumptions.length > 0) {
-                                                    const lastCons = dayConsumptions[0];
-                                                    const lastHour = new Date(lastCons.timestamp).getHours() + new Date(lastCons.timestamp).getMinutes() / 60;
-                                                    lastConsumptionToSleepData.push({ lastHour: lastHour, sleep: w.sleep });
+                                                // Only include if sleep is valid
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                                                    if (dayConsumptions.length > 0) {
+                                                        const lastCons = dayConsumptions[0];
+                                                        const lastHour = new Date(lastCons.timestamp).getHours() + new Date(lastCons.timestamp).getMinutes() / 60;
+                                                        lastConsumptionToSleepData.push({ lastHour: lastHour, sleep: parseFloat(w.sleep) });
+                                                    }
                                                 }
                                             });
 
                                             // 6. Consumo → Humor (mesmo dia)
                                             const consumptionToSameDayMoodData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                if (w.mood !== undefined && w.mood !== null && w.mood !== '') {
+                                                if (w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood))) {
                                                     const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                    consumptionToSameDayMoodData.push({ consumptions: dayConsumptions, mood: w.mood });
+                                                    consumptionToSameDayMoodData.push({ consumptions: dayConsumptions, mood: parseInt(w.mood) });
                                                 }
                                             });
 
                                             // 7. Consumo → Energia (mesmo dia)
                                             const consumptionToEnergyData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '') {
+                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '' && !isNaN(parseInt(w.energy))) {
                                                     const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                    consumptionToEnergyData.push({ consumptions: dayConsumptions, energy: w.energy });
+                                                    consumptionToEnergyData.push({ consumptions: dayConsumptions, energy: parseInt(w.energy) });
                                                 }
                                             });
 
                                             // 8. Energia → Consumo (mesmo dia)
                                             const energyToConsumptionData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '') {
+                                                if (w.energy !== undefined && w.energy !== null && w.energy !== '' && !isNaN(parseInt(w.energy))) {
                                                     const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                    energyToConsumptionData.push({ energy: w.energy, consumptions: dayConsumptions });
+                                                    energyToConsumptionData.push({ energy: parseInt(w.energy), consumptions: dayConsumptions });
                                                 }
                                             });
 
@@ -3892,16 +3907,20 @@
                                             // 1. Sono → Consumo
                                             const sleepToConsData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                sleepToConsData.push({ sleep: w.sleep, consumptions: dayConsumptions });
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    sleepToConsData.push({ sleep: parseFloat(w.sleep), consumptions: dayConsumptions });
+                                                }
                                             });
                                             const sleepToConsCorr = getCorrelation(sleepToConsData, 'sleep', 'consumptions');
 
                                             // 2. Consumo → Sono
                                             const consToSleepData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                consToSleepData.push({ consumptions: dayConsumptions, sleep: w.sleep });
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    consToSleepData.push({ consumptions: dayConsumptions, sleep: parseFloat(w.sleep) });
+                                                }
                                             });
                                             const consToSleepCorr = getCorrelation(consToSleepData, 'consumptions', 'sleep');
 
@@ -3910,11 +3929,13 @@
                                             for (let i = 0; i < filteredWellbeingLogs.length - 1; i++) {
                                                 const today = filteredWellbeingLogs[i];
                                                 const tomorrow = filteredWellbeingLogs[i + 1];
-                                                const todayDate = new Date(today.date);
-                                                const tomorrowDate = new Date(tomorrow.date);
-                                                if ((tomorrowDate - todayDate) === 86400000) {
-                                                    const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
-                                                    consToNextMoodData.push({ consumptions: todayConsumptions, mood: tomorrow.mood });
+                                                if (tomorrow.mood !== undefined && tomorrow.mood !== null && tomorrow.mood !== '' && !isNaN(parseInt(tomorrow.mood))) {
+                                                    const todayDate = new Date(today.date);
+                                                    const tomorrowDate = new Date(tomorrow.date);
+                                                    if ((tomorrowDate - todayDate) === 86400000) {
+                                                        const todayConsumptions = filteredConsumptions.filter(c => c.date === today.date).length;
+                                                        consToNextMoodData.push({ consumptions: todayConsumptions, mood: parseInt(tomorrow.mood) });
+                                                    }
                                                 }
                                             }
                                             const consToNextMoodCorr = getCorrelation(consToNextMoodData, 'consumptions', 'mood');
@@ -3922,19 +3943,23 @@
                                             // 4. Humor → Consumo
                                             const moodToConsData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
-                                                moodToConsData.push({ mood: w.mood, consumptions: dayConsumptions });
+                                                if (w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).length;
+                                                    moodToConsData.push({ mood: parseInt(w.mood), consumptions: dayConsumptions });
+                                                }
                                             });
                                             const moodToConsCorr = getCorrelation(moodToConsData, 'mood', 'consumptions');
 
                                             // 5. Hora último consumo → Sono
                                             const lastHourToSleepData = [];
                                             filteredWellbeingLogs.forEach(w => {
-                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-                                                if (dayConsumptions.length > 0) {
-                                                    const lastCons = dayConsumptions[0];
-                                                    const lastHour = new Date(lastCons.timestamp).getHours() + new Date(lastCons.timestamp).getMinutes() / 60;
-                                                    lastHourToSleepData.push({ lastHour: lastHour, sleep: w.sleep });
+                                                if (w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) {
+                                                    const dayConsumptions = filteredConsumptions.filter(c => c.date === w.date).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+                                                    if (dayConsumptions.length > 0) {
+                                                        const lastCons = dayConsumptions[0];
+                                                        const lastHour = new Date(lastCons.timestamp).getHours() + new Date(lastCons.timestamp).getMinutes() / 60;
+                                                        lastHourToSleepData.push({ lastHour: lastHour, sleep: parseFloat(w.sleep) });
+                                                    }
                                                 }
                                             });
                                             const lastHourToSleepCorr = getCorrelation(lastHourToSleepData, 'lastHour', 'sleep');
