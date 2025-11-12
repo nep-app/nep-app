@@ -2579,7 +2579,7 @@
                                                                     if (filteredDailyLogs.length > 0) {
                                                                         const avgMg = filteredDailyLogs.reduce((sum, l) => sum + l.mg, 0) / filteredDailyLogs.length;
                                                                         const avgTimes = filteredDailyLogs.reduce((sum, l) => sum + l.times, 0) / filteredDailyLogs.length;
-                                                                        insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de nicotina distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${avgTimes >= 5 ? 'Foca em reduzir a frequência (número de consumos) para diminuir dependência física.' : avgMg >= 150 ? 'Considera reduzir a dosagem por consumo (mg) para atenuar efeitos.' : 'Padrão de consumo moderado - monitoriza tendências ao longo do tempo.'}`);
+                                                                        insights.push(`💊 Dosagem média diária: ${Math.round(avgMg)}mg de NEP distribuídos por ${avgTimes.toFixed(1)} consumos/dia. ${avgTimes >= 5 ? 'Foca em reduzir a frequência (número de consumos) para diminuir dependência física.' : avgMg >= 150 ? 'Considera reduzir a dosagem por consumo (mg) para atenuar efeitos.' : 'Padrão de consumo moderado - monitoriza tendências ao longo do tempo.'}`);
                                                                     }
 
                                                                     return insights.map((insight, i) => (
@@ -2739,6 +2739,7 @@
                                                                                             if (g.type === 'reduce_frequency') return 'Reduzir Frequência';
                                                                                             if (g.type === 'reduce_quantity') return 'Reduzir Quantidade';
                                                                                             if (g.type === 'delay_first') return 'Adiar 1º Consumo';
+                                                                                            if (g.type === 'increase_interval') return 'Aumentar Intervalo';
                                                                                             if (g.type === 'limit_last') return 'Limitar Último';
                                                                                             if (g.type === 'sleep_hours') return 'Horas de Sono';
                                                                                             return g.type;
