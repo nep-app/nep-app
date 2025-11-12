@@ -4297,22 +4297,189 @@
                                             );
                                         }
 
-                                        // COACH (NOVA - EM DESENVOLVIMENTO)
+                                        // COACH
                                         if (patternView === 'coach') {
+                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) {
+                                                return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                                            }
+
+                                            // Calculate all metrics for narrative
+                                            const totalConsumptions = filteredConsumptions.length;
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            const uniqueDays = Object.keys(byDate).length;
+                                            const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
+
+                                            // Wellbeing averages
+                                            const validSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
+                                            const avgSleep = validSleep.length > 0 ? (validSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / validSleep.length).toFixed(1) : null;
+
+                                            const validMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(parseInt(w.mood)));
+                                            const avgMood = validMood.length > 0 ? (validMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / validMood.length).toFixed(1) : null;
+
+                                            const validEnergy = filteredWellbeingLogs.filter(w => w.energy && !isNaN(parseInt(w.energy)));
+                                            const avgEnergy = validEnergy.length > 0 ? (validEnergy.reduce((sum, w) => sum + parseInt(w.energy), 0) / validEnergy.length).toFixed(1) : null;
+
+                                            // Trending
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push(diff);
+                                            }
+                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
+                                            const goodIntervals = intervals.filter(i => i >= 2).length;
+                                            const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
+
+                                            // Best/worst days
+                                            const dates = Object.keys(byDate).sort();
+                                            const sortedDates = dates.sort((a, b) => byDate[a] - byDate[b]);
+                                            const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;
+                                            const worstDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
+                                            const bestCount = bestDate ? byDate[bestDate] : 0;
+                                            const worstCount = worstDate ? byDate[worstDate] : 0;
+
+                                            // Time pattern
+                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+                                                else byPartOfDay.madrugada++;
+                                            });
+                                            const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                                            const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
+
+                                            // Sentiment analysis (if we have notes)
+                                            const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...(dailyLogs || []).filter(d => {
+                                                const inRange = filteredConsumptions.some(c => c.date === d.date);
+                                                return inRange && d.note;
+                                            }).map(d => d.note)].filter(n => n.length > 0).join(' ');
+
+                                            const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
+                                            const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
+
+                                            const positiveCount = positiveWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+                                            const negativeCount = negativeWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+
+                                            const sentimentScore = positiveCount - negativeCount;
+
                                             return (
                                                 <div className="space-y-4">
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-8 border text-center'}>
-                                                        <div className="text-6xl mb-4">💬</div>
-                                                        <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                            O Teu Coach Pessoal
-                                                        </h3>
-                                                        <p className={'text-sm mb-4 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                            Em breve terás aqui um resumo narrativo personalizado, escrito num tom acolhedor e empático,
-                                                            como se fosse uma sessão com um terapeuta.
-                                                        </p>
+                                                    {/* Header */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <span className="text-4xl">💬</span>
+                                                            <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                O Teu Coach
+                                                            </h3>
+                                                        </div>
                                                         <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                            Seleciona o período: Diário / Semanal / Mensal / Total
+                                                            Resumo personalizado do período selecionado
                                                         </p>
+                                                    </div>
+
+                                                    {/* Narrative Summary */}
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                        <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            {/* Paragraph 1: Overview */}
+                                                            <p>
+                                                                Olá! Vamos refletir sobre este período juntos.
+                                                                {totalConsumptions > 0 ? (
+                                                                    <> Registaste <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'}</strong> ao longo de {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'}, com uma média de <strong>{avgPerDay} consumos/dia</strong>.</>
+                                                                ) : (
+                                                                    <> Não tens consumos registados neste período - isso é excelente! </>
+                                                                )}
+                                                            </p>
+
+                                                            {/* Paragraph 2: Patterns and Progress */}
+                                                            {totalConsumptions > 0 && (
+                                                                <p>
+                                                                    {intervals.length > 0 ? (
+                                                                        <>
+                                                                            Notei que tens um intervalo médio de <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval} horas</strong> entre consumos.
+                                                                            {goodPercent >= 50 ? (
+                                                                                <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>Isso é fantástico - {goodPercent}% dos teus intervalos são ≥2h!</span> Estás a conseguir espaçar bem os consumos, o que demonstra grande controlo.</>
+                                                                            ) : (
+                                                                                <> Há espaço para melhorar aqui - atualmente {goodPercent}% dos intervalos são ≥2h. Pequenas mudanças, como adicionar uma atividade entre consumos, podem fazer grande diferença.</>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <> Neste período ainda não tenho dados suficientes sobre intervalos, mas vamos continuar a acompanhar juntos.</>
+                                                                    )}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 3: Time Patterns */}
+                                                            {totalConsumptions > 0 && maxPartOfDay[1] > 0 && (
+                                                                <p>
+                                                                    Reparei que a maioria dos teus consumos ({Math.round((maxPartOfDay[1] / totalConsumptions) * 100)}%) acontece à <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{partNames[maxPartOfDay[0]]}</strong>.
+                                                                    {maxPartOfDay[0] === 'madrugada' && (
+                                                                        <> Consumir durante a madrugada pode indicar dificuldades com o sono ou ansiedade noturna. Tens pensado no que te leva a consumir nesse período? Talvez seja útil explorar técnicas de relaxamento para a noite.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'noite' && (
+                                                                        <> A noite é um período comum para consumo, muitas vezes ligado ao descontrair após o dia. Considera se há formas alternativas de relaxar que te fazem sentir bem.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'tarde' && (
+                                                                        <> As tardes podem ser desafiantes, especialmente se há rotinas ou gatilhos específicos. Identifica o que precede esses momentos.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'manha' && (
+                                                                        <> Consumir pela manhã pode estar relacionado com o acordar ou com a gestão de ansiedade matinal. Observa como te sentes ao acordar e se há padrões.</>
+                                                                    )}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 4: Wellbeing Integration */}
+                                                            {(avgMood || avgEnergy || avgSleep) && (
+                                                                <p>
+                                                                    Sobre o teu bem-estar geral:
+                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{avgSleep < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : avgSleep > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : ' - um valor razoável'}.</>}
+                                                                    {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
+                                                                    {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 5: Emotional Tone & Encouragement */}
+                                                            <p>
+                                                                {allNotes.length > 50 ? (
+                                                                    <>
+                                                                        Ao ler as tuas reflexões, percebo que tens usado palavras
+                                                                        {sentimentScore > 5 ? (
+                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> maioritariamente positivas</strong> + ' - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!'
+                                                                        ) : sentimentScore < -5 ? (
+                                                                            <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}> que sugerem alguma dificuldade emocional</strong> + '. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.'
+                                                                        ) : (
+                                                                            ' neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.'
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
+                                                                )}
+                                                            </p>
+
+                                                            {/* Paragraph 6: Highlights */}
+                                                            {bestDate && totalConsumptions > 0 && (
+                                                                <p>
+                                                                    {bestCount <= 2 ? (
+                                                                        <>
+                                                                            Destaco o dia <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{new Date(bestDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong>, onde tiveste apenas {bestCount} {bestCount === 1 ? 'consumo' : 'consumos'}.
+                                                                            <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> O que fizeste diferente nesse dia? Identificar essas estratégias pode ser a chave para replicar esse sucesso.</span>
+                                                                        </>
+                                                                    ) : worstDate && worstCount >= 8 ? (
+                                                                        <>
+                                                                            Repara que em <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{new Date(worstDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong> houve {worstCount} consumos. Não te culpes - em vez disso, pergunta-te: o que aconteceu? Houve gatilhos específicos? Stress? Tédio? Compreender é o primeiro passo para prevenir.
+                                                                        </>
+                                                                    ) : null}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 7: Closing & Next Steps */}
+                                                            <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
+                                                                Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer, a registar, a refletir. Cada dados que partilhas aqui é um passo de autoconsciência.
+                                                                Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
