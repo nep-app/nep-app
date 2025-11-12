@@ -2757,11 +2757,14 @@
                                                                             doseMsg = 'Excelente! Dosagem muito baixa. Ótimo controlo';
                                                                         }
 
+                                                                        // Get period label for context
+                                                                        const periodLabel = getPeriodLabel(patternsPeriod, patternsPeriodOffset);
+
                                                                         // Adicionar análise de frequência
-                                                                        insights.push(`🔢 Frequência média: ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}`);
+                                                                        insights.push(`🔢 Frequência média (${periodLabel}): ${avgTimes.toFixed(1)} consumos/dia. ${freqMsg}`);
 
                                                                         // Adicionar análise de dosagem
-                                                                        insights.push(`💊 Dosagem média: ${Math.round(avgMg)}mg de NEP/dia. ${doseMsg}`);
+                                                                        insights.push(`💊 Dosagem média (${periodLabel}): ${Math.round(avgMg)}mg de NEP/dia. ${doseMsg}`);
                                                                     }
 
                                                                     return insights.map((insight, i) => (
