@@ -2468,7 +2468,17 @@
 
                                             Object.entries(byDate).forEach(([date, logs]) => {
                                                 if (logs.length < 2) return;
-                                                const sorted = logs.sort((a, b) => {
+
+                                                // Filter out early morning logs (00:00-05:59) to avoid comparing late night with early morning
+                                                const dayLogs = logs.filter(log => {
+                                                    const time = log.timestamp || '12:00';
+                                                    const [hour] = time.split(':').map(Number);
+                                                    return hour >= 6 && hour < 24; // Only 06:00-23:59
+                                                });
+
+                                                if (dayLogs.length < 2) return;
+
+                                                const sorted = dayLogs.sort((a, b) => {
                                                     const timeA = a.timestamp || '12:00';
                                                     const timeB = b.timestamp || '12:00';
                                                     return timeA.localeCompare(timeB);
@@ -2744,7 +2754,7 @@
 
                                                                     return insights.map((insight, i) => (
                                                                         <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-blue-100') + ' p-3 rounded-lg border'}>
-                                                                            <p className="leading-relaxed">{insight}</p>
+                                                                            <p className={(darkMode ? 'text-gray-200' : 'text-gray-800') + ' leading-relaxed'}>{insight}</p>
                                                                         </div>
                                                                     ));
                                                                 })()}
