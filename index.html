@@ -2456,52 +2456,57 @@
                                                 .sort((a, b) => new Date(a.date) - new Date(b.date));
                                             const energyTrend = getTrend(energyTrendData, 'energy');
 
-                                            // Variação Intra-dia: Humor e Energia de manhã vs noite
+                                            // Variação Intra-dia: Regressão linear em TODOS os registos do dia (não só primeiro/último)
                                             const byDate = {};
                                             filteredWellbeingLogs.forEach(log => {
                                                 if (!byDate[log.date]) byDate[log.date] = [];
                                                 byDate[log.date].push(log);
                                             });
 
-                                            const intraDayMoodChanges = [];
-                                            const intraDayEnergyChanges = [];
+                                            const intraDayMoodSlopes = [];
+                                            const intraDayEnergySlopes = [];
 
                                             Object.entries(byDate).forEach(([date, logs]) => {
-                                                if (logs.length < 2) return;
-
-                                                // Filter out early morning logs (00:00-05:59) to avoid comparing late night with early morning
+                                                // Filter out early morning logs (00:00-05:59) to avoid including late night hours
                                                 const dayLogs = logs.filter(log => {
                                                     const time = log.timestamp || '12:00';
                                                     const [hour] = time.split(':').map(Number);
                                                     return hour >= 6 && hour < 24; // Only 06:00-23:59
-                                                });
-
-                                                if (dayLogs.length < 2) return;
-
-                                                const sorted = dayLogs.sort((a, b) => {
+                                                }).sort((a, b) => {
                                                     const timeA = a.timestamp || '12:00';
                                                     const timeB = b.timestamp || '12:00';
                                                     return timeA.localeCompare(timeB);
                                                 });
-                                                const first = sorted[0];
-                                                const last = sorted[sorted.length - 1];
 
-                                                if (first.mood !== undefined && first.mood !== null && first.mood !== '' &&
-                                                    last.mood !== undefined && last.mood !== null && last.mood !== '') {
-                                                    intraDayMoodChanges.push(last.mood - first.mood);
+                                                if (dayLogs.length < 2) return;
+
+                                                // Linear regression for mood using ALL logs of the day
+                                                const moodData = dayLogs
+                                                    .filter(log => log.mood !== undefined && log.mood !== null && log.mood !== '')
+                                                    .map((log, index) => ({ x: index, y: parseInt(log.mood) }));
+
+                                                if (moodData.length >= 2) {
+                                                    const moodSlope = getTrend(moodData, 'y');
+                                                    if (moodSlope !== null) intraDayMoodSlopes.push(moodSlope);
                                                 }
 
-                                                if (first.energy !== undefined && first.energy !== null && first.energy !== '' &&
-                                                    last.energy !== undefined && last.energy !== null && last.energy !== '') {
-                                                    intraDayEnergyChanges.push(last.energy - first.energy);
+                                                // Linear regression for energy using ALL logs of the day
+                                                const energyData = dayLogs
+                                                    .filter(log => log.energy !== undefined && log.energy !== null && log.energy !== '')
+                                                    .map((log, index) => ({ x: index, y: parseInt(log.energy) }));
+
+                                                if (energyData.length >= 2) {
+                                                    const energySlope = getTrend(energyData, 'y');
+                                                    if (energySlope !== null) intraDayEnergySlopes.push(energySlope);
                                                 }
                                             });
 
-                                            const avgIntraDayMoodChange = intraDayMoodChanges.length > 0
-                                                ? intraDayMoodChanges.reduce((a, b) => a + b, 0) / intraDayMoodChanges.length
+                                            // Average slope across all days (positive = increases during day, negative = decreases)
+                                            const avgIntraDayMoodChange = intraDayMoodSlopes.length > 0
+                                                ? intraDayMoodSlopes.reduce((a, b) => a + b, 0) / intraDayMoodSlopes.length
                                                 : null;
-                                            const avgIntraDayEnergyChange = intraDayEnergyChanges.length > 0
-                                                ? intraDayEnergyChanges.reduce((a, b) => a + b, 0) / intraDayEnergyChanges.length
+                                            const avgIntraDayEnergyChange = intraDayEnergySlopes.length > 0
+                                                ? intraDayEnergySlopes.reduce((a, b) => a + b, 0) / intraDayEnergySlopes.length
                                                 : null;
 
                                             // Word frequency analysis (for filtered period)
