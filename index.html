@@ -75,6 +75,20 @@
         const getTodayKey = () => new Date().toISOString().split('T')[0];
         const genId = () => crypto.randomUUID();
 
+        // Helper: Converter data para ISO string de forma segura
+        const safeToISODate = (dateValue) => {
+            if (!dateValue) return null;
+            const d = new Date(dateValue);
+            return (d instanceof Date && !isNaN(d)) ? d.toISOString().split('T')[0] : null;
+        };
+
+        // Helper: Criar Date object seguro
+        const safeDate = (dateValue) => {
+            if (!dateValue) return null;
+            const d = new Date(dateValue);
+            return (d instanceof Date && !isNaN(d)) ? d : null;
+        };
+
         // Icons (simplified SVG components)
         const Clock = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>);
         const Heart = ({ className = "w-5 h-5" }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>);
@@ -1358,7 +1372,8 @@
 
                 // Cycle Notes
                 allCycleNotes.forEach(cy => {
-                    const date = new Date(cy.timestamp).toISOString().split('T')[0];
+                    const date = safeToISODate(cy.timestamp);
+                    if (!date) return;
                     const dayConsumptions = consumptions.filter(c => c.date === date).length;
 
                     if (!sentimentByDay[date]) sentimentByDay[date] = { sentiments: [], consumptions: dayConsumptions };
@@ -2693,8 +2708,8 @@
                                             const today = new Date().toISOString().split('T')[0];
                                             const analysisConsumptions = patternsPeriod === 'hoje' ? filteredConsumptions : filteredConsumptions.filter(c => c.date !== today);
                                             const analysisWellbeing = patternsPeriod === 'hoje' ? filteredWellbeingLogs : filteredWellbeingLogs.filter(w => {
-                                                const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
-                                                return wDate !== today;
+                                                const wDate = w.date || safeToISODate(w.timestamp);
+                                                return wDate && wDate !== today;
                                             });
                                             const analysisCycles = patternsPeriod === 'hoje' ? filteredCycles : filteredCycles.filter(cy => cy.date !== today);
 
@@ -2841,7 +2856,7 @@
                                                                             if (!cycle.triggers || cycle.triggers.length === 0) return;
 
                                                                             // Encontrar data do ciclo (bedtime)
-                                                                            const cycleDate = cycle.bedtime ? new Date(cycle.bedtime).toISOString().split('T')[0] : null;
+                                                                            const cycleDate = safeToISODate(cycle.bedtime);
                                                                             if (!cycleDate) return;
 
                                                                             // Contar consumos nesse dia
@@ -3064,7 +3079,8 @@
                                                         // Adicionar bem-estar
                                                         analysisWellbeing.forEach(w => {
                                                             // Extrair data do timestamp se não houver campo date
-                                                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            if (!wDate) return; // Skip if invalid date
                                                             if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
                                                             if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
                                                             if (w.mood && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
@@ -3503,7 +3519,9 @@
                                             // Time pattern
                                             const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
                                             filteredConsumptions.forEach(c => {
-                                                const hour = new Date(c.timestamp).getHours();
+                                                const d = safeDate(c.timestamp);
+                                                if (!d) return; // Skip if invalid timestamp
+                                                const hour = d.getHours();
                                                 if (hour >= 6 && hour < 12) byPartOfDay.manha++;
                                                 else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
                                                 else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
