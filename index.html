@@ -2174,12 +2174,12 @@
                                                 const recentLogsWithDosage = recentDailyLogs.filter(d => d.mg && d.mg > 0);
                                                 const previousLogsWithDosage = previousDailyLogs.filter(d => d.mg && d.mg > 0);
 
-                                                // Dividir pelo número total de dias do período, não só pelos dias com registo
+                                                // Média dos dias em que houve registo de dosagem
                                                 const recentAvgDosage = recentLogsWithDosage.length > 0
-                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / periodDays
+                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / recentLogsWithDosage.length
                                                     : 0;
                                                 const previousAvgDosage = previousLogsWithDosage.length > 0
-                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / periodDays
+                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / previousLogsWithDosage.length
                                                     : 0;
 
                                                 progressData.dosage = {
