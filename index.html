@@ -3165,50 +3165,136 @@
                                                                             const today = dailyData[date];
                                                                             const nextDay = dailyData[sortedDates[i + 1]];
 
-                                                                            if (today.consumptions > 0 && nextDay.sleep !== null) {
-                                                                                bidirectional.push({ consumptions: today.consumptions, nextSleep: nextDay.sleep });
+                                                                            if (today.consumptions > 0 && (nextDay.sleep !== null || nextDay.mood !== null || nextDay.energy !== null)) {
+                                                                                bidirectional.push({
+                                                                                    consumptions: today.consumptions,
+                                                                                    nextSleep: nextDay.sleep,
+                                                                                    nextMood: nextDay.mood,
+                                                                                    nextEnergy: nextDay.energy
+                                                                                });
                                                                             }
                                                                         }
                                                                     });
 
                                                                     if (bidirectional.length >= 3) {
-                                                                        const avgCons = bidirectional.reduce((s, d) => s + d.consumptions, 0) / bidirectional.length;
-                                                                        const highCons = bidirectional.filter(d => d.consumptions > avgCons);
-                                                                        const lowCons = bidirectional.filter(d => d.consumptions <= avgCons);
+                                                                        // Correlação de Pearson para consumo hoje → bem-estar amanhã
+                                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                                            const validData = data.filter(d => d[yKey] !== null);
+                                                                            if (validData.length < 3) return null;
+                                                                            const n = validData.length;
+                                                                            const sumX = validData.reduce((sum, d) => sum + d[xKey], 0);
+                                                                            const sumY = validData.reduce((sum, d) => sum + d[yKey], 0);
+                                                                            const sumXY = validData.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                                            const sumX2 = validData.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                                            const sumY2 = validData.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                                            const numerator = n * sumXY - sumX * sumY;
+                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                                            return denominator === 0 ? null : numerator / denominator;
+                                                                        };
 
-                                                                        const avgHighNextSleep = highCons.reduce((s, d) => s + d.nextSleep, 0) / highCons.length;
-                                                                        const avgLowNextSleep = lowCons.reduce((s, d) => s + d.nextSleep, 0) / lowCons.length;
-                                                                        const diff = avgLowNextSleep - avgHighNextSleep;
+                                                                        const getCorrelationLabel = (r) => {
+                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior amanhã' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor amanhã' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor amanhã' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                        };
 
-                                                                        return (
-                                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>↔️ Consumo Afeta Bem-Estar</h3>
-                                                                                <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Como o consumo hoje afeta o bem-estar no dia seguinte
-                                                                                </p>
-                                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                                    <div className="flex items-center justify-between mb-3">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-xl">😴</span>
-                                                                                            <span className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono no dia seguinte</span>
-                                                                                        </div>
-                                                                                        <div className={'text-sm px-2 py-1 rounded-full font-medium ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                            {diff > 0.5 ? '✓ Positiva' : '⚠ Negativa'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="grid grid-cols-2 gap-3 text-center">
-                                                                                        <div>
-                                                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Após alto consumo</div>
-                                                                                            <div className={'text-xl font-bold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{avgHighNextSleep.toFixed(1)}h</div>
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Após baixo consumo</div>
-                                                                                            <div className={'text-xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{avgLowNextSleep.toFixed(1)}h</div>
-                                                                                        </div>
-                                                                                    </div>
+                                                                        const bidirCorrelations = [];
+
+                                                                        // Sono
+                                                                        const sleepCorr = getCorrelation(bidirectional, 'consumptions', 'nextSleep');
+                                                                        const sleepData = bidirectional.filter(d => d.nextSleep !== null);
+                                                                        if (sleepData.length >= 3) {
+                                                                            const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Sono',
+                                                                                icon: '😴',
+                                                                                correlation: sleepCorr,
+                                                                                average: avgNextSleep.toFixed(1),
+                                                                                unit: 'h',
+                                                                                dataPoints: sleepData.length
+                                                                            });
+                                                                        }
+
+                                                                        // Humor
+                                                                        const moodCorr = getCorrelation(bidirectional, 'consumptions', 'nextMood');
+                                                                        const moodData = bidirectional.filter(d => d.nextMood !== null);
+                                                                        if (moodData.length >= 3) {
+                                                                            const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Humor',
+                                                                                icon: '😊',
+                                                                                correlation: moodCorr,
+                                                                                average: avgNextMood.toFixed(1),
+                                                                                unit: '/5',
+                                                                                dataPoints: moodData.length
+                                                                            });
+                                                                        }
+
+                                                                        // Energia
+                                                                        const energyCorr = getCorrelation(bidirectional, 'consumptions', 'nextEnergy');
+                                                                        const energyData = bidirectional.filter(d => d.nextEnergy !== null);
+                                                                        if (energyData.length >= 3) {
+                                                                            const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Energia',
+                                                                                icon: '⚡',
+                                                                                correlation: energyCorr,
+                                                                                average: avgNextEnergy.toFixed(1),
+                                                                                unit: '/5',
+                                                                                dataPoints: energyData.length
+                                                                            });
+                                                                        }
+
+                                                                        if (bidirCorrelations.length > 0) {
+                                                                            return (
+                                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>↔️ Consumo Afeta Bem-Estar</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Correlação entre consumo hoje e bem-estar no dia seguinte
+                                                                                    </p>
+                                                                                    {bidirCorrelations.map((corr, i) => {
+                                                                                        const label = getCorrelationLabel(corr.correlation);
+                                                                                        const colorClasses = {
+                                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                                        };
+                                                                                        return (
+                                                                                            <div key={i} className={'rounded-lg p-4 border mb-3 last:mb-0 ' + colorClasses[label.color]}>
+                                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                                    <div className="flex items-center gap-2">
+                                                                                                        <span className="text-xl">{corr.icon}</span>
+                                                                                                        <span className="font-semibold">{corr.name} amanhã</span>
+                                                                                                    </div>
+                                                                                                    <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
+                                                                                                        {label.text}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center justify-between text-sm">
+                                                                                                    <div>
+                                                                                                        <span className="opacity-75">Média: </span>
+                                                                                                        <span className="font-bold">{corr.average}{corr.unit}</span>
+                                                                                                    </div>
+                                                                                                    <div className="opacity-75">
+                                                                                                        r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                {label.desc && (
+                                                                                                    <div className="text-xs opacity-75 mt-2">{label.desc}</div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
                                                                                 </div>
-                                                                            </div>
-                                                                        );
+                                                                            );
+                                                                        }
                                                                     }
                                                                     return null;
                                                                 })()}
