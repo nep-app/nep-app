@@ -1970,11 +1970,13 @@
                                                         </div>
                                                     )}
 
-                                                    {/* Mini Calendar (últimos 7 dias) */}
+                                                    {/* Mini Calendar (dinâmico baseado no filtro) */}
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>📅 Últimos 7 Dias</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>
+                                                            📅 {patternsPeriod === 'hoje' ? 'Hoje' : patternsPeriod === 'semana' ? 'Esta Semana' : patternsPeriod === 'mes' ? 'Este Mês' : 'Todo o Período'}
+                                                        </h3>
                                                         <div className="space-y-2">
-                                                            {dates.slice(-7).reverse().map(date => {
+                                                            {(patternsPeriod === 'semana' ? dates.slice(-7) : dates).reverse().map(date => {
                                                                 const count = byDate[date];
                                                                 const dayConsumptions = consumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                                                 return (
