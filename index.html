@@ -2845,7 +2845,7 @@
                                                                             if (!cycleDate) return;
 
                                                                             // Contar consumos nesse dia
-                                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === cycleDate).length;
+                                                                            const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
 
                                                                             cycle.triggers.forEach(trigger => {
                                                                                 if (!triggerData[trigger]) {
