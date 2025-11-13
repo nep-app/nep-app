@@ -2821,8 +2821,11 @@
 
                                                             {/* Gatilhos */}
                                                             {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Gatilhos Identificados</h3>
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-red-900/20 to-orange-900/20 border-red-700/50' : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200') + ' rounded-xl p-4 border'}>
+                                                                    <div className="flex items-center gap-2 mb-3">
+                                                                        <span className="text-xl">⚡</span>
+                                                                        <h3 className={'font-bold text-sm uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-700')}>Gatilhos Identificados</h3>
+                                                                    </div>
                                                                     {(() => {
                                                                         const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
                                                                         const triggerCount = {};
@@ -2830,11 +2833,11 @@
                                                                         const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
 
                                                                         return (
-                                                                            <div className="space-y-2">
+                                                                            <div className="grid grid-cols-2 gap-2">
                                                                                 {sortedTriggers.map(([trigger, count]) => (
-                                                                                    <div key={trigger} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border flex justify-between items-center'}>
-                                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{trigger}</span>
-                                                                                        <span className={'text-lg font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{count}x</span>
+                                                                                    <div key={trigger} className={(darkMode ? 'bg-gray-800/50 border-red-700/30' : 'bg-white/70 border-red-200') + ' rounded-lg p-2 border'}>
+                                                                                        <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{trigger}</div>
+                                                                                        <div className={'text-2xl font-black ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{count}<span className={'text-sm font-normal ' + (darkMode ? 'text-red-300/70' : 'text-red-500/70')}>x</span></div>
                                                                                     </div>
                                                                                 ))}
                                                                             </div>
