@@ -1902,13 +1902,14 @@
                                             if (dates.length > 0) {
                                                 const today = new Date().toISOString().split('T')[0];
                                                 const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
-                                                if (completedDates.length > 1) {
+                                                if (completedDates.length > 0) {
                                                     const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                                     const bestDate = sortedDates[0];
                                                     const bestCount = byDate[bestDate];
                                                     const bestDayName = new Date(bestDate).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
+                                                    const prefix = completedDates.length === 1 ? 'Neste dia registaste' : 'Teu melhor dia foi';
                                                     insights.push({
-                                                        text: `Teu melhor dia foi ${bestDayName} com ${bestCount === 1 ? 'apenas 1 consumo' : `${bestCount} consumos`}. ${bestCount <= 2 ? 'Identifica o que funcionou! ⭐' : 'Continua a melhorar! 💪'}`,
+                                                        text: `${prefix} ${bestDayName} com ${bestCount === 1 ? 'apenas 1 consumo' : `${bestCount} consumos`}. ${bestCount <= 2 ? 'Identifica o que funcionou! ⭐' : 'Continua a melhorar! 💪'}`,
                                                         type: 'positive'
                                                     });
                                                 }
