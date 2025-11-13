@@ -782,6 +782,10 @@
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
 
+                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
+                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) return;
+
+                        // Ajustar madrugada
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
                             bedtimeMinutes += 1440;
                         }
@@ -791,7 +795,7 @@
                             targetAdjusted += 1440;
                         }
 
-                        if (bedtimeMinutes < targetAdjusted) successCount++;
+                        if (bedtimeMinutes <= targetAdjusted) successCount++;
                     });
 
                     return Math.min(100, (successCount / cyclesWithBedtime.length) * 100);
@@ -885,8 +889,8 @@
                 }
 
                 if (goal.type === 'bedtime_before') {
-                    // REGRA: Conta ciclos onde hora de deitar foi ANTES do target
-                    // Ex: target="01:30" → conta ciclos com bedtime < 01:30
+                    // REGRA: Conta ciclos onde hora de deitar foi ATÉ o target (incluindo a hora exata)
+                    // Ex: target="02:00" → conta ciclos com bedtime <= 02:00
                     const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
@@ -904,17 +908,24 @@
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
                         const originalBedtime = cycle.bedtime;
 
-                        // Ajustar para madrugada (00:00-05:59 = 24:00-29:59)
-                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-6h
+                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
+                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) { // 06:00-20:59
+                            console.log('  🕐', originalBedtime, '→ ⏰ Não é hora de deitar → ❌');
+                            return;
+                        }
+
+                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
+                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
                             bedtimeMinutes += 1440; // +24h
                         }
 
+                        // Ajustar target se for madrugada
                         let targetAdjusted = targetMinutes;
                         if (targetMinutes >= 0 && targetMinutes < 360) {
                             targetAdjusted += 1440;
                         }
 
-                        const isAchieved = bedtimeMinutes < targetAdjusted;
+                        const isAchieved = bedtimeMinutes <= targetAdjusted; // Incluir a hora exata
                         console.log('  🕐', originalBedtime, '→', bedtimeMinutes, 'min vs', targetAdjusted, 'min →', isAchieved ? '✅' : '❌');
 
                         if (isAchieved) achievedCount++;
