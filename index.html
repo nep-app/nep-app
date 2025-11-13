@@ -780,7 +780,7 @@
                 if (goal.type === 'reduce_quantity') {
                     // REGRA: Conta dias com mg ABAIXO do target (excluindo o target)
                     // Ex: target=200 → conta dias com <200mg
-                    dailyLogs.forEach(log => {
+                    wellbeingLogs.forEach(log => {
                         if (log.mg && log.mg < goal.target) achievedCount++;
                     });
                 }
