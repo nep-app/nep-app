@@ -2695,15 +2695,24 @@
                                         if (patternView === 'patterns') {
                                             if (filteredConsumptions.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
+                                            // EXCLUIR DIA ATUAL (exceto quando período é "hoje")
+                                            const today = new Date().toISOString().split('T')[0];
+                                            const analysisConsumptions = patternsPeriod === 'hoje' ? filteredConsumptions : filteredConsumptions.filter(c => c.date !== today);
+                                            const analysisWellbeing = patternsPeriod === 'hoje' ? filteredWellbeingLogs : filteredWellbeingLogs.filter(w => {
+                                                const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                return wDate !== today;
+                                            });
+                                            const analysisCycles = patternsPeriod === 'hoje' ? filteredCycles : filteredCycles.filter(cy => cy.date !== today);
+
                                             // Calculate all needed data
                                             const byHour = {};
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 byHour[hour] = (byHour[hour] || 0) + 1;
                                             });
 
                                             const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 if (hour >= 6 && hour < 12) byPartOfDay.manha++;
                                                 else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
@@ -2713,12 +2722,12 @@
 
                                             const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
                                             const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const day = new Date(c.timestamp).getDay();
                                                 byWeekday[day]++;
                                             });
 
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const sorted = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
@@ -2962,18 +2971,18 @@
                                                     {patternsSubView === 'correlacoes' && (() => {
                                                         console.log('🔍 DEBUG CORRELAÇÕES:', {
                                                             totalConsumptions: consumptions.length,
-                                                            filteredConsumptions: filteredConsumptions.length,
+                                                            analysisConsumptions: analysisConsumptions.length,
                                                             totalWellbeing: wellbeingLogs.length,
-                                                            filteredWellbeing: filteredWellbeingLogs.length
+                                                            analysisWellbeing: analysisWellbeing.length
                                                         });
 
-                                                        if (filteredConsumptions.length < 5) {
+                                                        if (analysisConsumptions.length < 5) {
                                                             return (
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
                                                                     <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
                                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Precisas de mais dados para análise de correlações. (Tens {filteredConsumptions.length} consumos filtrados, precisas de pelo menos 5)
+                                                                        Precisas de mais dados para análise de correlações. (Tens {analysisConsumptions.length} consumos filtrados, precisas de pelo menos 5)
                                                                     </p>
                                                                 </div>
                                                             );
@@ -2983,17 +2992,17 @@
                                                         // Agregar dados por dia
                                                         const dailyData = {};
 
-                                                        console.log('🔍 Amostra consumo:', filteredConsumptions[0]);
-                                                        console.log('🔍 Amostra bem-estar:', filteredWellbeingLogs[0]);
+                                                        console.log('🔍 Amostra consumo:', analysisConsumptions[0]);
+                                                        console.log('🔍 Amostra bem-estar:', analysisWellbeing[0]);
 
                                                         // Contar consumos por dia
-                                                        filteredConsumptions.forEach(c => {
+                                                        analysisConsumptions.forEach(c => {
                                                             if (!dailyData[c.date]) dailyData[c.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
                                                             dailyData[c.date].consumptions++;
                                                         });
 
                                                         // Adicionar bem-estar
-                                                        filteredWellbeingLogs.forEach(w => {
+                                                        analysisWellbeing.forEach(w => {
                                                             // Extrair data do timestamp se não houver campo date
                                                             const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
                                                             if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
@@ -3204,13 +3213,13 @@
                                                                 {(() => {
                                                                     const cycleData = {};
 
-                                                                    filteredConsumptions.forEach(c => {
+                                                                    analysisConsumptions.forEach(c => {
                                                                         if (!c.cycleId) return;
                                                                         if (!cycleData[c.cycleId]) cycleData[c.cycleId] = { consumptions: [], wellbeing: [] };
                                                                         cycleData[c.cycleId].consumptions.push({ timestamp: c.timestamp, type: 'consumption' });
                                                                     });
 
-                                                                    filteredWellbeingLogs.forEach(w => {
+                                                                    analysisWellbeing.forEach(w => {
                                                                         if (!w.cycleId) return;
                                                                         if (!cycleData[w.cycleId]) cycleData[w.cycleId] = { consumptions: [], wellbeing: [] };
                                                                         if (w.mood && !isNaN(parseInt(w.mood))) {
