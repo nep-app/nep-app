@@ -625,16 +625,25 @@
             };
 
             const getLast7Days = () => {
-                // Exclude today since the day is not complete yet
+                // Calculate avgTimes from actual consumptions in last 7 complete days
+                const last7Dates = [...Array(7)].map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (i + 1)); // Start from yesterday (exclude today)
+                    return d.toISOString().split('T')[0];
+                });
+
+                const totalConsumptions = last7Dates.reduce((sum, date) => {
+                    return sum + consumptions.filter(c => c.date === date).length;
+                }, 0);
+
+                const avgTimes = (totalConsumptions / 7).toFixed(1);
+
+                // Calculate avgMg from dailyLogs that have mg registered
                 const completedLogs = excludeToday(dailyLogs);
-                const logs = completedLogs.slice(0, 7);
-                if (logs.length === 0) return { avgTimes: 0, avgMg: 0 };
-                const logsWithTimes = logs.filter(l => l.times !== undefined && !isNaN(l.times));
-                const logsWithMg = logs.filter(l => l.mg !== undefined && !isNaN(l.mg));
-                return {
-                    avgTimes: logsWithTimes.length > 0 ? (logsWithTimes.reduce((sum, l) => sum + l.times, 0) / logsWithTimes.length).toFixed(1) : 0,
-                    avgMg: logsWithMg.length > 0 ? (logsWithMg.reduce((sum, l) => sum + l.mg, 0) / logsWithMg.length).toFixed(0) : 0
-                };
+                const logsWithMg = completedLogs.filter(l => l.mg !== undefined && !isNaN(l.mg));
+                const avgMg = logsWithMg.length > 0 ? (logsWithMg.reduce((sum, l) => sum + l.mg, 0) / logsWithMg.length).toFixed(0) : 0;
+
+                return { avgTimes, avgMg };
             };
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
@@ -2003,30 +2012,6 @@
                                                         )}
                                                     </div>
 
-                                                    {/* Gatilhos Comuns */}
-                                                    {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Gatilhos Mais Comuns</h3>
-                                                            {(() => {
-                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
-                                                                const triggerCount = {};
-                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
-                                                                const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
-
-                                                                return (
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                        {sortedTriggers.slice(0,5).map(([trigger, count]) => (
-                                                                            <div key={trigger} className={'inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm ' + (darkMode ? 'bg-indigo-900/50 text-indigo-200 border border-indigo-700' : 'bg-indigo-100 text-indigo-800 border border-indigo-200')}>
-                                                                                <span>{trigger}</span>
-                                                                                <span className={'font-bold ' + (darkMode ? 'text-indigo-300' : 'text-indigo-600')}>{count}x</span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    )}
-
                                                     {/* Metas */}
                                                     {goals.filter(g => !g.completed).length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-xl p-6 border'}>
@@ -2304,7 +2289,7 @@
                                             const previousTriggers = previousCycles.flatMap(c => c.triggers || []);
 
                                             // Count negative emotions
-                                            const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🌫️ Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
+                                            const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
                                             const recentNegativeCount = recentEmotions.filter(e => negativeEmotions.includes(e)).length;
                                             const previousNegativeCount = previousEmotions.filter(e => negativeEmotions.includes(e)).length;
 
@@ -2317,7 +2302,11 @@
                                                     recent: recentNegativePercent,
                                                     previous: previousNegativePercent,
                                                     change: calculateChange(recentNegativePercent, previousNegativePercent, true), // Lower is better
-                                                    label: 'Emoções negativas (% do total)'
+                                                    label: 'Emoções negativas (% do total)',
+                                                    recentCount: recentNegativeCount,
+                                                    recentTotal: recentEmotions.length,
+                                                    previousCount: previousNegativeCount,
+                                                    previousTotal: previousEmotions.length
                                                 };
                                             }
 
@@ -2595,13 +2584,18 @@
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-center justify-between">
-                                                                            <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
-                                                                                    {progressData.negativeEmotions.recent.toFixed(0)}%
-                                                                                </span>
-                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
-                                                                                    do total
-                                                                                </span>
+                                                                            <div>
+                                                                                <div className="flex items-baseline gap-1">
+                                                                                    <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                        {progressData.negativeEmotions.recent.toFixed(0)}%
+                                                                                    </span>
+                                                                                    <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                                        do total
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-purple-400/60' : 'text-purple-600/60')}>
+                                                                                    {progressData.negativeEmotions.recentCount} de {progressData.negativeEmotions.recentTotal} emoções
+                                                                                </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
                                                                                 era {progressData.negativeEmotions.previous.toFixed(0)}%
@@ -2695,15 +2689,24 @@
                                         if (patternView === 'patterns') {
                                             if (filteredConsumptions.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
+                                            // EXCLUIR DIA ATUAL (exceto quando período é "hoje")
+                                            const today = new Date().toISOString().split('T')[0];
+                                            const analysisConsumptions = patternsPeriod === 'hoje' ? filteredConsumptions : filteredConsumptions.filter(c => c.date !== today);
+                                            const analysisWellbeing = patternsPeriod === 'hoje' ? filteredWellbeingLogs : filteredWellbeingLogs.filter(w => {
+                                                const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                return wDate !== today;
+                                            });
+                                            const analysisCycles = patternsPeriod === 'hoje' ? filteredCycles : filteredCycles.filter(cy => cy.date !== today);
+
                                             // Calculate all needed data
                                             const byHour = {};
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 byHour[hour] = (byHour[hour] || 0) + 1;
                                             });
 
                                             const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const hour = new Date(c.timestamp).getHours();
                                                 if (hour >= 6 && hour < 12) byPartOfDay.manha++;
                                                 else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
@@ -2713,12 +2716,12 @@
 
                                             const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
                                             const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                            filteredConsumptions.forEach(c => {
+                                            analysisConsumptions.forEach(c => {
                                                 const day = new Date(c.timestamp).getDay();
                                                 byWeekday[day]++;
                                             });
 
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const sorted = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
@@ -2828,22 +2831,88 @@
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
                                                                     <div className="flex items-center gap-2 mb-3">
                                                                         <span className="text-lg">⚡</span>
-                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Gatilhos Identificados</h3>
+                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análise de Gatilhos</h3>
                                                                     </div>
                                                                     {(() => {
-                                                                        const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
-                                                                        const triggerCount = {};
-                                                                        allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
-                                                                        const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
+                                                                        // Calcular gatilhos e média de consumos por gatilho
+                                                                        const triggerData = {};
+
+                                                                        filteredCycles.forEach(cycle => {
+                                                                            if (!cycle.triggers || cycle.triggers.length === 0) return;
+
+                                                                            // Encontrar data do ciclo (bedtime)
+                                                                            const cycleDate = cycle.bedtime ? new Date(cycle.bedtime).toISOString().split('T')[0] : null;
+                                                                            if (!cycleDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                            cycle.triggers.forEach(trigger => {
+                                                                                if (!triggerData[trigger]) {
+                                                                                    triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                triggerData[trigger].count++;
+                                                                                triggerData[trigger].totalConsumptions += dayConsumptions;
+                                                                                triggerData[trigger].days.push(cycleDate);
+                                                                            });
+                                                                        });
+
+                                                                        const sortedTriggers = Object.entries(triggerData).sort((a, b) => b[1].count - a[1].count);
+
+                                                                        // Calcular emoções de alto risco (emoções negativas + gatilhos frequentes)
+                                                                        const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
+                                                                        const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
+                                                                        const emotionCount = {};
+                                                                        allEmotions.forEach(e => { emotionCount[e] = (emotionCount[e] || 0) + 1; });
+                                                                        const topNegativeEmotions = Object.entries(emotionCount)
+                                                                            .filter(([e]) => negativeEmotions.includes(e))
+                                                                            .sort((a, b) => b[1] - a[1])
+                                                                            .slice(0, 2);
 
                                                                         return (
-                                                                            <div className="flex flex-wrap gap-2">
-                                                                                {sortedTriggers.map(([trigger, count]) => (
-                                                                                    <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700') + ' rounded-full px-3 py-1.5 border text-sm font-medium flex items-center gap-1.5'}>
-                                                                                        <span>{trigger}</span>
-                                                                                        <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-1.5 py-0.5 text-xs font-bold'}>{count}</span>
+                                                                            <div className="space-y-3">
+                                                                                {/* Lista de gatilhos com média de consumos */}
+                                                                                {sortedTriggers.length > 0 && (
+                                                                                    <div className="space-y-2">
+                                                                                        {sortedTriggers.map(([trigger, data]) => {
+                                                                                            const avgConsumptions = data.count > 0 ? (data.totalConsumptions / data.count).toFixed(1) : 0;
+                                                                                            return (
+                                                                                                <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
+                                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                                        <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{trigger}</span>
+                                                                                                        <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{data.count}x</span>
+                                                                                                    </div>
+                                                                                                    <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                        💡 Nos dias com este gatilho, média de <span className="font-bold">{avgConsumptions} consumos</span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
                                                                                     </div>
-                                                                                ))}
+                                                                                )}
+
+                                                                                {/* Alerta de emoções de alto risco */}
+                                                                                {topNegativeEmotions.length > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-3 border'}>
+                                                                                        <div className="flex items-start gap-2">
+                                                                                            <span className="text-lg">⚠️</span>
+                                                                                            <div className="flex-1">
+                                                                                                <div className={'font-semibold text-sm mb-1 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>
+                                                                                                    Alerta de Gatilho Emocional
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-yellow-400/80' : 'text-yellow-700/80')}>
+                                                                                                    <span className="font-medium">{topNegativeEmotions[0][0]}</span> é uma emoção de alto risco para ti ({topNegativeEmotions[0][1]}x registada). Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {sortedTriggers.length === 0 && (
+                                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                        Sem gatilhos identificados
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })()}
@@ -2856,27 +2925,31 @@
                                                     {patternsSubView === 'estrutural' && (
                                                         <div className="space-y-4">
                                                             {/* Por horário */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
-                                                                <h3 className={'font-semibold mb-3 text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
                                                                 {Object.keys(byHour).length === 0 ? (
                                                                     <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
-                                                                ) : (
-                                                                    <div className="grid grid-cols-6 gap-1.5">
-                                                                        {Array.from({length: 24}, (_, i) => i).map(hour => {
-                                                                            const count = byHour[hour] || 0;
-                                                                            const maxCount = Math.max(...Object.values(byHour));
-                                                                            const intensity = count > 0 ? Math.max(0.3, count / maxCount) : 0;
-                                                                            return (
-                                                                                <div key={hour} className={'relative rounded-lg border transition-all ' + (count > 0 ? (darkMode ? 'bg-blue-500 border-blue-400' : 'bg-blue-500 border-blue-400') : (darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-100 border-gray-200'))} style={{opacity: count > 0 ? intensity : 0.4, minHeight: '60px'}}>
-                                                                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-1">
-                                                                                        <div className={'text-xs font-bold ' + (count > 0 ? 'text-white' : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>{hour}h</div>
-                                                                                        {count > 0 && <div className="text-xs font-black text-white mt-0.5">{count}</div>}
+                                                                ) : (() => {
+                                                                    const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
+                                                                    const maxCount = Math.max(...Object.values(byHour));
+                                                                    return (
+                                                                        <div className="flex items-end justify-between gap-0.5" style={{height: '120px'}}>
+                                                                            {Array.from({length: 24}, (_, i) => i).map(hour => {
+                                                                                const count = byHour[hour] || 0;
+                                                                                const percent = totalHour > 0 ? Math.round((count / totalHour) * 100) : 0;
+                                                                                const height = count > 0 ? Math.max(20, (count / maxCount) * 100) : 5;
+                                                                                return (
+                                                                                    <div key={hour} className="flex flex-col items-center flex-1" style={{minWidth: '8px'}}>
+                                                                                        <div className={'rounded-t text-[9px] font-bold flex flex-col items-center justify-end pb-1 transition-all ' + (count > 0 ? (darkMode ? 'bg-indigo-500 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700/50' : 'bg-gray-200'))} style={{height: height + '%', width: '100%'}}>
+                                                                                            {count > 0 && percent >= 5 && <span>{percent}%</span>}
+                                                                                        </div>
+                                                                                        <div className={'text-[9px] mt-1 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{hour}</div>
                                                                                     </div>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                )}
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </div>
 
                                                             {/* Por período do dia */}
@@ -2929,7 +3002,7 @@
                                                             {/* Por dia da semana */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                                 <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
-                                                                <div className="space-y-2">
+                                                                <div className="space-y-3">
                                                                     {Object.values(byWeekday).every(v => v === 0) ? (
                                                                         <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
                                                                     ) : (() => {
@@ -2938,11 +3011,11 @@
                                                                             const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
                                                                             return (
                                                                                 <div key={day} className="flex items-center gap-2">
-                                                                                    <div className={'text-sm w-12 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
-                                                                                    <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
-                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-2 text-white text-xs font-medium" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
-                                                                                            <span>{percent}%</span>
+                                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
+                                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
                                                                                             <span>{count}x</span>
+                                                                                            <span>{percent}%</span>
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -2956,13 +3029,20 @@
 
                                                     {/* CORRELAÇÕES */}
                                                     {patternsSubView === 'correlacoes' && (() => {
-                                                        if (filteredConsumptions.length < 5) {
+                                                        console.log('🔍 DEBUG CORRELAÇÕES:', {
+                                                            totalConsumptions: consumptions.length,
+                                                            analysisConsumptions: analysisConsumptions.length,
+                                                            totalWellbeing: wellbeingLogs.length,
+                                                            analysisWellbeing: analysisWellbeing.length
+                                                        });
+
+                                                        if (analysisConsumptions.length < 5) {
                                                             return (
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
                                                                     <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
                                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Precisas de mais dados para análise de correlações.
+                                                                        Precisas de mais dados para análise de correlações. (Tens {analysisConsumptions.length} consumos filtrados, precisas de pelo menos 5)
                                                                     </p>
                                                                 </div>
                                                             );
@@ -2972,22 +3052,36 @@
                                                         // Agregar dados por dia
                                                         const dailyData = {};
 
+                                                        console.log('🔍 Amostra consumo:', analysisConsumptions[0]);
+                                                        console.log('🔍 Amostra bem-estar:', analysisWellbeing[0]);
+
                                                         // Contar consumos por dia
-                                                        filteredConsumptions.forEach(c => {
+                                                        analysisConsumptions.forEach(c => {
                                                             if (!dailyData[c.date]) dailyData[c.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
                                                             dailyData[c.date].consumptions++;
                                                         });
 
                                                         // Adicionar bem-estar
-                                                        filteredWellbeingLogs.forEach(w => {
-                                                            if (!dailyData[w.date]) dailyData[w.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
-                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[w.date].sleep = parseFloat(w.sleep);
-                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[w.date].mood = parseInt(w.mood);
-                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[w.date].energy = parseInt(w.energy);
+                                                        analysisWellbeing.forEach(w => {
+                                                            // Extrair data do timestamp se não houver campo date
+                                                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                            if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
+                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
+                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
                                                         });
 
+                                                        console.log('🔍 dailyData keys:', Object.keys(dailyData));
+                                                        console.log('🔍 dailyData sample:', Object.entries(dailyData).slice(0, 3));
+
                                                         // Calcular correlações simples (comparar dias com mais vs menos consumo)
-                                                        const daysWithData = Object.values(dailyData).filter(d => d.consumptions > 0);
+                                                        // IMPORTANTE: Filtrar apenas dias que têm CONSUMO E PELO MENOS UM DADO DE BEM-ESTAR
+                                                        const daysWithData = Object.values(dailyData).filter(d =>
+                                                            d.consumptions > 0 && (d.sleep !== null || d.mood !== null || d.energy !== null)
+                                                        );
+
+                                                        console.log('🔍 daysWithData length:', daysWithData.length);
+                                                        console.log('🔍 daysWithData sample:', daysWithData.slice(0, 3));
 
                                                         if (daysWithData.length < 3) {
                                                             return (
@@ -3001,64 +3095,65 @@
                                                             );
                                                         }
 
-                                                        // Dividir em dias de alto e baixo consumo
-                                                        const avgConsumptions = daysWithData.reduce((sum, d) => sum + d.consumptions, 0) / daysWithData.length;
-                                                        const highConsumptionDays = daysWithData.filter(d => d.consumptions > avgConsumptions);
-                                                        const lowConsumptionDays = daysWithData.filter(d => d.consumptions <= avgConsumptions);
+                                                        // Helper: Correlação de Pearson
+                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                            if (data.length < 3) return null;
+                                                            const n = data.length;
+                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                            const numerator = n * sumXY - sumX * sumY;
+                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                            return denominator === 0 ? null : numerator / denominator;
+                                                        };
 
                                                         const correlations = [];
+                                                        const averages = [];
 
-                                                        // Sono
-                                                        const highSleep = highConsumptionDays.filter(d => d.sleep !== null);
-                                                        const lowSleep = lowConsumptionDays.filter(d => d.sleep !== null);
-                                                        if (highSleep.length > 0 && lowSleep.length > 0) {
-                                                            const avgHighSleep = highSleep.reduce((sum, d) => sum + d.sleep, 0) / highSleep.length;
-                                                            const avgLowSleep = lowSleep.reduce((sum, d) => sum + d.sleep, 0) / lowSleep.length;
-                                                            const diff = avgLowSleep - avgHighSleep;
+                                                        // SONO
+                                                        const sleepData = daysWithData.filter(d => d.sleep !== null);
+                                                        if (sleepData.length >= 3) {
+                                                            const correlation = getCorrelation(sleepData, 'consumptions', 'sleep');
+                                                            const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
                                                                 name: 'Sono',
                                                                 icon: '😴',
-                                                                high: avgHighSleep.toFixed(1),
-                                                                low: avgLowSleep.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: 'h'
+                                                                correlation: correlation,
+                                                                average: avgSleep.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: sleepData.length
                                                             });
                                                         }
 
-                                                        // Humor
-                                                        const highMood = highConsumptionDays.filter(d => d.mood !== null);
-                                                        const lowMood = lowConsumptionDays.filter(d => d.mood !== null);
-                                                        if (highMood.length > 0 && lowMood.length > 0) {
-                                                            const avgHighMood = highMood.reduce((sum, d) => sum + d.mood, 0) / highMood.length;
-                                                            const avgLowMood = lowMood.reduce((sum, d) => sum + d.mood, 0) / lowMood.length;
-                                                            const diff = avgLowMood - avgHighMood;
+                                                        // HUMOR
+                                                        const moodData = daysWithData.filter(d => d.mood !== null);
+                                                        if (moodData.length >= 3) {
+                                                            const correlation = getCorrelation(moodData, 'consumptions', 'mood');
+                                                            const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
                                                                 name: 'Humor',
                                                                 icon: '😊',
-                                                                high: avgHighMood.toFixed(1),
-                                                                low: avgLowMood.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: '/10'
+                                                                correlation: correlation,
+                                                                average: avgMood.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: moodData.length
                                                             });
                                                         }
 
-                                                        // Energia
-                                                        const highEnergy = highConsumptionDays.filter(d => d.energy !== null);
-                                                        const lowEnergy = lowConsumptionDays.filter(d => d.energy !== null);
-                                                        if (highEnergy.length > 0 && lowEnergy.length > 0) {
-                                                            const avgHighEnergy = highEnergy.reduce((sum, d) => sum + d.energy, 0) / highEnergy.length;
-                                                            const avgLowEnergy = lowEnergy.reduce((sum, d) => sum + d.energy, 0) / lowEnergy.length;
-                                                            const diff = avgLowEnergy - avgHighEnergy;
+                                                        // ENERGIA
+                                                        const energyData = daysWithData.filter(d => d.energy !== null);
+                                                        if (energyData.length >= 3) {
+                                                            const correlation = getCorrelation(energyData, 'consumptions', 'energy');
+                                                            const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
                                                                 name: 'Energia',
                                                                 icon: '⚡',
-                                                                high: avgHighEnergy.toFixed(1),
-                                                                low: avgLowEnergy.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: '/10'
+                                                                correlation: correlation,
+                                                                average: avgEnergy.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: energyData.length
                                                             });
                                                         }
 
@@ -3077,37 +3172,46 @@
                                                         return (
                                                             <div className="space-y-4">
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔗 Correlações com Consumo</h3>
+                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📊 Análise de Bem-Estar</h3>
                                                                     <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Comparação entre dias de alto consumo vs baixo consumo
+                                                                        Correlação entre nº de consumos e bem-estar nos dias com dados
                                                                     </p>
                                                                     <div className="space-y-3">
-                                                                        {correlations.map((corr, i) => (
-                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                                <div className="flex items-center justify-between mb-3">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-xl">{corr.icon}</span>
-                                                                                        <span className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</span>
+                                                                        {correlations.map((corr, i) => {
+                                                                            const getCorrelationLabel = (r) => {
+                                                                                if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                                const abs = Math.abs(r);
+                                                                                if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
+                                                                                if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor' };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                            };
+                                                                            const corrLabel = getCorrelationLabel(corr.correlation);
+                                                                            return (
+                                                                                <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                                    <div className="flex items-center justify-between mb-3">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-2xl">{corr.icon}</span>
+                                                                                            <div>
+                                                                                                <div className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Média: {corr.average}{corr.unit}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
+                                                                                            {corrLabel.text}
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className={'text-sm px-2 py-1 rounded-full font-medium ' + (corr.positive ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                        {corr.positive ? '✓ Positiva' : '⚠ Negativa'}
+                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        {corrLabel.desc && <span>💡 {corrLabel.desc}</span>}
+                                                                                        {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
+                                                                                        <span className="ml-2">• {corr.dataPoints} dias</span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="grid grid-cols-2 gap-3 text-center">
-                                                                                    <div>
-                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias alto consumo</div>
-                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{corr.high}{corr.unit}</div>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias baixo consumo</div>
-                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{corr.low}{corr.unit}</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className={'text-xs mt-2 text-center ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Diferença: {Math.abs(parseFloat(corr.diff)).toFixed(1)}{corr.unit}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 </div>
 
@@ -3121,50 +3225,136 @@
                                                                             const today = dailyData[date];
                                                                             const nextDay = dailyData[sortedDates[i + 1]];
 
-                                                                            if (today.consumptions > 0 && nextDay.sleep !== null) {
-                                                                                bidirectional.push({ consumptions: today.consumptions, nextSleep: nextDay.sleep });
+                                                                            if (today.consumptions > 0 && (nextDay.sleep !== null || nextDay.mood !== null || nextDay.energy !== null)) {
+                                                                                bidirectional.push({
+                                                                                    consumptions: today.consumptions,
+                                                                                    nextSleep: nextDay.sleep,
+                                                                                    nextMood: nextDay.mood,
+                                                                                    nextEnergy: nextDay.energy
+                                                                                });
                                                                             }
                                                                         }
                                                                     });
 
                                                                     if (bidirectional.length >= 3) {
-                                                                        const avgCons = bidirectional.reduce((s, d) => s + d.consumptions, 0) / bidirectional.length;
-                                                                        const highCons = bidirectional.filter(d => d.consumptions > avgCons);
-                                                                        const lowCons = bidirectional.filter(d => d.consumptions <= avgCons);
+                                                                        // Correlação de Pearson para consumo hoje → bem-estar amanhã
+                                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                                            const validData = data.filter(d => d[yKey] !== null);
+                                                                            if (validData.length < 3) return null;
+                                                                            const n = validData.length;
+                                                                            const sumX = validData.reduce((sum, d) => sum + d[xKey], 0);
+                                                                            const sumY = validData.reduce((sum, d) => sum + d[yKey], 0);
+                                                                            const sumXY = validData.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                                            const sumX2 = validData.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                                            const sumY2 = validData.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                                            const numerator = n * sumXY - sumX * sumY;
+                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                                            return denominator === 0 ? null : numerator / denominator;
+                                                                        };
 
-                                                                        const avgHighNextSleep = highCons.reduce((s, d) => s + d.nextSleep, 0) / highCons.length;
-                                                                        const avgLowNextSleep = lowCons.reduce((s, d) => s + d.nextSleep, 0) / lowCons.length;
-                                                                        const diff = avgLowNextSleep - avgHighNextSleep;
+                                                                        const getCorrelationLabel = (r) => {
+                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior amanhã' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor amanhã' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor amanhã' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                        };
 
-                                                                        return (
-                                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>↔️ Consumo Afeta Bem-Estar</h3>
-                                                                                <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Como o consumo hoje afeta o bem-estar no dia seguinte
-                                                                                </p>
-                                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                                    <div className="flex items-center justify-between mb-3">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-xl">😴</span>
-                                                                                            <span className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Sono no dia seguinte</span>
-                                                                                        </div>
-                                                                                        <div className={'text-sm px-2 py-1 rounded-full font-medium ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                            {diff > 0.5 ? '✓ Positiva' : '⚠ Negativa'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="grid grid-cols-2 gap-3 text-center">
-                                                                                        <div>
-                                                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Após alto consumo</div>
-                                                                                            <div className={'text-xl font-bold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{avgHighNextSleep.toFixed(1)}h</div>
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Após baixo consumo</div>
-                                                                                            <div className={'text-xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{avgLowNextSleep.toFixed(1)}h</div>
-                                                                                        </div>
-                                                                                    </div>
+                                                                        const bidirCorrelations = [];
+
+                                                                        // Sono
+                                                                        const sleepCorr = getCorrelation(bidirectional, 'consumptions', 'nextSleep');
+                                                                        const sleepData = bidirectional.filter(d => d.nextSleep !== null);
+                                                                        if (sleepData.length >= 3) {
+                                                                            const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Sono',
+                                                                                icon: '😴',
+                                                                                correlation: sleepCorr,
+                                                                                average: avgNextSleep.toFixed(1),
+                                                                                unit: 'h',
+                                                                                dataPoints: sleepData.length
+                                                                            });
+                                                                        }
+
+                                                                        // Humor
+                                                                        const moodCorr = getCorrelation(bidirectional, 'consumptions', 'nextMood');
+                                                                        const moodData = bidirectional.filter(d => d.nextMood !== null);
+                                                                        if (moodData.length >= 3) {
+                                                                            const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Humor',
+                                                                                icon: '😊',
+                                                                                correlation: moodCorr,
+                                                                                average: avgNextMood.toFixed(1),
+                                                                                unit: '/5',
+                                                                                dataPoints: moodData.length
+                                                                            });
+                                                                        }
+
+                                                                        // Energia
+                                                                        const energyCorr = getCorrelation(bidirectional, 'consumptions', 'nextEnergy');
+                                                                        const energyData = bidirectional.filter(d => d.nextEnergy !== null);
+                                                                        if (energyData.length >= 3) {
+                                                                            const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
+                                                                            bidirCorrelations.push({
+                                                                                name: 'Energia',
+                                                                                icon: '⚡',
+                                                                                correlation: energyCorr,
+                                                                                average: avgNextEnergy.toFixed(1),
+                                                                                unit: '/5',
+                                                                                dataPoints: energyData.length
+                                                                            });
+                                                                        }
+
+                                                                        if (bidirCorrelations.length > 0) {
+                                                                            return (
+                                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>↔️ Consumo Afeta Bem-Estar</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Correlação entre consumo hoje e bem-estar no dia seguinte
+                                                                                    </p>
+                                                                                    {bidirCorrelations.map((corr, i) => {
+                                                                                        const label = getCorrelationLabel(corr.correlation);
+                                                                                        const colorClasses = {
+                                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                                        };
+                                                                                        return (
+                                                                                            <div key={i} className={'rounded-lg p-4 border mb-3 last:mb-0 ' + colorClasses[label.color]}>
+                                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                                    <div className="flex items-center gap-2">
+                                                                                                        <span className="text-xl">{corr.icon}</span>
+                                                                                                        <span className="font-semibold">{corr.name} amanhã</span>
+                                                                                                    </div>
+                                                                                                    <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
+                                                                                                        {label.text}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center justify-between text-sm">
+                                                                                                    <div>
+                                                                                                        <span className="opacity-75">Média: </span>
+                                                                                                        <span className="font-bold">{corr.average}{corr.unit}</span>
+                                                                                                    </div>
+                                                                                                    <div className="opacity-75">
+                                                                                                        r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                {label.desc && (
+                                                                                                    <div className="text-xs opacity-75 mt-2">{label.desc}</div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
                                                                                 </div>
-                                                                            </div>
-                                                                        );
+                                                                            );
+                                                                        }
                                                                     }
                                                                     return null;
                                                                 })()}
@@ -3173,13 +3363,13 @@
                                                                 {(() => {
                                                                     const cycleData = {};
 
-                                                                    filteredConsumptions.forEach(c => {
+                                                                    analysisConsumptions.forEach(c => {
                                                                         if (!c.cycleId) return;
                                                                         if (!cycleData[c.cycleId]) cycleData[c.cycleId] = { consumptions: [], wellbeing: [] };
                                                                         cycleData[c.cycleId].consumptions.push({ timestamp: c.timestamp, type: 'consumption' });
                                                                     });
 
-                                                                    filteredWellbeingLogs.forEach(w => {
+                                                                    analysisWellbeing.forEach(w => {
                                                                         if (!w.cycleId) return;
                                                                         if (!cycleData[w.cycleId]) cycleData[w.cycleId] = { consumptions: [], wellbeing: [] };
                                                                         if (w.mood && !isNaN(parseInt(w.mood))) {
@@ -3928,7 +4118,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🌫️ Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
+                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
                                                     <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={wellbeingForm.emotions.includes(emotion)} onChange={(e) => {
                                                             if (e.target.checked) {
