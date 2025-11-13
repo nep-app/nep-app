@@ -2025,15 +2025,23 @@
                                                     )}
 
                                                     {/* Metas */}
-                                                    {goals.length > 0 && (
+                                                    {goals.filter(g => !g.completed).length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-xl p-6 border'}>
                                                             <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Metas Ativas</h3>
                                                             <div className="space-y-3">
-                                                                {goals.filter(g => g.isActive).slice(0, 3).map((goal, i) => (
+                                                                {goals.filter(g => !g.completed).slice(0, 3).map((goal, i) => (
                                                                     <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                        <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>{goal.description}</div>
+                                                                        <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
+                                                                            {goal.type === 'reduce_frequency' && 'Reduzir Frequência'}
+                                                                            {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
+                                                                            {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
+                                                                            {goal.type === 'limit_last' && 'Hora do Último Consumo'}
+                                                                        </div>
                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            Alvo: {goal.targetCount} consumos/dia {goal.targetInterval && `• Intervalo: ${goal.targetInterval}h`}
+                                                                            Meta: {goal.type === 'reduce_frequency' && `${goal.target}x/dia`}
+                                                                            {goal.type === 'delay_first' && `depois das ${goal.target}`}
+                                                                            {goal.type === 'increase_interval' && `${goal.target}h entre consumos`}
+                                                                            {goal.type === 'limit_last' && 'último antes das 00h'}
                                                                         </div>
                                                                     </div>
                                                                 ))}
