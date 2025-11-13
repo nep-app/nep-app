@@ -755,7 +755,48 @@
                     Object.values(lastOfDays).forEach(timestamp => { const d = new Date(timestamp); const lastMinutes = d.getHours() * 60 + d.getMinutes(); if (lastMinutes <= targetMinutes) successDays++; });
                     return Math.min(100, (successDays / Object.keys(lastOfDays).length) * 100);
                 }
-                
+
+                if (goal.type === 'sleep_hours') {
+                    const recentLogs = wellbeingLogs.slice(0, 7);
+                    if (recentLogs.length === 0) return 0;
+                    const logsWithSleep = recentLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
+                    if (logsWithSleep.length === 0) return 0;
+                    const avgSleep = logsWithSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / logsWithSleep.length;
+                    if (avgSleep >= goal.target) return 100;
+                    const progress = (avgSleep / goal.target) * 100;
+                    return Math.max(0, Math.min(100, progress));
+                }
+
+                if (goal.type === 'bedtime_before') {
+                    const recentCycles = cycles.slice(0, 7);
+                    if (recentCycles.length === 0) return 0;
+                    const cyclesWithBedtime = recentCycles.filter(c => c.bedtime);
+                    if (cyclesWithBedtime.length === 0) return 0;
+
+                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                    const targetParts = targetStr.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+                    let successCount = 0;
+                    cyclesWithBedtime.forEach(cycle => {
+                        const bedtimeParts = cycle.bedtime.split(':');
+                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+
+                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
+                            bedtimeMinutes += 1440;
+                        }
+
+                        let targetAdjusted = targetMinutes;
+                        if (targetMinutes >= 0 && targetMinutes < 360) {
+                            targetAdjusted += 1440;
+                        }
+
+                        if (bedtimeMinutes < targetAdjusted) successCount++;
+                    });
+
+                    return Math.min(100, (successCount / cyclesWithBedtime.length) * 100);
+                }
+
                 return 0;
             };
 
@@ -846,8 +887,9 @@
                 if (goal.type === 'bedtime_before') {
                     // REGRA: Conta ciclos onde hora de deitar foi ANTES do target
                     // Ex: target="01:30" → conta ciclos com bedtime < 01:30
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                    const targetParts = targetStr.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
                     cycles.forEach(cycle => {
                         if (!cycle.bedtime) return;
@@ -4141,7 +4183,7 @@
 
                                                             {/* Paragraph 7: Bedtime & Sleep Patterns */}
                                                             {(() => {
-                                                                const cyclesWithBedtime = cycles.filter(c => c.bedtime && c.timestamp >= analysisStart && c.timestamp <= analysisEnd);
+                                                                const cyclesWithBedtime = filteredCycles.filter(c => c.bedtime);
                                                                 if (cyclesWithBedtime.length === 0) return null;
 
                                                                 const getBedtimeMinutes = (bedtime) => {
@@ -4151,8 +4193,10 @@
                                                                 };
 
                                                                 const avgBedtimeMinutes = cyclesWithBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithBedtime.length;
-                                                                const avgBedtimeHours = Math.floor(avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes / 60);
-                                                                const avgBedtimeMins = Math.round(avgBedtimeMinutes % 60);
+                                                                // Convert back to 0-23h range if needed
+                                                                const adjustedMinutes = avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes;
+                                                                const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                const avgBedtimeMins = Math.round(adjustedMinutes % 60);
                                                                 const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
 
                                                                 return (
@@ -4173,7 +4217,7 @@
 
                                                             {/* Paragraph 8: Self-Care Analysis */}
                                                             {(() => {
-                                                                const periodWellbeing = wellbeingLogs.filter(w => w.timestamp >= analysisStart && w.timestamp <= analysisEnd);
+                                                                const periodWellbeing = filteredWellbeingLogs;
                                                                 if (periodWellbeing.length < 3) return null;
 
                                                                 const areas = { water: 0, food: 0, rest: 0, social: 0 };
@@ -4237,7 +4281,7 @@
                                                             {(() => {
                                                                 const dailyData = {};
 
-                                                                analysisWellbeing.forEach(w => {
+                                                                filteredWellbeingLogs.forEach(w => {
                                                                     const wDate = w.date || safeToISODate(w.timestamp);
                                                                     if (!wDate) return;
                                                                     if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
@@ -4665,6 +4709,7 @@
                                                                 {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
                                                                 {goal.type === 'limit_last' && 'Hora do Último Consumo'}
                                                                 {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
+                                                                {goal.type === 'bedtime_before' && 'Deitar Antes de'}
                                                             </h3>
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
                                                                 Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
@@ -4673,6 +4718,7 @@
                                                                 {goal.type === 'increase_interval' && goal.target + 'h entre consumos'}
                                                                 {goal.type === 'limit_last' && 'antes de ' + goal.target}
                                                                 {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
+                                                                {goal.type === 'bedtime_before' && 'antes das ' + goal.target}
                                                             </p>
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
                                                             <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
