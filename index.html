@@ -2307,7 +2307,8 @@
                                             const recentNegativeCount = recentEmotions.filter(e => negativeEmotions.includes(e)).length;
                                             const previousNegativeCount = previousEmotions.filter(e => negativeEmotions.includes(e)).length;
 
-                                            if (recentEmotions.length > 0 || previousEmotions.length > 0) {
+                                            // Só mostrar emoções negativas se houver pelo menos uma emoção negativa registada
+                                            if (recentNegativeCount > 0 || previousNegativeCount > 0) {
                                                 const recentNegativePercent = recentEmotions.length > 0 ? (recentNegativeCount / recentEmotions.length) * 100 : 0;
                                                 const previousNegativePercent = previousEmotions.length > 0 ? (previousNegativeCount / previousEmotions.length) * 100 : 0;
 
@@ -2319,6 +2320,7 @@
                                                 };
                                             }
 
+                                            // Só mostrar gatilhos se houver pelo menos um gatilho registado
                                             if (recentTriggers.length > 0 || previousTriggers.length > 0) {
                                                 const recentAvgTriggers = recentCycles.length > 0 ? recentTriggers.length / recentCycles.length : 0;
                                                 const previousAvgTriggers = previousCycles.length > 0 ? previousTriggers.length / previousCycles.length : 0;
