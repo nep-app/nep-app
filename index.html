@@ -1177,6 +1177,27 @@
                     }
                 }
 
+                // NEW: Sleep → Mood correlations
+                // Same Day: Tonight's sleep → Mood (registered later or next morning)
+                const sleepToMoodSameDay = [];
+                dates.forEach(date => {
+                    const day = dailyData[date];
+                    if (day.sleep && day.mood) {
+                        sleepToMoodSameDay.push({ sleep: day.sleep, mood: day.mood });
+                    }
+                });
+
+                // Next Day: Tonight's sleep → Tomorrow's mood
+                const sleepToMoodNextDay = [];
+                for (let i = 0; i < dates.length - 1; i++) {
+                    const today = dailyData[dates[i]];
+                    const tomorrow = dailyData[dates[i + 1]];
+
+                    if (today.sleep && tomorrow.mood) {
+                        sleepToMoodNextDay.push({ sleep: today.sleep, mood: tomorrow.mood });
+                    }
+                }
+
                 return {
                     sameDay: {
                         sleep: {
@@ -1204,6 +1225,16 @@
                         energy: {
                             correlation: getCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
                             dataPoints: consumptionToEnergyNextDay.length
+                        }
+                    },
+                    sleepToMood: {
+                        sameDay: {
+                            correlation: getCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
+                            dataPoints: sleepToMoodSameDay.length
+                        },
+                        nextDay: {
+                            correlation: getCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
+                            dataPoints: sleepToMoodNextDay.length
                         }
                     }
                 };
@@ -2258,11 +2289,22 @@
                                                 };
                                             }
 
-                                            // 6. CICLOS - Consistência da hora de deitar
+                                            // 6. CICLOS - Consistência da hora de deitar + Média
                                             if (recentCycles.length > 0 || previousCycles.length > 0) {
                                                 const getBedtimeMinutes = (bedtime) => {
                                                     const [hours, minutes] = bedtime.split(':').map(Number);
+                                                    // Adjust for late night (00:00-05:59 = next day)
+                                                    if (hours >= 0 && hours < 6) {
+                                                        return (hours + 24) * 60 + minutes; // Treat as 24:00-29:59
+                                                    }
                                                     return hours * 60 + minutes;
+                                                };
+
+                                                const minutesToTime = (mins) => {
+                                                    const adjustedMins = mins >= 1440 ? mins - 1440 : mins; // Convert back from 24h+ to 0-23h
+                                                    const h = Math.floor(adjustedMins / 60);
+                                                    const m = Math.round(adjustedMins % 60);
+                                                    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                                                 };
 
                                                 const recentBedtimes = recentCycles.filter(c => c.bedtime).map(c => getBedtimeMinutes(c.bedtime));
@@ -2286,10 +2328,28 @@
                                                         change: calculateChange(recentStdDev, previousStdDev, true), // Lower std dev is better
                                                         label: 'Consistência da hora de deitar'
                                                     };
+
+                                                    // Calculate average bedtime
+                                                    const recentAvgBedtime = recentBedtimes.length > 0
+                                                        ? recentBedtimes.reduce((sum, v) => sum + v, 0) / recentBedtimes.length
+                                                        : 0;
+                                                    const previousAvgBedtime = previousBedtimes.length > 0
+                                                        ? previousBedtimes.reduce((sum, v) => sum + v, 0) / previousBedtimes.length
+                                                        : 0;
+
+                                                    progressData.avgBedtime = {
+                                                        recent: recentAvgBedtime,
+                                                        previous: previousAvgBedtime,
+                                                        recentTime: minutesToTime(recentAvgBedtime),
+                                                        previousTime: minutesToTime(previousAvgBedtime),
+                                                        // Earlier bedtime is generally better (but depends on sleep quality)
+                                                        change: calculateChange(recentAvgBedtime, previousAvgBedtime, true),
+                                                        label: 'Hora média de deitar'
+                                                    };
                                                 }
                                             }
 
-                                            // 7. AUTOCUIDADO - Frequência de atividades
+                                            // 7. AUTOCUIDADO - Análise detalhada por área
                                             const recentSelfCareActivities = recentCycles.flatMap(c => c.selfCareActivities || []);
                                             const previousSelfCareActivities = previousCycles.flatMap(c => c.selfCareActivities || []);
 
@@ -2302,6 +2362,62 @@
                                                     previous: previousAvgSelfCare,
                                                     change: calculateChange(recentAvgSelfCare, previousAvgSelfCare, false), // More is better
                                                     label: 'Atividades de autocuidado por ciclo'
+                                                };
+                                            }
+
+                                            // AUTOCUIDADO - Análise por área (water, rest, social, food)
+                                            if (recentWellbeing.length > 0) {
+                                                const areas = {
+                                                    water: { name: 'Hidratação', emoji: '💧' },
+                                                    food: { name: 'Alimentação', emoji: '🍎' },
+                                                    rest: { name: 'Descanso', emoji: '😴' },
+                                                    social: { name: 'Socialização', emoji: '👥' }
+                                                };
+
+                                                const recentAreaStats = {};
+                                                const previousAreaStats = {};
+
+                                                Object.keys(areas).forEach(area => {
+                                                    const recentCount = recentWellbeing.filter(w => w[area] === true).length;
+                                                    const recentPercent = recentWellbeing.length > 0 ? (recentCount / recentWellbeing.length) * 100 : 0;
+
+                                                    const previousCount = previousWellbeing.filter(w => w[area] === true).length;
+                                                    const previousPercent = previousWellbeing.length > 0 ? (previousCount / previousWellbeing.length) * 100 : 0;
+
+                                                    recentAreaStats[area] = recentPercent;
+                                                    previousAreaStats[area] = previousPercent;
+                                                });
+
+                                                // Calculate overall completion rate
+                                                const recentOverall = Object.values(recentAreaStats).reduce((sum, v) => sum + v, 0) / 4;
+                                                const previousOverall = Object.values(previousAreaStats).reduce((sum, v) => sum + v, 0) / 4;
+
+                                                // Identify low areas (< 70%)
+                                                const lowAreas = Object.entries(recentAreaStats)
+                                                    .filter(([_, percent]) => percent < 70)
+                                                    .map(([area, percent]) => ({ area, percent, ...areas[area] }))
+                                                    .sort((a, b) => a.percent - b.percent);
+
+                                                // Generate suggestions
+                                                let suggestion = '';
+                                                if (lowAreas.length >= 3) {
+                                                    suggestion = `Abaixo de 70% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${areas.water.name.toLowerCase()} e ${areas.food.name.toLowerCase()} regular.`;
+                                                } else if (lowAreas.length === 2) {
+                                                    suggestion = `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
+                                                } else if (lowAreas.length === 1) {
+                                                    suggestion = `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
+                                                } else {
+                                                    suggestion = `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas.`;
+                                                }
+
+                                                progressData.selfCareDetailed = {
+                                                    recentOverall,
+                                                    previousOverall,
+                                                    areas: recentAreaStats,
+                                                    previousAreas: previousAreaStats,
+                                                    lowAreas,
+                                                    suggestion,
+                                                    change: calculateChange(recentOverall, previousOverall, false)
                                                 };
                                             }
 
@@ -2343,6 +2459,37 @@
                                                     previous: previousAvgTriggers,
                                                     change: calculateChange(recentAvgTriggers, previousAvgTriggers, true), // Lower is better
                                                     label: 'Gatilhos por ciclo'
+                                                };
+                                            }
+
+                                            // 9. METAS - Análise de progresso
+                                            if (goals.length > 0) {
+                                                // Total goals completed (progress >= 100%)
+                                                const completedGoals = goals.filter(g => getGoalProgress(g) >= 100);
+                                                const totalCompleted = completedGoals.length;
+
+                                                // Average goal progress
+                                                const totalProgress = goals.reduce((sum, g) => sum + getGoalProgress(g), 0);
+                                                const avgProgress = goals.length > 0 ? totalProgress / goals.length : 0;
+
+                                                // Goals created in recent period
+                                                const recentGoals = goals.filter(g => {
+                                                    const createdDate = new Date(g.timestamp || g.deadline || getTodayKey());
+                                                    return createdDate >= recentStart && createdDate <= recentEnd;
+                                                });
+
+                                                // Calculate "days with goal work" (rough estimate based on completion %)
+                                                const activeDays = periodDays; // Use period length as baseline
+                                                const avgProgressPerDay = avgProgress / activeDays;
+
+                                                progressData.goalsAnalysis = {
+                                                    totalCompleted,
+                                                    totalGoals: goals.length,
+                                                    avgProgress: avgProgress.toFixed(1),
+                                                    avgProgressPerDay: avgProgressPerDay.toFixed(1),
+                                                    recentGoalsCreated: recentGoals.length,
+                                                    activeGoals: goals.filter(g => !g.completed && getGoalProgress(g) < 100).length,
+                                                    completionRate: goals.length > 0 ? ((totalCompleted / goals.length) * 100).toFixed(0) : 0
                                                 };
                                             }
 
@@ -2557,6 +2704,44 @@
                                                                         </div>
                                                                     </div>
                                                                 )}
+                                                                {progressData.avgBedtime && (
+                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                {progressData.avgBedtime.label}
+                                                                            </span>
+                                                                            {progressData.avgBedtime.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                    {progressData.avgBedtime.change.direction === 'up' ? 'Mais tarde' : 'Mais cedo'}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                                {progressData.avgBedtime.recentTime}
+                                                                            </span>
+                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                era: {progressData.avgBedtime.previousTime}
+                                                                            </span>
+                                                                        </div>
+                                                                        {(() => {
+                                                                            const hour = parseInt(progressData.avgBedtime.recentTime.split(':')[0]);
+                                                                            let feedback = '';
+                                                                            if (hour >= 0 && hour < 6) {
+                                                                                feedback = 'Atenção: deitar muito tarde (madrugada) pode afetar a qualidade do sono.';
+                                                                            } else if (hour >= 22 && hour < 24) {
+                                                                                feedback = 'Boa janela para deitar! (22h-00h)';
+                                                                            } else if (hour >= 6 && hour < 12) {
+                                                                                feedback = 'Dormir de manhã pode indicar inversão do ciclo.';
+                                                                            }
+                                                                            return feedback ? (
+                                                                                <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    {feedback}
+                                                                                </div>
+                                                                            ) : null;
+                                                                        })()}
+                                                                    </div>
+                                                                )}
                                                                 {progressData.selfCare && (
                                                                     <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
@@ -2654,6 +2839,127 @@
                                                                         </div>
                                                                     </div>
                                                                 )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Autocuidado Detalhado */}
+                                                    {progressData.selfCareDetailed && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                💚 Análise de Autocuidado
+                                                            </h3>
+
+                                                            {/* Overall score */}
+                                                            <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-lg p-4 border mb-4'}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                        Taxa geral de autocuidado
+                                                                    </span>
+                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                        {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-3 overflow-hidden'}>
+                                                                    <div
+                                                                        className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'bg-green-500' : 'bg-orange-500')}
+                                                                        style={{width: `${progressData.selfCareDetailed.recentOverall}%`}}
+                                                                    ></div>
+                                                                </div>
+                                                                <div className={'text-xs mt-2 italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    {progressData.selfCareDetailed.suggestion}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Per-area breakdown */}
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                {Object.entries(progressData.selfCareDetailed.areas).map(([areaKey, percent]) => {
+                                                                    const areaNames = {
+                                                                        water: { name: 'Hidratação', emoji: '💧' },
+                                                                        food: { name: 'Alimentação', emoji: '🍎' },
+                                                                        rest: { name: 'Descanso', emoji: '😴' },
+                                                                        social: { name: 'Socialização', emoji: '👥' }
+                                                                    };
+                                                                    const area = areaNames[areaKey];
+                                                                    return (
+                                                                        <div key={areaKey} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                <span className="text-lg">{area.emoji}</span>
+                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                    {area.name}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-baseline gap-1">
+                                                                                <span className={'text-2xl font-bold ' + (percent >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                                    {percent.toFixed(0)}%
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-1.5 overflow-hidden mt-2'}>
+                                                                                <div
+                                                                                    className={'h-full ' + (percent >= 70 ? 'bg-green-500' : 'bg-orange-500')}
+                                                                                    style={{width: `${percent}%`}}
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Análise de Metas */}
+                                                    {progressData.goalsAnalysis && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                🎯 Análise de Metas
+                                                            </h3>
+
+                                                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
+                                                                        Metas Atingidas
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
+                                                                            {progressData.goalsAnalysis.totalCompleted}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            de {progressData.goalsAnalysis.totalGoals}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        Taxa: {progressData.goalsAnalysis.completionRate}%
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                        Progresso Médio
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                            {progressData.goalsAnalysis.avgProgress}%
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        {progressData.goalsAnalysis.avgProgressPerDay}% por dia
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border text-center'}>
+                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Metas ativas</div>
+                                                                    <div className={'text-2xl font-bold mt-1 ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                        {progressData.goalsAnalysis.activeGoals}
+                                                                    </div>
+                                                                </div>
+                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border text-center'}>
+                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Criadas no período</div>
+                                                                    <div className={'text-2xl font-bold mt-1 ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                        {progressData.goalsAnalysis.recentGoalsCreated}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -3380,6 +3686,138 @@
                                                                             );
                                                                         }
                                                                     }
+                                                                    return null;
+                                                                })()}
+
+                                                                {/* Sono → Humor */}
+                                                                {(() => {
+                                                                    const sleepToMoodData = [];
+                                                                    const sortedDates = Object.keys(dailyData).sort();
+
+                                                                    // Same day: Sleep → Mood
+                                                                    const sameDaySleepMood = sortedDates
+                                                                        .map(date => dailyData[date])
+                                                                        .filter(day => day.sleep !== null && day.mood !== null)
+                                                                        .map(day => ({ sleep: day.sleep, mood: day.mood }));
+
+                                                                    // Next day: Tonight's sleep → Tomorrow's mood
+                                                                    const nextDaySleepMood = [];
+                                                                    sortedDates.forEach((date, i) => {
+                                                                        if (i < sortedDates.length - 1) {
+                                                                            const today = dailyData[date];
+                                                                            const tomorrow = dailyData[sortedDates[i + 1]];
+                                                                            if (today.sleep !== null && tomorrow.mood !== null) {
+                                                                                nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
+                                                                            }
+                                                                        }
+                                                                    });
+
+                                                                    if (sameDaySleepMood.length >= 3 || nextDaySleepMood.length >= 3) {
+                                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                                            if (data.length < 3) return null;
+                                                                            const n = data.length;
+                                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                                            const numerator = n * sumXY - sumX * sumY;
+                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                                            return denominator === 0 ? null : numerator / denominator;
+                                                                        };
+
+                                                                        const getCorrelationLabel = (r) => {
+                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais sono → Muito melhor humor' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais sono → Melhor humor' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Sono ajuda o humor' };
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais sono → Muito pior humor (incomum)' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais sono → Pior humor (incomum)' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Possível correlação negativa' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                        };
+
+                                                                        const sleepMoodCorrelations = [];
+
+                                                                        if (sameDaySleepMood.length >= 3) {
+                                                                            const corr = getCorrelation(sameDaySleepMood, 'sleep', 'mood');
+                                                                            const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
+                                                                            const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
+                                                                            sleepMoodCorrelations.push({
+                                                                                name: 'Sono → Humor (mesmo dia)',
+                                                                                icon: '😴➡️😊',
+                                                                                correlation: corr,
+                                                                                avgSleep: avgSleep.toFixed(1),
+                                                                                avgMood: avgMood.toFixed(1),
+                                                                                dataPoints: sameDaySleepMood.length
+                                                                            });
+                                                                        }
+
+                                                                        if (nextDaySleepMood.length >= 3) {
+                                                                            const corr = getCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                            const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
+                                                                            const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
+                                                                            sleepMoodCorrelations.push({
+                                                                                name: 'Sono → Humor amanhã',
+                                                                                icon: '😴💤😊',
+                                                                                correlation: corr,
+                                                                                avgSleep: avgSleep.toFixed(1),
+                                                                                avgMood: avgMood.toFixed(1),
+                                                                                dataPoints: nextDaySleepMood.length
+                                                                            });
+                                                                        }
+
+                                                                        if (sleepMoodCorrelations.length > 0) {
+                                                                            return (
+                                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>😴💭 Sono → Humor</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Como a qualidade/quantidade de sono influencia o humor
+                                                                                    </p>
+                                                                                    <div className="space-y-3">
+                                                                                        {sleepMoodCorrelations.map((corr, i) => {
+                                                                                            const label = getCorrelationLabel(corr.correlation);
+                                                                                            const colorClasses = {
+                                                                                                red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                                                orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                                yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                                                green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                                                gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                                            };
+                                                                                            return (
+                                                                                                <div key={i} className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
+                                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                            <span className="text-xl">{corr.icon}</span>
+                                                                                                            <span className="font-semibold">{corr.name}</span>
+                                                                                                        </div>
+                                                                                                        <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
+                                                                                                            {label.text}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div className="flex items-center justify-between text-sm">
+                                                                                                        <div>
+                                                                                                            <span className="opacity-75">Sono: </span>
+                                                                                                            <span className="font-bold">{corr.avgSleep}h</span>
+                                                                                                            <span className="opacity-75"> • Humor: </span>
+                                                                                                            <span className="font-bold">{corr.avgMood}/10</span>
+                                                                                                        </div>
+                                                                                                        <div className="opacity-75">
+                                                                                                            r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    {label.desc && (
+                                                                                                        <div className="text-xs opacity-75 mt-2">💡 {label.desc}</div>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        }
+                                                                    }
+
                                                                     return null;
                                                                 })()}
 
