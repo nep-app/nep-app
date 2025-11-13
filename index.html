@@ -2861,7 +2861,7 @@
 
                                                                         // Calcular emoções de alto risco (emoções negativas + gatilhos frequentes)
                                                                         const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
-                                                                        const allEmotions = filteredWellbeingLogs.flatMap(w => w.emotions || []);
+                                                                        const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
                                                                         const emotionCount = {};
                                                                         allEmotions.forEach(e => { emotionCount[e] = (emotionCount[e] || 0) + 1; });
                                                                         const topNegativeEmotions = Object.entries(emotionCount)
