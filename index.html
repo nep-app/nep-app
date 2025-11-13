@@ -3035,70 +3035,65 @@
                                                             );
                                                         }
 
-                                                        // Dividir em dias de alto e baixo consumo
-                                                        const avgConsumptions = daysWithData.reduce((sum, d) => sum + d.consumptions, 0) / daysWithData.length;
-                                                        const highConsumptionDays = daysWithData.filter(d => d.consumptions > avgConsumptions);
-                                                        const lowConsumptionDays = daysWithData.filter(d => d.consumptions <= avgConsumptions);
-
-                                                        console.log('🔍 avgConsumptions:', avgConsumptions);
-                                                        console.log('🔍 highConsumptionDays:', highConsumptionDays.length, highConsumptionDays);
-                                                        console.log('🔍 lowConsumptionDays:', lowConsumptionDays.length, lowConsumptionDays);
+                                                        // Helper: Correlação de Pearson
+                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                            if (data.length < 3) return null;
+                                                            const n = data.length;
+                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                            const numerator = n * sumXY - sumX * sumY;
+                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                            return denominator === 0 ? null : numerator / denominator;
+                                                        };
 
                                                         const correlations = [];
+                                                        const averages = [];
 
-                                                        // Sono
-                                                        const highSleep = highConsumptionDays.filter(d => d.sleep !== null);
-                                                        const lowSleep = lowConsumptionDays.filter(d => d.sleep !== null);
-                                                        console.log('🔍 SONO - highSleep:', highSleep.length, 'lowSleep:', lowSleep.length);
-                                                        if (highSleep.length > 0 && lowSleep.length > 0) {
-                                                            const avgHighSleep = highSleep.reduce((sum, d) => sum + d.sleep, 0) / highSleep.length;
-                                                            const avgLowSleep = lowSleep.reduce((sum, d) => sum + d.sleep, 0) / lowSleep.length;
-                                                            const diff = avgLowSleep - avgHighSleep;
+                                                        // SONO
+                                                        const sleepData = daysWithData.filter(d => d.sleep !== null);
+                                                        if (sleepData.length >= 3) {
+                                                            const correlation = getCorrelation(sleepData, 'consumptions', 'sleep');
+                                                            const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
                                                                 name: 'Sono',
                                                                 icon: '😴',
-                                                                high: avgHighSleep.toFixed(1),
-                                                                low: avgLowSleep.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: 'h'
+                                                                correlation: correlation,
+                                                                average: avgSleep.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: sleepData.length
                                                             });
                                                         }
 
-                                                        // Humor
-                                                        const highMood = highConsumptionDays.filter(d => d.mood !== null);
-                                                        const lowMood = lowConsumptionDays.filter(d => d.mood !== null);
-                                                        console.log('🔍 HUMOR - highMood:', highMood.length, 'lowMood:', lowMood.length);
-                                                        if (highMood.length > 0 && lowMood.length > 0) {
-                                                            const avgHighMood = highMood.reduce((sum, d) => sum + d.mood, 0) / highMood.length;
-                                                            const avgLowMood = lowMood.reduce((sum, d) => sum + d.mood, 0) / lowMood.length;
-                                                            const diff = avgLowMood - avgHighMood;
+                                                        // HUMOR
+                                                        const moodData = daysWithData.filter(d => d.mood !== null);
+                                                        if (moodData.length >= 3) {
+                                                            const correlation = getCorrelation(moodData, 'consumptions', 'mood');
+                                                            const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
                                                                 name: 'Humor',
                                                                 icon: '😊',
-                                                                high: avgHighMood.toFixed(1),
-                                                                low: avgLowMood.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: '/10'
+                                                                correlation: correlation,
+                                                                average: avgMood.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: moodData.length
                                                             });
                                                         }
 
-                                                        // Energia
-                                                        const highEnergy = highConsumptionDays.filter(d => d.energy !== null);
-                                                        const lowEnergy = lowConsumptionDays.filter(d => d.energy !== null);
-                                                        if (highEnergy.length > 0 && lowEnergy.length > 0) {
-                                                            const avgHighEnergy = highEnergy.reduce((sum, d) => sum + d.energy, 0) / highEnergy.length;
-                                                            const avgLowEnergy = lowEnergy.reduce((sum, d) => sum + d.energy, 0) / lowEnergy.length;
-                                                            const diff = avgLowEnergy - avgHighEnergy;
+                                                        // ENERGIA
+                                                        const energyData = daysWithData.filter(d => d.energy !== null);
+                                                        if (energyData.length >= 3) {
+                                                            const correlation = getCorrelation(energyData, 'consumptions', 'energy');
+                                                            const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
                                                                 name: 'Energia',
                                                                 icon: '⚡',
-                                                                high: avgHighEnergy.toFixed(1),
-                                                                low: avgLowEnergy.toFixed(1),
-                                                                diff: diff.toFixed(1),
-                                                                positive: diff > 0.5,
-                                                                unit: '/10'
+                                                                correlation: correlation,
+                                                                average: avgEnergy.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: energyData.length
                                                             });
                                                         }
 
@@ -3117,37 +3112,46 @@
                                                         return (
                                                             <div className="space-y-4">
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔗 Correlações com Consumo</h3>
+                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📊 Análise de Bem-Estar</h3>
                                                                     <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Comparação entre dias de alto consumo vs baixo consumo
+                                                                        Correlação entre nº de consumos e bem-estar nos dias com dados
                                                                     </p>
                                                                     <div className="space-y-3">
-                                                                        {correlations.map((corr, i) => (
-                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                                <div className="flex items-center justify-between mb-3">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-xl">{corr.icon}</span>
-                                                                                        <span className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</span>
+                                                                        {correlations.map((corr, i) => {
+                                                                            const getCorrelationLabel = (r) => {
+                                                                                if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                                const abs = Math.abs(r);
+                                                                                if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
+                                                                                if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor' };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                            };
+                                                                            const corrLabel = getCorrelationLabel(corr.correlation);
+                                                                            return (
+                                                                                <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                                    <div className="flex items-center justify-between mb-3">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-2xl">{corr.icon}</span>
+                                                                                            <div>
+                                                                                                <div className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Média: {corr.average}{corr.unit}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
+                                                                                            {corrLabel.text}
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className={'text-sm px-2 py-1 rounded-full font-medium ' + (corr.positive ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                        {corr.positive ? '✓ Positiva' : '⚠ Negativa'}
+                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        {corrLabel.desc && <span>💡 {corrLabel.desc}</span>}
+                                                                                        {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
+                                                                                        <span className="ml-2">• {corr.dataPoints} dias</span>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className="grid grid-cols-2 gap-3 text-center">
-                                                                                    <div>
-                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias alto consumo</div>
-                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{corr.high}{corr.unit}</div>
-                                                                                    </div>
-                                                                                    <div>
-                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias baixo consumo</div>
-                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{corr.low}{corr.unit}</div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className={'text-xs mt-2 text-center ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Diferença: {Math.abs(parseFloat(corr.diff)).toFixed(1)}{corr.unit}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
+                                                                            );
+                                                                        })}
                                                                     </div>
                                                                 </div>
 
