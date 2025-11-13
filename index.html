@@ -2012,30 +2012,6 @@
                                                         )}
                                                     </div>
 
-                                                    {/* Gatilhos Comuns */}
-                                                    {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Gatilhos Mais Comuns</h3>
-                                                            {(() => {
-                                                                const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
-                                                                const triggerCount = {};
-                                                                allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
-                                                                const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
-
-                                                                return (
-                                                                    <div className="flex flex-wrap gap-2">
-                                                                        {sortedTriggers.slice(0,5).map(([trigger, count]) => (
-                                                                            <div key={trigger} className={'inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm ' + (darkMode ? 'bg-indigo-900/50 text-indigo-200 border border-indigo-700' : 'bg-indigo-100 text-indigo-800 border border-indigo-200')}>
-                                                                                <span>{trigger}</span>
-                                                                                <span className={'font-bold ' + (darkMode ? 'text-indigo-300' : 'text-indigo-600')}>{count}x</span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                    )}
-
                                                     {/* Metas */}
                                                     {goals.filter(g => !g.completed).length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-xl p-6 border'}>
@@ -2313,7 +2289,7 @@
                                             const previousTriggers = previousCycles.flatMap(c => c.triggers || []);
 
                                             // Count negative emotions
-                                            const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🌫️ Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
+                                            const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
                                             const recentNegativeCount = recentEmotions.filter(e => negativeEmotions.includes(e)).length;
                                             const previousNegativeCount = previousEmotions.filter(e => negativeEmotions.includes(e)).length;
 
@@ -2326,7 +2302,11 @@
                                                     recent: recentNegativePercent,
                                                     previous: previousNegativePercent,
                                                     change: calculateChange(recentNegativePercent, previousNegativePercent, true), // Lower is better
-                                                    label: 'Emoções negativas (% do total)'
+                                                    label: 'Emoções negativas (% do total)',
+                                                    recentCount: recentNegativeCount,
+                                                    recentTotal: recentEmotions.length,
+                                                    previousCount: previousNegativeCount,
+                                                    previousTotal: previousEmotions.length
                                                 };
                                             }
 
@@ -2604,13 +2584,18 @@
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-center justify-between">
-                                                                            <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
-                                                                                    {progressData.negativeEmotions.recent.toFixed(0)}%
-                                                                                </span>
-                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
-                                                                                    do total
-                                                                                </span>
+                                                                            <div>
+                                                                                <div className="flex items-baseline gap-1">
+                                                                                    <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                        {progressData.negativeEmotions.recent.toFixed(0)}%
+                                                                                    </span>
+                                                                                    <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                                        do total
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-purple-400/60' : 'text-purple-600/60')}>
+                                                                                    {progressData.negativeEmotions.recentCount} de {progressData.negativeEmotions.recentTotal} emoções
+                                                                                </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
                                                                                 era {progressData.negativeEmotions.previous.toFixed(0)}%
@@ -2846,22 +2831,88 @@
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
                                                                     <div className="flex items-center gap-2 mb-3">
                                                                         <span className="text-lg">⚡</span>
-                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Gatilhos Identificados</h3>
+                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análise de Gatilhos</h3>
                                                                     </div>
                                                                     {(() => {
-                                                                        const allTriggers = filteredCycles.flatMap(c => c.triggers || []);
-                                                                        const triggerCount = {};
-                                                                        allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
-                                                                        const sortedTriggers = Object.entries(triggerCount).sort((a, b) => b[1] - a[1]);
+                                                                        // Calcular gatilhos e média de consumos por gatilho
+                                                                        const triggerData = {};
+
+                                                                        filteredCycles.forEach(cycle => {
+                                                                            if (!cycle.triggers || cycle.triggers.length === 0) return;
+
+                                                                            // Encontrar data do ciclo (bedtime)
+                                                                            const cycleDate = cycle.bedtime ? new Date(cycle.bedtime).toISOString().split('T')[0] : null;
+                                                                            if (!cycleDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                            cycle.triggers.forEach(trigger => {
+                                                                                if (!triggerData[trigger]) {
+                                                                                    triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                triggerData[trigger].count++;
+                                                                                triggerData[trigger].totalConsumptions += dayConsumptions;
+                                                                                triggerData[trigger].days.push(cycleDate);
+                                                                            });
+                                                                        });
+
+                                                                        const sortedTriggers = Object.entries(triggerData).sort((a, b) => b[1].count - a[1].count);
+
+                                                                        // Calcular emoções de alto risco (emoções negativas + gatilhos frequentes)
+                                                                        const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
+                                                                        const allEmotions = filteredWellbeingLogs.flatMap(w => w.emotions || []);
+                                                                        const emotionCount = {};
+                                                                        allEmotions.forEach(e => { emotionCount[e] = (emotionCount[e] || 0) + 1; });
+                                                                        const topNegativeEmotions = Object.entries(emotionCount)
+                                                                            .filter(([e]) => negativeEmotions.includes(e))
+                                                                            .sort((a, b) => b[1] - a[1])
+                                                                            .slice(0, 2);
 
                                                                         return (
-                                                                            <div className="flex flex-wrap gap-2">
-                                                                                {sortedTriggers.map(([trigger, count]) => (
-                                                                                    <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50 text-red-300' : 'bg-red-50 border-red-200 text-red-700') + ' rounded-full px-3 py-1.5 border text-sm font-medium flex items-center gap-1.5'}>
-                                                                                        <span>{trigger}</span>
-                                                                                        <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-1.5 py-0.5 text-xs font-bold'}>{count}</span>
+                                                                            <div className="space-y-3">
+                                                                                {/* Lista de gatilhos com média de consumos */}
+                                                                                {sortedTriggers.length > 0 && (
+                                                                                    <div className="space-y-2">
+                                                                                        {sortedTriggers.map(([trigger, data]) => {
+                                                                                            const avgConsumptions = data.count > 0 ? (data.totalConsumptions / data.count).toFixed(1) : 0;
+                                                                                            return (
+                                                                                                <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
+                                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                                        <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{trigger}</span>
+                                                                                                        <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{data.count}x</span>
+                                                                                                    </div>
+                                                                                                    <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                        💡 Nos dias com este gatilho, média de <span className="font-bold">{avgConsumptions} consumos</span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
                                                                                     </div>
-                                                                                ))}
+                                                                                )}
+
+                                                                                {/* Alerta de emoções de alto risco */}
+                                                                                {topNegativeEmotions.length > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-3 border'}>
+                                                                                        <div className="flex items-start gap-2">
+                                                                                            <span className="text-lg">⚠️</span>
+                                                                                            <div className="flex-1">
+                                                                                                <div className={'font-semibold text-sm mb-1 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>
+                                                                                                    Alerta de Gatilho Emocional
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-yellow-400/80' : 'text-yellow-700/80')}>
+                                                                                                    <span className="font-medium">{topNegativeEmotions[0][0]}</span> é uma emoção de alto risco para ti ({topNegativeEmotions[0][1]}x registada). Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {sortedTriggers.length === 0 && (
+                                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                        Sem gatilhos identificados
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })()}
@@ -4067,7 +4118,7 @@
                                         <div>
                                             <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🌫️ Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
+                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
                                                     <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
                                                         <input type="checkbox" checked={wellbeingForm.emotions.includes(emotion)} onChange={(e) => {
                                                             if (e.target.checked) {
