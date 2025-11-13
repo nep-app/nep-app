@@ -2108,7 +2108,21 @@
 
                                             // Helper to calculate change percentage and direction
                                             const calculateChange = (recent, previous, lowerIsBetter = true) => {
-                                                if (previous === 0) return { percent: 0, direction: 'stable', isImprovement: false };
+                                                // Se ambos são 0, não há mudança
+                                                if (previous === 0 && recent === 0) return { percent: 0, direction: 'stable', isImprovement: false };
+
+                                                // Se previous é 0 mas há dados recentes, tratar como dados novos
+                                                if (previous === 0 && recent > 0) {
+                                                    // Não podemos calcular % de mudança, mas consideramos como "up" (começou a registar)
+                                                    return { percent: 100, direction: 'up', isImprovement: false, rawChange: recent, isNew: true };
+                                                }
+
+                                                // Se previous > 0 mas recent é 0, tudo parou
+                                                if (previous > 0 && recent === 0) {
+                                                    return { percent: 100, direction: 'down', isImprovement: lowerIsBetter, rawChange: -previous };
+                                                }
+
+                                                // Caso normal: ambos têm valores
                                                 const change = ((recent - previous) / previous) * 100;
                                                 const direction = change > 5 ? 'up' : change < -5 ? 'down' : 'stable';
                                                 const isImprovement = lowerIsBetter ? change < 0 : change > 0;
