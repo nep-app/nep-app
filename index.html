@@ -2864,23 +2864,17 @@
                                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
                                                                     const maxCount = Math.max(...Object.values(byHour));
                                                                     return (
-                                                                        <div className="grid grid-cols-6 gap-2">
+                                                                        <div className="flex items-end justify-between gap-0.5" style={{height: '120px'}}>
                                                                             {Array.from({length: 24}, (_, i) => i).map(hour => {
                                                                                 const count = byHour[hour] || 0;
                                                                                 const percent = totalHour > 0 ? Math.round((count / totalHour) * 100) : 0;
-                                                                                const intensity = count > 0 ? Math.max(0.3, count / maxCount) : 0;
-                                                                                const isHighActivity = count > 0 && count === maxCount;
+                                                                                const height = count > 0 ? Math.max(20, (count / maxCount) * 100) : 5;
                                                                                 return (
-                                                                                    <div key={hour} className={'relative rounded-xl border-2 transition-all hover:scale-105 ' + (count > 0 ? (isHighActivity ? (darkMode ? 'bg-gradient-to-br from-red-500 to-pink-500 border-red-400 shadow-lg' : 'bg-gradient-to-br from-red-400 to-pink-400 border-red-500 shadow-lg') : (darkMode ? 'bg-gradient-to-br from-blue-500 to-indigo-500 border-blue-400' : 'bg-gradient-to-br from-blue-400 to-indigo-400 border-blue-500')) : (darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-50 border-gray-200'))} style={{opacity: count > 0 ? intensity : 0.5, minHeight: '70px'}}>
-                                                                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-1">
-                                                                                            <div className={'text-xs font-bold ' + (count > 0 ? 'text-white' : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>{hour}h</div>
-                                                                                            {count > 0 && (
-                                                                                                <>
-                                                                                                    <div className="text-lg font-black text-white mt-0.5">{count}</div>
-                                                                                                    <div className="text-[10px] font-semibold text-white/90">{percent}%</div>
-                                                                                                </>
-                                                                                            )}
+                                                                                    <div key={hour} className="flex flex-col items-center flex-1" style={{minWidth: '8px'}}>
+                                                                                        <div className={'rounded-t text-[9px] font-bold flex flex-col items-center justify-end pb-1 transition-all ' + (count > 0 ? (darkMode ? 'bg-indigo-500 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700/50' : 'bg-gray-200'))} style={{height: height + '%', width: '100%'}}>
+                                                                                            {count > 0 && percent >= 5 && <span>{percent}%</span>}
                                                                                         </div>
+                                                                                        <div className={'text-[9px] mt-1 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{hour}</div>
                                                                                     </div>
                                                                                 );
                                                                             })}
@@ -2944,22 +2938,15 @@
                                                                         <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
                                                                     ) : (() => {
                                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
-                                                                        const maxWeekdayCount = Math.max(...Object.values(byWeekday));
-                                                                        const weekdayEmojis = ['☀️', '✨', '💫', '⭐', '🌟', '🎯', '🌙'];
-                                                                        return Object.entries(byWeekday).map(([day, count], idx) => {
+                                                                        return Object.entries(byWeekday).map(([day, count]) => {
                                                                             const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
-                                                                            const isHighest = count === maxWeekdayCount && count > 0;
-                                                                            const barWidth = Math.min(100, (count / maxWeekdayCount) * 100);
                                                                             return (
-                                                                                <div key={day} className={'rounded-lg border-2 p-3 transition-all hover:scale-[1.02] ' + (isHighest ? (darkMode ? 'bg-gradient-to-r from-pink-900/30 to-purple-900/30 border-pink-500' : 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-400') : (darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-50 border-gray-200'))}>
-                                                                                    <div className="flex items-center gap-3 mb-2">
-                                                                                        <span className="text-xl">{weekdayEmojis[parseInt(day)]}</span>
-                                                                                        <div className={'text-sm font-semibold flex-1 ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>{weekdayNames[parseInt(day)]}</div>
-                                                                                        <div className={'text-lg font-bold ' + (isHighest ? (darkMode ? 'text-pink-400' : 'text-pink-600') : (darkMode ? 'text-purple-400' : 'text-purple-600'))}>{count}x</div>
-                                                                                    </div>
-                                                                                    <div className={'rounded-full h-8 overflow-hidden border-2 ' + (darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200')}>
-                                                                                        <div className={'h-full flex items-center justify-center text-sm font-bold transition-all ' + (isHighest ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white' : 'bg-gradient-to-r from-purple-400 to-indigo-400 text-white')} style={{width: barWidth + '%', minWidth: count > 0 ? '40px' : '0'}}>
-                                                                                            {count > 0 && <span>{percent}%</span>}
+                                                                                <div key={day} className="flex items-center gap-2">
+                                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
+                                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
+                                                                                            <span>{count}x</span>
+                                                                                            <span>{percent}%</span>
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
