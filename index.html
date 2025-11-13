@@ -4096,69 +4096,317 @@
                                                                     const cyclesWithData = Object.values(cycleData).filter(c => c.consumptions.length > 0 && c.wellbeing.length >= 2);
 
                                                                     if (cyclesWithData.length >= 2) {
+                                                                        // 1. Evolução de Humor e Energia ao longo do ciclo
+                                                                        let moodProgression = { start: [], middle: [], end: [] };
+                                                                        let energyProgression = { start: [], middle: [], end: [] };
                                                                         let moodImproves = 0;
                                                                         let moodWorsens = 0;
+                                                                        let energyImproves = 0;
+                                                                        let energyWorsens = 0;
+
+                                                                        // 2. Padrão temporal de consumo
+                                                                        let consumptionTiming = { start: 0, middle: 0, end: 0 };
+
+                                                                        // 3. Intervalos entre consumos
+                                                                        let intervals = [];
+
+                                                                        // 4. Impacto do consumo
                                                                         let moodAfterCons = { better: 0, worse: 0, same: 0 };
+                                                                        let energyAfterCons = { better: 0, worse: 0, same: 0 };
 
                                                                         cyclesWithData.forEach(cycle => {
                                                                             const sortedWellbeing = cycle.wellbeing.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                            const sortedConsumptions = cycle.consumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                                                                             if (sortedWellbeing.length >= 2) {
-                                                                                const firstMood = sortedWellbeing[0].mood;
-                                                                                const lastMood = sortedWellbeing[sortedWellbeing.length - 1].mood;
+                                                                                // Dividir ciclo em 3 partes (início, meio, fim)
+                                                                                const third = Math.floor(sortedWellbeing.length / 3);
 
-                                                                                if (lastMood > firstMood) moodImproves++;
-                                                                                else if (lastMood < firstMood) moodWorsens++;
+                                                                                const startSegment = sortedWellbeing.slice(0, Math.max(1, third));
+                                                                                const middleSegment = sortedWellbeing.slice(third, sortedWellbeing.length - third);
+                                                                                const endSegment = sortedWellbeing.slice(-Math.max(1, third));
+
+                                                                                // Calcular médias de cada segmento
+                                                                                const startMood = startSegment.reduce((s, w) => s + w.mood, 0) / startSegment.length;
+                                                                                const endMood = endSegment.reduce((s, w) => s + w.mood, 0) / endSegment.length;
+
+                                                                                moodProgression.start.push(startMood);
+                                                                                if (middleSegment.length > 0) {
+                                                                                    moodProgression.middle.push(middleSegment.reduce((s, w) => s + w.mood, 0) / middleSegment.length);
+                                                                                }
+                                                                                moodProgression.end.push(endMood);
+
+                                                                                // Tendência de humor
+                                                                                if (endMood > startMood + 0.5) moodImproves++;
+                                                                                else if (endMood < startMood - 0.5) moodWorsens++;
+
+                                                                                // Energia
+                                                                                const startEnergy = startSegment.filter(w => w.energy).reduce((s, w) => s + w.energy, 0) / startSegment.filter(w => w.energy).length;
+                                                                                const endEnergy = endSegment.filter(w => w.energy).reduce((s, w) => s + w.energy, 0) / endSegment.filter(w => w.energy).length;
+
+                                                                                if (!isNaN(startEnergy) && !isNaN(endEnergy)) {
+                                                                                    energyProgression.start.push(startEnergy);
+                                                                                    energyProgression.end.push(endEnergy);
+
+                                                                                    if (endEnergy > startEnergy + 0.5) energyImproves++;
+                                                                                    else if (endEnergy < startEnergy - 0.5) energyWorsens++;
+                                                                                }
                                                                             }
 
+                                                                            // Padrão temporal de consumo
+                                                                            if (sortedConsumptions.length > 0 && sortedWellbeing.length >= 2) {
+                                                                                const cycleStart = new Date(sortedWellbeing[0].timestamp);
+                                                                                const cycleEnd = new Date(sortedWellbeing[sortedWellbeing.length - 1].timestamp);
+                                                                                const cycleDuration = cycleEnd - cycleStart;
+
+                                                                                sortedConsumptions.forEach(cons => {
+                                                                                    const consTime = new Date(cons.timestamp);
+                                                                                    const elapsed = consTime - cycleStart;
+                                                                                    const position = elapsed / cycleDuration;
+
+                                                                                    if (position < 0.33) consumptionTiming.start++;
+                                                                                    else if (position < 0.67) consumptionTiming.middle++;
+                                                                                    else consumptionTiming.end++;
+                                                                                });
+                                                                            }
+
+                                                                            // Intervalos entre consumos
+                                                                            for (let i = 1; i < sortedConsumptions.length; i++) {
+                                                                                const interval = (new Date(sortedConsumptions[i].timestamp) - new Date(sortedConsumptions[i-1].timestamp)) / (1000 * 60 * 60);
+                                                                                intervals.push(interval);
+                                                                            }
+
+                                                                            // Impacto do consumo no humor/energia
                                                                             cycle.consumptions.forEach(cons => {
                                                                                 const consTime = new Date(cons.timestamp);
-                                                                                const afterWellbeing = cycle.wellbeing.filter(w => new Date(w.timestamp) > consTime);
-                                                                                const beforeWellbeing = cycle.wellbeing.filter(w => new Date(w.timestamp) < consTime);
+                                                                                const afterWellbeing = cycle.wellbeing.filter(w => {
+                                                                                    const wTime = new Date(w.timestamp);
+                                                                                    const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                                    return hoursDiff > 0 && hoursDiff <= 3; // Nas 3h seguintes
+                                                                                });
+                                                                                const beforeWellbeing = cycle.wellbeing.filter(w => {
+                                                                                    const wTime = new Date(w.timestamp);
+                                                                                    const hoursDiff = (consTime - wTime) / (1000 * 60 * 60);
+                                                                                    return hoursDiff > 0 && hoursDiff <= 3; // Nas 3h anteriores
+                                                                                });
 
                                                                                 if (afterWellbeing.length > 0 && beforeWellbeing.length > 0) {
-                                                                                    const avgBefore = beforeWellbeing.reduce((s, w) => s + w.mood, 0) / beforeWellbeing.length;
-                                                                                    const avgAfter = afterWellbeing.reduce((s, w) => s + w.mood, 0) / afterWellbeing.length;
+                                                                                    const avgMoodBefore = beforeWellbeing.reduce((s, w) => s + w.mood, 0) / beforeWellbeing.length;
+                                                                                    const avgMoodAfter = afterWellbeing.reduce((s, w) => s + w.mood, 0) / afterWellbeing.length;
 
-                                                                                    if (avgAfter > avgBefore + 0.5) moodAfterCons.better++;
-                                                                                    else if (avgAfter < avgBefore - 0.5) moodAfterCons.worse++;
+                                                                                    if (avgMoodAfter > avgMoodBefore + 0.5) moodAfterCons.better++;
+                                                                                    else if (avgMoodAfter < avgMoodBefore - 0.5) moodAfterCons.worse++;
                                                                                     else moodAfterCons.same++;
+
+                                                                                    const energyBefore = beforeWellbeing.filter(w => w.energy);
+                                                                                    const energyAfter = afterWellbeing.filter(w => w.energy);
+
+                                                                                    if (energyBefore.length > 0 && energyAfter.length > 0) {
+                                                                                        const avgEnergyBefore = energyBefore.reduce((s, w) => s + w.energy, 0) / energyBefore.length;
+                                                                                        const avgEnergyAfter = energyAfter.reduce((s, w) => s + w.energy, 0) / energyAfter.length;
+
+                                                                                        if (avgEnergyAfter > avgEnergyBefore + 0.5) energyAfterCons.better++;
+                                                                                        else if (avgEnergyAfter < avgEnergyBefore - 0.5) energyAfterCons.worse++;
+                                                                                        else energyAfterCons.same++;
+                                                                                    }
                                                                                 }
                                                                             });
                                                                         });
 
+                                                                        // Calcular médias globais
+                                                                        const avgMoodStart = moodProgression.start.length > 0 ? (moodProgression.start.reduce((a,b) => a+b, 0) / moodProgression.start.length).toFixed(1) : null;
+                                                                        const avgMoodMiddle = moodProgression.middle.length > 0 ? (moodProgression.middle.reduce((a,b) => a+b, 0) / moodProgression.middle.length).toFixed(1) : null;
+                                                                        const avgMoodEnd = moodProgression.end.length > 0 ? (moodProgression.end.reduce((a,b) => a+b, 0) / moodProgression.end.length).toFixed(1) : null;
+
+                                                                        const avgEnergyStart = energyProgression.start.length > 0 ? (energyProgression.start.reduce((a,b) => a+b, 0) / energyProgression.start.length).toFixed(1) : null;
+                                                                        const avgEnergyEnd = energyProgression.end.length > 0 ? (energyProgression.end.reduce((a,b) => a+b, 0) / energyProgression.end.length).toFixed(1) : null;
+
+                                                                        const avgInterval = intervals.length > 0 ? (intervals.reduce((a,b) => a+b, 0) / intervals.length).toFixed(1) : null;
+
+                                                                        const totalCons = consumptionTiming.start + consumptionTiming.middle + consumptionTiming.end;
+
                                                                         return (
                                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔄 Análise Intraciclo</h3>
+                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔄 Análise Intraciclo Detalhada</h3>
                                                                                 <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Progressões dentro do mesmo ciclo de sono
+                                                                                    Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono
                                                                                 </p>
-                                                                                <div className="space-y-3">
-                                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                                        <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tendência de Humor no Ciclo</div>
-                                                                                        <div className="flex gap-2 text-xs">
-                                                                                            <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                ↑ {moodImproves} ciclos melhoram
+                                                                                <div className="space-y-4">
+                                                                                    {/* Evolução de Humor */}
+                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Ciclo</div>
+
+                                                                                        {avgMoodStart && avgMoodEnd && (
+                                                                                            <div className="space-y-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Início</div>
+                                                                                                    <div className="flex-1 flex items-center gap-2">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 flex-1 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold'} style={{width: (parseFloat(avgMoodStart) / 10 * 100) + '%'}}>
+                                                                                                                {avgMoodStart}
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                {avgMoodMiddle && (
+                                                                                                    <div className="flex items-center gap-2">
+                                                                                                        <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Meio</div>
+                                                                                                        <div className="flex-1 flex items-center gap-2">
+                                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 flex-1 overflow-hidden'}>
+                                                                                                                <div className={'h-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold'} style={{width: (parseFloat(avgMoodMiddle) / 10 * 100) + '%'}}>
+                                                                                                                    {avgMoodMiddle}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fim</div>
+                                                                                                    <div className="flex-1 flex items-center gap-2">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 flex-1 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold'} style={{width: (parseFloat(avgMoodEnd) / 10 * 100) + '%'}}>
+                                                                                                                {avgMoodEnd}
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex gap-2 mt-3 text-xs">
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
+                                                                                                        ↑ {moodImproves} ciclos melhoram
+                                                                                                    </div>
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
+                                                                                                        ↓ {moodWorsens} ciclos pioram
+                                                                                                    </div>
+                                                                                                </div>
                                                                                             </div>
-                                                                                            <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                ↓ {moodWorsens} ciclos pioram
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    {/* Evolução de Energia */}
+                                                                                    {avgEnergyStart && avgEnergyEnd && (
+                                                                                        <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Ciclo</div>
+                                                                                            <div className="space-y-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Início</div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-yellow-500 flex items-center justify-center text-white text-xs font-bold'} style={{width: (parseFloat(avgEnergyStart) / 10 * 100) + '%'}}>
+                                                                                                                {avgEnergyStart}
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fim</div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-yellow-600 flex items-center justify-center text-white text-xs font-bold'} style={{width: (parseFloat(avgEnergyEnd) / 10 * 100) + '%'}}>
+                                                                                                                {avgEnergyEnd}
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex gap-2 mt-3 text-xs">
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
+                                                                                                        ↑ {energyImproves} ciclos melhoram
+                                                                                                    </div>
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
+                                                                                                        ↓ {energyWorsens} ciclos pioram
+                                                                                                    </div>
+                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                                        <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Consumo → Humor (mesmo ciclo)</div>
-                                                                                        <div className="flex gap-2 text-xs">
-                                                                                            <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                ✓ {moodAfterCons.better}x melhor
-                                                                                            </div>
-                                                                                            <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                ✗ {moodAfterCons.worse}x pior
-                                                                                            </div>
-                                                                                            <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600')}>
-                                                                                                = {moodAfterCons.same}x igual
+                                                                                    )}
+
+                                                                                    {/* Padrão Temporal de Consumo */}
+                                                                                    {totalCons > 0 && (
+                                                                                        <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏰ Quando Consomes no Ciclo</div>
+                                                                                            <div className="space-y-2">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-16 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Início (primeiras 33%)</div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, (consumptionTiming.start / totalCons * 100)) + '%'}}>
+                                                                                                                {consumptionTiming.start}x ({Math.round(consumptionTiming.start / totalCons * 100)}%)
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-16 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Meio</div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, (consumptionTiming.middle / totalCons * 100)) + '%'}}>
+                                                                                                                {consumptionTiming.middle}x ({Math.round(consumptionTiming.middle / totalCons * 100)}%)
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <div className={'text-xs w-16 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fim (últimas 33%)</div>
+                                                                                                    <div className="flex-1">
+                                                                                                        <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={'h-full bg-purple-600 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, (consumptionTiming.end / totalCons * 100)) + '%'}}>
+                                                                                                                {consumptionTiming.end}x ({Math.round(consumptionTiming.end / totalCons * 100)}%)
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
+                                                                                    )}
+
+                                                                                    {/* Impacto do Consumo */}
+                                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>💊 Impacto nas 3h Seguintes ao Consumo</div>
+                                                                                        <div className="space-y-3">
+                                                                                            <div>
+                                                                                                <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>No Humor:</div>
+                                                                                                <div className="flex gap-2 text-xs flex-wrap">
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
+                                                                                                        ↑ {moodAfterCons.better}x melhora
+                                                                                                    </div>
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
+                                                                                                        ↓ {moodAfterCons.worse}x piora
+                                                                                                    </div>
+                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')}>
+                                                                                                        = {moodAfterCons.same}x igual
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            {(energyAfterCons.better + energyAfterCons.worse + energyAfterCons.same) > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Na Energia:</div>
+                                                                                                    <div className="flex gap-2 text-xs flex-wrap">
+                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
+                                                                                                            ↑ {energyAfterCons.better}x aumenta
+                                                                                                        </div>
+                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
+                                                                                                            ↓ {energyAfterCons.worse}x diminui
+                                                                                                        </div>
+                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')}>
+                                                                                                            = {energyAfterCons.same}x igual
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
+
+                                                                                    {/* Intervalo Médio */}
+                                                                                    {avgInterval && (
+                                                                                        <div className={(darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-indigo-300' : 'text-indigo-800')}>⏱️ Intervalo Médio Entre Consumos</div>
+                                                                                            <div className={'text-2xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>
+                                                                                                {avgInterval}h
+                                                                                            </div>
+                                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                                Tempo médio entre consumos dentro do mesmo ciclo
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         );
