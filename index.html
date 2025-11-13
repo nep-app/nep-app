@@ -2994,10 +2994,12 @@
 
                                                         // Adicionar bem-estar
                                                         filteredWellbeingLogs.forEach(w => {
-                                                            if (!dailyData[w.date]) dailyData[w.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
-                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[w.date].sleep = parseFloat(w.sleep);
-                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[w.date].mood = parseInt(w.mood);
-                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[w.date].energy = parseInt(w.energy);
+                                                            // Extrair data do timestamp se não houver campo date
+                                                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                            if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
+                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
+                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
                                                         });
 
                                                         console.log('🔍 dailyData keys:', Object.keys(dailyData));
@@ -3026,11 +3028,16 @@
                                                         const highConsumptionDays = daysWithData.filter(d => d.consumptions > avgConsumptions);
                                                         const lowConsumptionDays = daysWithData.filter(d => d.consumptions <= avgConsumptions);
 
+                                                        console.log('🔍 avgConsumptions:', avgConsumptions);
+                                                        console.log('🔍 highConsumptionDays:', highConsumptionDays.length, highConsumptionDays);
+                                                        console.log('🔍 lowConsumptionDays:', lowConsumptionDays.length, lowConsumptionDays);
+
                                                         const correlations = [];
 
                                                         // Sono
                                                         const highSleep = highConsumptionDays.filter(d => d.sleep !== null);
                                                         const lowSleep = lowConsumptionDays.filter(d => d.sleep !== null);
+                                                        console.log('🔍 SONO - highSleep:', highSleep.length, 'lowSleep:', lowSleep.length);
                                                         if (highSleep.length > 0 && lowSleep.length > 0) {
                                                             const avgHighSleep = highSleep.reduce((sum, d) => sum + d.sleep, 0) / highSleep.length;
                                                             const avgLowSleep = lowSleep.reduce((sum, d) => sum + d.sleep, 0) / lowSleep.length;
@@ -3049,6 +3056,7 @@
                                                         // Humor
                                                         const highMood = highConsumptionDays.filter(d => d.mood !== null);
                                                         const lowMood = lowConsumptionDays.filter(d => d.mood !== null);
+                                                        console.log('🔍 HUMOR - highMood:', highMood.length, 'lowMood:', lowMood.length);
                                                         if (highMood.length > 0 && lowMood.length > 0) {
                                                             const avgHighMood = highMood.reduce((sum, d) => sum + d.mood, 0) / highMood.length;
                                                             const avgLowMood = lowMood.reduce((sum, d) => sum + d.mood, 0) / lowMood.length;
