@@ -2075,7 +2075,10 @@
                                         if (patternView === 'progress') {
                                             // Define two periods to compare: recent vs previous
                                             const now = new Date();
-                                            const periodDays = 30; // Compare last 30 days vs previous 30 days
+                                            // Adapt period based on filter
+                                            const periodDays = patternsPeriod === 'hoje' ? 1 :
+                                                             patternsPeriod === 'semana' ? 7 :
+                                                             patternsPeriod === 'mes' ? 30 : 30;
 
                                             const recentStart = new Date(now);
                                             recentStart.setDate(now.getDate() - periodDays);
@@ -2347,7 +2350,10 @@
                                                             </div>
                                                         </div>
                                                         <p className={'text-sm mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                            Comparação entre os últimos {periodDays} dias vs os {periodDays} dias anteriores
+                                                            {patternsPeriod === 'hoje' ? 'Comparação entre hoje vs ontem' :
+                                                             patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
+                                                             patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
+                                                             `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
                                                         </p>
                                                         <div className="flex items-center gap-2">
                                                             <div className={'flex-1 h-3 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-200')}>
