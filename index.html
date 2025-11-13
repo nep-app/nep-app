@@ -891,10 +891,18 @@
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
+                    console.log('🛏️ META BEDTIME_BEFORE:', {
+                        target: goal.target,
+                        targetStr,
+                        targetMinutes,
+                        totalCycles: cycles.length
+                    });
+
                     cycles.forEach(cycle => {
                         if (!cycle.bedtime) return;
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                        const originalBedtime = cycle.bedtime;
 
                         // Ajustar para madrugada (00:00-05:59 = 24:00-29:59)
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-6h
@@ -906,7 +914,10 @@
                             targetAdjusted += 1440;
                         }
 
-                        if (bedtimeMinutes < targetAdjusted) achievedCount++;
+                        const isAchieved = bedtimeMinutes < targetAdjusted;
+                        console.log('  🕐', originalBedtime, '→', bedtimeMinutes, 'min vs', targetAdjusted, 'min →', isAchieved ? '✅' : '❌');
+
+                        if (isAchieved) achievedCount++;
                     });
                 }
 
