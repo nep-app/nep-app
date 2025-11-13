@@ -1976,9 +1976,9 @@
                                                             📅 {patternsPeriod === 'hoje' ? 'Hoje' : patternsPeriod === 'semana' ? 'Esta Semana' : patternsPeriod === 'mes' ? 'Este Mês' : 'Todo o Período'}
                                                         </h3>
                                                         <div className="space-y-2">
-                                                            {(patternsPeriod === 'semana' ? dates.slice(-7) : dates).reverse().map(date => {
+                                                            {dates.reverse().map(date => {
                                                                 const count = byDate[date];
-                                                                const dayConsumptions = consumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                                                 return (
                                                                     <div key={date} className={(darkMode ? 'border-gray-700' : 'border-gray-200') + ' border rounded-lg p-3'}>
                                                                         <div className="flex justify-between items-center mb-2">
