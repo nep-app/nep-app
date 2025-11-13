@@ -834,11 +834,11 @@
                     // Ex: target=200 → conta dias com <200mg
                     console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
-                        totalLogs: wellbeingLogs.length,
-                        logsComMg: wellbeingLogs.filter(w => w.mg).length
+                        totalLogs: dailyLogs.length,
+                        logsComMg: dailyLogs.filter(d => d.mg).length
                     });
 
-                    wellbeingLogs.forEach(log => {
+                    dailyLogs.forEach(log => {
                         if (log.mg) {
                             const isAchieved = log.mg < goal.target;
                             console.log('  📊', log.date || 'sem data', '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
