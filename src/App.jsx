@@ -4534,9 +4534,6 @@ import * as Icons from './components/Icons';
                                                                     byHour[hour] = (byHour[hour] || 0) + 1;
                                                                 });
 
-                                                                console.log('🕐 DEBUG - Consumos por hora:', byHour);
-                                                                console.log('🔢 DEBUG - Total consumos filtrados:', filteredConsumptions.length);
-
                                                                 if (Object.keys(byHour).length === 0) return null;
 
                                                                 // Encontrar hora com mais e menos consumos
