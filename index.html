@@ -3280,7 +3280,24 @@
                                                                             });
                                                                         });
 
-                                                                        const sortedTriggers = Object.entries(triggerData).sort((a, b) => b[1].count - a[1].count);
+                                                                        // Calcular média de consumos para cada gatilho
+                                                                        const triggersWithAvg = Object.entries(triggerData).map(([trigger, data]) => ({
+                                                                            trigger,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Gatilhos com MAIOR consumo (top 3)
+                                                                        const highRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2)
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 3);
+
+                                                                        // Gatilhos com MENOR consumo (bottom 2)
+                                                                        const lowRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2 && t.avgConsumptions < 10)
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
+                                                                            .slice(0, 2);
 
                                                                         // Análise de emoções correlacionadas com consumo
                                                                         const emotionData = {};
@@ -3329,28 +3346,54 @@
                                                                                 {/* GATILHOS (situações/contextos) */}
                                                                                 <div>
                                                                                     <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                        Gatilhos (Situações/Contextos)
+                                                                                        Análise de Gatilhos
                                                                                     </h4>
-                                                                                    {sortedTriggers.length > 0 ? (
-                                                                                        <div className="space-y-2">
-                                                                                            {sortedTriggers.map(([trigger, data]) => {
-                                                                                                const avgConsumptions = data.count > 0 ? (data.totalConsumptions / data.count).toFixed(1) : 0;
-                                                                                                return (
-                                                                                                    <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
-                                                                                                        <div className="flex items-center justify-between mb-1">
-                                                                                                            <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{trigger}</span>
-                                                                                                            <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{data.count}x</span>
-                                                                                                        </div>
-                                                                                                        <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
-                                                                                                            💡 Nos dias com este gatilho, média de <span className="font-bold">{avgConsumptions} consumos</span>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                );
-                                                                                            })}
+
+                                                                                    {highRiskTriggers.length === 0 && lowRiskTriggers.length === 0 ? (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem dados suficientes de gatilhos neste período
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
-                                                                                            Sem gatilhos identificados neste período
+                                                                                        <div className="space-y-2">
+                                                                                            {/* Gatilhos de ALTO risco (mais consumo) */}
+                                                                                            {highRiskTriggers.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                        🔴 Alto Risco (mais consumo)
+                                                                                                    </div>
+                                                                                                    {highRiskTriggers.map(t => (
+                                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{t.trigger}</span>
+                                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                                ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {/* Gatilhos de BAIXO risco (menos consumo) */}
+                                                                                            {lowRiskTriggers.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                        🟢 Baixo Risco (menos consumo)
+                                                                                                    </div>
+                                                                                                    {lowRiskTriggers.map(t => (
+                                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{t.trigger}</span>
+                                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                                ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
