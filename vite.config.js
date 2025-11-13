@@ -6,15 +6,15 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   build: {
-    outDir: 'dist',
+    outDir: 'dist-standalone',
     sourcemap: false,
     minify: 'terser',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'firebase-vendor': ['firebase/app', 'firebase/firestore', 'firebase/auth']
-        }
+        format: 'iife',
+        inlineDynamicImports: true,
+        entryFileNames: 'app.js',
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   },
