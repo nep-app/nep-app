@@ -1898,17 +1898,21 @@
                                             // Generate insights
                                             const insights = [];
 
-                                            // Best day insight
+                                            // Best day insight (excluir o dia de hoje)
                                             if (dates.length > 0) {
-                                                const sortedDates = dates.sort((a, b) => byDate[a] - byDate[b]);
-                                                const bestDate = sortedDates[0];
-                                                const bestCount = byDate[bestDate];
-                                                const bestDayName = new Date(bestDate).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
-                                                if (bestCount <= 2) {
-                                                    insights.push({
-                                                        text: `Teu melhor dia foi ${bestDayName} com apenas ${bestCount} ${bestCount === 1 ? 'consumo' : 'consumos'}. Identifica o que funcionou! ⭐`,
-                                                        type: 'positive'
-                                                    });
+                                                const today = new Date().toISOString().split('T')[0];
+                                                const completedDates = dates.filter(d => d !== today);
+                                                if (completedDates.length > 0) {
+                                                    const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
+                                                    const bestDate = sortedDates[0];
+                                                    const bestCount = byDate[bestDate];
+                                                    const bestDayName = new Date(bestDate).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
+                                                    if (bestCount <= 2) {
+                                                        insights.push({
+                                                            text: `Teu melhor dia foi ${bestDayName} com apenas ${bestCount} ${bestCount === 1 ? 'consumo' : 'consumos'}. Identifica o que funcionou! ⭐`,
+                                                            type: 'positive'
+                                                        });
+                                                    }
                                                 }
                                             }
 
@@ -2927,9 +2931,11 @@
                                             const goodIntervals = intervals.filter(i => i >= 2).length;
                                             const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
 
-                                            // Best/worst days
+                                            // Best/worst days (excluir o dia de hoje)
                                             const dates = Object.keys(byDate).sort();
-                                            const sortedDates = dates.sort((a, b) => byDate[a] - byDate[b]);
+                                            const today = new Date().toISOString().split('T')[0];
+                                            const completedDates = dates.filter(d => d !== today);
+                                            const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                             const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;
                                             const worstDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
                                             const bestCount = bestDate ? byDate[bestDate] : 0;
