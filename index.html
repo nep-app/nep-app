@@ -3294,49 +3294,60 @@
 
                                                                         return (
                                                                             <div className="space-y-3">
-                                                                                {/* Lista de gatilhos com média de consumos */}
-                                                                                {sortedTriggers.length > 0 && (
-                                                                                    <div className="space-y-2">
-                                                                                        {sortedTriggers.map(([trigger, data]) => {
-                                                                                            const avgConsumptions = data.count > 0 ? (data.totalConsumptions / data.count).toFixed(1) : 0;
-                                                                                            return (
-                                                                                                <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
-                                                                                                    <div className="flex items-center justify-between mb-1">
-                                                                                                        <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{trigger}</span>
-                                                                                                        <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{data.count}x</span>
+                                                                                {/* GATILHOS (situações/contextos) */}
+                                                                                <div>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Gatilhos (Situações/Contextos)
+                                                                                    </h4>
+                                                                                    {sortedTriggers.length > 0 ? (
+                                                                                        <div className="space-y-2">
+                                                                                            {sortedTriggers.map(([trigger, data]) => {
+                                                                                                const avgConsumptions = data.count > 0 ? (data.totalConsumptions / data.count).toFixed(1) : 0;
+                                                                                                return (
+                                                                                                    <div key={trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border'}>
+                                                                                                        <div className="flex items-center justify-between mb-1">
+                                                                                                            <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{trigger}</span>
+                                                                                                            <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{data.count}x</span>
+                                                                                                        </div>
+                                                                                                        <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                            💡 Nos dias com este gatilho, média de <span className="font-bold">{avgConsumptions} consumos</span>
+                                                                                                        </div>
                                                                                                     </div>
-                                                                                                    <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
-                                                                                                        💡 Nos dias com este gatilho, média de <span className="font-bold">{avgConsumptions} consumos</span>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            );
-                                                                                        })}
-                                                                                    </div>
-                                                                                )}
+                                                                                                );
+                                                                                            })}
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem gatilhos identificados neste período
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
 
-                                                                                {/* Alerta de emoções de alto risco */}
-                                                                                {topNegativeEmotions.length > 0 && (
-                                                                                    <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-3 border'}>
-                                                                                        <div className="flex items-start gap-2">
-                                                                                            <span className="text-lg">⚠️</span>
-                                                                                            <div className="flex-1">
-                                                                                                <div className={'font-semibold text-sm mb-1 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>
-                                                                                                    Alerta de Gatilho Emocional
-                                                                                                </div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-yellow-400/80' : 'text-yellow-700/80')}>
-                                                                                                    <span className="font-medium">{topNegativeEmotions[0][0]}</span> é uma emoção de alto risco para ti ({topNegativeEmotions[0][1]}x registada). Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.
+                                                                                {/* EMOÇÕES (estados emocionais) */}
+                                                                                <div>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Emoções de Risco
+                                                                                    </h4>
+                                                                                    {topNegativeEmotions.length > 0 ? (
+                                                                                        <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-3 border'}>
+                                                                                            <div className="flex items-start gap-2">
+                                                                                                <span className="text-lg">⚠️</span>
+                                                                                                <div className="flex-1">
+                                                                                                    <div className={'font-semibold text-sm mb-1 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>
+                                                                                                        Alerta de Gatilho Emocional
+                                                                                                    </div>
+                                                                                                    <div className={'text-xs ' + (darkMode ? 'text-yellow-400/80' : 'text-yellow-700/80')}>
+                                                                                                        <span className="font-medium">{topNegativeEmotions[0][0]}</span> é uma emoção de alto risco para ti ({topNegativeEmotions[0][1]}x registada). Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* Só mostra "sem gatilhos" se também não há alerta de emoção */}
-                                                                                {sortedTriggers.length === 0 && topNegativeEmotions.length === 0 && (
-                                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                                        Sem gatilhos ou emoções de risco identificados neste período
-                                                                                    </div>
-                                                                                )}
+                                                                                    ) : (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem emoções de risco identificadas neste período
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                         );
                                                                     })()}
