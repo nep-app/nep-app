@@ -2996,6 +2996,9 @@
                                                         // Agregar dados por dia
                                                         const dailyData = {};
 
+                                                        console.log('🔍 Amostra consumo:', filteredConsumptions[0]);
+                                                        console.log('🔍 Amostra bem-estar:', filteredWellbeingLogs[0]);
+
                                                         // Contar consumos por dia
                                                         filteredConsumptions.forEach(c => {
                                                             if (!dailyData[c.date]) dailyData[c.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
@@ -3010,8 +3013,14 @@
                                                             if (w.energy && !isNaN(parseInt(w.energy))) dailyData[w.date].energy = parseInt(w.energy);
                                                         });
 
+                                                        console.log('🔍 dailyData keys:', Object.keys(dailyData));
+                                                        console.log('🔍 dailyData sample:', Object.entries(dailyData).slice(0, 3));
+
                                                         // Calcular correlações simples (comparar dias com mais vs menos consumo)
                                                         const daysWithData = Object.values(dailyData).filter(d => d.consumptions > 0);
+
+                                                        console.log('🔍 daysWithData length:', daysWithData.length);
+                                                        console.log('🔍 daysWithData sample:', daysWithData.slice(0, 3));
 
                                                         if (daysWithData.length < 3) {
                                                             return (
