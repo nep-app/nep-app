@@ -3263,8 +3263,8 @@
                                                                         filteredCycles.forEach(cycle => {
                                                                             if (!cycle.triggers || cycle.triggers.length === 0) return;
 
-                                                                            // Encontrar data do ciclo (bedtime)
-                                                                            const cycleDate = safeToISODate(cycle.bedtime);
+                                                                            // Encontrar data do ciclo usando o timestamp
+                                                                            const cycleDate = safeToISODate(cycle.timestamp);
                                                                             if (!cycleDate) return;
 
                                                                             // Contar consumos nesse dia
@@ -3282,14 +3282,46 @@
 
                                                                         const sortedTriggers = Object.entries(triggerData).sort((a, b) => b[1].count - a[1].count);
 
-                                                                        // Calcular emoções de alto risco (emoções negativas + gatilhos frequentes)
-                                                                        const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
-                                                                        const allEmotions = filteredWellbeingLogs.flatMap(w => w.emotions || []);
-                                                                        const emotionCount = {};
-                                                                        allEmotions.forEach(e => { emotionCount[e] = (emotionCount[e] || 0) + 1; });
-                                                                        const topNegativeEmotions = Object.entries(emotionCount)
-                                                                            .filter(([e]) => negativeEmotions.includes(e))
-                                                                            .sort((a, b) => b[1] - a[1])
+                                                                        // Análise de emoções correlacionadas com consumo
+                                                                        const emotionData = {};
+
+                                                                        // Para cada registo de bem-estar
+                                                                        filteredWellbeingLogs.forEach(log => {
+                                                                            if (!log.emotions || log.emotions.length === 0) return;
+
+                                                                            const logDate = safeToISODate(log.timestamp);
+                                                                            if (!logDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === logDate).length;
+
+                                                                            log.emotions.forEach(emotion => {
+                                                                                if (!emotionData[emotion]) {
+                                                                                    emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                emotionData[emotion].count++;
+                                                                                emotionData[emotion].totalConsumptions += dayConsumptions;
+                                                                                emotionData[emotion].days.push(logDate);
+                                                                            });
+                                                                        });
+
+                                                                        // Calcular média de consumos para cada emoção e ordenar
+                                                                        const emotionsWithAvg = Object.entries(emotionData).map(([emotion, data]) => ({
+                                                                            emotion,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Emoções com MAIOR consumo (top 2)
+                                                                        const highRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2) // Apenas emoções registadas 2+ vezes
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        // Emoções com MENOR consumo (bottom 2)
+                                                                        const lowRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2 && e.avgConsumptions < 10) // Menos de 10 consumos em média
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
                                                                             .slice(0, 2);
 
                                                                         return (
@@ -3326,25 +3358,54 @@
                                                                                 {/* EMOÇÕES (estados emocionais) */}
                                                                                 <div>
                                                                                     <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                        Emoções de Risco
+                                                                                        Análise de Emoções
                                                                                     </h4>
-                                                                                    {topNegativeEmotions.length > 0 ? (
-                                                                                        <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-3 border'}>
-                                                                                            <div className="flex items-start gap-2">
-                                                                                                <span className="text-lg">⚠️</span>
-                                                                                                <div className="flex-1">
-                                                                                                    <div className={'font-semibold text-sm mb-1 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>
-                                                                                                        Alerta de Gatilho Emocional
-                                                                                                    </div>
-                                                                                                    <div className={'text-xs ' + (darkMode ? 'text-yellow-400/80' : 'text-yellow-700/80')}>
-                                                                                                        <span className="font-medium">{topNegativeEmotions[0][0]}</span> é uma emoção de alto risco para ti ({topNegativeEmotions[0][1]}x registada). Quando a sentires, essa é a hora de usar as tuas técnicas DBT, não de consumir. Prepara um plano para esses momentos.
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
+
+                                                                                    {highRiskEmotions.length === 0 && lowRiskEmotions.length === 0 ? (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem dados suficientes de emoções neste período
                                                                                         </div>
                                                                                     ) : (
-                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
-                                                                                            Sem emoções de risco identificadas neste período
+                                                                                        <div className="space-y-2">
+                                                                                            {/* Emoções de ALTO risco (mais consumo) */}
+                                                                                            {highRiskEmotions.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                        🔴 Alto Risco (mais consumo)
+                                                                                                    </div>
+                                                                                                    {highRiskEmotions.map(e => (
+                                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{e.emotion}</span>
+                                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                                ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {/* Emoções de BAIXO risco (menos consumo) */}
+                                                                                            {lowRiskEmotions.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                        🟢 Baixo Risco (menos consumo)
+                                                                                                    </div>
+                                                                                                    {lowRiskEmotions.map(e => (
+                                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{e.emotion}</span>
+                                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                                ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
