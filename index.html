@@ -4035,6 +4035,115 @@
                                                                     return null;
                                                                 })()}
 
+                                                                {/* Hora de Deitar ↔ Consumo */}
+                                                                {(() => {
+                                                                    // Correlação entre hora de deitar e consumo
+                                                                    const bedtimeConsumptionData = [];
+
+                                                                    analysisCycles.forEach(cycle => {
+                                                                        if (!cycle.bedtime) return;
+
+                                                                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
+                                                                        const [hours] = cycle.bedtime.split(':').map(Number);
+                                                                        if (hours >= 6 && hours < 21) return;
+
+                                                                        // Converter bedtime para minutos
+                                                                        const [h, m] = cycle.bedtime.split(':').map(Number);
+                                                                        let bedtimeMinutes = h * 60 + m;
+                                                                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
+                                                                        if (h >= 0 && h < 6) bedtimeMinutes += 1440;
+
+                                                                        // Encontrar data do ciclo
+                                                                        const cycleDate = safeToISODate(cycle.timestamp);
+                                                                        if (!cycleDate) return;
+
+                                                                        // Contar consumos nesse dia
+                                                                        const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                        bedtimeConsumptionData.push({
+                                                                            bedtime: bedtimeMinutes,
+                                                                            consumptions: dayConsumptions
+                                                                        });
+                                                                    });
+
+                                                                    if (bedtimeConsumptionData.length >= 3) {
+                                                                        // Calcular correlação de Pearson
+                                                                        const getCorrelation = (data, xKey, yKey) => {
+                                                                            const n = data.length;
+                                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                                            const numerator = n * sumXY - sumX * sumY;
+                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                                            return denominator === 0 ? null : numerator / denominator;
+                                                                        };
+
+                                                                        const correlation = getCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions');
+
+                                                                        const getCorrelationLabel = (r) => {
+                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'orange', desc: 'Deitar tarde → Mais consumo' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
+                                                                        };
+
+                                                                        const label = getCorrelationLabel(correlation);
+                                                                        const avgBedtime = bedtimeConsumptionData.reduce((s, d) => s + d.bedtime, 0) / bedtimeConsumptionData.length;
+                                                                        const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
+                                                                        const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                        const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                        const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+                                                                        const avgConsumptions = (bedtimeConsumptionData.reduce((s, d) => s + d.consumptions, 0) / bedtimeConsumptionData.length).toFixed(1);
+
+                                                                        const colorClasses = {
+                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                        };
+
+                                                                        return (
+                                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐💊 Hora de Deitar vs Consumo</h3>
+                                                                                <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    Correlação entre a hora que te deitas e o consumo desse dia
+                                                                                </p>
+                                                                                <div className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-xl">🕐➡️💊</span>
+                                                                                            <span className="font-semibold">Bedtime → Consumo</span>
+                                                                                        </div>
+                                                                                        <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
+                                                                                            {label.text}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-sm mb-2">
+                                                                                        <span className="opacity-75">Hora média de deitar: </span>
+                                                                                        <span className="font-bold">{avgBedtimeStr}</span>
+                                                                                        <span className="opacity-75"> • Consumo médio: </span>
+                                                                                        <span className="font-bold">{avgConsumptions}/dia</span>
+                                                                                    </div>
+                                                                                    <div className="text-xs opacity-75">
+                                                                                        {label.desc && <span>💡 {label.desc}</span>}
+                                                                                        {correlation !== null && <span className="ml-2">• r = {correlation.toFixed(2)}</span>}
+                                                                                        <span className="ml-2">• {bedtimeConsumptionData.length} dias</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    }
+
+                                                                    return null;
+                                                                })()}
+
                                                                 {/* Análise Intraciclo */}
                                                                 {(() => {
                                                                     const cycleData = {};
@@ -4754,9 +4863,72 @@
                                                                 );
                                                             })()}
 
-                                                            {/* Paragraph 11: Closing & Next Steps */}
+                                                            {/* Paragraph 11: Tendência (se aplicável) */}
+                                                            {(() => {
+                                                                if (totalConsumptions === 0) return null;
+
+                                                                const today = new Date();
+                                                                const sevenDaysAgo = new Date(today);
+                                                                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                                                const fourteenDaysAgo = new Date(today);
+                                                                fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+                                                                const thisWeek = filteredConsumptions.filter(c => {
+                                                                    const d = safeDate(c.timestamp);
+                                                                    return d && d >= sevenDaysAgo && d <= today;
+                                                                });
+
+                                                                const lastWeek = consumptions.filter(c => {
+                                                                    const d = safeDate(c.timestamp);
+                                                                    return d && d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                });
+
+                                                                if (thisWeek.length === 0 || lastWeek.length === 0) return null;
+
+                                                                const percentChange = ((thisWeek.length - lastWeek.length) / lastWeek.length) * 100;
+
+                                                                // Só mostrar se mudança significativa (>20%)
+                                                                if (Math.abs(percentChange) < 20) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        {percentChange > 0 ? (
+                                                                            <>
+                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> na última semana comparado à anterior (de {lastWeek.length} para {thisWeek.length} consumos).
+                                                                                <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> na última semana comparado à anterior (de {lastWeek.length} para {thisWeek.length} consumos).
+                                                                                <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
+                                                                            </>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 12: Autoconhecimento */}
+                                                            {(filteredWellbeingLogs.length > 3 || filteredCycles.length > 2) && (
+                                                                <p>
+                                                                    ✨ <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Autoconhecimento:</strong> Estás a registar de forma consistente
+                                                                    {filteredWellbeingLogs.length > 0 && <> (bem-estar)</>}
+                                                                    {filteredCycles.length > 0 && <>{filteredWellbeingLogs.length > 0 && ','} ciclos de sono</>}.
+                                                                    <span className={'font-medium ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 13: Tu Tens o Controlo */}
+                                                            <p className={'font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
+                                                                <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
+                                                            </p>
+
+                                                            {/* Paragraph 14: Closing & Next Steps */}
                                                             <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
-                                                                Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer, a registar, a refletir. Cada dados que partilhas aqui é um passo de autoconsciência.
+                                                                🤝 <strong>Compromisso:</strong> O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.
+                                                                <span> Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.</span>
+                                                                <br/><br/>
+                                                                Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer.
                                                                 Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
                                                             </p>
                                                         </div>
