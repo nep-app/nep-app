@@ -4139,7 +4139,155 @@
                                                                 </p>
                                                             )}
 
-                                                            {/* Paragraph 7: Closing & Next Steps */}
+                                                            {/* Paragraph 7: Bedtime & Sleep Patterns */}
+                                                            {(() => {
+                                                                const cyclesWithBedtime = cycles.filter(c => c.bedtime && c.timestamp >= analysisStart && c.timestamp <= analysisEnd);
+                                                                if (cyclesWithBedtime.length === 0) return null;
+
+                                                                const getBedtimeMinutes = (bedtime) => {
+                                                                    const [hours, minutes] = bedtime.split(':').map(Number);
+                                                                    if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
+                                                                    return hours * 60 + minutes;
+                                                                };
+
+                                                                const avgBedtimeMinutes = cyclesWithBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithBedtime.length;
+                                                                const avgBedtimeHours = Math.floor(avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes / 60);
+                                                                const avgBedtimeMins = Math.round(avgBedtimeMinutes % 60);
+                                                                const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+
+                                                                return (
+                                                                    <p>
+                                                                        Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{avgBedtimeStr}</strong>.
+                                                                        {avgBedtimeHours >= 0 && avgBedtimeHours < 6 ? (
+                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
+                                                                        ) : avgBedtimeHours >= 22 && avgBedtimeHours < 24 ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
+                                                                        ) : avgBedtimeHours >= 6 && avgBedtimeHours < 12 ? (
+                                                                            <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
+                                                                        ) : (
+                                                                            <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 8: Self-Care Analysis */}
+                                                            {(() => {
+                                                                const periodWellbeing = wellbeingLogs.filter(w => w.timestamp >= analysisStart && w.timestamp <= analysisEnd);
+                                                                if (periodWellbeing.length < 3) return null;
+
+                                                                const areas = { water: 0, food: 0, rest: 0, social: 0 };
+                                                                periodWellbeing.forEach(w => {
+                                                                    if (w.water) areas.water++;
+                                                                    if (w.food) areas.food++;
+                                                                    if (w.rest) areas.rest++;
+                                                                    if (w.social) areas.social++;
+                                                                });
+
+                                                                const percentages = {
+                                                                    water: (areas.water / periodWellbeing.length) * 100,
+                                                                    food: (areas.food / periodWellbeing.length) * 100,
+                                                                    rest: (areas.rest / periodWellbeing.length) * 100,
+                                                                    social: (areas.social / periodWellbeing.length) * 100
+                                                                };
+
+                                                                const lowAreas = Object.entries(percentages)
+                                                                    .filter(([_, pct]) => pct < 70)
+                                                                    .sort((a, b) => a[1] - b[1]);
+
+                                                                const areaNames = { water: 'hidratação', food: 'alimentação', rest: 'descanso', social: 'socialização' };
+                                                                const overall = (percentages.water + percentages.food + percentages.rest + percentages.social) / 4;
+
+                                                                return (
+                                                                    <p>
+                                                                        No autocuidado, a tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
+                                                                        {lowAreas.length >= 3 ? (
+                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Pequenos hábitos diários fazem diferença - começa por {areaNames[lowAreas[0][0]]} e {areaNames[lowAreas[1][0]]} regular.</span></>
+                                                                        ) : lowAreas.length === 2 ? (
+                                                                            <> Atenção a {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). Criar rotinas simples pode ajudar!</>
+                                                                        ) : lowAreas.length === 1 ? (
+                                                                            <> Foca em melhorar {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) - pequenos passos contam!</>
+                                                                        ) : (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas.</span></>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 9: Goals Achievement */}
+                                                            {goals.length > 0 && (() => {
+                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g), 0);
+                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g) > 0);
+
+                                                                return (
+                                                                    <p>
+                                                                        Sobre as tuas metas: cumpriste condições das tuas metas <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>{totalAchievements} vezes</strong> neste período!
+                                                                        {goalsWithAchievements.length === goals.length ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {goals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
+                                                                        ) : goalsWithAchievements.length > 0 ? (
+                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {goals.length} metas. Continua focado/a nas que ainda não atingiste.</>
+                                                                        ) : (
+                                                                            <> Ainda não atingiste nenhuma meta neste período, mas não desanimes - ajustar metas ou estratégias é parte do processo.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 10: Sleep-Mood Correlation */}
+                                                            {(() => {
+                                                                const dailyData = {};
+
+                                                                analysisWellbeing.forEach(w => {
+                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                    if (!wDate) return;
+                                                                    if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
+                                                                    if (w.sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                                    if (w.mood) dailyData[wDate].mood = parseInt(w.mood);
+                                                                });
+
+                                                                const sortedDates = Object.keys(dailyData).sort();
+                                                                const nextDaySleepMood = [];
+
+                                                                for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                                    const today = dailyData[sortedDates[i]];
+                                                                    const tomorrow = dailyData[sortedDates[i + 1]];
+                                                                    if (today.sleep !== null && tomorrow.mood !== null) {
+                                                                        nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
+                                                                    }
+                                                                }
+
+                                                                if (nextDaySleepMood.length < 3) return null;
+
+                                                                const getCorrelation = (data, xKey, yKey) => {
+                                                                    const n = data.length;
+                                                                    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+                                                                    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+                                                                    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+                                                                    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+                                                                    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+                                                                    const numerator = n * sumXY - sumX * sumY;
+                                                                    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+                                                                    return denominator === 0 ? null : numerator / denominator;
+                                                                };
+
+                                                                const correlation = getCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                if (correlation === null) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>{correlation.toFixed(2)}</strong>.
+                                                                        {correlation > 0.4 ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dormir bem melhora claramente o teu humor no dia seguinte!</span> Priorizar o sono é investir no teu bem-estar emocional.</>
+                                                                        ) : correlation < -0.2 ? (
+                                                                            <> Curiosamente, mais sono parece correlacionar-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta o humor.</>
+                                                                        ) : (
+                                                                            <> Não há uma relação clara entre sono e humor nos teus dados. Outros fatores podem estar a influenciar mais o teu estado emocional.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 11: Closing & Next Steps */}
                                                             <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
                                                                 Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer, a registar, a refletir. Cada dados que partilhas aqui é um passo de autoconsciência.
                                                                 Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
@@ -4761,6 +4909,7 @@
                                                 <option value="increase_interval">Aumentar Intervalo (horas)</option>
                                                 <option value="limit_last">Hora do Último Consumo</option>
                                                 <option value="sleep_hours">Horas de Sono por Dia</option>
+                                                <option value="bedtime_before">Deitar Antes de</option>
                                             </select>
                                         </div>
                                         <div>
@@ -4773,9 +4922,9 @@
                                         </div>
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
-                                                Meta {goalForm.type.includes('delay') || goalForm.type.includes('limit') ? '(HH:MM)' : '(número)'}
+                                                Meta {goalForm.type.includes('delay') || goalForm.type.includes('limit') || goalForm.type.includes('bedtime') ? '(HH:MM)' : '(número)'}
                                             </label>
-                                            <input type={goalForm.type.includes('delay') || goalForm.type.includes('limit') ? 'time' : 'number'} value={goalForm.target} onChange={(e) => setGoalForm({...goalForm, target: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
+                                            <input type={goalForm.type.includes('delay') || goalForm.type.includes('limit') || goalForm.type.includes('bedtime') ? 'time' : 'number'} value={goalForm.target} onChange={(e) => setGoalForm({...goalForm, target: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
                                         </div>
                                         <div>
                                             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
