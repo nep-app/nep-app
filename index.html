@@ -4202,6 +4202,43 @@
                                                                 </p>
                                                             )}
 
+                                                            {/* Paragraph 3b: Hourly Consumption Analysis */}
+                                                            {(() => {
+                                                                if (totalConsumptions === 0) return null;
+
+                                                                // Calcular consumos por hora
+                                                                const byHour = {};
+                                                                filteredConsumptions.forEach(c => {
+                                                                    const d = safeDate(c.timestamp);
+                                                                    if (!d) return;
+                                                                    const hour = d.getHours();
+                                                                    byHour[hour] = (byHour[hour] || 0) + 1;
+                                                                });
+
+                                                                if (Object.keys(byHour).length === 0) return null;
+
+                                                                // Encontrar hora com mais e menos consumos
+                                                                const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
+                                                                hourEntries.sort((a, b) => b.count - a.count);
+
+                                                                const worstHour = hourEntries[0];
+                                                                const bestHour = hourEntries[hourEntries.length - 1];
+
+                                                                // Apenas mostrar se houver variação significativa
+                                                                if (hourEntries.length < 2) return null;
+
+                                                                const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
+
+                                                                return (
+                                                                    <p>
+                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
+                                                                        {hourEntries.length > 1 && (
+                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
                                                             {/* Paragraph 4: Wellbeing Integration */}
                                                             {(avgMood || avgEnergy || avgSleep) && (
                                                                 <p>
@@ -4248,17 +4285,26 @@
 
                                                             {/* Paragraph 7: Bedtime & Sleep Patterns */}
                                                             {(() => {
-                                                                const cyclesWithBedtime = filteredCycles.filter(c => c.bedtime);
-                                                                if (cyclesWithBedtime.length === 0) return null;
+                                                                // Filtrar apenas bedtimes válidos (21:00-05:59, excluir 06:00-20:59)
+                                                                const cyclesWithValidBedtime = filteredCycles.filter(c => {
+                                                                    if (!c.bedtime) return false;
+                                                                    const [hours] = c.bedtime.split(':').map(Number);
+                                                                    // Excluir horas de dia (06:00-20:59) que não são horas de deitar
+                                                                    if (hours >= 6 && hours < 21) return false;
+                                                                    return true;
+                                                                });
+
+                                                                if (cyclesWithValidBedtime.length === 0) return null;
 
                                                                 const getBedtimeMinutes = (bedtime) => {
                                                                     const [hours, minutes] = bedtime.split(':').map(Number);
+                                                                    // Ajustar madrugada (00:00-05:59) para 24:00-29:59
                                                                     if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
                                                                     return hours * 60 + minutes;
                                                                 };
 
-                                                                const avgBedtimeMinutes = cyclesWithBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithBedtime.length;
-                                                                // Convert back to 0-23h range if needed
+                                                                const avgBedtimeMinutes = cyclesWithValidBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithValidBedtime.length;
+                                                                // Converter de volta para 0-23h se necessário
                                                                 const adjustedMinutes = avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes;
                                                                 const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
                                                                 const avgBedtimeMins = Math.round(adjustedMinutes % 60);
