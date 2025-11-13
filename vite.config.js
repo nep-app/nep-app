@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/nep-app/',
   plugins: [react()],
   build: {
-    outDir: 'dist-standalone',
+    outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
     rollupOptions: {
@@ -14,7 +14,7 @@ export default defineConfig({
         format: 'iife',
         inlineDynamicImports: true,
         entryFileNames: 'app.js',
-        assetFileNames: 'assets/[name].[ext]'
+        assetFileNames: '[name].[ext]'
       }
     }
   },
