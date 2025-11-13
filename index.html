@@ -2029,22 +2029,39 @@
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-xl p-6 border'}>
                                                             <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🎯 Metas Ativas</h3>
                                                             <div className="space-y-3">
-                                                                {goals.filter(g => !g.completed).slice(0, 3).map((goal, i) => (
-                                                                    <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                        <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
-                                                                            {goal.type === 'reduce_frequency' && 'Reduzir Frequência'}
-                                                                            {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
-                                                                            {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
-                                                                            {goal.type === 'limit_last' && 'Hora do Último Consumo'}
+                                                                {goals.filter(g => !g.completed).slice(0, 3).map((goal, i) => {
+                                                                    const progress = getGoalProgress(goal);
+                                                                    return (
+                                                                        <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                            <div className="flex items-start justify-between mb-2">
+                                                                                <div className="flex-1">
+                                                                                    <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
+                                                                                        {goal.type === 'reduce_frequency' && 'Reduzir Frequência'}
+                                                                                        {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
+                                                                                        {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
+                                                                                        {goal.type === 'limit_last' && 'Hora do Último Consumo'}
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Meta: {goal.type === 'reduce_frequency' && `${goal.target}x/dia`}
+                                                                                        {goal.type === 'delay_first' && `depois das ${goal.target}`}
+                                                                                        {goal.type === 'increase_interval' && `${goal.target}h entre consumos`}
+                                                                                        {goal.type === 'limit_last' && 'último antes das 00h'}
+                                                                                        {goal.deadline && ` • Até ${new Date(goal.deadline).toLocaleDateString('pt-PT')}`}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={'text-sm font-bold ml-2 ' + (progress >= 100 ? 'text-green-500' : progress >= 50 ? 'text-blue-500' : 'text-orange-500')}>
+                                                                                    {Math.round(progress)}%
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                <div
+                                                                                    className={'h-full transition-all duration-500 ' + (progress >= 100 ? 'bg-green-500' : progress >= 50 ? 'bg-blue-500' : 'bg-orange-500')}
+                                                                                    style={{width: `${Math.min(100, progress)}%`}}
+                                                                                ></div>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            Meta: {goal.type === 'reduce_frequency' && `${goal.target}x/dia`}
-                                                                            {goal.type === 'delay_first' && `depois das ${goal.target}`}
-                                                                            {goal.type === 'increase_interval' && `${goal.target}h entre consumos`}
-                                                                            {goal.type === 'limit_last' && 'último antes das 00h'}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                                                    );
+                                                                })}
                                                             </div>
                                                         </div>
                                                     )}
