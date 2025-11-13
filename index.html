@@ -760,58 +760,33 @@
             };
 
             const getGoalAchievementCount = (goal) => {
-                let achievedDays = 0;
+                let achievedCount = 0;
                 console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
-                    // REGRA: Conta o dia quando:
-                    // 1. Número de consumos <= target
-                    // 2. Pelo menos metade dos intervalos >= 2h
+                    // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
+                    // Ex: target=10 → conta dias com <10 consumos (0-9)
                     const consumptionsByDate = {};
-
-                    // Group all consumptions by date
                     consumptions.forEach(c => {
-                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
-                        consumptionsByDate[c.date].push(c);
+                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                        consumptionsByDate[c.date]++;
                     });
 
-                    // Check each day
-                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
-                        const count = dayConsumptions.length;
-                        if (count === 0 || count > goal.target) return;
-
-                        // Check interval rule: at least half of intervals must be 2h+
-                        if (dayConsumptions.length <= 1) {
-                            // Only 1 consumption = always passes interval rule
-                            achievedDays++;
-                            return;
-                        }
-
-                        // Sort by timestamp
-                        const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
-                        let longIntervals = 0;
-                        for (let i = 1; i < sorted.length; i++) {
-                            const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
-                            if (intervalHours >= 2) longIntervals++;
-                        }
-
-                        // At least half of intervals must be 2h+
-                        const totalIntervals = sorted.length - 1;
-                        if (longIntervals >= totalIntervals / 2) {
-                            achievedDays++;
-                        }
+                    Object.values(consumptionsByDate).forEach(count => {
+                        if (count < goal.target) achievedCount++;
                     });
                 }
 
                 if (goal.type === 'reduce_quantity') {
-                    // Count days where mg < target (strictly below)
+                    // REGRA: Conta dias com mg ABAIXO do target (excluindo o target)
+                    // Ex: target=200 → conta dias com <200mg
                     dailyLogs.forEach(log => {
-                        if (log.mg < goal.target) achievedDays++;
+                        if (log.mg && log.mg < goal.target) achievedCount++;
                     });
                 }
 
                 if (goal.type === 'delay_first') {
-                    // Count days where first consumption >= target time
+                    // REGRA: Conta dias onde primeiro consumo foi >= target
                     const firstOfDays = {};
                     consumptions.forEach(c => {
                         if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
@@ -823,37 +798,78 @@
                     Object.values(firstOfDays).forEach(timestamp => {
                         const d = new Date(timestamp);
                         const firstMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (firstMinutes >= targetMinutes) achievedDays++;
+                        if (firstMinutes >= targetMinutes) achievedCount++;
                     });
                 }
 
                 if (goal.type === 'limit_last') {
-                    // Count days from cycles where user marked last consumption before target
+                    // REGRA: Conta CICLOS onde user marcou lastBefore00=true
                     cycles.forEach(cycle => {
-                        if (cycle.lastBefore00) achievedDays++;
+                        if (cycle.lastBefore00 === true) achievedCount++;
                     });
                 }
 
                 if (goal.type === 'increase_interval') {
-                    // Count intervals between consumptions >= target hours
-                    if (consumptions.length >= 2) {
-                        const sorted = [...consumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-                        for (let i = 1; i < sorted.length; i++) {
-                            const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                            if (diff >= goal.target) achievedDays++;
-                        }
-                    }
-                }
+                    // REGRA: Conta CICLOS onde ≥50% dos intervalos são >2h
+                    const consumptionsByCycle = {};
+                    consumptions.forEach(c => {
+                        if (!c.cycleId) return;
+                        if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
+                        consumptionsByCycle[c.cycleId].push(c);
+                    });
 
-                if (goal.type === 'sleep_hours') {
-                    // Count days where sleep hours >= target
-                    wellbeingLogs.forEach(log => {
-                        if (log.sleep != null && log.sleep >= parseFloat(goal.target)) achievedDays++;
+                    Object.values(consumptionsByCycle).forEach(cycleConsumptions => {
+                        if (cycleConsumptions.length < 2) return; // Precisa de pelo menos 2 consumos para ter intervalo
+
+                        const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        let longIntervals = 0;
+                        let totalIntervals = 0;
+
+                        for (let i = 1; i < sorted.length; i++) {
+                            const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
+                            totalIntervals++;
+                            if (intervalHours > 2) longIntervals++; // Estritamente >2h
+                        }
+
+                        // Pelo menos 50% dos intervalos devem ser >2h
+                        if (longIntervals >= totalIntervals / 2) achievedCount++;
                     });
                 }
 
-                console.log('🎯 Resultado:', achievedDays, 'dias atingidos');
-                return achievedDays;
+                if (goal.type === 'sleep_hours') {
+                    // REGRA: Conta dias com sono ≥ target (7h ou mais)
+                    wellbeingLogs.forEach(log => {
+                        if (log.sleep != null && parseFloat(log.sleep) >= parseFloat(goal.target)) achievedCount++;
+                    });
+                }
+
+                if (goal.type === 'bedtime_before') {
+                    // REGRA: Conta ciclos onde hora de deitar foi ANTES do target
+                    // Ex: target="01:30" → conta ciclos com bedtime < 01:30
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+
+                    cycles.forEach(cycle => {
+                        if (!cycle.bedtime) return;
+                        const bedtimeParts = cycle.bedtime.split(':');
+                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+
+                        // Ajustar para madrugada (00:00-05:59 = 24:00-29:59)
+                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-6h
+                            bedtimeMinutes += 1440; // +24h
+                        }
+
+                        let targetAdjusted = targetMinutes;
+                        if (targetMinutes >= 0 && targetMinutes < 360) {
+                            targetAdjusted += 1440;
+                        }
+
+                        if (bedtimeMinutes < targetAdjusted) achievedCount++;
+                    });
+                }
+
+                console.log('🎯 Resultado:', achievedCount, 'vezes atingido');
+                return achievedCount;
             };
 
             // Streak calculation
@@ -2462,34 +2478,30 @@
                                                 };
                                             }
 
-                                            // 9. METAS - Análise de progresso
+                                            // 9. METAS - Análise de cumprimentos
                                             if (goals.length > 0) {
-                                                // Total goals completed (progress >= 100%)
-                                                const completedGoals = goals.filter(g => getGoalProgress(g) >= 100);
-                                                const totalCompleted = completedGoals.length;
+                                                // Total times user met goal conditions
+                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g), 0);
 
-                                                // Average goal progress
-                                                const totalProgress = goals.reduce((sum, g) => sum + getGoalProgress(g), 0);
-                                                const avgProgress = goals.length > 0 ? totalProgress / goals.length : 0;
+                                                // Per-goal breakdown
+                                                const goalBreakdown = goals.map(g => ({
+                                                    ...g,
+                                                    achievementCount: getGoalAchievementCount(g)
+                                                }));
 
-                                                // Goals created in recent period
-                                                const recentGoals = goals.filter(g => {
-                                                    const createdDate = new Date(g.timestamp || g.deadline || getTodayKey());
-                                                    return createdDate >= recentStart && createdDate <= recentEnd;
-                                                });
+                                                // Average achievements per goal
+                                                const avgAchievements = goals.length > 0 ? totalAchievements / goals.length : 0;
 
-                                                // Calculate "days with goal work" (rough estimate based on completion %)
-                                                const activeDays = periodDays; // Use period length as baseline
-                                                const avgProgressPerDay = avgProgress / activeDays;
+                                                // Goals with at least one achievement
+                                                const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
 
                                                 progressData.goalsAnalysis = {
-                                                    totalCompleted,
+                                                    totalAchievements,
                                                     totalGoals: goals.length,
-                                                    avgProgress: avgProgress.toFixed(1),
-                                                    avgProgressPerDay: avgProgressPerDay.toFixed(1),
-                                                    recentGoalsCreated: recentGoals.length,
-                                                    activeGoals: goals.filter(g => !g.completed && getGoalProgress(g) < 100).length,
-                                                    completionRate: goals.length > 0 ? ((totalCompleted / goals.length) * 100).toFixed(0) : 0
+                                                    avgAchievements: avgAchievements.toFixed(1),
+                                                    goalsWithAchievements,
+                                                    goalBreakdown,
+                                                    activeGoals: goals.filter(g => !g.completed).length
                                                 };
                                             }
 
@@ -2914,51 +2926,82 @@
                                                                 🎯 Análise de Metas
                                                             </h3>
 
+                                                            {/* Main stats */}
                                                             <div className="grid grid-cols-2 gap-3 mb-4">
                                                                 <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
-                                                                        Metas Atingidas
+                                                                        Total de Cumprimentos
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
                                                                         <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
-                                                                            {progressData.goalsAnalysis.totalCompleted}
+                                                                            {progressData.goalsAnalysis.totalAchievements}
                                                                         </span>
                                                                         <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            de {progressData.goalsAnalysis.totalGoals}
+                                                                            vezes
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Taxa: {progressData.goalsAnalysis.completionRate}%
+                                                                        {progressData.goalsAnalysis.goalsWithAchievements}/{progressData.goalsAnalysis.totalGoals} metas cumpridas
                                                                     </div>
                                                                 </div>
 
                                                                 <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
-                                                                        Progresso Médio
+                                                                        Média por Meta
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
                                                                         <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
-                                                                            {progressData.goalsAnalysis.avgProgress}%
+                                                                            {progressData.goalsAnalysis.avgAchievements}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            vezes
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        {progressData.goalsAnalysis.avgProgressPerDay}% por dia
+                                                                        {progressData.goalsAnalysis.activeGoals} metas ativas
                                                                     </div>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="grid grid-cols-2 gap-3">
-                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border text-center'}>
-                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Metas ativas</div>
-                                                                    <div className={'text-2xl font-bold mt-1 ' + (darkMode ? 'text-white' : 'text-gray-900')}>
-                                                                        {progressData.goalsAnalysis.activeGoals}
-                                                                    </div>
+                                                            {/* Per-goal breakdown */}
+                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
+                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    Detalhes por Meta
                                                                 </div>
-                                                                <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border text-center'}>
-                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Criadas no período</div>
-                                                                    <div className={'text-2xl font-bold mt-1 ' + (darkMode ? 'text-white' : 'text-gray-900')}>
-                                                                        {progressData.goalsAnalysis.recentGoalsCreated}
-                                                                    </div>
+                                                                <div className="space-y-2">
+                                                                    {progressData.goalsAnalysis.goalBreakdown.map((goal, i) => {
+                                                                        const goalTypeLabels = {
+                                                                            'reduce_frequency': '🔢 Reduzir frequência',
+                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
+                                                                            'delay_first': '⏰ Adiar primeiro consumo',
+                                                                            'limit_last': '🌙 Limitar último consumo',
+                                                                            'increase_interval': '⏳ Aumentar intervalo',
+                                                                            'sleep_hours': '😴 Horas de sono',
+                                                                            'bedtime_before': '🛏️ Deitar antes de'
+                                                                        };
+                                                                        return (
+                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <div className="flex-1">
+                                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                                            {goalTypeLabels[goal.type] || goal.type}
+                                                                                        </div>
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            Meta: {goal.target}{goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : ''}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-right">
+                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
+                                                                                            {goal.achievementCount}
+                                                                                        </div>
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            vezes
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         </div>
