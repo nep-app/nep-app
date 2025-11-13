@@ -2565,49 +2565,58 @@
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.negativeEmotions && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                                {progressData.negativeEmotions.label}
+                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200') + ' rounded-lg p-3 border'}>
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-lg">😔</span>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>
+                                                                                Emoções Negativas
                                                                             </span>
                                                                             {progressData.negativeEmotions.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.negativeEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                    {progressData.negativeEmotions.change.direction === 'up' ? '↑' : '↓'} {progressData.negativeEmotions.change.percent.toFixed(0)}%
+                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
+                                                                                    {progressData.negativeEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.negativeEmotions.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
-                                                                                {progressData.negativeEmotions.recent.toFixed(0)}%
-                                                                            </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                antes: {progressData.negativeEmotions.previous.toFixed(0)}%
-                                                                            </span>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-baseline gap-1">
+                                                                                <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                    {progressData.negativeEmotions.recent.toFixed(0)}%
+                                                                                </span>
+                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                                    do total
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                                era {progressData.negativeEmotions.previous.toFixed(0)}%
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.triggers && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                                {progressData.triggers.label}
+                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-red-900/20 to-orange-900/20 border-red-700/50' : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200') + ' rounded-lg p-3 border'}>
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-lg">⚡</span>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-700')}>
+                                                                                Gatilhos Identificados
                                                                             </span>
                                                                             {progressData.triggers.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.triggers.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                    {progressData.triggers.change.direction === 'up' ? '↑' : '↓'} {progressData.triggers.change.percent.toFixed(0)}%
+                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.triggers.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
+                                                                                    {progressData.triggers.change.direction === 'up' ? '↑' : '↓'}{progressData.triggers.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
-                                                                                {progressData.triggers.recent.toFixed(1)}
-                                                                            </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                                gatilhos/ciclo
-                                                                            </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                antes: {progressData.triggers.previous.toFixed(1)}
-                                                                            </span>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-baseline gap-1">
+                                                                                <span className={'text-3xl font-black ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                    {progressData.triggers.recent.toFixed(1)}
+                                                                                </span>
+                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-red-300/70' : 'text-red-600/70')}>
+                                                                                    /ciclo
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                                era {progressData.triggers.previous.toFixed(1)}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
