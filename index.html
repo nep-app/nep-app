@@ -2955,19 +2955,151 @@
                                                     )}
 
                                                     {/* CORRELAÇÕES */}
-                                                    {patternsSubView === 'correlacoes' && (
-                                                        <div className="space-y-4">
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
-                                                                <div className="text-6xl mb-4">🔗</div>
-                                                                <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                    Correlações
-                                                                </h3>
-                                                                <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                    Em breve: análise de correlações entre consumo, sono, humor e energia.
-                                                                </p>
+                                                    {patternsSubView === 'correlacoes' && (() => {
+                                                        // Agregar dados por dia
+                                                        const dailyData = {};
+
+                                                        // Contar consumos por dia
+                                                        filteredConsumptions.forEach(c => {
+                                                            if (!dailyData[c.date]) dailyData[c.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
+                                                            dailyData[c.date].consumptions++;
+                                                        });
+
+                                                        // Adicionar bem-estar
+                                                        filteredWellbeingLogs.forEach(w => {
+                                                            if (!dailyData[w.date]) dailyData[w.date] = { consumptions: 0, sleep: null, mood: null, energy: null };
+                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[w.date].sleep = parseFloat(w.sleep);
+                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[w.date].mood = parseInt(w.mood);
+                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[w.date].energy = parseInt(w.energy);
+                                                        });
+
+                                                        // Calcular correlações simples (comparar dias com mais vs menos consumo)
+                                                        const daysWithData = Object.values(dailyData).filter(d => d.consumptions > 0);
+
+                                                        if (daysWithData.length < 3) {
+                                                            return (
+                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-6xl mb-4">🔗</div>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
+                                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        Precisas de pelo menos 3 dias com dados para análise de correlações.
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        // Dividir em dias de alto e baixo consumo
+                                                        const avgConsumptions = daysWithData.reduce((sum, d) => sum + d.consumptions, 0) / daysWithData.length;
+                                                        const highConsumptionDays = daysWithData.filter(d => d.consumptions > avgConsumptions);
+                                                        const lowConsumptionDays = daysWithData.filter(d => d.consumptions <= avgConsumptions);
+
+                                                        const correlations = [];
+
+                                                        // Sono
+                                                        const highSleep = highConsumptionDays.filter(d => d.sleep !== null);
+                                                        const lowSleep = lowConsumptionDays.filter(d => d.sleep !== null);
+                                                        if (highSleep.length > 0 && lowSleep.length > 0) {
+                                                            const avgHighSleep = highSleep.reduce((sum, d) => sum + d.sleep, 0) / highSleep.length;
+                                                            const avgLowSleep = lowSleep.reduce((sum, d) => sum + d.sleep, 0) / lowSleep.length;
+                                                            const diff = avgLowSleep - avgHighSleep;
+                                                            correlations.push({
+                                                                name: 'Sono',
+                                                                icon: '😴',
+                                                                high: avgHighSleep.toFixed(1),
+                                                                low: avgLowSleep.toFixed(1),
+                                                                diff: diff.toFixed(1),
+                                                                positive: diff > 0.5,
+                                                                unit: 'h'
+                                                            });
+                                                        }
+
+                                                        // Humor
+                                                        const highMood = highConsumptionDays.filter(d => d.mood !== null);
+                                                        const lowMood = lowConsumptionDays.filter(d => d.mood !== null);
+                                                        if (highMood.length > 0 && lowMood.length > 0) {
+                                                            const avgHighMood = highMood.reduce((sum, d) => sum + d.mood, 0) / highMood.length;
+                                                            const avgLowMood = lowMood.reduce((sum, d) => sum + d.mood, 0) / lowMood.length;
+                                                            const diff = avgLowMood - avgHighMood;
+                                                            correlations.push({
+                                                                name: 'Humor',
+                                                                icon: '😊',
+                                                                high: avgHighMood.toFixed(1),
+                                                                low: avgLowMood.toFixed(1),
+                                                                diff: diff.toFixed(1),
+                                                                positive: diff > 0.5,
+                                                                unit: '/10'
+                                                            });
+                                                        }
+
+                                                        // Energia
+                                                        const highEnergy = highConsumptionDays.filter(d => d.energy !== null);
+                                                        const lowEnergy = lowConsumptionDays.filter(d => d.energy !== null);
+                                                        if (highEnergy.length > 0 && lowEnergy.length > 0) {
+                                                            const avgHighEnergy = highEnergy.reduce((sum, d) => sum + d.energy, 0) / highEnergy.length;
+                                                            const avgLowEnergy = lowEnergy.reduce((sum, d) => sum + d.energy, 0) / lowEnergy.length;
+                                                            const diff = avgLowEnergy - avgHighEnergy;
+                                                            correlations.push({
+                                                                name: 'Energia',
+                                                                icon: '⚡',
+                                                                high: avgHighEnergy.toFixed(1),
+                                                                low: avgLowEnergy.toFixed(1),
+                                                                diff: diff.toFixed(1),
+                                                                positive: diff > 0.5,
+                                                                unit: '/10'
+                                                            });
+                                                        }
+
+                                                        if (correlations.length === 0) {
+                                                            return (
+                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-6xl mb-4">🔗</div>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
+                                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        Regista bem-estar (sono, humor, energia) para ver correlações com consumo.
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div className="space-y-4">
+                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔗 Correlações com Consumo</h3>
+                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        Comparação entre dias de alto consumo vs baixo consumo
+                                                                    </p>
+                                                                    <div className="space-y-3">
+                                                                        {correlations.map((corr, i) => (
+                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                                <div className="flex items-center justify-between mb-3">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-xl">{corr.icon}</span>
+                                                                                        <span className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</span>
+                                                                                    </div>
+                                                                                    <div className={'text-sm px-2 py-1 rounded-full font-medium ' + (corr.positive ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                        {corr.positive ? '✓ Positiva' : '⚠ Negativa'}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="grid grid-cols-2 gap-3 text-center">
+                                                                                    <div>
+                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias alto consumo</div>
+                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{corr.high}{corr.unit}</div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Dias baixo consumo</div>
+                                                                                        <div className={'text-xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{corr.low}{corr.unit}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={'text-xs mt-2 text-center ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    Diferença: {Math.abs(parseFloat(corr.diff)).toFixed(1)}{corr.unit}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
                                                 </div>
                                             );
                                         }
