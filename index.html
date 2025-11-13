@@ -2161,14 +2161,14 @@
                                             });
 
                                             if (recentDailyLogs.length > 0 || previousDailyLogs.length > 0) {
-                                                const recentLogsWithDosage = recentDailyLogs.filter(d => d.totalMg && d.totalMg > 0);
-                                                const previousLogsWithDosage = previousDailyLogs.filter(d => d.totalMg && d.totalMg > 0);
+                                                const recentLogsWithDosage = recentDailyLogs.filter(d => d.mg && d.mg > 0);
+                                                const previousLogsWithDosage = previousDailyLogs.filter(d => d.mg && d.mg > 0);
 
                                                 const recentAvgDosage = recentLogsWithDosage.length > 0
-                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.totalMg, 0) / recentLogsWithDosage.length
+                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / recentLogsWithDosage.length
                                                     : 0;
                                                 const previousAvgDosage = previousLogsWithDosage.length > 0
-                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.totalMg, 0) / previousLogsWithDosage.length
+                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / previousLogsWithDosage.length
                                                     : 0;
 
                                                 progressData.dosage = {
