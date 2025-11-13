@@ -1931,12 +1931,7 @@
                                                     {/* Mini-resumo contextual */}
                                                     <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
                                                         <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                            {(() => {
-                                                                const mainPeriod = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                                                                const periodNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
-                                                                const mainPercentage = ((mainPeriod[1] / filteredConsumptions.length) * 100).toFixed(0);
-                                                                return `Tiveste ${totalConsumptions} ${totalConsumptions === 1 ? 'consumo' : 'consumos'} (média ${avgPerDay}/dia). ${mainPercentage}% ocorrem à ${periodNames[mainPeriod[0]]}. ${avgInterval > 0 ? `Intervalo médio: ${avgInterval}h.` : ''}`;
-                                                            })()}
+                                                            {`Tiveste ${totalConsumptions} ${totalConsumptions === 1 ? 'consumo' : 'consumos'} (média ${avgPerDay}/dia).${avgInterval > 0 ? ` Intervalo médio: ${avgInterval}h.` : ''}`}
                                                         </p>
                                                     </div>
 
