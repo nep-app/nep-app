@@ -2956,13 +2956,20 @@
 
                                                     {/* CORRELAÇÕES */}
                                                     {patternsSubView === 'correlacoes' && (() => {
+                                                        console.log('🔍 DEBUG CORRELAÇÕES:', {
+                                                            totalConsumptions: consumptions.length,
+                                                            filteredConsumptions: filteredConsumptions.length,
+                                                            totalWellbeing: wellbeingLogs.length,
+                                                            filteredWellbeing: filteredWellbeingLogs.length
+                                                        });
+
                                                         if (filteredConsumptions.length < 5) {
                                                             return (
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
                                                                     <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
                                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Precisas de mais dados para análise de correlações.
+                                                                        Precisas de mais dados para análise de correlações. (Tens {filteredConsumptions.length} consumos filtrados, precisas de pelo menos 5)
                                                                     </p>
                                                                 </div>
                                                             );
