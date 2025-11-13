@@ -1898,10 +1898,10 @@
                                             // Generate insights
                                             const insights = [];
 
-                                            // Best day insight (excluir o dia de hoje)
+                                            // Best day insight (excluir o dia de hoje exceto quando filtrado por "dia")
                                             if (dates.length > 0) {
                                                 const today = new Date().toISOString().split('T')[0];
-                                                const completedDates = dates.filter(d => d !== today);
+                                                const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
                                                 if (completedDates.length > 0) {
                                                     const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                                     const bestDate = sortedDates[0];
@@ -2931,10 +2931,10 @@
                                             const goodIntervals = intervals.filter(i => i >= 2).length;
                                             const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
 
-                                            // Best/worst days (excluir o dia de hoje)
+                                            // Best/worst days (excluir o dia de hoje exceto quando filtrado por "dia")
                                             const dates = Object.keys(byDate).sort();
                                             const today = new Date().toISOString().split('T')[0];
-                                            const completedDates = dates.filter(d => d !== today);
+                                            const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
                                             const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                             const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;
                                             const worstDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
