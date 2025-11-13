@@ -817,16 +817,33 @@
                         consumptionsByDate[c.date]++;
                     });
 
-                    Object.values(consumptionsByDate).forEach(count => {
-                        if (count < goal.target) achievedCount++;
+                    console.log('📉 META REDUCE_FREQUENCY:', {
+                        target: goal.target,
+                        totalDias: Object.keys(consumptionsByDate).length
+                    });
+
+                    Object.entries(consumptionsByDate).forEach(([date, count]) => {
+                        const isAchieved = count < goal.target;
+                        console.log('  📅', date, '→', count, 'consumos →', isAchieved ? '✅' : '❌');
+                        if (isAchieved) achievedCount++;
                     });
                 }
 
                 if (goal.type === 'reduce_quantity') {
                     // REGRA: Conta dias com mg ABAIXO do target (excluindo o target)
                     // Ex: target=200 → conta dias com <200mg
+                    console.log('⚖️ META REDUCE_QUANTITY:', {
+                        target: goal.target,
+                        totalLogs: wellbeingLogs.length,
+                        logsComMg: wellbeingLogs.filter(w => w.mg).length
+                    });
+
                     wellbeingLogs.forEach(log => {
-                        if (log.mg && log.mg < goal.target) achievedCount++;
+                        if (log.mg) {
+                            const isAchieved = log.mg < goal.target;
+                            console.log('  📊', log.date || 'sem data', '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
+                            if (isAchieved) achievedCount++;
+                        }
                     });
                 }
 
@@ -863,8 +880,16 @@
                         consumptionsByCycle[c.cycleId].push(c);
                     });
 
-                    Object.values(consumptionsByCycle).forEach(cycleConsumptions => {
-                        if (cycleConsumptions.length < 2) return; // Precisa de pelo menos 2 consumos para ter intervalo
+                    console.log('⏱️ META INCREASE_INTERVAL:', {
+                        target: goal.target + 'h',
+                        totalCiclos: Object.keys(consumptionsByCycle).length
+                    });
+
+                    Object.entries(consumptionsByCycle).forEach(([cycleId, cycleConsumptions]) => {
+                        if (cycleConsumptions.length < 2) {
+                            console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', cycleConsumptions.length, 'consumo(s) → ⏭️ Precisa de ≥2');
+                            return;
+                        }
 
                         const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                         let longIntervals = 0;
@@ -876,8 +901,11 @@
                             if (intervalHours > 2) longIntervals++; // Estritamente >2h
                         }
 
-                        // Pelo menos 50% dos intervalos devem ser >2h
-                        if (longIntervals >= totalIntervals / 2) achievedCount++;
+                        const percentage = (longIntervals / totalIntervals) * 100;
+                        const isAchieved = longIntervals >= totalIntervals / 2;
+                        console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', longIntervals, 'de', totalIntervals, 'intervalos >2h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
+
+                        if (isAchieved) achievedCount++;
                     });
                 }
 
