@@ -4538,12 +4538,17 @@ import * as Icons from './components/Icons';
 
                                                                 // Encontrar hora com mais e menos consumos
                                                                 const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
+
+                                                                const renderID = Math.random().toString(36).substr(2, 9);
+                                                                console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
+
                                                                 hourEntries.sort((a, b) => b.count - a.count);
+
+                                                                console.log(`🔍 AFTER SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
 
                                                                 const worstHour = hourEntries[0];
                                                                 const bestHour = hourEntries[hourEntries.length - 1];
 
-                                                                const renderID = Math.random().toString(36).substr(2, 9);
                                                                 console.log(`📊 WORST/BEST HOUR [${renderID}]:`, {
                                                                     hourEntries,
                                                                     worstHour,
