@@ -1674,13 +1674,13 @@ import * as Icons from './components/Icons';
                                             }
                                         }
 
-                                        // Check high dosage (fixed threshold >200mg) - ONLY check the most recent log (last cycle)
+                                        // Check high dosage (fixed threshold >=200mg) - ONLY check the most recent log (last cycle)
                                         // Since there's only ONE log per cycle, check ONLY the most recent log
                                         const lastLog = dailyLogs
                                             .filter(l => l.mg !== undefined)
                                             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-                                        if (lastLog && lastLog.mg > 200) {
+                                        if (lastLog && lastLog.mg >= 200) {
                                             const logDate = new Date(lastLog.timestamp);
                                             const isToday = lastLog.date === getTodayKey();
                                             const yesterday = new Date();
@@ -1690,7 +1690,7 @@ import * as Icons from './components/Icons';
                                             const dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - logDate) / (1000 * 60 * 60 * 24))} dias`;
 
                                             alerts.push({
-                                                text: `Dosagem alta ${dateLabel}! (+200mg)`,
+                                                text: `Dosagem alta ${dateLabel}! (≥200mg)`,
                                                 emoji: '📊',
                                                 color: isToday ? 'red' : 'orange',
                                                 type: 'negative'
