@@ -1674,14 +1674,11 @@ import * as Icons from './components/Icons';
                                             }
                                         }
 
-                                        // Check high dosage (fixed threshold >200mg) for the most recent logs (last cycle)
-                                        // Since there's only ONE log per cycle, check the most recent log regardless of date
-                                        const sortedLogs = dailyLogs
+                                        // Check high dosage (fixed threshold >200mg) - ONLY check the most recent log (last cycle)
+                                        // Since there's only ONE log per cycle, check ONLY the most recent log
+                                        const lastLog = dailyLogs
                                             .filter(l => l.mg !== undefined)
-                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-                                        const lastLog = sortedLogs[0]; // Most recent log
-                                        const secondLastLog = sortedLogs[1]; // Second most recent log
+                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
                                         if (lastLog && lastLog.mg > 200) {
                                             const logDate = new Date(lastLog.timestamp);
@@ -1696,20 +1693,6 @@ import * as Icons from './components/Icons';
                                                 text: `Dosagem alta ${dateLabel}! (+200mg)`,
                                                 emoji: '📊',
                                                 color: isToday ? 'red' : 'orange',
-                                                type: 'negative'
-                                            });
-                                        } else if (secondLastLog && secondLastLog.mg > 200) {
-                                            const logDate = new Date(secondLastLog.timestamp);
-                                            const yesterday = new Date();
-                                            yesterday.setDate(yesterday.getDate() - 1);
-                                            const isYesterday = secondLastLog.date === yesterday.toISOString().split('T')[0];
-
-                                            const dateLabel = isYesterday ? 'ontem' : `há ${Math.floor((new Date() - logDate) / (1000 * 60 * 60 * 24))} dias`;
-
-                                            alerts.push({
-                                                text: `Dosagem alta ${dateLabel}! (+200mg)`,
-                                                emoji: '⚠️',
-                                                color: 'orange',
                                                 type: 'negative'
                                             });
                                         }
