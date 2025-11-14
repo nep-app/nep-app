@@ -4543,7 +4543,8 @@ import * as Icons from './components/Icons';
                                                                 const worstHour = hourEntries[0];
                                                                 const bestHour = hourEntries[hourEntries.length - 1];
 
-                                                                console.log('📊 WORST/BEST HOUR:', {
+                                                                const renderID = Math.random().toString(36).substr(2, 9);
+                                                                console.log(`📊 WORST/BEST HOUR [${renderID}]:`, {
                                                                     hourEntries,
                                                                     worstHour,
                                                                     bestHour,
@@ -4558,7 +4559,7 @@ import * as Icons from './components/Icons';
 
                                                                 return (
                                                                     <p>
-                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
+                                                                        [ID:{renderID}] A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
                                                                         {hourEntries.length > 1 && (
                                                                             <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
                                                                         )}
