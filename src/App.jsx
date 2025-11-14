@@ -4543,6 +4543,14 @@ import * as Icons from './components/Icons';
                                                                 const worstHour = hourEntries[0];
                                                                 const bestHour = hourEntries[hourEntries.length - 1];
 
+                                                                console.log('📊 WORST/BEST HOUR:', {
+                                                                    hourEntries,
+                                                                    worstHour,
+                                                                    bestHour,
+                                                                    worstFormatted: `${String(worstHour.hour).padStart(2, '0')}:00-${String(worstHour.hour + 1).padStart(2, '0')}:00`,
+                                                                    bestFormatted: `${String(bestHour.hour).padStart(2, '0')}:00-${String(bestHour.hour + 1).padStart(2, '0')}:00`
+                                                                });
+
                                                                 // Apenas mostrar se houver variação significativa
                                                                 if (hourEntries.length < 2) return null;
 
