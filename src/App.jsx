@@ -4524,6 +4524,16 @@ import * as Icons from './components/Icons';
                                                                     byHour[hour] = (byHour[hour] || 0) + 1;
                                                                 });
 
+                                                                console.log('🕐 ANÁLISE POR HORA:', {
+                                                                    totalConsumptions: filteredConsumptions.length,
+                                                                    byHour: byHour,
+                                                                    consumptions: filteredConsumptions.map(c => ({
+                                                                        timestamp: c.timestamp,
+                                                                        hour: new Date(c.timestamp).getHours(),
+                                                                        date: new Date(c.timestamp).toLocaleDateString('pt-PT')
+                                                                    }))
+                                                                });
+
                                                                 if (Object.keys(byHour).length === 0) return null;
 
                                                                 // Encontrar hora com mais e menos consumos
