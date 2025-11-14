@@ -1675,7 +1675,10 @@ import * as Icons from './components/Icons';
                                         }
 
                                         // Check high dosage (fixed threshold >200mg) for today and yesterday
-                                        const todayLog = dailyLogs.find(l => l.date === getTodayKey());
+                                        // Get the MOST RECENT log for today (in case there are multiple logs per day/cycle)
+                                        const todayLog = dailyLogs
+                                            .filter(l => l.date === getTodayKey())
+                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
                                         if (todayLog && todayLog.mg > 200) {
                                             alerts.push({
                                                 text: `Dosagem alta hoje! (+200mg)`,
@@ -1689,7 +1692,10 @@ import * as Icons from './components/Icons';
                                         const yesterday = new Date();
                                         yesterday.setDate(yesterday.getDate() - 1);
                                         const yesterdayKey = yesterday.toISOString().split('T')[0];
-                                        const yesterdayLog = dailyLogs.find(l => l.date === yesterdayKey);
+                                        // Get the MOST RECENT log for yesterday
+                                        const yesterdayLog = dailyLogs
+                                            .filter(l => l.date === yesterdayKey)
+                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
                                         if (yesterdayLog && yesterdayLog.mg > 200) {
                                             alerts.push({
                                                 text: `Dosagem alta ontem! (+200mg)`,
@@ -1802,10 +1808,7 @@ import * as Icons from './components/Icons';
                                                     <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
                                                         <div className="flex-1">
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
-                                                                {(() => {
-                                                                    const d = safeDate(c.timestamp);
-                                                                    return d ? `${d.toLocaleDateString('pt-PT')} - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
-                                                                })()}
+                                                                {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
                                                             </div>
                                                             {c.notes && <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{c.notes}</div>}
                                                         </div>
@@ -2012,12 +2015,9 @@ import * as Icons from './components/Icons';
                                                                             <div className={'text-lg font-bold ' + (count >= 10 ? (darkMode ? 'text-red-400' : 'text-red-600') : count > 6 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : count > 3 ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{count}x</div>
                                                                         </div>
                                                                         <div className="flex flex-wrap gap-1">
-                                                                            {dayConsumptions.map((c, i) => {
-                                                                                const d = safeDate(c.timestamp);
-                                                                                return d ? (
-                                                                                    <span key={i} className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700')}>{d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
-                                                                                ) : null;
-                                                                            })}
+                                                                            {dayConsumptions.map((c, i) => (
+                                                                                <span key={i} className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700')}>{new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
+                                                                            ))}
                                                                         </div>
                                                                     </div>
                                                                 );
@@ -4434,9 +4434,7 @@ import * as Icons from './components/Icons';
                                             // Time pattern
                                             const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
                                             filteredConsumptions.forEach(c => {
-                                                const d = safeDate(c.timestamp);
-                                                if (!d) return; // Skip if invalid timestamp
-                                                const hour = d.getHours();
+                                                const hour = new Date(c.timestamp).getHours();
                                                 if (hour >= 6 && hour < 12) byPartOfDay.manha++;
                                                 else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
                                                 else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
@@ -4528,9 +4526,7 @@ import * as Icons from './components/Icons';
                                                                 // Calcular consumos por hora
                                                                 const byHour = {};
                                                                 filteredConsumptions.forEach(c => {
-                                                                    const d = safeDate(c.timestamp);
-                                                                    if (!d) return;
-                                                                    const hour = d.getHours();
+                                                                    const hour = new Date(c.timestamp).getHours();
                                                                     byHour[hour] = (byHour[hour] || 0) + 1;
                                                                 });
 
@@ -4772,13 +4768,13 @@ import * as Icons from './components/Icons';
                                                                 fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
                                                                 const thisWeek = filteredConsumptions.filter(c => {
-                                                                    const d = safeDate(c.timestamp);
-                                                                    return d && d >= sevenDaysAgo && d <= today;
+                                                                    const d = new Date(c.timestamp);
+                                                                    return d >= sevenDaysAgo && d <= today;
                                                                 });
 
                                                                 const lastWeek = consumptions.filter(c => {
-                                                                    const d = safeDate(c.timestamp);
-                                                                    return d && d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                    const d = new Date(c.timestamp);
+                                                                    return d >= fourteenDaysAgo && d < sevenDaysAgo;
                                                                 });
 
                                                                 if (thisWeek.length === 0 || lastWeek.length === 0) return null;
@@ -5062,10 +5058,6 @@ import * as Icons from './components/Icons';
                                                                     </div>
                                                                     <div className="flex gap-4 text-sm">
                                                                         <div>
-                                                                            <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>Frequência: </span>
-                                                                            <span className={'font-bold ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>{l.times}x</span>
-                                                                        </div>
-                                                                        <div>
                                                                             <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>Quantidade: </span>
                                                                             <span className={'font-bold ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>{l.mg}mg</span>
                                                                         </div>
@@ -5086,10 +5078,7 @@ import * as Icons from './components/Icons';
                                                                     <div className="flex justify-between items-center">
                                                                         <div>
                                                                             <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                                {(() => {
-                                                                                    const d = safeDate(c.timestamp);
-                                                                                    return d ? `${d.toLocaleDateString('pt-PT')} - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
-                                                                                })()}
+                                                                                {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
                                                                             </div>
                                                                             {c.notes && <div className={'text-sm mt-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {c.notes}</div>}
                                                                         </div>
