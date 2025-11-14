@@ -550,9 +550,11 @@ import * as Icons from './components/Icons';
 
                 const avgTimes = (totalConsumptions / 7).toFixed(1);
 
-                // Calculate avgMg from dailyLogs that have mg registered
-                const completedLogs = excludeToday(dailyLogs);
-                const logsWithMg = completedLogs.filter(l => l.mg !== undefined && !isNaN(l.mg));
+                // Calculate avgMg from dailyLogs that have mg registered IN THE LAST 7 DAYS
+                const logsWithMg = dailyLogs.filter(l => {
+                    // Only include logs from last 7 days with valid mg
+                    return last7Dates.includes(l.date) && l.mg !== undefined && !isNaN(l.mg);
+                });
                 const avgMg = logsWithMg.length > 0 ? (logsWithMg.reduce((sum, l) => sum + l.mg, 0) / logsWithMg.length).toFixed(0) : 0;
 
                 return { avgTimes, avgMg };
