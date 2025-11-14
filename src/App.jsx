@@ -4517,6 +4517,8 @@ import * as Icons from './components/Icons';
                                                             {(() => {
                                                                 if (totalConsumptions === 0) return null;
 
+                                                                const renderID = Math.random().toString(36).substr(2, 9);
+
                                                                 // Calcular consumos por hora
                                                                 const byHour = {};
                                                                 filteredConsumptions.forEach(c => {
@@ -4524,7 +4526,7 @@ import * as Icons from './components/Icons';
                                                                     byHour[hour] = (byHour[hour] || 0) + 1;
                                                                 });
 
-                                                                console.log('🕐 ANÁLISE POR HORA:', {
+                                                                console.log(`🕐 ANÁLISE POR HORA [${renderID}]:`, {
                                                                     totalConsumptions: filteredConsumptions.length,
                                                                     byHour: byHour,
                                                                     consumptions: filteredConsumptions.map(c => ({
@@ -4539,7 +4541,6 @@ import * as Icons from './components/Icons';
                                                                 // Encontrar hora com mais e menos consumos
                                                                 const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
 
-                                                                const renderID = Math.random().toString(36).substr(2, 9);
                                                                 console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
 
                                                                 hourEntries.sort((a, b) => b.count - a.count);
