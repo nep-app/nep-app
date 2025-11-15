@@ -2799,9 +2799,18 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             'sleep_hours': '😴 Horas de sono',
                                                                             'bedtime_before': '🛏️ Deitar antes de'
                                                                         };
+                                                                        const explanations = {
+                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
+                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
+                                                                            'delay_first': `Dias com 1º consumo ≥${goal.target}`,
+                                                                            'limit_last': `Ciclos com último antes da meia-noite`,
+                                                                            'increase_interval': `Ciclos com ≥50% intervalos >${goal.target}h`,
+                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
+                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
+                                                                        };
                                                                         return (
                                                                             <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                                <div className="flex items-center justify-between">
+                                                                                <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
                                                                                         <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
                                                                                             {goalTypeLabels[goal.type] || goal.type}
@@ -2817,6 +2826,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
                                                                                             vezes
                                                                                         </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5'}>
+                                                                                    <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        {explanations[goal.type] || 'Cumprimentos registados'}
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
