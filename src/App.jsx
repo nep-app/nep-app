@@ -4880,9 +4880,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                 const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
 
+                                                                // Só mostrar se houver variação significativa entre horas
+                                                                // (pior hora tem pelo menos 2x mais consumos que melhor hora)
+                                                                if (worstHour.count < bestHour.count * 2) return null;
+
                                                                 return (
                                                                     <p>
-                                                                        [ID:{renderID}] A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
+                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
                                                                         {hourEntries.length > 1 && (
                                                                             <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
                                                                         )}
@@ -4894,7 +4898,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             {(avgMood || avgEnergy || avgSleep) && (
                                                                 <p>
                                                                     Sobre o teu bem-estar geral:
-                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : ' - um valor razoável'}.</>}
+                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : parseFloat(avgSleep) >= 7 && parseFloat(avgSleep) <= 9 ? ' - excelente! Esse é o intervalo ideal para a maioria das pessoas' : ' - um valor razoável'}.</>}
                                                                     {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
                                                                     {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
                                                                 </p>
@@ -5085,25 +5089,65 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             {(() => {
                                                                 if (totalConsumptions === 0) return null;
 
-                                                                const today = new Date();
-                                                                const sevenDaysAgo = new Date(today);
-                                                                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                                                const fourteenDaysAgo = new Date(today);
-                                                                fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+                                                                const now = new Date();
+                                                                let recentPeriod, previousPeriod, periodLabel;
 
-                                                                const thisWeek = filteredConsumptions.filter(c => {
-                                                                    const d = new Date(c.timestamp);
-                                                                    return d >= sevenDaysAgo && d <= today;
-                                                                });
+                                                                // Adaptar comparação ao filtro selecionado
+                                                                if (patternsPeriod === 'hoje') {
+                                                                    // Comparar hoje vs ontem
+                                                                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                                                                    const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+                                                                    const yesterdayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
 
-                                                                const lastWeek = consumptions.filter(c => {
-                                                                    const d = new Date(c.timestamp);
-                                                                    return d >= fourteenDaysAgo && d < sevenDaysAgo;
-                                                                });
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= todayStart);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= yesterdayStart && d <= yesterdayEnd;
+                                                                    });
+                                                                    periodLabel = { recent: 'hoje', previous: 'ontem' };
+                                                                } else if (patternsPeriod === 'semana') {
+                                                                    // Comparar esta semana vs semana anterior
+                                                                    const sevenDaysAgo = new Date(now);
+                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                                                    const fourteenDaysAgo = new Date(now);
+                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-                                                                if (thisWeek.length === 0 || lastWeek.length === 0) return null;
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                    });
+                                                                    periodLabel = { recent: 'nesta semana', previous: 'na anterior' };
+                                                                } else if (patternsPeriod === 'mês') {
+                                                                    // Comparar este mês vs mês anterior
+                                                                    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                                                                    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                                                                    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-                                                                const percentChange = ((thisWeek.length - lastWeek.length) / lastWeek.length) * 100;
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= thisMonthStart);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= lastMonthStart && d <= lastMonthEnd;
+                                                                    });
+                                                                    periodLabel = { recent: 'neste mês', previous: 'no anterior' };
+                                                                } else {
+                                                                    // 'tudo': Comparar últimos 7 dias vs 7 dias anteriores
+                                                                    const sevenDaysAgo = new Date(now);
+                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                                                    const fourteenDaysAgo = new Date(now);
+                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                    });
+                                                                    periodLabel = { recent: 'na última semana', previous: 'na anterior' };
+                                                                }
+
+                                                                if (recentPeriod.length === 0 || previousPeriod.length === 0) return null;
+
+                                                                const percentChange = ((recentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
 
                                                                 // Só mostrar se mudança significativa (>20%)
                                                                 if (Math.abs(percentChange) < 20) return null;
@@ -5112,12 +5156,12 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                     <p>
                                                                         {percentChange > 0 ? (
                                                                             <>
-                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> na última semana comparado à anterior (de {lastWeek.length} para {thisWeek.length} consumos).
+                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
                                                                                 <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> na última semana comparado à anterior (de {lastWeek.length} para {thisWeek.length} consumos).
+                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
                                                                                 <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
                                                                             </>
                                                                         )}
