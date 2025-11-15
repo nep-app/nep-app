@@ -718,7 +718,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 return 0;
             };
 
-            const getGoalAchievementCount = (goal) => {
+            const getGoalAchievementCount = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
+                // Usar dados filtrados se fornecidos, caso contrário usar todos os dados
+                const dataConsumptions = filteredConsumptions || consumptions;
+                const dataDailyLogs = filteredDailyLogs || dailyLogs;
+                const dataCycles = filteredCycles || cycles;
+                const dataWellbeing = filteredWellbeing || wellbeingLogs;
+
                 let achievedCount = 0;
                 console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
@@ -726,7 +732,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
                     // Ex: target=10 → conta dias com <10 consumos (0-9)
                     const consumptionsByDate = {};
-                    consumptions.forEach(c => {
+                    dataConsumptions.forEach(c => {
                         if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
                         consumptionsByDate[c.date]++;
                     });
@@ -748,11 +754,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     // Ex: target=200 → conta dias com <200mg
                     console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
-                        totalLogs: dailyLogs.length,
-                        logsComMg: dailyLogs.filter(d => d.mg).length
+                        totalLogs: dataDailyLogs.length,
+                        logsComMg: dataDailyLogs.filter(d => d.mg).length
                     });
 
-                    dailyLogs.forEach(log => {
+                    dataDailyLogs.forEach(log => {
                         if (log.mg) {
                             const isAchieved = log.mg < goal.target;
                             console.log('  📊', log.date || 'sem data', '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
@@ -764,7 +770,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (goal.type === 'delay_first') {
                     // REGRA: Conta dias onde primeiro consumo foi >= target
                     const firstOfDays = {};
-                    consumptions.forEach(c => {
+                    dataConsumptions.forEach(c => {
                         if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
                             firstOfDays[c.date] = c.timestamp;
                         }
@@ -780,7 +786,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 if (goal.type === 'limit_last') {
                     // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                    cycles.forEach(cycle => {
+                    dataCycles.forEach(cycle => {
                         if (cycle.lastBefore00 === true) achievedCount++;
                     });
                 }
@@ -788,7 +794,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (goal.type === 'increase_interval') {
                     // REGRA: Conta CICLOS onde ≥50% dos intervalos são >2h
                     const consumptionsByCycle = {};
-                    consumptions.forEach(c => {
+                    dataConsumptions.forEach(c => {
                         if (!c.cycleId) return;
                         if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
                         consumptionsByCycle[c.cycleId].push(c);
@@ -825,7 +831,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 if (goal.type === 'sleep_hours') {
                     // REGRA: Conta dias com sono ≥ target (7h ou mais)
-                    wellbeingLogs.forEach(log => {
+                    dataWellbeing.forEach(log => {
                         if (log.sleep != null && parseFloat(log.sleep) >= parseFloat(goal.target)) achievedCount++;
                     });
                 }
@@ -841,10 +847,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         target: goal.target,
                         targetStr,
                         targetMinutes,
-                        totalCycles: cycles.length
+                        totalCycles: dataCycles.length
                     });
 
-                    cycles.forEach(cycle => {
+                    dataCycles.forEach(cycle => {
                         if (!cycle.bedtime) return;
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
@@ -1738,11 +1744,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         const filteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
+                                        const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
 
                                         console.log('📊 Análises - Dados filtrados:', {
                                             consumos: filteredConsumptions.length,
                                             bemEstar: filteredWellbeingLogs.length,
-                                            ciclos: filteredCycles.length
+                                            ciclos: filteredCycles.length,
+                                            dailyLogs: filteredDailyLogs.length
                                         });
 
                                         // DASHBOARD (COMPACTO)
@@ -2278,13 +2286,19 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                             // 9. METAS - Análise de cumprimentos
                                             if (goals.length > 0) {
-                                                // Total times user met goal conditions
-                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g), 0);
+                                                // Filtrar dailyLogs para o período recente
+                                                const recentDailyLogs = dailyLogs.filter(log => {
+                                                    const d = new Date(log.date);
+                                                    return d >= recentStart && d <= recentEnd;
+                                                });
+
+                                                // Total times user met goal conditions (apenas período recente)
+                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, recentConsumptions, recentDailyLogs, recentCycles, recentWellbeing), 0);
 
                                                 // Per-goal breakdown
                                                 const goalBreakdown = goals.map(g => ({
                                                     ...g,
-                                                    achievementCount: getGoalAchievementCount(g)
+                                                    achievementCount: getGoalAchievementCount(g, recentConsumptions, recentDailyLogs, recentCycles, recentWellbeing)
                                                 }));
 
                                                 // Average achievements per DAY (not per goal)
@@ -4581,8 +4595,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                             {/* Paragraph 9: Goals Achievement */}
                                                             {goals.length > 0 && (() => {
-                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g), 0);
-                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g) > 0);
+                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
+                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs) > 0);
 
                                                                 return (
                                                                     <p>
