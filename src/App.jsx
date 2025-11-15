@@ -2158,10 +2158,18 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                     // Calculate total possible based on goal type
                                                     let totalPossible = 0;
-                                                    const isCycleBased = ['increase_interval', 'limit_last'].includes(g.type);
 
-                                                    if (isCycleBased) {
-                                                        // For cycle-based goals: count unique cycles
+                                                    if (g.type === 'increase_interval') {
+                                                        // For increase_interval: count cycles with ≥2 consumptions (need at least 2 to have intervals)
+                                                        const consumptionsByCycle = {};
+                                                        filteredConsumptions.forEach(c => {
+                                                            if (!c.cycleId) return;
+                                                            if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
+                                                            consumptionsByCycle[c.cycleId].push(c);
+                                                        });
+                                                        totalPossible = Object.values(consumptionsByCycle).filter(arr => arr.length >= 2).length;
+                                                    } else if (g.type === 'limit_last') {
+                                                        // For limit_last: count all cycles
                                                         totalPossible = filteredCycles.length;
                                                     } else {
                                                         // For day-based goals: count unique days (excluding today)
