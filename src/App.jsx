@@ -3039,13 +3039,22 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="flex items-baseline gap-2">
+                                                                        <div className="flex items-baseline gap-2 mb-2">
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.bedtimeConsistency.recent < 30 ? 'Muito consistente' : progressData.bedtimeConsistency.recent < 60 ? 'Consistente' : 'Variável'}
                                                                             </span>
                                                                             <span className={'text-xs ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
                                                                                 variação: ±{(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h
                                                                             </span>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-3 py-2'}>
+                                                                            <p className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                {progressData.bedtimeConsistency.recent < 30
+                                                                                    ? 'Deitas-te sempre a horas semelhantes (variação <30min). Excelente para a qualidade do sono!'
+                                                                                    : progressData.bedtimeConsistency.recent < 60
+                                                                                    ? 'Variação moderada nas horas de deitar. Tenta manter uma rotina mais regular.'
+                                                                                    : `Horas de deitar muito variáveis (±${(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h). Rotinas consistentes melhoram o sono.`}
+                                                                            </p>
                                                                         </div>
                                                                     </div>
                                                                 )}
