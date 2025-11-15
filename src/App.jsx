@@ -903,33 +903,34 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
 
                 if (goal.type === 'increase_interval') {
-                    // REGRA: Conta CICLOS onde ≥50% dos intervalos são >2h
-                    const consumptionsByCycle = {};
-                    const consumptionsWithCycleId = dataConsumptions.filter(c => c.cycleId);
-                    const consumptionsWithoutCycleId = dataConsumptions.filter(c => !c.cycleId);
+                    // REGRA: Conta DIAS onde ≥50% dos intervalos são >target
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
+                    const consumptionsByDate = {};
 
                     dataConsumptions.forEach(c => {
-                        if (!c.cycleId) return;
-                        if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
-                        consumptionsByCycle[c.cycleId].push(c);
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                        consumptionsByDate[dateKey].push(c);
                     });
+
+                    // Remove dia atual da contagem
+                    delete consumptionsByDate[today];
 
                     console.log('⏱️ META INCREASE_INTERVAL:', {
                         target: goal.target + 'h',
                         totalConsumptions: dataConsumptions.length,
-                        withCycleId: consumptionsWithCycleId.length,
-                        withoutCycleId: consumptionsWithoutCycleId.length,
-                        totalCiclos: Object.keys(consumptionsByCycle).length,
-                        ciclosIds: Object.keys(consumptionsByCycle).map(id => id.substring(0, 8))
+                        totalDias: Object.keys(consumptionsByDate).length,
+                        hoje: today
                     });
 
-                    Object.entries(consumptionsByCycle).forEach(([cycleId, cycleConsumptions]) => {
-                        if (cycleConsumptions.length < 2) {
-                            console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', cycleConsumptions.length, 'consumo(s) → ⏭️ Precisa de ≥2');
+                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+                        if (dayConsumptions.length < 2) {
+                            console.log('  📅', date, '→', dayConsumptions.length, 'consumo(s) → ⏭️ Precisa de ≥2');
                             return;
                         }
 
-                        const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        const sorted = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                         let longIntervals = 0;
                         let totalIntervals = 0;
                         const intervalDetails = [];
@@ -940,8 +941,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             const isLong = intervalHours > goal.target;
                             if (isLong) longIntervals++;
                             intervalDetails.push({
-                                from: new Date(sorted[i-1].timestamp).toLocaleString('pt-PT'),
-                                to: new Date(sorted[i].timestamp).toLocaleString('pt-PT'),
+                                from: new Date(sorted[i-1].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
+                                to: new Date(sorted[i].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
                                 hours: intervalHours.toFixed(1),
                                 isLong
                             });
@@ -949,7 +950,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                         const percentage = (longIntervals / totalIntervals) * 100;
                         const isAchieved = longIntervals >= totalIntervals / 2;
-                        console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', longIntervals, 'de', totalIntervals, 'intervalos >' + goal.target + 'h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
+                        console.log('  📅', date, '→', longIntervals, 'de', totalIntervals, 'intervalos >' + goal.target + 'h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
                         console.log('    Detalhes:', intervalDetails);
 
                         if (isAchieved) achievedCount++;
@@ -2160,14 +2161,16 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     let totalPossible = 0;
 
                                                     if (g.type === 'increase_interval') {
-                                                        // For increase_interval: count cycles with ≥2 consumptions (need at least 2 to have intervals)
-                                                        const consumptionsByCycle = {};
+                                                        // For increase_interval: count days with ≥2 consumptions (need at least 2 to have intervals)
+                                                        const today = new Date().toLocaleDateString('pt-PT');
+                                                        const consumptionsByDate = {};
                                                         filteredConsumptions.forEach(c => {
-                                                            if (!c.cycleId) return;
-                                                            if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
-                                                            consumptionsByCycle[c.cycleId].push(c);
+                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                            if (dateKey === today) return; // Skip today
+                                                            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                                                            consumptionsByDate[dateKey].push(c);
                                                         });
-                                                        totalPossible = Object.values(consumptionsByCycle).filter(arr => arr.length >= 2).length;
+                                                        totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
                                                     } else if (g.type === 'limit_last') {
                                                         // For limit_last: count all cycles
                                                         totalPossible = filteredCycles.length;
@@ -2329,7 +2332,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             'reduce_quantity': `Dias com <${goal.target}mg`,
                                                                             'delay_first': `Dias com 1º consumo ≥${goal.target}`,
                                                                             'limit_last': `Ciclos com último antes da meia-noite`,
-                                                                            'increase_interval': `Ciclos com ≥50% intervalos >${goal.target}h`,
+                                                                            'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
                                                                             'sleep_hours': `Noites com ≥${goal.target}h de sono`,
                                                                             'bedtime_before': `Noites a dormir antes de ${goal.target}`
                                                                         };
