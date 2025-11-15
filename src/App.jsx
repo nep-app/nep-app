@@ -937,7 +937,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         for (let i = 1; i < sorted.length; i++) {
                             const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
                             totalIntervals++;
-                            const isLong = intervalHours > 2;
+                            const isLong = intervalHours > goal.target;
                             if (isLong) longIntervals++;
                             intervalDetails.push({
                                 from: new Date(sorted[i-1].timestamp).toLocaleString('pt-PT'),
@@ -949,7 +949,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                         const percentage = (longIntervals / totalIntervals) * 100;
                         const isAchieved = longIntervals >= totalIntervals / 2;
-                        console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', longIntervals, 'de', totalIntervals, 'intervalos >2h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
+                        console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', longIntervals, 'de', totalIntervals, 'intervalos >' + goal.target + 'h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
                         console.log('    Detalhes:', intervalDetails);
 
                         if (isAchieved) achievedCount++;
@@ -2153,10 +2153,50 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                 const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
-                                                const goalBreakdown = goals.map(g => ({
-                                                    ...g,
-                                                    achievementCount: getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs)
-                                                }));
+                                                const goalBreakdown = goals.map(g => {
+                                                    const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
+
+                                                    // Calculate total possible based on goal type
+                                                    let totalPossible = 0;
+                                                    const isCycleBased = ['increase_interval', 'limit_last'].includes(g.type);
+
+                                                    if (isCycleBased) {
+                                                        // For cycle-based goals: count unique cycles
+                                                        totalPossible = filteredCycles.length;
+                                                    } else {
+                                                        // For day-based goals: count unique days (excluding today)
+                                                        const today = new Date().toLocaleDateString('pt-PT');
+                                                        const allDates = new Set();
+
+                                                        if (g.type === 'reduce_frequency' || g.type === 'delay_first') {
+                                                            filteredConsumptions.forEach(c => {
+                                                                const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                if (dateKey !== today) allDates.add(dateKey);
+                                                            });
+                                                        } else if (g.type === 'reduce_quantity') {
+                                                            filteredDailyLogs.forEach(log => {
+                                                                const dateKey = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                                                                if (dateKey !== today) allDates.add(dateKey);
+                                                            });
+                                                        } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
+                                                            filteredWellbeingLogs.forEach(log => {
+                                                                const dateKey = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                                                                if (dateKey !== today) allDates.add(dateKey);
+                                                            });
+                                                        }
+
+                                                        totalPossible = allDates.size;
+                                                    }
+
+                                                    const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;
+
+                                                    return {
+                                                        ...g,
+                                                        achievementCount,
+                                                        totalPossible,
+                                                        successRate
+                                                    };
+                                                });
 
                                                 const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : 0;
                                                 const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
@@ -2305,9 +2345,26 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5'}>
+                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5 mb-2'}>
                                                                                     <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
                                                                                         {explanations[goal.type] || 'Cumprimentos registados'}
+                                                                                    </div>
+                                                                                </div>
+                                                                                {/* Progress Bar */}
+                                                                                <div>
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            {goal.achievementCount} / {goal.totalPossible}
+                                                                                        </span>
+                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : goal.successRate >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                                            {goal.successRate.toFixed(0)}%
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                        <div
+                                                                                            className={'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')}
+                                                                                            style={{width: `${Math.min(100, goal.successRate)}%`}}
+                                                                                        ></div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
