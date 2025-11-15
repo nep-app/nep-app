@@ -1985,69 +1985,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         </div>
                                     )}
 
-                                    {/* Metas Compactas */}
-                                    {goals.length > 0 && (
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-300') + ' rounded-xl p-4 border'}>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-2xl">🎯</span>
-                                                    <h3 className={'font-bold ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>Metas</h3>
-                                                </div>
-                                                <button onClick={() => setShowGoalModal(true)} className={'px-3 py-1 rounded-lg text-xs font-medium ' + (darkMode ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-purple-600 text-white hover:bg-purple-700')}>+ Nova</button>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {goals.map(goal => {
-                                                    const progress = getGoalProgressStats(goal);
-                                                    const isCycleBased = ['increase_interval', 'limit_last', 'bedtime_before'].includes(goal.type);
-                                                    const label = isCycleBased ? 'ciclos' : 'dias';
-                                                    return (
-                                                        <div key={goal.id} className={(darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/80 border-gray-200') + ' rounded-lg p-3 border'}>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className={'text-sm font-semibold truncate ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                        {goal.type === 'reduce_frequency' && '🔢 Reduzir Frequência'}
-                                                                        {goal.type === 'reduce_quantity' && '⚖️ Reduzir Quantidade'}
-                                                                        {goal.type === 'delay_first' && '⏰ Adiar Primeiro'}
-                                                                        {goal.type === 'increase_interval' && '⏳ Aumentar Intervalo'}
-                                                                        {goal.type === 'limit_last' && '🌙 Último Consumo'}
-                                                                        {goal.type === 'sleep_hours' && '😴 Horas de Sono'}
-                                                                        {goal.type === 'bedtime_before' && '🛏️ Deitar Antes de'}
-                                                                    </div>
-                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                                        Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
-                                                                        {goal.type === 'reduce_quantity' && goal.target + 'mg'}
-                                                                        {goal.type === 'delay_first' && goal.target}
-                                                                        {goal.type === 'increase_interval' && goal.target + 'h'}
-                                                                        {goal.type === 'limit_last' && goal.target}
-                                                                        {goal.type === 'sleep_hours' && goal.target + 'h'}
-                                                                        {goal.type === 'bedtime_before' && goal.target}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 ml-2">
-                                                                    <div className="text-right">
-                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{progress.percentage}%</div>
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{progress.achieved}/{progress.total} {label}</div>
-                                                                    </div>
-                                                                    <button onClick={() => {
-                                                                        setEditingGoal(goal);
-                                                                        setGoalForm({
-                                                                            type: goal.type,
-                                                                            target: goal.target.toString(),
-                                                                            deadline: goal.deadline
-                                                                        });
-                                                                        setShowGoalModal(true);
-                                                                    }} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit2 className="w-3 h-3" /></button>
-                                                                </div>
-                                                            </div>
-                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' w-full rounded-full h-1.5 overflow-hidden'}>
-                                                                <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style={{ width: progress.percentage + '%' }} />
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {consumptions.length > 0 && (
                                         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
@@ -2113,7 +2050,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         {['dashboard', 'progress', 'patterns', 'coach'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
-                                                {view === 'progress' && '📈 Progresso'}
+                                                {view === 'progress' && '📊 Dashboard'}
                                                 {view === 'patterns' && '🔍 Padrões & Análises'}
                                                 {view === 'coach' && '💬 Coach'}
                                             </button>
