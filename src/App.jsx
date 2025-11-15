@@ -1117,9 +1117,12 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
 
                 if (goal.type === 'limit_last') {
+                    console.log('🌙 META LIMIT_LAST (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     total = dataCycles.length;
                     dataCycles.forEach(cycle => {
-                        if (cycle.lastBefore00 === true) achieved++;
+                        const isAchieved = cycle.lastBefore00 === true;
+                        if (isAchieved) achieved++;
+                        console.log(`  🌙 Ciclo ${cycle.id.slice(0, 8)} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
@@ -1134,17 +1137,24 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
 
                 if (goal.type === 'bedtime_before') {
+                    console.log('🛏️ META BEDTIME_BEFORE (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
                     dataCycles.forEach(cycle => {
-                        if (!cycle.bedtime) return;
+                        if (!cycle.bedtime) {
+                            console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → sem bedtime → ⏭️ Ignorado`);
+                            return;
+                        }
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
 
                         // Filter invalid times (06:00-20:59 is not bedtime)
-                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) return;
+                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) {
+                            console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} (inválido, dia) → ⏭️ Ignorado`);
+                            return;
+                        }
 
                         total++;
 
@@ -1158,7 +1168,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             targetAdjusted += 1440;
                         }
 
-                        if (bedtimeMinutes <= targetAdjusted) achieved++;
+                        const isAchieved = bedtimeMinutes <= targetAdjusted;
+                        if (isAchieved) achieved++;
+                        console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
@@ -5385,7 +5397,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
                                                             {(() => {
                                                                 const progress = getGoalProgressStats(goal);
-                                                                const label = goal.type === 'increase_interval' ?
+                                                                const isCycleBased = ['increase_interval', 'limit_last', 'bedtime_before'].includes(goal.type);
+                                                                const label = isCycleBased ?
                                                                     (progress.total === 1 ? 'ciclo' : 'ciclos') :
                                                                     (progress.total === 1 ? 'dia' : 'dias');
                                                                 return (
