@@ -733,8 +733,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     // Ex: target=10 → conta dias com <10 consumos (0-9)
                     const consumptionsByDate = {};
                     dataConsumptions.forEach(c => {
-                        if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
-                        consumptionsByDate[c.date]++;
+                        // Derivar data do timestamp para garantir consistência
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
+                        consumptionsByDate[dateKey]++;
                     });
 
                     console.log('📉 META REDUCE_FREQUENCY:', {
@@ -771,8 +773,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     // REGRA: Conta dias onde primeiro consumo foi >= target
                     const firstOfDays = {};
                     dataConsumptions.forEach(c => {
-                        if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
-                            firstOfDays[c.date] = c.timestamp;
+                        // Derivar data do timestamp para garantir consistência
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!firstOfDays[dateKey] || c.timestamp < firstOfDays[dateKey]) {
+                            firstOfDays[dateKey] = c.timestamp;
                         }
                     });
                     const targetParts = goal.target.split(':');
