@@ -34,6 +34,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const [password, setPassword] = useState('');
             const [authError, setAuthError] = useState('');
             const [appError, setAppError] = useState(null);
+            const hasAutoAssociatedRef = React.useRef(false);
 
             // 2.2 UI Navigation State
             const [currentView, setCurrentView] = useState('home');
@@ -263,6 +264,51 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             useEffect(() => { if (!user || !db) return; const unsubs = [onSnapshot(collection(db, `users/${user.uid}/consumptions`), snap => setConsumptions(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), snap => setDailyLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), snap => setWellbeingLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/reflections`), snap => setReflections(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/cycles`), snap => setCycles(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/goals`), snap => setGoals(snap.docs.map(d => d.data())))]; return () => unsubs.forEach(u => u()); }, [user, db]);
 
+            // Auto-associate consumptions to cycles when data is loaded
+            useEffect(() => {
+                if (!user || !db || cycles.length === 0 || consumptions.length === 0) return;
+                if (hasAutoAssociatedRef.current) return; // Only run once
+
+                const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
+                if (consumptionsWithoutCycle.length === 0) return; // Nothing to do
+
+                hasAutoAssociatedRef.current = true;
+                console.log(`🔄 Auto-associando ${consumptionsWithoutCycle.length} consumos a ciclos...`);
+
+                // Run association asynchronously to avoid blocking
+                (async () => {
+                    const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                    let updatedCount = 0;
+
+                    for (const consumption of consumptionsWithoutCycle) {
+                        let assignedCycleId = null;
+
+                        for (let i = sortedCycles.length - 1; i >= 0; i--) {
+                            const cycle = sortedCycles[i];
+                            const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
+
+                            const isAfterCycleStart = consumption.timestamp >= cycle.timestamp;
+                            const isBeforeNextCycle = !nextCycle || consumption.timestamp < nextCycle.timestamp;
+
+                            if (isAfterCycleStart && isBeforeNextCycle) {
+                                assignedCycleId = cycle.id;
+                                break;
+                            }
+                        }
+
+                        if (!assignedCycleId) {
+                            assignedCycleId = sortedCycles[0].id;
+                        }
+
+                        const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
+                        await saveToFirebase('consumptions', updatedConsumption);
+                        updatedCount++;
+                    }
+
+                    console.log(`✅ ${updatedCount} consumos associados automaticamente`);
+                })();
+            }, [user, db, cycles, consumptions]);
+
             const toggleDarkMode = () => { const newMode = !darkMode; setDarkMode(newMode); localStorage.setItem('darkMode', newMode); document.body.classList.toggle('dark', newMode); };
 
             const handleAuth = async (e) => { e.preventDefault(); setAuthError(''); if (!auth) return;  try { if (isLogin) await signInWithEmailAndPassword(auth, email, password); else await createUserWithEmailAndPassword(auth, email, password); } catch (error) { if (error.code === 'auth/user-not-found') setAuthError('Email não encontrado. Cria conta primeiro.'); else if (error.code === 'auth/wrong-password') setAuthError('Password errada.'); else if (error.code === 'auth/email-already-in-use') setAuthError('Email já existe. Faz login.'); else if (error.code === 'auth/weak-password') setAuthError('Password fraca (mínimo 6 caracteres).'); else if (error.code === 'auth/invalid-email') setAuthError('Email inválido.'); else if (error.code === 'auth/invalid-credential') setAuthError('Email ou password incorretos.'); else setAuthError('Erro: ' + error.message); } };
@@ -333,68 +379,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const getCurrentCycleId = () => {
                 if (cycles.length === 0) return null;
                 return cycles[0].id; // Most recent cycle (sorted by timestamp desc)
-            };
-
-            // Associate consumptions without cycleId to their respective cycles
-            const associateConsumptionsToCycles = async () => {
-                if (cycles.length === 0) {
-                    console.log('⚠️ Nenhum ciclo encontrado. Criar ciclos primeiro.');
-                    return;
-                }
-
-                // Sort cycles by timestamp (oldest first)
-                const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-                // Find consumptions without cycleId
-                const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
-
-                if (consumptionsWithoutCycle.length === 0) {
-                    console.log('✅ Todos os consumos já têm cycleId');
-                    showToast('✓ Todos os consumos já estão associados a ciclos', 'success');
-                    return;
-                }
-
-                console.log(`🔄 Associando ${consumptionsWithoutCycle.length} consumos a ${sortedCycles.length} ciclos...`);
-
-                let updatedCount = 0;
-                for (const consumption of consumptionsWithoutCycle) {
-                    // Find which cycle this consumption belongs to
-                    let assignedCycleId = null;
-
-                    for (let i = sortedCycles.length - 1; i >= 0; i--) {
-                        const cycle = sortedCycles[i];
-                        const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
-
-                        // Check if consumption is within this cycle's time range
-                        const isAfterCycleStart = consumption.timestamp >= cycle.timestamp;
-                        const isBeforeNextCycle = !nextCycle || consumption.timestamp < nextCycle.timestamp;
-
-                        if (isAfterCycleStart && isBeforeNextCycle) {
-                            assignedCycleId = cycle.id;
-                            break;
-                        }
-                    }
-
-                    // If no cycle found, assign to the oldest cycle
-                    if (!assignedCycleId) {
-                        assignedCycleId = sortedCycles[0].id;
-                    }
-
-                    // Update consumption with cycleId
-                    const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
-                    await saveToFirebase('consumptions', updatedConsumption);
-
-                    // Update local state
-                    setConsumptions(prev => prev.map(c =>
-                        c.id === consumption.id ? updatedConsumption : c
-                    ));
-
-                    updatedCount++;
-                    console.log(`  ✓ Consumo ${consumption.id.substring(0, 8)} → Ciclo ${assignedCycleId.substring(0, 8)}`);
-                }
-
-                console.log(`✅ ${updatedCount} consumos associados a ciclos`);
-                showToast(`✓ ${updatedCount} consumos associados a ciclos`, 'success');
             };
 
             const submitDailyLog = async () => {
@@ -1561,7 +1545,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     )}
 
                                     <div className="flex gap-1">
-                                        <button onClick={associateConsumptionsToCycles} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Associar consumos a ciclos"><Icons.RefreshCw className="w-4 h-4" /></button>
                                         <button onClick={toggleDarkMode} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}</button>
                                         <button onClick={exportToCSV} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Exportar dados"><Icons.Download className="w-4 h-4" /></button>
                                         <button onClick={handleLogout} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Sair"><Icons.LogOut className="w-4 h-4" /></button>
