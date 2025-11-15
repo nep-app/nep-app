@@ -2050,7 +2050,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         {['dashboard', 'progress', 'patterns', 'coach'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
-                                                {view === 'progress' && '📊 Dashboard'}
+                                                {view === 'progress' && '📈 Progresso'}
                                                 {view === 'patterns' && '🔍 Padrões & Análises'}
                                                 {view === 'coach' && '💬 Coach'}
                                             </button>
@@ -2143,6 +2143,35 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 });
                                             }
 
+                                            // Calculate goals analysis for dashboard
+                                            let goalsAnalysis = null;
+                                            if (goals.length > 0) {
+                                                const periodDays = patternsPeriod === 'hoje' ? 1 :
+                                                                 patternsPeriod === 'semana' ? 7 :
+                                                                 patternsPeriod === 'mes' ? 30 :
+                                                                 uniqueDays || 1;
+
+                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
+
+                                                const goalBreakdown = goals.map(g => ({
+                                                    ...g,
+                                                    achievementCount: getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs)
+                                                }));
+
+                                                const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : 0;
+                                                const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
+
+                                                goalsAnalysis = {
+                                                    totalAchievements,
+                                                    totalGoals: goals.length,
+                                                    avgAchievementsPerDay: avgAchievementsPerDay.toFixed(1),
+                                                    goalsWithAchievements,
+                                                    goalBreakdown,
+                                                    activeGoals: goals.filter(g => !g.completed).length,
+                                                    periodDays
+                                                };
+                                            }
+
                                             return (
                                                 <div className="space-y-4">
                                                     {/* Mini-resumo contextual */}
@@ -2183,6 +2212,108 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         </div>
                                                                     </div>
                                                                 ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Análise de Metas */}
+                                                    {goalsAnalysis && (
+                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                🎯 Metas
+                                                            </h3>
+
+                                                            {/* Main stats */}
+                                                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
+                                                                        Total de Cumprimentos
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
+                                                                            {goalsAnalysis.totalAchievements}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            vezes
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                        Média por Dia
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                            {goalsAnalysis.avgAchievementsPerDay}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            cumprimentos
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        nos últimos {goalsAnalysis.periodDays} dias
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Per-goal breakdown */}
+                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
+                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    Detalhes por Meta
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {goalsAnalysis.goalBreakdown.map((goal, i) => {
+                                                                        const goalTypeLabels = {
+                                                                            'reduce_frequency': '🔢 Reduzir frequência',
+                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
+                                                                            'delay_first': '⏰ Adiar primeiro consumo',
+                                                                            'limit_last': '🌙 Limitar último consumo',
+                                                                            'increase_interval': '⏳ Aumentar intervalo',
+                                                                            'sleep_hours': '😴 Horas de sono',
+                                                                            'bedtime_before': '🛏️ Deitar antes de'
+                                                                        };
+                                                                        const explanations = {
+                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
+                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
+                                                                            'delay_first': `Dias com 1º consumo ≥${goal.target}`,
+                                                                            'limit_last': `Ciclos com último antes da meia-noite`,
+                                                                            'increase_interval': `Ciclos com ≥50% intervalos >${goal.target}h`,
+                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
+                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
+                                                                        };
+                                                                        return (
+                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                    <div className="flex-1">
+                                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                                            {goalTypeLabels[goal.type] || goal.type}
+                                                                                        </div>
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            Meta: {goal.target}{goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : ''}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-right">
+                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
+                                                                                            {goal.achievementCount}
+                                                                                        </div>
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            vezes
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5'}>
+                                                                                    <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        {explanations[goal.type] || 'Cumprimentos registados'}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -2607,40 +2738,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     previous: previousAvgTriggers,
                                                     change: calculateChange(recentAvgTriggers, previousAvgTriggers, true), // Lower is better
                                                     label: 'Gatilhos por ciclo'
-                                                };
-                                            }
-
-                                            // 9. METAS - Análise de cumprimentos
-                                            if (goals.length > 0) {
-                                                // Filtrar dailyLogs para o período recente
-                                                const recentDailyLogs = dailyLogs.filter(log => {
-                                                    const d = new Date(log.date);
-                                                    return d >= recentStart && d <= recentEnd;
-                                                });
-
-                                                // Total times user met goal conditions (apenas período recente)
-                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, recentConsumptions, recentDailyLogs, recentCycles, recentWellbeing), 0);
-
-                                                // Per-goal breakdown
-                                                const goalBreakdown = goals.map(g => ({
-                                                    ...g,
-                                                    achievementCount: getGoalAchievementCount(g, recentConsumptions, recentDailyLogs, recentCycles, recentWellbeing)
-                                                }));
-
-                                                // Average achievements per DAY (not per goal)
-                                                const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : 0;
-
-                                                // Goals with at least one achievement
-                                                const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
-
-                                                progressData.goalsAnalysis = {
-                                                    totalAchievements,
-                                                    totalGoals: goals.length,
-                                                    avgAchievementsPerDay: avgAchievementsPerDay.toFixed(1),
-                                                    goalsWithAchievements,
-                                                    goalBreakdown,
-                                                    activeGoals: goals.filter(g => !g.completed).length,
-                                                    periodDays
                                                 };
                                             }
 
@@ -3075,108 +3172,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         </div>
                                                                     );
                                                                 })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Análise de Metas */}
-                                                    {progressData.goalsAnalysis && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                🎯 Análise de Metas
-                                                            </h3>
-
-                                                            {/* Main stats */}
-                                                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
-                                                                        Total de Cumprimentos
-                                                                    </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
-                                                                            {progressData.goalsAnalysis.totalAchievements}
-                                                                        </span>
-                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            vezes
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        {progressData.goalsAnalysis.goalsWithAchievements}/{progressData.goalsAnalysis.totalGoals} metas cumpridas
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
-                                                                        Média por Dia
-                                                                    </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
-                                                                            {progressData.goalsAnalysis.avgAchievementsPerDay}
-                                                                        </span>
-                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            cumprimentos
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        nos últimos {progressData.goalsAnalysis.periodDays} dias
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Per-goal breakdown */}
-                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
-                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                    Detalhes por Meta
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    {progressData.goalsAnalysis.goalBreakdown.map((goal, i) => {
-                                                                        const goalTypeLabels = {
-                                                                            'reduce_frequency': '🔢 Reduzir frequência',
-                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
-                                                                            'delay_first': '⏰ Adiar primeiro consumo',
-                                                                            'limit_last': '🌙 Limitar último consumo',
-                                                                            'increase_interval': '⏳ Aumentar intervalo',
-                                                                            'sleep_hours': '😴 Horas de sono',
-                                                                            'bedtime_before': '🛏️ Deitar antes de'
-                                                                        };
-                                                                        const explanations = {
-                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
-                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
-                                                                            'delay_first': `Dias com 1º consumo ≥${goal.target}`,
-                                                                            'limit_last': `Ciclos com último antes da meia-noite`,
-                                                                            'increase_interval': `Ciclos com ≥50% intervalos >${goal.target}h`,
-                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
-                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
-                                                                        };
-                                                                        return (
-                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                                <div className="flex items-center justify-between mb-2">
-                                                                                    <div className="flex-1">
-                                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                                            {goalTypeLabels[goal.type] || goal.type}
-                                                                                        </div>
-                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                            Meta: {goal.target}{goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : ''}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-right">
-                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
-                                                                                            {goal.achievementCount}
-                                                                                        </div>
-                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                            vezes
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5'}>
-                                                                                    <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                        {explanations[goal.type] || 'Cumprimentos registados'}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
