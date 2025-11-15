@@ -1954,6 +1954,100 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         )}
                                     </div>
 
+                                    {/* Conquistas */}
+                                    {badges.length > 0 && (
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-yellow-900/30 via-orange-900/20 to-amber-900/30 border-yellow-700/50' : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 border-yellow-300') + ' rounded-xl p-4 border-2'}>
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <div className="text-2xl">🏆</div>
+                                                <div>
+                                                    <h3 className={'font-bold ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
+                                                    <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length + (streaks.current >= 3 ? 1 : 0)} vitórias</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {badges.slice(0, 4).map(badge => (
+                                                    <div key={badge.id} className={(darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-700/80 border-gray-600' : 'bg-gradient-to-br from-white to-gray-50 border-' + badge.color + '-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
+                                                        <div className="text-xl">{badge.icon}</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className={'font-bold text-xs truncate ' + (darkMode ? 'text-gray-100' : 'text-' + badge.color + '-800')}>{badge.title}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {streaks.current >= 3 && (
+                                                    <div className={(darkMode ? 'bg-gradient-to-br from-orange-900/80 to-red-900/80 border-orange-600' : 'bg-gradient-to-br from-orange-100 to-red-100 border-orange-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
+                                                        <div className="text-xl">💪</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className={'font-bold text-xs ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>Streak! {streaks.current} dias</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Metas Compactas */}
+                                    {goals.length > 0 && (
+                                        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-300') + ' rounded-xl p-4 border'}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-2xl">🎯</span>
+                                                    <h3 className={'font-bold ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>Metas</h3>
+                                                </div>
+                                                <button onClick={() => setShowGoalModal(true)} className={'px-3 py-1 rounded-lg text-xs font-medium ' + (darkMode ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-purple-600 text-white hover:bg-purple-700')}>+ Nova</button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {goals.map(goal => {
+                                                    const progress = getGoalProgressStats(goal);
+                                                    const isCycleBased = ['increase_interval', 'limit_last', 'bedtime_before'].includes(goal.type);
+                                                    const label = isCycleBased ? 'ciclos' : 'dias';
+                                                    return (
+                                                        <div key={goal.id} className={(darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/80 border-gray-200') + ' rounded-lg p-3 border'}>
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className={'text-sm font-semibold truncate ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                        {goal.type === 'reduce_frequency' && '🔢 Reduzir Frequência'}
+                                                                        {goal.type === 'reduce_quantity' && '⚖️ Reduzir Quantidade'}
+                                                                        {goal.type === 'delay_first' && '⏰ Adiar Primeiro'}
+                                                                        {goal.type === 'increase_interval' && '⏳ Aumentar Intervalo'}
+                                                                        {goal.type === 'limit_last' && '🌙 Último Consumo'}
+                                                                        {goal.type === 'sleep_hours' && '😴 Horas de Sono'}
+                                                                        {goal.type === 'bedtime_before' && '🛏️ Deitar Antes de'}
+                                                                    </div>
+                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
+                                                                        {goal.type === 'reduce_quantity' && goal.target + 'mg'}
+                                                                        {goal.type === 'delay_first' && goal.target}
+                                                                        {goal.type === 'increase_interval' && goal.target + 'h'}
+                                                                        {goal.type === 'limit_last' && goal.target}
+                                                                        {goal.type === 'sleep_hours' && goal.target + 'h'}
+                                                                        {goal.type === 'bedtime_before' && goal.target}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 ml-2">
+                                                                    <div className="text-right">
+                                                                        <div className={'text-sm font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{progress.percentage}%</div>
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{progress.achieved}/{progress.total} {label}</div>
+                                                                    </div>
+                                                                    <button onClick={() => {
+                                                                        setEditingGoal(goal);
+                                                                        setGoalForm({
+                                                                            type: goal.type,
+                                                                            target: goal.target.toString(),
+                                                                            deadline: goal.deadline
+                                                                        });
+                                                                        setShowGoalModal(true);
+                                                                    }} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit2 className="w-3 h-3" /></button>
+                                                                </div>
+                                                            </div>
+                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' w-full rounded-full h-1.5 overflow-hidden'}>
+                                                                <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style={{ width: progress.percentage + '%' }} />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {consumptions.length > 0 && (
                                         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
@@ -5323,125 +5417,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     })()}
                                 </div>
                             )}
-                            {currentView === 'goals' && (
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Metas</h2>
-                                        <button onClick={() => setShowGoalModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">+ Nova Meta</button>
-                                    </div>
-
-                                    {/* Achievements Section */}
-                                    {badges.length > 0 && (
-                                        <div className={(darkMode ? 'bg-gradient-to-br from-yellow-900/30 via-orange-900/20 to-amber-900/30 border-yellow-700/50' : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 border-yellow-300') + ' rounded-xl p-5 border-2'}>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="text-3xl">🏆</div>
-                                                    <div>
-                                                        <h3 className={'font-bold text-lg ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
-                                                        <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>As tuas vitórias</p>
-                                                    </div>
-                                                </div>
-                                                <div className={(darkMode ? 'bg-yellow-900/40 text-yellow-300 border-yellow-700/50' : 'bg-yellow-100 text-yellow-800 border-yellow-400') + ' px-3 py-1 rounded-full text-sm font-bold border'}>
-                                                    {badges.length + (streaks.current >= 3 ? 1 : 0)}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                                {badges.map(badge => (
-                                                    <div key={badge.id} className={(darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-700/80 border-gray-600 shadow-lg' : 'bg-gradient-to-br from-white to-gray-50 border-' + badge.color + '-300 shadow-md') + ' rounded-xl p-4 border-2 hover:scale-105 transition-transform'}>
-                                                        <div className="flex flex-col items-center text-center">
-                                                            <div className="text-3xl mb-2">{badge.icon}</div>
-                                                            <div className={'font-bold text-sm ' + (darkMode ? 'text-gray-100' : 'text-' + badge.color + '-800')}>{badge.title}</div>
-                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{badge.description}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {streaks.current >= 3 && (
-                                                    <div className={(darkMode ? 'bg-gradient-to-br from-orange-900/80 to-red-900/80 border-orange-600 shadow-lg' : 'bg-gradient-to-br from-orange-100 to-red-100 border-orange-300 shadow-md') + ' rounded-xl p-4 border-2 hover:scale-105 transition-transform'}>
-                                                        <div className="flex flex-col items-center text-center">
-                                                            <div className="text-3xl mb-2">💪</div>
-                                                            <div className={'font-bold text-sm ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>Streak!</div>
-                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-orange-400' : 'text-orange-700')}>{streaks.current} dias seguidos!</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {goals.length === 0 ? (
-                                        <div className={'text-center py-8 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}><Icons.Target className={'w-12 h-12 mx-auto mb-3 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')} /><p>Ainda não tens metas definidas</p></div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {goals.map(goal => (
-                                                <div key={goal.id} className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ''}>
-                                                                {goal.type === 'reduce_frequency' && 'Reduzir Frequência'}
-                                                                {goal.type === 'reduce_quantity' && 'Reduzir Quantidade'}
-                                                                {goal.type === 'delay_first' && 'Adiar Primeiro Consumo'}
-                                                                {goal.type === 'increase_interval' && 'Aumentar Intervalo'}
-                                                                {goal.type === 'limit_last' && 'Hora do Último Consumo'}
-                                                                {goal.type === 'sleep_hours' && 'Horas de Sono por Dia'}
-                                                                {goal.type === 'bedtime_before' && 'Deitar Antes de'}
-                                                            </h3>
-                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
-                                                                Meta: {goal.type === 'reduce_frequency' && goal.target + 'x/dia'}
-                                                                {goal.type === 'reduce_quantity' && goal.target + 'mg/dia'}
-                                                                {goal.type === 'delay_first' && 'após ' + goal.target}
-                                                                {goal.type === 'increase_interval' && goal.target + 'h entre consumos'}
-                                                                {goal.type === 'limit_last' && 'antes de ' + goal.target}
-                                                                {goal.type === 'sleep_hours' && goal.target + 'h por dia'}
-                                                                {goal.type === 'bedtime_before' && 'antes das ' + goal.target}
-                                                            </p>
-                                                            <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
-                                                            {(() => {
-                                                                const progress = getGoalProgressStats(goal);
-                                                                const isCycleBased = ['increase_interval', 'limit_last', 'bedtime_before'].includes(goal.type);
-                                                                const label = isCycleBased ?
-                                                                    (progress.total === 1 ? 'ciclo' : 'ciclos') :
-                                                                    (progress.total === 1 ? 'dia' : 'dias');
-                                                                return (
-                                                                    <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
-                                                                        ✅ {progress.achieved} de {progress.total} {label} ({progress.percentage}%)
-                                                                    </p>
-                                                                );
-                                                            })()}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button onClick={() => {
-                                                                setEditingGoal(goal);
-                                                                setGoalForm({
-                                                                    type: goal.type,
-                                                                    target: goal.target.toString(),
-                                                                    deadline: goal.deadline
-                                                                });
-                                                                setShowGoalModal(true);
-                                                            }} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700')}><Icons.Edit2 className="w-4 h-4" /></button>
-                                                            <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
-                                                        </div>
-                                                    </div>
-                                                    {(() => {
-                                                        const progress = getGoalProgressStats(goal);
-                                                        return (
-                                                            <div className="mt-3">
-                                                                <div className="flex justify-between text-sm mb-1">
-                                                                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Progresso</span>
-                                                                    <span className={'font-medium ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{progress.percentage}%</span>
-                                                                </div>
-                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' w-full rounded-full h-3 overflow-hidden'}>
-                                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style={{ width: progress.percentage + '%' }} />
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
                             {currentView === 'resources' && (
                                 <div className="space-y-6">
                                     <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Recursos</h2>
@@ -5727,7 +5702,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
-                                <div className="grid grid-cols-5 gap-1">
+                                <div className="grid grid-cols-4 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
@@ -5739,10 +5714,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.BookOpen className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Histórico</div>
-                                    </button>
-                                    <button onClick={() => setCurrentView('goals')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'goals' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                                        <Icons.Target className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Metas</div>
                                     </button>
                                     <button onClick={() => setCurrentView('resources')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'resources' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.TrendingDown className="w-5 h-5" />
