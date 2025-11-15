@@ -844,6 +844,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (goal.type === 'increase_interval') {
                     // REGRA: Conta CICLOS onde ≥50% dos intervalos são >2h
                     const consumptionsByCycle = {};
+                    const consumptionsWithCycleId = dataConsumptions.filter(c => c.cycleId);
+                    const consumptionsWithoutCycleId = dataConsumptions.filter(c => !c.cycleId);
+
                     dataConsumptions.forEach(c => {
                         if (!c.cycleId) return;
                         if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
@@ -852,7 +855,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                     console.log('⏱️ META INCREASE_INTERVAL:', {
                         target: goal.target + 'h',
-                        totalCiclos: Object.keys(consumptionsByCycle).length
+                        totalConsumptions: dataConsumptions.length,
+                        withCycleId: consumptionsWithCycleId.length,
+                        withoutCycleId: consumptionsWithoutCycleId.length,
+                        totalCiclos: Object.keys(consumptionsByCycle).length,
+                        ciclosIds: Object.keys(consumptionsByCycle).map(id => id.substring(0, 8))
                     });
 
                     Object.entries(consumptionsByCycle).forEach(([cycleId, cycleConsumptions]) => {
@@ -864,16 +871,25 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                         let longIntervals = 0;
                         let totalIntervals = 0;
+                        const intervalDetails = [];
 
                         for (let i = 1; i < sorted.length; i++) {
                             const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
                             totalIntervals++;
-                            if (intervalHours > 2) longIntervals++; // Estritamente >2h
+                            const isLong = intervalHours > 2;
+                            if (isLong) longIntervals++;
+                            intervalDetails.push({
+                                from: new Date(sorted[i-1].timestamp).toLocaleString('pt-PT'),
+                                to: new Date(sorted[i].timestamp).toLocaleString('pt-PT'),
+                                hours: intervalHours.toFixed(1),
+                                isLong
+                            });
                         }
 
                         const percentage = (longIntervals / totalIntervals) * 100;
                         const isAchieved = longIntervals >= totalIntervals / 2;
                         console.log('  🔄 Ciclo', cycleId.substring(0, 8), '→', longIntervals, 'de', totalIntervals, 'intervalos >2h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
+                        console.log('    Detalhes:', intervalDetails);
 
                         if (isAchieved) achievedCount++;
                     });
@@ -2991,23 +3007,12 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 byWeekday[day]++;
                                             });
 
-                                            // Calculate intervals WITHIN each cycle (not across cycles)
+                                            const sorted = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                                             const intervals = [];
-                                            const consumptionsByCycle = {};
-                                            analysisConsumptions.forEach(c => {
-                                                if (!c.cycleId) return; // Skip consumptions without cycleId
-                                                if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
-                                                consumptionsByCycle[c.cycleId].push(c);
-                                            });
-
-                                            // For each cycle, calculate intervals between consecutive consumptions
-                                            Object.values(consumptionsByCycle).forEach(cycleConsumptions => {
-                                                const sorted = [...cycleConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                                                for (let i = 1; i < sorted.length; i++) {
-                                                    const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                    intervals.push({ hours: diff, date: sorted[i].date });
-                                                }
-                                            });
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push({ hours: diff, date: sorted[i].date });
+                                            }
 
                                             return (
                                                 <div className="space-y-4">
