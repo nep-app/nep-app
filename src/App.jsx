@@ -2756,22 +2756,23 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 const recentCompleteCyclesPercent = recentDates.size > 0 ? (recentCompleteCycles / recentDates.size) * 100 : 0;
                                                 const previousCompleteCyclesPercent = previousDates.size > 0 ? (previousCompleteCycles / previousDates.size) * 100 : 0;
 
-                                                // Identify low areas (< 70%)
+                                                // Identify low areas (< 50%)
                                                 const lowAreas = Object.entries(recentAreaStats)
-                                                    .filter(([_, percent]) => percent < 70)
+                                                    .filter(([_, percent]) => percent < 50)
                                                     .map(([area, percent]) => ({ area, percent, ...areas[area] }))
                                                     .sort((a, b) => a.percent - b.percent);
 
                                                 // Generate suggestions
                                                 let suggestion = '';
                                                 if (lowAreas.length >= 3) {
-                                                    suggestion = `Abaixo de 70% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${areas.water.name.toLowerCase()} e ${areas.food.name.toLowerCase()} regular.`;
+                                                    // Mencionar as 2 áreas MAIS BAIXAS
+                                                    suggestion = `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
                                                 } else if (lowAreas.length === 2) {
                                                     suggestion = `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
                                                 } else if (lowAreas.length === 1) {
                                                     suggestion = `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
                                                 } else {
-                                                    suggestion = `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas.`;
+                                                    suggestion = `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
                                                 }
 
                                                 progressData.selfCareDetailed = {
