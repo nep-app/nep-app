@@ -2156,11 +2156,22 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 const previousAreaStats = {};
 
                                                 Object.keys(areas).forEach(area => {
-                                                    const recentCount = recentWellbeing.filter(w => w[area] === true).length;
-                                                    const recentPercent = recentWellbeing.length > 0 ? (recentCount / recentWellbeing.length) * 100 : 0;
+                                                    // NOVA LÓGICA: Contar por CICLO, não por registo
+                                                    // Agrupar wellbeing por data (1 data = 1 ciclo aprox)
+                                                    const recentDates = new Set(recentWellbeing.map(w => w.date));
+                                                    const previousDates = new Set(previousWellbeing.map(w => w.date));
 
-                                                    const previousCount = previousWellbeing.filter(w => w[area] === true).length;
-                                                    const previousPercent = previousWellbeing.length > 0 ? (previousCount / previousWellbeing.length) * 100 : 0;
+                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area:true
+                                                    const recentCyclesWithArea = Array.from(recentDates).filter(date => {
+                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                    }).length;
+
+                                                    const previousCyclesWithArea = Array.from(previousDates).filter(date => {
+                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                    }).length;
+
+                                                    const recentPercent = recentDates.size > 0 ? (recentCyclesWithArea / recentDates.size) * 100 : 0;
+                                                    const previousPercent = previousDates.size > 0 ? (previousCyclesWithArea / previousDates.size) * 100 : 0;
 
                                                     recentAreaStats[area] = recentPercent;
                                                     previousAreaStats[area] = previousPercent;
