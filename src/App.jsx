@@ -2340,11 +2340,12 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
-                                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                                        <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                            Meta: {goal.target}{goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : ''}
+                                                                                            <div>Meta: {goal.target}{goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : ''}</div>
+                                                                                            <div className="italic mt-0.5">{explanations[goal.type] || 'Cumprimentos registados'}</div>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
@@ -2354,11 +2355,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
                                                                                             vezes
                                                                                         </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-2 py-1.5 mb-2'}>
-                                                                                    <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                        {explanations[goal.type] || 'Cumprimentos registados'}
                                                                                     </div>
                                                                                 </div>
                                                                                 {/* Progress Bar */}
