@@ -1031,6 +1031,142 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 return achievedCount;
             };
 
+            // Get goal progress with percentage
+            const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
+                const dataConsumptions = filteredConsumptions || consumptions;
+                const dataDailyLogs = filteredDailyLogs || dailyLogs;
+                const dataCycles = filteredCycles || cycles;
+                const dataWellbeing = filteredWellbeing || wellbeingLogs;
+
+                let achieved = 0;
+                let total = 0;
+
+                const today = new Date().toLocaleDateString('pt-PT');
+
+                if (goal.type === 'increase_interval') {
+                    const consumptionsByCycle = {};
+                    dataConsumptions.forEach(c => {
+                        if (!c.cycleId) return;
+                        if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
+                        consumptionsByCycle[c.cycleId].push(c);
+                    });
+
+                    Object.values(consumptionsByCycle).forEach(cycleConsumptions => {
+                        if (cycleConsumptions.length < 2) return; // Skip cycles with <2 consumptions
+                        total++;
+
+                        const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                        let longIntervals = 0;
+                        let totalIntervals = 0;
+
+                        for (let i = 1; i < sorted.length; i++) {
+                            const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
+                            totalIntervals++;
+                            if (intervalHours > 2) longIntervals++;
+                        }
+
+                        if (longIntervals >= totalIntervals / 2) achieved++;
+                    });
+                }
+
+                if (goal.type === 'reduce_frequency') {
+                    const consumptionsByDate = {};
+                    dataConsumptions.forEach(c => {
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
+                        consumptionsByDate[dateKey]++;
+                    });
+
+                    Object.entries(consumptionsByDate).forEach(([date, count]) => {
+                        if (date === today) return; // Skip today
+                        total++;
+                        if (count < goal.target) achieved++;
+                    });
+                }
+
+                if (goal.type === 'reduce_quantity') {
+                    dataDailyLogs.forEach(log => {
+                        if (!log.mg) return;
+                        const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                        if (logDate === today) return; // Skip today
+                        total++;
+                        if (log.mg < goal.target) achieved++;
+                    });
+                }
+
+                if (goal.type === 'delay_first') {
+                    const firstOfDays = {};
+                    dataConsumptions.forEach(c => {
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!firstOfDays[dateKey] || c.timestamp < firstOfDays[dateKey]) {
+                            firstOfDays[dateKey] = c.timestamp;
+                        }
+                    });
+
+                    delete firstOfDays[today]; // Skip today
+
+                    const targetParts = goal.target.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
+
+                    Object.values(firstOfDays).forEach(timestamp => {
+                        total++;
+                        const d = new Date(timestamp);
+                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (firstMinutes >= targetMinutes) achieved++;
+                    });
+                }
+
+                if (goal.type === 'limit_last') {
+                    total = dataCycles.length;
+                    dataCycles.forEach(cycle => {
+                        if (cycle.lastBefore00 === true) achieved++;
+                    });
+                }
+
+                if (goal.type === 'sleep_hours') {
+                    dataWellbeing.forEach(log => {
+                        if (log.sleep == null) return;
+                        const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                        if (logDate === today) return; // Skip today
+                        total++;
+                        if (parseFloat(log.sleep) >= parseFloat(goal.target)) achieved++;
+                    });
+                }
+
+                if (goal.type === 'bedtime_before') {
+                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                    const targetParts = targetStr.split(':');
+                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+                    dataCycles.forEach(cycle => {
+                        if (!cycle.bedtime) return;
+                        const bedtimeParts = cycle.bedtime.split(':');
+                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+
+                        // Filter invalid times (06:00-20:59 is not bedtime)
+                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) return;
+
+                        total++;
+
+                        // Adjust for early morning (00:00-05:59 → 24:00-29:59)
+                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
+                            bedtimeMinutes += 1440;
+                        }
+
+                        let targetAdjusted = targetMinutes;
+                        if (targetMinutes >= 0 && targetMinutes < 360) {
+                            targetAdjusted += 1440;
+                        }
+
+                        if (bedtimeMinutes <= targetAdjusted) achieved++;
+                    });
+                }
+
+                const percentage = total > 0 ? Math.round((achieved / total) * 100) : 0;
+
+                return { achieved, total, percentage };
+            };
+
             // Streak calculation
             const getStreaks = () => {
                 if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
@@ -5247,7 +5383,17 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 {goal.type === 'bedtime_before' && 'antes das ' + goal.target}
                                                             </p>
                                                             <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Até: {new Date(goal.deadline).toLocaleDateString('pt-PT')}</p>
-                                                            <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>✅ Atingida {getGoalAchievementCount(goal)} {getGoalAchievementCount(goal) === 1 ? 'vez' : 'vezes'}</p>
+                                                            {(() => {
+                                                                const progress = getGoalProgressStats(goal);
+                                                                const label = goal.type === 'increase_interval' ?
+                                                                    (progress.total === 1 ? 'ciclo' : 'ciclos') :
+                                                                    (progress.total === 1 ? 'dia' : 'dias');
+                                                                return (
+                                                                    <p className={'text-sm font-medium mt-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                        ✅ {progress.achieved} de {progress.total} {label} ({progress.percentage}%)
+                                                                    </p>
+                                                                );
+                                                            })()}
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button onClick={() => {
@@ -5262,15 +5408,20 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             <button onClick={() => deleteItem('goals', goal.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
                                                         </div>
                                                     </div>
-                                                    <div className="mt-3">
-                                                        <div className="flex justify-between text-sm mb-1">
-                                                            <span className="text-gray-600">Progresso</span>
-                                                            <span className="font-medium text-purple-600">{getGoalProgress(goal).toFixed(0)}%</span>
-                                                        </div>
-                                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                                                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style={{ width: getGoalProgress(goal) + '%' }} />
-                                                        </div>
-                                                    </div>
+                                                    {(() => {
+                                                        const progress = getGoalProgressStats(goal);
+                                                        return (
+                                                            <div className="mt-3">
+                                                                <div className="flex justify-between text-sm mb-1">
+                                                                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>Progresso</span>
+                                                                    <span className={'font-medium ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{progress.percentage}%</span>
+                                                                </div>
+                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' w-full rounded-full h-3 overflow-hidden'}>
+                                                                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all" style={{ width: progress.percentage + '%' }} />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             ))}
                                         </div>
