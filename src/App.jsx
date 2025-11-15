@@ -2631,9 +2631,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             if (recentCycles.length > 0 || previousCycles.length > 0) {
                                                 const getBedtimeMinutes = (bedtime) => {
                                                     const [hours, minutes] = bedtime.split(':').map(Number);
-                                                    // Adjust for late night (00:00-05:59 = next day)
-                                                    if (hours >= 0 && hours < 6) {
-                                                        return (hours + 24) * 60 + minutes; // Treat as 24:00-29:59
+                                                    // Adjust for late night/early morning (00:00-13:59 = next day)
+                                                    // Horas de deitar antes das 14h são consideradas "manhã/tarde do dia seguinte"
+                                                    if (hours >= 0 && hours < 14) {
+                                                        return (hours + 24) * 60 + minutes; // Treat as 24:00-37:59
                                                     }
                                                     return hours * 60 + minutes;
                                                 };
