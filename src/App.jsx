@@ -777,7 +777,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (goal.type === 'reduce_frequency') {
                     // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
                     // Ex: target=10 → conta dias com <10 consumos (0-9)
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
                     const consumptionsByDate = {};
+
                     dataConsumptions.forEach(c => {
                         // Derivar data do timestamp para garantir consistência
                         const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
@@ -785,12 +788,19 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         consumptionsByDate[dateKey]++;
                     });
 
+                    // Remove dia atual da contagem
+                    const completedDays = { ...consumptionsByDate };
+                    delete completedDays[today];
+
                     console.log('📉 META REDUCE_FREQUENCY:', {
                         target: goal.target,
-                        totalDias: Object.keys(consumptionsByDate).length
+                        totalDias: Object.keys(consumptionsByDate).length,
+                        diasCompletos: Object.keys(completedDays).length,
+                        hoje: today,
+                        consumosHoje: consumptionsByDate[today] || 0
                     });
 
-                    Object.entries(consumptionsByDate).forEach(([date, count]) => {
+                    Object.entries(completedDays).forEach(([date, count]) => {
                         const isAchieved = count < goal.target;
                         console.log('  📅', date, '→', count, 'consumos →', isAchieved ? '✅' : '❌');
                         if (isAchieved) achievedCount++;
@@ -800,16 +810,26 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (goal.type === 'reduce_quantity') {
                     // REGRA: Conta dias com mg ABAIXO do target (excluindo o target)
                     // Ex: target=200 → conta dias com <200mg
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
+
                     console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
                         totalLogs: dataDailyLogs.length,
-                        logsComMg: dataDailyLogs.filter(d => d.mg).length
+                        logsComMg: dataDailyLogs.filter(d => d.mg).length,
+                        hoje: today
                     });
 
                     dataDailyLogs.forEach(log => {
                         if (log.mg) {
+                            const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                            if (logDate === today) {
+                                console.log('  📊', logDate, '→', log.mg, 'mg → ⏭️ Dia atual (ignorado)');
+                                return; // Skip today
+                            }
+
                             const isAchieved = log.mg < goal.target;
-                            console.log('  📊', log.date || 'sem data', '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
+                            console.log('  📊', logDate, '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
                             if (isAchieved) achievedCount++;
                         }
                     });
@@ -817,7 +837,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 if (goal.type === 'delay_first') {
                     // REGRA: Conta dias onde primeiro consumo foi >= target
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
                     const firstOfDays = {};
+
                     dataConsumptions.forEach(c => {
                         // Derivar data do timestamp para garantir consistência
                         const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
@@ -825,12 +848,27 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             firstOfDays[dateKey] = c.timestamp;
                         }
                     });
+
+                    // Remove dia atual da contagem
+                    delete firstOfDays[today];
+
                     const targetParts = goal.target.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-                    Object.values(firstOfDays).forEach(timestamp => {
+
+                    console.log('⏰ META DELAY_FIRST:', {
+                        target: goal.target,
+                        targetMinutes,
+                        totalDias: Object.keys(firstOfDays).length,
+                        hoje: today
+                    });
+
+                    Object.entries(firstOfDays).forEach(([date, timestamp]) => {
                         const d = new Date(timestamp);
                         const firstMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (firstMinutes >= targetMinutes) achievedCount++;
+                        const isAchieved = firstMinutes >= targetMinutes;
+                        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                        console.log('  📅', date, '→ primeiro consumo às', timeStr, '→', isAchieved ? '✅' : '❌');
+                        if (isAchieved) achievedCount++;
                     });
                 }
 
@@ -897,8 +935,28 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 if (goal.type === 'sleep_hours') {
                     // REGRA: Conta dias com sono ≥ target (7h ou mais)
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
+
+                    console.log('😴 META SLEEP_HOURS:', {
+                        target: goal.target + 'h',
+                        totalLogs: dataWellbeing.length,
+                        logsComSono: dataWellbeing.filter(w => w.sleep != null).length,
+                        hoje: today
+                    });
+
                     dataWellbeing.forEach(log => {
-                        if (log.sleep != null && parseFloat(log.sleep) >= parseFloat(goal.target)) achievedCount++;
+                        if (log.sleep != null) {
+                            const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
+                            if (logDate === today) {
+                                console.log('  😴', logDate, '→', log.sleep, 'h → ⏭️ Dia atual (ignorado)');
+                                return; // Skip today
+                            }
+
+                            const isAchieved = parseFloat(log.sleep) >= parseFloat(goal.target);
+                            console.log('  😴', logDate, '→', log.sleep, 'h →', isAchieved ? '✅' : '❌');
+                            if (isAchieved) achievedCount++;
+                        }
                     });
                 }
 
