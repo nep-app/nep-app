@@ -7,6 +7,21 @@ import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
 import { firebaseConfig } from './utils/firebase';
 import * as Icons from './components/Icons';
 
+// ===== UTILITY FUNCTIONS =====
+// Calculate Pearson correlation coefficient
+const calculatePearsonCorrelation = (data, xKey, yKey) => {
+    if (data.length < 2) return null;
+    const n = data.length;
+    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
+    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
+    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    return denominator === 0 ? null : numerator / denominator;
+};
+
         function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
             // 2.1 Firebase & Auth State
@@ -1058,27 +1073,13 @@ import * as Icons from './components/Icons';
                     }
                 }
 
-                // Calculate correlation coefficient
-                const getCorrelation = (data, xKey, yKey) => {
-                    if (data.length < 2) return null;
-                    const n = data.length;
-                    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                    const numerator = n * sumXY - sumX * sumY;
-                    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                    return denominator === 0 ? null : numerator / denominator;
-                };
-
                 return {
                     sleepLag1: {
-                        correlation: getCorrelation(sleepLag1Data, 'yesterdaySleep', 'todayConsumptions'),
+                        correlation: calculatePearsonCorrelation(sleepLag1Data, 'yesterdaySleep', 'todayConsumptions'),
                         dataPoints: sleepLag1Data.length
                     },
                     moodLag1: {
-                        correlation: getCorrelation(moodLag1Data, 'yesterdayMood', 'todayConsumptions'),
+                        correlation: calculatePearsonCorrelation(moodLag1Data, 'yesterdayMood', 'todayConsumptions'),
                         dataPoints: moodLag1Data.length
                     }
                 };
@@ -1110,20 +1111,6 @@ import * as Icons from './components/Icons';
 
                 // Get sorted dates
                 const dates = Object.keys(dailyData).sort();
-
-                // Helper: correlation coefficient
-                const getCorrelation = (data, xKey, yKey) => {
-                    if (data.length < 2) return null;
-                    const n = data.length;
-                    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                    const numerator = n * sumXY - sumX * sumY;
-                    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                    return denominator === 0 ? null : numerator / denominator;
-                };
 
                 // Same Day Impact: Today's consumption → Tonight's sleep
                 const consumptionToSleepSameDay = [];
@@ -1209,39 +1196,39 @@ import * as Icons from './components/Icons';
                 return {
                     sameDay: {
                         sleep: {
-                            correlation: getCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
+                            correlation: calculatePearsonCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
                             dataPoints: consumptionToSleepSameDay.length
                         },
                         mood: {
-                            correlation: getCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
+                            correlation: calculatePearsonCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
                             dataPoints: consumptionToMoodSameDay.length
                         },
                         energy: {
-                            correlation: getCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
+                            correlation: calculatePearsonCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
                             dataPoints: consumptionToEnergySameDay.length
                         }
                     },
                     nextDay: {
                         sleep: {
-                            correlation: getCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
+                            correlation: calculatePearsonCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
                             dataPoints: consumptionToSleepNextDay.length
                         },
                         mood: {
-                            correlation: getCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
+                            correlation: calculatePearsonCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
                             dataPoints: consumptionToMoodNextDay.length
                         },
                         energy: {
-                            correlation: getCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
+                            correlation: calculatePearsonCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
                             dataPoints: consumptionToEnergyNextDay.length
                         }
                     },
                     sleepToMood: {
                         sameDay: {
-                            correlation: getCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
+                            correlation: calculatePearsonCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
                             dataPoints: sleepToMoodSameDay.length
                         },
                         nextDay: {
-                            correlation: getCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
+                            correlation: calculatePearsonCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
                             dataPoints: sleepToMoodNextDay.length
                         }
                     }
@@ -1470,7 +1457,7 @@ import * as Icons from './components/Icons';
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = getLast7Days();
             const streaks = getStreaks();
-            const badges = getBadges();
+            const badges = useMemo(() => getBadges(), [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
             // Coping strategies based on triggers
             const getCopingStrategies = () => {
@@ -3531,27 +3518,13 @@ import * as Icons from './components/Icons';
                                                             );
                                                         }
 
-                                                        // Helper: Correlação de Pearson
-                                                        const getCorrelation = (data, xKey, yKey) => {
-                                                            if (data.length < 3) return null;
-                                                            const n = data.length;
-                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                                                            const numerator = n * sumXY - sumX * sumY;
-                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                            return denominator === 0 ? null : numerator / denominator;
-                                                        };
-
                                                         const correlations = [];
                                                         const averages = [];
 
                                                         // SONO
                                                         const sleepData = daysWithData.filter(d => d.sleep !== null);
                                                         if (sleepData.length >= 3) {
-                                                            const correlation = getCorrelation(sleepData, 'consumptions', 'sleep');
+                                                            const correlation = calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep');
                                                             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
                                                                 name: 'Sono',
@@ -3566,7 +3539,7 @@ import * as Icons from './components/Icons';
                                                         // HUMOR
                                                         const moodData = daysWithData.filter(d => d.mood !== null);
                                                         if (moodData.length >= 3) {
-                                                            const correlation = getCorrelation(moodData, 'consumptions', 'mood');
+                                                            const correlation = calculatePearsonCorrelation(moodData, 'consumptions', 'mood');
                                                             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
                                                                 name: 'Humor',
@@ -3581,7 +3554,7 @@ import * as Icons from './components/Icons';
                                                         // ENERGIA
                                                         const energyData = daysWithData.filter(d => d.energy !== null);
                                                         if (energyData.length >= 3) {
-                                                            const correlation = getCorrelation(energyData, 'consumptions', 'energy');
+                                                            const correlation = calculatePearsonCorrelation(energyData, 'consumptions', 'energy');
                                                             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
                                                                 name: 'Energia',
@@ -3673,21 +3646,6 @@ import * as Icons from './components/Icons';
                                                                     });
 
                                                                     if (bidirectional.length >= 3) {
-                                                                        // Correlação de Pearson para consumo hoje → bem-estar amanhã
-                                                                        const getCorrelation = (data, xKey, yKey) => {
-                                                                            const validData = data.filter(d => d[yKey] !== null);
-                                                                            if (validData.length < 3) return null;
-                                                                            const n = validData.length;
-                                                                            const sumX = validData.reduce((sum, d) => sum + d[xKey], 0);
-                                                                            const sumY = validData.reduce((sum, d) => sum + d[yKey], 0);
-                                                                            const sumXY = validData.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                                                                            const sumX2 = validData.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                                                                            const sumY2 = validData.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                                                                            const numerator = n * sumXY - sumX * sumY;
-                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                                            return denominator === 0 ? null : numerator / denominator;
-                                                                        };
-
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
@@ -3702,7 +3660,7 @@ import * as Icons from './components/Icons';
                                                                         const bidirCorrelations = [];
 
                                                                         // Sono
-                                                                        const sleepCorr = getCorrelation(bidirectional, 'consumptions', 'nextSleep');
+                                                                        const sleepCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
                                                                         const sleepData = bidirectional.filter(d => d.nextSleep !== null);
                                                                         if (sleepData.length >= 3) {
                                                                             const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
@@ -3717,7 +3675,7 @@ import * as Icons from './components/Icons';
                                                                         }
 
                                                                         // Humor
-                                                                        const moodCorr = getCorrelation(bidirectional, 'consumptions', 'nextMood');
+                                                                        const moodCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
                                                                         const moodData = bidirectional.filter(d => d.nextMood !== null);
                                                                         if (moodData.length >= 3) {
                                                                             const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
@@ -3732,7 +3690,7 @@ import * as Icons from './components/Icons';
                                                                         }
 
                                                                         // Energia
-                                                                        const energyCorr = getCorrelation(bidirectional, 'consumptions', 'nextEnergy');
+                                                                        const energyCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
                                                                         const energyData = bidirectional.filter(d => d.nextEnergy !== null);
                                                                         if (energyData.length >= 3) {
                                                                             const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
@@ -3819,19 +3777,6 @@ import * as Icons from './components/Icons';
                                                                     });
 
                                                                     if (sameDaySleepMood.length >= 3 || nextDaySleepMood.length >= 3) {
-                                                                        const getCorrelation = (data, xKey, yKey) => {
-                                                                            if (data.length < 3) return null;
-                                                                            const n = data.length;
-                                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                                                                            const numerator = n * sumXY - sumX * sumY;
-                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                                            return denominator === 0 ? null : numerator / denominator;
-                                                                        };
-
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais sono → Muito melhor humor' };
@@ -3846,7 +3791,7 @@ import * as Icons from './components/Icons';
                                                                         const sleepMoodCorrelations = [];
 
                                                                         if (sameDaySleepMood.length >= 3) {
-                                                                            const corr = getCorrelation(sameDaySleepMood, 'sleep', 'mood');
+                                                                            const corr = calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                                                                             const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
                                                                             sleepMoodCorrelations.push({
@@ -3860,7 +3805,7 @@ import * as Icons from './components/Icons';
                                                                         }
 
                                                                         if (nextDaySleepMood.length >= 3) {
-                                                                            const corr = getCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                            const corr = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
                                                                             const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
                                                                             sleepMoodCorrelations.push({
@@ -3959,20 +3904,7 @@ import * as Icons from './components/Icons';
                                                                     });
 
                                                                     if (bedtimeConsumptionData.length >= 3) {
-                                                                        // Calcular correlação de Pearson
-                                                                        const getCorrelation = (data, xKey, yKey) => {
-                                                                            const n = data.length;
-                                                                            const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                                                                            const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                                                                            const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                                                                            const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                                                                            const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                                                                            const numerator = n * sumXY - sumX * sumY;
-                                                                            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                                            return denominator === 0 ? null : numerator / denominator;
-                                                                        };
-
-                                                                        const correlation = getCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions');
+                                                                        const correlation = calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions');
 
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
@@ -4747,19 +4679,7 @@ import * as Icons from './components/Icons';
 
                                                                 if (nextDaySleepMood.length < 3) return null;
 
-                                                                const getCorrelation = (data, xKey, yKey) => {
-                                                                    const n = data.length;
-                                                                    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-                                                                    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-                                                                    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-                                                                    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-                                                                    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-                                                                    const numerator = n * sumXY - sumX * sumY;
-                                                                    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                                    return denominator === 0 ? null : numerator / denominator;
-                                                                };
-
-                                                                const correlation = getCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                const correlation = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                 if (correlation === null) return null;
 
                                                                 return (
