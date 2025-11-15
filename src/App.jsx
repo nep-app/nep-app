@@ -2421,18 +2421,49 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         if (patternView === 'progress') {
                                             // Define two periods to compare: recent vs previous
                                             const now = new Date();
-                                            // Adapt period based on filter
-                                            const periodDays = patternsPeriod === 'hoje' ? 1 :
-                                                             patternsPeriod === 'semana' ? 7 :
-                                                             patternsPeriod === 'mes' ? 30 : 30;
+                                            let recentStart, recentEnd, previousStart, previousEnd, periodDays;
 
-                                            const recentStart = new Date(now);
-                                            recentStart.setDate(now.getDate() - periodDays);
-                                            const recentEnd = now;
+                                            if (patternsPeriod === 'hoje') {
+                                                // HOJE: Comparar dia atual (até agora) vs dia anterior (completo)
+                                                // Dia atual: 00:00:00 de hoje → agora
+                                                recentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                                                recentEnd = now;
 
-                                            const previousStart = new Date(now);
-                                            previousStart.setDate(now.getDate() - (periodDays * 2));
-                                            const previousEnd = recentStart;
+                                                // Dia anterior: 00:00:00 ontem → 23:59:59 ontem
+                                                previousStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+                                                previousEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+                                                periodDays = 1;
+                                            } else if (patternsPeriod === 'semana') {
+                                                // SEMANA: Esta semana vs semana anterior
+                                                periodDays = 7;
+                                                recentStart = new Date(now);
+                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentEnd = now;
+
+                                                previousStart = new Date(now);
+                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousEnd = recentStart;
+                                            } else if (patternsPeriod === 'mes') {
+                                                // MÊS: Este mês vs mês anterior
+                                                periodDays = 30;
+                                                recentStart = new Date(now);
+                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentEnd = now;
+
+                                                previousStart = new Date(now);
+                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousEnd = recentStart;
+                                            } else {
+                                                // TUDO: Últimos 30 dias vs 30 dias anteriores
+                                                periodDays = 30;
+                                                recentStart = new Date(now);
+                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentEnd = now;
+
+                                                previousStart = new Date(now);
+                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousEnd = recentStart;
+                                            }
 
                                             // Filter data for both periods
                                             const recentConsumptions = consumptions.filter(c => {
@@ -2441,7 +2472,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             });
                                             const previousConsumptions = consumptions.filter(c => {
                                                 const d = new Date(c.timestamp);
-                                                return d >= previousStart && d < previousEnd;
+                                                return d >= previousStart && d <= previousEnd;
                                             });
 
                                             const recentWellbeing = wellbeingLogs.filter(w => {
@@ -2450,16 +2481,16 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             });
                                             const previousWellbeing = wellbeingLogs.filter(w => {
                                                 const d = new Date(w.timestamp);
-                                                return d >= previousStart && d < previousEnd;
+                                                return d >= previousStart && d <= previousEnd;
                                             });
 
                                             const recentCycles = cycles.filter(c => {
-                                                const d = new Date(c.bedtime);
+                                                const d = new Date(c.timestamp);
                                                 return d >= recentStart && d <= recentEnd;
                                             });
                                             const previousCycles = cycles.filter(c => {
-                                                const d = new Date(c.bedtime);
-                                                return d >= previousStart && d < previousEnd;
+                                                const d = new Date(c.timestamp);
+                                                return d >= previousStart && d <= previousEnd;
                                             });
 
                                             // Helper to calculate change percentage and direction
@@ -2825,7 +2856,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             </div>
                                                         </div>
                                                         <p className={'text-sm mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                            {patternsPeriod === 'hoje' ? 'Comparação entre hoje vs ontem' :
+                                                            {patternsPeriod === 'hoje' ? 'Comparação entre hoje (até agora) vs ontem (dia completo)' :
                                                              patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
                                                              patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
                                                              `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
