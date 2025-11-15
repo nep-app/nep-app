@@ -2155,12 +2155,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 const recentAreaStats = {};
                                                 const previousAreaStats = {};
 
-                                                Object.keys(areas).forEach(area => {
-                                                    // NOVA LÓGICA: Contar por CICLO, não por registo
-                                                    // Agrupar wellbeing por data (1 data = 1 ciclo aprox)
-                                                    const recentDates = new Set(recentWellbeing.map(w => w.date));
-                                                    const previousDates = new Set(previousWellbeing.map(w => w.date));
+                                                // Agrupar wellbeing por data (1 data = 1 ciclo aprox)
+                                                const recentDates = new Set(recentWellbeing.map(w => w.date));
+                                                const previousDates = new Set(previousWellbeing.map(w => w.date));
 
+                                                Object.keys(areas).forEach(area => {
                                                     // Para cada ciclo (data), verificar se ALGUM registo tem area:true
                                                     const recentCyclesWithArea = Array.from(recentDates).filter(date => {
                                                         return recentWellbeing.some(w => w.date === date && w[area] === true);
@@ -2177,9 +2176,25 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     previousAreaStats[area] = previousPercent;
                                                 });
 
-                                                // Calculate overall completion rate
+                                                // Calculate overall completion rate (média dos indicadores)
                                                 const recentOverall = Object.values(recentAreaStats).reduce((sum, v) => sum + v, 0) / 4;
                                                 const previousOverall = Object.values(previousAreaStats).reduce((sum, v) => sum + v, 0) / 4;
+
+                                                // Calculate complete cycles (ciclos onde completaste os 4 indicadores)
+                                                const recentCompleteCycles = Array.from(recentDates).filter(date => {
+                                                    return Object.keys(areas).every(area => {
+                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                    });
+                                                }).length;
+
+                                                const previousCompleteCycles = Array.from(previousDates).filter(date => {
+                                                    return Object.keys(areas).every(area => {
+                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                    });
+                                                }).length;
+
+                                                const recentCompleteCyclesPercent = recentDates.size > 0 ? (recentCompleteCycles / recentDates.size) * 100 : 0;
+                                                const previousCompleteCyclesPercent = previousDates.size > 0 ? (previousCompleteCycles / previousDates.size) * 100 : 0;
 
                                                 // Identify low areas (< 70%)
                                                 const lowAreas = Object.entries(recentAreaStats)
@@ -2206,7 +2221,17 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     previousAreas: previousAreaStats,
                                                     lowAreas,
                                                     suggestion,
-                                                    change: calculateChange(recentOverall, previousOverall, false)
+                                                    change: calculateChange(recentOverall, previousOverall, false),
+                                                    // Ciclos completos (onde completaste os 4 indicadores)
+                                                    completeCycles: {
+                                                        recent: recentCompleteCyclesPercent,
+                                                        previous: previousCompleteCyclesPercent,
+                                                        recentCount: recentCompleteCycles,
+                                                        recentTotal: recentDates.size,
+                                                        previousCount: previousCompleteCycles,
+                                                        previousTotal: previousDates.size,
+                                                        change: calculateChange(recentCompleteCyclesPercent, previousCompleteCyclesPercent, false)
+                                                    }
                                                 };
                                             }
 
@@ -2654,6 +2679,27 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 </div>
                                                                 <div className={'text-xs mt-2 italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
                                                                     {progressData.selfCareDetailed.suggestion}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Complete cycles */}
+                                                            <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-lg p-4 border mb-4'}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                        🎯 Ciclos completos (4 indicadores)
+                                                                    </span>
+                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? (darkMode ? 'text-blue-400' : 'text-blue-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                        {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
+                                                                    </span>
+                                                                </div>
+                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-3 overflow-hidden'}>
+                                                                    <div
+                                                                        className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'bg-blue-500' : 'bg-orange-500')}
+                                                                        style={{width: `${progressData.selfCareDetailed.completeCycles.recent}%`}}
+                                                                    ></div>
+                                                                </div>
+                                                                <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    {progressData.selfCareDetailed.completeCycles.recentCount} de {progressData.selfCareDetailed.completeCycles.recentTotal} ciclos com todos os indicadores
                                                                 </div>
                                                             </div>
 
