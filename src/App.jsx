@@ -270,20 +270,34 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 if (hasAutoAssociatedRef.current) return; // Only run once
 
                 const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
-                if (consumptionsWithoutCycle.length === 0) return; // Nothing to do
+                if (consumptionsWithoutCycle.length === 0) {
+                    console.log('✅ Todos os consumos já têm cycleId');
+                    return;
+                }
 
                 hasAutoAssociatedRef.current = true;
-                console.log(`🔄 Auto-associando ${consumptionsWithoutCycle.length} consumos a ciclos...`);
+
+                const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+                console.log('🔄 ASSOCIAÇÃO AUTOMÁTICA DE CONSUMOS A CICLOS');
+                console.log(`📊 Total ciclos criados: ${sortedCycles.length}`);
+                console.log(`📊 Total consumos: ${consumptions.length}`);
+                console.log(`📊 Consumos com cycleId: ${consumptions.filter(c => c.cycleId).length}`);
+                console.log(`📊 Consumos SEM cycleId: ${consumptionsWithoutCycle.length}`);
+                console.log('\n🗓️ CICLOS (ordenados por timestamp):');
+                sortedCycles.forEach((cycle, i) => {
+                    console.log(`  ${i + 1}. Ciclo ${cycle.id.substring(0, 8)} → ${new Date(cycle.timestamp).toLocaleString('pt-PT')}`);
+                });
 
                 // Run association asynchronously to avoid blocking
                 (async () => {
-                    const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
                     let updatedCount = 0;
+                    const consumptionsByCycle = {};
 
                     for (const consumption of consumptionsWithoutCycle) {
                         let assignedCycleId = null;
 
-                        for (let i = sortedCycles.length - 1; i >= 0; i--) {
+                        for (let i = 0; i < sortedCycles.length; i++) {
                             const cycle = sortedCycles[i];
                             const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
 
@@ -300,12 +314,21 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             assignedCycleId = sortedCycles[0].id;
                         }
 
+                        if (!consumptionsByCycle[assignedCycleId]) consumptionsByCycle[assignedCycleId] = [];
+                        consumptionsByCycle[assignedCycleId].push(consumption);
+
                         const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
                         await saveToFirebase('consumptions', updatedConsumption);
                         updatedCount++;
                     }
 
-                    console.log(`✅ ${updatedCount} consumos associados automaticamente`);
+                    console.log('\n✅ RESULTADO DA ASSOCIAÇÃO:');
+                    console.log(`📊 ${updatedCount} consumos associados`);
+                    console.log('\n📋 DISTRIBUIÇÃO POR CICLO:');
+                    sortedCycles.forEach((cycle, i) => {
+                        const count = consumptionsByCycle[cycle.id]?.length || 0;
+                        console.log(`  ${i + 1}. Ciclo ${cycle.id.substring(0, 8)} → ${count} consumos associados`);
+                    });
                 })();
             }, [user, db, cycles, consumptions]);
 
