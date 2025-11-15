@@ -60,7 +60,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const [historyPeriod, setHistoryPeriod] = useState('tudo');
             const [historyPeriodOffset, setHistoryPeriodOffset] = useState(0);
             const [historyTopic, setHistoryTopic] = useState('todos'); // todos, consumo, reflexoes, ciclos, bem-estar, dbt
-            const [currentCycleId, setCurrentCycleId] = useState(null);
 
             // Modal states
             const [showDailyLogModal, setShowDailyLogModal] = useState(false);
@@ -1455,8 +1454,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }))
             });
             // ===== PRE-RENDER DATA PREPARATION =====
-            const last7 = getLast7Days();
-            const streaks = getStreaks();
+            const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs]);
+            const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
             const badges = useMemo(() => getBadges(), [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
             // Coping strategies based on triggers
