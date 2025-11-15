@@ -335,6 +335,68 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 return cycles[0].id; // Most recent cycle (sorted by timestamp desc)
             };
 
+            // Associate consumptions without cycleId to their respective cycles
+            const associateConsumptionsToCycles = async () => {
+                if (cycles.length === 0) {
+                    console.log('⚠️ Nenhum ciclo encontrado. Criar ciclos primeiro.');
+                    return;
+                }
+
+                // Sort cycles by timestamp (oldest first)
+                const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+                // Find consumptions without cycleId
+                const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
+
+                if (consumptionsWithoutCycle.length === 0) {
+                    console.log('✅ Todos os consumos já têm cycleId');
+                    showToast('✓ Todos os consumos já estão associados a ciclos', 'success');
+                    return;
+                }
+
+                console.log(`🔄 Associando ${consumptionsWithoutCycle.length} consumos a ${sortedCycles.length} ciclos...`);
+
+                let updatedCount = 0;
+                for (const consumption of consumptionsWithoutCycle) {
+                    // Find which cycle this consumption belongs to
+                    let assignedCycleId = null;
+
+                    for (let i = sortedCycles.length - 1; i >= 0; i--) {
+                        const cycle = sortedCycles[i];
+                        const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
+
+                        // Check if consumption is within this cycle's time range
+                        const isAfterCycleStart = consumption.timestamp >= cycle.timestamp;
+                        const isBeforeNextCycle = !nextCycle || consumption.timestamp < nextCycle.timestamp;
+
+                        if (isAfterCycleStart && isBeforeNextCycle) {
+                            assignedCycleId = cycle.id;
+                            break;
+                        }
+                    }
+
+                    // If no cycle found, assign to the oldest cycle
+                    if (!assignedCycleId) {
+                        assignedCycleId = sortedCycles[0].id;
+                    }
+
+                    // Update consumption with cycleId
+                    const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
+                    await saveToFirebase('consumptions', updatedConsumption);
+
+                    // Update local state
+                    setConsumptions(prev => prev.map(c =>
+                        c.id === consumption.id ? updatedConsumption : c
+                    ));
+
+                    updatedCount++;
+                    console.log(`  ✓ Consumo ${consumption.id.substring(0, 8)} → Ciclo ${assignedCycleId.substring(0, 8)}`);
+                }
+
+                console.log(`✅ ${updatedCount} consumos associados a ciclos`);
+                showToast(`✓ ${updatedCount} consumos associados a ciclos`, 'success');
+            };
+
             const submitDailyLog = async () => {
                 try {
                     const currentCycle = getCurrentCycleId();
@@ -1499,6 +1561,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     )}
 
                                     <div className="flex gap-1">
+                                        <button onClick={associateConsumptionsToCycles} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Associar consumos a ciclos"><Icons.RefreshCw className="w-4 h-4" /></button>
                                         <button onClick={toggleDarkMode} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}</button>
                                         <button onClick={exportToCSV} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Exportar dados"><Icons.Download className="w-4 h-4" /></button>
                                         <button onClick={handleLogout} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Sair"><Icons.LogOut className="w-4 h-4" /></button>
