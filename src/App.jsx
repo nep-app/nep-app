@@ -3467,8 +3467,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             {(() => {
                                                                 if (totalConsumptions === 0) return null;
 
-                                                                const renderID = Math.random().toString(36).substr(2, 9);
-
                                                                 // Calcular consumos por hora (inicializar todas as 24 horas com 0)
                                                                 const byHour = {};
                                                                 for (let h = 0; h < 24; h++) {
@@ -3480,37 +3478,14 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                     byHour[hour]++;
                                                                 });
 
-                                                                console.log(`🕐 ANÁLISE POR HORA [${renderID}]:`, {
-                                                                    totalConsumptions: filteredConsumptions.length,
-                                                                    byHour: byHour,
-                                                                    consumptions: filteredConsumptions.map(c => ({
-                                                                        timestamp: c.timestamp,
-                                                                        hour: new Date(c.timestamp).getHours(),
-                                                                        date: new Date(c.timestamp).toLocaleDateString('pt-PT')
-                                                                    }))
-                                                                });
-
                                                                 if (filteredConsumptions.length === 0) return null;
 
                                                                 // Encontrar hora com mais e menos consumos (todas as 24 horas)
                                                                 const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
-
-                                                                console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
-
                                                                 hourEntries.sort((a, b) => b.count - a.count);
-
-                                                                console.log(`🔍 AFTER SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
 
                                                                 const worstHour = hourEntries[0];
                                                                 const bestHour = hourEntries[hourEntries.length - 1];
-
-                                                                console.log(`📊 WORST/BEST HOUR [${renderID}]:`, {
-                                                                    hourEntries,
-                                                                    worstHour,
-                                                                    bestHour,
-                                                                    worstFormatted: `${String(worstHour.hour).padStart(2, '0')}:00-${String(worstHour.hour + 1).padStart(2, '0')}:00`,
-                                                                    bestFormatted: `${String(bestHour.hour).padStart(2, '0')}:00-${String(bestHour.hour + 1).padStart(2, '0')}:00`
-                                                                });
 
                                                                 const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
 
@@ -3649,17 +3624,25 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 const areaNames = { water: 'hidratação', food: 'alimentação', rest: 'descanso', social: 'socialização' };
                                                                 const overall = (percentages.water + percentages.food + percentages.rest + percentages.social) / 4;
 
+                                                                // Sugestões específicas por área
+                                                                const suggestions = {
+                                                                    water: 'tenta manter uma garrafa de água visível ao teu lado',
+                                                                    food: 'define 3 refeições básicas diárias, mesmo que pequenas',
+                                                                    rest: 'agenda pausas de 5-10 minutos ao longo do dia',
+                                                                    social: 'envia uma mensagem a alguém uma vez por dia'
+                                                                };
+
                                                                 return (
                                                                     <p>
-                                                                        No autocuidado, a tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
+                                                                        💧 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Autocuidado:</strong> A tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
                                                                         {lowAreas.length >= 3 ? (
-                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Pequenos hábitos diários fazem diferença - começa por {areaNames[lowAreas[0][0]]} e {areaNames[lowAreas[1][0]]} regular.</span></>
+                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Foca primeiro em {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%): {suggestions[lowAreas[0][0]]}.</span> Depois expande para {areaNames[lowAreas[1][0]]}.</>
                                                                         ) : lowAreas.length === 2 ? (
-                                                                            <> Atenção a {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). Criar rotinas simples pode ajudar!</>
+                                                                            <> Duas áreas precisam de atenção: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Para {areaNames[lowAreas[0][0]]}: {suggestions[lowAreas[0][0]]}.</span></>
                                                                         ) : lowAreas.length === 1 ? (
-                                                                            <> Foca em melhorar {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) - pequenos passos contam!</>
+                                                                            <> Só uma área abaixo de 70%: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Dica prática: {suggestions[lowAreas[0][0]]}.</span> Pequenos passos contam!</>
                                                                         ) : (
-                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas.</span></>
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas (todas ≥70%).</span> Continua assim - o autocuidado é a base da recuperação.</>
                                                                         )}
                                                                     </p>
                                                                 );
@@ -3721,6 +3704,146 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             <> Curiosamente, mais sono parece correlacionar-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta o humor.</>
                                                                         ) : (
                                                                             <> Não há uma relação clara entre sono e humor nos teus dados. Outros fatores podem estar a influenciar mais o teu estado emocional.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 10b: Consumption-Wellbeing Correlation */}
+                                                            {(() => {
+                                                                // Análise: consumo hoje afeta bem-estar amanhã?
+                                                                const dailyConsumptionData = {};
+
+                                                                // Agrupar consumos por dia
+                                                                filteredConsumptions.forEach(c => {
+                                                                    if (!dailyConsumptionData[c.date]) dailyConsumptionData[c.date] = { consumptions: 0, mood: null, energy: null };
+                                                                    dailyConsumptionData[c.date].consumptions++;
+                                                                });
+
+                                                                // Adicionar bem-estar
+                                                                filteredWellbeingLogs.forEach(w => {
+                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                    if (!wDate) return;
+                                                                    if (!dailyConsumptionData[wDate]) dailyConsumptionData[wDate] = { consumptions: 0, mood: null, energy: null };
+                                                                    if (w.mood) dailyConsumptionData[wDate].mood = parseInt(w.mood);
+                                                                    if (w.energy) dailyConsumptionData[wDate].energy = parseInt(w.energy);
+                                                                });
+
+                                                                const sortedDates = Object.keys(dailyConsumptionData).sort();
+                                                                const nextDayData = [];
+
+                                                                // Correlacionar consumo de hoje com bem-estar de amanhã
+                                                                for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                                    const today = dailyConsumptionData[sortedDates[i]];
+                                                                    const tomorrow = dailyConsumptionData[sortedDates[i + 1]];
+                                                                    if (today.consumptions > 0 && (tomorrow.mood !== null || tomorrow.energy !== null)) {
+                                                                        nextDayData.push({
+                                                                            consumptions: today.consumptions,
+                                                                            mood: tomorrow.mood,
+                                                                            energy: tomorrow.energy
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                if (nextDayData.length < 3) return null;
+
+                                                                const validMoodData = nextDayData.filter(d => d.mood !== null);
+                                                                const validEnergyData = nextDayData.filter(d => d.energy !== null);
+
+                                                                const moodCorr = validMoodData.length >= 3 ? calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
+                                                                const energyCorr = validEnergyData.length >= 3 ? calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
+
+                                                                // Só mostrar se pelo menos uma correlação existe e é significativa
+                                                                if ((moodCorr === null || Math.abs(moodCorr) < 0.3) && (energyCorr === null || Math.abs(energyCorr) < 0.3)) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        🔍 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Impacto do Consumo:</strong> Analisei como o consumo hoje afeta o teu bem-estar no dia seguinte.
+                                                                        {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
+                                                                            <>
+                                                                                {moodCorr < -0.3 ? (
+                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Dias com mais consumo tendem a preceder dias com humor mais baixo (correlação: {moodCorr.toFixed(2)})</span> - isto mostra claramente o impacto emocional do consumo.</>
+                                                                                ) : moodCorr > 0.3 ? (
+                                                                                    <> Curiosamente, mais consumo correlaciona-se com melhor humor no dia seguinte (correlação: {moodCorr.toFixed(2)}) - isto pode indicar alívio temporário ou outros fatores em jogo.</>
+                                                                                ) : null}
+                                                                            </>
+                                                                        )}
+                                                                        {energyCorr !== null && Math.abs(energyCorr) >= 0.3 && (
+                                                                            <>
+                                                                                {energyCorr < -0.3 ? (
+                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Mais consumo também afeta negativamente os teus níveis de energia no dia seguinte (correlação: {energyCorr.toFixed(2)})</span> - o corpo está a recuperar.</>
+                                                                                ) : energyCorr > 0.3 ? (
+                                                                                    <> Mais consumo parece correlacionar-se com mais energia no dia seguinte (correlação: {energyCorr.toFixed(2)}) - observa se isto é sustentável a longo prazo.</>
+                                                                                ) : null}
+                                                                            </>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 10c: Perfil de Risco */}
+                                                            {(() => {
+                                                                // Identificar condições que precedem dias com mais consumo
+                                                                if (filteredConsumptions.length < 5 || filteredWellbeingLogs.length < 3) return null;
+
+                                                                const dailyProfile = {};
+
+                                                                // Agrupar por dia
+                                                                filteredConsumptions.forEach(c => {
+                                                                    if (!dailyProfile[c.date]) dailyProfile[c.date] = { consumptions: 0, prevSleep: null, prevMood: null, prevEnergy: null };
+                                                                    dailyProfile[c.date].consumptions++;
+                                                                });
+
+                                                                filteredWellbeingLogs.forEach(w => {
+                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                    if (!wDate) return;
+                                                                    if (!dailyProfile[wDate]) dailyProfile[wDate] = { consumptions: 0, prevSleep: null, prevMood: null, prevEnergy: null };
+                                                                });
+
+                                                                // Para cada dia, pegar bem-estar do dia ANTERIOR
+                                                                const sortedDates = Object.keys(dailyProfile).sort();
+                                                                for (let i = 1; i < sortedDates.length; i++) {
+                                                                    const yesterday = sortedDates[i - 1];
+                                                                    const yesterdayWellbeing = filteredWellbeingLogs.find(w => {
+                                                                        const wDate = w.date || safeToISODate(w.timestamp);
+                                                                        return wDate === yesterday;
+                                                                    });
+
+                                                                    if (yesterdayWellbeing) {
+                                                                        dailyProfile[sortedDates[i]].prevSleep = yesterdayWellbeing.sleep ? parseFloat(yesterdayWellbeing.sleep) : null;
+                                                                        dailyProfile[sortedDates[i]].prevMood = yesterdayWellbeing.mood ? parseInt(yesterdayWellbeing.mood) : null;
+                                                                        dailyProfile[sortedDates[i]].prevEnergy = yesterdayWellbeing.energy ? parseInt(yesterdayWellbeing.energy) : null;
+                                                                    }
+                                                                }
+
+                                                                // Identificar "dias de alto risco" (top 33% de consumo)
+                                                                const daysWithData = Object.values(dailyProfile).filter(d => d.consumptions > 0);
+                                                                if (daysWithData.length < 3) return null;
+
+                                                                daysWithData.sort((a, b) => b.consumptions - a.consumptions);
+                                                                const highRiskDays = daysWithData.slice(0, Math.ceil(daysWithData.length / 3));
+
+                                                                // Calcular médias de bem-estar do dia anterior para dias de alto vs baixo risco
+                                                                const highRiskPrevMood = highRiskDays.filter(d => d.prevMood !== null).map(d => d.prevMood);
+                                                                const lowRiskDays = daysWithData.slice(Math.ceil(daysWithData.length / 3));
+                                                                const lowRiskPrevMood = lowRiskDays.filter(d => d.prevMood !== null).map(d => d.prevMood);
+
+                                                                if (highRiskPrevMood.length < 2 || lowRiskPrevMood.length < 2) return null;
+
+                                                                const avgHighRiskPrevMood = highRiskPrevMood.reduce((a, b) => a + b, 0) / highRiskPrevMood.length;
+                                                                const avgLowRiskPrevMood = lowRiskPrevMood.reduce((a, b) => a + b, 0) / lowRiskPrevMood.length;
+                                                                const moodDiff = avgLowRiskPrevMood - avgHighRiskPrevMood;
+
+                                                                // Só mostrar se diferença significativa (>1.5 pontos)
+                                                                if (Math.abs(moodDiff) < 1.5) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        🎯 <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Perfil de Risco:</strong> Identifiquei um padrão importante:
+                                                                        {moodDiff > 0 ? (
+                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Dias com mais consumo tendem a ser precedidos por humor mais baixo no dia anterior</span> (diferença de {moodDiff.toFixed(1)} pontos). <strong>Isto sugere que humor baixo é um gatilho para ti.</strong> Quando te sentires em baixo, esse é o momento de usar estratégias de prevenção - contacta alguém, faz exercício, ou usa técnicas de mindfulness.</>
+                                                                        ) : (
+                                                                            <> Dias com mais consumo são precedidos por humor mais alto (diferença de {Math.abs(moodDiff).toFixed(1)} pontos) - isto pode indicar que celebração ou euforia são gatilhos. Estar consciente disto ajuda-te a moderar.</>
                                                                         )}
                                                                     </p>
                                                                 );
