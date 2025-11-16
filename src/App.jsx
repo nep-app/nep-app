@@ -4836,11 +4836,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                 const renderID = Math.random().toString(36).substr(2, 9);
 
-                                                                // Calcular consumos por hora
+                                                                // Calcular consumos por hora (inicializar todas as 24 horas com 0)
                                                                 const byHour = {};
+                                                                for (let h = 0; h < 24; h++) {
+                                                                    byHour[h] = 0;
+                                                                }
+
                                                                 filteredConsumptions.forEach(c => {
                                                                     const hour = new Date(c.timestamp).getHours();
-                                                                    byHour[hour] = (byHour[hour] || 0) + 1;
+                                                                    byHour[hour]++;
                                                                 });
 
                                                                 console.log(`🕐 ANÁLISE POR HORA [${renderID}]:`, {
@@ -4853,9 +4857,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                     }))
                                                                 });
 
-                                                                if (Object.keys(byHour).length === 0) return null;
+                                                                if (filteredConsumptions.length === 0) return null;
 
-                                                                // Encontrar hora com mais e menos consumos
+                                                                // Encontrar hora com mais e menos consumos (todas as 24 horas)
                                                                 const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
 
                                                                 console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
@@ -4875,19 +4879,23 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                     bestFormatted: `${String(bestHour.hour).padStart(2, '0')}:00-${String(bestHour.hour + 1).padStart(2, '0')}:00`
                                                                 });
 
-                                                                // Apenas mostrar se houver variação significativa
-                                                                if (hourEntries.length < 2) return null;
-
                                                                 const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
 
                                                                 // Só mostrar se houver variação significativa entre horas
-                                                                // (pior hora tem pelo menos 2x mais consumos que melhor hora)
-                                                                if (worstHour.count < bestHour.count * 2) return null;
+                                                                // Se melhor hora tem 0, qualquer pior hora > 0 é significativo
+                                                                // Caso contrário, pior hora precisa ter pelo menos 2x mais que melhor
+                                                                const hasSignificantVariation = bestHour.count === 0
+                                                                    ? worstHour.count > 0
+                                                                    : worstHour.count >= bestHour.count * 2;
+
+                                                                if (!hasSignificantVariation) return null;
 
                                                                 return (
                                                                     <p>
                                                                         A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
-                                                                        {hourEntries.length > 1 && (
+                                                                        {bestHour.count === 0 ? (
+                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> <strong>nunca registas consumos</strong>. <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                        ) : (
                                                                             <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
                                                                         )}
                                                                     </p>
