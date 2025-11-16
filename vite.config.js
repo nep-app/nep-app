@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/nep-app/',
   plugins: [react()],
   build: {
-    outDir: 'docs',
+    outDir: 'dist',
     sourcemap: false,
     minify: 'terser',
     rollupOptions: {
