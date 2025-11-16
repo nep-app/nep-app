@@ -4905,13 +4905,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                 {/* Análise Intraciclo */}
                                                                 {(() => {
-                                                                    console.log('📍 ANTES de agrupar por ciclo:', {
-                                                                        periodo: patternsPeriod,
-                                                                        totalConsumptions: consumptions.length,
-                                                                        analysisConsumptions: analysisConsumptions.length,
-                                                                        analysisWellbeing: analysisWellbeing.length
-                                                                    });
-
                                                                     const cycleData = {};
 
                                                                     analysisConsumptions.forEach(c => {
@@ -4929,13 +4922,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                     });
 
                                                                     const cyclesWithData = Object.values(cycleData).filter(c => c.consumptions.length > 0 && c.wellbeing.length >= 2);
-
-                                                                    console.log('🔄 Análise Intraciclo DEBUG:', {
-                                                                        periodo: patternsPeriod,
-                                                                        totalCiclos: Object.keys(cycleData).length,
-                                                                        ciclosComDados: cyclesWithData.length,
-                                                                        cycleIds: Object.keys(cycleData)
-                                                                    });
 
                                                                     if (cyclesWithData.length >= 2) {
                                                                         // 1. Evolução de Humor e Energia ao longo do ciclo
@@ -5064,12 +5050,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         const avgEnergyEnd = energyProgression.end.length > 0 ? (energyProgression.end.reduce((a,b) => a+b, 0) / energyProgression.end.length).toFixed(1) : null;
 
                                                                         const avgInterval = intervals.length > 0 ? (intervals.reduce((a,b) => a+b, 0) / intervals.length).toFixed(1) : null;
-
-                                                                        console.log('📊 Intervalos calculados:', {
-                                                                            totalIntervalos: intervals.length,
-                                                                            intervalos: intervals.map(i => i.toFixed(2) + 'h'),
-                                                                            media: avgInterval
-                                                                        });
 
                                                                         const totalCons = consumptionTiming.start + consumptionTiming.middle + consumptionTiming.end;
 
