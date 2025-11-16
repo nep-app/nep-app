@@ -3899,8 +3899,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             return r.date >= dateRange.start && r.date <= dateRange.end;
                                         });
 
-                                            if (filteredConsumptions.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
-
                                             // EXCLUIR DIA ATUAL (exceto quando período é "hoje")
                                             const today = new Date().toISOString().split('T')[0];
                                             const analysisConsumptions = patternsPeriod === 'hoje' ? filteredConsumptions : filteredConsumptions.filter(c => c.date !== today);
