@@ -4905,6 +4905,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                 {/* Análise Intraciclo */}
                                                                 {(() => {
+                                                                    console.log('📍 ANTES de agrupar por ciclo:', {
+                                                                        periodo: patternsPeriod,
+                                                                        totalConsumptions: consumptions.length,
+                                                                        analysisConsumptions: analysisConsumptions.length,
+                                                                        analysisWellbeing: analysisWellbeing.length
+                                                                    });
+
                                                                     const cycleData = {};
 
                                                                     analysisConsumptions.forEach(c => {
