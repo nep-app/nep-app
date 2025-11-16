@@ -73,6 +73,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const [editingGoal, setEditingGoal] = useState(null);
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
+            const [analysisSubView, setAnalysisSubView] = useState('temporal'); // For analyses tab: temporal, structural, correlations
 
             // 2.4 Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
@@ -2048,11 +2049,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['dashboard', 'progress', 'patterns', 'coach'].map(view => (
+                                        {['dashboard', 'progress', 'coach'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
                                                 {view === 'progress' && '📈 Progresso'}
-                                                {view === 'patterns' && '🔍 Padrões & Análises'}
                                                 {view === 'coach' && '💬 Coach'}
                                             </button>
                                         ))}
@@ -3332,7 +3332,573 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         }
 
                                         // PADRÕES & ANÁLISES (NOVA - EM DESENVOLVIMENTO)
-                                        if (patternView === 'patterns') {
+
+                                        // COACH
+                                        if (patternView === 'coach') {
+                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) {
+                                                return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                                            }
+
+                                            // Calculate all metrics for narrative
+                                            const totalConsumptions = filteredConsumptions.length;
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            const uniqueDays = Object.keys(byDate).length;
+                                            const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
+
+                                            // Wellbeing averages
+                                            const validSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
+                                            const avgSleep = validSleep.length > 0 ? (validSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / validSleep.length).toFixed(1) : null;
+
+                                            const validMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(parseInt(w.mood)));
+                                            const avgMood = validMood.length > 0 ? (validMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / validMood.length).toFixed(1) : null;
+
+                                            const validEnergy = filteredWellbeingLogs.filter(w => w.energy && !isNaN(parseInt(w.energy)));
+                                            const avgEnergy = validEnergy.length > 0 ? (validEnergy.reduce((sum, w) => sum + parseInt(w.energy), 0) / validEnergy.length).toFixed(1) : null;
+
+                                            // Trending
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push(diff);
+                                            }
+                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
+                                            const goodIntervals = intervals.filter(i => i >= 2).length;
+                                            const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
+
+                                            // Best/worst days (excluir o dia de hoje exceto quando filtrado por "dia")
+                                            const dates = Object.keys(byDate).sort();
+                                            const today = new Date().toISOString().split('T')[0];
+                                            const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
+                                            const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
+                                            const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;
+                                            const worstDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
+                                            const bestCount = bestDate ? byDate[bestDate] : 0;
+                                            const worstCount = worstDate ? byDate[worstDate] : 0;
+
+                                            // Time pattern
+                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+                                                else byPartOfDay.madrugada++;
+                                            });
+                                            const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                                            const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
+
+                                            // Sentiment analysis (if we have notes)
+                                            const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...filteredCycles.map(c => c.notes || '')].filter(n => n.length > 0).join(' ');
+
+                                            const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
+                                            const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
+
+                                            const positiveCount = positiveWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+                                            const negativeCount = negativeWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+
+                                            const sentimentScore = positiveCount - negativeCount;
+
+                                            return (
+                                                <div className="space-y-4">
+                                                    {/* Header */}
+                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <span className="text-4xl">💬</span>
+                                                            <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                O Teu Coach
+                                                            </h3>
+                                                        </div>
+                                                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                            Resumo personalizado do período selecionado
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Narrative Summary */}
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                        <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            {/* Paragraph 1: Overview */}
+                                                            <p>
+                                                                Olá! Vamos refletir sobre este período juntos.
+                                                                {totalConsumptions > 0 ? (
+                                                                    <> Registaste <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'}</strong> ao longo de {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'}, com uma média de <strong>{avgPerDay} consumos/dia</strong>.</>
+                                                                ) : (
+                                                                    <> Não tens consumos registados neste período - isso é excelente! </>
+                                                                )}
+                                                            </p>
+
+                                                            {/* Paragraph 2: Patterns and Progress */}
+                                                            {totalConsumptions > 0 && (
+                                                                <p>
+                                                                    {intervals.length > 0 ? (
+                                                                        <>
+                                                                            Notei que tens um intervalo médio de <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval} horas</strong> entre consumos.
+                                                                            {goodPercent >= 50 ? (
+                                                                                <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>Isso é fantástico - {goodPercent}% dos teus intervalos são ≥2h!</span> Estás a conseguir espaçar bem os consumos, o que demonstra grande controlo.</>
+                                                                            ) : (
+                                                                                <> Há espaço para melhorar aqui - atualmente {goodPercent}% dos intervalos são ≥2h. Pequenas mudanças, como adicionar uma atividade entre consumos, podem fazer grande diferença.</>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <> Neste período ainda não tenho dados suficientes sobre intervalos, mas vamos continuar a acompanhar juntos.</>
+                                                                    )}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 3: Time Patterns */}
+                                                            {totalConsumptions > 0 && maxPartOfDay[1] > 0 && (
+                                                                <p>
+                                                                    Reparei que a maioria dos teus consumos ({Math.round((maxPartOfDay[1] / totalConsumptions) * 100)}%) acontece à <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{partNames[maxPartOfDay[0]]}</strong>.
+                                                                    {maxPartOfDay[0] === 'madrugada' && (
+                                                                        <> Consumir durante a madrugada pode indicar dificuldades com o sono ou ansiedade noturna. Tens pensado no que te leva a consumir nesse período? Talvez seja útil explorar técnicas de relaxamento para a noite.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'noite' && (
+                                                                        <> A noite é um período comum para consumo, muitas vezes ligado ao descontrair após o dia. Considera se há formas alternativas de relaxar que te fazem sentir bem.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'tarde' && (
+                                                                        <> As tardes podem ser desafiantes, especialmente se há rotinas ou gatilhos específicos. Identifica o que precede esses momentos.</>
+                                                                    )}
+                                                                    {maxPartOfDay[0] === 'manha' && (
+                                                                        <> Consumir pela manhã pode estar relacionado com o acordar ou com a gestão de ansiedade matinal. Observa como te sentes ao acordar e se há padrões.</>
+                                                                    )}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 3b: Hourly Consumption Analysis */}
+                                                            {(() => {
+                                                                if (totalConsumptions === 0) return null;
+
+                                                                const renderID = Math.random().toString(36).substr(2, 9);
+
+                                                                // Calcular consumos por hora (inicializar todas as 24 horas com 0)
+                                                                const byHour = {};
+                                                                for (let h = 0; h < 24; h++) {
+                                                                    byHour[h] = 0;
+                                                                }
+
+                                                                filteredConsumptions.forEach(c => {
+                                                                    const hour = new Date(c.timestamp).getHours();
+                                                                    byHour[hour]++;
+                                                                });
+
+                                                                console.log(`🕐 ANÁLISE POR HORA [${renderID}]:`, {
+                                                                    totalConsumptions: filteredConsumptions.length,
+                                                                    byHour: byHour,
+                                                                    consumptions: filteredConsumptions.map(c => ({
+                                                                        timestamp: c.timestamp,
+                                                                        hour: new Date(c.timestamp).getHours(),
+                                                                        date: new Date(c.timestamp).toLocaleDateString('pt-PT')
+                                                                    }))
+                                                                });
+
+                                                                if (filteredConsumptions.length === 0) return null;
+
+                                                                // Encontrar hora com mais e menos consumos (todas as 24 horas)
+                                                                const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
+
+                                                                console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
+
+                                                                hourEntries.sort((a, b) => b.count - a.count);
+
+                                                                console.log(`🔍 AFTER SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
+
+                                                                const worstHour = hourEntries[0];
+                                                                const bestHour = hourEntries[hourEntries.length - 1];
+
+                                                                console.log(`📊 WORST/BEST HOUR [${renderID}]:`, {
+                                                                    hourEntries,
+                                                                    worstHour,
+                                                                    bestHour,
+                                                                    worstFormatted: `${String(worstHour.hour).padStart(2, '0')}:00-${String(worstHour.hour + 1).padStart(2, '0')}:00`,
+                                                                    bestFormatted: `${String(bestHour.hour).padStart(2, '0')}:00-${String(bestHour.hour + 1).padStart(2, '0')}:00`
+                                                                });
+
+                                                                const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
+
+                                                                // Só mostrar se houver variação significativa entre horas
+                                                                // Se melhor hora tem 0, qualquer pior hora > 0 é significativo
+                                                                // Caso contrário, pior hora precisa ter pelo menos 2x mais que melhor
+                                                                const hasSignificantVariation = bestHour.count === 0
+                                                                    ? worstHour.count > 0
+                                                                    : worstHour.count >= bestHour.count * 2;
+
+                                                                if (!hasSignificantVariation) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
+                                                                        {bestHour.count === 0 ? (
+                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> <strong>nunca registas consumos</strong>. <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                        ) : (
+                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 4: Wellbeing Integration */}
+                                                            {(avgMood || avgEnergy || avgSleep) && (
+                                                                <p>
+                                                                    Sobre o teu bem-estar geral:
+                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : parseFloat(avgSleep) >= 7 && parseFloat(avgSleep) <= 9 ? ' - excelente! Esse é o intervalo ideal para a maioria das pessoas' : ' - um valor razoável'}.</>}
+                                                                    {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
+                                                                    {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 5: Emotional Tone & Encouragement */}
+                                                            <p>
+                                                                {allNotes.length > 50 ? (
+                                                                    <>
+                                                                        Ao ler as tuas reflexões, percebo que tens usado palavras
+                                                                        {sentimentScore > 5 ? (
+                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>maioritariamente positivas</strong> - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!</>
+                                                                        ) : sentimentScore < -5 ? (
+                                                                            <> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>que sugerem alguma dificuldade emocional</strong>. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
+                                                                        ) : (
+                                                                            <> neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
+                                                                )}
+                                                            </p>
+
+                                                            {/* Paragraph 6: Highlights */}
+                                                            {bestDate && totalConsumptions > 0 && (
+                                                                <p>
+                                                                    {bestCount <= 2 ? (
+                                                                        <>
+                                                                            Destaco o dia <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{new Date(bestDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong>, onde tiveste apenas {bestCount} {bestCount === 1 ? 'consumo' : 'consumos'}.
+                                                                            <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> O que fizeste diferente nesse dia? Identificar essas estratégias pode ser a chave para replicar esse sucesso.</span>
+                                                                        </>
+                                                                    ) : worstDate && worstCount >= 8 ? (
+                                                                        <>
+                                                                            Repara que em <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{new Date(worstDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong> houve {worstCount} consumos. Não te culpes - em vez disso, pergunta-te: o que aconteceu? Houve gatilhos específicos? Stress? Tédio? Compreender é o primeiro passo para prevenir.
+                                                                        </>
+                                                                    ) : null}
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 7: Bedtime & Sleep Patterns */}
+                                                            {(() => {
+                                                                // Filtrar apenas bedtimes válidos (21:00-05:59, excluir 06:00-20:59)
+                                                                const cyclesWithValidBedtime = filteredCycles.filter(c => {
+                                                                    if (!c.bedtime) return false;
+                                                                    const [hours] = c.bedtime.split(':').map(Number);
+                                                                    // Excluir horas de dia (06:00-20:59) que não são horas de deitar
+                                                                    if (hours >= 6 && hours < 21) return false;
+                                                                    return true;
+                                                                });
+
+                                                                if (cyclesWithValidBedtime.length === 0) return null;
+
+                                                                const getBedtimeMinutes = (bedtime) => {
+                                                                    const [hours, minutes] = bedtime.split(':').map(Number);
+                                                                    // Ajustar madrugada (00:00-05:59) para 24:00-29:59
+                                                                    if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
+                                                                    return hours * 60 + minutes;
+                                                                };
+
+                                                                const avgBedtimeMinutes = cyclesWithValidBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithValidBedtime.length;
+                                                                // Converter de volta para 0-23h se necessário
+                                                                const adjustedMinutes = avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes;
+                                                                const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+
+                                                                return (
+                                                                    <p>
+                                                                        Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{avgBedtimeStr}</strong>.
+                                                                        {avgBedtimeHours >= 0 && avgBedtimeHours < 6 ? (
+                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
+                                                                        ) : avgBedtimeHours >= 22 && avgBedtimeHours < 24 ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
+                                                                        ) : avgBedtimeHours >= 6 && avgBedtimeHours < 12 ? (
+                                                                            <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
+                                                                        ) : (
+                                                                            <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 8: Self-Care Analysis */}
+                                                            {(() => {
+                                                                const periodWellbeing = filteredWellbeingLogs;
+                                                                if (periodWellbeing.length < 3) return null;
+
+                                                                const areas = { water: 0, food: 0, rest: 0, social: 0 };
+                                                                periodWellbeing.forEach(w => {
+                                                                    if (w.water) areas.water++;
+                                                                    if (w.food) areas.food++;
+                                                                    if (w.rest) areas.rest++;
+                                                                    if (w.social) areas.social++;
+                                                                });
+
+                                                                const percentages = {
+                                                                    water: (areas.water / periodWellbeing.length) * 100,
+                                                                    food: (areas.food / periodWellbeing.length) * 100,
+                                                                    rest: (areas.rest / periodWellbeing.length) * 100,
+                                                                    social: (areas.social / periodWellbeing.length) * 100
+                                                                };
+
+                                                                const lowAreas = Object.entries(percentages)
+                                                                    .filter(([_, pct]) => pct < 70)
+                                                                    .sort((a, b) => a[1] - b[1]);
+
+                                                                const areaNames = { water: 'hidratação', food: 'alimentação', rest: 'descanso', social: 'socialização' };
+                                                                const overall = (percentages.water + percentages.food + percentages.rest + percentages.social) / 4;
+
+                                                                return (
+                                                                    <p>
+                                                                        No autocuidado, a tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
+                                                                        {lowAreas.length >= 3 ? (
+                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Pequenos hábitos diários fazem diferença - começa por {areaNames[lowAreas[0][0]]} e {areaNames[lowAreas[1][0]]} regular.</span></>
+                                                                        ) : lowAreas.length === 2 ? (
+                                                                            <> Atenção a {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). Criar rotinas simples pode ajudar!</>
+                                                                        ) : lowAreas.length === 1 ? (
+                                                                            <> Foca em melhorar {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) - pequenos passos contam!</>
+                                                                        ) : (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas.</span></>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 9: Goals Achievement */}
+                                                            {goals.length > 0 && (() => {
+                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
+                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs) > 0);
+
+                                                                return (
+                                                                    <p>
+                                                                        Sobre as tuas metas: cumpriste condições das tuas metas <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>{totalAchievements} vezes</strong> neste período!
+                                                                        {goalsWithAchievements.length === goals.length ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {goals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
+                                                                        ) : goalsWithAchievements.length > 0 ? (
+                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {goals.length} metas. Continua focado/a nas que ainda não atingiste.</>
+                                                                        ) : (
+                                                                            <> Ainda não atingiste nenhuma meta neste período, mas não desanimes - ajustar metas ou estratégias é parte do processo.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 10: Sleep-Mood Correlation */}
+                                                            {(() => {
+                                                                const dailyData = {};
+
+                                                                filteredWellbeingLogs.forEach(w => {
+                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                    if (!wDate) return;
+                                                                    if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
+                                                                    if (w.sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                                    if (w.mood) dailyData[wDate].mood = parseInt(w.mood);
+                                                                });
+
+                                                                const sortedDates = Object.keys(dailyData).sort();
+                                                                const nextDaySleepMood = [];
+
+                                                                for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                                    const today = dailyData[sortedDates[i]];
+                                                                    const tomorrow = dailyData[sortedDates[i + 1]];
+                                                                    if (today.sleep !== null && tomorrow.mood !== null) {
+                                                                        nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
+                                                                    }
+                                                                }
+
+                                                                if (nextDaySleepMood.length < 3) return null;
+
+                                                                const correlation = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                if (correlation === null) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>{correlation.toFixed(2)}</strong>.
+                                                                        {correlation > 0.4 ? (
+                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dormir bem melhora claramente o teu humor no dia seguinte!</span> Priorizar o sono é investir no teu bem-estar emocional.</>
+                                                                        ) : correlation < -0.2 ? (
+                                                                            <> Curiosamente, mais sono parece correlacionar-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta o humor.</>
+                                                                        ) : (
+                                                                            <> Não há uma relação clara entre sono e humor nos teus dados. Outros fatores podem estar a influenciar mais o teu estado emocional.</>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 11: Tendência (se aplicável) */}
+                                                            {(() => {
+                                                                if (totalConsumptions === 0) return null;
+
+                                                                const now = new Date();
+                                                                let recentPeriod, previousPeriod, periodLabel;
+
+                                                                // Adaptar comparação ao filtro selecionado
+                                                                if (patternsPeriod === 'hoje') {
+                                                                    // Comparar hoje vs ontem
+                                                                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                                                                    const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+                                                                    const yesterdayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= todayStart);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= yesterdayStart && d <= yesterdayEnd;
+                                                                    });
+                                                                    periodLabel = { recent: 'hoje', previous: 'ontem' };
+                                                                } else if (patternsPeriod === 'semana') {
+                                                                    // Comparar esta semana vs semana anterior
+                                                                    const sevenDaysAgo = new Date(now);
+                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                                                    const fourteenDaysAgo = new Date(now);
+                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                    });
+                                                                    periodLabel = { recent: 'nesta semana', previous: 'na anterior' };
+                                                                } else if (patternsPeriod === 'mês') {
+                                                                    // Comparar este mês vs mês anterior
+                                                                    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                                                                    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                                                                    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= thisMonthStart);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= lastMonthStart && d <= lastMonthEnd;
+                                                                    });
+                                                                    periodLabel = { recent: 'neste mês', previous: 'no anterior' };
+                                                                } else {
+                                                                    // 'tudo': Comparar últimos 7 dias vs 7 dias anteriores
+                                                                    const sevenDaysAgo = new Date(now);
+                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                                                    const fourteenDaysAgo = new Date(now);
+                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
+                                                                    previousPeriod = consumptions.filter(c => {
+                                                                        const d = new Date(c.timestamp);
+                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+                                                                    });
+                                                                    periodLabel = { recent: 'na última semana', previous: 'na anterior' };
+                                                                }
+
+                                                                if (recentPeriod.length === 0 || previousPeriod.length === 0) return null;
+
+                                                                const percentChange = ((recentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
+
+                                                                // Só mostrar se mudança significativa (>20%)
+                                                                if (Math.abs(percentChange) < 20) return null;
+
+                                                                return (
+                                                                    <p>
+                                                                        {percentChange > 0 ? (
+                                                                            <>
+                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
+                                                                            </>
+                                                                        )}
+                                                                    </p>
+                                                                );
+                                                            })()}
+
+                                                            {/* Paragraph 12: Autoconhecimento */}
+                                                            {(filteredWellbeingLogs.length > 3 || filteredCycles.length > 2) && (
+                                                                <p>
+                                                                    ✨ <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Autoconhecimento:</strong> Estás a registar de forma consistente
+                                                                    {filteredWellbeingLogs.length > 0 && <> (bem-estar)</>}
+                                                                    {filteredCycles.length > 0 && <>{filteredWellbeingLogs.length > 0 && ','} ciclos de sono</>}.
+                                                                    <span className={'font-medium ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
+                                                                </p>
+                                                            )}
+
+                                                            {/* Paragraph 13: Tu Tens o Controlo */}
+                                                            <p className={'font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
+                                                                <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
+                                                            </p>
+
+                                                            {/* Paragraph 14: Closing & Next Steps */}
+                                                            <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
+                                                                🤝 <strong>Compromisso:</strong> O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.
+                                                                <span> Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.</span>
+                                                                <br/><br/>
+                                                                Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer.
+                                                                Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
+                            )}
+                            {currentView === 'analyses' && (
+                                <div className="space-y-6">
+                                    <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análises</h2>
+
+                                    {/* Temporal Filters */}
+                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className={'text-sm font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Período de análise</div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setPatternsPeriodOffset(prev => prev - 1)} disabled={patternsPeriodOffset >= 0 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
+                                                    <Icons.ChevronLeft className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset === 0 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset === 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
+                                                    <Icons.ChevronRight className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                            {['hoje', 'semana', 'mes', 'tudo'].map(period => (
+                                                <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                                    {period === 'hoje' && 'Hoje'}
+                                                    {period === 'semana' && 'Semana'}
+                                                    {period === 'mes' && 'Mês'}
+                                                    {period === 'tudo' && 'Tudo'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {patternsPeriod !== 'tudo' && (
+                                            <div className={'text-xs mt-2 text-center ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                {(() => {
+                                                    const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                                                    return new Date(dateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }) + ' - ' + new Date(dateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
+                                                })()}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {(() => {
+                                        // Apply temporal filter to all data
+                                        const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                                        const filteredConsumptions = consumptions.filter(c => {
+                                            return c.date >= dateRange.start && c.date <= dateRange.end;
+                                        });
+                                        const filteredWellbeingLogs = wellbeingLogs.filter(w => {
+                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                            return wDate && wDate >= dateRange.start && wDate <= dateRange.end;
+                                        });
+                                        const filteredCycles = cycles.filter(cy => {
+                                            return cy.date >= dateRange.start && cy.date <= dateRange.end;
+                                        });
+                                        const filteredReflections = reflections.filter(r => {
+                                            return r.date >= dateRange.start && r.date <= dateRange.end;
+                                        });
+
                                             if (filteredConsumptions.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
                                             // EXCLUIR DIA ATUAL (exceto quando período é "hoje")
@@ -3381,8 +3947,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         {['temporal', 'estrutural', 'correlacoes'].map(subView => (
                                                             <button
                                                                 key={subView}
-                                                                onClick={() => setPatternsSubView(subView)}
-                                                                className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
+                                                                onClick={() => setAnalysisSubView(subView)}
+                                                                className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
                                                                 {subView === 'temporal' && '⏰ Temporal'}
                                                                 {subView === 'estrutural' && '📊 Estrutural'}
@@ -3392,7 +3958,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     </div>
 
                                                     {/* TEMPORAL */}
-                                                    {patternsSubView === 'temporal' && (
+                                                    {analysisSubView === 'temporal' && (
                                                         <div className="space-y-4">
                                                             {/* Análise de Intervalos Simplificada */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
@@ -3684,7 +4250,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     )}
 
                                                     {/* ESTRUTURAL */}
-                                                    {patternsSubView === 'estrutural' && (
+                                                    {analysisSubView === 'estrutural' && (
                                                         <div className="space-y-4">
                                                             {/* Por horário */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
@@ -3834,7 +4400,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     )}
 
                                                     {/* CORRELAÇÕES */}
-                                                    {patternsSubView === 'correlacoes' && (() => {
+                                                    {analysisSubView === 'correlacoes' && (() => {
                                                         console.log('🔍 DEBUG CORRELAÇÕES:', {
                                                             totalConsumptions: consumptions.length,
                                                             analysisConsumptions: analysisConsumptions.length,
@@ -4695,517 +5261,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     })()}
                                                 </div>
                                             );
-                                        }
-
-                                        // COACH
-                                        if (patternView === 'coach') {
-                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) {
-                                                return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
-                                            }
-
-                                            // Calculate all metrics for narrative
-                                            const totalConsumptions = filteredConsumptions.length;
-                                            const byDate = {};
-                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
-                                            const uniqueDays = Object.keys(byDate).length;
-                                            const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
-
-                                            // Wellbeing averages
-                                            const validSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
-                                            const avgSleep = validSleep.length > 0 ? (validSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / validSleep.length).toFixed(1) : null;
-
-                                            const validMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(parseInt(w.mood)));
-                                            const avgMood = validMood.length > 0 ? (validMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / validMood.length).toFixed(1) : null;
-
-                                            const validEnergy = filteredWellbeingLogs.filter(w => w.energy && !isNaN(parseInt(w.energy)));
-                                            const avgEnergy = validEnergy.length > 0 ? (validEnergy.reduce((sum, w) => sum + parseInt(w.energy), 0) / validEnergy.length).toFixed(1) : null;
-
-                                            // Trending
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                                            const intervals = [];
-                                            for (let i = 1; i < sorted.length; i++) {
-                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                intervals.push(diff);
-                                            }
-                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
-                                            const goodIntervals = intervals.filter(i => i >= 2).length;
-                                            const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
-
-                                            // Best/worst days (excluir o dia de hoje exceto quando filtrado por "dia")
-                                            const dates = Object.keys(byDate).sort();
-                                            const today = new Date().toISOString().split('T')[0];
-                                            const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
-                                            const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
-                                            const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;
-                                            const worstDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null;
-                                            const bestCount = bestDate ? byDate[bestDate] : 0;
-                                            const worstCount = worstDate ? byDate[worstDate] : 0;
-
-                                            // Time pattern
-                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            filteredConsumptions.forEach(c => {
-                                                const hour = new Date(c.timestamp).getHours();
-                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
-                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
-                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
-                                                else byPartOfDay.madrugada++;
-                                            });
-                                            const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                                            const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
-
-                                            // Sentiment analysis (if we have notes)
-                                            const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...filteredCycles.map(c => c.notes || '')].filter(n => n.length > 0).join(' ');
-
-                                            const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
-                                            const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
-
-                                            const positiveCount = positiveWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
-                                            const negativeCount = negativeWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
-
-                                            const sentimentScore = positiveCount - negativeCount;
-
-                                            return (
-                                                <div className="space-y-4">
-                                                    {/* Header */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <span className="text-4xl">💬</span>
-                                                            <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                O Teu Coach
-                                                            </h3>
-                                                        </div>
-                                                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                            Resumo personalizado do período selecionado
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Narrative Summary */}
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                            {/* Paragraph 1: Overview */}
-                                                            <p>
-                                                                Olá! Vamos refletir sobre este período juntos.
-                                                                {totalConsumptions > 0 ? (
-                                                                    <> Registaste <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'}</strong> ao longo de {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'}, com uma média de <strong>{avgPerDay} consumos/dia</strong>.</>
-                                                                ) : (
-                                                                    <> Não tens consumos registados neste período - isso é excelente! </>
-                                                                )}
-                                                            </p>
-
-                                                            {/* Paragraph 2: Patterns and Progress */}
-                                                            {totalConsumptions > 0 && (
-                                                                <p>
-                                                                    {intervals.length > 0 ? (
-                                                                        <>
-                                                                            Notei que tens um intervalo médio de <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval} horas</strong> entre consumos.
-                                                                            {goodPercent >= 50 ? (
-                                                                                <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>Isso é fantástico - {goodPercent}% dos teus intervalos são ≥2h!</span> Estás a conseguir espaçar bem os consumos, o que demonstra grande controlo.</>
-                                                                            ) : (
-                                                                                <> Há espaço para melhorar aqui - atualmente {goodPercent}% dos intervalos são ≥2h. Pequenas mudanças, como adicionar uma atividade entre consumos, podem fazer grande diferença.</>
-                                                                            )}
-                                                                        </>
-                                                                    ) : (
-                                                                        <> Neste período ainda não tenho dados suficientes sobre intervalos, mas vamos continuar a acompanhar juntos.</>
-                                                                    )}
-                                                                </p>
-                                                            )}
-
-                                                            {/* Paragraph 3: Time Patterns */}
-                                                            {totalConsumptions > 0 && maxPartOfDay[1] > 0 && (
-                                                                <p>
-                                                                    Reparei que a maioria dos teus consumos ({Math.round((maxPartOfDay[1] / totalConsumptions) * 100)}%) acontece à <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{partNames[maxPartOfDay[0]]}</strong>.
-                                                                    {maxPartOfDay[0] === 'madrugada' && (
-                                                                        <> Consumir durante a madrugada pode indicar dificuldades com o sono ou ansiedade noturna. Tens pensado no que te leva a consumir nesse período? Talvez seja útil explorar técnicas de relaxamento para a noite.</>
-                                                                    )}
-                                                                    {maxPartOfDay[0] === 'noite' && (
-                                                                        <> A noite é um período comum para consumo, muitas vezes ligado ao descontrair após o dia. Considera se há formas alternativas de relaxar que te fazem sentir bem.</>
-                                                                    )}
-                                                                    {maxPartOfDay[0] === 'tarde' && (
-                                                                        <> As tardes podem ser desafiantes, especialmente se há rotinas ou gatilhos específicos. Identifica o que precede esses momentos.</>
-                                                                    )}
-                                                                    {maxPartOfDay[0] === 'manha' && (
-                                                                        <> Consumir pela manhã pode estar relacionado com o acordar ou com a gestão de ansiedade matinal. Observa como te sentes ao acordar e se há padrões.</>
-                                                                    )}
-                                                                </p>
-                                                            )}
-
-                                                            {/* Paragraph 3b: Hourly Consumption Analysis */}
-                                                            {(() => {
-                                                                if (totalConsumptions === 0) return null;
-
-                                                                const renderID = Math.random().toString(36).substr(2, 9);
-
-                                                                // Calcular consumos por hora (inicializar todas as 24 horas com 0)
-                                                                const byHour = {};
-                                                                for (let h = 0; h < 24; h++) {
-                                                                    byHour[h] = 0;
-                                                                }
-
-                                                                filteredConsumptions.forEach(c => {
-                                                                    const hour = new Date(c.timestamp).getHours();
-                                                                    byHour[hour]++;
-                                                                });
-
-                                                                console.log(`🕐 ANÁLISE POR HORA [${renderID}]:`, {
-                                                                    totalConsumptions: filteredConsumptions.length,
-                                                                    byHour: byHour,
-                                                                    consumptions: filteredConsumptions.map(c => ({
-                                                                        timestamp: c.timestamp,
-                                                                        hour: new Date(c.timestamp).getHours(),
-                                                                        date: new Date(c.timestamp).toLocaleDateString('pt-PT')
-                                                                    }))
-                                                                });
-
-                                                                if (filteredConsumptions.length === 0) return null;
-
-                                                                // Encontrar hora com mais e menos consumos (todas as 24 horas)
-                                                                const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
-
-                                                                console.log(`🔍 BEFORE SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
-
-                                                                hourEntries.sort((a, b) => b.count - a.count);
-
-                                                                console.log(`🔍 AFTER SORT [${renderID}]:`, JSON.parse(JSON.stringify(hourEntries)));
-
-                                                                const worstHour = hourEntries[0];
-                                                                const bestHour = hourEntries[hourEntries.length - 1];
-
-                                                                console.log(`📊 WORST/BEST HOUR [${renderID}]:`, {
-                                                                    hourEntries,
-                                                                    worstHour,
-                                                                    bestHour,
-                                                                    worstFormatted: `${String(worstHour.hour).padStart(2, '0')}:00-${String(worstHour.hour + 1).padStart(2, '0')}:00`,
-                                                                    bestFormatted: `${String(bestHour.hour).padStart(2, '0')}:00-${String(bestHour.hour + 1).padStart(2, '0')}:00`
-                                                                });
-
-                                                                const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
-
-                                                                // Só mostrar se houver variação significativa entre horas
-                                                                // Se melhor hora tem 0, qualquer pior hora > 0 é significativo
-                                                                // Caso contrário, pior hora precisa ter pelo menos 2x mais que melhor
-                                                                const hasSignificantVariation = bestHour.count === 0
-                                                                    ? worstHour.count > 0
-                                                                    : worstHour.count >= bestHour.count * 2;
-
-                                                                if (!hasSignificantVariation) return null;
-
-                                                                return (
-                                                                    <p>
-                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
-                                                                        {bestHour.count === 0 ? (
-                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> <strong>nunca registas consumos</strong>. <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
-                                                                        ) : (
-                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 4: Wellbeing Integration */}
-                                                            {(avgMood || avgEnergy || avgSleep) && (
-                                                                <p>
-                                                                    Sobre o teu bem-estar geral:
-                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : parseFloat(avgSleep) >= 7 && parseFloat(avgSleep) <= 9 ? ' - excelente! Esse é o intervalo ideal para a maioria das pessoas' : ' - um valor razoável'}.</>}
-                                                                    {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
-                                                                    {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
-                                                                </p>
-                                                            )}
-
-                                                            {/* Paragraph 5: Emotional Tone & Encouragement */}
-                                                            <p>
-                                                                {allNotes.length > 50 ? (
-                                                                    <>
-                                                                        Ao ler as tuas reflexões, percebo que tens usado palavras
-                                                                        {sentimentScore > 5 ? (
-                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>maioritariamente positivas</strong> - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!</>
-                                                                        ) : sentimentScore < -5 ? (
-                                                                            <> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>que sugerem alguma dificuldade emocional</strong>. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
-                                                                        ) : (
-                                                                            <> neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
-                                                                        )}
-                                                                    </>
-                                                                ) : (
-                                                                    <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
-                                                                )}
-                                                            </p>
-
-                                                            {/* Paragraph 6: Highlights */}
-                                                            {bestDate && totalConsumptions > 0 && (
-                                                                <p>
-                                                                    {bestCount <= 2 ? (
-                                                                        <>
-                                                                            Destaco o dia <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{new Date(bestDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong>, onde tiveste apenas {bestCount} {bestCount === 1 ? 'consumo' : 'consumos'}.
-                                                                            <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> O que fizeste diferente nesse dia? Identificar essas estratégias pode ser a chave para replicar esse sucesso.</span>
-                                                                        </>
-                                                                    ) : worstDate && worstCount >= 8 ? (
-                                                                        <>
-                                                                            Repara que em <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{new Date(worstDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong> houve {worstCount} consumos. Não te culpes - em vez disso, pergunta-te: o que aconteceu? Houve gatilhos específicos? Stress? Tédio? Compreender é o primeiro passo para prevenir.
-                                                                        </>
-                                                                    ) : null}
-                                                                </p>
-                                                            )}
-
-                                                            {/* Paragraph 7: Bedtime & Sleep Patterns */}
-                                                            {(() => {
-                                                                // Filtrar apenas bedtimes válidos (21:00-05:59, excluir 06:00-20:59)
-                                                                const cyclesWithValidBedtime = filteredCycles.filter(c => {
-                                                                    if (!c.bedtime) return false;
-                                                                    const [hours] = c.bedtime.split(':').map(Number);
-                                                                    // Excluir horas de dia (06:00-20:59) que não são horas de deitar
-                                                                    if (hours >= 6 && hours < 21) return false;
-                                                                    return true;
-                                                                });
-
-                                                                if (cyclesWithValidBedtime.length === 0) return null;
-
-                                                                const getBedtimeMinutes = (bedtime) => {
-                                                                    const [hours, minutes] = bedtime.split(':').map(Number);
-                                                                    // Ajustar madrugada (00:00-05:59) para 24:00-29:59
-                                                                    if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
-                                                                    return hours * 60 + minutes;
-                                                                };
-
-                                                                const avgBedtimeMinutes = cyclesWithValidBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithValidBedtime.length;
-                                                                // Converter de volta para 0-23h se necessário
-                                                                const adjustedMinutes = avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes;
-                                                                const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
-                                                                const avgBedtimeMins = Math.round(adjustedMinutes % 60);
-                                                                const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
-
-                                                                return (
-                                                                    <p>
-                                                                        Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{avgBedtimeStr}</strong>.
-                                                                        {avgBedtimeHours >= 0 && avgBedtimeHours < 6 ? (
-                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
-                                                                        ) : avgBedtimeHours >= 22 && avgBedtimeHours < 24 ? (
-                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
-                                                                        ) : avgBedtimeHours >= 6 && avgBedtimeHours < 12 ? (
-                                                                            <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
-                                                                        ) : (
-                                                                            <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 8: Self-Care Analysis */}
-                                                            {(() => {
-                                                                const periodWellbeing = filteredWellbeingLogs;
-                                                                if (periodWellbeing.length < 3) return null;
-
-                                                                const areas = { water: 0, food: 0, rest: 0, social: 0 };
-                                                                periodWellbeing.forEach(w => {
-                                                                    if (w.water) areas.water++;
-                                                                    if (w.food) areas.food++;
-                                                                    if (w.rest) areas.rest++;
-                                                                    if (w.social) areas.social++;
-                                                                });
-
-                                                                const percentages = {
-                                                                    water: (areas.water / periodWellbeing.length) * 100,
-                                                                    food: (areas.food / periodWellbeing.length) * 100,
-                                                                    rest: (areas.rest / periodWellbeing.length) * 100,
-                                                                    social: (areas.social / periodWellbeing.length) * 100
-                                                                };
-
-                                                                const lowAreas = Object.entries(percentages)
-                                                                    .filter(([_, pct]) => pct < 70)
-                                                                    .sort((a, b) => a[1] - b[1]);
-
-                                                                const areaNames = { water: 'hidratação', food: 'alimentação', rest: 'descanso', social: 'socialização' };
-                                                                const overall = (percentages.water + percentages.food + percentages.rest + percentages.social) / 4;
-
-                                                                return (
-                                                                    <p>
-                                                                        No autocuidado, a tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
-                                                                        {lowAreas.length >= 3 ? (
-                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Pequenos hábitos diários fazem diferença - começa por {areaNames[lowAreas[0][0]]} e {areaNames[lowAreas[1][0]]} regular.</span></>
-                                                                        ) : lowAreas.length === 2 ? (
-                                                                            <> Atenção a {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). Criar rotinas simples pode ajudar!</>
-                                                                        ) : lowAreas.length === 1 ? (
-                                                                            <> Foca em melhorar {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) - pequenos passos contam!</>
-                                                                        ) : (
-                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas.</span></>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 9: Goals Achievement */}
-                                                            {goals.length > 0 && (() => {
-                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
-                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs) > 0);
-
-                                                                return (
-                                                                    <p>
-                                                                        Sobre as tuas metas: cumpriste condições das tuas metas <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>{totalAchievements} vezes</strong> neste período!
-                                                                        {goalsWithAchievements.length === goals.length ? (
-                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {goals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
-                                                                        ) : goalsWithAchievements.length > 0 ? (
-                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {goals.length} metas. Continua focado/a nas que ainda não atingiste.</>
-                                                                        ) : (
-                                                                            <> Ainda não atingiste nenhuma meta neste período, mas não desanimes - ajustar metas ou estratégias é parte do processo.</>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 10: Sleep-Mood Correlation */}
-                                                            {(() => {
-                                                                const dailyData = {};
-
-                                                                filteredWellbeingLogs.forEach(w => {
-                                                                    const wDate = w.date || safeToISODate(w.timestamp);
-                                                                    if (!wDate) return;
-                                                                    if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
-                                                                    if (w.sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
-                                                                    if (w.mood) dailyData[wDate].mood = parseInt(w.mood);
-                                                                });
-
-                                                                const sortedDates = Object.keys(dailyData).sort();
-                                                                const nextDaySleepMood = [];
-
-                                                                for (let i = 0; i < sortedDates.length - 1; i++) {
-                                                                    const today = dailyData[sortedDates[i]];
-                                                                    const tomorrow = dailyData[sortedDates[i + 1]];
-                                                                    if (today.sleep !== null && tomorrow.mood !== null) {
-                                                                        nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
-                                                                    }
-                                                                }
-
-                                                                if (nextDaySleepMood.length < 3) return null;
-
-                                                                const correlation = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
-                                                                if (correlation === null) return null;
-
-                                                                return (
-                                                                    <p>
-                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>{correlation.toFixed(2)}</strong>.
-                                                                        {correlation > 0.4 ? (
-                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dormir bem melhora claramente o teu humor no dia seguinte!</span> Priorizar o sono é investir no teu bem-estar emocional.</>
-                                                                        ) : correlation < -0.2 ? (
-                                                                            <> Curiosamente, mais sono parece correlacionar-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta o humor.</>
-                                                                        ) : (
-                                                                            <> Não há uma relação clara entre sono e humor nos teus dados. Outros fatores podem estar a influenciar mais o teu estado emocional.</>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 11: Tendência (se aplicável) */}
-                                                            {(() => {
-                                                                if (totalConsumptions === 0) return null;
-
-                                                                const now = new Date();
-                                                                let recentPeriod, previousPeriod, periodLabel;
-
-                                                                // Adaptar comparação ao filtro selecionado
-                                                                if (patternsPeriod === 'hoje') {
-                                                                    // Comparar hoje vs ontem
-                                                                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                                                                    const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
-                                                                    const yesterdayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
-
-                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= todayStart);
-                                                                    previousPeriod = consumptions.filter(c => {
-                                                                        const d = new Date(c.timestamp);
-                                                                        return d >= yesterdayStart && d <= yesterdayEnd;
-                                                                    });
-                                                                    periodLabel = { recent: 'hoje', previous: 'ontem' };
-                                                                } else if (patternsPeriod === 'semana') {
-                                                                    // Comparar esta semana vs semana anterior
-                                                                    const sevenDaysAgo = new Date(now);
-                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                                                    const fourteenDaysAgo = new Date(now);
-                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
-                                                                    previousPeriod = consumptions.filter(c => {
-                                                                        const d = new Date(c.timestamp);
-                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
-                                                                    });
-                                                                    periodLabel = { recent: 'nesta semana', previous: 'na anterior' };
-                                                                } else if (patternsPeriod === 'mês') {
-                                                                    // Comparar este mês vs mês anterior
-                                                                    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                                                                    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                                                                    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
-                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= thisMonthStart);
-                                                                    previousPeriod = consumptions.filter(c => {
-                                                                        const d = new Date(c.timestamp);
-                                                                        return d >= lastMonthStart && d <= lastMonthEnd;
-                                                                    });
-                                                                    periodLabel = { recent: 'neste mês', previous: 'no anterior' };
-                                                                } else {
-                                                                    // 'tudo': Comparar últimos 7 dias vs 7 dias anteriores
-                                                                    const sevenDaysAgo = new Date(now);
-                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                                                    const fourteenDaysAgo = new Date(now);
-                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
-                                                                    previousPeriod = consumptions.filter(c => {
-                                                                        const d = new Date(c.timestamp);
-                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
-                                                                    });
-                                                                    periodLabel = { recent: 'na última semana', previous: 'na anterior' };
-                                                                }
-
-                                                                if (recentPeriod.length === 0 || previousPeriod.length === 0) return null;
-
-                                                                const percentChange = ((recentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
-
-                                                                // Só mostrar se mudança significativa (>20%)
-                                                                if (Math.abs(percentChange) < 20) return null;
-
-                                                                return (
-                                                                    <p>
-                                                                        {percentChange > 0 ? (
-                                                                            <>
-                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
-                                                                                <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
-                                                                                <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
-                                                                            </>
-                                                                        )}
-                                                                    </p>
-                                                                );
-                                                            })()}
-
-                                                            {/* Paragraph 12: Autoconhecimento */}
-                                                            {(filteredWellbeingLogs.length > 3 || filteredCycles.length > 2) && (
-                                                                <p>
-                                                                    ✨ <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Autoconhecimento:</strong> Estás a registar de forma consistente
-                                                                    {filteredWellbeingLogs.length > 0 && <> (bem-estar)</>}
-                                                                    {filteredCycles.length > 0 && <>{filteredWellbeingLogs.length > 0 && ','} ciclos de sono</>}.
-                                                                    <span className={'font-medium ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
-                                                                </p>
-                                                            )}
-
-                                                            {/* Paragraph 13: Tu Tens o Controlo */}
-                                                            <p className={'font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
-                                                                💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
-                                                                <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
-                                                            </p>
-
-                                                            {/* Paragraph 14: Closing & Next Steps */}
-                                                            <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
-                                                                🤝 <strong>Compromisso:</strong> O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.
-                                                                <span> Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.</span>
-                                                                <br/><br/>
-                                                                Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer.
-                                                                Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
                                     })()}
                                 </div>
                             )}
@@ -5791,7 +5846,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
-                                <div className="grid grid-cols-4 gap-1">
+                                <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
@@ -5799,6 +5854,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.BarChart3 className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Padrões</div>
+                                    </button>
+                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                        <Icons.Activity className="w-5 h-5" />
+                                        <div className="text-xs font-medium mt-1">Análises</div>
                                     </button>
                                     <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.BookOpen className="w-5 h-5" />
