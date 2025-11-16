@@ -3933,8 +3933,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
-                                                                {subView === 'temporal' && '⏰ Temporal'}
-                                                                {subView === 'estrutural' && '📊 Estrutural'}
+                                                                {subView === 'temporal' && '📊 Estrutural'}
+                                                                {subView === 'estrutural' && '⏰ Temporal'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
                                                             </button>
                                                         ))}
