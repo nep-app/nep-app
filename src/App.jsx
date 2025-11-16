@@ -2049,11 +2049,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['dashboard', 'progress', 'estrutural'].map(view => (
+                                        {['dashboard', 'progress', 'coach'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
                                                 {view === 'progress' && '📈 Progresso'}
-                                                {view === 'estrutural' && '📊 Estrutural'}
+                                                {view === 'coach' && '💬 Coach'}
                                             </button>
                                         ))}
                                     </div>
@@ -3331,10 +3331,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             );
                                         }
 
-                                        // PADRÕES & ANÁLISES (NOVA - EM DESENVOLVIMENTO)
-
                                         // COACH
-                                        if (patternView === 'estrutural') {
+                                        if (patternView === 'coach') {
                                             if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) {
                                                 return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
                                             }
@@ -3929,15 +3927,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                 <div className="space-y-4">
                                                     {/* Sub-tab navigation */}
                                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                                        {['temporal', 'correlacoes', 'coach'].map(subView => (
+                                                        {['temporal', 'estrutural', 'correlacoes'].map(subView => (
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
                                                                 {subView === 'temporal' && '⏰ Temporal'}
+                                                                {subView === 'estrutural' && '📊 Estrutural'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
-                                                                {subView === 'coach' && '💬 Coach'}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -4235,7 +4233,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     )}
 
                                                     {/* ESTRUTURAL */}
-                                                    {analysisSubView === 'coach' && (
+                                                    {analysisSubView === 'estrutural' && (
                                                         <div className="space-y-4">
                                                             {/* Por horário */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
