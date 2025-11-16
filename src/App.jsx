@@ -2343,9 +2343,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
-                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                            <div className="italic mb-0.5">{explanations[goal.type] || 'Cumprimentos registados'}</div>
-                                                                                            <div>Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}</div>
+                                                                                        <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            {explanations[goal.type] || 'Cumprimentos registados'} - Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
