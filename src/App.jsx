@@ -3885,24 +3885,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     {(() => {
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                        const filteredConsumptions = consumptions.filter(c => {
-                                            return c.date >= dateRange.start && c.date <= dateRange.end;
-                                        });
-                                        const filteredWellbeingLogs = wellbeingLogs.filter(w => {
-                                            const wDate = w.date || safeToISODate(w.timestamp);
-                                            return wDate && wDate >= dateRange.start && wDate <= dateRange.end;
-                                        });
-                                        const filteredCycles = cycles.filter(cy => {
-                                            return cy.date >= dateRange.start && cy.date <= dateRange.end;
-                                        });
-                                        const filteredReflections = reflections.filter(r => {
-                                            return r.date >= dateRange.start && r.date <= dateRange.end;
-                                        });
+                                        const filteredConsumptions = filterByDateRange(consumptions, dateRange);
+                                        const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
+                                        const filteredCycles = filterByDateRange(cycles, dateRange);
+                                        const filteredReflections = filterByDateRange(reflections, dateRange);
 
-                                            // Usar dados filtrados diretamente (sem excluir dia atual)
-                                            const analysisConsumptions = filteredConsumptions;
-                                            const analysisWellbeing = filteredWellbeingLogs;
-                                            const analysisCycles = filteredCycles;
+                                        // Usar dados filtrados diretamente (sem excluir dia atual)
+                                        const analysisConsumptions = filteredConsumptions;
+                                        const analysisWellbeing = filteredWellbeingLogs;
+                                        const analysisCycles = filteredCycles;
 
                                             // Calculate all needed data
                                             const byHour = {};
