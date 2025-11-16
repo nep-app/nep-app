@@ -3899,14 +3899,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             return r.date >= dateRange.start && r.date <= dateRange.end;
                                         });
 
-                                            // EXCLUIR DIA ATUAL (exceto quando período é "hoje")
-                                            const today = new Date().toISOString().split('T')[0];
-                                            const analysisConsumptions = patternsPeriod === 'hoje' ? filteredConsumptions : filteredConsumptions.filter(c => c.date !== today);
-                                            const analysisWellbeing = patternsPeriod === 'hoje' ? filteredWellbeingLogs : filteredWellbeingLogs.filter(w => {
-                                                const wDate = w.date || safeToISODate(w.timestamp);
-                                                return wDate && wDate !== today;
-                                            });
-                                            const analysisCycles = patternsPeriod === 'hoje' ? filteredCycles : filteredCycles.filter(cy => cy.date !== today);
+                                            // Usar dados filtrados diretamente (sem excluir dia atual)
+                                            const analysisConsumptions = filteredConsumptions;
+                                            const analysisWellbeing = filteredWellbeingLogs;
+                                            const analysisCycles = filteredCycles;
 
                                             // Calculate all needed data
                                             const byHour = {};
