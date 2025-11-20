@@ -3325,292 +3325,150 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             
                                             return (
                                         <div className="space-y-4">
-                                            {/* Análise de Intervalos Simplificada */}
+                                            {/* Por horário */}
                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>⏱️ Intervalos Entre Consumos</h3>
-                                                {intervals.length === 0 ? (
-                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-                                                        Sem intervalos (necessário ≥2 consumos)
-                                                    </div>
+                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
+                                                {Object.keys(byHour).length === 0 ? (
+                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
                                                 ) : (() => {
-                                                    const goodIntervals = intervals.filter(i => i.hours >= 2);
-                                                    const shortIntervals = intervals.filter(i => i.hours < 2);
-                                                    const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
-                                                    const maxInterval = Math.max(...intervals.map(i => i.hours));
-                                                    const goodPercent = ((goodIntervals.length / intervals.length) * 100).toFixed(0);
-                                                    const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
+                                                    const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
+                                                    const maxCount = Math.max(...Object.values(byHour));
+
+                                                    // Agrupar horas em blocos de 3h para melhor visualização
+                                                    const hourBlocks = [
+                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: 'Madrugada' },
+                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: 'Madrugada' },
+                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: 'Manhã' },
+                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: 'Manhã' },
+                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: 'Tarde' },
+                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: 'Tarde' },
+                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: 'Noite' },
+                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
+                                                    ];
 
                                                     return (
-                                                        <>
-                                                            <div className="grid grid-cols-3 gap-3 mb-4">
-                                                                <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
-                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{intervals.length}</div>
-                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total</div>
-                                                                </div>
-                                                                <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
-                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgInterval.toFixed(1)}h</div>
-                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
-                                                                </div>
-                                                                <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
-                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{maxInterval.toFixed(1)}h</div>
-                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
-                                                                </div>
-                                                            </div>
+                                                        <div className="space-y-2">
+                                                            {hourBlocks.map(block => {
+                                                                const blockCount = block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0);
+                                                                const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
+                                                                const intensity = maxCount > 0 ? (blockCount / maxCount) : 0;
 
-                                                            <div className="space-y-3">
-                                                                {/* Bons intervalos (≥2h) */}
-                                                                <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-4`}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                                                                            <span>✅</span>
-                                                                            <span>Intervalos Bons (≥2h)</span>
-                                                                        </div>
-                                                                        <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                                                                            {goodIntervals.length} ({goodPercent}%)
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
-                                                                        <div className="bg-green-500 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
-                                                                    </div>
-                                                                </div>
+                                                                // Cores por período
+                                                                let colorClass = '';
+                                                                if (block.label === 'Madrugada') {
+                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                } else if (block.label === 'Manhã') {
+                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                } else if (block.label === 'Tarde') {
+                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                } else {
+                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                }
 
-                                                                {/* Intervalos curtos (<2h) */}
-                                                                <div className={`${darkMode ? 'bg-orange-900/20 border border-orange-700/50' : 'bg-orange-50 border border-orange-200'} rounded-lg p-4`}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
-                                                                            <span>⚠️</span>
-                                                                            <span>Intervalos Curtos (&lt;2h)</span>
+                                                                return (
+                                                                    <div key={block.range} className="flex items-center gap-3">
+                                                                        <div className={'text-xl w-8 text-center'}>
+                                                                            {block.icon}
                                                                         </div>
-                                                                        <div className={`text-sm font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
-                                                                            {shortIntervals.length} ({shortPercent}%)
+                                                                        <div className={'text-sm font-medium w-16 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            {block.range}h
+                                                                        </div>
+                                                                        <div className="flex-1">
+                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-8 overflow-hidden relative'}>
+                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
+                                                                                    {blockCount > 0 && (
+                                                                                        <span className="whitespace-nowrap">
+                                                                                            {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
-                                                                        <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                                );
+                                                            })}
 
-                                                            <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
-                                                                <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                                    {goodPercent >= 50
-                                                                        ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
-                                                                        : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
-                                                                </p>
+                                                            {/* Legenda */}
+                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
+                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
                                                             </div>
-                                                        </>
+                                                        </div>
                                                     );
                                                 })()}
                                             </div>
 
-                                            {/* Gatilhos */}
-                                            {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <span className="text-lg">⚡</span>
-                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análise de Gatilhos</h3>
-                                                    </div>
-                                                    {(() => {
-                                                        // Calcular gatilhos e média de consumos por gatilho
-                                                        const triggerData = {};
+                                            {/* Por período do dia */}
+                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
+                                                {(() => {
+                                                    const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
+                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
 
-                                                        filteredCycles.forEach(cycle => {
-                                                            if (!cycle.triggers || cycle.triggers.length === 0) return;
+                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
+                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
+                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
+                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
 
-                                                            // Encontrar data do ciclo usando o timestamp
-                                                            const cycleDate = safeToISODate(cycle.timestamp);
-                                                            if (!cycleDate) return;
-
-                                                            // Contar consumos nesse dia
-                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === cycleDate).length;
-
-                                                            cycle.triggers.forEach(trigger => {
-                                                                if (!triggerData[trigger]) {
-                                                                    triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
-                                                                }
-                                                                triggerData[trigger].count++;
-                                                                triggerData[trigger].totalConsumptions += dayConsumptions;
-                                                                triggerData[trigger].days.push(cycleDate);
-                                                            });
-                                                        });
-
-                                                        // Calcular média de consumos para cada gatilho
-                                                        const triggersWithAvg = Object.entries(triggerData).map(([trigger, data]) => ({
-                                                            trigger,
-                                                            count: data.count,
-                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
-                                                        }));
-
-                                                        // Gatilhos com MAIOR consumo (top 3)
-                                                        const highRiskTriggers = triggersWithAvg
-                                                            .filter(t => t.count >= 2)
-                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
-                                                            .slice(0, 3);
-
-                                                        // Gatilhos com MENOR consumo (bottom 2)
-                                                        const lowRiskTriggers = triggersWithAvg
-                                                            .filter(t => t.count >= 2 && t.avgConsumptions < 10)
-                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
-                                                            .slice(0, 2);
-
-                                                        // Análise de emoções correlacionadas com consumo
-                                                        const emotionData = {};
-
-                                                        // Para cada registo de bem-estar
-                                                        filteredWellbeingLogs.forEach(log => {
-                                                            if (!log.emotions || log.emotions.length === 0) return;
-
-                                                            const logDate = safeToISODate(log.timestamp);
-                                                            if (!logDate) return;
-
-                                                            // Contar consumos nesse dia
-                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === logDate).length;
-
-                                                            log.emotions.forEach(emotion => {
-                                                                if (!emotionData[emotion]) {
-                                                                    emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
-                                                                }
-                                                                emotionData[emotion].count++;
-                                                                emotionData[emotion].totalConsumptions += dayConsumptions;
-                                                                emotionData[emotion].days.push(logDate);
-                                                            });
-                                                        });
-
-                                                        // Calcular média de consumos para cada emoção e ordenar
-                                                        const emotionsWithAvg = Object.entries(emotionData).map(([emotion, data]) => ({
-                                                            emotion,
-                                                            count: data.count,
-                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
-                                                        }));
-
-                                                        // Emoções com MAIOR consumo (top 2)
-                                                        const highRiskEmotions = emotionsWithAvg
-                                                            .filter(e => e.count >= 2) // Apenas emoções registadas 2+ vezes
-                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
-                                                            .slice(0, 2);
-
-                                                        // Emoções com MENOR consumo (bottom 2)
-                                                        const lowRiskEmotions = emotionsWithAvg
-                                                            .filter(e => e.count >= 2 && e.avgConsumptions < 10) // Menos de 10 consumos em média
-                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
-                                                            .slice(0, 2);
-
-                                                        return (
-                                                            <div className="space-y-3">
-                                                                {/* GATILHOS (situações/contextos) */}
-                                                                <div>
-                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Análise de Gatilhos
-                                                                    </h4>
-
-                                                                    {highRiskTriggers.length === 0 && lowRiskTriggers.length === 0 ? (
-                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
-                                                                            Sem dados suficientes de gatilhos neste período
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="space-y-2">
-                                                                            {/* Gatilhos de ALTO risco (mais consumo) */}
-                                                                            {highRiskTriggers.length > 0 && (
-                                                                                <div>
-                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
-                                                                                        🔴 Alto Risco (mais consumo)
-                                                                                    </div>
-                                                                                    {highRiskTriggers.map(t => (
-                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
-                                                                                            <div className="flex items-center justify-between mb-1">
-                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{t.trigger}</span>
-                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
-                                                                                            </div>
-                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
-                                                                                                ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Gatilhos de BAIXO risco (menos consumo) */}
-                                                                            {lowRiskTriggers.length > 0 && (
-                                                                                <div>
-                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
-                                                                                        🟢 Baixo Risco (menos consumo)
-                                                                                    </div>
-                                                                                    {lowRiskTriggers.map(t => (
-                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
-                                                                                            <div className="flex items-center justify-between mb-1">
-                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{t.trigger}</span>
-                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
-                                                                                            </div>
-                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
-                                                                                                ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* EMOÇÕES (estados emocionais) */}
-                                                                <div>
-                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Análise de Emoções
-                                                                    </h4>
-
-                                                                    {highRiskEmotions.length === 0 && lowRiskEmotions.length === 0 ? (
-                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
-                                                                            Sem dados suficientes de emoções neste período
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="space-y-2">
-                                                                            {/* Emoções de ALTO risco (mais consumo) */}
-                                                                            {highRiskEmotions.length > 0 && (
-                                                                                <div>
-                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
-                                                                                        🔴 Alto Risco (mais consumo)
-                                                                                    </div>
-                                                                                    {highRiskEmotions.map(e => (
-                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
-                                                                                            <div className="flex items-center justify-between mb-1">
-                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{e.emotion}</span>
-                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
-                                                                                            </div>
-                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
-                                                                                                ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Emoções de BAIXO risco (menos consumo) */}
-                                                                            {lowRiskEmotions.length > 0 && (
-                                                                                <div>
-                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
-                                                                                        🟢 Baixo Risco (menos consumo)
-                                                                                    </div>
-                                                                                    {lowRiskEmotions.map(e => (
-                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
-                                                                                            <div className="flex items-center justify-between mb-1">
-                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{e.emotion}</span>
-                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
-                                                                                            </div>
-                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
-                                                                                                ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                                    return (
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
+                                                                <div className="text-2xl mb-2">🌅</div>
+                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
+                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
+                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
                                                             </div>
-                                                        );
+                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
+                                                                <div className="text-2xl mb-2">☀️</div>
+                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
+                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
+                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
+                                                            </div>
+                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
+                                                                <div className="text-2xl mb-2">🌙</div>
+                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
+                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
+                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
+                                                            </div>
+                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
+                                                                <div className="text-2xl mb-2">⭐</div>
+                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
+                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
+                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+
+                                            {/* Por dia da semana */}
+                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
+                                                <div className="space-y-3">
+                                                    {Object.values(byWeekday).every(v => v === 0) ? (
+                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                    ) : (() => {
+                                                        const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
+                                                        return Object.entries(byWeekday).map(([day, count]) => {
+                                                            const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
+                                                            return (
+                                                                <div key={day} className="flex items-center gap-2">
+                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
+                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
+                                                                            <span>{count}x</span>
+                                                                            <span>{percent}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        });
                                                     })()}
                                                 </div>
-                                            )}
+                                            </div>
                                         </div>
                                             );
                                         }
@@ -4354,300 +4212,292 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                     {/* ESTRUTURAL */}
                                                     {analysisSubView === 'estrutural' && (
                                                         <div className="space-y-4">
-                                                            {/* Por horário */}
+                                                            {/* Análise de Intervalos Simplificada */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
-                                                                {Object.keys(byHour).length === 0 ? (
-                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>⏱️ Intervalos Entre Consumos</h3>
+                                                                {intervals.length === 0 ? (
+                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        Sem intervalos (necessário ≥2 consumos)
+                                                                    </div>
                                                                 ) : (() => {
-                                                                    const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
-                                                                    const maxCount = Math.max(...Object.values(byHour));
-
-                                                                    // Agrupar horas em blocos de 3h para melhor visualização
-                                                                    const hourBlocks = [
-                                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: 'Madrugada' },
-                                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: 'Madrugada' },
-                                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: 'Manhã' },
-                                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: 'Manhã' },
-                                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: 'Tarde' },
-                                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: 'Tarde' },
-                                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: 'Noite' },
-                                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
-                                                                    ];
+                                                                    const goodIntervals = intervals.filter(i => i.hours >= 2);
+                                                                    const shortIntervals = intervals.filter(i => i.hours < 2);
+                                                                    const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+                                                                    const maxInterval = Math.max(...intervals.map(i => i.hours));
+                                                                    const goodPercent = ((goodIntervals.length / intervals.length) * 100).toFixed(0);
+                                                                    const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
 
                                                                     return (
-                                                                        <div className="space-y-2">
-                                                                            {hourBlocks.map(block => {
-                                                                                const blockCount = block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0);
-                                                                                const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
-                                                                                const intensity = maxCount > 0 ? (blockCount / maxCount) : 0;
+                                                                        <>
+                                                                            <div className="grid grid-cols-3 gap-3 mb-4">
+                                                                                <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
+                                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{intervals.length}</div>
+                                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total</div>
+                                                                                </div>
+                                                                                <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
+                                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgInterval.toFixed(1)}h</div>
+                                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                                                </div>
+                                                                                <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
+                                                                                    <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{maxInterval.toFixed(1)}h</div>
+                                                                                    <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                                                </div>
+                                                                            </div>
 
-                                                                                // Cores por período
-                                                                                let colorClass = '';
-                                                                                if (block.label === 'Madrugada') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else if (block.label === 'Manhã') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else if (block.label === 'Tarde') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                }
-
-                                                                                return (
-                                                                                    <div key={block.range} className="flex items-center gap-3">
-                                                                                        <div className={'text-xl w-8 text-center'}>
-                                                                                            {block.icon}
+                                                                            <div className="space-y-3">
+                                                                                {/* Bons intervalos (≥2h) */}
+                                                                                <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-4`}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                            <span>✅</span>
+                                                                                            <span>Intervalos Bons (≥2h)</span>
                                                                                         </div>
-                                                                                        <div className={'text-sm font-medium w-16 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                                            {block.range}h
-                                                                                        </div>
-                                                                                        <div className="flex-1">
-                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-8 overflow-hidden relative'}>
-                                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
-                                                                                                    {blockCount > 0 && (
-                                                                                                        <span className="whitespace-nowrap">
-                                                                                                            {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
+                                                                                        <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                            {goodIntervals.length} ({goodPercent}%)
                                                                                         </div>
                                                                                     </div>
-                                                                                );
-                                                                            })}
-
-                                                                            {/* Legenda */}
-                                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
-                                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-
-                                                            {/* Por período do dia */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
-                                                                {(() => {
-                                                                    const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
-
-                                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
-                                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
-                                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
-                                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
-
-                                                                    return (
-                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">🌅</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">☀️</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">🌙</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">⭐</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-
-                                                            {/* Por dia da semana */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
-                                                                <div className="space-y-3">
-                                                                    {Object.values(byWeekday).every(v => v === 0) ? (
-                                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
-                                                                    ) : (() => {
-                                                                        const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
-                                                                        return Object.entries(byWeekday).map(([day, count]) => {
-                                                                            const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
-                                                                            return (
-                                                                                <div key={day} className="flex items-center gap-2">
-                                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
-                                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
-                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
-                                                                                            <span>{count}x</span>
-                                                                                            <span>{percent}%</span>
-                                                                                        </div>
+                                                                                    <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                                        <div className="bg-green-500 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
                                                                                     </div>
                                                                                 </div>
-                                                                            );
-                                                                        });
-                                                                    })()}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
 
-                                                    {/* ESTRUTURAL */}
-                                                    {analysisSubView === 'estrutural' && (
-                                                        <div className="space-y-4">
-                                                            {/* Por horário */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
-                                                                {Object.keys(byHour).length === 0 ? (
-                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
-                                                                ) : (() => {
-                                                                    const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
-                                                                    const maxCount = Math.max(...Object.values(byHour));
-
-                                                                    // Agrupar horas em blocos de 3h para melhor visualização
-                                                                    const hourBlocks = [
-                                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: 'Madrugada' },
-                                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: 'Madrugada' },
-                                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: 'Manhã' },
-                                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: 'Manhã' },
-                                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: 'Tarde' },
-                                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: 'Tarde' },
-                                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: 'Noite' },
-                                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
-                                                                    ];
-
-                                                                    return (
-                                                                        <div className="space-y-2">
-                                                                            {hourBlocks.map(block => {
-                                                                                const blockCount = block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0);
-                                                                                const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
-                                                                                const intensity = maxCount > 0 ? (blockCount / maxCount) : 0;
-
-                                                                                // Cores por período
-                                                                                let colorClass = '';
-                                                                                if (block.label === 'Madrugada') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else if (block.label === 'Manhã') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else if (block.label === 'Tarde') {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                } else {
-                                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
-                                                                                }
-
-                                                                                return (
-                                                                                    <div key={block.range} className="flex items-center gap-3">
-                                                                                        <div className={'text-xl w-8 text-center'}>
-                                                                                            {block.icon}
+                                                                                {/* Intervalos curtos (<2h) */}
+                                                                                <div className={`${darkMode ? 'bg-orange-900/20 border border-orange-700/50' : 'bg-orange-50 border border-orange-200'} rounded-lg p-4`}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                            <span>⚠️</span>
+                                                                                            <span>Intervalos Curtos (&lt;2h)</span>
                                                                                         </div>
-                                                                                        <div className={'text-sm font-medium w-16 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                                            {block.range}h
-                                                                                        </div>
-                                                                                        <div className="flex-1">
-                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-8 overflow-hidden relative'}>
-                                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
-                                                                                                    {blockCount > 0 && (
-                                                                                                        <span className="whitespace-nowrap">
-                                                                                                            {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
+                                                                                        <div className={`text-sm font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                            {shortIntervals.length} ({shortPercent}%)
                                                                                         </div>
                                                                                     </div>
-                                                                                );
-                                                                            })}
-
-                                                                            {/* Legenda */}
-                                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
-                                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-
-                                                            {/* Por período do dia */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
-                                                                {(() => {
-                                                                    const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
-
-                                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
-                                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
-                                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
-                                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
-
-                                                                    return (
-                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">🌅</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">☀️</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">🌙</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
-                                                                            </div>
-                                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
-                                                                                <div className="text-2xl mb-2">⭐</div>
-                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
-                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
-                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                            </div>
-
-                                                            {/* Por dia da semana */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
-                                                                <div className="space-y-3">
-                                                                    {Object.values(byWeekday).every(v => v === 0) ? (
-                                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
-                                                                    ) : (() => {
-                                                                        const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
-                                                                        return Object.entries(byWeekday).map(([day, count]) => {
-                                                                            const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
-                                                                            return (
-                                                                                <div key={day} className="flex items-center gap-2">
-                                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
-                                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
-                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
-                                                                                            <span>{count}x</span>
-                                                                                            <span>{percent}%</span>
-                                                                                        </div>
+                                                                                    <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                                        <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
                                                                                     </div>
                                                                                 </div>
-                                                                            );
+                                                                            </div>
+
+                                                                            <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
+                                                                                <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                                                    {goodPercent >= 50
+                                                                                        ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
+                                                                                        : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
+                                                                                </p>
+                                                                            </div>
+                                                                        </>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Gatilhos */}
+                                                            {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
+                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                                                    <div className="flex items-center gap-2 mb-3">
+                                                                        <span className="text-lg">⚡</span>
+                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análise de Gatilhos</h3>
+                                                                    </div>
+                                                                    {(() => {
+                                                                        // Calcular gatilhos e média de consumos por gatilho
+                                                                        const triggerData = {};
+
+                                                                        filteredCycles.forEach(cycle => {
+                                                                            if (!cycle.triggers || cycle.triggers.length === 0) return;
+
+                                                                            // Encontrar data do ciclo usando o timestamp
+                                                                            const cycleDate = safeToISODate(cycle.timestamp);
+                                                                            if (!cycleDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                            cycle.triggers.forEach(trigger => {
+                                                                                if (!triggerData[trigger]) {
+                                                                                    triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                triggerData[trigger].count++;
+                                                                                triggerData[trigger].totalConsumptions += dayConsumptions;
+                                                                                triggerData[trigger].days.push(cycleDate);
+                                                                            });
                                                                         });
+
+                                                                        // Calcular média de consumos para cada gatilho
+                                                                        const triggersWithAvg = Object.entries(triggerData).map(([trigger, data]) => ({
+                                                                            trigger,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Gatilhos com MAIOR consumo (top 3)
+                                                                        const highRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2)
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 3);
+
+                                                                        // Gatilhos com MENOR consumo (bottom 2)
+                                                                        const lowRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2 && t.avgConsumptions < 10)
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        // Análise de emoções correlacionadas com consumo
+                                                                        const emotionData = {};
+
+                                                                        // Para cada registo de bem-estar
+                                                                        filteredWellbeingLogs.forEach(log => {
+                                                                            if (!log.emotions || log.emotions.length === 0) return;
+
+                                                                            const logDate = safeToISODate(log.timestamp);
+                                                                            if (!logDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = filteredConsumptions.filter(c => c.date === logDate).length;
+
+                                                                            log.emotions.forEach(emotion => {
+                                                                                if (!emotionData[emotion]) {
+                                                                                    emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                emotionData[emotion].count++;
+                                                                                emotionData[emotion].totalConsumptions += dayConsumptions;
+                                                                                emotionData[emotion].days.push(logDate);
+                                                                            });
+                                                                        });
+
+                                                                        // Calcular média de consumos para cada emoção e ordenar
+                                                                        const emotionsWithAvg = Object.entries(emotionData).map(([emotion, data]) => ({
+                                                                            emotion,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Emoções com MAIOR consumo (top 2)
+                                                                        const highRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2) // Apenas emoções registadas 2+ vezes
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        // Emoções com MENOR consumo (bottom 2)
+                                                                        const lowRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2 && e.avgConsumptions < 10) // Menos de 10 consumos em média
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        return (
+                                                                            <div className="space-y-3">
+                                                                                {/* GATILHOS (situações/contextos) */}
+                                                                                <div>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Análise de Gatilhos
+                                                                                    </h4>
+
+                                                                                    {highRiskTriggers.length === 0 && lowRiskTriggers.length === 0 ? (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem dados suficientes de gatilhos neste período
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="space-y-2">
+                                                                                            {/* Gatilhos de ALTO risco (mais consumo) */}
+                                                                                            {highRiskTriggers.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                        🔴 Alto Risco (mais consumo)
+                                                                                                    </div>
+                                                                                                    {highRiskTriggers.map(t => (
+                                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{t.trigger}</span>
+                                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                                ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {/* Gatilhos de BAIXO risco (menos consumo) */}
+                                                                                            {lowRiskTriggers.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                        🟢 Baixo Risco (menos consumo)
+                                                                                                    </div>
+                                                                                                    {lowRiskTriggers.map(t => (
+                                                                                                        <div key={t.trigger} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{t.trigger}</span>
+                                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                                ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                {/* EMOÇÕES (estados emocionais) */}
+                                                                                <div>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        Análise de Emoções
+                                                                                    </h4>
+
+                                                                                    {highRiskEmotions.length === 0 && lowRiskEmotions.length === 0 ? (
+                                                                                        <div className={'text-center py-3 text-sm rounded-lg ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500')}>
+                                                                                            Sem dados suficientes de emoções neste período
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="space-y-2">
+                                                                                            {/* Emoções de ALTO risco (mais consumo) */}
+                                                                                            {highRiskEmotions.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                        🔴 Alto Risco (mais consumo)
+                                                                                                    </div>
+                                                                                                    {highRiskEmotions.map(e => (
+                                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{e.emotion}</span>
+                                                                                                                <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                                ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {/* Emoções de BAIXO risco (menos consumo) */}
+                                                                                            {lowRiskEmotions.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className={'text-xs font-medium mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                        🟢 Baixo Risco (menos consumo)
+                                                                                                    </div>
+                                                                                                    {lowRiskEmotions.map(e => (
+                                                                                                        <div key={e.emotion} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                                                <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{e.emotion}</span>
+                                                                                                                <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}x</span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                                ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
                                                                     })()}
                                                                 </div>
-                                                            </div>
+                                                            )}
                                                         </div>
                                                     )}
 
