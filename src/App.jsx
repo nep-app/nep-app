@@ -3315,14 +3315,31 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                         // TEMPORAL
                                         if (patternView === 'temporal') {
-                                            // Calculate intervals
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                                            const intervals = [];
-                                            for (let i = 1; i < sorted.length; i++) {
-                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                intervals.push({ hours: diff, date: sorted[i].date });
-                                            }
-                                            
+                                            // Calculate byHour
+                                            const byHour = {};
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                byHour[hour] = (byHour[hour] || 0) + 1;
+                                            });
+
+                                            // Calculate byPartOfDay
+                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                            filteredConsumptions.forEach(c => {
+                                                const hour = new Date(c.timestamp).getHours();
+                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+                                                else byPartOfDay.madrugada++;
+                                            });
+
+                                            // Calculate byWeekday
+                                            const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+                                            const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                            filteredConsumptions.forEach(c => {
+                                                const day = new Date(c.timestamp).getDay();
+                                                byWeekday[day]++;
+                                            });
+
                                             return (
                                         <div className="space-y-4">
                                             {/* Por horário */}
