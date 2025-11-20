@@ -9,11 +9,11 @@ export default function HomeView() {
     const {
         setShowDailyLogModal, setShowWellbeingModal, setShowReflectionModal,
         setShowCycleModal, openEditConsumption, consumptionsToShow, setConsumptionsToShow,
-        notificationsEnabled, setNotificationsEnabled, showToast
+        notificationsEnabled, setNotificationsEnabled, showToast, patternView
     } = useUI();
 
     const {
-        consumptions, dailyLogs, wellbeingLogs, cycles,
+        consumptions, dailyLogs, wellbeingLogs, cycles, reflections, goals,
         saveToFirebase, setConsumptions, deleteItem, user
     } = useData();
 
@@ -106,6 +106,83 @@ export default function HomeView() {
         return { current: currentStreak, max: maxStreak };
     };
 
+    // Helper: Get average frequency with new rules (2h+ intervals) - duplicated from App.jsx needed for badge logic
+    const getAvgFrequencyLast7Days = () => {
+        // Exclude today (day 0) and get last 7 completed days (days 1-7)
+        const last7Dates = [...Array(7)].map((_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (i + 1)); // Start from yesterday
+            return d.toISOString().split('T')[0];
+        });
+
+        let validDaysCount = 0;
+        let totalConsumptions = 0;
+
+        last7Dates.forEach(date => {
+            const dayConsumptions = consumptions.filter(c => c.date === date);
+            if (dayConsumptions.length === 0) return;
+
+            // Check interval rule if more than 1 consumption
+            if (dayConsumptions.length === 1) {
+                validDaysCount++;
+                totalConsumptions += 1;
+                return;
+            }
+
+            const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+            let longIntervals = 0;
+            for (let i = 1; i < sorted.length; i++) {
+                const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
+                if (intervalHours >= 2) longIntervals++;
+            }
+
+            const totalIntervals = sorted.length - 1;
+            if (longIntervals >= totalIntervals / 2) {
+                validDaysCount++;
+                totalConsumptions += dayConsumptions.length;
+            }
+        });
+
+        return validDaysCount > 0 ? (totalConsumptions / validDaysCount) : 0;
+    };
+
+    const getIntervalStats = () => {
+        if (consumptions.length < 2) return null;
+        const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+        const last20 = sorted.slice(-20);
+        const intervals = [];
+        for (let i = 1; i < last20.length; i++) {
+            const diff = (new Date(last20[i].timestamp) - new Date(last20[i-1].timestamp)) / (1000 * 60 * 60);
+            intervals.push({ hours: diff, date: last20[i].date, timestamp: last20[i].timestamp });
+        }
+        const avgHours = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+        const shortIntervals = intervals.filter(i => i.hours < 2);
+        const shortByDay = {};
+        shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
+        return { avgHours: avgHours.toFixed(1), intervals: intervals.slice(-10).reverse(), shortIntervals: shortIntervals.length, shortByDay };
+    };
+
+    // Helper: Get goal progress - duplicated from App.jsx needed for badge logic
+    const getGoalProgress = (goal) => {
+        if (goal.type === 'reduce_frequency') {
+            const avgLast7 = getAvgFrequencyLast7Days();
+            if (avgLast7 === 0) return 100; // No consumptions = goal achieved
+            if (avgLast7 <= goal.target) return 100;
+            const baseline = Math.max(avgLast7, goal.target * 2);
+            const progress = ((baseline - avgLast7) / (baseline - goal.target)) * 100;
+            return Math.max(0, Math.min(100, progress));
+        }
+        // Simplified for brevity, focusing on completion for badge
+        if (goal.type === 'reduce_quantity') {
+            const avgLast7Mg = parseFloat(getLast7Days().avgMg);
+            if (avgLast7Mg === 0) return 0;
+            if (avgLast7Mg < goal.target) return 100;
+            return 0; // Simplified
+        }
+        // Other goal types... simplified return 0 if not specifically checking
+        return 0;
+    };
+
     const getCopingStrategies = () => {
         const allTriggers = cycles.flatMap(c => c.triggers || []);
         const triggerCount = {};
@@ -157,21 +234,82 @@ export default function HomeView() {
     const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
     const strategies = useMemo(() => getCopingStrategies(), [cycles]);
 
-    // Get Badges (Simplified logic for view)
+    // Get Badges (Restored logic)
     const badges = useMemo(() => {
-        const badgesList = [];
+        const badges = [];
+
+        // Long intervals badge (5 days with >2h intervals)
         if (consumptions.length >= 2) {
-             // Simplified badge logic for display
-             const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-             let longIntervalDays = 0;
-             // ... (Full logic would be duplicated here, assuming it's fine or we should extract it too)
+            const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+            const intervalsByDate = {};
+            for (let i = 1; i < sorted.length; i++) {
+                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                if (diff >= 2) {
+                    intervalsByDate[sorted[i].date] = (intervalsByDate[sorted[i].date] || 0) + 1;
+                }
+            }
+            const daysWithLongIntervals = Object.keys(intervalsByDate).length;
+            if (daysWithLongIntervals >= 5) badges.push({ id: 'long_intervals_5', title: '5 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '⏱️', color: 'green' });
+            if (daysWithLongIntervals >= 10) badges.push({ id: 'long_intervals_10', title: '10 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '🏆', color: 'green' });
         }
-        // Just returning empty for now as full logic is huge,
-        // ideally getBadges should be in a helper or DataContext if used across views.
-        // For now, let's implement the basic ones used in Home.
-        if (wellbeingLogs.length >= 7) badgesList.push({ id: 'wellbeing_7', title: 'Semana de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💚', color: 'blue' });
-        return badgesList;
-    }, [consumptions, wellbeingLogs]);
+
+        // DBT reflections badge
+        if (reflections.length >= 5) badges.push({ id: 'reflections_5', title: '5 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🧠', color: 'purple' });
+        if (reflections.length >= 10) badges.push({ id: 'reflections_10', title: '10 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '💜', color: 'purple' });
+        if (reflections.length >= 20) badges.push({ id: 'reflections_20', title: '20 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🌟', color: 'purple' });
+
+        // Wellbeing check-ins badge
+        if (wellbeingLogs.length >= 7) badges.push({ id: 'wellbeing_7', title: 'Semana de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💚', color: 'blue' });
+        if (wellbeingLogs.length >= 30) badges.push({ id: 'wellbeing_30', title: 'Mês de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💎', color: 'blue' });
+
+        // Cycle tracking badge
+        if (cycles.length >= 5) badges.push({ id: 'cycles_5', title: 'Rastreador Dedicado', description: cycles.length + ' ciclos marcados', icon: '🌙', color: 'indigo' });
+
+        // Goal completion badge
+        const completedGoals = goals.filter(g => getGoalProgress(g) >= 100);
+        if (completedGoals.length >= 1) badges.push({ id: 'goal_1', title: 'Meta Atingida', description: completedGoals.length + ' meta(s) completa(s)', icon: '🎯', color: 'pink' });
+
+        // Reduction badge (compare first week vs last week)
+        if (consumptions.length > 0) {
+            const dates = [...new Set(consumptions.map(c => c.date))].sort();
+            if (dates.length >= 14) {
+                const firstWeekDates = dates.slice(0, 7);
+                const lastWeekDates = dates.slice(-7);
+                const firstWeekCount = consumptions.filter(c => firstWeekDates.includes(c.date)).length;
+                const lastWeekCount = consumptions.filter(c => lastWeekDates.includes(c.date)).length;
+                if (lastWeekCount < firstWeekCount) {
+                    badges.push({ id: 'reduction', title: 'Redução de Consumo', description: 'Reduziste ' + (firstWeekCount - lastWeekCount) + ' consumos vs primeira semana', icon: '📉', color: 'green' });
+                }
+            }
+        }
+
+        // Consistency badge (tracked for 7 days in a row)
+        if (consumptions.length > 0 || wellbeingLogs.length > 0) {
+            const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
+            let streak = 1;
+            let maxStreak = 1;
+            for (let i = 1; i < allDates.length; i++) {
+                const prev = new Date(allDates[i-1]);
+                const curr = new Date(allDates[i]);
+                const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+                if (diffDays === 1) {
+                    streak++;
+                    maxStreak = Math.max(maxStreak, streak);
+                } else {
+                    streak = 1;
+                }
+            }
+            if (maxStreak >= 7) badges.push({ id: 'streak_7', title: '7 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
+            if (maxStreak >= 14) badges.push({ id: 'streak_14', title: '14 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
+            if (maxStreak >= 30) badges.push({ id: 'streak_30', title: '30 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '💪', color: 'orange' });
+        }
+
+        // Self-care champion (checked all 4 items at least once)
+        const hasAllSelfCare = wellbeingLogs.some(w => w.water && w.rest && w.social && w.food);
+        if (hasAllSelfCare) badges.push({ id: 'selfcare_complete', title: 'Autocuidado Completo', description: 'Completaste todos os itens de autocuidado', icon: '✨', color: 'yellow' });
+
+        return badges;
+    }, [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
     const currentCycleCount = useMemo(() => {
         const currentCycle = cycles.length > 0 ? cycles[0] : null;
@@ -301,6 +439,37 @@ export default function HomeView() {
                     ))}
                 </div>
             </div>
+
+             {/* Conquistas (Badges) - Restored */}
+             {badges.length > 0 && (
+                <div className={(darkMode ? 'bg-gradient-to-br from-yellow-900/30 via-orange-900/20 to-amber-900/30 border-yellow-700/50' : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 border-yellow-300') + ' rounded-xl p-4 border-2'}>
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="text-2xl">🏆</div>
+                        <div>
+                            <h3 className={'font-bold ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
+                            <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length + (streaks.current >= 3 ? 1 : 0)} vitórias</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {badges.slice(0, 4).map(badge => (
+                            <div key={badge.id} className={(darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-700/80 border-gray-600' : 'bg-gradient-to-br from-white to-gray-50 border-' + badge.color + '-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
+                                <div className="text-xl">{badge.icon}</div>
+                                <div className="flex-1 min-w-0">
+                                    <div className={'font-bold text-xs truncate ' + (darkMode ? 'text-gray-100' : 'text-' + badge.color + '-800')}>{badge.title}</div>
+                                </div>
+                            </div>
+                        ))}
+                        {streaks.current >= 3 && (
+                            <div className={(darkMode ? 'bg-gradient-to-br from-orange-900/80 to-red-900/80 border-orange-600' : 'bg-gradient-to-br from-orange-100 to-red-100 border-orange-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
+                                <div className="text-xl">💪</div>
+                                <div className="flex-1 min-w-0">
+                                    <div className={'font-bold text-xs ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>Streak! {streaks.current} dias</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Recent Consumptions List */}
             {consumptions.length > 0 && (

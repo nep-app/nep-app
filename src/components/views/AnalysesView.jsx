@@ -3,7 +3,7 @@ import * as Icons from '../Icons';
 import { useUI } from '../../contexts/UIContext';
 import { useData } from '../../contexts/DataContext';
 import { safeToISODate, safeDate } from '../../utils/helpers';
-import { getTemporalCorrelations, getBidirectionalAnalysis, calculatePearsonCorrelation } from '../../utils/analytics';
+import { getTemporalCorrelations, getBidirectionalAnalysis, calculatePearsonCorrelation, analyzeSentiment } from '../../utils/analytics';
 
 export default function AnalysesView() {
     const {
@@ -12,7 +12,7 @@ export default function AnalysesView() {
     } = useUI();
 
     const {
-        consumptions, dailyLogs, wellbeingLogs, cycles, reflections
+        consumptions, dailyLogs, wellbeingLogs, cycles, reflections, goals
     } = useData();
 
     const darkMode = true;
@@ -116,6 +116,14 @@ export default function AnalysesView() {
         return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
     };
 
+    const getTabClass = (isActive) => {
+        const baseClass = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ';
+        if (isActive) {
+            return baseClass + (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white');
+        }
+        return baseClass + (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200');
+    };
+
     return (
         <div className="space-y-6">
             <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análises</h2>
@@ -158,7 +166,7 @@ export default function AnalysesView() {
                     <button
                         key={subView}
                         onClick={() => setAnalysisSubView(subView)}
-                        className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : (darkMode ? 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
+                        className={getTabClass(analysisSubView === subView)}
                     >
                         {subView === 'temporal' && '⏰ Temporal'}
                         {subView === 'coach' && '💬 Coach'}
@@ -194,18 +202,146 @@ export default function AnalysesView() {
             )}
 
             {analysisSubView === 'coach' && (
-                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border text-center text-gray-500'}>
-                    <h3 className="text-xl font-bold text-white mb-2">O Teu Coach</h3>
-                    <p>O coach está a analisar os teus dados... (Funcionalidade completa em breve)</p>
-                    {/* Note: Full Coach logic is massive (hundreds of lines of conditional rendering).
-                        For now, we restored the structure. In a real scenario, we'd move the coach logic
-                        to a separate component `CoachAnalysis.jsx` */}
+                <div className="space-y-4">
+                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="text-4xl">💬</span>
+                            <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>O Teu Coach</h3>
+                        </div>
+                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Resumo personalizado do período selecionado</p>
+                    </div>
+
+                    {(() => {
+                        const filteredConsumptions = filteredData.consumptions;
+                        const filteredWellbeingLogs = filteredData.wellbeing;
+                        const filteredCycles = filteredData.cycles;
+
+                        if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) {
+                            return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                        }
+
+                        // Calculate all metrics for narrative
+                        const totalConsumptions = filteredConsumptions.length;
+                        const byDate = {};
+                        filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                        const uniqueDays = Object.keys(byDate).length;
+                        const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
+
+                        // Wellbeing averages
+                        const validSleep = filteredWellbeingLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
+                        const avgSleep = validSleep.length > 0 ? (validSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / validSleep.length).toFixed(1) : null;
+
+                        const validMood = filteredWellbeingLogs.filter(w => w.mood && !isNaN(parseInt(w.mood)));
+                        const avgMood = validMood.length > 0 ? (validMood.reduce((sum, w) => sum + parseInt(w.mood), 0) / validMood.length).toFixed(1) : null;
+
+                        const validEnergy = filteredWellbeingLogs.filter(w => w.energy && !isNaN(parseInt(w.energy)));
+                        const avgEnergy = validEnergy.length > 0 ? (validEnergy.reduce((sum, w) => sum + parseInt(w.energy), 0) / validEnergy.length).toFixed(1) : null;
+
+                        // Trending
+                        const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                        const intervals = [];
+                        for (let i = 1; i < sorted.length; i++) {
+                            const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                            intervals.push(diff);
+                        }
+                        const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
+                        const goodIntervals = intervals.filter(i => i >= 2).length;
+                        const goodPercent = intervals.length > 0 ? Math.round((goodIntervals / intervals.length) * 100) : 0;
+
+                        // Time pattern
+                        const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                        filteredConsumptions.forEach(c => {
+                            const hour = new Date(c.timestamp).getHours();
+                            if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+                            else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+                            else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+                            else byPartOfDay.madrugada++;
+                        });
+                        const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                        const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
+
+                        // Sentiment analysis
+                        const allNotes = [...filteredConsumptions.map(c => c.note || ''), ...filteredWellbeingLogs.map(w => w.note || ''), ...filteredCycles.map(c => c.notes || '')].filter(n => n.length > 0).join(' ');
+                        const sentiment = analyzeSentiment(allNotes);
+
+                        return (
+                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                    <p>
+                                        Olá! Vamos refletir sobre este período juntos.
+                                        {totalConsumptions > 0 ? (
+                                            <> Registaste <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'}</strong> ao longo de {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'}, com uma média de <strong>{avgPerDay} consumos/dia</strong>.</>
+                                        ) : (
+                                            <> Não tens consumos registados neste período - isso é excelente! </>
+                                        )}
+                                    </p>
+
+                                    {totalConsumptions > 0 && (
+                                        <p>
+                                            {intervals.length > 0 ? (
+                                                <>
+                                                    Notei que tens um intervalo médio de <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval} horas</strong> entre consumos.
+                                                    {goodPercent >= 50 ? (
+                                                        <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>Isso é fantástico - {goodPercent}% dos teus intervalos são ≥2h!</span> Estás a conseguir espaçar bem os consumos, o que demonstra grande controlo.</>
+                                                    ) : (
+                                                        <> Há espaço para melhorar aqui - atualmente {goodPercent}% dos intervalos são ≥2h. Pequenas mudanças, como adicionar uma atividade entre consumos, podem fazer grande diferença.</>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <> Neste período ainda não tenho dados suficientes sobre intervalos, mas vamos continuar a acompanhar juntos.</>
+                                            )}
+                                        </p>
+                                    )}
+
+                                    {totalConsumptions > 0 && maxPartOfDay[1] > 0 && (
+                                        <p>
+                                            Reparei que a maioria dos teus consumos ({Math.round((maxPartOfDay[1] / totalConsumptions) * 100)}%) acontece à <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{partNames[maxPartOfDay[0]]}</strong>.
+                                            {maxPartOfDay[0] === 'madrugada' && <> Consumir durante a madrugada pode indicar dificuldades com o sono ou ansiedade noturna. Tens pensado no que te leva a consumir nesse período? Talvez seja útil explorar técnicas de relaxamento para a noite.</>}
+                                            {maxPartOfDay[0] === 'noite' && <> A noite é um período comum para consumo, muitas vezes ligado ao descontrair após o dia. Considera se há formas alternativas de relaxar que te fazem sentir bem.</>}
+                                            {maxPartOfDay[0] === 'tarde' && <> As tardes podem ser desafiantes, especialmente se há rotinas ou gatilhos específicos. Identifica o que precede esses momentos.</>}
+                                            {maxPartOfDay[0] === 'manha' && <> Consumir pela manhã pode estar relacionado com o acordar ou com a gestão de ansiedade matinal. Observa como te sentes ao acordar e se há padrões.</>}
+                                        </p>
+                                    )}
+
+                                    {(avgMood || avgEnergy || avgSleep) && (
+                                        <p>
+                                            Sobre o teu bem-estar geral:
+                                            {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>.</>}
+                                            {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>.</>}
+                                            {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>.</>}
+                                        </p>
+                                    )}
+
+                                    <p>
+                                        {allNotes.length > 50 ? (
+                                            <>
+                                                Ao ler as tuas reflexões, percebo que tens usado palavras
+                                                {sentiment.score > 5 ? (
+                                                    <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>maioritariamente positivas</strong> - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!</>
+                                                ) : sentiment.score < -5 ? (
+                                                    <> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>que sugerem alguma dificuldade emocional</strong>. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
+                                                ) : (
+                                                    <> neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
+                                        )}
+                                    </p>
+
+                                    <p className={'font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                        💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
+                                        <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
 
             {analysisSubView === 'correlacoes' && (
                 <div className="space-y-4">
-                    {/* Simple Correlations */}
                      <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                         <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔗 Correlações Temporais</h3>
                         <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
@@ -214,7 +350,6 @@ export default function AnalysesView() {
 
                         {correlations ? (
                             <div className="space-y-3">
-                                {/* Sleep Lag 1 */}
                                 {correlations.sleepLag1.dataPoints >= 5 && (
                                     <div className={(darkMode ? 'bg-gray-700/50' : 'bg-gray-50') + ' rounded-lg p-4 border border-gray-600'}>
                                         <div className="flex justify-between mb-2">
