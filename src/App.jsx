@@ -1227,9 +1227,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
 
                 // DBT reflections badge
-                if (reflections.length >= 5) badgesList.push({ id: 'reflections_5', title: '5 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🧠', color: 'purple' });
-                if (reflections.length >= 10) badgesList.push({ id: 'reflections_10', title: '10 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '💜', color: 'purple' });
-                if (reflections.length >= 20) badgesList.push({ id: 'reflections_20', title: '20 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🌟', color: 'purple' });
+                if (reflections.length >= 5) badgesList.push({ id: 'reflections_5', title: '5 Reflexões diárias', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🧠', color: 'purple' });
+                if (reflections.length >= 10) badgesList.push({ id: 'reflections_10', title: '10 Reflexões diárias', description: 'Completaste ' + reflections.length + ' reflexões', icon: '💜', color: 'purple' });
+                if (reflections.length >= 20) badgesList.push({ id: 'reflections_20', title: '20 Reflexões diárias', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🌟', color: 'purple' });
 
                 // Wellbeing check-ins badge
                 if (wellbeingLogs.length >= 7) badgesList.push({ id: 'wellbeing_7', title: 'Semana de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💚', color: 'blue' });
@@ -1893,7 +1893,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-purple-500 to-indigo-500 text-white rounded-xl p-4 font-medium hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
                                             <Icons.Brain className="w-5 h-5 mb-2" />
-                                            <div className="text-sm">Reflexão DBT</div>
+                                            <div className="text-sm">Reflexão diária</div>
                                         </button>
                                         <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-xl p-4 font-medium hover:from-indigo-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
                                             <div className="text-xl mb-1">🌙</div>
@@ -5505,7 +5505,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             <div className="space-y-6">
                                                 {filteredReflections.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões DBT ({filteredReflections.length})</h3>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredReflections.slice(0, reflectionsToShow).map(r => (
                                                                 <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
@@ -5804,7 +5804,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowReflectionModal(false)}>
                                 <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Reflexão DBT</h3>
+                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Reflexão diária</h3>
                                         <button onClick={() => setShowReflectionModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
                                     </div>
                                     <div className="space-y-4">
