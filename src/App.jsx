@@ -4501,6 +4501,157 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         </div>
                                                     )}
 
+                                                    {/* ESTRUTURAL */}
+                                                    {analysisSubView === 'estrutural' && (
+                                                        <div className="space-y-4">
+                                                            {/* Por horário */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
+                                                                {Object.keys(byHour).length === 0 ? (
+                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                                ) : (() => {
+                                                                    const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
+                                                                    const maxCount = Math.max(...Object.values(byHour));
+
+                                                                    // Agrupar horas em blocos de 3h para melhor visualização
+                                                                    const hourBlocks = [
+                                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: 'Madrugada' },
+                                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: 'Madrugada' },
+                                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: 'Manhã' },
+                                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: 'Manhã' },
+                                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: 'Tarde' },
+                                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: 'Tarde' },
+                                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: 'Noite' },
+                                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
+                                                                    ];
+
+                                                                    return (
+                                                                        <div className="space-y-2">
+                                                                            {hourBlocks.map(block => {
+                                                                                const blockCount = block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0);
+                                                                                const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
+                                                                                const intensity = maxCount > 0 ? (blockCount / maxCount) : 0;
+
+                                                                                // Cores por período
+                                                                                let colorClass = '';
+                                                                                if (block.label === 'Madrugada') {
+                                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                                } else if (block.label === 'Manhã') {
+                                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                                } else if (block.label === 'Tarde') {
+                                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                                } else {
+                                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                                }
+
+                                                                                return (
+                                                                                    <div key={block.range} className="flex items-center gap-3">
+                                                                                        <div className={'text-xl w-8 text-center'}>
+                                                                                            {block.icon}
+                                                                                        </div>
+                                                                                        <div className={'text-sm font-medium w-16 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                            {block.range}h
+                                                                                        </div>
+                                                                                        <div className="flex-1">
+                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-8 overflow-hidden relative'}>
+                                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
+                                                                                                    {blockCount > 0 && (
+                                                                                                        <span className="whitespace-nowrap">
+                                                                                                            {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+
+                                                                            {/* Legenda */}
+                                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
+                                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Por período do dia */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
+                                                                {(() => {
+                                                                    const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
+                                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
+
+                                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
+                                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
+                                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
+                                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
+
+                                                                    return (
+                                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">🌅</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">☀️</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">🌙</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
+                                                                            </div>
+                                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
+                                                                                <div className="text-2xl mb-2">⭐</div>
+                                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
+                                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
+                                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+
+                                                            {/* Por dia da semana */}
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
+                                                                <div className="space-y-3">
+                                                                    {Object.values(byWeekday).every(v => v === 0) ? (
+                                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                                    ) : (() => {
+                                                                        const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
+                                                                        return Object.entries(byWeekday).map(([day, count]) => {
+                                                                            const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
+                                                                            return (
+                                                                                <div key={day} className="flex items-center gap-2">
+                                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
+                                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
+                                                                                            <span>{count}x</span>
+                                                                                            <span>{percent}%</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        });
+                                                                    })()}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
                                                         console.log('🔍 DEBUG CORRELAÇÕES:', {
