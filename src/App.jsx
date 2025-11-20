@@ -1207,8 +1207,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             };
 
             // ===== 7. BADGES & ACHIEVEMENTS =====
-            const getBadges = () => {
-                const badges = [];
+            // Memoized badges calculation (optimized to prevent re-calculation on every render)
+            const badges = useMemo(() => {
+                const badgesList = [];
 
                 // Long intervals badge (5 days with >2h intervals)
                 if (consumptions.length >= 2) {
@@ -1221,25 +1222,25 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         }
                     }
                     const daysWithLongIntervals = Object.keys(intervalsByDate).length;
-                    if (daysWithLongIntervals >= 5) badges.push({ id: 'long_intervals_5', title: '5 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '⏱️', color: 'green' });
-                    if (daysWithLongIntervals >= 10) badges.push({ id: 'long_intervals_10', title: '10 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '🏆', color: 'green' });
+                    if (daysWithLongIntervals >= 5) badgesList.push({ id: 'long_intervals_5', title: '5 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '⏱️', color: 'green' });
+                    if (daysWithLongIntervals >= 10) badgesList.push({ id: 'long_intervals_10', title: '10 Dias com Intervalos Saudáveis', description: daysWithLongIntervals + ' dias com intervalos >2h', icon: '🏆', color: 'green' });
                 }
 
                 // DBT reflections badge
-                if (reflections.length >= 5) badges.push({ id: 'reflections_5', title: '5 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🧠', color: 'purple' });
-                if (reflections.length >= 10) badges.push({ id: 'reflections_10', title: '10 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '💜', color: 'purple' });
-                if (reflections.length >= 20) badges.push({ id: 'reflections_20', title: '20 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🌟', color: 'purple' });
+                if (reflections.length >= 5) badgesList.push({ id: 'reflections_5', title: '5 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🧠', color: 'purple' });
+                if (reflections.length >= 10) badgesList.push({ id: 'reflections_10', title: '10 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '💜', color: 'purple' });
+                if (reflections.length >= 20) badgesList.push({ id: 'reflections_20', title: '20 Reflexões DBT', description: 'Completaste ' + reflections.length + ' reflexões', icon: '🌟', color: 'purple' });
 
                 // Wellbeing check-ins badge
-                if (wellbeingLogs.length >= 7) badges.push({ id: 'wellbeing_7', title: 'Semana de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💚', color: 'blue' });
-                if (wellbeingLogs.length >= 30) badges.push({ id: 'wellbeing_30', title: 'Mês de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💎', color: 'blue' });
+                if (wellbeingLogs.length >= 7) badgesList.push({ id: 'wellbeing_7', title: 'Semana de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💚', color: 'blue' });
+                if (wellbeingLogs.length >= 30) badgesList.push({ id: 'wellbeing_30', title: 'Mês de Autocuidado', description: wellbeingLogs.length + ' check-ins de bem-estar', icon: '💎', color: 'blue' });
 
                 // Cycle tracking badge
-                if (cycles.length >= 5) badges.push({ id: 'cycles_5', title: 'Rastreador Dedicado', description: cycles.length + ' ciclos marcados', icon: '🌙', color: 'indigo' });
+                if (cycles.length >= 5) badgesList.push({ id: 'cycles_5', title: 'Rastreador Dedicado', description: cycles.length + ' ciclos marcados', icon: '🌙', color: 'indigo' });
 
                 // Goal completion badge
                 const completedGoals = goals.filter(g => getGoalProgress(g) >= 100);
-                if (completedGoals.length >= 1) badges.push({ id: 'goal_1', title: 'Meta Atingida', description: completedGoals.length + ' meta(s) completa(s)', icon: '🎯', color: 'pink' });
+                if (completedGoals.length >= 1) badgesList.push({ id: 'goal_1', title: 'Meta Atingida', description: completedGoals.length + ' meta(s) completa(s)', icon: '🎯', color: 'pink' });
 
                 // Reduction badge (compare first week vs last week)
                 if (consumptions.length > 0) {
@@ -1250,7 +1251,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         const firstWeekCount = consumptions.filter(c => firstWeekDates.includes(c.date)).length;
                         const lastWeekCount = consumptions.filter(c => lastWeekDates.includes(c.date)).length;
                         if (lastWeekCount < firstWeekCount) {
-                            badges.push({ id: 'reduction', title: 'Redução de Consumo', description: 'Reduziste ' + (firstWeekCount - lastWeekCount) + ' consumos vs primeira semana', icon: '📉', color: 'green' });
+                            badgesList.push({ id: 'reduction', title: 'Redução de Consumo', description: 'Reduziste ' + (firstWeekCount - lastWeekCount) + ' consumos vs primeira semana', icon: '📉', color: 'green' });
                         }
                     }
                 }
@@ -1271,17 +1272,17 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             streak = 1;
                         }
                     }
-                    if (maxStreak >= 7) badges.push({ id: 'streak_7', title: '7 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
-                    if (maxStreak >= 14) badges.push({ id: 'streak_14', title: '14 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
-                    if (maxStreak >= 30) badges.push({ id: 'streak_30', title: '30 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '💪', color: 'orange' });
+                    if (maxStreak >= 7) badgesList.push({ id: 'streak_7', title: '7 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
+                    if (maxStreak >= 14) badgesList.push({ id: 'streak_14', title: '14 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '🔥', color: 'orange' });
+                    if (maxStreak >= 30) badgesList.push({ id: 'streak_30', title: '30 Dias Consecutivos', description: 'Maior sequência: ' + maxStreak + ' dias', icon: '💪', color: 'orange' });
                 }
 
                 // Self-care champion (checked all 4 items at least once)
                 const hasAllSelfCare = wellbeingLogs.some(w => w.water && w.rest && w.social && w.food);
-                if (hasAllSelfCare) badges.push({ id: 'selfcare_complete', title: 'Autocuidado Completo', description: 'Completaste todos os itens de autocuidado', icon: '✨', color: 'yellow' });
+                if (hasAllSelfCare) badgesList.push({ id: 'selfcare_complete', title: 'Autocuidado Completo', description: 'Completaste todos os itens de autocuidado', icon: '✨', color: 'yellow' });
 
-                return badges;
-            };
+                return badgesList;
+            }, [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
             // ===== INTELLIGENT INSIGHTS & SENTIMENT ANALYSIS =====
             // Analyze sentiment in text using keyword matching
@@ -1317,8 +1318,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 return { score, positiveCount, negativeCount, label };
             };
 
-            // Analyze temporal correlation with lag (e.g., sleep yesterday vs consumption today)
-            const getTemporalCorrelations = () => {
+            // Memoized temporal correlation analysis (optimized)
+            const temporalCorrelations = useMemo(() => {
                 if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
 
                 // Create daily data structure
@@ -1368,10 +1369,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         dataPoints: moodLag1Data.length
                     }
                 };
-            };
+            }, [wellbeingLogs, consumptions]);
 
-            // Analyze bidirectional impact: Consumo → Bem-estar (same day + next day)
-            const getBidirectionalAnalysis = () => {
+            // Memoized bidirectional analysis (optimized)
+            const bidirectionalAnalysis = useMemo(() => {
                 if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
 
                 // Create daily data structure
@@ -1518,7 +1519,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         }
                     }
                 };
-            };
+            }, [wellbeingLogs, consumptions]);
 
             // Analyze intra-day variation (how mood/energy change throughout the same day)
             const getIntraDayVariation = () => {
@@ -1616,7 +1617,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
-            const badges = useMemo(() => getBadges(), [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
             // Coping strategies based on triggers
             const getCopingStrategies = () => {
