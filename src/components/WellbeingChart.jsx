@@ -1,14 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts';
+import React, { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceDot } from 'recharts';
 
 const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }) => {
-  const [viewMode, setViewMode] = useState('day'); // 'day' or 'cycle'
-
-  // Dados por dia (24 horas)
+  // Gráfico do dia - Humor & Energia ao longo das 24h
   const dayData = useMemo(() => {
     if (wellbeingLogs.length === 0) return [];
 
-    // Agrupa por dia
     const today = wellbeingLogs[0]?.date;
     const todayLogs = wellbeingLogs.filter(log => log.date === today).sort((a, b) =>
       new Date(a.timestamp) - new Date(b.timestamp)
@@ -16,86 +13,85 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
     if (todayLogs.length === 0) return [];
 
-    // Cria array com horas do dia
+    // Inicializa 24 horas
     const hourlyData = {};
     for (let hour = 0; hour <= 23; hour++) {
-      hourlyData[hour] = { hour: `${hour.toString().padStart(2, '0')}:00`, mood: null, energy: null, consumptions: 0 };
+      hourlyData[hour] = { hour: `${hour.toString().padStart(2, '0')}:00`, mood: null, energy: null };
     }
 
-    // Preenche com dados de bem-estar
+    // Preenche com dados (pega o último valor de cada hora)
     todayLogs.forEach(log => {
       const time = new Date(log.timestamp);
       const hour = time.getHours();
       if (hourlyData[hour]) {
-        if (!hourlyData[hour].mood) hourlyData[hour].mood = log.mood;
-        if (!hourlyData[hour].energy) hourlyData[hour].energy = log.energy;
+        hourlyData[hour].mood = log.mood;
+        hourlyData[hour].energy = log.energy;
       }
     });
 
-    // Adiciona consumos
-    const todayConsumptions = consumptions.filter(c => c.date === today);
-    todayConsumptions.forEach(cons => {
-      const time = new Date(cons.timestamp);
-      const hour = time.getHours();
-      if (hourlyData[hour]) hourlyData[hour].consumptions++;
-    });
-
-    return Object.values(hourlyData).map(item => ({
-      ...item,
-      mood: item.mood !== null ? item.mood : undefined,
-      energy: item.energy !== null ? item.energy : undefined
+    return Object.entries(hourlyData).map(([key, val]) => ({
+      ...val,
+      hourNum: parseInt(key)
     }));
-  }, [wellbeingLogs, consumptions]);
+  }, [wellbeingLogs]);
 
-  // Dados por ciclo (impacto nas 3h após cada consumo)
-  const cycleData = useMemo(() => {
+  // Cards de antes/depois do consumo
+  const impactCards = useMemo(() => {
     if (consumptions.length === 0) return [];
 
-    const cycleConsumptions = selectedCycle
-      ? consumptions.filter(c => c.cycleId === selectedCycle)
-      : consumptions.slice(0, 5); // Últimos 5 se não houver ciclo selecionado
+    const today = wellbeingLogs[0]?.date;
+    const todayConsumptions = consumptions.filter(c => c.date === today);
 
-    return cycleConsumptions.map((cons, idx) => {
+    return todayConsumptions.map(cons => {
       const consTime = new Date(cons.timestamp);
 
-      // Encontra registos de bem-estar nas 3h seguintes
+      // Bem-estar nas 3h ANTES
+      const beforeWellbeing = wellbeingLogs.filter(w => {
+        const wTime = new Date(w.timestamp);
+        const hoursDiff = (consTime - wTime) / (1000 * 60 * 60);
+        return hoursDiff > 0 && hoursDiff <= 3;
+      }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      // Bem-estar nas 3h DEPOIS
       const afterWellbeing = wellbeingLogs.filter(w => {
         const wTime = new Date(w.timestamp);
         const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
         return hoursDiff > 0 && hoursDiff <= 3;
-      }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
 
-      // Bem-estar nos 30min antes
-      const beforeWellbeing = wellbeingLogs.filter(w => {
-        const wTime = new Date(w.timestamp);
-        const minsDiff = (consTime - wTime) / (1000 * 60);
-        return minsDiff > 0 && minsDiff <= 30;
-      }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      if (!beforeWellbeing || !afterWellbeing) return null;
 
-      const baseMood = beforeWellbeing.length > 0 ? beforeWellbeing[0].mood : null;
-      const baseEnergy = beforeWellbeing.length > 0 ? beforeWellbeing[0].energy : null;
+      const moodDiff = afterWellbeing.mood - beforeWellbeing.mood;
+      const energyDiff = afterWellbeing.energy - beforeWellbeing.energy;
 
-      const dataPoints = [];
-      dataPoints.push({
-        time: '0h (consumo)',
-        mood: baseMood,
-        energy: baseEnergy,
-        label: 'Antes'
-      });
+      return {
+        id: cons.id,
+        time: new Date(cons.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+        moodBefore: beforeWellbeing.mood,
+        moodAfter: afterWellbeing.mood,
+        moodDiff,
+        energyBefore: beforeWellbeing.energy,
+        energyAfter: afterWellbeing.energy,
+        energyDiff
+      };
+    }).filter(Boolean);
+  }, [consumptions, wellbeingLogs]);
 
-      afterWellbeing.forEach((w, i) => {
-        const hoursDiff = (new Date(w.timestamp) - consTime) / (1000 * 60 * 60);
-        dataPoints.push({
-          time: `${hoursDiff.toFixed(1)}h`,
-          mood: w.mood,
-          energy: w.energy,
-          label: `Após ${hoursDiff.toFixed(1)}h`
-        });
-      });
+  // Encontra consumos para marcar no gráfico
+  const consumptionMarkers = useMemo(() => {
+    const today = wellbeingLogs[0]?.date;
+    const todayConsumptions = consumptions.filter(c => c.date === today);
 
-      return { consumptionId: cons.id, consumptionTime: cons.timestamp, data: dataPoints };
+    return todayConsumptions.map(cons => {
+      const time = new Date(cons.timestamp);
+      const hour = time.getHours();
+      const minutes = time.getMinutes();
+      return {
+        hour: hour + minutes / 60,
+        hourLabel: `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+      };
     });
-  }, [consumptions, wellbeingLogs, selectedCycle]);
+  }, [consumptions, wellbeingLogs]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -103,7 +99,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         <div className={`p-2 rounded text-xs ${darkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-800 border border-gray-300'}`}>
           {payload.map((entry, idx) => (
             <p key={idx} style={{ color: entry.color }}>
-              {entry.name}: {entry.value !== undefined ? entry.value : '-'}
+              {entry.name}: {entry.value !== undefined && entry.value !== null ? entry.value : '-'}
             </p>
           ))}
         </div>
@@ -112,39 +108,42 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     return null;
   };
 
-  if (viewMode === 'day') {
-    if (dayData.length === 0) {
-      return (
-        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
-          <p className="text-sm">Sem dados de bem-estar registados para hoje</p>
-        </div>
-      );
-    }
+  const getImpactColor = (diff) => {
+    if (diff > 0.5) return 'text-green-600';
+    if (diff < -0.5) return 'text-red-600';
+    return 'text-gray-500';
+  };
 
+  const getImpactBgColor = (diff) => {
+    if (diff > 0.5) return darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200';
+    if (diff < -0.5) return darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200';
+    return darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200';
+  };
+
+  const getImpactIcon = (diff) => {
+    if (diff > 0.5) return '↑';
+    if (diff < -0.5) return '↓';
+    return '→';
+  };
+
+  if (dayData.length === 0) {
     return (
+      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+        <p className="text-sm">Sem dados de bem-estar registados para hoje</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Gráfico do Dia */}
       <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-        <div className="flex justify-between items-center mb-4">
-          <div className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-            📈 Humor & Energia ao Longo do Dia
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('day')}
-              className={`text-xs px-3 py-1 rounded ${viewMode === 'day' ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')}`}
-            >
-              Por Dia
-            </button>
-            <button
-              onClick={() => setViewMode('cycle')}
-              className={`text-xs px-3 py-1 rounded ${viewMode === 'cycle' ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')}`}
-            >
-              Por Ciclo
-            </button>
-          </div>
+        <div className={'text-sm font-semibold mb-4 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+          📈 Humor & Energia ao Longo do Dia
         </div>
 
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={dayData}>
+          <LineChart data={dayData} margin={{ top: 5, right: 30, left: 0, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
             <XAxis
               dataKey="hour"
@@ -153,20 +152,15 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               height={80}
             />
             <YAxis
-              yAxisId="left"
-              label={{ value: 'Humor/Energia (0-10)', angle: -90, position: 'insideLeft' }}
+              domain={[0, 10]}
               tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              label={{ value: 'Consumos', angle: 90, position: 'insideRight' }}
-              tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
+              label={{ value: 'Valor (0-10)', angle: -90, position: 'insideLeft', offset: 10 }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
+
+            {/* Linhas */}
             <Line
-              yAxisId="left"
               type="monotone"
               dataKey="mood"
               stroke="#3b82f6"
@@ -174,9 +168,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               connectNulls
               dot={{ fill: '#3b82f6', r: 4 }}
               strokeWidth={2}
+              isAnimationActive={false}
             />
             <Line
-              yAxisId="left"
               type="monotone"
               dataKey="energy"
               stroke="#f59e0b"
@@ -184,108 +178,84 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               connectNulls
               dot={{ fill: '#f59e0b', r: 4 }}
               strokeWidth={2}
+              isAnimationActive={false}
             />
-            <Bar
-              yAxisId="right"
-              dataKey="consumptions"
-              fill="#ef4444"
-              name="Consumos"
-              opacity={0.4}
-            />
-          </ComposedChart>
+
+            {/* Marcadores de consumo */}
+            {consumptionMarkers.map((marker, idx) => (
+              <ReferenceDot
+                key={idx}
+                x={marker.hour}
+                y={10}
+                r={6}
+                fill="#ef4444"
+                opacity={0.8}
+              />
+            ))}
+          </LineChart>
         </ResponsiveContainer>
 
-        <div className={`mt-4 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          <p>📊 Azul: Humor | 🟠 Energia | 🔴 Consumos nesta hora</p>
+        <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p>📊 Azul: Humor | 🟠 Energia | 🔴 Consumo</p>
         </div>
       </div>
-    );
-  }
 
-  if (viewMode === 'cycle') {
-    if (cycleData.length === 0) {
-      return (
-        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
-          <p className="text-sm">Sem dados de impacto disponíveis</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-        <div className="flex justify-between items-center mb-4">
-          <div className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-            💊 Impacto do Consumo (3h seguintes)
+      {/* Cards de Antes/Depois */}
+      {impactCards.length > 0 && (
+        <div>
+          <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+            💊 Impacto do Consumo (Antes → Depois)
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('day')}
-              className={`text-xs px-3 py-1 rounded ${viewMode === 'day' ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')}`}
-            >
-              Por Dia
-            </button>
-            <button
-              onClick={() => setViewMode('cycle')}
-              className={`text-xs px-3 py-1 rounded ${viewMode === 'cycle' ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')}`}
-            >
-              Por Ciclo
-            </button>
-          </div>
-        </div>
 
-        <div className="space-y-6">
-          {cycleData.map((cycle, idx) => (
-            <div key={cycle.consumptionId}>
-              <div className={`text-xs font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Consumo {idx + 1} - {new Date(cycle.consumptionTime).toLocaleTimeString('pt-PT')}
-              </div>
-              {cycle.data.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={cycle.data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
-                    />
-                    <YAxis
-                      label={{ value: 'Valor (0-10)', angle: -90, position: 'insideLeft' }}
-                      tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: darkMode ? '#999' : '#666' }} />
-                    <Line
-                      type="monotone"
-                      dataKey="mood"
-                      stroke="#3b82f6"
-                      name="Humor"
-                      connectNulls
-                      dot={{ fill: '#3b82f6', r: 3 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="energy"
-                      stroke="#f59e0b"
-                      name="Energia"
-                      connectNulls
-                      dot={{ fill: '#f59e0b', r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className={`text-xs p-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Sem registos de bem-estar nas 3h seguintes
+          <div className="space-y-3">
+            {impactCards.map((card) => (
+              <div
+                key={card.id}
+                className={`rounded-lg p-4 border ${getImpactBgColor(Math.max(card.moodDiff, card.energyDiff))}`}
+              >
+                <div className={'text-xs font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                  ⏰ {card.time}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
 
-        <div className={`mt-4 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          <p>📊 Visualiza como o consumo afeta o humor e energia nas próximas 3 horas</p>
+                <div className="space-y-2">
+                  {/* Humor */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Humor:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{card.moodBefore}</span>
+                      <span className={`text-lg font-bold ${getImpactColor(card.moodDiff)}`}>
+                        {getImpactIcon(card.moodDiff)}
+                      </span>
+                      <span className="text-sm font-medium">{card.moodAfter}</span>
+                    </div>
+                  </div>
+
+                  {/* Energia */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Energia:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{card.energyBefore}</span>
+                      <span className={`text-lg font-bold ${getImpactColor(card.energyDiff)}`}>
+                        {getImpactIcon(card.energyDiff)}
+                      </span>
+                      <span className="text-sm font-medium">{card.energyAfter}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
+
+      {/* Mensagem se não há dados suficientes */}
+      {impactCards.length === 0 && consumptions.length > 0 && (
+        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700/50 border-gray-600 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'} border text-xs`}>
+          ℹ️ Para análise antes/depois, precisa de registos de bem-estar próximos ao consumo (3h antes e 3h depois)
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default WellbeingChart;
