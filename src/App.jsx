@@ -46,15 +46,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const [reflections, setReflections] = useState([]);
             const [cycles, setCycles] = useState([]);
             const [goals, setGoals] = useState([]);
-            const [darkMode, setDarkMode] = useState(() => {
-                // Check if user has a saved preference
-                const saved = localStorage.getItem('darkMode');
-                if (saved !== null) return saved === 'true';
-
-                // Otherwise, auto-enable dark mode between 19h-7h
-                const hour = new Date().getHours();
-                return hour >= 19 || hour < 7;
-            });
+            // Dark mode is now permanently enabled
+            const darkMode = true;
             const [timeFilter, setTimeFilter] = useState('all');
             const [patternsPeriod, setPatternsPeriod] = useState('tudo'); // hoje, semana, mes, tudo
             const [patternsPeriodOffset, setPatternsPeriodOffset] = useState(0); // 0 = current, 1 = previous, etc
@@ -245,19 +238,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 };
             }, []);
 
-            // Save dark mode preference and apply to body
+            // Apply dark mode to body (permanent)
             useEffect(() => {
-                try {
-                    localStorage.setItem('darkMode', darkMode);
-                    if (darkMode) {
-                        document.body.classList.add('dark');
-                    } else {
-                        document.body.classList.remove('dark');
-                    }
-                } catch (e) {
-                    console.error('Error setting dark mode:', e);
-                }
-            }, [darkMode]);
+                document.body.classList.add('dark');
+            }, []);
 
             useEffect(() => { const app = initializeApp(firebaseConfig); const dbInstance = getFirestore(app); const authInstance = getAuth(app); enableIndexedDbPersistence(dbInstance).catch(() => {}); setDb(dbInstance); setAuth(authInstance); setFirebaseInitialized(true); }, []);
 
@@ -333,7 +317,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 })();
             }, [user, db, cycles, consumptions]);
 
-            const toggleDarkMode = () => { const newMode = !darkMode; setDarkMode(newMode); localStorage.setItem('darkMode', newMode); document.body.classList.toggle('dark', newMode); };
 
             const handleAuth = async (e) => { e.preventDefault(); setAuthError(''); if (!auth) return;  try { if (isLogin) await signInWithEmailAndPassword(auth, email, password); else await createUserWithEmailAndPassword(auth, email, password); } catch (error) { if (error.code === 'auth/user-not-found') setAuthError('Email não encontrado. Cria conta primeiro.'); else if (error.code === 'auth/wrong-password') setAuthError('Password errada.'); else if (error.code === 'auth/email-already-in-use') setAuthError('Email já existe. Faz login.'); else if (error.code === 'auth/weak-password') setAuthError('Password fraca (mínimo 6 caracteres).'); else if (error.code === 'auth/invalid-email') setAuthError('Email inválido.'); else if (error.code === 'auth/invalid-credential') setAuthError('Email ou password incorretos.'); else setAuthError('Erro: ' + error.message); } };
 
@@ -1792,9 +1775,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     )}
 
                                     <div className="flex gap-1">
-                                        <button onClick={toggleDarkMode} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title={darkMode ? "Modo claro" : "Modo escuro"}>{darkMode ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}</button>
-                                        <button onClick={exportToCSV} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Exportar dados"><Icons.Download className="w-4 h-4" /></button>
-                                        <button onClick={handleLogout} className={(darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600') + ' p-2 rounded-lg transition-colors'} title="Sair"><Icons.LogOut className="w-4 h-4" /></button>
+                                        <button onClick={exportToCSV} className="text-gray-500 hover:text-gray-300 p-2 rounded-lg transition-colors" title="Exportar dados"><Icons.Download className="w-4 h-4" /></button>
+                                        <button onClick={handleLogout} className="text-gray-500 hover:text-gray-300 p-2 rounded-lg transition-colors" title="Sair"><Icons.LogOut className="w-4 h-4" /></button>
                                     </div>
                                 </div>
                             </div>
