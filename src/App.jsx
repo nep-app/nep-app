@@ -66,7 +66,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const [editingGoal, setEditingGoal] = useState(null);
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
-            const [analysisSubView, setAnalysisSubView] = useState('temporal'); // For analyses tab: temporal, structural, correlations
+            const [analysisSubView, setAnalysisSubView] = useState('estrutural'); // For analyses tab: temporal, structural, correlations
 
             // 2.4 Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
@@ -3313,8 +3313,16 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             );
                                         }
 
-                                        // COACH
+                                        // TEMPORAL
                                         if (patternView === 'temporal') {
+                                            // Calculate intervals
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push({ hours: diff, date: sorted[i].date });
+                                            }
+                                            
                                             return (
                                         <div className="space-y-4">
                                             {/* Análise de Intervalos Simplificada */}
@@ -3700,7 +3708,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
-                                                                {subView === 'temporal' && '⏰ Temporal'}
                                                                 {subView === 'estrutural' && '📊 Estrutural'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
                                                                 {subView === 'coach' && '💬 Coach'}
