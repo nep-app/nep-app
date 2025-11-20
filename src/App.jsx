@@ -6,6 +6,7 @@ import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResourc
 import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
 import { firebaseConfig } from './utils/firebase';
 import * as Icons from './components/Icons';
+import WellbeingChart from './components/WellbeingChart';
 
 // ===== UTILITY FUNCTIONS =====
 // Calculate Pearson correlation coefficient
@@ -5321,42 +5322,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         </div>
                                                                                     )}
 
-                                                                                    {/* Impacto do Consumo */}
-                                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>💊 Impacto nas 3h Seguintes ao Consumo</div>
-                                                                                        <div className="space-y-3">
-                                                                                            <div>
-                                                                                                <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>No Humor:</div>
-                                                                                                <div className="flex gap-2 text-xs flex-wrap">
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                        ↑ {moodAfterCons.better}x melhora
-                                                                                                    </div>
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                        ↓ {moodAfterCons.worse}x piora
-                                                                                                    </div>
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')}>
-                                                                                                        = {moodAfterCons.same}x igual
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            {(energyAfterCons.better + energyAfterCons.worse + energyAfterCons.same) > 0 && (
-                                                                                                <div>
-                                                                                                    <div className={'text-xs mb-2 font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Na Energia:</div>
-                                                                                                    <div className="flex gap-2 text-xs flex-wrap">
-                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                            ↑ {energyAfterCons.better}x aumenta
-                                                                                                        </div>
-                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                            ↓ {energyAfterCons.worse}x diminui
-                                                                                                        </div>
-                                                                                                        <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')}>
-                                                                                                            = {energyAfterCons.same}x igual
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
+                                                                                    {/* Impacto do Consumo - Novo Componente com Gráficos */}
+                                                                                    <WellbeingChart
+                                                                                        wellbeingLogs={wellbeingLogs}
+                                                                                        consumptions={consumptions}
+                                                                                        darkMode={darkMode}
+                                                                                        selectedCycle={currentCycle}
+                                                                                    />
 
                                                                                     {/* Intervalo Médio */}
                                                                                     {avgInterval && (
