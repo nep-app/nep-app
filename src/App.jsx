@@ -3661,12 +3661,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         const filteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
+                                        const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
                                         const filteredReflections = filterByDateRange(reflections, dateRange);
 
                                         // Usar dados filtrados diretamente (sem excluir dia atual)
                                         const analysisConsumptions = filteredConsumptions;
                                         const analysisWellbeing = filteredWellbeingLogs;
                                         const analysisCycles = filteredCycles;
+                                        const analysisDailyLogs = filteredDailyLogs;
+                                        const analysisReflections = filteredReflections;
 
                                             // Calculate all needed data
                                             const byHour = {};
