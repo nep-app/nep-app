@@ -4038,15 +4038,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
-                                                                {subView === 'temporal' && '📊 Estrutural'}
-                                                                {subView === 'estrutural' && '⏰ Temporal'}
+                                                                {subView === 'temporal' && '⏰ Temporal'}
+                                                                {subView === 'estrutural' && '📊 Estrutural'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
                                                             </button>
                                                         ))}
                                                     </div>
 
-                                                    {/* TEMPORAL */}
-                                                    {analysisSubView === 'temporal' && (
+                                                    {/* ESTRUTURAL */}
+                                                    {analysisSubView === 'estrutural' && (
                                                         <div className="space-y-4">
                                                             {/* Análise de Intervalos Simplificada */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
@@ -4337,8 +4337,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         </div>
                                                     )}
 
-                                                    {/* ESTRUTURAL */}
-                                                    {analysisSubView === 'estrutural' && (
+                                                    {/* TEMPORAL */}
+                                                    {analysisSubView === 'temporal' && (
                                                         <div className="space-y-4">
                                                             {/* Por horário */}
                                                             <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
