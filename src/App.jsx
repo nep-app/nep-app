@@ -19,6 +19,13 @@ import { CycleModal } from './components/modals/CycleModal';
 import { GoalModal } from './components/modals/GoalModal';
 import { EditConsumptionModal } from './components/modals/EditConsumptionModal';
 
+// Import UI components
+import { AlertCard } from './components/ui/AlertCard';
+import { GradientButton } from './components/ui/GradientButton';
+import { InfoBadge } from './components/ui/InfoBadge';
+import { MotivationalCard } from './components/ui/MotivationalCard';
+import { StatCard } from './components/ui/StatCard';
+
 // ===== UTILITY FUNCTIONS =====
 // Calculate Pearson correlation coefficient
 const calculatePearsonCorrelation = (data, xKey, yKey) => {
@@ -1725,15 +1732,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                             {currentView === 'home' && (
                                 <div className="space-y-6">
                                     {/* Mensagem Motivacional */}
-                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/20 via-pink-900/20 to-blue-900/20' : 'bg-gradient-to-r from-purple-100/50 via-pink-100/50 to-blue-100/50') + ' rounded-2xl p-5'}>
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                                <span className="text-white text-sm">💜</span>
-                                            </div>
-                                            <span className={(darkMode ? 'text-purple-300' : 'text-purple-700') + ' text-xs font-semibold tracking-wide uppercase'}>Mensagem de Hoje</span>
-                                        </div>
-                                        <p className={(darkMode ? 'text-gray-200' : 'text-gray-800') + ' text-sm leading-relaxed font-medium ml-11'}>{currentReflection}</p>
-                                    </div>
+                                    <MotivationalCard message={currentReflection} darkMode={darkMode} />
 
                                     {(() => {
                                         const alerts = [];
@@ -1786,18 +1785,21 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         return alerts.length > 0 && (
                                             <div className="space-y-2">
                                                 {alerts.map((alert, i) => (
-                                                    <div key={i} className={'bg-gradient-to-r rounded-lg p-2 border ' + (alert.type === 'positive' ? (darkMode ? 'from-green-900/30 to-emerald-900/30 border-green-700/50' : 'from-green-50 to-emerald-50 border-green-200') : alert.color === 'orange' ? (darkMode ? 'from-orange-900/30 to-yellow-900/30 border-orange-700/50' : 'from-orange-50 to-yellow-50 border-orange-200') : (darkMode ? 'from-red-900/30 to-pink-900/30 border-red-700/50' : 'from-red-50 to-pink-50 border-red-200'))}>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-sm">{alert.emoji}</span>
-                                                            <span className={'text-xs font-medium ' + (alert.type === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-700') : alert.color === 'orange' ? (darkMode ? 'text-orange-400' : 'text-orange-700') : (darkMode ? 'text-red-400' : 'text-red-700'))}>{alert.text}</span>
-                                                        </div>
-                                                    </div>
+                                                    <AlertCard key={i} alert={alert} darkMode={darkMode} />
                                                 ))}
                                             </div>
                                         );
                                     })()}
 
-                                    <button onClick={markConsumption} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-8 text-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl flex flex-col items-center"><Icons.Clock className="w-6 h-6" /><div className="mt-2">Marcar Consumo Agora</div></button>
+                                    <GradientButton
+                                        onClick={markConsumption}
+                                        icon={Icons.Clock}
+                                        variant="purple"
+                                        size="large"
+                                        className="w-full shadow-xl"
+                                    >
+                                        Marcar Consumo Agora
+                                    </GradientButton>
 
                                     {(() => {
                                         const timeSince = getTimeSinceLastConsumption();
@@ -1805,13 +1807,14 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                             const isLong = timeSince.hours >= 2;
                                             return (
                                                 <div className="flex justify-center -mt-2">
-                                                    <div className={'bg-gradient-to-r rounded-full px-4 py-1.5 border inline-flex items-center gap-2 ' + (isLong ? (darkMode ? 'from-green-900/40 to-blue-900/40 border-green-700/50' : 'from-green-50 to-blue-50 border-green-200') : (darkMode ? 'from-yellow-900/40 to-orange-900/40 border-yellow-700/50' : 'from-yellow-50 to-orange-50 border-yellow-200'))}>
-                                                        <span className={'text-xs font-medium ' + (isLong ? (darkMode ? 'text-green-400' : 'text-green-700') : (darkMode ? 'text-yellow-400' : 'text-yellow-700'))}>Sem consumir há</span>
-                                                        <span className={'text-sm font-bold ' + (isLong ? (darkMode ? 'text-green-300' : 'text-green-900') : (darkMode ? 'text-yellow-300' : 'text-yellow-900'))}>
-                                                            {timeSince.value}{timeSince.unit}
-                                                            {timeSince.subValue && <span className="text-xs ml-0.5">{timeSince.subValue}{timeSince.subUnit}</span>}
-                                                        </span>
-                                                    </div>
+                                                    <InfoBadge
+                                                        label="Sem consumir há"
+                                                        value={`${timeSince.value}${timeSince.unit}`}
+                                                        subValue={timeSince.subValue}
+                                                        subUnit={timeSince.subUnit}
+                                                        isPositive={isLong}
+                                                        darkMode={darkMode}
+                                                    />
                                                 </div>
                                             );
                                         }
@@ -1819,14 +1822,20 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                     })()}
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-                                            <Icons.BarChart3 className="w-5 h-5 mb-2" />
-                                            <div className="text-sm">Registar Dosagem do Dia</div>
-                                        </button>
-                                        <button onClick={() => setShowWellbeingModal(true)} className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4 font-medium hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-                                            <Icons.Heart className="w-5 h-5 mb-2" />
-                                            <div className="text-sm">Check-in Bem-Estar</div>
-                                        </button>
+                                        <GradientButton
+                                            onClick={() => setShowDailyLogModal(true)}
+                                            icon={Icons.BarChart3}
+                                            variant="pink"
+                                        >
+                                            Registar Dosagem do Dia
+                                        </GradientButton>
+                                        <GradientButton
+                                            onClick={() => setShowWellbeingModal(true)}
+                                            icon={Icons.Heart}
+                                            variant="blue"
+                                        >
+                                            Check-in Bem-Estar
+                                        </GradientButton>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
