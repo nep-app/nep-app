@@ -334,15 +334,20 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             const markConsumption = async () => {
                 try {
+                    console.log('🔍 markConsumption - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
                     const now = new Date();
                     const currentCycle = getCurrentCycleId();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
+                    console.log('📦 Item a guardar:', item);
                     setConsumptions(prev => [item, ...prev]);
                     await saveToFirebase('consumptions', item);
+                    console.log('✅ Guardado com sucesso!');
                     showToast('✓ Consumo registado', 'success');
                 } catch (error) {
+                    console.error('❌ ERRO COMPLETO:', error);
+                    console.error('❌ Mensagem:', error.message);
+                    console.error('❌ Stack:', error.stack);
                     showToast('✗ Erro ao guardar consumo', 'error');
-                    console.error(error);
                 }
             };
 
@@ -414,6 +419,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             const submitWellbeing = async () => {
                 try {
+                    console.log('🔍 submitWellbeing - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
                     const currentCycle = getCurrentCycleId();
                     const item = {
                         id: genId(),
@@ -430,14 +436,18 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         emotions: wellbeingForm.emotions,
                         notes: wellbeingForm.notes
                     };
+                    console.log('📦 Item a guardar:', item);
                     setWellbeingLogs(prev => [item, ...prev]);
                     await saveToFirebase('wellbeingLogs', item);
+                    console.log('✅ Guardado com sucesso!');
                     setWellbeingForm({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
                     showToast('✓ Bem-estar guardado', 'success');
                 } catch (error) {
+                    console.error('❌ ERRO COMPLETO:', error);
+                    console.error('❌ Mensagem:', error.message);
+                    console.error('❌ Stack:', error.stack);
                     showToast('✗ Erro ao guardar bem-estar', 'error');
-                    console.error(error);
                 }
             };
 
