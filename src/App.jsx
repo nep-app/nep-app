@@ -4560,18 +4560,18 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             const wDate = w.date || safeToISODate(w.timestamp);
                                                             if (!wDate) return; // Skip if invalid date
                                                             if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
-                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
-                                                            if (w.mood && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
-                                                            if (w.energy && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
+                                                            if (w.sleep != null && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                            if (w.mood != null && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
+                                                            if (w.energy != null && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
                                                         });
 
                                                         console.log('🔍 dailyData keys:', Object.keys(dailyData));
                                                         console.log('🔍 dailyData sample:', Object.entries(dailyData).slice(0, 3));
 
                                                         // Calcular correlações simples (comparar dias com mais vs menos consumo)
-                                                        // IMPORTANTE: Filtrar apenas dias que têm CONSUMO E PELO MENOS UM DADO DE BEM-ESTAR
+                                                        // IMPORTANTE: Filtrar apenas dias que têm PELO MENOS UM DADO DE BEM-ESTAR
                                                         const daysWithData = Object.values(dailyData).filter(d =>
-                                                            d.consumptions > 0 && (d.sleep !== null || d.mood !== null || d.energy !== null)
+                                                            (d.sleep !== null || d.mood !== null || d.energy !== null)
                                                         );
 
                                                         console.log('🔍 daysWithData length:', daysWithData.length);
@@ -4594,8 +4594,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // SONO
                                                         const sleepData = daysWithData.filter(d => d.sleep !== null);
-                                                        if (sleepData.length >= 2) {
-                                                            const correlation = calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep');
+                                                        if (sleepData.length >= 1) {
+                                                            const correlation = sleepData.length >= 2 ? calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep') : null;
                                                             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
                                                                 name: 'Sono',
@@ -4609,8 +4609,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // HUMOR
                                                         const moodData = daysWithData.filter(d => d.mood !== null);
-                                                        if (moodData.length >= 2) {
-                                                            const correlation = calculatePearsonCorrelation(moodData, 'consumptions', 'mood');
+                                                        if (moodData.length >= 1) {
+                                                            const correlation = moodData.length >= 2 ? calculatePearsonCorrelation(moodData, 'consumptions', 'mood') : null;
                                                             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
                                                                 name: 'Humor',
@@ -4624,8 +4624,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // ENERGIA
                                                         const energyData = daysWithData.filter(d => d.energy !== null);
-                                                        if (energyData.length >= 2) {
-                                                            const correlation = calculatePearsonCorrelation(energyData, 'consumptions', 'energy');
+                                                        if (energyData.length >= 1) {
+                                                            const correlation = energyData.length >= 2 ? calculatePearsonCorrelation(energyData, 'consumptions', 'energy') : null;
                                                             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
                                                                 name: 'Energia',
