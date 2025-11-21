@@ -11,6 +11,14 @@ import { useUI } from './contexts/UIContext';
 // Lazy load heavy chart component (saves ~200KB on initial load)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
+// Import modal components
+import { DailyLogModal } from './components/modals/DailyLogModal';
+import { WellbeingModal } from './components/modals/WellbeingModal';
+import { ReflectionModal } from './components/modals/ReflectionModal';
+import { CycleModal } from './components/modals/CycleModal';
+import { GoalModal } from './components/modals/GoalModal';
+import { EditConsumptionModal } from './components/modals/EditConsumptionModal';
+
 // ===== UTILITY FUNCTIONS =====
 // Calculate Pearson correlation coefficient
 const calculatePearsonCorrelation = (data, xKey, yKey) => {
@@ -5634,259 +5642,62 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         </div>
 
                         {/* Modals */}
-                        {showDailyLogModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowDailyLogModal(false)}>
-                                <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' rounded-2xl p-6 max-w-md w-full shadow-2xl'} onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Registar Dosagem do Dia</h3>
-                                        <button onClick={() => setShowDailyLogModal(false)} className={(darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600')}><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Total aproximado (mg)</label>
-                                            <input type="number" value={dailyForm.mg} onChange={(e) => setDailyForm({...dailyForm, mg: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'} min="0" />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas (opcional)</label>
-                                            <textarea value={dailyForm.notes} onChange={(e) => setDailyForm({...dailyForm, notes: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-20'} placeholder="Como te sentiste? Contexto..."></textarea>
-                                        </div>
-                                        <button onClick={submitDailyLog} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-rose-600 transition-all font-medium shadow-lg">Guardar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <DailyLogModal
+                            isOpen={showDailyLogModal}
+                            onClose={() => setShowDailyLogModal(false)}
+                            darkMode={darkMode}
+                            dailyForm={dailyForm}
+                            setDailyForm={setDailyForm}
+                            onSubmit={submitDailyLog}
+                        />
 
-                        {showWellbeingModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowWellbeingModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Check-in Bem-Estar</h3>
-                                        <button onClick={() => setShowWellbeingModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Horas de sono</label>
-                                            <input type="number" min="0" max="24" step="0.5" value={wellbeingForm.sleep} onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400'} placeholder="Ex: 7.5" />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Humor: {wellbeingForm.mood}/10</label>
-                                            <input type="range" min="1" max="10" value={wellbeingForm.mood} onChange={(e) => setWellbeingForm({...wellbeingForm, mood: e.target.value})} className="w-full" />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Energia: {wellbeingForm.energy}/10</label>
-                                            <input type="range" min="1" max="10" value={wellbeingForm.energy} onChange={(e) => setWellbeingForm({...wellbeingForm, energy: e.target.value})} className="w-full" />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Autocuidado hoje</label>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox" checked={wellbeingForm.water} onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>💧 Bebi água suficiente</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox" checked={wellbeingForm.rest} onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>😴 Descansei o suficiente</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox" checked={wellbeingForm.social} onChange={(e) => setWellbeingForm({...wellbeingForm, social: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>👥 Tive contacto social</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input type="checkbox" checked={wellbeingForm.food} onChange={(e) => setWellbeingForm({...wellbeingForm, food: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500" />
-                                                    <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>🍽️ Comi refeições nutritivas</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {['😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a', '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a', '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a', '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a', '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a', '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a', '😊 Satisfeito/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente', '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'].map(emotion => (
-                                                    <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" checked={wellbeingForm.emotions.includes(emotion)} onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setWellbeingForm({...wellbeingForm, emotions: [...wellbeingForm.emotions, emotion]});
-                                                            } else {
-                                                                setWellbeingForm({...wellbeingForm, emotions: wellbeingForm.emotions.filter(em => em !== emotion)});
-                                                            }
-                                                        }} className="rounded text-purple-600 focus:ring-purple-500" />
-                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{emotion}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Notas (opcional)</label>
-                                            <textarea value={wellbeingForm.notes} onChange={(e) => setWellbeingForm({...wellbeingForm, notes: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 h-20'} placeholder="Como te sentes hoje?"></textarea>
-                                        </div>
-                                        <button onClick={submitWellbeing} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-medium">Guardar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <WellbeingModal
+                            isOpen={showWellbeingModal}
+                            onClose={() => setShowWellbeingModal(false)}
+                            darkMode={darkMode}
+                            wellbeingForm={wellbeingForm}
+                            setWellbeingForm={setWellbeingForm}
+                            onSubmit={submitWellbeing}
+                        />
 
-                        {showReflectionModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowReflectionModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Reflexão diária</h3>
-                                        <button onClick={() => setShowReflectionModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                            <p className="text-purple-900 font-medium">{currentDbtQuestion}</p>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>A tua reflexão</label>
-                                            <textarea value={reflectionAnswer} onChange={(e) => setReflectionAnswer(e.target.value)} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-32'} placeholder="Escreve os teus pensamentos..."></textarea>
-                                        </div>
-                                        <button onClick={submitReflection} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium">Guardar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <ReflectionModal
+                            isOpen={showReflectionModal}
+                            onClose={() => setShowReflectionModal(false)}
+                            darkMode={darkMode}
+                            currentDbtQuestion={currentDbtQuestion}
+                            reflectionAnswer={reflectionAnswer}
+                            setReflectionAnswer={setReflectionAnswer}
+                            onSubmit={submitReflection}
+                        />
 
-                        {showCycleModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowCycleModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌙 Novo Ciclo</h3>
-                                        <button onClick={() => setShowCycleModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Hora a que te deitaste</label>
-                                            <input type="time" value={cycleForm.bedtime} onChange={(e) => setCycleForm({...cycleForm, bedtime: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400'} />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Gatilhos identificados</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {['Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família', 'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor física', 'Insónia', 'Conflito', 'Celebração'].map(trigger => (
-                                                    <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
-                                                        <input type="checkbox" checked={cycleForm.triggers.includes(trigger)} onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setCycleForm({...cycleForm, triggers: [...cycleForm.triggers, trigger]});
-                                                            } else {
-                                                                setCycleForm({...cycleForm, triggers: cycleForm.triggers.filter(t => t !== trigger)});
-                                                            }
-                                                        }} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{trigger}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas sobre este ciclo (opcional)</label>
-                                            <textarea value={cycleForm.notes} onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-20'} placeholder="Como foi o ciclo? O que observaste?"></textarea>
-                                        </div>
-                                        <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border'}>
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input type="checkbox" checked={cycleForm.lastBefore00} onChange={(e) => setCycleForm({...cycleForm, lastBefore00: e.target.checked})} className="rounded text-green-600 focus:ring-green-500 w-5 h-5" />
-                                                <span className={'text-sm font-medium ' + (darkMode ? 'text-green-300' : 'text-green-800')}>✓ Último consumo do ciclo foi antes da meia-noite (00h)</span>
-                                            </label>
-                                        </div>
-                                        <button onClick={submitCycle} className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium">Iniciar Novo Ciclo</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <CycleModal
+                            isOpen={showCycleModal}
+                            onClose={() => setShowCycleModal(false)}
+                            darkMode={darkMode}
+                            cycleForm={cycleForm}
+                            setCycleForm={setCycleForm}
+                            onSubmit={submitCycle}
+                        />
 
-                        {showGoalModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowGoalModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{editingGoal ? 'Editar Meta' : 'Nova Meta'}</h3>
-                                        <button onClick={() => { setShowGoalModal(false); setEditingGoal(null); }} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Tipo de Meta</label>
-                                            <select value={goalForm.type} onChange={(e) => setGoalForm({...goalForm, type: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400">
-                                                <option value="reduce_frequency">Reduzir Frequência</option>
-                                                <option value="reduce_quantity">Reduzir Quantidade (mg)</option>
-                                                <option value="delay_first">Adiar Primeiro Consumo</option>
-                                                <option value="increase_interval">Aumentar Intervalo (horas)</option>
-                                                <option value="limit_last">Hora do Último Consumo</option>
-                                                <option value="sleep_hours">Horas de Sono por Dia</option>
-                                                <option value="bedtime_before">Deitar Antes de</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Período</label>
-                                            <select value={goalForm.period} onChange={(e) => setGoalForm({...goalForm, period: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400">
-                                                <option value="daily">Diário</option>
-                                                <option value="weekly">Semanal</option>
-                                                <option value="monthly">Mensal</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
-                                                Meta {goalForm.type.includes('delay') || goalForm.type.includes('limit') || goalForm.type.includes('bedtime') ? '(HH:MM)' : '(número)'}
-                                            </label>
-                                            <input type={goalForm.type.includes('delay') || goalForm.type.includes('limit') || goalForm.type.includes('bedtime') ? 'time' : 'number'} value={goalForm.target} onChange={(e) => setGoalForm({...goalForm, target: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
-                                            <input type="date" value={goalForm.deadline} onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />
-                                        </div>
-                                        <button onClick={submitGoal} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">{editingGoal ? 'Atualizar Meta' : 'Criar Meta'}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <GoalModal
+                            isOpen={showGoalModal}
+                            onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
+                            darkMode={darkMode}
+                            editingGoal={editingGoal}
+                            goalForm={goalForm}
+                            setGoalForm={setGoalForm}
+                            onSubmit={submitGoal}
+                        />
 
-                        {showEditConsumptionModal && editingConsumption && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowEditConsumptionModal(false)}>
-                                <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Editar Consumo</h3>
-                                        <button onClick={() => setShowEditConsumptionModal(false)} className="text-gray-400 hover:text-gray-600"><Icons.X /></button>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Data</label>
-                                                <input
-                                                    type="date"
-                                                    value={editingConsumption.timestamp.split('T')[0]}
-                                                    onChange={(e) => {
-                                                        const currentDate = safeDate(editingConsumption.timestamp);
-                                                        if (!currentDate) return;
-                                                        const newDate = new Date(e.target.value);
-                                                        newDate.setHours(currentDate.getHours(), currentDate.getMinutes(), 0, 0);
-                                                        setEditingConsumption({...editingConsumption, timestamp: newDate.toISOString(), date: e.target.value});
-                                                    }}
-                                                    className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-400'}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Hora</label>
-                                                <input
-                                                    type="time"
-                                                    value={(() => {
-                                                        const d = safeDate(editingConsumption.timestamp);
-                                                        return d ? d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}) : '00:00';
-                                                    })()}
-                                                    onChange={(e) => {
-                                                        const currentDate = safeDate(editingConsumption.timestamp);
-                                                        if (!currentDate) return;
-                                                        const [hours, minutes] = e.target.value.split(':');
-                                                        currentDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-                                                        setEditingConsumption({...editingConsumption, timestamp: currentDate.toISOString()});
-                                                    }}
-                                                    className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-400'}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas</label>
-                                            <textarea value={editingConsumption.notes || ''} onChange={(e) => setEditingConsumption({...editingConsumption, notes: e.target.value})} className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 h-24'} placeholder="Adiciona notas sobre este consumo..."></textarea>
-                                        </div>
-                                        <button onClick={saveEditedConsumption} className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-medium">Guardar</button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <EditConsumptionModal
+                            isOpen={showEditConsumptionModal}
+                            onClose={() => setShowEditConsumptionModal(false)}
+                            darkMode={darkMode}
+                            editingConsumption={editingConsumption}
+                            setEditingConsumption={setEditingConsumption}
+                            onSubmit={saveEditedConsumption}
+                            safeDate={safeDate}
+                        />
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
