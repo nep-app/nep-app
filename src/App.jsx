@@ -4013,8 +4013,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                 const validMoodData = nextDayData.filter(d => d.mood !== null);
                                                                                 const validEnergyData = nextDayData.filter(d => d.energy !== null);
                 
-                                                                                const moodCorr = validMoodData.length >= 3 ? calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
-                                                                                const energyCorr = validEnergyData.length >= 3 ? calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
+                                                                                const moodCorr = validMoodData.length >= 2 ? calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
+                                                                                const energyCorr = validEnergyData.length >= 2 ? calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
                 
                                                                                 // Só mostrar se pelo menos uma correlação existe e é significativa
                                                                                 if ((moodCorr === null || Math.abs(moodCorr) < 0.3) && (energyCorr === null || Math.abs(energyCorr) < 0.3)) return null;
@@ -4529,13 +4529,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                             analysisWellbeing: analysisWellbeing.length
                                                         });
 
-                                                        if (analysisConsumptions.length < 5) {
+                                                        if (analysisConsumptions.length < 1) {
                                                             return (
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
                                                                     <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
                                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Precisas de mais dados para análise de correlações. (Tens {analysisConsumptions.length} consumos filtrados, precisas de pelo menos 5)
+                                                                        Sem consumos registados para análise.
                                                                     </p>
                                                                 </div>
                                                             );
@@ -4594,7 +4594,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // SONO
                                                         const sleepData = daysWithData.filter(d => d.sleep !== null);
-                                                        if (sleepData.length >= 3) {
+                                                        if (sleepData.length >= 2) {
                                                             const correlation = calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep');
                                                             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
@@ -4609,7 +4609,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // HUMOR
                                                         const moodData = daysWithData.filter(d => d.mood !== null);
-                                                        if (moodData.length >= 3) {
+                                                        if (moodData.length >= 2) {
                                                             const correlation = calculatePearsonCorrelation(moodData, 'consumptions', 'mood');
                                                             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
@@ -4624,7 +4624,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                         // ENERGIA
                                                         const energyData = daysWithData.filter(d => d.energy !== null);
-                                                        if (energyData.length >= 3) {
+                                                        if (energyData.length >= 2) {
                                                             const correlation = calculatePearsonCorrelation(energyData, 'consumptions', 'energy');
                                                             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
@@ -4716,7 +4716,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
                                                                     });
 
-                                                                    if (bidirectional.length >= 3) {
+                                                                    if (bidirectional.length >= 2) {
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
@@ -4733,7 +4733,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Sono
                                                                         const sleepCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
                                                                         const sleepData = bidirectional.filter(d => d.nextSleep !== null);
-                                                                        if (sleepData.length >= 3) {
+                                                                        if (sleepData.length >= 2) {
                                                                             const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Sono',
@@ -4748,7 +4748,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Humor
                                                                         const moodCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
                                                                         const moodData = bidirectional.filter(d => d.nextMood !== null);
-                                                                        if (moodData.length >= 3) {
+                                                                        if (moodData.length >= 2) {
                                                                             const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Humor',
@@ -4763,7 +4763,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Energia
                                                                         const energyCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
                                                                         const energyData = bidirectional.filter(d => d.nextEnergy !== null);
-                                                                        if (energyData.length >= 3) {
+                                                                        if (energyData.length >= 2) {
                                                                             const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Energia',
@@ -4847,7 +4847,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
                                                                     });
 
-                                                                    if (sameDaySleepMood.length >= 3 || nextDaySleepMood.length >= 3) {
+                                                                    if (sameDaySleepMood.length >= 2 || nextDaySleepMood.length >= 2) {
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais sono → Muito melhor humor' };
@@ -4861,7 +4861,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                         const sleepMoodCorrelations = [];
 
-                                                                        if (sameDaySleepMood.length >= 3) {
+                                                                        if (sameDaySleepMood.length >= 2) {
                                                                             const corr = calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                                                                             const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
@@ -4875,7 +4875,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             });
                                                                         }
 
-                                                                        if (nextDaySleepMood.length >= 3) {
+                                                                        if (nextDaySleepMood.length >= 2) {
                                                                             const corr = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
                                                                             const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
