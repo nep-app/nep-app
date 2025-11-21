@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { LineChart, Line, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }) => {
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline', 'scatter', 'step'
@@ -296,7 +296,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {viewMode === 'scatter' && (
         <div>
           <ResponsiveContainer width="100%" height={350}>
-            <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }} data={chartData}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
               <XAxis
                 dataKey="time"
@@ -312,18 +312,24 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
 
-              <Scatter
-                name="Humor"
+              <Line
+                type="linear"
                 dataKey="mood"
-                fill="#3b82f6"
-                line={{ stroke: '#3b82f6', strokeWidth: 2 }}
+                stroke="#3b82f6"
+                name="Humor"
+                dot={{ fill: '#3b82f6', r: 5 }}
+                strokeWidth={2}
+                isAnimationActive={false}
               />
 
-              <Scatter
-                name="Energia"
+              <Line
+                type="linear"
                 dataKey="energy"
-                fill="#f59e0b"
-                line={{ stroke: '#f59e0b', strokeWidth: 2 }}
+                stroke="#f59e0b"
+                name="Energia"
+                dot={{ fill: '#f59e0b', r: 5 }}
+                strokeWidth={2}
+                isAnimationActive={false}
               />
 
               {consumptionMarkers.map((marker, idx) => (
@@ -332,10 +338,10 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   x={marker.time}
                   stroke="#ef4444"
                   strokeDasharray="5 5"
-                  label={{ value: '▼', position: 'bottom', fill: '#ef4444', fontSize: 14 }}
+                  label={{ value: '▼', position: 'bottom', fill: '#ef4444', fontSize: 14, offset: 10 }}
                 />
               ))}
-            </ScatterChart>
+            </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             <p>● Azul: Humor | ● Laranja: Energia | ▼ Consumos</p>
