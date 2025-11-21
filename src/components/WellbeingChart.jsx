@@ -199,18 +199,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               isAnimationActive={false}
             />
 
-            {/* Linha invisível só para legenda de Consumos */}
-            <Line
-              type="linear"
-              dataKey={null}
-              stroke="#ef4444"
-              name="💊 Consumos"
-              strokeWidth={0}
-              dot={false}
-              legendType="line"
-              isAnimationActive={false}
-            />
-
             {/* Marcas de consumo no eixo X */}
             {chartData
               .filter(d => d.hasConsumption)
