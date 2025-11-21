@@ -3,19 +3,44 @@ import { LineChart, Line, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, To
 
 const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }) => {
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline', 'scatter', 'step'
+  const [selectedDate, setSelectedDate] = useState(null); // Data selecionada
 
-  // Prepara dados do gráfico
-  const chartData = useMemo(() => {
+  // Encontra todas as datas únicas com bem-estar registado
+  const availableDates = useMemo(() => {
     if (wellbeingLogs.length === 0) return [];
 
-    const today = wellbeingLogs[0]?.date;
-    const todayLogs = wellbeingLogs
-      .filter(log => log.date === today)
+    const dates = [...new Set(wellbeingLogs.map(log => log.date))].sort().reverse();
+    return dates;
+  }, [wellbeingLogs]);
+
+  // Define a data selecionada (padrão: hoje)
+  const currentDate = useMemo(() => {
+    if (selectedDate) return selectedDate;
+    if (availableDates.length > 0) return availableDates[0];
+    return null;
+  }, [selectedDate, availableDates]);
+
+  // Calcula label do dia (Hoje, Ontem, Há 2 dias, etc.)
+  const getDayLabel = (date) => {
+    if (!date || availableDates.length === 0) return '';
+
+    const index = availableDates.indexOf(date);
+    if (index === 0) return 'Hoje';
+    if (index === 1) return 'Ontem';
+    return `Há ${index} dias`;
+  };
+
+  // Prepara dados do gráfico para o dia selecionado
+  const chartData = useMemo(() => {
+    if (wellbeingLogs.length === 0 || !currentDate) return [];
+
+    const selectedLogs = wellbeingLogs
+      .filter(log => log.date === currentDate)
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    if (todayLogs.length === 0) return [];
+    if (selectedLogs.length === 0) return [];
 
-    return todayLogs.map((log) => {
+    return selectedLogs.map((log) => {
       const time = new Date(log.timestamp);
       const timeNum = time.getTime();
       const timeStr = time.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -27,20 +52,19 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         energy: log.energy
       };
     });
-  }, [wellbeingLogs]);
+  }, [wellbeingLogs, currentDate]);
 
-  // Prepara timeline (mesma lógica anterior)
+  // Prepara timeline para o dia selecionado
   const timeline = useMemo(() => {
-    if (wellbeingLogs.length === 0) return [];
+    if (wellbeingLogs.length === 0 || !currentDate) return [];
 
-    const today = wellbeingLogs[0]?.date;
-    const todayLogs = wellbeingLogs
-      .filter(log => log.date === today)
+    const selectedLogs = wellbeingLogs
+      .filter(log => log.date === currentDate)
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    if (todayLogs.length === 0) return [];
+    if (selectedLogs.length === 0) return [];
 
-    return todayLogs.map((log, idx) => {
+    return selectedLogs.map((log, idx) => {
       const currentTime = new Date(log.timestamp);
       const currentTimeStr = currentTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 
@@ -50,7 +74,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       let arrow = null;
 
       if (idx > 0) {
-        const previousLog = todayLogs[idx - 1];
+        const previousLog = selectedLogs[idx - 1];
         const previousTime = new Date(previousLog.timestamp);
         previousTimeStr = previousTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 
@@ -65,8 +89,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
           arrow = '→';
         }
 
-        const todayConsumptions = consumptions.filter(c => c.date === today);
-        consumptionsBetween = todayConsumptions.filter(c => {
+        const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
+        consumptionsBetween = selectedConsumptions.filter(c => {
           const consTime = new Date(c.timestamp);
           return consTime > previousTime && consTime <= currentTime;
         }).length;
@@ -84,16 +108,15 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         arrow
       };
     });
-  }, [wellbeingLogs, consumptions]);
+  }, [wellbeingLogs, consumptions, currentDate]);
 
-  // Encontra consumos para marcar nos gráficos
+  // Encontra consumos para o dia selecionado
   const consumptionMarkers = useMemo(() => {
-    if (consumptions.length === 0 || chartData.length === 0) return [];
+    if (consumptions.length === 0 || chartData.length === 0 || !currentDate) return [];
 
-    const today = wellbeingLogs[0]?.date;
-    const todayConsumptions = consumptions.filter(c => c.date === today);
+    const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
 
-    return todayConsumptions.map(cons => {
+    return selectedConsumptions.map(cons => {
       const consTime = new Date(cons.timestamp);
       const timeStr = consTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
 
@@ -102,7 +125,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         timeNum: consTime.getTime()
       };
     });
-  }, [consumptions, wellbeingLogs, chartData]);
+  }, [consumptions, chartData, currentDate]);
 
   const getColorForDiff = (value) => {
     if (value > 0.5) return darkMode ? 'text-green-400' : 'text-green-600';
@@ -131,20 +154,64 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     return null;
   };
 
-  if (chartData.length === 0) {
+  if (availableDates.length === 0 || chartData.length === 0) {
     return (
       <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
-        <p className="text-sm">Sem dados de bem-estar registados para hoje</p>
+        <p className="text-sm">Sem dados de bem-estar registados</p>
       </div>
     );
   }
 
   return (
     <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-      <div className="flex justify-between items-center mb-4">
+      {/* Header com seletor de data e visualização */}
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <div className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
           📈 Evolução de Bem-estar & Consumos
         </div>
+
+        {/* Seletor de datas */}
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => {
+              const currentIdx = availableDates.indexOf(currentDate);
+              if (currentIdx < availableDates.length - 1) {
+                setSelectedDate(availableDates[currentIdx + 1]);
+              }
+            }}
+            disabled={availableDates.indexOf(currentDate) >= availableDates.length - 1}
+            className={`text-xs px-2 py-1 rounded ${
+              availableDates.indexOf(currentDate) >= availableDates.length - 1
+                ? (darkMode ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed')
+                : (darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-300 text-gray-700 hover:bg-gray-400')
+            }`}
+          >
+            ←
+          </button>
+
+          <div className={`text-xs px-3 py-1 rounded font-medium ${darkMode ? 'bg-gray-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
+            {getDayLabel(currentDate)}
+          </div>
+
+          <button
+            onClick={() => {
+              const currentIdx = availableDates.indexOf(currentDate);
+              if (currentIdx > 0) {
+                setSelectedDate(availableDates[currentIdx - 1]);
+              }
+            }}
+            disabled={availableDates.indexOf(currentDate) <= 0}
+            className={`text-xs px-2 py-1 rounded ${
+              availableDates.indexOf(currentDate) <= 0
+                ? (darkMode ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed')
+                : (darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-300 text-gray-700 hover:bg-gray-400')
+            }`}
+          >
+            →
+          </button>
+        </div>
+
+        {/* Seletor de visualização */}
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('timeline')}
@@ -245,7 +312,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
 
-              {/* Linha contínua de Humor */}
               <Scatter
                 name="Humor"
                 dataKey="mood"
@@ -253,7 +319,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 line={{ stroke: '#3b82f6', strokeWidth: 2 }}
               />
 
-              {/* Linha contínua de Energia */}
               <Scatter
                 name="Energia"
                 dataKey="energy"
@@ -261,7 +326,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 line={{ stroke: '#f59e0b', strokeWidth: 2 }}
               />
 
-              {/* Marcadores de consumo como linha de referência */}
               {consumptionMarkers.map((marker, idx) => (
                 <ReferenceLine
                   key={idx}
@@ -299,7 +363,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
 
-              {/* Step chart: mantém valor até ao próximo */}
               <Line
                 type="stepAfter"
                 dataKey="mood"
@@ -320,7 +383,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 isAnimationActive={false}
               />
 
-              {/* Marcadores de consumo */}
               {consumptionMarkers.map((marker, idx) => (
                 <ReferenceLine
                   key={idx}
