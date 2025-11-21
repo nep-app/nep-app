@@ -11,9 +11,10 @@ export default defineConfig({
     minify: 'terser',
     rollupOptions: {
       output: {
-        format: 'iife',
-        inlineDynamicImports: true,
+        format: 'es',
+        // Removed inlineDynamicImports to enable code-splitting
         entryFileNames: 'app.js',
+        chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name].[ext]'
       }
     }

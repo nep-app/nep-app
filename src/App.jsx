@@ -8,16 +8,16 @@ import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useUI } from './contexts/UIContext';
 
-// Lazy load heavy chart component (saves ~200KB on initial load)
+// Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
-// Import modal components
-import { DailyLogModal } from './components/modals/DailyLogModal';
-import { WellbeingModal } from './components/modals/WellbeingModal';
-import { ReflectionModal } from './components/modals/ReflectionModal';
-import { CycleModal } from './components/modals/CycleModal';
-import { GoalModal } from './components/modals/GoalModal';
-import { EditConsumptionModal } from './components/modals/EditConsumptionModal';
+// Lazy load modals (only load when user opens them)
+const DailyLogModal = lazy(() => import('./components/modals/DailyLogModal').then(module => ({ default: module.DailyLogModal })));
+const WellbeingModal = lazy(() => import('./components/modals/WellbeingModal').then(module => ({ default: module.WellbeingModal })));
+const ReflectionModal = lazy(() => import('./components/modals/ReflectionModal').then(module => ({ default: module.ReflectionModal })));
+const CycleModal = lazy(() => import('./components/modals/CycleModal').then(module => ({ default: module.CycleModal })));
+const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
+const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 
 // Import UI components
 import { AlertCard } from './components/ui/AlertCard';
@@ -5650,63 +5650,75 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                         </div>
 
-                        {/* Modals */}
-                        <DailyLogModal
-                            isOpen={showDailyLogModal}
-                            onClose={() => setShowDailyLogModal(false)}
-                            darkMode={darkMode}
-                            dailyForm={dailyForm}
-                            setDailyForm={setDailyForm}
-                            onSubmit={submitDailyLog}
-                        />
+                        {/* Modals - Lazy loaded with Suspense */}
+                        <Suspense fallback={null}>
+                            <DailyLogModal
+                                isOpen={showDailyLogModal}
+                                onClose={() => setShowDailyLogModal(false)}
+                                darkMode={darkMode}
+                                dailyForm={dailyForm}
+                                setDailyForm={setDailyForm}
+                                onSubmit={submitDailyLog}
+                            />
+                        </Suspense>
 
-                        <WellbeingModal
-                            isOpen={showWellbeingModal}
-                            onClose={() => setShowWellbeingModal(false)}
-                            darkMode={darkMode}
-                            wellbeingForm={wellbeingForm}
-                            setWellbeingForm={setWellbeingForm}
-                            onSubmit={submitWellbeing}
-                        />
+                        <Suspense fallback={null}>
+                            <WellbeingModal
+                                isOpen={showWellbeingModal}
+                                onClose={() => setShowWellbeingModal(false)}
+                                darkMode={darkMode}
+                                wellbeingForm={wellbeingForm}
+                                setWellbeingForm={setWellbeingForm}
+                                onSubmit={submitWellbeing}
+                            />
+                        </Suspense>
 
-                        <ReflectionModal
-                            isOpen={showReflectionModal}
-                            onClose={() => setShowReflectionModal(false)}
-                            darkMode={darkMode}
-                            currentDbtQuestion={currentDbtQuestion}
-                            reflectionAnswer={reflectionAnswer}
-                            setReflectionAnswer={setReflectionAnswer}
-                            onSubmit={submitReflection}
-                        />
+                        <Suspense fallback={null}>
+                            <ReflectionModal
+                                isOpen={showReflectionModal}
+                                onClose={() => setShowReflectionModal(false)}
+                                darkMode={darkMode}
+                                currentDbtQuestion={currentDbtQuestion}
+                                reflectionAnswer={reflectionAnswer}
+                                setReflectionAnswer={setReflectionAnswer}
+                                onSubmit={submitReflection}
+                            />
+                        </Suspense>
 
-                        <CycleModal
-                            isOpen={showCycleModal}
-                            onClose={() => setShowCycleModal(false)}
-                            darkMode={darkMode}
-                            cycleForm={cycleForm}
-                            setCycleForm={setCycleForm}
-                            onSubmit={submitCycle}
-                        />
+                        <Suspense fallback={null}>
+                            <CycleModal
+                                isOpen={showCycleModal}
+                                onClose={() => setShowCycleModal(false)}
+                                darkMode={darkMode}
+                                cycleForm={cycleForm}
+                                setCycleForm={setCycleForm}
+                                onSubmit={submitCycle}
+                            />
+                        </Suspense>
 
-                        <GoalModal
-                            isOpen={showGoalModal}
-                            onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
-                            darkMode={darkMode}
-                            editingGoal={editingGoal}
-                            goalForm={goalForm}
-                            setGoalForm={setGoalForm}
-                            onSubmit={submitGoal}
-                        />
+                        <Suspense fallback={null}>
+                            <GoalModal
+                                isOpen={showGoalModal}
+                                onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
+                                darkMode={darkMode}
+                                editingGoal={editingGoal}
+                                goalForm={goalForm}
+                                setGoalForm={setGoalForm}
+                                onSubmit={submitGoal}
+                            />
+                        </Suspense>
 
-                        <EditConsumptionModal
-                            isOpen={showEditConsumptionModal}
-                            onClose={() => setShowEditConsumptionModal(false)}
-                            darkMode={darkMode}
-                            editingConsumption={editingConsumption}
-                            setEditingConsumption={setEditingConsumption}
-                            onSubmit={saveEditedConsumption}
-                            safeDate={safeDate}
-                        />
+                        <Suspense fallback={null}>
+                            <EditConsumptionModal
+                                isOpen={showEditConsumptionModal}
+                                onClose={() => setShowEditConsumptionModal(false)}
+                                darkMode={darkMode}
+                                editingConsumption={editingConsumption}
+                                setEditingConsumption={setEditingConsumption}
+                                onSubmit={saveEditedConsumption}
+                                safeDate={safeDate}
+                            />
+                        </Suspense>
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
