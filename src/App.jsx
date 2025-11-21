@@ -29,7 +29,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
         function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
             // Use contexts for data and UI state
-            const { auth, db, user, loading: dataLoading, consumptions, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
             const { darkMode } = useUI();
 
             // 2.1 Auth State (local)
@@ -42,9 +42,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             // 2.2 UI Navigation State
             const [currentView, setCurrentView] = useState('home');
-
-            // 2.3 Legacy states (kept for compatibility)
-            const [dailyLogs, setDailyLogs] = useState([]);
             const [timeFilter, setTimeFilter] = useState('all');
             const [patternsPeriod, setPatternsPeriod] = useState('tudo'); // hoje, semana, mes, tudo
             const [patternsPeriodOffset, setPatternsPeriodOffset] = useState(0); // 0 = current, 1 = previous, etc

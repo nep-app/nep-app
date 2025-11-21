@@ -31,6 +31,7 @@ export const DataProvider = ({ children }) => {
 
   // Data states
   const [consumptions, setConsumptions] = useState([]);
+  const [dailyLogs, setDailyLogs] = useState([]);
   const [reflections, setReflections] = useState([]);
   const [wellbeingLogs, setWellbeingLogs] = useState([]);
   const [cycles, setCycles] = useState([]);
@@ -50,6 +51,7 @@ export const DataProvider = ({ children }) => {
   useEffect(() => {
     if (!user) {
       setConsumptions([]);
+      setDailyLogs([]);
       setReflections([]);
       setWellbeingLogs([]);
       setCycles([]);
@@ -65,6 +67,14 @@ export const DataProvider = ({ children }) => {
       onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setConsumptions(data);
+      })
+    );
+
+    // Daily logs listener
+    unsubscribers.push(
+      onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
+        setDailyLogs(data);
       })
     );
 
@@ -120,6 +130,11 @@ export const DataProvider = ({ children }) => {
   const deleteConsumption = async (id) => {
     if (!user) return;
     return await deleteDoc(doc(db, `users/${user.uid}/consumptions`, id));
+  };
+
+  const addDailyLog = async (data) => {
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/dailyLogs`, data.id), data);
   };
 
   const addReflection = async (data) => {
@@ -178,6 +193,7 @@ export const DataProvider = ({ children }) => {
     user,
     loading,
     consumptions,
+    dailyLogs,
     reflections,
     wellbeingLogs,
     cycles,
@@ -185,6 +201,7 @@ export const DataProvider = ({ children }) => {
     copingStrategies,
     addConsumption,
     deleteConsumption,
+    addDailyLog,
     addReflection,
     addWellbeingLog,
     addCycle,
