@@ -317,8 +317,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="mood"
                 stroke="#3b82f6"
                 name="Humor"
-                dot={{ fill: '#3b82f6', r: 5 }}
-                strokeWidth={2}
+                dot={{ fill: '#3b82f6', r: 7 }}
+                strokeWidth={3}
                 isAnimationActive={false}
               />
 
@@ -327,8 +327,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="energy"
                 stroke="#f59e0b"
                 name="Energia"
-                dot={{ fill: '#f59e0b', r: 5 }}
-                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ fill: '#f59e0b', r: 7 }}
+                strokeWidth={3}
                 isAnimationActive={false}
               />
 
@@ -337,8 +338,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   key={idx}
                   x={marker.time}
                   stroke="#ef4444"
-                  strokeDasharray="5 5"
-                  label={{ value: '▼', position: 'bottom', fill: '#ef4444', fontSize: 14, offset: 10 }}
+                  strokeWidth={3}
+                  label={{ value: '◆ CONSUMO', position: 'top', fill: '#ef4444', fontSize: 12, offset: 10 }}
                 />
               ))}
             </LineChart>
@@ -374,8 +375,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="mood"
                 stroke="#3b82f6"
                 name="Humor"
-                dot={{ fill: '#3b82f6', r: 5 }}
-                strokeWidth={2}
+                dot={{ fill: '#3b82f6', r: 7 }}
+                strokeWidth={3}
                 isAnimationActive={false}
               />
 
@@ -384,8 +385,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="energy"
                 stroke="#f59e0b"
                 name="Energia"
-                dot={{ fill: '#f59e0b', r: 5 }}
-                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ fill: '#f59e0b', r: 7 }}
+                strokeWidth={3}
                 isAnimationActive={false}
               />
 
@@ -394,8 +396,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   key={idx}
                   x={marker.time}
                   stroke="#ef4444"
-                  strokeDasharray="5 5"
-                  label={{ value: '▼', position: 'bottom', fill: '#ef4444', fontSize: 14 }}
+                  strokeWidth={3}
+                  label={{ value: '◆ CONSUMO', position: 'top', fill: '#ef4444', fontSize: 12, offset: 10 }}
                 />
               ))}
             </LineChart>
