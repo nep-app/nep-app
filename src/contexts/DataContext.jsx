@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initializeApp } from 'firebase/app';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc, where, orderBy } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
@@ -15,10 +15,15 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }) => {
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+  // Initialize Firebase (only once)
+  const { app, auth, db } = useMemo(() => {
+    const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    return {
+      app: firebaseApp,
+      auth: getAuth(firebaseApp),
+      db: getFirestore(firebaseApp)
+    };
+  }, []);
 
   // User state
   const [user, setUser] = useState(null);
