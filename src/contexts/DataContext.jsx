@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const DataContext = createContext();
@@ -60,78 +60,50 @@ export const DataProvider = ({ children }) => {
 
     const unsubscribers = [];
 
-    // Consumptions listener
-    const consumptionsQuery = query(
-      collection(db, 'consumptions'),
-      where('userId', '==', user.uid),
-      orderBy('timestamp', 'desc')
-    );
+    // Consumptions listener (estrutura original: users/{userId}/consumptions)
     unsubscribers.push(
-      onSnapshot(consumptionsQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setConsumptions(data);
       })
     );
 
     // Reflections listener
-    const reflectionsQuery = query(
-      collection(db, 'reflections'),
-      where('userId', '==', user.uid),
-      orderBy('timestamp', 'desc')
-    );
     unsubscribers.push(
-      onSnapshot(reflectionsQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/reflections`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
         setReflections(data);
       })
     );
 
     // Wellbeing logs listener
-    const wellbeingQuery = query(
-      collection(db, 'wellbeingLogs'),
-      where('userId', '==', user.uid),
-      orderBy('timestamp', 'desc')
-    );
     unsubscribers.push(
-      onSnapshot(wellbeingQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
         setWellbeingLogs(data);
       })
     );
 
     // Cycles listener
-    const cyclesQuery = query(
-      collection(db, 'cycles'),
-      where('userId', '==', user.uid),
-      orderBy('startDate', 'desc')
-    );
     unsubscribers.push(
-      onSnapshot(cyclesQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/cycles`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setCycles(data);
       })
     );
 
     // Goals listener
-    const goalsQuery = query(
-      collection(db, 'goals'),
-      where('userId', '==', user.uid)
-    );
     unsubscribers.push(
-      onSnapshot(goalsQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/goals`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data());
         setGoals(data);
       })
     );
 
-    // Coping strategies listener
-    const strategiesQuery = query(
-      collection(db, 'copingStrategies'),
-      where('userId', '==', user.uid)
-    );
+    // Coping strategies listener (se existir)
     unsubscribers.push(
-      onSnapshot(strategiesQuery, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      onSnapshot(collection(db, `users/${user.uid}/copingStrategies`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data());
         setCopingStrategies(data);
       })
     );
@@ -139,53 +111,65 @@ export const DataProvider = ({ children }) => {
     return () => unsubscribers.forEach(unsub => unsub());
   }, [user]);
 
-  // CRUD operations
+  // CRUD operations (estrutura original: users/{userId}/collection)
   const addConsumption = async (data) => {
-    return await addDoc(collection(db, 'consumptions'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/consumptions`, data.id), data);
   };
 
   const deleteConsumption = async (id) => {
-    return await deleteDoc(doc(db, 'consumptions', id));
+    if (!user) return;
+    return await deleteDoc(doc(db, `users/${user.uid}/consumptions`, id));
   };
 
   const addReflection = async (data) => {
-    return await addDoc(collection(db, 'reflections'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/reflections`, data.id), data);
   };
 
   const addWellbeingLog = async (data) => {
-    return await addDoc(collection(db, 'wellbeingLogs'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/wellbeingLogs`, data.id), data);
   };
 
   const addCycle = async (data) => {
-    return await addDoc(collection(db, 'cycles'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/cycles`, data.id), data);
   };
 
   const updateCycle = async (id, data) => {
-    return await updateDoc(doc(db, 'cycles', id), data);
+    if (!user) return;
+    return await updateDoc(doc(db, `users/${user.uid}/cycles`, id), data);
   };
 
   const deleteCycle = async (id) => {
-    return await deleteDoc(doc(db, 'cycles', id));
+    if (!user) return;
+    return await deleteDoc(doc(db, `users/${user.uid}/cycles`, id));
   };
 
   const addGoal = async (data) => {
-    return await addDoc(collection(db, 'goals'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/goals`, data.id), data);
   };
 
   const updateGoal = async (id, data) => {
-    return await updateDoc(doc(db, 'goals', id), data);
+    if (!user) return;
+    return await updateDoc(doc(db, `users/${user.uid}/goals`, id), data);
   };
 
   const deleteGoal = async (id) => {
-    return await deleteDoc(doc(db, 'goals', id));
+    if (!user) return;
+    return await deleteDoc(doc(db, `users/${user.uid}/goals`, id));
   };
 
   const addCopingStrategy = async (data) => {
-    return await addDoc(collection(db, 'copingStrategies'), { ...data, userId: user.uid });
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/copingStrategies`, data.id), data);
   };
 
   const deleteCopingStrategy = async (id) => {
-    return await deleteDoc(doc(db, 'copingStrategies', id));
+    if (!user) return;
+    return await deleteDoc(doc(db, `users/${user.uid}/copingStrategies`, id));
   };
 
   const value = {
