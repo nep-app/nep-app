@@ -40,7 +40,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
     if (selectedLogs.length === 0) return [];
 
-    return selectedLogs.map((log) => {
+    const data = selectedLogs.map((log) => {
       const time = new Date(log.timestamp);
       const timeNum = time.getTime();
       const timeStr = time.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -49,10 +49,34 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         time: timeStr,
         timeNum,
         mood: log.mood,
-        energy: log.energy
+        energy: log.energy,
+        isConsumption: false
       };
     });
-  }, [wellbeingLogs, currentDate]);
+
+    // Adiciona TODOS os consumos ao gráfico
+    const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
+    selectedConsumptions.forEach(cons => {
+      const consTime = new Date(cons.timestamp);
+      const timeStr = consTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+
+      // Verifica se já existe um ponto com essa hora
+      const existingPoint = data.find(d => d.time === timeStr);
+      if (existingPoint) {
+        existingPoint.isConsumption = true;
+      } else {
+        data.push({
+          time: timeStr,
+          timeNum: consTime.getTime(),
+          mood: null,
+          energy: null,
+          isConsumption: true
+        });
+      }
+    });
+
+    return data.sort((a, b) => a.timeNum - b.timeNum);
+  }, [wellbeingLogs, consumptions, currentDate]);
 
   // Prepara timeline para o dia selecionado
   const timeline = useMemo(() => {
@@ -110,22 +134,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     });
   }, [wellbeingLogs, consumptions, currentDate]);
 
-  // Encontra consumos para o dia selecionado
-  const consumptionMarkers = useMemo(() => {
-    if (consumptions.length === 0 || chartData.length === 0 || !currentDate) return [];
-
-    const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
-
-    return selectedConsumptions.map(cons => {
-      const consTime = new Date(cons.timestamp);
-      const timeStr = consTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-
-      return {
-        time: timeStr,
-        timeNum: consTime.getTime()
-      };
-    });
-  }, [consumptions, chartData, currentDate]);
 
   const getColorForDiff = (value) => {
     if (value > 0.5) return darkMode ? 'text-green-400' : 'text-green-600';
@@ -303,6 +311,13 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
                 angle={-45}
                 height={80}
+                label={{
+                  value: chartData.filter(d => d.isConsumption).map(d => d.time).join(' 💊 '),
+                  position: 'bottom',
+                  offset: 40,
+                  fill: '#ef4444',
+                  fontSize: 10
+                }}
               />
               <YAxis
                 domain={[0, 10]}
@@ -317,7 +332,11 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="mood"
                 stroke="#3b82f6"
                 name="Humor"
-                dot={{ fill: '#3b82f6', r: 7 }}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.isConsumption) return null;
+                  return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
+                }}
                 strokeWidth={3}
                 isAnimationActive={false}
               />
@@ -328,24 +347,29 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 stroke="#f59e0b"
                 name="Energia"
                 strokeDasharray="5 5"
-                dot={{ fill: '#f59e0b', r: 7 }}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.isConsumption) return null;
+                  return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
+                }}
                 strokeWidth={3}
                 isAnimationActive={false}
               />
 
-              {consumptionMarkers.map((marker, idx) => (
+              {/* Marcadores de consumo */}
+              {chartData.filter(d => d.isConsumption).map((point, idx) => (
                 <ReferenceLine
                   key={idx}
-                  x={marker.time}
+                  x={point.time}
                   stroke="#ef4444"
-                  strokeWidth={3}
-                  label={{ value: '◆ CONSUMO', position: 'top', fill: '#ef4444', fontSize: 12, offset: 10 }}
+                  strokeWidth={2}
+                  opacity={0.5}
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul: Humor | ● Laranja: Energia | ▼ Consumos</p>
+            <p>● Azul: Humor | ● Laranja: Energia | 💊 Consumos</p>
           </div>
         </div>
       )}
@@ -361,6 +385,13 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
                 angle={-45}
                 height={80}
+                label={{
+                  value: chartData.filter(d => d.isConsumption).map(d => d.time).join(' 💊 '),
+                  position: 'bottom',
+                  offset: 40,
+                  fill: '#ef4444',
+                  fontSize: 10
+                }}
               />
               <YAxis
                 domain={[0, 10]}
@@ -375,7 +406,11 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 dataKey="mood"
                 stroke="#3b82f6"
                 name="Humor"
-                dot={{ fill: '#3b82f6', r: 7 }}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.isConsumption) return null;
+                  return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
+                }}
                 strokeWidth={3}
                 isAnimationActive={false}
               />
@@ -386,24 +421,29 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 stroke="#f59e0b"
                 name="Energia"
                 strokeDasharray="5 5"
-                dot={{ fill: '#f59e0b', r: 7 }}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.isConsumption) return null;
+                  return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
+                }}
                 strokeWidth={3}
                 isAnimationActive={false}
               />
 
-              {consumptionMarkers.map((marker, idx) => (
+              {/* Marcadores de consumo */}
+              {chartData.filter(d => d.isConsumption).map((point, idx) => (
                 <ReferenceLine
                   key={idx}
-                  x={marker.time}
+                  x={point.time}
                   stroke="#ef4444"
-                  strokeWidth={3}
-                  label={{ value: '◆ CONSUMO', position: 'top', fill: '#ef4444', fontSize: 12, offset: 10 }}
+                  strokeWidth={2}
+                  opacity={0.5}
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul: Humor | ● Laranja: Energia | ▼ Consumos</p>
+            <p>● Azul: Humor | ● Laranja: Energia | 💊 Consumos</p>
           </div>
         </div>
       )}
