@@ -5325,8 +5325,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                                     {/* Impacto do Consumo - Novo Componente com Gráficos */}
                                                                                     <WellbeingChart
-                                                                                        wellbeingLogs={wellbeingLogs}
-                                                                                        consumptions={consumptions}
+                                                                                        wellbeingLogs={analysisWellbeing}
+                                                                                        consumptions={analysisConsumptions}
                                                                                         darkMode={darkMode}
                                                                                         selectedCycle={currentCycle}
                                                                                     />
