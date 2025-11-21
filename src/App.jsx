@@ -308,7 +308,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         consumptionsByCycle[assignedCycleId].push(consumption);
 
                         const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
-                        await saveToFirebase('consumptions', updatedConsumption);
+                        await addConsumption(updatedConsumption);
                         updatedCount++;
                     }
 
@@ -327,11 +327,6 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             const handleLogout = () => { signOut(auth); };
 
-            const saveToFirebase = async (collectionName, entry) => {
-                if (!user || !db) throw new Error('Não autenticado. Por favor faz login novamente.');
-                await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry);
-            };
-
             const markConsumption = async () => {
                 try {
                     console.log('🔍 markConsumption - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
@@ -339,8 +334,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     const currentCycle = getCurrentCycleId();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
                     console.log('📦 Item a guardar:', item);
-                    setConsumptions(prev => [item, ...prev]);
-                    await saveToFirebase('consumptions', item);
+                    await addConsumption(item);
                     console.log('✅ Guardado com sucesso!');
                     showToast('✓ Consumo registado', 'success');
                 } catch (error) {
@@ -406,8 +400,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                     const currentCycle = getCurrentCycleId();
                     const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
                     const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
-                    setDailyLogs(prev => [item, ...prev]);
-                    await saveToFirebase('dailyLogs', item);
+                    await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '' });
                     setShowDailyLogModal(false);
                     showToast('✓ Registo diário guardado', 'success');
@@ -437,8 +430,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                         notes: wellbeingForm.notes
                     };
                     console.log('📦 Item a guardar:', item);
-                    setWellbeingLogs(prev => [item, ...prev]);
-                    await saveToFirebase('wellbeingLogs', item);
+                    await addWellbeingLog(item);
                     console.log('✅ Guardado com sucesso!');
                     setWellbeingForm({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
@@ -454,8 +446,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const submitReflection = async () => {
                 try {
                     const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
-                    setReflections(prev => [item, ...prev]);
-                    await saveToFirebase('reflections', item);
+                    await addReflection(item);
                     setReflectionAnswer('');
                     setShowReflectionModal(false);
                     showToast('✓ Reflexão guardada', 'success');
@@ -468,8 +459,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const submitCycle = async () => {
                 try {
                     const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastBefore00: cycleForm.lastBefore00 };
-                    setCycles(prev => [item, ...prev]);
-                    await saveToFirebase('cycles', item);
+                    await addCycle(item);
                     setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
@@ -485,16 +475,14 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                     if (editingGoal) {
                         // Update existing goal
-                        const updatedGoal = { ...editingGoal, type: goalForm.type, target, deadline: goalForm.deadline };
-                        setGoals(prev => prev.map(g => g.id === editingGoal.id ? updatedGoal : g));
-                        await saveToFirebase('goals', updatedGoal);
+                        const updatedData = { type: goalForm.type, target, deadline: goalForm.deadline };
+                        await updateGoal(editingGoal.id, updatedData);
                         setEditingGoal(null);
                         showToast('✓ Meta atualizada', 'success');
                     } else {
                         // Create new goal
                         const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
-                        setGoals(prev => [...prev, item]);
-                        await saveToFirebase('goals', item);
+                        await addGoal(item);
                         showToast('✓ Meta criada', 'success');
                     }
 
