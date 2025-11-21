@@ -3503,10 +3503,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                         <div className="flex items-center justify-between mb-3">
                                             <div className={'text-sm font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Período de análise</div>
                                             <div className="flex gap-2">
-                                                <button onClick={() => setPatternsPeriodOffset(prev => prev - 1)} disabled={patternsPeriodOffset >= 0 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
+                                                <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset >= 100 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 100 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
                                                     <Icons.ChevronLeft className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset === 0 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset === 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
+                                                <button onClick={() => setPatternsPeriodOffset(prev => Math.max(0, prev - 1))} disabled={patternsPeriodOffset === 0 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset === 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
                                                     <Icons.ChevronRight className="w-4 h-4" />
                                                 </button>
                                             </div>
