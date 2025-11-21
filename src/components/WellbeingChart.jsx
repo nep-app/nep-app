@@ -32,50 +32,73 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
   // Prepara dados do gráfico para o dia selecionado
   const chartData = useMemo(() => {
-    if (wellbeingLogs.length === 0 || !currentDate) return [];
+    if (!currentDate) return [];
 
+    // Cria mapa de dados por minuto desde meia-noite
+    const dataByMinute = {};
+
+    // Função auxiliar para converter tempo em minutos desde meia-noite
+    const getMinutesFromMidnight = (timestamp) => {
+      const date = new Date(timestamp);
+      return date.getHours() * 60 + date.getMinutes();
+    };
+
+    // Função auxiliar para converter minutos para string HH:MM
+    const minutesToTimeStr = (minutes) => {
+      const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+      const mins = (minutes % 60).toString().padStart(2, '0');
+      return `${hours}:${mins}`;
+    };
+
+    // Adiciona registos de wellbeing
     const selectedLogs = wellbeingLogs
       .filter(log => log.date === currentDate)
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    if (selectedLogs.length === 0) return [];
+    selectedLogs.forEach(log => {
+      const minutesSinceMidnight = getMinutesFromMidnight(log.timestamp);
+      const timeStr = minutesToTimeStr(minutesSinceMidnight);
 
-    const data = selectedLogs.map((log) => {
-      const time = new Date(log.timestamp);
-      const timeNum = time.getTime();
-      const timeStr = time.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      if (!dataByMinute[minutesSinceMidnight]) {
+        dataByMinute[minutesSinceMidnight] = {
+          time: timeStr,
+          minutesSinceMidnight,
+          mood: null,
+          energy: null,
+          consumptionCount: 0,
+          hasConsumption: false
+        };
+      }
 
-      return {
-        time: timeStr,
-        timeNum,
-        mood: log.mood,
-        energy: log.energy,
-        isConsumption: false
-      };
+      dataByMinute[minutesSinceMidnight].mood = log.mood;
+      dataByMinute[minutesSinceMidnight].energy = log.energy;
     });
 
     // Adiciona TODOS os consumos ao gráfico
     const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
     selectedConsumptions.forEach(cons => {
-      const consTime = new Date(cons.timestamp);
-      const timeStr = consTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const minutesSinceMidnight = getMinutesFromMidnight(cons.timestamp);
+      const timeStr = minutesToTimeStr(minutesSinceMidnight);
 
-      // Verifica se já existe um ponto com essa hora
-      const existingPoint = data.find(d => d.time === timeStr);
-      if (existingPoint) {
-        existingPoint.isConsumption = true;
-      } else {
-        data.push({
+      if (!dataByMinute[minutesSinceMidnight]) {
+        dataByMinute[minutesSinceMidnight] = {
           time: timeStr,
-          timeNum: consTime.getTime(),
+          minutesSinceMidnight,
           mood: null,
           energy: null,
-          isConsumption: true
-        });
+          consumptionCount: 0,
+          hasConsumption: false
+        };
       }
+
+      dataByMinute[minutesSinceMidnight].consumptionCount++;
+      dataByMinute[minutesSinceMidnight].hasConsumption = true;
     });
 
-    return data.sort((a, b) => a.timeNum - b.timeNum);
+    // Converte mapa em array ordenado
+    const data = Object.values(dataByMinute).sort((a, b) => a.minutesSinceMidnight - b.minutesSinceMidnight);
+
+    return data;
   }, [wellbeingLogs, consumptions, currentDate]);
 
   // Prepara timeline para o dia selecionado
@@ -147,15 +170,28 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     return '→';
   };
 
+  const minutesToTimeStr = (minutes) => {
+    const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+    const mins = (minutes % 60).toString().padStart(2, '0');
+    return `${hours}:${mins}`;
+  };
+
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0]?.payload;
       return (
         <div className={`p-2 rounded text-xs ${darkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-800 border border-gray-300'}`}>
+          <p className="font-semibold mb-1">{data?.time}</p>
           {payload.map((entry, idx) => (
-            <p key={idx} style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
-            </p>
+            entry.value !== null && (
+              <p key={idx} style={{ color: entry.color }}>
+                {entry.name}: {entry.value}
+              </p>
+            )
           ))}
+          {data?.hasConsumption && (
+            <p className="mt-1 text-red-500 font-semibold">💊 {data.consumptionCount} consumo{data.consumptionCount !== 1 ? 's' : ''}</p>
+          )}
         </div>
       );
     }
@@ -304,19 +340,23 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {viewMode === 'scatter' && (
         <div>
           <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
               <XAxis
-                dataKey="time"
-                tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
+                type="number"
+                dataKey="minutesSinceMidnight"
+                domain={[0, 1440]}
+                ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
+                tickFormatter={(minutes) => minutesToTimeStr(minutes)}
+                tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
                 angle={-45}
-                height={80}
+                height={100}
                 label={{
-                  value: chartData.filter(d => d.isConsumption).map(d => d.time).join(' 💊 '),
+                  value: '⏰ Horas do Dia | 💊 = Consumo',
                   position: 'bottom',
-                  offset: 40,
-                  fill: '#ef4444',
-                  fontSize: 10
+                  offset: 50,
+                  fill: darkMode ? '#aaa' : '#333',
+                  fontSize: 11
                 }}
               />
               <YAxis
@@ -334,7 +374,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 name="Humor"
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.isConsumption) return null;
+                  if (payload.hasConsumption && !payload.mood) return null;
                   return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
                 }}
                 strokeWidth={3}
@@ -350,7 +390,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 strokeDasharray="5 5"
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.isConsumption) return null;
+                  if (payload.hasConsumption && !payload.energy) return null;
                   return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
                 }}
                 strokeWidth={3}
@@ -362,7 +402,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul: Humor | ● Laranja: Energia | 💊 Consumos</p>
+            <p>● Azul sólida: Humor | ● Laranja tracejada: Energia | Passe o rato para ver consumos (💊)</p>
           </div>
         </div>
       )}
@@ -371,19 +411,23 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {viewMode === 'step' && (
         <div>
           <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
               <XAxis
-                dataKey="time"
-                tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
+                type="number"
+                dataKey="minutesSinceMidnight"
+                domain={[0, 1440]}
+                ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
+                tickFormatter={(minutes) => minutesToTimeStr(minutes)}
+                tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
                 angle={-45}
-                height={80}
+                height={100}
                 label={{
-                  value: chartData.filter(d => d.isConsumption).map(d => d.time).join(' 💊 '),
+                  value: '⏰ Horas do Dia | 💊 = Consumo',
                   position: 'bottom',
-                  offset: 40,
-                  fill: '#ef4444',
-                  fontSize: 10
+                  offset: 50,
+                  fill: darkMode ? '#aaa' : '#333',
+                  fontSize: 11
                 }}
               />
               <YAxis
@@ -401,7 +445,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 name="Humor"
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.isConsumption) return null;
+                  if (payload.hasConsumption && !payload.mood) return null;
                   return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
                 }}
                 strokeWidth={3}
@@ -417,7 +461,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 strokeDasharray="5 5"
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.isConsumption) return null;
+                  if (payload.hasConsumption && !payload.energy) return null;
                   return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
                 }}
                 strokeWidth={3}
@@ -429,7 +473,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul: Humor | ● Laranja: Energia | 💊 Consumos</p>
+            <p>● Azul sólida: Humor | ● Laranja tracejada: Energia | Passe o rato para ver consumos (💊)</p>
           </div>
         </div>
       )}
