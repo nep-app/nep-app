@@ -4716,7 +4716,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
                                                                     });
 
-                                                                    if (bidirectional.length >= 2) {
+                                                                    if (bidirectional.length >= 1) {
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
@@ -4733,7 +4733,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Sono
                                                                         const sleepCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
                                                                         const sleepData = bidirectional.filter(d => d.nextSleep !== null);
-                                                                        if (sleepData.length >= 2) {
+                                                                        if (sleepData.length >= 1) {
                                                                             const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Sono',
@@ -4748,7 +4748,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Humor
                                                                         const moodCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
                                                                         const moodData = bidirectional.filter(d => d.nextMood !== null);
-                                                                        if (moodData.length >= 2) {
+                                                                        if (moodData.length >= 1) {
                                                                             const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Humor',
@@ -4763,7 +4763,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         // Energia
                                                                         const energyCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
                                                                         const energyData = bidirectional.filter(d => d.nextEnergy !== null);
-                                                                        if (energyData.length >= 2) {
+                                                                        if (energyData.length >= 1) {
                                                                             const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
                                                                             bidirCorrelations.push({
                                                                                 name: 'Energia',
@@ -4847,7 +4847,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
                                                                     });
 
-                                                                    if (sameDaySleepMood.length >= 2 || nextDaySleepMood.length >= 2) {
+                                                                    if (sameDaySleepMood.length >= 1 || nextDaySleepMood.length >= 1) {
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                             if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais sono → Muito melhor humor' };
@@ -4861,7 +4861,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                                                                         const sleepMoodCorrelations = [];
 
-                                                                        if (sameDaySleepMood.length >= 2) {
+                                                                        if (sameDaySleepMood.length >= 1) {
                                                                             const corr = calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                                                                             const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
@@ -4875,7 +4875,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             });
                                                                         }
 
-                                                                        if (nextDaySleepMood.length >= 2) {
+                                                                        if (nextDaySleepMood.length >= 1) {
                                                                             const corr = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
                                                                             const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
