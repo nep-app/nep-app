@@ -13,7 +13,6 @@ import { useUI } from './contexts/UIContext';
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
 // Lazy load views (only load when user navigates to them)
-const ResourcesView = lazy(() => import('./views/ResourcesView').then(module => ({ default: module.ResourcesView })));
 const SettingsView = lazy(() => import('./views/SettingsView').then(module => ({ default: module.SettingsView })));
 
 // Lazy load modals (only load when user opens them)
@@ -5502,15 +5501,6 @@ function HarmReductionTracker() {
                                     })()}
                                 </div>
                             )}
-                            {currentView === 'resources' && (
-                                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
-                                    <ResourcesView
-                                        darkMode={darkMode}
-                                        notificationsEnabled={notificationsEnabled}
-                                        requestNotificationPermission={requestNotificationPermission}
-                                    />
-                                </Suspense>
-                            )}
                             {currentView === 'settings' && (
                                 <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
                                     <SettingsView
@@ -5598,7 +5588,7 @@ function HarmReductionTracker() {
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
-                                <div className="grid grid-cols-6 gap-1">
+                                <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
@@ -5614,10 +5604,6 @@ function HarmReductionTracker() {
                                     <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.BookOpen className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Histórico</div>
-                                    </button>
-                                    <button onClick={() => setCurrentView('resources')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'resources' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                                        <Icons.TrendingDown className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Recursos</div>
                                     </button>
                                     <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.Settings className="w-5 h-5" />
