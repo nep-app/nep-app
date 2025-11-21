@@ -412,10 +412,24 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const submitWellbeing = async () => {
                 try {
                     const currentCycle = getCurrentCycleId();
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, sleep: parseFloat(wellbeingForm.sleep), mood: parseInt(wellbeingForm.mood), energy: parseInt(wellbeingForm.energy), water: wellbeingForm.water, rest: wellbeingForm.rest, social: wellbeingForm.social, food: wellbeingForm.food, emotions: wellbeingForm.emotions, notes: wellbeingForm.notes };
+                    const item = {
+                        id: genId(),
+                        date: getTodayKey(),
+                        timestamp: new Date().toISOString(),
+                        cycleId: currentCycle,
+                        sleep: wellbeingForm.sleep !== '' ? parseFloat(wellbeingForm.sleep) : null,
+                        mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
+                        energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
+                        water: wellbeingForm.water,
+                        rest: wellbeingForm.rest,
+                        social: wellbeingForm.social,
+                        food: wellbeingForm.food,
+                        emotions: wellbeingForm.emotions,
+                        notes: wellbeingForm.notes
+                    };
                     setWellbeingLogs(prev => [item, ...prev]);
                     await saveToFirebase('wellbeingLogs', item);
-                    setWellbeingForm({ sleep: 7, mood: 5, energy: 5, water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+                    setWellbeingForm({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
                     showToast('✓ Bem-estar guardado', 'success');
                 } catch (error) {
