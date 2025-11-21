@@ -146,9 +146,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       </div>
 
       {/* SCATTER CHART */}
-      <div className="w-full overflow-x-auto">
-        <div style={{ minWidth: '900px' }}>
-          <ResponsiveContainer width="100%" height={600}>
+      <div className="w-full">
+        <ResponsiveContainer width="100%" height={600}>
             <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 50, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
             <XAxis
@@ -226,7 +225,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               ))}
           </LineChart>
         </ResponsiveContainer>
-        </div>
       </div>
     </div>
   );
