@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence } from 'firebase/firestore';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
-import { firebaseConfig } from './utils/firebase';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as Icons from './components/Icons';
+import { useData } from './contexts/DataContext';
+import { useUI } from './contexts/UIContext';
 
 // Lazy load heavy chart component (saves ~200KB on initial load)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -28,11 +28,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
         function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
-            // 2.1 Firebase & Auth State
-            const [firebaseInitialized, setFirebaseInitialized] = useState(false);
-            const [db, setDb] = useState(null);
-            const [auth, setAuth] = useState(null);
-            const [user, setUser] = useState(null);
+            // Use contexts for data and UI state
+            const { auth, db, user, loading: dataLoading, consumptions, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
+            const { darkMode } = useUI();
+
+            // 2.1 Auth State (local)
             const [isLogin, setIsLogin] = useState(true);
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -43,15 +43,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             // 2.2 UI Navigation State
             const [currentView, setCurrentView] = useState('home');
 
-            // 2.3 Data State (from Firebase)
-            const [consumptions, setConsumptions] = useState([]);
+            // 2.3 Legacy states (kept for compatibility)
             const [dailyLogs, setDailyLogs] = useState([]);
-            const [wellbeingLogs, setWellbeingLogs] = useState([]);
-            const [reflections, setReflections] = useState([]);
-            const [cycles, setCycles] = useState([]);
-            const [goals, setGoals] = useState([]);
-            // Dark mode is now permanently enabled
-            const darkMode = true;
             const [timeFilter, setTimeFilter] = useState('all');
             const [patternsPeriod, setPatternsPeriod] = useState('tudo'); // hoje, semana, mes, tudo
             const [patternsPeriodOffset, setPatternsPeriodOffset] = useState(0); // 0 = current, 1 = previous, etc
@@ -247,11 +240,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 document.body.classList.add('dark');
             }, []);
 
-            useEffect(() => { const app = initializeApp(firebaseConfig); const dbInstance = getFirestore(app); const authInstance = getAuth(app); enableIndexedDbPersistence(dbInstance).catch(() => {}); setDb(dbInstance); setAuth(authInstance); setFirebaseInitialized(true); }, []);
-
-            useEffect(() => { if (!auth) return; onAuthStateChanged(auth, (user) => { setUser(user); }); }, [auth]);
-
-            useEffect(() => { if (!user || !db) return; const unsubs = [onSnapshot(collection(db, `users/${user.uid}/consumptions`), snap => setConsumptions(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), snap => setDailyLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), snap => setWellbeingLogs(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/reflections`), snap => setReflections(snap.docs.map(d => d.data()).sort((a,b) => b.date.localeCompare(a.date)))), onSnapshot(collection(db, `users/${user.uid}/cycles`), snap => setCycles(snap.docs.map(d => d.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp)))), onSnapshot(collection(db, `users/${user.uid}/goals`), snap => setGoals(snap.docs.map(d => d.data())))]; return () => unsubs.forEach(u => u()); }, [user, db]);
+            // Firebase initialization and listeners now handled by DataContext
 
             // Auto-associate consumptions to cycles when data is loaded
             useEffect(() => {
