@@ -338,6 +338,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
                 }}
                 strokeWidth={3}
+                connectNulls={true}
                 isAnimationActive={false}
               />
 
@@ -353,19 +354,11 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
                 }}
                 strokeWidth={3}
+                connectNulls={true}
                 isAnimationActive={false}
               />
 
-              {/* Marcadores de consumo */}
-              {chartData.filter(d => d.isConsumption).map((point, idx) => (
-                <ReferenceLine
-                  key={idx}
-                  x={point.time}
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  opacity={0.5}
-                />
-              ))}
+              {/* Consumos já aparecem no eixo X com 💊 */}
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -412,6 +405,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
                 }}
                 strokeWidth={3}
+                connectNulls={true}
                 isAnimationActive={false}
               />
 
@@ -427,19 +421,11 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                   return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
                 }}
                 strokeWidth={3}
+                connectNulls={true}
                 isAnimationActive={false}
               />
 
-              {/* Marcadores de consumo */}
-              {chartData.filter(d => d.isConsumption).map((point, idx) => (
-                <ReferenceLine
-                  key={idx}
-                  x={point.time}
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  opacity={0.5}
-                />
-              ))}
+              {/* Consumos já aparecem no eixo X com 💊 */}
             </LineChart>
           </ResponsiveContainer>
           <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
