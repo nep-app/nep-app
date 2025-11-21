@@ -110,17 +110,31 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     if (active && payload && payload.length) {
       const data = payload[0]?.payload;
       return (
-        <div className={`p-2 rounded text-xs ${darkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-800 border border-gray-300'}`}>
-          <p className="font-semibold mb-1">{data?.time}</p>
-          {payload.map((entry, idx) => (
-            entry.value !== null && entry.name !== 'Consumos' && (
-              <p key={idx} style={{ color: entry.color }}>
-                {entry.name}: {entry.value}
-              </p>
-            )
-          ))}
+        <div className={`p-4 rounded-lg shadow-xl border-2 ${darkMode ? 'bg-gray-900 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}>
+          <p className="font-bold mb-3 text-base pb-2 border-b" style={{ borderColor: darkMode ? '#444' : '#ddd' }}>
+            🕐 {data?.time}
+          </p>
+          <div className="space-y-2 mt-2">
+            {payload.map((entry, idx) => (
+              entry.value !== null && entry.name !== 'Consumos' && (
+                <div key={idx} className="flex items-center justify-between gap-4">
+                  <span className="font-medium text-sm">{entry.name}:</span>
+                  <span className="font-bold text-lg px-2 py-1 rounded" style={{
+                    color: entry.color,
+                    backgroundColor: `${entry.color}20`
+                  }}>
+                    {entry.value}
+                  </span>
+                </div>
+              )
+            ))}
+          </div>
           {data?.hasConsumption && (
-            <p className="mt-1 text-red-500 font-semibold">💊 {data.consumptionCount} consumo{data.consumptionCount !== 1 ? 's' : ''}</p>
+            <div className="mt-3 pt-2 border-t" style={{ borderColor: darkMode ? '#444' : '#ddd' }}>
+              <p className="text-red-500 font-bold text-sm flex items-center gap-2">
+                💊 <span className="text-base">{data.consumptionCount}</span> consumo{data.consumptionCount !== 1 ? 's' : ''}
+              </p>
+            </div>
           )}
         </div>
       );
@@ -163,10 +177,28 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
             <YAxis
               domain={[0, 10]}
               ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
+              tick={{ fontSize: 14, fill: darkMode ? '#ccc' : '#444', fontWeight: 600 }}
+              width={35}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '0px', color: darkMode ? '#999' : '#666' }} />
+            <Legend
+              wrapperStyle={{
+                paddingTop: '10px',
+                paddingBottom: '5px'
+              }}
+              iconSize={16}
+              iconType="line"
+              formatter={(value, entry) => (
+                <span style={{
+                  color: darkMode ? '#ddd' : '#333',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  marginLeft: '8px'
+                }}>
+                  {value}
+                </span>
+              )}
+            />
 
             <Line
               type="linear"
