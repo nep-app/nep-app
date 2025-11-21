@@ -327,7 +327,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             const handleLogout = () => { signOut(auth); };
 
-            const saveToFirebase = async (collectionName, entry) => { if (!user || !db) return;  await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry); };
+            const saveToFirebase = async (collectionName, entry) => {
+                if (!user || !db) throw new Error('Não autenticado. Por favor faz login novamente.');
+                await setDoc(doc(db, `users/${user.uid}/${collectionName}`, entry.id), entry);
+            };
 
             const markConsumption = async () => {
                 try {
