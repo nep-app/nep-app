@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const DataContext = createContext();
@@ -18,10 +18,21 @@ export const DataProvider = ({ children }) => {
   // Initialize Firebase (only once)
   const { app, auth, db } = useMemo(() => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const dbInstance = getFirestore(firebaseApp);
+
+    // Enable offline persistence (original behavior)
+    enableIndexedDbPersistence(dbInstance).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.log('Persistence: múltiplos tabs abertos');
+      } else if (err.code === 'unimplemented') {
+        console.log('Persistence: browser não suporta');
+      }
+    });
+
     return {
       app: firebaseApp,
       auth: getAuth(firebaseApp),
-      db: getFirestore(firebaseApp)
+      db: dbInstance
     };
   }, []);
 
