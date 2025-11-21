@@ -207,56 +207,15 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
   }
 
   return (
-    <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-      {/* Header com seletor de data e visualização */}
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <div className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-          📈 Evolução de Bem-estar & Consumos
-        </div>
-
-        {/* Seletor de datas */}
-        <div className="flex gap-2 items-center">
-          <button
-            onClick={() => {
-              const currentIdx = availableDates.indexOf(currentDate);
-              if (currentIdx < availableDates.length - 1) {
-                setSelectedDate(availableDates[currentIdx + 1]);
-              }
-            }}
-            disabled={availableDates.indexOf(currentDate) >= availableDates.length - 1}
-            className={`text-xs px-2 py-1 rounded ${
-              availableDates.indexOf(currentDate) >= availableDates.length - 1
-                ? (darkMode ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed')
-                : (darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-300 text-gray-700 hover:bg-gray-400')
-            }`}
-          >
-            ←
-          </button>
-
-          <div className={`text-xs px-3 py-1 rounded font-medium ${darkMode ? 'bg-gray-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
-            {getDayLabel(currentDate)}
-          </div>
-
-          <button
-            onClick={() => {
-              const currentIdx = availableDates.indexOf(currentDate);
-              if (currentIdx > 0) {
-                setSelectedDate(availableDates[currentIdx - 1]);
-              }
-            }}
-            disabled={availableDates.indexOf(currentDate) <= 0}
-            className={`text-xs px-2 py-1 rounded ${
-              availableDates.indexOf(currentDate) <= 0
-                ? (darkMode ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-400 cursor-not-allowed')
-                : (darkMode ? 'bg-gray-600 text-gray-300 hover:bg-gray-500' : 'bg-gray-300 text-gray-700 hover:bg-gray-400')
-            }`}
-          >
-            →
-          </button>
+    <div className={`rounded-lg p-2 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+      {/* Header compacto com seletor de visualização */}
+      <div className="flex justify-between items-center mb-2 flex-wrap gap-1">
+        <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+          📈
         </div>
 
         {/* Seletor de visualização */}
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             onClick={() => setViewMode('timeline')}
             className={`text-xs px-2 py-1 rounded ${
@@ -352,7 +311,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 angle={-45}
                 height={100}
                 label={{
-                  value: '⏰ Horas do Dia | 💊 = Consumo',
+                  value: '⏰ Horas do Dia',
                   position: 'bottom',
                   offset: 50,
                   fill: darkMode ? '#aaa' : '#333',
@@ -398,12 +357,20 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 isAnimationActive={false}
               />
 
-              {/* Consumos já aparecem no eixo X com 💊 */}
+              {/* Marcas de consumo no eixo X */}
+              {chartData
+                .filter(d => d.hasConsumption)
+                .map((d, idx) => (
+                  <ReferenceLine
+                    key={idx}
+                    x={d.minutesSinceMidnight}
+                    stroke="rgba(239, 68, 68, 0.2)"
+                    strokeDasharray="2 2"
+                    label={{ value: '💊', position: 'top', fill: '#ef4444', fontSize: 14 }}
+                  />
+                ))}
             </LineChart>
           </ResponsiveContainer>
-          <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul sólida: Humor | ● Laranja tracejada: Energia | Passe o rato para ver consumos (💊)</p>
-          </div>
         </div>
       )}
 
@@ -423,7 +390,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 angle={-45}
                 height={100}
                 label={{
-                  value: '⏰ Horas do Dia | 💊 = Consumo',
+                  value: '⏰ Horas do Dia',
                   position: 'bottom',
                   offset: 50,
                   fill: darkMode ? '#aaa' : '#333',
@@ -469,12 +436,20 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
                 isAnimationActive={false}
               />
 
-              {/* Consumos já aparecem no eixo X com 💊 */}
+              {/* Marcas de consumo no eixo X */}
+              {chartData
+                .filter(d => d.hasConsumption)
+                .map((d, idx) => (
+                  <ReferenceLine
+                    key={idx}
+                    x={d.minutesSinceMidnight}
+                    stroke="rgba(239, 68, 68, 0.2)"
+                    strokeDasharray="2 2"
+                    label={{ value: '💊', position: 'top', fill: '#ef4444', fontSize: 14 }}
+                  />
+                ))}
             </LineChart>
           </ResponsiveContainer>
-          <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <p>● Azul sólida: Humor | ● Laranja tracejada: Energia | Passe o rato para ver consumos (💊)</p>
-          </div>
         </div>
       )}
     </div>
