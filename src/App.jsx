@@ -376,11 +376,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
             const saveEditedConsumption = async () => {
-                if (!editingConsumption || !user || !db) return;
-                
+                if (!editingConsumption) return;
+
                 try {
-                    await setDoc(doc(db, `users/${user.uid}/consumptions`, editingConsumption.id), editingConsumption);
-                    setConsumptions(prev => prev.map(c => c.id === editingConsumption.id ? editingConsumption : c));
+                    await addConsumption(editingConsumption);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast('✓ Consumo editado', 'success');
