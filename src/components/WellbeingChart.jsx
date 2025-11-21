@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }) => {
-  const [viewMode, setViewMode] = useState('timeline'); // 'timeline', 'scatter', 'step'
   const [selectedDate, setSelectedDate] = useState(null); // Data selecionada
 
   // Encontra todas as datas únicas com bem-estar registado
@@ -101,75 +100,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     return data;
   }, [wellbeingLogs, consumptions, currentDate]);
 
-  // Prepara timeline para o dia selecionado
-  const timeline = useMemo(() => {
-    if (wellbeingLogs.length === 0 || !currentDate) return [];
-
-    const selectedLogs = wellbeingLogs
-      .filter(log => log.date === currentDate)
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-    if (selectedLogs.length === 0) return [];
-
-    return selectedLogs.map((log, idx) => {
-      const currentTime = new Date(log.timestamp);
-      const currentTimeStr = currentTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-
-      let diff = null;
-      let previousTimeStr = null;
-      let consumptionsBetween = 0;
-      let arrow = null;
-
-      if (idx > 0) {
-        const previousLog = selectedLogs[idx - 1];
-        const previousTime = new Date(previousLog.timestamp);
-        previousTimeStr = previousTime.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-
-        const moodDiff = log.mood - previousLog.mood;
-        const energyDiff = log.energy - previousLog.energy;
-
-        if (moodDiff > 0.5 && energyDiff > 0.5) {
-          arrow = '↑';
-        } else if (moodDiff < -0.5 && energyDiff < -0.5) {
-          arrow = '↓';
-        } else {
-          arrow = '→';
-        }
-
-        const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
-        consumptionsBetween = selectedConsumptions.filter(c => {
-          const consTime = new Date(c.timestamp);
-          return consTime > previousTime && consTime <= currentTime;
-        }).length;
-
-        diff = { mood: moodDiff, energy: energyDiff };
-      }
-
-      return {
-        time: currentTimeStr,
-        mood: log.mood,
-        energy: log.energy,
-        diff,
-        previousTime: previousTimeStr,
-        consumptionsBetween,
-        arrow
-      };
-    });
-  }, [wellbeingLogs, consumptions, currentDate]);
-
-
-  const getColorForDiff = (value) => {
-    if (value > 0.5) return darkMode ? 'text-green-400' : 'text-green-600';
-    if (value < -0.5) return darkMode ? 'text-red-400' : 'text-red-600';
-    return darkMode ? 'text-gray-400' : 'text-gray-600';
-  };
-
-  const getDiffIcon = (value) => {
-    if (value > 0.5) return '↑';
-    if (value < -0.5) return '↓';
-    return '→';
-  };
-
   const minutesToTimeStr = (minutes) => {
     const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
     const mins = (minutes % 60).toString().padStart(2, '0');
@@ -183,7 +113,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         <div className={`p-2 rounded text-xs ${darkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-800 border border-gray-300'}`}>
           <p className="font-semibold mb-1">{data?.time}</p>
           {payload.map((entry, idx) => (
-            entry.value !== null && (
+            entry.value !== null && entry.name !== 'Consumos' && (
               <p key={idx} style={{ color: entry.color }}>
                 {entry.name}: {entry.value}
               </p>
@@ -208,250 +138,94 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
   return (
     <div className={`rounded-lg p-2 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-      {/* Header compacto com seletor de visualização */}
+      {/* Header compacto */}
       <div className="flex justify-between items-center mb-2 flex-wrap gap-1">
         <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
           📈
         </div>
-
-        {/* Seletor de visualização */}
-        <div className="flex gap-1">
-          <button
-            onClick={() => setViewMode('timeline')}
-            className={`text-xs px-2 py-1 rounded ${
-              viewMode === 'timeline'
-                ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white')
-                : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')
-            }`}
-          >
-            Timeline
-          </button>
-          <button
-            onClick={() => setViewMode('scatter')}
-            className={`text-xs px-2 py-1 rounded ${
-              viewMode === 'scatter'
-                ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white')
-                : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')
-            }`}
-          >
-            Scatter
-          </button>
-          <button
-            onClick={() => setViewMode('step')}
-            className={`text-xs px-2 py-1 rounded ${
-              viewMode === 'step'
-                ? (darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white')
-                : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700')
-            }`}
-          >
-            Step
-          </button>
-        </div>
       </div>
 
-      {/* TIMELINE VIEW */}
-      {viewMode === 'timeline' && (
-        <div className="space-y-4">
-          {timeline.map((entry, idx) => (
-            <div key={idx}>
-              <div className={'flex items-center gap-2 text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
-                {entry.arrow ? (
-                  <span className="text-lg">{entry.arrow}</span>
-                ) : (
-                  <span className="text-lg">•</span>
-                )}
-                <span>{entry.time}</span>
-                {entry.consumptionsBetween > 0 && (
-                  <span className="text-xs ml-2">
-                    💊 {entry.consumptionsBetween} consumo{entry.consumptionsBetween !== 1 ? 's' : ''} desde {entry.previousTime}
-                  </span>
-                )}
-                {entry.previousTime && entry.consumptionsBetween === 0 && (
-                  <span className={`text-xs ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    (sem consumos desde {entry.previousTime})
-                  </span>
-                )}
-              </div>
+      {/* SCATTER CHART */}
+      <div>
+        <ResponsiveContainer width="100%" height={600}>
+          <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 50, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
+            <XAxis
+              type="number"
+              dataKey="minutesSinceMidnight"
+              domain={[0, 1440]}
+              ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
+              tickFormatter={(minutes) => minutesToTimeStr(minutes)}
+              tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
+              angle={-45}
+              height={80}
+            />
+            <YAxis
+              domain={[0, 10]}
+              ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+              tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ paddingTop: '5px', color: darkMode ? '#999' : '#666' }} />
 
-              <div className={'text-sm ml-6 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                Humor: {entry.mood}
-                {entry.diff && (
-                  <span className={`ml-2 font-medium ${getColorForDiff(entry.diff.mood)}`}>
-                    ({getDiffIcon(entry.diff.mood)} {entry.diff.mood > 0 ? '+' : ''}{entry.diff.mood.toFixed(0)})
-                  </span>
-                )}
-              </div>
+            <Line
+              type="linear"
+              dataKey="mood"
+              stroke="#3b82f6"
+              name="Humor"
+              dot={(props) => {
+                const { cx, cy, payload } = props;
+                if (payload.hasConsumption && !payload.mood) return null;
+                return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
+              }}
+              strokeWidth={3}
+              connectNulls={true}
+              isAnimationActive={false}
+            />
 
-              <div className={'text-sm ml-6 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                Energia: {entry.energy}
-                {entry.diff && (
-                  <span className={`ml-2 font-medium ${getColorForDiff(entry.diff.energy)}`}>
-                    ({getDiffIcon(entry.diff.energy)} {entry.diff.energy > 0 ? '+' : ''}{entry.diff.energy.toFixed(0)})
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            <Line
+              type="linear"
+              dataKey="energy"
+              stroke="#f59e0b"
+              name="Energia"
+              strokeDasharray="5 5"
+              dot={(props) => {
+                const { cx, cy, payload } = props;
+                if (payload.hasConsumption && !payload.energy) return null;
+                return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
+              }}
+              strokeWidth={3}
+              connectNulls={true}
+              isAnimationActive={false}
+            />
 
-      {/* SCATTER CHART VIEW */}
-      {viewMode === 'scatter' && (
-        <div>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
-              <XAxis
-                type="number"
-                dataKey="minutesSinceMidnight"
-                domain={[0, 1440]}
-                ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
-                tickFormatter={(minutes) => minutesToTimeStr(minutes)}
-                tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
-                angle={-45}
-                height={100}
-                label={{
-                  value: '⏰ Horas do Dia',
-                  position: 'bottom',
-                  offset: 50,
-                  fill: darkMode ? '#aaa' : '#333',
-                  fontSize: 11
-                }}
-              />
-              <YAxis
-                domain={[0, 10]}
-                tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
-                label={{ value: 'Valor (0-10)', angle: -90, position: 'insideLeft', offset: 10 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
+            {/* Linha invisível só para legenda de Consumos */}
+            <Line
+              type="linear"
+              dataKey={null}
+              stroke="#ef4444"
+              name="💊 Consumos"
+              strokeWidth={0}
+              dot={false}
+              legendType="line"
+              isAnimationActive={false}
+            />
 
-              <Line
-                type="linear"
-                dataKey="mood"
-                stroke="#3b82f6"
-                name="Humor"
-                dot={(props) => {
-                  const { cx, cy, payload } = props;
-                  if (payload.hasConsumption && !payload.mood) return null;
-                  return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
-                }}
-                strokeWidth={3}
-                connectNulls={true}
-                isAnimationActive={false}
-              />
-
-              <Line
-                type="linear"
-                dataKey="energy"
-                stroke="#f59e0b"
-                name="Energia"
-                strokeDasharray="5 5"
-                dot={(props) => {
-                  const { cx, cy, payload } = props;
-                  if (payload.hasConsumption && !payload.energy) return null;
-                  return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
-                }}
-                strokeWidth={3}
-                connectNulls={true}
-                isAnimationActive={false}
-              />
-
-              {/* Marcas de consumo no eixo X */}
-              {chartData
-                .filter(d => d.hasConsumption)
-                .map((d, idx) => (
-                  <ReferenceLine
-                    key={idx}
-                    x={d.minutesSinceMidnight}
-                    stroke="rgba(239, 68, 68, 0.2)"
-                    strokeDasharray="2 2"
-                    label={{ value: '💊', position: 'top', fill: '#ef4444', fontSize: 14 }}
-                  />
-                ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* STEP CHART VIEW */}
-      {viewMode === 'step' && (
-        <div>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 80, left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
-              <XAxis
-                type="number"
-                dataKey="minutesSinceMidnight"
-                domain={[0, 1440]}
-                ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
-                tickFormatter={(minutes) => minutesToTimeStr(minutes)}
-                tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
-                angle={-45}
-                height={100}
-                label={{
-                  value: '⏰ Horas do Dia',
-                  position: 'bottom',
-                  offset: 50,
-                  fill: darkMode ? '#aaa' : '#333',
-                  fontSize: 11
-                }}
-              />
-              <YAxis
-                domain={[0, 10]}
-                tick={{ fontSize: 12, fill: darkMode ? '#999' : '#666' }}
-                label={{ value: 'Valor (0-10)', angle: -90, position: 'insideLeft', offset: 10 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ paddingTop: '20px', color: darkMode ? '#999' : '#666' }} />
-
-              <Line
-                type="stepAfter"
-                dataKey="mood"
-                stroke="#3b82f6"
-                name="Humor"
-                dot={(props) => {
-                  const { cx, cy, payload } = props;
-                  if (payload.hasConsumption && !payload.mood) return null;
-                  return <circle cx={cx} cy={cy} r={7} fill="#3b82f6" />;
-                }}
-                strokeWidth={3}
-                connectNulls={true}
-                isAnimationActive={false}
-              />
-
-              <Line
-                type="stepAfter"
-                dataKey="energy"
-                stroke="#f59e0b"
-                name="Energia"
-                strokeDasharray="5 5"
-                dot={(props) => {
-                  const { cx, cy, payload } = props;
-                  if (payload.hasConsumption && !payload.energy) return null;
-                  return <circle cx={cx} cy={cy} r={7} fill="#f59e0b" />;
-                }}
-                strokeWidth={3}
-                connectNulls={true}
-                isAnimationActive={false}
-              />
-
-              {/* Marcas de consumo no eixo X */}
-              {chartData
-                .filter(d => d.hasConsumption)
-                .map((d, idx) => (
-                  <ReferenceLine
-                    key={idx}
-                    x={d.minutesSinceMidnight}
-                    stroke="rgba(239, 68, 68, 0.2)"
-                    strokeDasharray="2 2"
-                    label={{ value: '💊', position: 'top', fill: '#ef4444', fontSize: 14 }}
-                  />
-                ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+            {/* Marcas de consumo no eixo X */}
+            {chartData
+              .filter(d => d.hasConsumption)
+              .map((d, idx) => (
+                <ReferenceLine
+                  key={idx}
+                  x={d.minutesSinceMidnight}
+                  stroke="rgba(239, 68, 68, 0.2)"
+                  strokeDasharray="2 2"
+                  label={{ value: '💊', position: 'top', fill: '#ef4444', fontSize: 14 }}
+                />
+              ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
