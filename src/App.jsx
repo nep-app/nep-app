@@ -3863,7 +3863,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             {/* Paragraph 8: Self-Care Analysis */}
                                                                             {(() => {
                                                                                 const periodWellbeing = analysisWellbeing;
-                                                                                if (periodWellbeing.length < 3) return null;
+                                                                                if (periodWellbeing.length < 1) return null;
                 
                                                                                 const areas = { water: 0, food: 0, rest: 0, social: 0 };
                                                                                 periodWellbeing.forEach(w => {
@@ -3953,7 +3953,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                     }
                                                                                 }
                 
-                                                                                if (nextDaySleepMood.length < 3) return null;
+                                                                                if (nextDaySleepMood.length < 2) return null;
                 
                                                                                 const correlation = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                                 if (correlation === null) return null;
@@ -4008,7 +4008,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                     }
                                                                                 }
                 
-                                                                                if (nextDayData.length < 3) return null;
+                                                                                if (nextDayData.length < 2) return null;
                 
                                                                                 const validMoodData = nextDayData.filter(d => d.mood !== null);
                                                                                 const validEnergyData = nextDayData.filter(d => d.energy !== null);
@@ -4047,7 +4047,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             {/* Paragraph 10c: Perfil de Risco */}
                                                                             {(() => {
                                                                                 // Identificar condições que precedem dias com mais consumo
-                                                                                if (analysisConsumptions.length < 5 || analysisWellbeing.length < 3) return null;
+                                                                                if (analysisConsumptions.length < 2 || analysisWellbeing.length < 1) return null;
                 
                                                                                 const dailyProfile = {};
                 
@@ -4081,7 +4081,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 
                                                                                 // Identificar "dias de alto risco" (top 33% de consumo)
                                                                                 const daysWithData = Object.values(dailyProfile).filter(d => d.consumptions > 0);
-                                                                                if (daysWithData.length < 3) return null;
+                                                                                if (daysWithData.length < 1) return null;
                 
                                                                                 daysWithData.sort((a, b) => b.consumptions - a.consumptions);
                                                                                 const highRiskDays = daysWithData.slice(0, Math.ceil(daysWithData.length / 3));
@@ -4577,13 +4577,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         console.log('🔍 daysWithData length:', daysWithData.length);
                                                         console.log('🔍 daysWithData sample:', daysWithData.slice(0, 3));
 
-                                                        if (daysWithData.length < 3) {
+                                                        if (daysWithData.length < 1) {
                                                             return (
                                                                 <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
                                                                     <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
                                                                     <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                        Precisas de pelo menos 3 dias com dados para análise de correlações.
+                                                                        Sem dados suficientes para análise de correlações neste momento.
                                                                     </p>
                                                                 </div>
                                                             );
