@@ -4974,42 +4974,35 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         });
                                                                     });
 
-                                                                    if (bedtimeConsumptionData.length >= 1) {
-                                                                        const correlation = calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions');
+                                                                    const getCorrelationLabel = (r) => {
+                                                                        if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                                                                        if (r < -0.7) return { text: 'Forte Negativa', color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
+                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
+                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
+                                                                        if (r > 0.7) return { text: 'Forte Positiva', color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
+                                                                        if (r > 0.4) return { text: 'Positiva', color: 'orange', desc: 'Deitar tarde → Mais consumo' };
+                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
+                                                                        return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
+                                                                    };
 
-                                                                        const getCorrelationLabel = (r) => {
-                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
-                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
-                                                                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
-                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
-                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
-                                                                            if (r > 0.4) return { text: 'Positiva', color: 'orange', desc: 'Deitar tarde → Mais consumo' };
-                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
-                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
-                                                                        };
+                                                                    const correlation = bedtimeConsumptionData.length >= 1 ? calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions') : null;
+                                                                    const label = getCorrelationLabel(correlation);
 
-                                                                        const label = getCorrelationLabel(correlation);
-                                                                        const avgBedtime = bedtimeConsumptionData.reduce((s, d) => s + d.bedtime, 0) / bedtimeConsumptionData.length;
-                                                                        const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
-                                                                        const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
-                                                                        const avgBedtimeMins = Math.round(adjustedMinutes % 60);
-                                                                        const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
-                                                                        const avgConsumptions = (bedtimeConsumptionData.reduce((s, d) => s + d.consumptions, 0) / bedtimeConsumptionData.length).toFixed(1);
+                                                                    const colorClasses = {
+                                                                        red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                        orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                        yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                        green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                        gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                    };
 
-                                                                        const colorClasses = {
-                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
-                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
-                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
-                                                                        };
-
-                                                                        return (
-                                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐💊 Hora de Deitar vs Consumo</h3>
-                                                                                <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                    Correlação entre a hora que te deitas e o consumo desse dia
-                                                                                </p>
+                                                                    return (
+                                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐💊 Hora de Deitar vs Consumo</h3>
+                                                                            <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                Correlação entre a hora que te deitas e o consumo desse dia
+                                                                            </p>
+                                                                            {bedtimeConsumptionData.length >= 1 ? (
                                                                                 <div className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
                                                                                     <div className="flex items-center justify-between mb-2">
                                                                                         <div className="flex items-center gap-2">
@@ -5022,9 +5015,15 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                     </div>
                                                                                     <div className="text-sm mb-2">
                                                                                         <span className="opacity-75">Hora média de deitar: </span>
-                                                                                        <span className="font-bold">{avgBedtimeStr}</span>
+                                                                                        <span className="font-bold">{(() => {
+                                                                                            const avgBedtime = bedtimeConsumptionData.reduce((s, d) => s + d.bedtime, 0) / bedtimeConsumptionData.length;
+                                                                                            const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
+                                                                                            const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                                            const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                                            return `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+                                                                                        })()}</span>
                                                                                         <span className="opacity-75"> • Consumo médio: </span>
-                                                                                        <span className="font-bold">{avgConsumptions}/dia</span>
+                                                                                        <span className="font-bold">{(bedtimeConsumptionData.reduce((s, d) => s + d.consumptions, 0) / bedtimeConsumptionData.length).toFixed(1)}/dia</span>
                                                                                     </div>
                                                                                     <div className="text-xs opacity-75">
                                                                                         {label.desc && <span>💡 {label.desc}</span>}
@@ -5032,11 +5031,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                         <span className="ml-2">• {bedtimeConsumptionData.length} dias</span>
                                                                                     </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        );
-                                                                    }
-
-                                                                    return null;
+                                                                            ) : (
+                                                                                <div className={'text-center py-6 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                    Sem dados de hora de deitar registados
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
                                                                 })()}
 
                                                                 {/* Análise Intraciclo */}
@@ -5346,7 +5347,18 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                             </div>
                                                                         );
                                                                     }
-                                                                    return null;
+
+                                                                    return (
+                                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔄 Análise Intraciclo Detalhada</h3>
+                                                                            <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono
+                                                                            </p>
+                                                                            <div className={'text-center py-6 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                Sem dados de ciclos com consumo e bem-estar registados
+                                                                            </div>
+                                                                        </div>
+                                                                    );
                                                                 })()}
                                                             </div>
                                                         );
