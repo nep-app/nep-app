@@ -14,6 +14,7 @@ const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
 // Lazy load views (only load when user navigates to them)
 const ResourcesView = lazy(() => import('./views/ResourcesView').then(module => ({ default: module.ResourcesView })));
+const SettingsView = lazy(() => import('./views/SettingsView').then(module => ({ default: module.SettingsView })));
 
 // Lazy load modals (only load when user opens them)
 const DailyLogModal = lazy(() => import('./components/modals/DailyLogModal').then(module => ({ default: module.DailyLogModal })));
@@ -1603,11 +1604,6 @@ function HarmReductionTracker() {
                                             <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
                                         </div>
                                     )}
-
-                                    <div className="flex gap-1">
-                                        <button onClick={exportToCSV} className="text-gray-500 hover:text-gray-300 p-2 rounded-lg transition-colors" title="Exportar dados"><Icons.Download className="w-4 h-4" /></button>
-                                        <button onClick={handleLogout} className="text-gray-500 hover:text-gray-300 p-2 rounded-lg transition-colors" title="Sair"><Icons.LogOut className="w-4 h-4" /></button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -5515,6 +5511,18 @@ function HarmReductionTracker() {
                                     />
                                 </Suspense>
                             )}
+                            {currentView === 'settings' && (
+                                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                                    <SettingsView
+                                        darkMode={darkMode}
+                                        user={user}
+                                        handleLogout={handleLogout}
+                                        exportToCSV={exportToCSV}
+                                        notificationsEnabled={notificationsEnabled}
+                                        requestNotificationPermission={requestNotificationPermission}
+                                    />
+                                </Suspense>
+                            )}
 
                         </div>
 
@@ -5590,7 +5598,7 @@ function HarmReductionTracker() {
 
                         <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
                             <div className="max-w-2xl mx-auto">
-                                <div className="grid grid-cols-5 gap-1">
+                                <div className="grid grid-cols-6 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
@@ -5610,6 +5618,10 @@ function HarmReductionTracker() {
                                     <button onClick={() => setCurrentView('resources')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'resources' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                         <Icons.TrendingDown className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Recursos</div>
+                                    </button>
+                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                        <Icons.Settings className="w-5 h-5" />
+                                        <div className="text-xs font-medium mt-1">Config</div>
                                     </button>
                                 </div>
                             </div>
