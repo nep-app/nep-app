@@ -4,6 +4,7 @@ import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
+import * as analyticsService from './services/analyticsService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useUI } from './contexts/UIContext';
@@ -26,22 +27,7 @@ import { InfoBadge } from './components/ui/InfoBadge';
 import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 
-// ===== UTILITY FUNCTIONS =====
-// Calculate Pearson correlation coefficient
-const calculatePearsonCorrelation = (data, xKey, yKey) => {
-    if (data.length < 2) return null;
-    const n = data.length;
-    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-    const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-    return denominator === 0 ? null : numerator / denominator;
-};
-
-        function HarmReductionTracker() {
+function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
             // Use contexts for data and UI state
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
@@ -495,144 +481,25 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
             // ===== 5. DATA PROCESSING & ANALYTICS =====
             // Memoized interval statistics (optimized to prevent re-calculation)
-            const intervalStats = useMemo(() => {
-                if (consumptions.length < 2) return null;
-                const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                const last20 = sorted.slice(-20);
-                const intervals = [];
-                for (let i = 1; i < last20.length; i++) {
-                    const diff = (new Date(last20[i].timestamp) - new Date(last20[i-1].timestamp)) / (1000 * 60 * 60);
-                    intervals.push({ hours: diff, date: last20[i].date, timestamp: last20[i].timestamp });
-                }
-                const avgHours = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
-                const shortIntervals = intervals.filter(i => i.hours < 2);
-                const shortByDay = {};
-                shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
-                return { avgHours: avgHours.toFixed(1), intervals: intervals.slice(-10).reverse(), shortIntervals: shortIntervals.length, shortByDay };
-            }, [consumptions]);
-
+            const intervalStats = useMemo(() => analyticsService.calculateIntervalStats(consumptions), [consumptions]);
             const getIntervalStats = () => intervalStats;
 
             // Memoized last interval calculation
-            const lastInterval = useMemo(() => {
-                if (consumptions.length < 2) return null;
-                const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
-                const last = new Date(sorted[0].timestamp);
-                const secondLast = new Date(sorted[1].timestamp);
-                const diffMs = last - secondLast;
-                const hours = diffMs / (1000 * 60 * 60);
-                return { hours: hours.toFixed(1), isShort: hours < 2 };
-            }, [consumptions]);
-
+            const lastInterval = useMemo(() => analyticsService.calculateLastInterval(consumptions), [consumptions]);
             const getLastInterval = () => lastInterval;
 
-            const getTimeSinceLastConsumption = () => {
-                if (consumptions.length === 0) return null;
-                const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
-                const last = new Date(sorted[0].timestamp);
-                const now = new Date();
-                const diffMs = now - last;
-                const hours = diffMs / (1000 * 60 * 60);
-
-                if (hours < 1) {
-                    const minutes = Math.floor((diffMs / (1000 * 60)));
-                    return { value: minutes, unit: 'min', hours: hours };
-                } else if (hours < 24) {
-                    return { value: hours.toFixed(1), unit: 'h', hours: hours };
-                } else {
-                    const days = Math.floor(hours / 24);
-                    const remainingHours = Math.floor(hours % 24);
-                    return { value: days, unit: days === 1 ? 'dia' : 'dias', subValue: remainingHours, subUnit: 'h', hours: hours };
-                }
-            };
+            // Time since last consumption
+            const getTimeSinceLastConsumption = () => analyticsService.calculateTimeSinceLastConsumption(consumptions);
 
             // Memoized today's consumptions
-            const todayConsumptions = useMemo(() =>
-                consumptions.filter(c => c.date === getTodayKey()),
-                [consumptions]
-            );
-
+            const todayConsumptions = useMemo(() => analyticsService.getTodayConsumptions(consumptions), [consumptions]);
             const getTodayConsumptions = () => todayConsumptions;
 
-            const getDateRangeForPeriod = (period, offset = 0) => {
-                console.log('🕐 getDateRangeForPeriod called:', { period, offset });
-                const now = new Date();
-                now.setHours(23, 59, 59, 999); // End of today
-                let start, end;
-
-                if (period === 'hoje') {
-                    // Today
-                    end = new Date(now);
-                    end.setDate(end.getDate() - offset);
-                    start = new Date(end);
-                    start.setHours(0, 0, 0, 0);
-                } else if (period === 'semana') {
-                    // Week (last 7 days)
-                    end = new Date(now);
-                    end.setDate(end.getDate() - (offset * 7));
-                    start = new Date(end);
-                    start.setDate(start.getDate() - 6);
-                    start.setHours(0, 0, 0, 0);
-                } else if (period === 'mes') {
-                    // Month (last 30 days)
-                    end = new Date(now);
-                    end.setDate(end.getDate() - (offset * 30));
-                    start = new Date(end);
-                    start.setDate(start.getDate() - 29);
-                    start.setHours(0, 0, 0, 0);
-                } else {
-                    // tudo (all time)
-                    console.log('⚠️ Returning null range (period = tudo)');
-                    return { start: null, end: null };
-                }
-
-                console.log('✅ Returning date range:', { start, end });
-                return { start, end };
-            };
-
-            const filterByDateRange = (items, dateRange, dateField = 'timestamp') => {
-                if (!dateRange.start || !dateRange.end) {
-                    console.log('⚠️ filterByDateRange: Sem range definido, retornando todos os items:', items.length);
-                    return items;
-                }
-
-                const filtered = items.filter(item => {
-                    const itemDate = new Date(item[dateField]);
-                    const isInRange = itemDate >= dateRange.start && itemDate <= dateRange.end;
-                    return isInRange;
-                });
-
-                console.log(`🔎 filterByDateRange: ${items.length} items → ${filtered.length} filtrados (campo: ${dateField})`, {
-                    start: dateRange.start,
-                    end: dateRange.end
-                });
-
-                return filtered;
-            };
-
-            const getPeriodLabel = (period, offset) => {
-                if (offset === 0) {
-                    if (period === 'hoje') return 'Hoje';
-                    if (period === 'semana') return 'Últimos 7 dias';
-                    if (period === 'mes') return 'Últimos 30 dias';
-                    return 'Todo o período';
-                }
-
-                if (period === 'hoje') {
-                    const date = new Date();
-                    date.setDate(date.getDate() - offset);
-                    return date.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' });
-                }
-                if (period === 'semana') return `${offset} ${offset === 1 ? 'semana' : 'semanas'} atrás`;
-                if (period === 'mes') return `${offset} ${offset === 1 ? 'mês' : 'meses'} atrás`;
-                return 'Todo o período';
-            };
-
-            // Helper: Exclude today from general analyses (since day is not complete)
-            const excludeToday = (items, dateField = 'date') => {
-                const today = getTodayKey();
-                return items.filter(item => item[dateField] !== today);
-            };
+            // Date range and filtering functions from analytics service
+            const getDateRangeForPeriod = (period, offset = 0) => analyticsService.getDateRangeForPeriod(period, offset);
+            const filterByDateRange = (items, dateRange, dateField = 'timestamp') => analyticsService.filterByDateRange(items, dateRange, dateField);
+            const getPeriodLabel = (period, offset) => analyticsService.getPeriodLabel(period, offset);
+            const excludeToday = (items, dateField = 'date') => analyticsService.excludeToday(items, dateField);
 
             const getLast7Days = () => {
                 // Calculate avgTimes from actual consumptions in last 7 complete days
@@ -1325,11 +1192,11 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 return {
                     sleepLag1: {
-                        correlation: calculatePearsonCorrelation(sleepLag1Data, 'yesterdaySleep', 'todayConsumptions'),
+                        correlation: analyticsService.calculatePearsonCorrelation(sleepLag1Data, 'yesterdaySleep', 'todayConsumptions'),
                         dataPoints: sleepLag1Data.length
                     },
                     moodLag1: {
-                        correlation: calculatePearsonCorrelation(moodLag1Data, 'yesterdayMood', 'todayConsumptions'),
+                        correlation: analyticsService.calculatePearsonCorrelation(moodLag1Data, 'yesterdayMood', 'todayConsumptions'),
                         dataPoints: moodLag1Data.length
                     }
                 };
@@ -1446,39 +1313,39 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 return {
                     sameDay: {
                         sleep: {
-                            correlation: calculatePearsonCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
                             dataPoints: consumptionToSleepSameDay.length
                         },
                         mood: {
-                            correlation: calculatePearsonCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
                             dataPoints: consumptionToMoodSameDay.length
                         },
                         energy: {
-                            correlation: calculatePearsonCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
                             dataPoints: consumptionToEnergySameDay.length
                         }
                     },
                     nextDay: {
                         sleep: {
-                            correlation: calculatePearsonCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
                             dataPoints: consumptionToSleepNextDay.length
                         },
                         mood: {
-                            correlation: calculatePearsonCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
                             dataPoints: consumptionToMoodNextDay.length
                         },
                         energy: {
-                            correlation: calculatePearsonCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
+                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
                             dataPoints: consumptionToEnergyNextDay.length
                         }
                     },
                     sleepToMood: {
                         sameDay: {
-                            correlation: calculatePearsonCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
+                            correlation: analyticsService.calculatePearsonCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
                             dataPoints: sleepToMoodSameDay.length
                         },
                         nextDay: {
-                            correlation: calculatePearsonCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
+                            correlation: analyticsService.calculatePearsonCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
                             dataPoints: sleepToMoodNextDay.length
                         }
                     }
@@ -3916,7 +3783,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 
                                                                                 if (nextDaySleepMood.length < 2) return null;
                 
-                                                                                const correlation = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                                const correlation = analyticsService.calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                                 if (correlation === null) return null;
                 
                                                                                 return (
@@ -3974,8 +3841,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                                 const validMoodData = nextDayData.filter(d => d.mood !== null);
                                                                                 const validEnergyData = nextDayData.filter(d => d.energy !== null);
                 
-                                                                                const moodCorr = validMoodData.length >= 2 ? calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
-                                                                                const energyCorr = validEnergyData.length >= 2 ? calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
+                                                                                const moodCorr = validMoodData.length >= 2 ? analyticsService.calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
+                                                                                const energyCorr = validEnergyData.length >= 2 ? analyticsService.calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
                 
                                                                                 // Só mostrar se pelo menos uma correlação existe e é significativa
                                                                                 if ((moodCorr === null || Math.abs(moodCorr) < 0.3) && (energyCorr === null || Math.abs(energyCorr) < 0.3)) return null;
@@ -4556,7 +4423,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         // SONO
                                                         const sleepData = daysWithData.filter(d => d.sleep !== null);
                                                         if (sleepData.length >= 1) {
-                                                            const correlation = sleepData.length >= 2 ? calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep') : null;
+                                                            const correlation = sleepData.length >= 2 ? analyticsService.calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep') : null;
                                                             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
                                                             correlations.push({
                                                                 name: 'Sono',
@@ -4571,7 +4438,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         // HUMOR
                                                         const moodData = daysWithData.filter(d => d.mood !== null);
                                                         if (moodData.length >= 1) {
-                                                            const correlation = moodData.length >= 2 ? calculatePearsonCorrelation(moodData, 'consumptions', 'mood') : null;
+                                                            const correlation = moodData.length >= 2 ? analyticsService.calculatePearsonCorrelation(moodData, 'consumptions', 'mood') : null;
                                                             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
                                                             correlations.push({
                                                                 name: 'Humor',
@@ -4586,7 +4453,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                         // ENERGIA
                                                         const energyData = daysWithData.filter(d => d.energy !== null);
                                                         if (energyData.length >= 1) {
-                                                            const correlation = energyData.length >= 2 ? calculatePearsonCorrelation(energyData, 'consumptions', 'energy') : null;
+                                                            const correlation = energyData.length >= 2 ? analyticsService.calculatePearsonCorrelation(energyData, 'consumptions', 'energy') : null;
                                                             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
                                                             correlations.push({
                                                                 name: 'Energia',
@@ -4692,7 +4559,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         const bidirCorrelations = [];
 
                                                                         // Sono
-                                                                        const sleepCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
+                                                                        const sleepCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
                                                                         const sleepData = bidirectional.filter(d => d.nextSleep !== null);
                                                                         if (sleepData.length >= 1) {
                                                                             const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
@@ -4707,7 +4574,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
 
                                                                         // Humor
-                                                                        const moodCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
+                                                                        const moodCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
                                                                         const moodData = bidirectional.filter(d => d.nextMood !== null);
                                                                         if (moodData.length >= 1) {
                                                                             const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
@@ -4722,7 +4589,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
 
                                                                         // Energia
-                                                                        const energyCorr = calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
+                                                                        const energyCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
                                                                         const energyData = bidirectional.filter(d => d.nextEnergy !== null);
                                                                         if (energyData.length >= 1) {
                                                                             const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
@@ -4823,7 +4690,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         const sleepMoodCorrelations = [];
 
                                                                         if (sameDaySleepMood.length >= 1) {
-                                                                            const corr = calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
+                                                                            const corr = analyticsService.calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                                                                             const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
                                                                             sleepMoodCorrelations.push({
@@ -4837,7 +4704,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         }
 
                                                                         if (nextDaySleepMood.length >= 1) {
-                                                                            const corr = calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
+                                                                            const corr = analyticsService.calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                                                                             const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
                                                                             const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
                                                                             sleepMoodCorrelations.push({
@@ -4946,7 +4813,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                                                                         return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
                                                                     };
 
-                                                                    const correlation = bedtimeConsumptionData.length >= 1 ? calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions') : null;
+                                                                    const correlation = bedtimeConsumptionData.length >= 1 ? analyticsService.calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions') : null;
                                                                     const label = getCorrelationLabel(correlation);
 
                                                                     const colorClasses = {
