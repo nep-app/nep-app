@@ -476,7 +476,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             };
 
             // ===== 5. DATA PROCESSING & ANALYTICS =====
-            const getIntervalStats = () => {
+            // Memoized interval statistics (optimized to prevent re-calculation)
+            const intervalStats = useMemo(() => {
                 if (consumptions.length < 2) return null;
                 const sorted = [...consumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
                 const last20 = sorted.slice(-20);
@@ -490,9 +491,12 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 const shortByDay = {};
                 shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
                 return { avgHours: avgHours.toFixed(1), intervals: intervals.slice(-10).reverse(), shortIntervals: shortIntervals.length, shortByDay };
-            };
+            }, [consumptions]);
 
-            const getLastInterval = () => {
+            const getIntervalStats = () => intervalStats;
+
+            // Memoized last interval calculation
+            const lastInterval = useMemo(() => {
                 if (consumptions.length < 2) return null;
                 const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
                 const last = new Date(sorted[0].timestamp);
@@ -500,7 +504,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 const diffMs = last - secondLast;
                 const hours = diffMs / (1000 * 60 * 60);
                 return { hours: hours.toFixed(1), isShort: hours < 2 };
-            };
+            }, [consumptions]);
+
+            const getLastInterval = () => lastInterval;
 
             const getTimeSinceLastConsumption = () => {
                 if (consumptions.length === 0) return null;
@@ -522,7 +528,13 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
             };
 
-            const getTodayConsumptions = () => consumptions.filter(c => c.date === getTodayKey());
+            // Memoized today's consumptions
+            const todayConsumptions = useMemo(() =>
+                consumptions.filter(c => c.date === getTodayKey()),
+                [consumptions]
+            );
+
+            const getTodayConsumptions = () => todayConsumptions;
 
             const getDateRangeForPeriod = (period, offset = 0) => {
                 console.log('🕐 getDateRangeForPeriod called:', { period, offset });
@@ -1590,8 +1602,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             };
 
             // Analyze emotional patterns (which emotions correlate with consumption)
-            const intervalStats = getIntervalStats();
-            const todayCount = getTodayConsumptions().length;
+            // Note: intervalStats and todayConsumptions are already memoized above
+            const todayCount = todayConsumptions.length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
@@ -1619,8 +1631,8 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
 
-            // Coping strategies based on triggers
-            const getCopingStrategies = () => {
+            // Memoized coping strategies based on triggers
+            const copingStrategies = useMemo(() => {
                 const allTriggers = cycles.flatMap(c => c.triggers || []);
                 const triggerCount = {};
                 allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
@@ -1654,12 +1666,10 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 });
 
                 return selectedStrategies.length > 0 ? selectedStrategies : strategies['Stress'];
-            };
+            }, [cycles]);
 
-            const copingStrategies = getCopingStrategies();
-
-            // Positive daily feedback
-            const getPositiveFeedback = () => {
+            // Memoized positive daily feedback
+            const positiveFeedback = useMemo(() => {
                 const messages = [];
 
                 // Check streak
@@ -1668,9 +1678,9 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
 
                 // Check interval quality
                 if (consumptions.length >= 2) {
-                    const lastInterval = getLastInterval();
-                    if (lastInterval && !lastInterval.isShort) {
-                        messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastInterval.hours}h`);
+                    const lastIntervalData = lastInterval;
+                    if (lastIntervalData && !lastIntervalData.isShort) {
+                        messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastIntervalData.hours}h`);
                     }
                 }
 
@@ -1702,9 +1712,7 @@ const calculatePearsonCorrelation = (data, xKey, yKey) => {
                 }
 
                 return messages[0];
-            };
-
-            const positiveFeedback = getPositiveFeedback();
+            }, [streaks, consumptions, lastInterval, wellbeingLogs, dailyLogs]);
 
             // Render
             if (appError) return (
