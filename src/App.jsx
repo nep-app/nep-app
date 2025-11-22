@@ -403,27 +403,21 @@ function HarmReductionTracker() {
 
                 const avgTimes = (totalConsumptions / 7).toFixed(1);
 
-                // Calculate avgMg from dailyLogs OR cycles (compatibilidade com dados antigos)
+                // Calculate avgMg from dailyLogs (somar todos os logs do mesmo dia)
                 const mgValues = [];
 
                 last7Dates.forEach(date => {
-                    // Tentar buscar de dailyLog primeiro (dados novos)
-                    const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(l.mg));
-                    if (dailyLog) {
-                        mgValues.push(dailyLog.mg);
-                        return;
-                    }
+                    // Buscar TODOS os dailyLogs deste dia e somar os mg
+                    const dayLogs = dailyLogs.filter(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
 
-                    // Se não encontrou no dailyLog, buscar do cycle do mesmo dia (dados antigos)
-                    const cycle = cycles.find(c => {
-                        const cycleDate = new Date(c.timestamp).toISOString().split('T')[0];
-                        return cycleDate === date && c.mg !== undefined && !isNaN(parseFloat(c.mg));
-                    });
+                    if (dayLogs.length > 0) {
+                        const dayTotal = dayLogs.reduce((sum, log) => {
+                            const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
+                            return sum + (isNaN(logMg) ? 0 : logMg);
+                        }, 0);
 
-                    if (cycle) {
-                        const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            mgValues.push(mgValue);
+                        if (dayTotal > 0) {
+                            mgValues.push(dayTotal);
                         }
                     }
                 });
@@ -618,7 +612,7 @@ function HarmReductionTracker() {
                     // REGRA: Conta ciclos com mg ABAIXO do target (excluindo o target)
                     // Ex: target=200 → conta ciclos com <200mg
                     // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
-                    // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou dailyLogs.mg (antigo)
+                    // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
                     const today = new Date().toLocaleDateString('pt-PT');
 
                     console.log('⚖️ META REDUCE_QUANTITY:', {
@@ -633,6 +627,7 @@ function HarmReductionTracker() {
                     // Debug: mostrar formato dos dailyLogs
                     console.log('📋 DailyLogs disponíveis:', dataDailyLogs.slice(0, 3).map(log => ({
                         date: log.date,
+                        cycleId: log.cycleId,
                         timestamp: log.timestamp,
                         mg: log.mg
                     })));
@@ -644,22 +639,27 @@ function HarmReductionTracker() {
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         let source = 'cycle';
 
-                        // Se não tiver no cycle, buscar do dailyLog do mesmo dia (dados antigos)
+                        // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const cycleDay = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
-                            const dailyLog = dataDailyLogs.find(log => {
-                                // Tentar múltiplos formatos de data
-                                const logDate = log.date || new Date(log.timestamp).toLocaleDateString('pt-PT');
-                                return logDate === cycleDay;
-                            });
-                            if (dailyLog && dailyLog.mg) {
-                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                source = 'dailyLog';
+                            // Buscar todos os dailyLogs deste ciclo e somar os mg
+                            const cycleDailyLogs = dataDailyLogs.filter(log => log.cycleId === cycle.id);
+
+                            if (cycleDailyLogs.length > 0) {
+                                const totalMg = cycleDailyLogs.reduce((sum, log) => {
+                                    const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
+                                    return sum + (isNaN(logMg) ? 0 : logMg);
+                                }, 0);
+
+                                if (totalMg > 0) {
+                                    mgValue = totalMg;
+                                    source = `dailyLog (${cycleDailyLogs.length} registos)`;
+                                }
                             }
                         }
 
                         // Debug: mostrar todos os ciclos
                         console.log(`  📊 Ciclo ${cycleDate}:`, {
+                            cycleId: cycle.id,
                             mg_original: cycle.mg,
                             mg_tipo: typeof cycle.mg,
                             mg_convertido: mgValue,
@@ -923,17 +923,21 @@ function HarmReductionTracker() {
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         let source = 'cycle';
 
-                        // Se não tiver no cycle, buscar do dailyLog do mesmo dia (dados antigos)
+                        // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const cycleDay = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
-                            const dailyLog = dataDailyLogs.find(log => {
-                                // Tentar múltiplos formatos de data
-                                const logDate = log.date || new Date(log.timestamp).toLocaleDateString('pt-PT');
-                                return logDate === cycleDay;
-                            });
-                            if (dailyLog && dailyLog.mg) {
-                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                source = 'dailyLog';
+                            // Buscar todos os dailyLogs deste ciclo e somar os mg
+                            const cycleDailyLogs = dataDailyLogs.filter(log => log.cycleId === cycle.id);
+
+                            if (cycleDailyLogs.length > 0) {
+                                const totalMg = cycleDailyLogs.reduce((sum, log) => {
+                                    const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
+                                    return sum + (isNaN(logMg) ? 0 : logMg);
+                                }, 0);
+
+                                if (totalMg > 0) {
+                                    mgValue = totalMg;
+                                    source = `dailyLog (${cycleDailyLogs.length} registos)`;
+                                }
                             }
                         }
 
