@@ -77,7 +77,7 @@ function HarmReductionTracker() {
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
-            const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
+            const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
 
             // ===== 3. TOAST & NOTIFICATION SYSTEM =====
             const [toasts, setToasts] = useState([]);
@@ -459,22 +459,22 @@ function HarmReductionTracker() {
 
             const submitGoal = async () => {
                 try {
-                    const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') ? goalForm.target : parseFloat(goalForm.target);
+                    const target = goalForm.type.includes('delay') || goalForm.type.includes('limit') || goalForm.type.includes('bedtime') ? goalForm.target : parseFloat(goalForm.target);
 
                     if (editingGoal) {
                         // Update existing goal
-                        const updatedData = { type: goalForm.type, target, deadline: goalForm.deadline };
+                        const updatedData = { type: goalForm.type, target };
                         await updateGoal(editingGoal.id, updatedData);
                         setEditingGoal(null);
                         showToast('✓ Meta atualizada', 'success');
                     } else {
                         // Create new goal
-                        const item = { id: genId(), type: goalForm.type, target, deadline: goalForm.deadline, createdAt: new Date().toISOString(), completed: false };
+                        const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), completed: false };
                         await addGoal(item);
                         showToast('✓ Meta criada', 'success');
                     }
 
-                    setGoalForm({ type: 'reduce_frequency', target: '', deadline: '' });
+                    setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' });
                     setShowGoalModal(false);
                 } catch (error) {
                     showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');

@@ -99,16 +99,6 @@ export const GoalModal = ({
                 required
               />
             </div>
-            <div>
-              <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Prazo</label>
-              <input
-                type="date"
-                value={goalForm.deadline}
-                onChange={(e) => setGoalForm({...goalForm, deadline: e.target.value})}
-                className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'}
-                required
-              />
-            </div>
             <button
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
