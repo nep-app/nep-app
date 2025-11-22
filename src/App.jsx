@@ -468,10 +468,20 @@ function HarmReductionTracker() {
                         setEditingGoal(null);
                         showToast('✓ Meta atualizada', 'success');
                     } else {
-                        // Create new goal
-                        const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), completed: false };
-                        await addGoal(item);
-                        showToast('✓ Meta criada', 'success');
+                        // Check if goal of this type already exists
+                        const existingGoal = goals.find(g => g.type === goalForm.type);
+
+                        if (existingGoal) {
+                            // Replace existing goal
+                            const updatedData = { type: goalForm.type, target };
+                            await updateGoal(existingGoal.id, updatedData);
+                            showToast('✓ Meta substituída', 'success');
+                        } else {
+                            // Create new goal
+                            const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), completed: false };
+                            await addGoal(item);
+                            showToast('✓ Meta criada', 'success');
+                        }
                     }
 
                     setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' });
