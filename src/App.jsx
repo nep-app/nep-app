@@ -626,9 +626,17 @@ function HarmReductionTracker() {
                         target: goal.target,
                         totalCycles: dataCycles.length,
                         cyclesComMg: dataCycles.filter(c => c.mg && c.mg !== '').length,
-                        dailyLogsComMg: dailyLogs.filter(d => d.mg).length,
+                        totalDailyLogs: dataDailyLogs.length,
+                        dailyLogsComMg: dataDailyLogs.filter(d => d.mg).length,
                         hoje: today
                     });
+
+                    // Debug: mostrar formato dos dailyLogs
+                    console.log('📋 DailyLogs disponíveis:', dataDailyLogs.slice(0, 3).map(log => ({
+                        date: log.date,
+                        timestamp: log.timestamp,
+                        mg: log.mg
+                    })));
 
                     dataCycles.forEach(cycle => {
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
