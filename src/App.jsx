@@ -76,7 +76,7 @@ function HarmReductionTracker() {
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', deadline: '', period: 'daily' });
 
             // ===== 3. TOAST & NOTIFICATION SYSTEM =====
@@ -446,9 +446,9 @@ function HarmReductionTracker() {
 
             const submitCycle = async () => {
                 try {
-                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastBefore00: cycleForm.lastBefore00 };
+                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastBefore00: cycleForm.lastBefore00, mg: cycleForm.mg };
                     await addCycle(item);
-                    setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false });
+                    setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
@@ -1702,11 +1702,11 @@ function HarmReductionTracker() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <GradientButton
-                                            onClick={() => setShowDailyLogModal(true)}
-                                            icon={Icons.BarChart3}
+                                            onClick={() => setShowGoalModal(true)}
+                                            icon={Icons.Target}
                                             variant="pink"
                                         >
-                                            Registar Dosagem do Dia
+                                            Metas
                                         </GradientButton>
                                         <GradientButton
                                             onClick={() => setShowWellbeingModal(true)}
