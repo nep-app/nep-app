@@ -619,12 +619,13 @@ function HarmReductionTracker() {
                     });
 
                     // Debug: mostrar formato dos dailyLogs
-                    console.log('📋 DailyLogs disponíveis:', dataDailyLogs.slice(0, 3).map(log => ({
+                    console.log('📋 DailyLogs disponíveis:', dataDailyLogs.map(log => ({
                         date: log.date,
                         cycleId: log.cycleId,
-                        timestamp: log.timestamp,
                         mg: log.mg
                     })));
+
+                    console.log('🔍 Cycles IDs:', dataCycles.map(c => ({ id: c.id, date: new Date(c.timestamp).toLocaleDateString('pt-PT') })));
 
                     dataCycles.forEach(cycle => {
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
@@ -636,6 +637,7 @@ function HarmReductionTracker() {
                         // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
                             const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
@@ -911,6 +913,7 @@ function HarmReductionTracker() {
                         // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
                             const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
