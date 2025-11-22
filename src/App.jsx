@@ -311,7 +311,17 @@ function HarmReductionTracker() {
 
             const submitCycle = async () => {
                 try {
-                    const item = { id: genId(), timestamp: new Date().toISOString(), bedtime: cycleForm.bedtime, triggers: cycleForm.triggers, notes: cycleForm.notes, lastBefore00: cycleForm.lastBefore00, mg: cycleForm.mg };
+                    const item = {
+                        id: genId(),
+                        timestamp: new Date().toISOString(),
+                        bedtime: cycleForm.bedtime,
+                        triggers: cycleForm.triggers,
+                        notes: cycleForm.notes,
+                        lastBefore00: cycleForm.lastBefore00,
+                        // Converter mg para número (se tiver valor)
+                        ...(cycleForm.mg && cycleForm.mg !== '' ? { mg: parseFloat(cycleForm.mg) } : {})
+                    };
+                    console.log('🌙 Novo ciclo:', item);
                     await addCycle(item);
                     setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
                     setShowCycleModal(false);
@@ -488,15 +498,10 @@ function HarmReductionTracker() {
                 
                 // ALTERAÇÃO 7: Nova meta "Hora do último consumo diário"
                 if (goal.type === 'limit_last') {
-                    const recentConsumptions = consumptions.slice(0, 21);
-                    if (recentConsumptions.length === 0) return 0;
-                    const lastOfDays = {};
-                    recentConsumptions.forEach(c => { if (!lastOfDays[c.date] || c.timestamp > lastOfDays[c.date]) { lastOfDays[c.date] = c.timestamp; } });
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-                    let successDays = 0;
-                    Object.values(lastOfDays).forEach(timestamp => { const d = new Date(timestamp); const lastMinutes = d.getHours() * 60 + d.getMinutes(); if (lastMinutes <= targetMinutes) successDays++; });
-                    return Math.min(100, (successDays / Object.keys(lastOfDays).length) * 100);
+                    const recentCycles = cycles.slice(0, 15);
+                    if (recentCycles.length === 0) return 0;
+                    const successCycles = recentCycles.filter(c => c.lastBefore00 === true).length;
+                    return Math.min(100, (successCycles / recentCycles.length) * 100);
                 }
 
                 if (goal.type === 'sleep_hours') {
@@ -599,23 +604,37 @@ function HarmReductionTracker() {
                     console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
                         totalCycles: dataCycles.length,
-                        cyclesComMg: dataCycles.filter(c => c.mg).length,
+                        cyclesComMg: dataCycles.filter(c => c.mg && c.mg !== '').length,
                         hoje: today
                     });
 
                     dataCycles.forEach(cycle => {
-                        if (cycle.mg) {
-                            const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                        const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                        const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+
+                        // Debug: mostrar todos os ciclos
+                        console.log(`  📊 Ciclo ${cycleDate}:`, {
+                            mg_original: cycle.mg,
+                            mg_tipo: typeof cycle.mg,
+                            mg_convertido: mgValue,
+                            valido: !isNaN(mgValue) && mgValue > 0
+                        });
+
+                        if (!isNaN(mgValue) && mgValue > 0) {
                             if (cycleDate === today) {
-                                console.log('  📊', cycleDate, '→', cycle.mg, 'mg → ⏭️ Ciclo atual (ignorado)');
+                                console.log('    ⏭️ Ciclo atual (ignorado)');
                                 return; // Skip today
                             }
 
-                            const isAchieved = parseFloat(cycle.mg) < parseFloat(goal.target);
-                            console.log('  📊', cycleDate, '→', cycle.mg, 'mg →', isAchieved ? '✅' : '❌');
+                            const isAchieved = mgValue < parseFloat(goal.target);
+                            console.log(`    ${isAchieved ? '✅' : '❌'} ${mgValue}mg ${isAchieved ? '<' : '>='} ${goal.target}mg`);
                             if (isAchieved) achievedCount++;
+                        } else {
+                            console.log('    ⚠️ Valor mg inválido ou vazio');
                         }
                     });
+
+                    console.log('⚖️ TOTAL ACHIEVED:', achievedCount);
                 }
 
                 if (goal.type === 'delay_first') {
@@ -656,52 +675,15 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'limit_last') {
-                    // REGRA: Conta dias onde último consumo foi ATÉ o target (incluindo a hora exata)
-                    // Ex: target="23:00" → conta dias com último consumo <= 23:00
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
-                    const consumptionsByDate = {};
-
-                    dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                        consumptionsByDate[dateKey].push(c);
-                    });
-
-                    // Remove dia atual da contagem
-                    delete consumptionsByDate[today];
-
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                    // Ajustar target se for madrugada (00:00-05:59 → 24:00-29:59)
-                    if (targetMinutes >= 0 && targetMinutes < 360) {
-                        targetMinutes += 1440; // +24h
-                    }
-
+                    // REGRA: Conta CICLOS onde user marcou lastBefore00=true
                     console.log('🌙 META LIMIT_LAST:', {
                         target: goal.target,
-                        targetStr,
-                        targetMinutes,
-                        totalDias: Object.keys(consumptionsByDate).length,
-                        hoje: today
+                        totalCycles: dataCycles.length
                     });
 
-                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
-                        const sorted = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        const lastConsumption = sorted[0];
-                        const lastTimestamp = new Date(lastConsumption.timestamp);
-                        let lastMinutes = lastTimestamp.getHours() * 60 + lastTimestamp.getMinutes();
-
-                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-                        if (lastMinutes >= 0 && lastMinutes < 360) {
-                            lastMinutes += 1440; // +24h
-                        }
-
-                        const isAchieved = lastMinutes <= targetMinutes;
-                        const timeStr = lastTimestamp.getHours().toString().padStart(2, '0') + ':' + lastTimestamp.getMinutes().toString().padStart(2, '0');
-                        console.log('  📅', date, '→ último consumo às', timeStr, '→', isAchieved ? '✅' : '❌');
+                    dataCycles.forEach(cycle => {
+                        const isAchieved = cycle.lastBefore00 === true;
+                        console.log(`  🌙 Ciclo ${cycle.id?.slice(0, 8) || 'sem-id'} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
                         if (isAchieved) achievedCount++;
                     });
                 }
@@ -890,12 +872,20 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'reduce_quantity') {
+                    console.log('⚖️ META REDUCE_QUANTITY (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     dataCycles.forEach(cycle => {
-                        if (!cycle.mg) return;
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
-                        if (cycleDate === today) return; // Skip today
-                        total++;
-                        if (parseFloat(cycle.mg) < parseFloat(goal.target)) achieved++;
+                        const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+
+                        if (!isNaN(mgValue) && mgValue > 0) {
+                            if (cycleDate === today) return; // Skip today
+                            total++;
+                            const isAchieved = mgValue < parseFloat(goal.target);
+                            if (isAchieved) achieved++;
+                            console.log(`  ⚖️ Ciclo ${cycleDate} → ${mgValue}mg → ${isAchieved ? '✅' : '❌'}`);
+                        } else {
+                            console.log(`  ⚖️ Ciclo ${cycleDate} → mg inválido/vazio (${cycle.mg})`);
+                        }
                     });
                 }
 
@@ -922,37 +912,12 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'limit_last') {
-                    const consumptionsByDate = {};
-                    dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                        consumptionsByDate[dateKey].push(c);
-                    });
-
-                    delete consumptionsByDate[today]; // Skip today
-
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                    // Ajustar target se for madrugada
-                    if (targetMinutes >= 0 && targetMinutes < 360) {
-                        targetMinutes += 1440;
-                    }
-
-                    Object.values(consumptionsByDate).forEach(dayConsumptions => {
-                        total++;
-                        const sorted = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        const lastConsumption = sorted[0];
-                        const lastTimestamp = new Date(lastConsumption.timestamp);
-                        let lastMinutes = lastTimestamp.getHours() * 60 + lastTimestamp.getMinutes();
-
-                        // Ajustar madrugada
-                        if (lastMinutes >= 0 && lastMinutes < 360) {
-                            lastMinutes += 1440;
-                        }
-
-                        if (lastMinutes <= targetMinutes) achieved++;
+                    console.log('🌙 META LIMIT_LAST (STATS):', { target: goal.target, totalCycles: dataCycles.length });
+                    total = dataCycles.length;
+                    dataCycles.forEach(cycle => {
+                        const isAchieved = cycle.lastBefore00 === true;
+                        if (isAchieved) achieved++;
+                        console.log(`  🌙 Ciclo ${cycle.id?.slice(0, 8) || 'sem-id'} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
@@ -2094,7 +2059,7 @@ function HarmReductionTracker() {
                                                                         };
                                                                         const explanations = {
                                                                             'reduce_frequency': `Dias com <${goal.target} consumos`,
-                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
+                                                                            'reduce_quantity': `Ciclos com <${goal.target}mg`,
                                                                             'delay_first': `Dias com 1º consumo ≥${goal.target}`,
                                                                             'limit_last': `Ciclos com último antes da meia-noite`,
                                                                             'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
