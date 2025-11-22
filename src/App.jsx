@@ -716,28 +716,28 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'reduce_quantity') {
-                    // REGRA: Conta dias com mg ABAIXO do target (excluindo o target)
-                    // Ex: target=200 → conta dias com <200mg
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    // REGRA: Conta ciclos com mg ABAIXO do target (excluindo o target)
+                    // Ex: target=200 → conta ciclos com <200mg
+                    // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
                     const today = new Date().toLocaleDateString('pt-PT');
 
                     console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
-                        totalLogs: dataDailyLogs.length,
-                        logsComMg: dataDailyLogs.filter(d => d.mg).length,
+                        totalCycles: dataCycles.length,
+                        cyclesComMg: dataCycles.filter(c => c.mg).length,
                         hoje: today
                     });
 
-                    dataDailyLogs.forEach(log => {
-                        if (log.mg) {
-                            const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                            if (logDate === today) {
-                                console.log('  📊', logDate, '→', log.mg, 'mg → ⏭️ Dia atual (ignorado)');
+                    dataCycles.forEach(cycle => {
+                        if (cycle.mg) {
+                            const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                            if (cycleDate === today) {
+                                console.log('  📊', cycleDate, '→', cycle.mg, 'mg → ⏭️ Ciclo atual (ignorado)');
                                 return; // Skip today
                             }
 
-                            const isAchieved = log.mg < goal.target;
-                            console.log('  📊', logDate, '→', log.mg, 'mg →', isAchieved ? '✅' : '❌');
+                            const isAchieved = parseFloat(cycle.mg) < parseFloat(goal.target);
+                            console.log('  📊', cycleDate, '→', cycle.mg, 'mg →', isAchieved ? '✅' : '❌');
                             if (isAchieved) achievedCount++;
                         }
                     });
@@ -781,9 +781,53 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'limit_last') {
-                    // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                    dataCycles.forEach(cycle => {
-                        if (cycle.lastBefore00 === true) achievedCount++;
+                    // REGRA: Conta dias onde último consumo foi ATÉ o target (incluindo a hora exata)
+                    // Ex: target="23:00" → conta dias com último consumo <= 23:00
+                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    const today = new Date().toLocaleDateString('pt-PT');
+                    const consumptionsByDate = {};
+
+                    dataConsumptions.forEach(c => {
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                        consumptionsByDate[dateKey].push(c);
+                    });
+
+                    // Remove dia atual da contagem
+                    delete consumptionsByDate[today];
+
+                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                    const targetParts = targetStr.split(':');
+                    let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+                    // Ajustar target se for madrugada (00:00-05:59 → 24:00-29:59)
+                    if (targetMinutes >= 0 && targetMinutes < 360) {
+                        targetMinutes += 1440; // +24h
+                    }
+
+                    console.log('🌙 META LIMIT_LAST:', {
+                        target: goal.target,
+                        targetStr,
+                        targetMinutes,
+                        totalDias: Object.keys(consumptionsByDate).length,
+                        hoje: today
+                    });
+
+                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+                        const sorted = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        const lastConsumption = sorted[0];
+                        const lastTimestamp = new Date(lastConsumption.timestamp);
+                        let lastMinutes = lastTimestamp.getHours() * 60 + lastTimestamp.getMinutes();
+
+                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
+                        if (lastMinutes >= 0 && lastMinutes < 360) {
+                            lastMinutes += 1440; // +24h
+                        }
+
+                        const isAchieved = lastMinutes <= targetMinutes;
+                        const timeStr = lastTimestamp.getHours().toString().padStart(2, '0') + ':' + lastTimestamp.getMinutes().toString().padStart(2, '0');
+                        console.log('  📅', date, '→ último consumo às', timeStr, '→', isAchieved ? '✅' : '❌');
+                        if (isAchieved) achievedCount++;
                     });
                 }
 
@@ -971,12 +1015,12 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'reduce_quantity') {
-                    dataDailyLogs.forEach(log => {
-                        if (!log.mg) return;
-                        const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                        if (logDate === today) return; // Skip today
+                    dataCycles.forEach(cycle => {
+                        if (!cycle.mg) return;
+                        const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                        if (cycleDate === today) return; // Skip today
                         total++;
-                        if (log.mg < goal.target) achieved++;
+                        if (parseFloat(cycle.mg) < parseFloat(goal.target)) achieved++;
                     });
                 }
 
@@ -1003,12 +1047,37 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'limit_last') {
-                    console.log('🌙 META LIMIT_LAST (STATS):', { target: goal.target, totalCycles: dataCycles.length });
-                    total = dataCycles.length;
-                    dataCycles.forEach(cycle => {
-                        const isAchieved = cycle.lastBefore00 === true;
-                        if (isAchieved) achieved++;
-                        console.log(`  🌙 Ciclo ${cycle.id.slice(0, 8)} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
+                    const consumptionsByDate = {};
+                    dataConsumptions.forEach(c => {
+                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                        consumptionsByDate[dateKey].push(c);
+                    });
+
+                    delete consumptionsByDate[today]; // Skip today
+
+                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                    const targetParts = targetStr.split(':');
+                    let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+                    // Ajustar target se for madrugada
+                    if (targetMinutes >= 0 && targetMinutes < 360) {
+                        targetMinutes += 1440;
+                    }
+
+                    Object.values(consumptionsByDate).forEach(dayConsumptions => {
+                        total++;
+                        const sorted = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        const lastConsumption = sorted[0];
+                        const lastTimestamp = new Date(lastConsumption.timestamp);
+                        let lastMinutes = lastTimestamp.getHours() * 60 + lastTimestamp.getMinutes();
+
+                        // Ajustar madrugada
+                        if (lastMinutes >= 0 && lastMinutes < 360) {
+                            lastMinutes += 1440;
+                        }
+
+                        if (lastMinutes <= targetMinutes) achieved++;
                     });
                 }
 
