@@ -639,8 +639,12 @@ function HarmReductionTracker() {
 
                         // Se não tiver no cycle, buscar do dailyLog do mesmo dia (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
-                            const dailyLog = dailyLogs.find(log => log.date === cycleDay);
+                            const cycleDay = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                            const dailyLog = dataDailyLogs.find(log => {
+                                // Tentar múltiplos formatos de data
+                                const logDate = log.date || new Date(log.timestamp).toLocaleDateString('pt-PT');
+                                return logDate === cycleDay;
+                            });
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
@@ -649,8 +653,9 @@ function HarmReductionTracker() {
 
                         // Debug: mostrar todos os ciclos
                         console.log(`  📊 Ciclo ${cycleDate}:`, {
-                            cycle_mg: cycle.mg,
-                            mg_final: mgValue,
+                            mg_original: cycle.mg,
+                            mg_tipo: typeof cycle.mg,
+                            mg_convertido: mgValue,
                             source: source,
                             valido: !isNaN(mgValue) && mgValue > 0
                         });
@@ -917,8 +922,12 @@ function HarmReductionTracker() {
 
                         // Se não tiver no cycle, buscar do dailyLog do mesmo dia (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
-                            const dailyLog = dailyLogs.find(log => log.date === cycleDay);
+                            const cycleDay = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                            const dailyLog = dataDailyLogs.find(log => {
+                                // Tentar múltiplos formatos de data
+                                const logDate = log.date || new Date(log.timestamp).toLocaleDateString('pt-PT');
+                                return logDate === cycleDay;
+                            });
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
