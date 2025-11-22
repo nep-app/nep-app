@@ -22,16 +22,19 @@ export const UIProvider = ({ children }) => {
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
+  const [showDailyLogModal, setShowDailyLogModal] = useState(false);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [showWellbeingModal, setShowWellbeingModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
   const [showCopingModal, setShowCopingModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
 
   // Edit states
   const [editingGoal, setEditingGoal] = useState(null);
   const [editingCycle, setEditingCycle] = useState(null);
+  const [editingConsumption, setEditingConsumption] = useState(null);
 
   // Analysis filters
   const [selectedCycle, setSelectedCycle] = useState(null);
@@ -60,14 +63,17 @@ export const UIProvider = ({ children }) => {
   // Helper to close all modals
   const closeAllModals = () => {
     setShowModal(false);
+    setShowDailyLogModal(false);
     setShowReflectionModal(false);
     setShowWellbeingModal(false);
     setShowCycleModal(false);
     setShowGoalModal(false);
+    setShowEditConsumptionModal(false);
     setShowCopingModal(false);
     setShowEducationModal(false);
     setEditingGoal(null);
     setEditingCycle(null);
+    setEditingConsumption(null);
   };
 
   const value = {
@@ -82,6 +88,8 @@ export const UIProvider = ({ children }) => {
     // Modals
     showModal,
     setShowModal,
+    showDailyLogModal,
+    setShowDailyLogModal,
     showReflectionModal,
     setShowReflectionModal,
     showWellbeingModal,
@@ -90,6 +98,8 @@ export const UIProvider = ({ children }) => {
     setShowCycleModal,
     showGoalModal,
     setShowGoalModal,
+    showEditConsumptionModal,
+    setShowEditConsumptionModal,
     showCopingModal,
     setShowCopingModal,
     showEducationModal,
@@ -100,6 +110,8 @@ export const UIProvider = ({ children }) => {
     setEditingGoal,
     editingCycle,
     setEditingCycle,
+    editingConsumption,
+    setEditingConsumption,
 
     // Analysis filters
     selectedCycle,

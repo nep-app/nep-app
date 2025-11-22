@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
@@ -8,6 +7,9 @@ import * as analyticsService from './services/analyticsService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useUI } from './contexts/UIContext';
+import { useToast } from './hooks/useToast';
+import { useAuth } from './hooks/useAuth';
+import { useReminders } from './hooks/useReminders';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -34,17 +36,18 @@ function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
             // Use contexts for data and UI state
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
-            const { darkMode } = useUI();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
-            // 2.1 Auth State (local)
-            const [isLogin, setIsLogin] = useState(true);
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [authError, setAuthError] = useState('');
+            // Use custom hooks
+            const { toasts, showToast } = useToast();
+            const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
+            const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, showToast);
+
+            // App error state
             const [appError, setAppError] = useState(null);
             const hasAutoAssociatedRef = React.useRef(false);
 
-            // 2.2 UI Navigation State
+            // UI Navigation State
             const [currentView, setCurrentView] = useState('home');
             const [timeFilter, setTimeFilter] = useState('all');
             const [patternsPeriod, setPatternsPeriod] = useState('tudo'); // hoje, semana, mes, tudo
@@ -52,157 +55,24 @@ function HarmReductionTracker() {
             const [historyPeriod, setHistoryPeriod] = useState('tudo');
             const [historyPeriodOffset, setHistoryPeriodOffset] = useState(0);
             const [historyTopic, setHistoryTopic] = useState('todos'); // todos, consumo, reflexoes, ciclos, bem-estar, dbt
-
-            // Modal states
-            const [showDailyLogModal, setShowDailyLogModal] = useState(false);
-            const [showWellbeingModal, setShowWellbeingModal] = useState(false);
-            const [showReflectionModal, setShowReflectionModal] = useState(false);
-            const [showCycleModal, setShowCycleModal] = useState(false);
-            const [showGoalModal, setShowGoalModal] = useState(false);
-            const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
-            const [editingConsumption, setEditingConsumption] = useState(null);
-            const [editingGoal, setEditingGoal] = useState(null);
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
             const [analysisSubView, setAnalysisSubView] = useState('estrutural'); // For analyses tab: temporal, structural, correlations
 
-            // 2.4 Pagination States
+            // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
             const [reflectionsToShow, setReflectionsToShow] = useState(10);
             const [wellbeingToShow, setWellbeingToShow] = useState(14);
             const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
 
-            // 2.5 Form States
+            // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
 
-            // ===== 3. TOAST & NOTIFICATION SYSTEM =====
-            const [toasts, setToasts] = useState([]);
-            const showToast = (message, type = 'success') => {
-                const id = genId();
-                setToasts(prev => [...prev, { id, message, type }]);
-                setTimeout(() => {
-                    setToasts(prev => prev.filter(t => t.id !== id));
-                }, 3000);
-            };
-
-            // Reminder/notification system
-            const [reminderDismissed, setReminderDismissed] = useState(() => {
-                const dismissed = localStorage.getItem('reminderDismissed');
-                return dismissed ? JSON.parse(dismissed) : {};
-            });
-
-            const dismissReminder = (type) => {
-                const today = getTodayKey();
-                const updated = { ...reminderDismissed, [type]: today };
-                setReminderDismissed(updated);
-                localStorage.setItem('reminderDismissed', JSON.stringify(updated));
-            };
-
-            const shouldShowReminder = (type) => {
-                const today = getTodayKey();
-                return reminderDismissed[type] !== today;
-            };
-
-            // Browser notification support
-            const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-                try {
-                    return localStorage.getItem('notificationsEnabled') === 'true';
-                } catch (e) {
-                    console.error('Error reading notificationsEnabled:', e);
-                    return false;
-                }
-            });
-
-            const requestNotificationPermission = async () => {
-                if (!('Notification' in window)) {
-                    showToast('✗ Notificações não suportadas no teu browser', 'error');
-                    return;
-                }
-
-                // Check current permission state
-                if (Notification.permission === 'denied') {
-                    showToast('✗ Notificações bloqueadas. Vai às definições do browser para permitir', 'error');
-                    return;
-                }
-
-                if (Notification.permission === 'granted') {
-                    setNotificationsEnabled(true);
-                    localStorage.setItem('notificationsEnabled', 'true');
-                    showToast('✓ Notificações já estavam ativadas', 'success');
-                    return;
-                }
-
-                try {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        setNotificationsEnabled(true);
-                        localStorage.setItem('notificationsEnabled', 'true');
-                        showToast('✓ Notificações ativadas com sucesso', 'success');
-                    } else if (permission === 'denied') {
-                        showToast('✗ Negaste a permissão. Vai às definições do browser para ativar', 'error');
-                    } else {
-                        showToast('✗ Permissão não concedida', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error requesting notification permission:', error);
-                    showToast('✗ Erro ao pedir permissão de notificações', 'error');
-                }
-            };
-
-            const showBrowserNotification = (title, body) => {
-                try {
-                    if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-                        new Notification(title, {
-                            body,
-                            icon: '/favicon.ico',
-                            badge: '/favicon.ico'
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error showing notification:', e);
-                }
-            };
-
-            // Check for reminders every minute
-            useEffect(() => {
-                if (!user) return;
-
-                const checkReminders = () => {
-                    try {
-                        const now = new Date();
-                        const hour = now.getHours();
-                        const today = getTodayKey();
-
-                        // Only show reminders between 10h and 22h
-                        if (hour < 10 || hour > 22) return;
-
-                        // Check if user hasn't logged wellbeing today
-                        const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
-                        if (!hasWellbeingToday && shouldShowReminder('wellbeing') && hour >= 18) {
-                            showToast('💭 Lembrete: Ainda não registaste bem-estar hoje', 'info');
-                            showBrowserNotification('Lembrete - NEP', 'Ainda não registaste bem-estar hoje');
-                            dismissReminder('wellbeing');
-                        }
-                    } catch (e) {
-                        console.error('Error checking reminders:', e);
-                    }
-                };
-
-                // Check immediately and then every hour
-                try {
-                    checkReminders();
-                    const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
-                    return () => clearInterval(interval);
-                } catch (e) {
-                    console.error('Error setting up reminders:', e);
-                }
-            }, [user, wellbeingLogs, notificationsEnabled]);
-
-            // ===== 4. FIREBASE OPERATIONS (CRUD) =====
+            // ===== 3. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
                 if (cycles.length === 0) return 0;
                 return cycles.length - 1;
@@ -310,11 +180,6 @@ function HarmReductionTracker() {
                     });
                 })();
             }, [user, db, cycles, consumptions]);
-
-
-            const handleAuth = async (e) => { e.preventDefault(); setAuthError(''); if (!auth) return;  try { if (isLogin) await signInWithEmailAndPassword(auth, email, password); else await createUserWithEmailAndPassword(auth, email, password); } catch (error) { if (error.code === 'auth/user-not-found') setAuthError('Email não encontrado. Cria conta primeiro.'); else if (error.code === 'auth/wrong-password') setAuthError('Password errada.'); else if (error.code === 'auth/email-already-in-use') setAuthError('Email já existe. Faz login.'); else if (error.code === 'auth/weak-password') setAuthError('Password fraca (mínimo 6 caracteres).'); else if (error.code === 'auth/invalid-email') setAuthError('Email inválido.'); else if (error.code === 'auth/invalid-credential') setAuthError('Email ou password incorretos.'); else setAuthError('Erro: ' + error.message); } };
-
-            const handleLogout = () => { signOut(auth); };
 
             const markConsumption = async () => {
                 try {
