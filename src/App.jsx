@@ -1924,6 +1924,8 @@ function HarmReductionTracker() {
                                                 });
 
                                                 uniqueGoals.push(...Object.values(goalsByType));
+                                                console.log('📊 Total goals:', goals.length, 'Unique goals:', uniqueGoals.length);
+                                                console.log('📋 Goals by type:', Object.keys(goalsByType));
 
                                                 const periodDays = patternsPeriod === 'hoje' ? 1 :
                                                                  patternsPeriod === 'semana' ? 7 :
@@ -2095,7 +2097,7 @@ function HarmReductionTracker() {
                                                                     Detalhes por Meta
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    {goalsAnalysis.goalBreakdown.map((goal, i) => {
+                                                                    {goalsAnalysis.goalBreakdown.map(goal => {
                                                                         const goalTypeLabels = {
                                                                             'reduce_frequency': '🔢 Reduzir frequência',
                                                                             'reduce_quantity': '⚖️ Reduzir quantidade',
@@ -2115,7 +2117,7 @@ function HarmReductionTracker() {
                                                                             'bedtime_before': `Noites a dormir antes de ${goal.target}`
                                                                         };
                                                                         return (
-                                                                            <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                            <div key={goal.id} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
                                                                                         <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
