@@ -2035,14 +2035,26 @@ function HarmReductionTracker() {
                                             // Calculate goals analysis for dashboard
                                             let goalsAnalysis = null;
                                             if (goals.length > 0) {
+                                                // Filter to get only the most recent goal of each type
+                                                const uniqueGoals = [];
+                                                const goalsByType = {};
+
+                                                goals.forEach(g => {
+                                                    if (!goalsByType[g.type] || new Date(g.createdAt) > new Date(goalsByType[g.type].createdAt)) {
+                                                        goalsByType[g.type] = g;
+                                                    }
+                                                });
+
+                                                uniqueGoals.push(...Object.values(goalsByType));
+
                                                 const periodDays = patternsPeriod === 'hoje' ? 1 :
                                                                  patternsPeriod === 'semana' ? 7 :
                                                                  patternsPeriod === 'mes' ? 30 :
                                                                  uniqueDays || 1;
 
-                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
+                                                const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
-                                                const goalBreakdown = goals.map(g => {
+                                                const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
 
                                                     // Calculate total possible based on goal type
@@ -2102,11 +2114,11 @@ function HarmReductionTracker() {
 
                                                 goalsAnalysis = {
                                                     totalAchievements,
-                                                    totalGoals: goals.length,
+                                                    totalGoals: uniqueGoals.length,
                                                     avgAchievementsPerDay: avgAchievementsPerDay.toFixed(1),
                                                     goalsWithAchievements,
                                                     goalBreakdown,
-                                                    activeGoals: goals.filter(g => !g.completed).length,
+                                                    activeGoals: uniqueGoals.filter(g => !g.completed).length,
                                                     periodDays
                                                 };
                                             }
