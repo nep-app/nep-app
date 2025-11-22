@@ -403,21 +403,15 @@ function HarmReductionTracker() {
 
                 const avgTimes = (totalConsumptions / 7).toFixed(1);
 
-                // Calculate avgMg from dailyLogs (somar todos os logs do mesmo dia)
+                // Calculate avgMg from dailyLogs
                 const mgValues = [];
 
                 last7Dates.forEach(date => {
-                    // Buscar TODOS os dailyLogs deste dia e somar os mg
-                    const dayLogs = dailyLogs.filter(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-
-                    if (dayLogs.length > 0) {
-                        const dayTotal = dayLogs.reduce((sum, log) => {
-                            const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
-                            return sum + (isNaN(logMg) ? 0 : logMg);
-                        }, 0);
-
-                        if (dayTotal > 0) {
-                            mgValues.push(dayTotal);
+                    const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
+                    if (dailyLog) {
+                        const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
+                        if (!isNaN(mgValue) && mgValue > 0) {
+                            mgValues.push(mgValue);
                         }
                     }
                 });
@@ -641,19 +635,10 @@ function HarmReductionTracker() {
 
                         // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            // Buscar todos os dailyLogs deste ciclo e somar os mg
-                            const cycleDailyLogs = dataDailyLogs.filter(log => log.cycleId === cycle.id);
-
-                            if (cycleDailyLogs.length > 0) {
-                                const totalMg = cycleDailyLogs.reduce((sum, log) => {
-                                    const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
-                                    return sum + (isNaN(logMg) ? 0 : logMg);
-                                }, 0);
-
-                                if (totalMg > 0) {
-                                    mgValue = totalMg;
-                                    source = `dailyLog (${cycleDailyLogs.length} registos)`;
-                                }
+                            const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            if (dailyLog && dailyLog.mg) {
+                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
+                                source = 'dailyLog';
                             }
                         }
 
@@ -925,19 +910,10 @@ function HarmReductionTracker() {
 
                         // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            // Buscar todos os dailyLogs deste ciclo e somar os mg
-                            const cycleDailyLogs = dataDailyLogs.filter(log => log.cycleId === cycle.id);
-
-                            if (cycleDailyLogs.length > 0) {
-                                const totalMg = cycleDailyLogs.reduce((sum, log) => {
-                                    const logMg = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
-                                    return sum + (isNaN(logMg) ? 0 : logMg);
-                                }, 0);
-
-                                if (totalMg > 0) {
-                                    mgValue = totalMg;
-                                    source = `dailyLog (${cycleDailyLogs.length} registos)`;
-                                }
+                            const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            if (dailyLog && dailyLog.mg) {
+                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
+                                source = 'dailyLog';
                             }
                         }
 
