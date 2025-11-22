@@ -634,10 +634,19 @@ function HarmReductionTracker() {
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         let source = 'cycle';
 
-                        // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
+                        // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            // Tentar buscar pelo cycleId primeiro (dados recentes)
+                            let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
                             console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
+
+                            // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
+                            if (!dailyLog || !dailyLog.mg) {
+                                const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
+                                console.log(`    🔎 Fallback: Procurando dailyLog por data=${cycleDay}:`, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'NÃO ENCONTRADO');
+                            }
+
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
@@ -910,10 +919,19 @@ function HarmReductionTracker() {
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         let source = 'cycle';
 
-                        // Se não tiver no cycle, buscar do dailyLog pelo cycleId (dados antigos)
+                        // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
                         if (isNaN(mgValue) || mgValue <= 0) {
-                            const dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
+                            // Tentar buscar pelo cycleId primeiro (dados recentes)
+                            let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
                             console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
+
+                            // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
+                            if (!dailyLog || !dailyLog.mg) {
+                                const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
+                                console.log(`    🔎 Fallback: Procurando dailyLog por data=${cycleDay}:`, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'NÃO ENCONTRADO');
+                            }
+
                             if (dailyLog && dailyLog.mg) {
                                 mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                                 source = 'dailyLog';
