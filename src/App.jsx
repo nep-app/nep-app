@@ -550,8 +550,7 @@ function HarmReductionTracker() {
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
 
-                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
-                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) return;
+                        // Nota: Qualquer hora é válida para deitar
 
                         // Ajustar madrugada
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
@@ -838,11 +837,7 @@ function HarmReductionTracker() {
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
                         const originalBedtime = cycle.bedtime;
 
-                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
-                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) { // 06:00-20:59
-                            console.log('  🕐', originalBedtime, '→ ⏰ Não é hora de deitar → ❌');
-                            return;
-                        }
+                        // Nota: Qualquer hora é válida para deitar
 
                         // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
@@ -1010,11 +1005,7 @@ function HarmReductionTracker() {
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
 
-                        // Filter invalid times (06:00-20:59 is not bedtime)
-                        if (bedtimeMinutes >= 360 && bedtimeMinutes < 1260) {
-                            console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} (inválido, dia) → ⏭️ Ignorado`);
-                            return;
-                        }
+                        // Nota: Qualquer hora é válida para deitar
 
                         total++;
 
@@ -3633,13 +3624,9 @@ function HarmReductionTracker() {
                 
                                                                             {/* Paragraph 7: Bedtime & Sleep Patterns */}
                                                                             {(() => {
-                                                                                // Filtrar apenas bedtimes válidos (21:00-05:59, excluir 06:00-20:59)
+                                                                                // Nota: Qualquer hora é válida para deitar
                                                                                 const cyclesWithValidBedtime = analysisCycles.filter(c => {
-                                                                                    if (!c.bedtime) return false;
-                                                                                    const [hours] = c.bedtime.split(':').map(Number);
-                                                                                    // Excluir horas de dia (06:00-20:59) que não são horas de deitar
-                                                                                    if (hours >= 6 && hours < 21) return false;
-                                                                                    return true;
+                                                                                    return c.bedtime; // Aceitar qualquer hora
                                                                                 });
                 
                                                                                 if (cyclesWithValidBedtime.length === 0) return null;
@@ -4765,9 +4752,7 @@ function HarmReductionTracker() {
                                                                     analysisCycles.forEach(cycle => {
                                                                         if (!cycle.bedtime) return;
 
-                                                                        // Filtrar horas inválidas (06:00-20:59 não é hora de deitar)
-                                                                        const [hours] = cycle.bedtime.split(':').map(Number);
-                                                                        if (hours >= 6 && hours < 21) return;
+                                                                        // Nota: Qualquer hora é válida para deitar
 
                                                                         // Converter bedtime para minutos
                                                                         const [h, m] = cycle.bedtime.split(':').map(Number);
