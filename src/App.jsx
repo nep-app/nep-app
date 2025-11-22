@@ -5061,14 +5061,6 @@ function HarmReductionTracker() {
                                                                                                         </div>
                                                                                                     </div>
                                                                                                 </div>
-                                                                                                <div className="flex gap-2 mt-3 text-xs">
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                        ↑ {moodImproves} ciclos melhoram
-                                                                                                    </div>
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                        ↓ {moodWorsens} ciclos pioram
-                                                                                                    </div>
-                                                                                                </div>
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
@@ -5096,14 +5088,6 @@ function HarmReductionTracker() {
                                                                                                                 {avgEnergyEnd}
                                                                                                             </div>
                                                                                                         </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div className="flex gap-2 mt-3 text-xs">
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700')}>
-                                                                                                        ↑ {energyImproves} ciclos melhoram
-                                                                                                    </div>
-                                                                                                    <div className={'px-2 py-1 rounded ' + (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700')}>
-                                                                                                        ↓ {energyWorsens} ciclos pioram
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
