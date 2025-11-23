@@ -1665,26 +1665,15 @@ function HarmReductionTracker() {
                                                 const targetMg = parseFloat(quantityGoal.target);
                                                 const mgValue = typeof lastCycleWithMg.mg === 'number' ? lastCycleWithMg.mg : parseFloat(lastCycleWithMg.mg);
 
-                                                // Se for de um ciclo, mostrar "último ciclo" em vez de data
-                                                // Se for de um dailyLog, usar a lógica de data
-                                                let dateLabel;
-                                                if (lastCycleWithMg.source === 'cycle') {
-                                                    dateLabel = 'último ciclo';
-                                                } else {
-                                                    const cycleDate = new Date(lastCycleWithMg.timestamp);
-                                                    const cycleKey = lastCycleWithMg.date || cycleDate.toISOString().split('T')[0];
-                                                    const isToday = cycleKey === getTodayKey();
-                                                    const yesterday = new Date();
-                                                    yesterday.setDate(yesterday.getDate() - 1);
-                                                    const isYesterday = cycleKey === yesterday.toISOString().split('T')[0];
-                                                    dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - cycleDate) / (1000 * 60 * 60 * 24))} dias`;
-                                                }
+                                                // Tanto ciclos como registos diários referem-se ao ciclo que terminou
+                                                // Por isso, mostrar "último ciclo" para ambos
+                                                const dateLabel = 'último ciclo';
 
                                                 if (mgValue >= targetMg) {
                                                     alerts.push({
                                                         text: `Atenção ao consumo ${dateLabel}! ${mgValue}mg`,
                                                         emoji: '📊',
-                                                        color: lastCycleWithMg.source === 'cycle' ? 'orange' : 'red',
+                                                        color: 'orange',
                                                         type: 'negative'
                                                     });
                                                 } else {
