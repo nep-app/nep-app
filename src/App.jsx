@@ -5289,8 +5289,7 @@ function HarmReductionTracker() {
                                             { id: 'consumo', label: '💊 Consumos' },
                                             { id: 'ciclos', label: '🌙 Ciclos' },
                                             { id: 'bem-estar', label: '💚 Bem-estar' },
-                                            { id: 'registos', label: '📝 Registos Diários' },
-                                            { id: 'dbt', label: '🎯 DBT' }
+                                            { id: 'dbt', label: '🎯 Reflexões' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {topic.label}
@@ -5337,8 +5336,8 @@ function HarmReductionTracker() {
                                         } else if (historyTopic === 'ciclos') {
                                             filteredConsumptions = [];
                                             filteredWellbeing = [];
-                                            filteredDailyLogs = [];
                                             filteredReflections = [];
+                                            // Manter filteredDailyLogs para mostrar dentro dos ciclos
                                         } else if (historyTopic === 'bem-estar') {
                                             filteredConsumptions = [];
                                             filteredReflections = [];
@@ -5348,11 +5347,6 @@ function HarmReductionTracker() {
                                             filteredConsumptions = [];
                                             filteredWellbeing = [];
                                             filteredDailyLogs = [];
-                                            filteredCycles = [];
-                                        } else if (historyTopic === 'registos') {
-                                            filteredConsumptions = [];
-                                            filteredReflections = [];
-                                            filteredWellbeing = [];
                                             filteredCycles = [];
                                         }
 
@@ -5458,34 +5452,6 @@ function HarmReductionTracker() {
                                                     </div>
                                                 )}
 
-                                                {filteredDailyLogs.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>📊 Registos Diários ({filteredDailyLogs.length})</h3>
-                                                        <div className="space-y-3">
-                                                            {filteredDailyLogs.map(l => (
-                                                                <div key={l.id} className={(darkMode ? 'bg-pink-900/30 border-pink-700/50' : 'bg-pink-50 border-pink-200') + ' p-3 rounded-lg border'}>
-                                                                    <div className="flex justify-between items-center mb-2">
-                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
-                                                                            {(() => {
-                                                                                const d = safeDate(l.timestamp || l.date);
-                                                                                return d ? d.toLocaleDateString('pt-PT') : 'Data inválida';
-                                                                            })()}
-                                                                        </div>
-                                                                        <button onClick={() => deleteItem('dailyLogs', l.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
-                                                                    </div>
-                                                                    <div className="flex gap-4 text-sm">
-                                                                        <div>
-                                                                            <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>Quantidade: </span>
-                                                                            <span className={'font-bold ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>{l.mg}mg</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    {l.notes && <div className={'text-sm mt-2 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {l.notes}</div>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                                 {filteredConsumptions.length > 0 && (
                                                     <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
@@ -5548,6 +5514,40 @@ function HarmReductionTracker() {
                                                                             <span>✓ Último consumo antes da meia-noite</span>
                                                                         </div>
                                                                     )}
+
+                                                                    {/* Registos Diários deste ciclo */}
+                                                                    {(() => {
+                                                                        // Buscar dailyLogs que pertencem a este ciclo (por cycleId ou por data)
+                                                                        const cycleDailyLogs = filteredDailyLogs.filter(log => {
+                                                                            // Primeiro tenta por cycleId (novo sistema)
+                                                                            if (log.cycleId && log.cycleId === cycle.id) return true;
+                                                                            // Fallback: comparar por data (antigo sistema)
+                                                                            if (log.date && cycle.date && log.date === cycle.date) return true;
+                                                                            // Fallback adicional: derivar data do timestamp
+                                                                            if (log.timestamp && cycle.timestamp) {
+                                                                                const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                                                                                const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                                return logDate === cycleDate;
+                                                                            }
+                                                                            return false;
+                                                                        });
+
+                                                                        return cycleDailyLogs.length > 0 && (
+                                                                            <div className={'text-xs mt-2 p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-gray-100')}>
+                                                                                <div className={'font-medium mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📝 Registos Diários:</div>
+                                                                                {cycleDailyLogs.map(log => (
+                                                                                    <div key={log.id} className={'flex justify-between items-center py-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                        <div>
+                                                                                            {log.mg && <span className="font-medium">{log.mg}mg</span>}
+                                                                                            {log.notes && <span className="italic ml-2">- {log.notes}</span>}
+                                                                                        </div>
+                                                                                        <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+
                                                                     {cycle.notes && <div className={'text-sm mt-2 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {cycle.notes}</div>}
                                                                 </div>
                                                             ))}
