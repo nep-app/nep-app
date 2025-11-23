@@ -10,6 +10,9 @@ import { useUI } from './contexts/UIContext';
 import { useToast } from './hooks/useToast';
 import { useAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
+import { POSITIVE_WORDS, NEGATIVE_WORDS } from './constants/sentimentWords';
+import { GOAL_TYPE_LABELS } from './constants/goalTypes';
+import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -269,6 +272,41 @@ function HarmReductionTracker() {
             const submitWellbeing = async () => {
                 try {
                     console.log('🔍 submitWellbeing - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
+
+                    // Validate sleep hours
+                    if (wellbeingForm.sleep !== '') {
+                        const sleepValidation = validateSleepHours(wellbeingForm.sleep);
+                        if (!sleepValidation.valid) {
+                            showToast('✗ ' + sleepValidation.error, 'error');
+                            return;
+                        }
+                    }
+
+                    // Validate mood
+                    if (wellbeingForm.mood !== '') {
+                        const moodValidation = validateMoodEnergy(wellbeingForm.mood);
+                        if (!moodValidation.valid) {
+                            showToast('✗ ' + moodValidation.error, 'error');
+                            return;
+                        }
+                    }
+
+                    // Validate energy
+                    if (wellbeingForm.energy !== '') {
+                        const energyValidation = validateMoodEnergy(wellbeingForm.energy);
+                        if (!energyValidation.valid) {
+                            showToast('✗ ' + energyValidation.error, 'error');
+                            return;
+                        }
+                    }
+
+                    // Validate and sanitize notes
+                    const notesValidation = validateText(wellbeingForm.notes, MAX_NOTE_LENGTH);
+                    if (!notesValidation.valid) {
+                        showToast('✗ ' + notesValidation.error, 'error');
+                        return;
+                    }
+
                     const currentCycle = getCurrentCycleId();
                     const item = {
                         id: genId(),
@@ -283,7 +321,7 @@ function HarmReductionTracker() {
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
-                        notes: wellbeingForm.notes
+                        notes: sanitizeText(wellbeingForm.notes)
                     };
                     console.log('📦 Item a guardar:', item);
                     await addWellbeingLog(item);
@@ -314,13 +352,20 @@ function HarmReductionTracker() {
 
             const submitThoughts = async (thoughtsText) => {
                 try {
+                    // Validate and sanitize thoughts
+                    const thoughtsValidation = validateText(thoughtsText, MAX_THOUGHT_LENGTH);
+                    if (!thoughtsValidation.valid) {
+                        showToast('✗ ' + thoughtsValidation.error, 'error');
+                        return;
+                    }
+
                     const currentCycle = getCurrentCycleId();
                     const item = {
                         id: genId(),
                         date: getTodayKey(),
                         timestamp: new Date().toISOString(),
                         cycleId: currentCycle,
-                        content: thoughtsText
+                        content: sanitizeText(thoughtsText)
                     };
                     await addThought(item);
                     setShowThoughtsModal(false);
@@ -1048,20 +1093,16 @@ function HarmReductionTracker() {
 
                 const lowerText = text.toLowerCase();
 
-                const positiveWords = ['bem', 'melhor', 'bom', 'boa', 'feliz', 'alegre', 'calmo', 'calma', 'paz', 'tranquilo', 'tranquila', 'consegui', 'vitória', 'sucesso', 'grato', 'grata', 'esperança', 'motivado', 'motivada', 'forte', 'resiliente', 'orgulho', 'orgulhoso', 'amor', 'amado', 'amada', 'confiante', 'positivo', 'positiva', 'otimista', 'divertido', 'divertida', 'produtivo', 'produtiva', 'okay', 'equilibrado', 'equilibrada'];
-
-                const negativeWords = ['mal', 'pior', 'triste', 'tristeza', 'ansioso', 'ansiosa', 'ansiedade', 'medo', 'preocupado', 'preocupada', 'stress', 'stressado', 'stressada', 'irritado', 'irritada', 'frustrado', 'frustrada', 'culpa', 'culpado', 'culpada', 'vergonha', 'sozinho', 'sozinha', 'solidão', 'deprimido', 'deprimida', 'desesperado', 'desesperada', 'fraco', 'fraca', 'cansado', 'cansada', 'exausto', 'exausta', 'difícil', 'dificuldade', 'problema', 'apático', 'apática'];
-
                 let positiveCount = 0;
                 let negativeCount = 0;
 
-                positiveWords.forEach(word => {
+                POSITIVE_WORDS.forEach(word => {
                     const regex = new RegExp('\\b' + word + '\\b', 'gi');
                     const matches = lowerText.match(regex);
                     if (matches) positiveCount += matches.length;
                 });
 
-                negativeWords.forEach(word => {
+                NEGATIVE_WORDS.forEach(word => {
                     const regex = new RegExp('\\b' + word + '\\b', 'gi');
                     const matches = lowerText.match(regex);
                     if (matches) negativeCount += matches.length;
@@ -3592,12 +3633,9 @@ function HarmReductionTracker() {
                                                                 ...analysisDailyLogs.map(d => d.notes || ''),
                                                                 ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0).join(' ');
-                
-                                                            const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
-                                                            const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
-                
-                                                            const positiveCount = positiveWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
-                                                            const negativeCount = negativeWords.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+
+                                                            const positiveCount = POSITIVE_WORDS.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
+                                                            const negativeCount = NEGATIVE_WORDS.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
                 
                                                             const sentimentScore = positiveCount - negativeCount;
                 

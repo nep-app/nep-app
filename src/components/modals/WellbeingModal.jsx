@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { EMOTIONS_LIST } from '../../constants/emotions';
 
 export const WellbeingModal = ({
   isOpen,
@@ -21,17 +22,6 @@ export const WellbeingModal = ({
     social: todayLogs.some(log => log.social === true),
     food: todayLogs.some(log => log.food === true)
   };
-
-  const emotionsList = [
-    '😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a',
-    '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a',
-    '😫 Frustrado/a', '🌟 Produtiva/o', '😐 Ambivalente', '😓 Stressado/a',
-    '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a',
-    '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a',
-    '😞 Apático/a', '🤗 Vulnerável', '⚡ Okay', '😣 Arrependido/a',
-    '😊 Divertido/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente',
-    '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'
-  ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
@@ -126,7 +116,7 @@ export const WellbeingModal = ({
           <div>
             <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
             <div className="grid grid-cols-2 gap-2">
-              {emotionsList.map(emotion => (
+              {EMOTIONS_LIST.map(emotion => (
                 <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
