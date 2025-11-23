@@ -1544,29 +1544,44 @@ function HarmReductionTracker() {
                                         // 2. META: Quantidade/Dosagem (reduce_quantity)
                                         const quantityGoal = goals.find(g => g.type === 'reduce_quantity');
                                         if (quantityGoal) {
-                                            const lastLog = dailyLogs
-                                                .filter(l => l.mg !== undefined)
-                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                                            // Buscar o mais recente entre CYCLES e DAILYLOGS (dados podem estar misturados)
+                                            const cyclesWithMg = cycles
+                                                .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
+                                                .map(c => ({ source: 'cycle', mg: c.mg, timestamp: c.timestamp, date: c.date }));
 
-                                            if (lastLog && lastLog.mg) {
+                                            const dailyLogsWithMg = dailyLogs
+                                                .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
+                                                .map(l => ({ source: 'dailyLog', mg: l.mg, timestamp: l.timestamp, date: l.date }));
+
+                                            // Juntar ambos e ordenar por timestamp (mais recente primeiro)
+                                            const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg]
+                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                                            const lastCycleWithMg = allWithMg[0];
+
+                                            if (lastCycleWithMg && lastCycleWithMg.mg) {
                                                 const targetMg = parseFloat(quantityGoal.target);
-                                                const logDate = new Date(lastLog.timestamp);
-                                                const isToday = lastLog.date === getTodayKey();
+                                                const mgValue = typeof lastCycleWithMg.mg === 'number' ? lastCycleWithMg.mg : parseFloat(lastCycleWithMg.mg);
+                                                const cycleDate = new Date(lastCycleWithMg.timestamp);
+
+                                                // Derivar a data do timestamp se não existir .date
+                                                const cycleKey = lastCycleWithMg.date || cycleDate.toISOString().split('T')[0];
+                                                const isToday = cycleKey === getTodayKey();
                                                 const yesterday = new Date();
                                                 yesterday.setDate(yesterday.getDate() - 1);
-                                                const isYesterday = lastLog.date === yesterday.toISOString().split('T')[0];
-                                                const dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - logDate) / (1000 * 60 * 60 * 24))} dias`;
+                                                const isYesterday = cycleKey === yesterday.toISOString().split('T')[0];
+                                                const dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - cycleDate) / (1000 * 60 * 60 * 24))} dias`;
 
-                                                if (lastLog.mg >= targetMg) {
+                                                if (mgValue >= targetMg) {
                                                     alerts.push({
-                                                        text: `Atenção ao consumo ${dateLabel}! ${lastLog.mg}mg (meta: <${targetMg}mg)`,
+                                                        text: `Atenção ao consumo ${dateLabel}! ${mgValue}mg (meta: <${targetMg}mg)`,
                                                         emoji: '📊',
                                                         color: isToday ? 'red' : 'orange',
                                                         type: 'negative'
                                                     });
                                                 } else {
                                                     alerts.push({
-                                                        text: `Boa! Consumo ${dateLabel}: ${lastLog.mg}mg (meta: <${targetMg}mg)`,
+                                                        text: `Boa! Consumo ${dateLabel}: ${mgValue}mg (meta: <${targetMg}mg)`,
                                                         emoji: '💚',
                                                         color: 'green',
                                                         type: 'positive'
