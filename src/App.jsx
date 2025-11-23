@@ -1770,24 +1770,12 @@ function HarmReductionTracker() {
                                                         type: 'positive'
                                                     });
                                                 } else {
-                                                    const cycleConsumptions = consumptions.filter(c => c.cycleId === lastCycle.id);
-                                                    if (cycleConsumptions.length > 0) {
-                                                        const lastConsumption = cycleConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-                                                        const lastTime = new Date(lastConsumption.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-                                                        alerts.push({
-                                                            text: `Cuidado! Último às ${lastTime}`,
-                                                            emoji: '⏰',
-                                                            color: 'orange',
-                                                            type: 'negative'
-                                                        });
-                                                    } else {
-                                                        alerts.push({
-                                                            text: `Cuidado! Último após 00h`,
-                                                            emoji: '⏰',
-                                                            color: 'orange',
-                                                            type: 'negative'
-                                                        });
-                                                    }
+                                                    alerts.push({
+                                                        text: `Cuidado! Último após 00h`,
+                                                        emoji: '⏰',
+                                                        color: 'orange',
+                                                        type: 'negative'
+                                                    });
                                                 }
                                             }
                                         }
