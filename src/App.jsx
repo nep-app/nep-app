@@ -5448,6 +5448,17 @@ function HarmReductionTracker() {
                                                                             <span className="font-medium">{cycle.triggers.join(', ')}</span>
                                                                         </div>
                                                                     )}
+                                                                    {cycle.mg && (
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Consumo diário: </span>
+                                                                            <span className="font-medium">{cycle.mg} mg</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {cycle.lastBefore00 && (
+                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-green-300' : 'text-green-700')}>
+                                                                            <span>✓ Último consumo antes da meia-noite</span>
+                                                                        </div>
+                                                                    )}
                                                                     {cycle.notes && <div className={'text-sm mt-2 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {cycle.notes}</div>}
                                                                 </div>
                                                             ))}
