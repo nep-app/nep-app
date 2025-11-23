@@ -4887,8 +4887,9 @@ function HarmReductionTracker() {
                                                                         // Converter bedtime para minutos
                                                                         const [h, m] = cycle.bedtime.split(':').map(Number);
                                                                         let bedtimeMinutes = h * 60 + m;
-                                                                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-                                                                        if (h >= 0 && h < 6) bedtimeMinutes += 1440;
+                                                                        // Ajustar madrugada/tarde (00:00-17:59 → 24:00-41:59)
+                                                                        // Cobre casos de sono irregular (deitar de madrugada ou durante o dia)
+                                                                        if (h >= 0 && h < 18) bedtimeMinutes += 1440;
 
                                                                         // Encontrar data do ciclo
                                                                         const cycleDate = safeToISODate(cycle.timestamp);
