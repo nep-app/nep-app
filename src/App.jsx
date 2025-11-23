@@ -1514,10 +1514,40 @@ function HarmReductionTracker() {
                                     {/* Mensagem Motivacional */}
                                     <MotivationalCard message={currentReflection} darkMode={darkMode} />
 
-                                    {(() => {
-                                        const alerts = [];
 
-                                        // AVISOS BASEADOS NAS METAS DEFINIDAS PELO USUÁRIO
+                                    {(() => {
+                                        const timeSince = getTimeSinceLastConsumption();
+                                        if (timeSince) {
+                                            const isLong = timeSince.hours >= 2;
+                                            return (
+                                                <div className="flex justify-center mb-4">
+                                                    <InfoBadge
+                                                        label="Sem consumir há"
+                                                        value={`${timeSince.value}${timeSince.unit}`}
+                                                        subValue={timeSince.subValue}
+                                                        subUnit={timeSince.subUnit}
+                                                        isPositive={isLong}
+                                                        darkMode={darkMode}
+                                                    />
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                    <GradientButton
+                                        onClick={markConsumption}
+                                        icon={Icons.Clock}
+                                        variant="purple"
+                                        size="large"
+                                        className="w-full shadow-xl"
+                                    >
+                                        Marcar Consumo Agora
+                                    </GradientButton>
+
+                                    {(() => {
+                                        // Recriar os alerts aqui (após o botão)
+                                        const alerts = [];
 
                                         // 1. META: Intervalo entre consumos (increase_interval)
                                         const intervalGoal = goals.find(g => g.type === 'increase_interval');
@@ -1544,7 +1574,6 @@ function HarmReductionTracker() {
                                         // 2. META: Quantidade/Dosagem (reduce_quantity)
                                         const quantityGoal = goals.find(g => g.type === 'reduce_quantity');
                                         if (quantityGoal) {
-                                            // Buscar o mais recente entre CYCLES e DAILYLOGS (dados podem estar misturados)
                                             const cyclesWithMg = cycles
                                                 .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
                                                 .map(c => ({ source: 'cycle', mg: c.mg, timestamp: c.timestamp, date: c.date }));
@@ -1553,7 +1582,6 @@ function HarmReductionTracker() {
                                                 .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
                                                 .map(l => ({ source: 'dailyLog', mg: l.mg, timestamp: l.timestamp, date: l.date }));
 
-                                            // Juntar ambos e ordenar por timestamp (mais recente primeiro)
                                             const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg]
                                                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
@@ -1563,8 +1591,6 @@ function HarmReductionTracker() {
                                                 const targetMg = parseFloat(quantityGoal.target);
                                                 const mgValue = typeof lastCycleWithMg.mg === 'number' ? lastCycleWithMg.mg : parseFloat(lastCycleWithMg.mg);
                                                 const cycleDate = new Date(lastCycleWithMg.timestamp);
-
-                                                // Derivar a data do timestamp se não existir .date
                                                 const cycleKey = lastCycleWithMg.date || cycleDate.toISOString().split('T')[0];
                                                 const isToday = cycleKey === getTodayKey();
                                                 const yesterday = new Date();
@@ -1634,20 +1660,19 @@ function HarmReductionTracker() {
                                                 const targetParts = targetStr.split(':');
                                                 let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
-                                                // Ajustar madrugada (00:00-05:59 vira 24:00-29:59)
                                                 if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
                                                 if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
 
                                                 if (bedtimeMinutes <= targetMinutes) {
                                                     alerts.push({
-                                                        text: `Boa! Deitaste-te às ${lastCycle.bedtime}`,
+                                                        text: `Boa! Deitaste às ${lastCycle.bedtime}`,
                                                         emoji: '💤',
                                                         color: 'green',
                                                         type: 'positive'
                                                     });
                                                 } else {
                                                     alerts.push({
-                                                        text: `Atenção! Deitaste-te tarde: ${lastCycle.bedtime}`,
+                                                        text: `Atenção! Deitaste às ${lastCycle.bedtime}`,
                                                         emoji: '🌃',
                                                         color: 'orange',
                                                         type: 'negative'
@@ -1671,20 +1696,19 @@ function HarmReductionTracker() {
                                                         type: 'positive'
                                                     });
                                                 } else {
-                                                    // Mostrar hora do último consumo se disponível
                                                     const cycleConsumptions = consumptions.filter(c => c.cycleId === lastCycle.id);
                                                     if (cycleConsumptions.length > 0) {
                                                         const lastConsumption = cycleConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
                                                         const lastTime = new Date(lastConsumption.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
                                                         alerts.push({
-                                                            text: `Cuidado! Último consumo foi às ${lastTime}`,
+                                                            text: `Cuidado! Último às ${lastTime}`,
                                                             emoji: '⏰',
                                                             color: 'orange',
                                                             type: 'negative'
                                                         });
                                                     } else {
                                                         alerts.push({
-                                                            text: `Cuidado! Último consumo foi depois da 00h`,
+                                                            text: `Cuidado! Último após 00h`,
                                                             emoji: '⏰',
                                                             color: 'orange',
                                                             type: 'negative'
@@ -1703,14 +1727,14 @@ function HarmReductionTracker() {
 
                                             if (todayConsumptions < targetFrequency) {
                                                 alerts.push({
-                                                    text: `Boa! Conseguiste apenas ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje`,
+                                                    text: `Boa! Só ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje`,
                                                     emoji: '🎯',
                                                     color: 'green',
                                                     type: 'positive'
                                                 });
                                             } else if (todayConsumptions >= targetFrequency) {
                                                 alerts.push({
-                                                    text: `Atenção! Já tens ${todayConsumptions} consumos hoje`,
+                                                    text: `Atenção! Já ${todayConsumptions} consumos hoje`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
@@ -1719,42 +1743,12 @@ function HarmReductionTracker() {
                                         }
 
                                         return alerts.length > 0 && (
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-2 mt-4">
                                                 {alerts.map((alert, i) => (
                                                     <AlertCard key={i} alert={alert} darkMode={darkMode} />
                                                 ))}
                                             </div>
                                         );
-                                    })()}
-
-                                    <GradientButton
-                                        onClick={markConsumption}
-                                        icon={Icons.Clock}
-                                        variant="purple"
-                                        size="large"
-                                        className="w-full shadow-xl"
-                                    >
-                                        Marcar Consumo Agora
-                                    </GradientButton>
-
-                                    {(() => {
-                                        const timeSince = getTimeSinceLastConsumption();
-                                        if (timeSince) {
-                                            const isLong = timeSince.hours >= 2;
-                                            return (
-                                                <div className="flex justify-center -mt-2">
-                                                    <InfoBadge
-                                                        label="Sem consumir há"
-                                                        value={`${timeSince.value}${timeSince.unit}`}
-                                                        subValue={timeSince.subValue}
-                                                        subUnit={timeSince.subUnit}
-                                                        isPositive={isLong}
-                                                        darkMode={darkMode}
-                                                    />
-                                                </div>
-                                            );
-                                        }
-                                        return null;
                                     })()}
 
                                     <div className="grid grid-cols-2 gap-4">
