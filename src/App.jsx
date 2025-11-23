@@ -1743,7 +1743,7 @@ function HarmReductionTracker() {
                                         }
 
                                         return alerts.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mt-4">
+                                            <div className="flex flex-wrap gap-2 mt-4 justify-center">
                                                 {alerts.map((alert, i) => (
                                                     <AlertCard key={i} alert={alert} darkMode={darkMode} />
                                                 ))}
