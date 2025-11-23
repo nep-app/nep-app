@@ -1570,7 +1570,7 @@ function HarmReductionTracker() {
                                         <GradientButton
                                             onClick={() => setShowThoughtsModal(true)}
                                             icon={Icons.BookOpen}
-                                            variant="pink"
+                                            variant="green"
                                             size="large"
                                             className="shadow-xl"
                                         >
