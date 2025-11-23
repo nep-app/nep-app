@@ -50,9 +50,14 @@ export const getDateRangeForPeriod = (period, offset = 0) => {
         start.setDate(start.getDate() - 29);
         start.setHours(0, 0, 0, 0);
     } else {
-        // tudo (all time)
-        console.log('⚠️ Returning null range (period = tudo)');
-        return { start: null, end: null };
+        // tudo (últimos 30 dias - mesma lógica que Progresso)
+        const periodDays = 30;
+        end = new Date(now);
+        end.setDate(end.getDate() - (offset * periodDays));
+        start = new Date(end);
+        start.setDate(start.getDate() - (periodDays - 1));
+        start.setHours(0, 0, 0, 0);
+        console.log('✅ Period "tudo" → últimos 30 dias');
     }
 
     console.log('✅ Returning date range:', { start, end });

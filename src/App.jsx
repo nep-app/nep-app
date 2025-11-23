@@ -3815,16 +3815,25 @@ function HarmReductionTracker() {
                 
                                                                             {/* Paragraph 9: Goals Achievement */}
                                                                             {goals.length > 0 && (() => {
-                                                                                const totalAchievements = goals.reduce((sum, g) => sum + getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing), 0);
-                                                                                const goalsWithAchievements = goals.filter(g => getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing) > 0);
+                                                                                // Filter to get only the most recent goal of each type (mesma lógica que Dashboard)
+                                                                                const goalsByType = {};
+                                                                                goals.forEach(g => {
+                                                                                    if (!goalsByType[g.type] || new Date(g.createdAt) > new Date(goalsByType[g.type].createdAt)) {
+                                                                                        goalsByType[g.type] = g;
+                                                                                    }
+                                                                                });
+                                                                                const uniqueGoals = Object.values(goalsByType);
+
+                                                                                const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing), 0);
+                                                                                const goalsWithAchievements = uniqueGoals.filter(g => getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing) > 0);
                 
                                                                                 return (
                                                                                     <p>
                                                                                         Sobre as tuas metas: cumpriste condições das tuas metas <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>{totalAchievements} vezes</strong> neste período!
-                                                                                        {goalsWithAchievements.length === goals.length ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {goals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
+                                                                                        {goalsWithAchievements.length === uniqueGoals.length ? (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {uniqueGoals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
                                                                                         ) : goalsWithAchievements.length > 0 ? (
-                                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {goals.length} metas. Continua focado/a nas que ainda não atingiste.</>
+                                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {uniqueGoals.length} metas. Continua focado/a nas que ainda não atingiste.</>
                                                                                         ) : (
                                                                                             <> Ainda não atingiste nenhuma meta neste período, mas não desanimes - ajustar metas ou estratégias é parte do processo.</>
                                                                                         )}
