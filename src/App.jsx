@@ -483,18 +483,6 @@ function HarmReductionTracker() {
                     return Math.max(0, Math.min(100, progress));
                 }
                 
-                if (goal.type === 'delay_first') {
-                    const recentConsumptions = consumptions.slice(0, 21);
-                    if (recentConsumptions.length === 0) return 0;
-                    const firstOfDays = {};
-                    recentConsumptions.forEach(c => { if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) { firstOfDays[c.date] = c.timestamp; } });
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-                    let successDays = 0;
-                    Object.values(firstOfDays).forEach(timestamp => { const d = new Date(timestamp); const firstMinutes = d.getHours() * 60 + d.getMinutes(); if (firstMinutes >= targetMinutes) successDays++; });
-                    return Math.min(100, (successDays / Object.keys(firstOfDays).length) * 100);
-                }
-                
                 if (goal.type === 'increase_interval') {
                     const intervalStats = getIntervalStats();
                     if (!intervalStats) return 0;
@@ -684,43 +672,6 @@ function HarmReductionTracker() {
                     });
 
                     console.log('⚖️ TOTAL ACHIEVED:', achievedCount);
-                }
-
-                if (goal.type === 'delay_first') {
-                    // REGRA: Conta dias onde primeiro consumo foi >= target
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
-                    const firstOfDays = {};
-
-                    dataConsumptions.forEach(c => {
-                        // Derivar data do timestamp para garantir consistência
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!firstOfDays[dateKey] || c.timestamp < firstOfDays[dateKey]) {
-                            firstOfDays[dateKey] = c.timestamp;
-                        }
-                    });
-
-                    // Remove dia atual da contagem
-                    delete firstOfDays[today];
-
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-
-                    console.log('⏰ META DELAY_FIRST:', {
-                        target: goal.target,
-                        targetMinutes,
-                        totalDias: Object.keys(firstOfDays).length,
-                        hoje: today
-                    });
-
-                    Object.entries(firstOfDays).forEach(([date, timestamp]) => {
-                        const d = new Date(timestamp);
-                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
-                        const isAchieved = firstMinutes >= targetMinutes;
-                        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-                        console.log('  📅', date, '→ primeiro consumo às', timeStr, '→', isAchieved ? '✅' : '❌');
-                        if (isAchieved) achievedCount++;
-                    });
                 }
 
                 if (goal.type === 'limit_last') {
@@ -953,28 +904,6 @@ function HarmReductionTracker() {
                         } else {
                             console.log(`  ⚖️ Ciclo ${cycleDate} → mg inválido/vazio`);
                         }
-                    });
-                }
-
-                if (goal.type === 'delay_first') {
-                    const firstOfDays = {};
-                    dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!firstOfDays[dateKey] || c.timestamp < firstOfDays[dateKey]) {
-                            firstOfDays[dateKey] = c.timestamp;
-                        }
-                    });
-
-                    delete firstOfDays[today]; // Skip today
-
-                    const targetParts = goal.target.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + parseInt(targetParts[1]);
-
-                    Object.values(firstOfDays).forEach(timestamp => {
-                        total++;
-                        const d = new Date(timestamp);
-                        const firstMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (firstMinutes >= targetMinutes) achieved++;
                     });
                 }
 
@@ -1588,21 +1517,23 @@ function HarmReductionTracker() {
                                     {(() => {
                                         const alerts = [];
 
-                                        // Check last interval
+                                        // AVISOS BASEADOS NAS METAS DEFINIDAS PELO USUÁRIO
+
+                                        // 1. META: Intervalo entre consumos (increase_interval)
+                                        const intervalGoal = goals.find(g => g.type === 'increase_interval');
                                         const lastInterval = getLastInterval();
-                                        if (lastInterval) {
-                                            if (lastInterval.isShort) {
-                                                // Negative alert for <2h
+                                        if (lastInterval && intervalGoal) {
+                                            const targetInterval = parseFloat(intervalGoal.target);
+                                            if (lastInterval.hours < targetInterval) {
                                                 alerts.push({
-                                                    text: `Intervalo curto: ${lastInterval.hours}h`,
+                                                    text: `Intervalo curto! ${lastInterval.hours}h (meta: ≥${targetInterval}h)`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
                                                 });
-                                            } else if (lastInterval.hours >= 2) {
-                                                // Positive alert for >=2h
+                                            } else {
                                                 alerts.push({
-                                                    text: `Bom intervalo! ${lastInterval.hours}h`,
+                                                    text: `Bom intervalo! ${lastInterval.hours}h (meta: ≥${targetInterval}h)`,
                                                     emoji: '✨',
                                                     color: 'green',
                                                     type: 'positive'
@@ -1610,27 +1541,166 @@ function HarmReductionTracker() {
                                             }
                                         }
 
-                                        // Check high dosage (fixed threshold >=200mg) - ONLY check the most recent log (last cycle)
-                                        // Since there's only ONE log per cycle, check ONLY the most recent log
-                                        const lastLog = dailyLogs
-                                            .filter(l => l.mg !== undefined)
-                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                                        // 2. META: Quantidade/Dosagem (reduce_quantity)
+                                        const quantityGoal = goals.find(g => g.type === 'reduce_quantity');
+                                        if (quantityGoal) {
+                                            const lastLog = dailyLogs
+                                                .filter(l => l.mg !== undefined)
+                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-                                        if (lastLog && lastLog.mg >= 200) {
-                                            const logDate = new Date(lastLog.timestamp);
-                                            const isToday = lastLog.date === getTodayKey();
-                                            const yesterday = new Date();
-                                            yesterday.setDate(yesterday.getDate() - 1);
-                                            const isYesterday = lastLog.date === yesterday.toISOString().split('T')[0];
+                                            if (lastLog && lastLog.mg) {
+                                                const targetMg = parseFloat(quantityGoal.target);
+                                                const logDate = new Date(lastLog.timestamp);
+                                                const isToday = lastLog.date === getTodayKey();
+                                                const yesterday = new Date();
+                                                yesterday.setDate(yesterday.getDate() - 1);
+                                                const isYesterday = lastLog.date === yesterday.toISOString().split('T')[0];
+                                                const dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - logDate) / (1000 * 60 * 60 * 24))} dias`;
 
-                                            const dateLabel = isToday ? 'hoje' : isYesterday ? 'ontem' : `há ${Math.floor((new Date() - logDate) / (1000 * 60 * 60 * 24))} dias`;
+                                                if (lastLog.mg >= targetMg) {
+                                                    alerts.push({
+                                                        text: `Atenção ao consumo ${dateLabel}! ${lastLog.mg}mg (meta: <${targetMg}mg)`,
+                                                        emoji: '📊',
+                                                        color: isToday ? 'red' : 'orange',
+                                                        type: 'negative'
+                                                    });
+                                                } else {
+                                                    alerts.push({
+                                                        text: `Boa! Consumo ${dateLabel}: ${lastLog.mg}mg (meta: <${targetMg}mg)`,
+                                                        emoji: '💚',
+                                                        color: 'green',
+                                                        type: 'positive'
+                                                    });
+                                                }
+                                            }
+                                        }
 
-                                            alerts.push({
-                                                text: `Dosagem alta ${dateLabel}! (≥200mg)`,
-                                                emoji: '📊',
-                                                color: isToday ? 'red' : 'orange',
-                                                type: 'negative'
-                                            });
+                                        // 3. META: Horas de sono (sleep_hours)
+                                        const sleepGoal = goals.find(g => g.type === 'sleep_hours');
+                                        if (sleepGoal && wellbeingLogs.length > 0) {
+                                            const lastWellbeing = wellbeingLogs
+                                                .filter(w => w.sleep && !isNaN(parseFloat(w.sleep)))
+                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                                            if (lastWellbeing) {
+                                                const sleepHours = parseFloat(lastWellbeing.sleep);
+                                                const targetSleep = parseFloat(sleepGoal.target);
+
+                                                if (sleepHours >= targetSleep) {
+                                                    alerts.push({
+                                                        text: `Parabéns! ${sleepHours}h de sono (meta: ≥${targetSleep}h)`,
+                                                        emoji: '🌙',
+                                                        color: 'green',
+                                                        type: 'positive'
+                                                    });
+                                                } else {
+                                                    alerts.push({
+                                                        text: `Atenção ao sono: ${sleepHours}h (meta: ≥${targetSleep}h)`,
+                                                        emoji: '😴',
+                                                        color: 'orange',
+                                                        type: 'negative'
+                                                    });
+                                                }
+                                            }
+                                        }
+
+                                        // 4. META: Hora de deitar (bedtime_before)
+                                        const bedtimeGoal = goals.find(g => g.type === 'bedtime_before');
+                                        if (bedtimeGoal && cycles.length > 0) {
+                                            const lastCycle = cycles
+                                                .filter(c => c.bedtime)
+                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                                            if (lastCycle) {
+                                                const targetStr = typeof bedtimeGoal.target === 'string' ? bedtimeGoal.target : String(bedtimeGoal.target).padStart(2, '0') + ':00';
+                                                const bedtimeParts = lastCycle.bedtime.split(':');
+                                                let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+
+                                                const targetParts = targetStr.split(':');
+                                                let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+                                                // Ajustar madrugada (00:00-05:59 vira 24:00-29:59)
+                                                if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
+                                                if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
+
+                                                if (bedtimeMinutes <= targetMinutes) {
+                                                    alerts.push({
+                                                        text: `Boa! Deitaste-te às ${lastCycle.bedtime} (meta: antes das ${targetStr})`,
+                                                        emoji: '💤',
+                                                        color: 'green',
+                                                        type: 'positive'
+                                                    });
+                                                } else {
+                                                    alerts.push({
+                                                        text: `Atenção! Deitaste-te tarde: ${lastCycle.bedtime} (meta: antes das ${targetStr})`,
+                                                        emoji: '🌃',
+                                                        color: 'orange',
+                                                        type: 'negative'
+                                                    });
+                                                }
+                                            }
+                                        }
+
+                                        // 5. META: Último consumo antes da 00h (limit_last)
+                                        const limitLastGoal = goals.find(g => g.type === 'limit_last');
+                                        if (limitLastGoal && cycles.length > 0) {
+                                            const lastCycle = cycles
+                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                                            if (lastCycle && lastCycle.lastBefore00 !== undefined) {
+                                                if (lastCycle.lastBefore00 === true) {
+                                                    alerts.push({
+                                                        text: `Boa! Último consumo antes da 00h`,
+                                                        emoji: '🌙',
+                                                        color: 'green',
+                                                        type: 'positive'
+                                                    });
+                                                } else {
+                                                    // Mostrar hora do último consumo se disponível
+                                                    const cycleConsumptions = consumptions.filter(c => c.cycleId === lastCycle.id);
+                                                    if (cycleConsumptions.length > 0) {
+                                                        const lastConsumption = cycleConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                                                        const lastTime = new Date(lastConsumption.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+                                                        alerts.push({
+                                                            text: `Cuidado! Último consumo foi às ${lastTime} (meta: antes da 00h)`,
+                                                            emoji: '⏰',
+                                                            color: 'orange',
+                                                            type: 'negative'
+                                                        });
+                                                    } else {
+                                                        alerts.push({
+                                                            text: `Cuidado! Último consumo foi depois da 00h (meta: antes da 00h)`,
+                                                            emoji: '⏰',
+                                                            color: 'orange',
+                                                            type: 'negative'
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // 6. META: Frequência diária (reduce_frequency)
+                                        const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
+                                        if (frequencyGoal) {
+                                            const today = getTodayKey();
+                                            const todayConsumptions = consumptions.filter(c => c.date === today).length;
+                                            const targetFrequency = parseInt(frequencyGoal.target);
+
+                                            if (todayConsumptions < targetFrequency) {
+                                                alerts.push({
+                                                    text: `Boa! Conseguiste apenas ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje (meta: <${targetFrequency})`,
+                                                    emoji: '🎯',
+                                                    color: 'green',
+                                                    type: 'positive'
+                                                });
+                                            } else if (todayConsumptions >= targetFrequency) {
+                                                alerts.push({
+                                                    text: `Atenção! Já tens ${todayConsumptions} consumos hoje (meta: <${targetFrequency})`,
+                                                    emoji: '⚠️',
+                                                    color: 'orange',
+                                                    type: 'negative'
+                                                });
+                                            }
                                         }
 
                                         return alerts.length > 0 && (
@@ -1974,7 +2044,7 @@ function HarmReductionTracker() {
                                                         const today = new Date().toLocaleDateString('pt-PT');
                                                         const allDates = new Set();
 
-                                                        if (g.type === 'reduce_frequency' || g.type === 'delay_first') {
+                                                        if (g.type === 'reduce_frequency') {
                                                             filteredConsumptions.forEach(c => {
                                                                 const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
                                                                 if (dateKey !== today) allDates.add(dateKey);
@@ -2116,7 +2186,6 @@ function HarmReductionTracker() {
                                                                         const goalTypeLabels = {
                                                                             'reduce_frequency': '🔢 Reduzir frequência',
                                                                             'reduce_quantity': '⚖️ Reduzir quantidade',
-                                                                            'delay_first': '⏰ Adiar primeiro consumo',
                                                                             'limit_last': '🌙 Limitar último consumo',
                                                                             'increase_interval': '⏳ Aumentar intervalo',
                                                                             'sleep_hours': '😴 Horas de sono',
@@ -2125,7 +2194,6 @@ function HarmReductionTracker() {
                                                                         const explanations = {
                                                                             'reduce_frequency': `Dias com <${goal.target} consumos`,
                                                                             'reduce_quantity': `Ciclos com <${goal.target}mg`,
-                                                                            'delay_first': `Dias com 1º consumo ≥${goal.target}`,
                                                                             'limit_last': `Ciclos com último antes da meia-noite`,
                                                                             'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
                                                                             'sleep_hours': `Noites com ≥${goal.target}h de sono`,
