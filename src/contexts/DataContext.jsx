@@ -48,6 +48,7 @@ export const DataProvider = ({ children }) => {
   const [cycles, setCycles] = useState([]);
   const [goals, setGoals] = useState([]);
   const [copingStrategies, setCopingStrategies] = useState([]);
+  const [thoughts, setThoughts] = useState([]);
 
   // Auth listener
   useEffect(() => {
@@ -68,6 +69,7 @@ export const DataProvider = ({ children }) => {
       setCycles([]);
       setGoals([]);
       setCopingStrategies([]);
+      setThoughts([]);
       return;
     }
 
@@ -126,6 +128,14 @@ export const DataProvider = ({ children }) => {
       onSnapshot(collection(db, `users/${user.uid}/copingStrategies`), (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data());
         setCopingStrategies(data);
+      })
+    );
+
+    // Thoughts listener
+    unsubscribers.push(
+      onSnapshot(collection(db, `users/${user.uid}/thoughts`), (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        setThoughts(data);
       })
     );
 
@@ -198,6 +208,11 @@ export const DataProvider = ({ children }) => {
     return await deleteDoc(doc(db, `users/${user.uid}/copingStrategies`, id));
   };
 
+  const addThought = async (data) => {
+    if (!user) return;
+    return await setDoc(doc(db, `users/${user.uid}/thoughts`, data.id), data);
+  };
+
   const value = {
     auth,
     db,
@@ -210,6 +225,7 @@ export const DataProvider = ({ children }) => {
     cycles,
     goals,
     copingStrategies,
+    thoughts,
     addConsumption,
     deleteConsumption,
     addDailyLog,
@@ -223,6 +239,7 @@ export const DataProvider = ({ children }) => {
     deleteGoal,
     addCopingStrategy,
     deleteCopingStrategy,
+    addThought,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

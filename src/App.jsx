@@ -24,6 +24,7 @@ const ReflectionModal = lazy(() => import('./components/modals/ReflectionModal')
 const CycleModal = lazy(() => import('./components/modals/CycleModal').then(module => ({ default: module.CycleModal })));
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
+const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
 
 // Import UI components
 import { AlertCard } from './components/ui/AlertCard';
@@ -35,8 +36,8 @@ import { StatCard } from './components/ui/StatCard';
 function HarmReductionTracker() {
             // ===== 2. STATE MANAGEMENT =====
             // Use contexts for data and UI state
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
             // Use custom hooks
             const { toasts, showToast } = useToast();
@@ -64,6 +65,7 @@ function HarmReductionTracker() {
             const [reflectionsToShow, setReflectionsToShow] = useState(10);
             const [wellbeingToShow, setWellbeingToShow] = useState(14);
             const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
+            const [thoughtsToShow, setThoughtsToShow] = useState(10);
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
@@ -209,7 +211,8 @@ function HarmReductionTracker() {
                     'wellbeingLogs': 'este registo de bem-estar',
                     'dailyLogs': 'este registo diário',
                     'cycles': 'este ciclo',
-                    'goals': 'esta meta'
+                    'goals': 'esta meta',
+                    'thoughts': 'este pensamento'
                 };
                 const itemName = itemNames[collectionName] || 'este item';
 
@@ -305,6 +308,25 @@ function HarmReductionTracker() {
                     showToast('✓ Reflexão guardada', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao guardar reflexão', 'error');
+                    console.error(error);
+                }
+            };
+
+            const submitThoughts = async (thoughtsText) => {
+                try {
+                    const currentCycle = getCurrentCycleId();
+                    const item = {
+                        id: genId(),
+                        date: getTodayKey(),
+                        timestamp: new Date().toISOString(),
+                        cycleId: currentCycle,
+                        content: thoughtsText
+                    };
+                    await addThought(item);
+                    setShowThoughtsModal(false);
+                    showToast('✓ Pensamento guardado no diário', 'success');
+                } catch (error) {
+                    showToast('✗ Erro ao guardar pensamento', 'error');
                     console.error(error);
                 }
             };
@@ -1535,15 +1557,26 @@ function HarmReductionTracker() {
                                         return null;
                                     })()}
 
-                                    <GradientButton
-                                        onClick={markConsumption}
-                                        icon={Icons.Clock}
-                                        variant="purple"
-                                        size="large"
-                                        className="w-full shadow-xl"
-                                    >
-                                        Marcar Consumo Agora
-                                    </GradientButton>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <GradientButton
+                                            onClick={markConsumption}
+                                            icon={Icons.Clock}
+                                            variant="purple"
+                                            size="large"
+                                            className="shadow-xl"
+                                        >
+                                            Marcar Consumo Agora
+                                        </GradientButton>
+                                        <GradientButton
+                                            onClick={() => setShowThoughtsModal(true)}
+                                            icon={Icons.BookOpen}
+                                            variant="purple"
+                                            size="large"
+                                            className="shadow-xl"
+                                        >
+                                            Pensamentos
+                                        </GradientButton>
+                                    </div>
 
                                     {(() => {
                                         // Recriar os alerts aqui (após o botão)
@@ -3437,6 +3470,7 @@ function HarmReductionTracker() {
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
                                         const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
                                         const filteredReflections = filterByDateRange(reflections, dateRange);
+                                        const filteredThoughts = filterByDateRange(thoughts, dateRange);
 
                                         // Usar dados filtrados diretamente (sem excluir dia atual)
                                         const analysisConsumptions = filteredConsumptions;
@@ -3444,6 +3478,7 @@ function HarmReductionTracker() {
                                         const analysisCycles = filteredCycles;
                                         const analysisDailyLogs = filteredDailyLogs;
                                         const analysisReflections = filteredReflections;
+                                        const analysisThoughts = filteredThoughts;
 
                                             // Calculate all needed data
                                             const byHour = {};
@@ -3554,7 +3589,8 @@ function HarmReductionTracker() {
                                                                 ...analysisWellbeing.map(w => w.note || ''),
                                                                 ...analysisCycles.map(c => c.notes || ''),
                                                                 ...analysisReflections.map(r => r.answer || ''),
-                                                                ...analysisDailyLogs.map(d => d.notes || '')
+                                                                ...analysisDailyLogs.map(d => d.notes || ''),
+                                                                ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0).join(' ');
                 
                                                             const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
@@ -5328,7 +5364,8 @@ function HarmReductionTracker() {
                                             { id: 'consumo', label: '💊 Consumos' },
                                             { id: 'ciclos', label: '🌙 Ciclos' },
                                             { id: 'bem-estar', label: '💚 Bem-estar' },
-                                            { id: 'dbt', label: '🎯 Reflexões' }
+                                            { id: 'dbt', label: '🎯 Reflexões' },
+                                            { id: 'pensamentos', label: '📝 Pensamentos' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {topic.label}
@@ -5351,13 +5388,15 @@ function HarmReductionTracker() {
                                         const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
                                         const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
+                                        const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
 
                                         console.log('📊 Dados após filtro temporal:', {
                                             reflexões: tempFilteredReflections.length,
                                             bemEstar: tempFilteredWellbeing.length,
                                             registosDiarios: tempFilteredDailyLogs.length,
                                             consumos: tempFilteredConsumptions.length,
-                                            ciclos: tempFilteredCycles.length
+                                            ciclos: tempFilteredCycles.length,
+                                            pensamentos: tempFilteredThoughts.length
                                         });
 
                                         // Apply topic filter
@@ -5366,27 +5405,38 @@ function HarmReductionTracker() {
                                         let filteredDailyLogs = tempFilteredDailyLogs;
                                         let filteredConsumptions = tempFilteredConsumptions;
                                         let filteredCycles = tempFilteredCycles;
+                                        let filteredThoughts = tempFilteredThoughts;
 
                                         if (historyTopic === 'consumo') {
                                             filteredReflections = [];
                                             filteredWellbeing = [];
                                             filteredDailyLogs = [];
                                             filteredCycles = [];
+                                            filteredThoughts = [];
                                         } else if (historyTopic === 'ciclos') {
                                             filteredConsumptions = [];
                                             filteredWellbeing = [];
                                             filteredReflections = [];
+                                            filteredThoughts = [];
                                             // Manter filteredDailyLogs para mostrar dentro dos ciclos
                                         } else if (historyTopic === 'bem-estar') {
                                             filteredConsumptions = [];
                                             filteredReflections = [];
                                             filteredDailyLogs = [];
                                             filteredCycles = [];
+                                            filteredThoughts = [];
                                         } else if (historyTopic === 'dbt') {
                                             filteredConsumptions = [];
                                             filteredWellbeing = [];
                                             filteredDailyLogs = [];
                                             filteredCycles = [];
+                                            filteredThoughts = [];
+                                        } else if (historyTopic === 'pensamentos') {
+                                            filteredConsumptions = [];
+                                            filteredWellbeing = [];
+                                            filteredDailyLogs = [];
+                                            filteredCycles = [];
+                                            filteredReflections = [];
                                         }
 
                                         console.log('✅ Dados após filtro de tópico:', {
@@ -5397,7 +5447,7 @@ function HarmReductionTracker() {
                                             ciclos: filteredCycles.length
                                         });
 
-                                        const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0;
+                                        const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
                                         if (!hasData) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos neste período</div>);
 
@@ -5429,6 +5479,36 @@ function HarmReductionTracker() {
                                                         {filteredReflections.length > reflectionsToShow && (
                                                             <button onClick={() => setReflectionsToShow(prev => prev + 10)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
                                                                 Ver mais ({filteredReflections.length - reflectionsToShow} restantes)
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {filteredThoughts.length > 0 && (
+                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.BookOpen className={'w-4 h-4 ' + (darkMode ? 'text-pink-400' : 'text-pink-600')} /> Pensamentos ({filteredThoughts.length})</h3>
+                                                        <div className="space-y-4">
+                                                            {filteredThoughts.slice(0, thoughtsToShow).map(t => (
+                                                                <div key={t.id} className={(darkMode ? 'border-pink-500 bg-pink-900/30' : 'border-pink-400 bg-pink-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
+                                                                    <div className="flex justify-between items-start mb-1">
+                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            {(() => {
+                                                                                const d = safeDate(t.timestamp || t.date);
+                                                                                if (!d) return 'Data inválida';
+                                                                                const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                return dateStr + timeStr;
+                                                                            })()}
+                                                                        </div>
+                                                                        <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                    </div>
+                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{t.content}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {filteredThoughts.length > thoughtsToShow && (
+                                                            <button onClick={() => setThoughtsToShow(prev => prev + 10)} className={(darkMode ? 'text-pink-400 hover:text-pink-300' : 'text-pink-600 hover:text-pink-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+                                                                Ver mais ({filteredThoughts.length - thoughtsToShow} restantes)
                                                             </button>
                                                         )}
                                                     </div>
@@ -5680,6 +5760,15 @@ function HarmReductionTracker() {
                                 setEditingConsumption={setEditingConsumption}
                                 onSubmit={saveEditedConsumption}
                                 safeDate={safeDate}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <ThoughtsModal
+                                isOpen={showThoughtsModal}
+                                onClose={() => setShowThoughtsModal(false)}
+                                darkMode={darkMode}
+                                onSubmit={submitThoughts}
                             />
                         </Suspense>
 

@@ -30,6 +30,7 @@ export const UIProvider = ({ children }) => {
   const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
   const [showCopingModal, setShowCopingModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showThoughtsModal, setShowThoughtsModal] = useState(false);
 
   // Edit states
   const [editingGoal, setEditingGoal] = useState(null);
@@ -71,6 +72,7 @@ export const UIProvider = ({ children }) => {
     setShowEditConsumptionModal(false);
     setShowCopingModal(false);
     setShowEducationModal(false);
+    setShowThoughtsModal(false);
     setEditingGoal(null);
     setEditingCycle(null);
     setEditingConsumption(null);
@@ -104,6 +106,8 @@ export const UIProvider = ({ children }) => {
     setShowCopingModal,
     showEducationModal,
     setShowEducationModal,
+    showThoughtsModal,
+    setShowThoughtsModal,
 
     // Edit states
     editingGoal,
