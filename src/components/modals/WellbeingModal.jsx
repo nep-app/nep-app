@@ -7,9 +7,20 @@ export const WellbeingModal = ({
   darkMode,
   wellbeingForm,
   setWellbeingForm,
-  onSubmit
+  onSubmit,
+  wellbeingLogs = [],
+  todayKey = ''
 }) => {
   if (!isOpen) return null;
+
+  // Verificar se já existe registo de autocuidado hoje
+  const todayLogs = wellbeingLogs.filter(log => log.date === todayKey);
+  const alreadyChecked = {
+    water: todayLogs.some(log => log.water === true),
+    rest: todayLogs.some(log => log.rest === true),
+    social: todayLogs.some(log => log.social === true),
+    food: todayLogs.some(log => log.food === true)
+  };
 
   const emotionsList = [
     '😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a',
@@ -70,41 +81,45 @@ export const WellbeingModal = ({
           <div>
             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Autocuidado hoje</label>
             <div className="space-y-2">
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className={'flex items-center space-x-2 ' + (alreadyChecked.water ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
-                  checked={wellbeingForm.water}
+                  checked={wellbeingForm.water || alreadyChecked.water}
                   onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})}
+                  disabled={alreadyChecked.water}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>💧 Bebi água suficiente</span>
+                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{alreadyChecked.water ? '✓ ' : ''}💧 Bebi água suficiente</span>
               </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className={'flex items-center space-x-2 ' + (alreadyChecked.rest ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
-                  checked={wellbeingForm.rest}
+                  checked={wellbeingForm.rest || alreadyChecked.rest}
                   onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})}
+                  disabled={alreadyChecked.rest}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>😴 Descansei o suficiente</span>
+                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{alreadyChecked.rest ? '✓ ' : ''}😴 Descansei o suficiente</span>
               </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className={'flex items-center space-x-2 ' + (alreadyChecked.social ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
-                  checked={wellbeingForm.social}
+                  checked={wellbeingForm.social || alreadyChecked.social}
                   onChange={(e) => setWellbeingForm({...wellbeingForm, social: e.target.checked})}
+                  disabled={alreadyChecked.social}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>👥 Tive contacto social</span>
+                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{alreadyChecked.social ? '✓ ' : ''}👥 Tive contacto social</span>
               </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
+              <label className={'flex items-center space-x-2 ' + (alreadyChecked.food ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
-                  checked={wellbeingForm.food}
+                  checked={wellbeingForm.food || alreadyChecked.food}
                   onChange={(e) => setWellbeingForm({...wellbeingForm, food: e.target.checked})}
+                  disabled={alreadyChecked.food}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>🍽️ Comi refeições nutritivas</span>
+                <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{alreadyChecked.food ? '✓ ' : ''}🍽️ Comi refeições nutritivas</span>
               </label>
             </div>
           </div>

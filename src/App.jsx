@@ -1570,7 +1570,7 @@ function HarmReductionTracker() {
                                         <GradientButton
                                             onClick={() => setShowThoughtsModal(true)}
                                             icon={Icons.BookOpen}
-                                            variant="purple"
+                                            variant="pink"
                                             size="large"
                                             className="shadow-xl"
                                         >
@@ -5713,6 +5713,8 @@ function HarmReductionTracker() {
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
+                                wellbeingLogs={wellbeingLogs}
+                                todayKey={getTodayKey()}
                             />
                         </Suspense>
 
