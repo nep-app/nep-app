@@ -14,11 +14,11 @@ export const WellbeingModal = ({
   const emotionsList = [
     '😊 Feliz', '😢 Triste', '😰 Ansioso/a', '😌 Calmo/a',
     '😤 Irritado/a', '💪 Motivado/a', '😴 Cansado/a', '🙏 Grato/a',
-    '😫 Frustrado/a', '🌟 Esperançoso/a', '😐 Entediado/a', '😓 Stressado/a',
+    '😫 Frustrado/a', '🌟 Produtiva/o', '😐 Ambivalente', '😓 Stressado/a',
     '💯 Confiante', '😔 Inseguro/a', '🥺 Solitário/a', '🥰 Amado/a',
     '🎉 Entusiasmado/a', '😕 Confuso/a', '🌱 Orgulhoso/a', '😖 Culpado/a',
-    '😞 Envergonhado/a', '🤗 Vulnerável', '⚡ Empoderado/a', '😣 Arrependido/a',
-    '😊 Satisfeito/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente',
+    '😞 Apático/a', '🤗 Vulnerável', '⚡ Okay', '😣 Arrependido/a',
+    '😊 Divertido/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente',
     '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz'
   ];
 

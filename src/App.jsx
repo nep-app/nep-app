@@ -1026,9 +1026,9 @@ function HarmReductionTracker() {
 
                 const lowerText = text.toLowerCase();
 
-                const positiveWords = ['bem', 'melhor', 'bom', 'boa', 'feliz', 'alegre', 'calmo', 'calma', 'paz', 'tranquilo', 'tranquila', 'consegui', 'vitória', 'sucesso', 'grato', 'grata', 'esperança', 'motivado', 'motivada', 'forte', 'resiliente', 'orgulho', 'orgulhoso', 'amor', 'amado', 'amada', 'confiante', 'positivo', 'positiva', 'otimista', 'satisfeito', 'satisfeita', 'equilibrado', 'equilibrada'];
+                const positiveWords = ['bem', 'melhor', 'bom', 'boa', 'feliz', 'alegre', 'calmo', 'calma', 'paz', 'tranquilo', 'tranquila', 'consegui', 'vitória', 'sucesso', 'grato', 'grata', 'esperança', 'motivado', 'motivada', 'forte', 'resiliente', 'orgulho', 'orgulhoso', 'amor', 'amado', 'amada', 'confiante', 'positivo', 'positiva', 'otimista', 'divertido', 'divertida', 'produtivo', 'produtiva', 'okay', 'equilibrado', 'equilibrada'];
 
-                const negativeWords = ['mal', 'pior', 'triste', 'tristeza', 'ansioso', 'ansiosa', 'ansiedade', 'medo', 'preocupado', 'preocupada', 'stress', 'stressado', 'stressada', 'irritado', 'irritada', 'frustrado', 'frustrada', 'culpa', 'culpado', 'culpada', 'vergonha', 'sozinho', 'sozinha', 'solidão', 'deprimido', 'deprimida', 'desesperado', 'desesperada', 'fraco', 'fraca', 'cansado', 'cansada', 'exausto', 'exausta', 'difícil', 'dificuldade', 'problema'];
+                const negativeWords = ['mal', 'pior', 'triste', 'tristeza', 'ansioso', 'ansiosa', 'ansiedade', 'medo', 'preocupado', 'preocupada', 'stress', 'stressado', 'stressada', 'irritado', 'irritada', 'frustrado', 'frustrada', 'culpa', 'culpado', 'culpada', 'vergonha', 'sozinho', 'sozinha', 'solidão', 'deprimido', 'deprimida', 'desesperado', 'desesperada', 'fraco', 'fraca', 'cansado', 'cansada', 'exausto', 'exausta', 'difícil', 'dificuldade', 'problema', 'apático', 'apática'];
 
                 let positiveCount = 0;
                 let negativeCount = 0;
