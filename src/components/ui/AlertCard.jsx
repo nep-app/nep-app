@@ -4,18 +4,18 @@ export const AlertCard = ({ alert, darkMode }) => {
   const getColorClasses = () => {
     if (alert.type === 'positive') {
       return {
-        bg: darkMode ? 'from-green-900/30 to-emerald-900/30 border-green-700/50' : 'from-green-50 to-emerald-50 border-green-200',
-        text: darkMode ? 'text-green-400' : 'text-green-700'
+        bg: darkMode ? 'bg-green-900/40 border-green-700/60' : 'bg-green-100 border-green-300',
+        text: darkMode ? 'text-green-300' : 'text-green-800'
       };
     } else if (alert.color === 'orange') {
       return {
-        bg: darkMode ? 'from-orange-900/30 to-yellow-900/30 border-orange-700/50' : 'from-orange-50 to-yellow-50 border-orange-200',
-        text: darkMode ? 'text-orange-400' : 'text-orange-700'
+        bg: darkMode ? 'bg-orange-900/40 border-orange-700/60' : 'bg-orange-100 border-orange-300',
+        text: darkMode ? 'text-orange-300' : 'text-orange-800'
       };
     } else {
       return {
-        bg: darkMode ? 'from-red-900/30 to-pink-900/30 border-red-700/50' : 'from-red-50 to-pink-50 border-red-200',
-        text: darkMode ? 'text-red-400' : 'text-red-700'
+        bg: darkMode ? 'bg-red-900/40 border-red-700/60' : 'bg-red-100 border-red-300',
+        text: darkMode ? 'text-red-300' : 'text-red-800'
       };
     }
   };
@@ -23,11 +23,9 @@ export const AlertCard = ({ alert, darkMode }) => {
   const colors = getColorClasses();
 
   return (
-    <div className={`bg-gradient-to-r rounded-lg p-2 border ${colors.bg}`}>
-      <div className="flex items-center gap-2">
-        <span className="text-sm">{alert.emoji}</span>
-        <span className={`text-xs font-medium ${colors.text}`}>{alert.text}</span>
-      </div>
+    <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 border text-xs font-medium ${colors.bg} ${colors.text}`}>
+      <span>{alert.emoji}</span>
+      <span>{alert.text}</span>
     </div>
   );
 };
