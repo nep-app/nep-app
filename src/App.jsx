@@ -3545,8 +3545,14 @@ function HarmReductionTracker() {
                                                             const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
                                                             const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
                 
-                                                            // Sentiment analysis (if we have notes)
-                                                            const allNotes = [...analysisConsumptions.map(c => c.note || ''), ...analysisWellbeing.map(w => w.note || ''), ...analysisCycles.map(c => c.notes || '')].filter(n => n.length > 0).join(' ');
+                                                            // Sentiment analysis - INCLUIR TUDO do histórico do período
+                                                            const allNotes = [
+                                                                ...analysisConsumptions.map(c => c.note || ''),
+                                                                ...analysisWellbeing.map(w => w.note || ''),
+                                                                ...analysisCycles.map(c => c.notes || ''),
+                                                                ...analysisReflections.map(r => r.answer || ''),
+                                                                ...analysisDailyLogs.map(d => d.notes || '')
+                                                            ].filter(n => n.length > 0).join(' ');
                 
                                                             const positiveWords = ['bem', 'bom', 'boa', 'melhor', 'óptimo', 'ótimo', 'feliz', 'calmo', 'calma', 'tranquilo', 'tranquila', 'forte', 'consegui', 'progresso', 'sucesso', 'vitória', 'orgulho', 'confiante', 'motivado', 'esperança'];
                                                             const negativeWords = ['mal', 'mau', 'má', 'pior', 'péssimo', 'triste', 'ansioso', 'ansiosa', 'stressado', 'stressada', 'difícil', 'fraco', 'fraca', 'falhei', 'desistir', 'sozinho', 'sozinha', 'perdido', 'perdida', 'cansado', 'cansada'];
@@ -3755,20 +3761,25 @@ function HarmReductionTracker() {
                                                                             {(() => {
                                                                                 const periodWellbeing = analysisWellbeing;
                                                                                 if (periodWellbeing.length < 1) return null;
-                
+
+                                                                                // Agrupar por DIAS (mesma lógica que Padrões)
+                                                                                const wellbeingDates = new Set(periodWellbeing.map(w => w.date));
+                                                                                const totalDays = wellbeingDates.size;
+
+                                                                                // Para cada área, contar quantos DIAS tiveram pelo menos um registo com essa área
                                                                                 const areas = { water: 0, food: 0, rest: 0, social: 0 };
-                                                                                periodWellbeing.forEach(w => {
-                                                                                    if (w.water) areas.water++;
-                                                                                    if (w.food) areas.food++;
-                                                                                    if (w.rest) areas.rest++;
-                                                                                    if (w.social) areas.social++;
+                                                                                Object.keys(areas).forEach(area => {
+                                                                                    const daysWithArea = Array.from(wellbeingDates).filter(date => {
+                                                                                        return periodWellbeing.some(w => w.date === date && w[area] === true);
+                                                                                    }).length;
+                                                                                    areas[area] = daysWithArea;
                                                                                 });
-                
+
                                                                                 const percentages = {
-                                                                                    water: (areas.water / periodWellbeing.length) * 100,
-                                                                                    food: (areas.food / periodWellbeing.length) * 100,
-                                                                                    rest: (areas.rest / periodWellbeing.length) * 100,
-                                                                                    social: (areas.social / periodWellbeing.length) * 100
+                                                                                    water: totalDays > 0 ? (areas.water / totalDays) * 100 : 0,
+                                                                                    food: totalDays > 0 ? (areas.food / totalDays) * 100 : 0,
+                                                                                    rest: totalDays > 0 ? (areas.rest / totalDays) * 100 : 0,
+                                                                                    social: totalDays > 0 ? (areas.social / totalDays) * 100 : 0
                                                                                 };
                 
                                                                                 const lowAreas = Object.entries(percentages)
