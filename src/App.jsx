@@ -618,14 +618,24 @@ function HarmReductionTracker() {
                         hoje: today
                     });
 
-                    // Debug: mostrar formato dos dailyLogs
-                    console.log('📋 DailyLogs disponíveis:', dataDailyLogs.map(log => ({
-                        date: log.date,
-                        cycleId: log.cycleId,
-                        mg: log.mg
+                    // Debug: mostrar TODOS os cycles com detalhes
+                    console.log('🔍 CYCLES COMPLETOS:', dataCycles.map(c => ({
+                        id: c.id?.slice(0, 8),
+                        timestamp: c.timestamp,
+                        date_ISO: new Date(c.timestamp).toISOString().split('T')[0],
+                        date_PT: new Date(c.timestamp).toLocaleDateString('pt-PT'),
+                        mg: c.mg,
+                        mg_tipo: typeof c.mg
                     })));
 
-                    console.log('🔍 Cycles IDs:', dataCycles.map(c => ({ id: c.id, date: new Date(c.timestamp).toLocaleDateString('pt-PT') })));
+                    // Debug: mostrar TODOS os dailyLogs com detalhes
+                    console.log('📋 DAILYLOGS COMPLETOS:', dataDailyLogs.map(log => ({
+                        id: log.id?.slice(0, 8),
+                        date: log.date,
+                        cycleId: log.cycleId?.slice(0, 8) || 'SEM CYCLEID',
+                        mg: log.mg,
+                        mg_tipo: typeof log.mg
+                    })));
 
                     dataCycles.forEach(cycle => {
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
