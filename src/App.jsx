@@ -2508,8 +2508,9 @@ function HarmReductionTracker() {
                                             if (recentCycles.length > 0 || previousCycles.length > 0) {
                                                 const getBedtimeMinutes = (bedtime) => {
                                                     const [hours, minutes] = bedtime.split(':').map(Number);
-                                                    // Ajustar madrugada (00:00-05:59) para 24:00-29:59
-                                                    if (hours >= 0 && hours < 6) {
+                                                    // Ajustar madrugada/tarde (00:00-17:59) para 24:00-41:59
+                                                    // Cobre casos de sono irregular (deitar de madrugada ou durante o dia)
+                                                    if (hours >= 0 && hours < 18) {
                                                         return (hours + 24) * 60 + minutes;
                                                     }
                                                     return hours * 60 + minutes;
@@ -3728,8 +3729,9 @@ function HarmReductionTracker() {
                 
                                                                                 const getBedtimeMinutes = (bedtime) => {
                                                                                     const [hours, minutes] = bedtime.split(':').map(Number);
-                                                                                    // Ajustar madrugada (00:00-05:59) para 24:00-29:59
-                                                                                    if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
+                                                                                    // Ajustar madrugada/tarde (00:00-17:59) para 24:00-41:59
+                                                                                    // Cobre casos de sono irregular (deitar de madrugada ou durante o dia)
+                                                                                    if (hours >= 0 && hours < 18) return (hours + 24) * 60 + minutes;
                                                                                     return hours * 60 + minutes;
                                                                                 };
                 
