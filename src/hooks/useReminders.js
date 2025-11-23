@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getTodayKey } from '../utils/helpers';
 
-export const useReminders = (user, wellbeingLogs, showToast) => {
+export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToast) => {
   const [reminderDismissed, setReminderDismissed] = useState(() => {
     const dismissed = localStorage.getItem('reminderDismissed');
     return dismissed ? JSON.parse(dismissed) : {};
@@ -110,6 +110,55 @@ export const useReminders = (user, wellbeingLogs, showToast) => {
       console.error('Error setting up reminders:', e);
     }
   }, [user, wellbeingLogs, notificationsEnabled]);
+
+  // Check for wellbeing reminder after every 2 consumptions
+  useEffect(() => {
+    if (!user || !cycles || cycles.length === 0) return;
+
+    try {
+      // Get current cycle
+      const currentCycle = cycles[0];
+      if (!currentCycle) return;
+
+      // Get consumptions in current cycle
+      const currentCycleConsumptions = consumptions.filter(c => c.cycleId === currentCycle.id);
+
+      // Get wellbeing logs in current cycle
+      const currentCycleWellbeing = wellbeingLogs.filter(w => w.cycleId === currentCycle.id);
+
+      if (currentCycleConsumptions.length === 0) return;
+
+      // Sort by timestamp to get order
+      const sortedConsumptions = [...currentCycleConsumptions].sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+      const sortedWellbeing = [...currentCycleWellbeing].sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
+      // Count consumptions since last wellbeing
+      let consumptionsSinceLastWellbeing = 0;
+      if (sortedWellbeing.length === 0) {
+        // No wellbeing yet in this cycle
+        consumptionsSinceLastWellbeing = sortedConsumptions.length;
+      } else {
+        // Count consumptions after last wellbeing
+        const lastWellbeingTime = new Date(sortedWellbeing[sortedWellbeing.length - 1].timestamp);
+        consumptionsSinceLastWellbeing = sortedConsumptions.filter(c =>
+          new Date(c.timestamp) > lastWellbeingTime
+        ).length;
+      }
+
+      // Show reminder if 2 or more consumptions without wellbeing
+      if (consumptionsSinceLastWellbeing >= 2 && shouldShowReminder('wellbeing-consumption')) {
+        showToast('💚 Lembrete: Já tens 2 consumos! Regista o teu bem-estar', 'info');
+        showBrowserNotification('Lembrete - NEP', 'Já tens 2 consumos! Regista o teu bem-estar');
+        dismissReminder('wellbeing-consumption');
+      }
+    } catch (e) {
+      console.error('Error checking wellbeing consumption reminder:', e);
+    }
+  }, [user, consumptions, wellbeingLogs, cycles]);
 
   return {
     notificationsEnabled,

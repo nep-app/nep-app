@@ -45,7 +45,7 @@ function HarmReductionTracker() {
             // Use custom hooks
             const { toasts, showToast } = useToast();
             const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
-            const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, showToast);
+            const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, consumptions, cycles, showToast);
 
             // App error state
             const [appError, setAppError] = useState(null);
