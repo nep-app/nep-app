@@ -10,17 +10,19 @@ export const WellbeingModal = ({
   setWellbeingForm,
   onSubmit,
   wellbeingLogs = [],
-  todayKey = ''
+  currentCycleId = null
 }) => {
   if (!isOpen) return null;
 
-  // Verificar se já existe registo de autocuidado hoje
-  const todayLogs = wellbeingLogs.filter(log => log.date === todayKey);
+  // Verificar se já existe registo de autocuidado neste ciclo
+  const cycleLogs = currentCycleId
+    ? wellbeingLogs.filter(log => log.cycleId === currentCycleId)
+    : [];
   const alreadyChecked = {
-    water: todayLogs.some(log => log.water === true),
-    rest: todayLogs.some(log => log.rest === true),
-    social: todayLogs.some(log => log.social === true),
-    food: todayLogs.some(log => log.food === true)
+    water: cycleLogs.some(log => log.water === true),
+    rest: cycleLogs.some(log => log.rest === true),
+    social: cycleLogs.some(log => log.social === true),
+    food: cycleLogs.some(log => log.food === true)
   };
 
   return (

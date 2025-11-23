@@ -5752,7 +5752,7 @@ function HarmReductionTracker() {
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
                                 wellbeingLogs={wellbeingLogs}
-                                todayKey={getTodayKey()}
+                                currentCycleId={getCurrentCycleId()}
                             />
                         </Suspense>
 
