@@ -1526,14 +1526,14 @@ function HarmReductionTracker() {
                                             const targetInterval = parseFloat(intervalGoal.target);
                                             if (lastInterval.hours < targetInterval) {
                                                 alerts.push({
-                                                    text: `Intervalo curto! ${lastInterval.hours}h (meta: ≥${targetInterval}h)`,
+                                                    text: `Intervalo curto! ${lastInterval.hours}h`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
                                                 });
                                             } else {
                                                 alerts.push({
-                                                    text: `Bom intervalo! ${lastInterval.hours}h (meta: ≥${targetInterval}h)`,
+                                                    text: `Bom intervalo! ${lastInterval.hours}h`,
                                                     emoji: '✨',
                                                     color: 'green',
                                                     type: 'positive'
@@ -1574,14 +1574,14 @@ function HarmReductionTracker() {
 
                                                 if (mgValue >= targetMg) {
                                                     alerts.push({
-                                                        text: `Atenção ao consumo ${dateLabel}! ${mgValue}mg (meta: <${targetMg}mg)`,
+                                                        text: `Atenção ao consumo ${dateLabel}! ${mgValue}mg`,
                                                         emoji: '📊',
                                                         color: isToday ? 'red' : 'orange',
                                                         type: 'negative'
                                                     });
                                                 } else {
                                                     alerts.push({
-                                                        text: `Boa! Consumo ${dateLabel}: ${mgValue}mg (meta: <${targetMg}mg)`,
+                                                        text: `Boa! Consumo ${dateLabel}: ${mgValue}mg`,
                                                         emoji: '💚',
                                                         color: 'green',
                                                         type: 'positive'
@@ -1603,14 +1603,14 @@ function HarmReductionTracker() {
 
                                                 if (sleepHours >= targetSleep) {
                                                     alerts.push({
-                                                        text: `Parabéns! ${sleepHours}h de sono (meta: ≥${targetSleep}h)`,
+                                                        text: `Parabéns! ${sleepHours}h de sono`,
                                                         emoji: '🌙',
                                                         color: 'green',
                                                         type: 'positive'
                                                     });
                                                 } else {
                                                     alerts.push({
-                                                        text: `Atenção ao sono: ${sleepHours}h (meta: ≥${targetSleep}h)`,
+                                                        text: `Atenção ao sono: ${sleepHours}h`,
                                                         emoji: '😴',
                                                         color: 'orange',
                                                         type: 'negative'
@@ -1640,14 +1640,14 @@ function HarmReductionTracker() {
 
                                                 if (bedtimeMinutes <= targetMinutes) {
                                                     alerts.push({
-                                                        text: `Boa! Deitaste-te às ${lastCycle.bedtime} (meta: antes das ${targetStr})`,
+                                                        text: `Boa! Deitaste-te às ${lastCycle.bedtime}`,
                                                         emoji: '💤',
                                                         color: 'green',
                                                         type: 'positive'
                                                     });
                                                 } else {
                                                     alerts.push({
-                                                        text: `Atenção! Deitaste-te tarde: ${lastCycle.bedtime} (meta: antes das ${targetStr})`,
+                                                        text: `Atenção! Deitaste-te tarde: ${lastCycle.bedtime}`,
                                                         emoji: '🌃',
                                                         color: 'orange',
                                                         type: 'negative'
@@ -1677,14 +1677,14 @@ function HarmReductionTracker() {
                                                         const lastConsumption = cycleConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
                                                         const lastTime = new Date(lastConsumption.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
                                                         alerts.push({
-                                                            text: `Cuidado! Último consumo foi às ${lastTime} (meta: antes da 00h)`,
+                                                            text: `Cuidado! Último consumo foi às ${lastTime}`,
                                                             emoji: '⏰',
                                                             color: 'orange',
                                                             type: 'negative'
                                                         });
                                                     } else {
                                                         alerts.push({
-                                                            text: `Cuidado! Último consumo foi depois da 00h (meta: antes da 00h)`,
+                                                            text: `Cuidado! Último consumo foi depois da 00h`,
                                                             emoji: '⏰',
                                                             color: 'orange',
                                                             type: 'negative'
@@ -1703,14 +1703,14 @@ function HarmReductionTracker() {
 
                                             if (todayConsumptions < targetFrequency) {
                                                 alerts.push({
-                                                    text: `Boa! Conseguiste apenas ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje (meta: <${targetFrequency})`,
+                                                    text: `Boa! Conseguiste apenas ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje`,
                                                     emoji: '🎯',
                                                     color: 'green',
                                                     type: 'positive'
                                                 });
                                             } else if (todayConsumptions >= targetFrequency) {
                                                 alerts.push({
-                                                    text: `Atenção! Já tens ${todayConsumptions} consumos hoje (meta: <${targetFrequency})`,
+                                                    text: `Atenção! Já tens ${todayConsumptions} consumos hoje`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
@@ -2231,7 +2231,7 @@ function HarmReductionTracker() {
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                                            {explanations[goal.type] || 'Cumprimentos registados'} - Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
+                                                                                            Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
