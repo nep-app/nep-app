@@ -2034,6 +2034,15 @@ function HarmReductionTracker() {
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
+                                                console.log('📊 DASHBOARD - Goals analysis:', {
+                                                    totalGoals: goals.length,
+                                                    uniqueGoals: uniqueGoals.length,
+                                                    totalAchievements,
+                                                    period: patternsPeriod,
+                                                    filteredConsumptions: filteredConsumptions.length,
+                                                    filteredCycles: filteredCycles.length
+                                                });
+
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
 
@@ -3827,6 +3836,16 @@ function HarmReductionTracker() {
 
                                                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing), 0);
                                                                                 const goalsWithAchievements = uniqueGoals.filter(g => getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing) > 0);
+
+                                                                                console.log('🎯 COACH - Goals analysis:', {
+                                                                                    totalGoals: goals.length,
+                                                                                    uniqueGoals: uniqueGoals.length,
+                                                                                    totalAchievements,
+                                                                                    goalsWithAchievements: goalsWithAchievements.length,
+                                                                                    period: patternsPeriod,
+                                                                                    analysisConsumptions: analysisConsumptions.length,
+                                                                                    analysisCycles: analysisCycles.length
+                                                                                });
                 
                                                                                 return (
                                                                                     <p>
