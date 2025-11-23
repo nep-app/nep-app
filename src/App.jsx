@@ -664,13 +664,9 @@ function HarmReductionTracker() {
                         });
 
                         if (!isNaN(mgValue) && mgValue > 0) {
-                            if (cycleDate === today) {
-                                console.log('    ⏭️ Ciclo atual (ignorado)');
-                                return; // Skip today
-                            }
-
+                            // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
                             const isAchieved = mgValue < parseFloat(goal.target);
-                            console.log(`    ${isAchieved ? '✅' : '❌'} ${mgValue}mg ${isAchieved ? '<' : '>='} ${goal.target}mg (de ${source})`);
+                            console.log(`  ${cycleDate}: ${isAchieved ? '✅' : '❌'} ${mgValue}mg ${isAchieved ? '<' : '>='} ${goal.target}mg (de ${source})`);
                             if (isAchieved) achievedCount++;
                         } else {
                             console.log('    ⚠️ Valor mg inválido ou vazio');
@@ -939,7 +935,7 @@ function HarmReductionTracker() {
                         }
 
                         if (!isNaN(mgValue) && mgValue > 0) {
-                            if (cycleDate === today) return; // Skip today
+                            // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
                             total++;
                             const isAchieved = mgValue < parseFloat(goal.target);
                             if (isAchieved) achieved++;
