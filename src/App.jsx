@@ -1735,7 +1735,7 @@ function HarmReductionTracker() {
                                                 if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
                                                 if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
 
-                                                // Validar se hora é "saudável" (21:00-02:00)
+                                                // Meta SÓ é cumprida se hora for entre 21:00-02:00
                                                 const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120; // 21:00-02:00
 
                                                 if (bedtimeMinutes <= targetMinutes && isHealthyBedtime) {
@@ -1744,14 +1744,6 @@ function HarmReductionTracker() {
                                                         emoji: '💤',
                                                         color: 'green',
                                                         type: 'positive'
-                                                    });
-                                                } else if (bedtimeMinutes <= targetMinutes && !isHealthyBedtime) {
-                                                    // Cumpriu a meta mas hora não é saudável
-                                                    alerts.push({
-                                                        text: `Cumpriu meta mas ${lastCycle.bedtime} é muito tarde/cedo`,
-                                                        emoji: '⚠️',
-                                                        color: 'orange',
-                                                        type: 'warning'
                                                     });
                                                 } else {
                                                     alerts.push({
