@@ -79,11 +79,11 @@ const REDUCERS = {
 };
 
 /**
- * Tokeniza texto em palavras, mantendo pontuação
+ * Tokeniza texto em palavras, removendo pontuação
  */
 function tokenize(text) {
   return text.toLowerCase()
-    .replace(/[,;!?]/g, ' ')
+    .replace(/[.,;!?:]/g, ' ')
     .split(/\s+/)
     .filter(word => word.length > 0);
 }

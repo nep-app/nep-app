@@ -3655,18 +3655,39 @@ function HarmReductionTracker() {
                 
                                                             // Sentiment analysis AVANÇADO - INCLUIR TUDO do histórico do período
                                                             const allNotes = [
-                                                                ...analysisConsumptions.map(c => c.note || ''),
-                                                                ...analysisWellbeing.map(w => w.note || ''),
+                                                                ...analysisConsumptions.map(c => c.notes || ''),
+                                                                ...analysisWellbeing.map(w => w.notes || ''),
                                                                 ...analysisCycles.map(c => c.notes || ''),
                                                                 ...analysisReflections.map(r => r.answer || ''),
                                                                 ...analysisDailyLogs.map(d => d.notes || ''),
                                                                 ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0);
 
+                                                            // DEBUG: Ver o que está a ser analisado
+                                                            console.log('🔍 SENTIMENT ANALYSIS DEBUG:', {
+                                                                totalNotes: allNotes.length,
+                                                                sampleNotes: allNotes.slice(0, 5),
+                                                                consumptionNotes: analysisConsumptions.filter(c => c.notes && c.notes.length > 0).length,
+                                                                wellbeingNotes: analysisWellbeing.filter(w => w.notes && w.notes.length > 0).length,
+                                                                cycleNotes: analysisCycles.filter(c => c.notes && c.notes.length > 0).length,
+                                                                reflectionNotes: analysisReflections.filter(r => r.answer && r.answer.length > 0).length,
+                                                                dailyLogNotes: analysisDailyLogs.filter(d => d.notes && d.notes.length > 0).length,
+                                                                thoughtNotes: analysisThoughts.filter(t => t.content && t.content.length > 0).length
+                                                            });
+
                                                             // Usar análise avançada com negações, intensificadores e contexto
                                                             const sentimentAnalysis = analyzeMultipleNotes(allNotes);
                                                             const sentimentThemes = identifyThemes(allNotes);
                                                             const sentimentScore = sentimentAnalysis.score;
+
+                                                            // DEBUG: Ver resultado da análise
+                                                            console.log('📊 SENTIMENT RESULT:', {
+                                                                noteCount: sentimentAnalysis.noteCount,
+                                                                score: sentimentScore,
+                                                                overall: sentimentAnalysis.overall,
+                                                                distribution: sentimentAnalysis.distribution,
+                                                                sampleAnalyses: sentimentAnalysis.analyses?.slice(0, 5)
+                                                            });
                 
                                                             return (
                                                                 <div className="space-y-4">
