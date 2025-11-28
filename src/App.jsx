@@ -14,6 +14,7 @@ import { POSITIVE_WORDS, NEGATIVE_WORDS } from './constants/sentimentWords';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
+import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -3652,7 +3653,7 @@ function HarmReductionTracker() {
                                                             const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
                                                             const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
                 
-                                                            // Sentiment analysis - INCLUIR TUDO do histórico do período
+                                                            // Sentiment analysis AVANÇADO - INCLUIR TUDO do histórico do período
                                                             const allNotes = [
                                                                 ...analysisConsumptions.map(c => c.note || ''),
                                                                 ...analysisWellbeing.map(w => w.note || ''),
@@ -3660,12 +3661,12 @@ function HarmReductionTracker() {
                                                                 ...analysisReflections.map(r => r.answer || ''),
                                                                 ...analysisDailyLogs.map(d => d.notes || ''),
                                                                 ...analysisThoughts.map(t => t.content || '')
-                                                            ].filter(n => n.length > 0).join(' ');
+                                                            ].filter(n => n.length > 0);
 
-                                                            const positiveCount = POSITIVE_WORDS.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
-                                                            const negativeCount = NEGATIVE_WORDS.reduce((count, word) => count + (allNotes.toLowerCase().match(new RegExp('\\b' + word + '\\b', 'g')) || []).length, 0);
-                
-                                                            const sentimentScore = positiveCount - negativeCount;
+                                                            // Usar análise avançada com negações, intensificadores e contexto
+                                                            const sentimentAnalysis = analyzeMultipleNotes(allNotes);
+                                                            const sentimentThemes = identifyThemes(allNotes);
+                                                            const sentimentScore = sentimentAnalysis.score;
                 
                                                             return (
                                                                 <div className="space-y-4">
@@ -3674,7 +3675,7 @@ function HarmReductionTracker() {
                                                                         <div className="flex items-center gap-3 mb-2">
                                                                             <span className="text-4xl">💬</span>
                                                                             <h3 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                                O Teu Coach
+                                                                                Reflexão Geral
                                                                             </h3>
                                                                         </div>
                                                                         <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
@@ -3789,18 +3790,36 @@ function HarmReductionTracker() {
                                                                                 </p>
                                                                             )}
                 
-                                                                            {/* Paragraph 5: Emotional Tone & Encouragement */}
+                                                                            {/* Paragraph 5: Emotional Tone & Encouragement (ANÁLISE AVANÇADA) */}
                                                                             <p>
-                                                                                {allNotes.length > 50 ? (
+                                                                                {allNotes.length > 0 ? (
                                                                                     <>
-                                                                                        Ao ler as tuas reflexões, percebo que tens usado palavras
-                                                                                        {sentimentScore > 5 ? (
-                                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>maioritariamente positivas</strong> - isso reflete resiliência e otimismo, mesmo nos desafios. Continua a cultivar essa perspetiva!</>
-                                                                                        ) : sentimentScore < -5 ? (
-                                                                                            <> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>que sugerem alguma dificuldade emocional</strong>. Quero que saibas que é completamente normal passar por fases mais difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
+                                                                                        Ao analisar as tuas reflexões ({sentimentAnalysis.noteCount} notas),
+                                                                                        {sentimentAnalysis.overall === 'very_positive' ? (
+                                                                                            <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>muito positivo</strong> (score: {sentimentScore.toFixed(1)}) - isso reflete resiliência e otimismo autênticos. Continua a cultivar essa perspetiva!</>
+                                                                                        ) : sentimentAnalysis.overall === 'positive' ? (
+                                                                                            <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> (score: {sentimentScore.toFixed(1)}). Há consciência dos desafios, mas também esperança. Isso é saudável!</>
+                                                                                        ) : sentimentAnalysis.overall === 'very_negative' ? (
+                                                                                            <> deteto um tom <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>muito negativo</strong> (score: {sentimentScore.toFixed(1)}). Quero que saibas que é completamente normal passar por fases difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
+                                                                                        ) : sentimentAnalysis.overall === 'negative' ? (
+                                                                                            <> o tom é <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> (score: {sentimentScore.toFixed(1)}). Reconheço que estás a enfrentar dificuldades. Usa as estratégias de coping e considera procurar apoio adicional se necessário.</>
                                                                                         ) : (
-                                                                                            <> neutras ou mistas. Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
+                                                                                            <> o tom é neutro ou misto (score: {sentimentScore.toFixed(1)}). Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
                                                                                         )}
+                                                                                        {sentimentAnalysis.trend === 'improving' && <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>📈 Tendência emocional: a melhorar!</span> Isso é excelente.</>}
+                                                                                        {sentimentAnalysis.trend === 'worsening' && <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>📉 Tendência emocional: a piorar.</span> Presta atenção a este padrão e ativa estratégias de suporte.</>}
+                                                                                        {(() => {
+                                                                                            // Mostrar tema mais mencionado
+                                                                                            const topThemes = Object.entries(sentimentThemes)
+                                                                                                .filter(([_, data]) => data.count > 2)
+                                                                                                .sort((a, b) => b[1].count - a[1].count)
+                                                                                                .slice(0, 2);
+                                                                                            const themeNames = { sleep: 'sono', stress: 'stress/ansiedade', energy: 'energia', mood: 'humor', focus: 'foco/concentração', social: 'relações sociais', health: 'saúde física' };
+                                                                                            if (topThemes.length > 0) {
+                                                                                                return <> Os temas mais presentes: <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{topThemes.map(([theme, data]) => `${themeNames[theme]} (${data.count}x)`).join(', ')}</strong>.</>;
+                                                                                            }
+                                                                                            return null;
+                                                                                        })()}
                                                                                     </>
                                                                                 ) : (
                                                                                     <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
@@ -3862,7 +3881,74 @@ function HarmReductionTracker() {
                                                                                     </p>
                                                                                 );
                                                                             })()}
-                
+
+                                                                            {/* Paragraph 7b: Análise de Ciclos (mg e padrões) */}
+                                                                            {(() => {
+                                                                                if (analysisCycles.length === 0) return null;
+
+                                                                                // Calcular mg total e média por ciclo
+                                                                                let totalMg = 0;
+                                                                                let cyclesWithMg = 0;
+                                                                                const cyclesMgData = [];
+
+                                                                                analysisCycles.forEach(cycle => {
+                                                                                    // Somar mg de todos os consumos deste ciclo
+                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => {
+                                                                                        const cTime = new Date(c.timestamp);
+                                                                                        const wakeTime = new Date(cycle.wakeup);
+                                                                                        const bedTime = new Date(cycle.bedtime);
+                                                                                        return cTime >= bedTime && cTime <= wakeTime;
+                                                                                    });
+
+                                                                                    const cycleMg = cycleConsumptions.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+                                                                                    if (cycleMg > 0) {
+                                                                                        totalMg += cycleMg;
+                                                                                        cyclesWithMg++;
+                                                                                        cyclesMgData.push(cycleMg);
+                                                                                    }
+                                                                                });
+
+                                                                                if (cyclesWithMg === 0) return null;
+
+                                                                                const avgMgPerCycle = totalMg / cyclesWithMg;
+
+                                                                                // Ciclos sem consumo após 00h
+                                                                                const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
+                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => {
+                                                                                        const cTime = new Date(c.timestamp);
+                                                                                        const wakeTime = new Date(cycle.wakeup);
+                                                                                        const bedTime = new Date(cycle.bedtime);
+                                                                                        return cTime >= bedTime && cTime <= wakeTime;
+                                                                                    });
+
+                                                                                    // Verificar se algum consumo foi após 00h
+                                                                                    const hasLateConsumption = cycleConsumptions.some(c => {
+                                                                                        const hour = new Date(c.timestamp).getHours();
+                                                                                        return hour >= 0 && hour < 6; // 00h-06h
+                                                                                    });
+
+                                                                                    return !hasLateConsumption;
+                                                                                }).length;
+
+                                                                                const pctNoLate = ((cyclesWithNoLateConsumption / analysisCycles.length) * 100).toFixed(0);
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Ciclos:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerCycle.toFixed(0)}mg por ciclo</strong> (dados de {cyclesWithMg} {cyclesWithMg === 1 ? 'ciclo' : 'ciclos'}).
+                                                                                        {avgMgPerCycle > 300 ? (
+                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
+                                                                                        ) : avgMgPerCycle > 200 ? (
+                                                                                            <> Esta é uma quantidade moderada-alta. Há espaço para redução se esse for um objetivo teu.</>
+                                                                                        ) : avgMgPerCycle > 100 ? (
+                                                                                            <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Esta é uma quantidade moderada.</span> Se estás a trabalhar na redução, estás no caminho certo.</>
+                                                                                        ) : (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Esta é uma quantidade relativamente baixa!</span> Bom trabalho na gestão de quantidade.</>
+                                                                                        )}
+                                                                                        {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{pctNoLate}%</strong> dos ciclos não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 8: Self-Care Analysis */}
                                                                             {(() => {
                                                                                 const periodWellbeing = analysisWellbeing;
@@ -3919,7 +4005,7 @@ function HarmReductionTracker() {
                                                                                 );
                                                                             })()}
                 
-                                                                            {/* Paragraph 9: Goals Achievement */}
+                                                                            {/* Paragraph 9: Goals Achievement (DETALHADO) */}
                                                                             {goals.length > 0 && (() => {
                                                                                 // Filter to get only the most recent goal of each type (mesma lógica que Dashboard)
                                                                                 const goalsByType = {};
@@ -3930,28 +4016,60 @@ function HarmReductionTracker() {
                                                                                 });
                                                                                 const uniqueGoals = Object.values(goalsByType);
 
-                                                                                const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing), 0);
-                                                                                const goalsWithAchievements = uniqueGoals.filter(g => getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing) > 0);
+                                                                                // Calcular detalhes para cada meta
+                                                                                const goalDetails = uniqueGoals.map(g => {
+                                                                                    const achievements = getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing);
 
-                                                                                console.log('🎯 COACH - Goals analysis:', {
-                                                                                    totalGoals: goals.length,
-                                                                                    uniqueGoals: uniqueGoals.length,
-                                                                                    totalAchievements,
-                                                                                    goalsWithAchievements: goalsWithAchievements.length,
-                                                                                    period: patternsPeriod,
-                                                                                    analysisConsumptions: analysisConsumptions.length,
-                                                                                    analysisCycles: analysisCycles.length
+                                                                                    // Calcular total possível baseado no tipo de meta
+                                                                                    let totalPossible = 0;
+                                                                                    if (g.type === 'reduce_frequency' || g.type === 'increase_interval' || g.type === 'sleep_hours') {
+                                                                                        // DIAS
+                                                                                        const byDate = {};
+                                                                                        analysisDailyLogs.forEach(d => { byDate[d.date] = true; });
+                                                                                        totalPossible = Object.keys(byDate).length;
+                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
+                                                                                        // CICLOS
+                                                                                        totalPossible = analysisCycles.length;
+                                                                                    }
+
+                                                                                    const percentage = totalPossible > 0 ? ((achievements / totalPossible) * 100).toFixed(0) : 0;
+
+                                                                                    return {
+                                                                                        goal: g,
+                                                                                        achievements,
+                                                                                        totalPossible,
+                                                                                        percentage: parseInt(percentage)
+                                                                                    };
                                                                                 });
-                
+
+                                                                                const totalAchievements = goalDetails.reduce((sum, gd) => sum + gd.achievements, 0);
+                                                                                const goalsWithAchievements = goalDetails.filter(gd => gd.achievements > 0);
+                                                                                const bestGoal = goalDetails.length > 0 ? goalDetails.reduce((max, gd) => gd.percentage > max.percentage ? gd : max) : null;
+
+                                                                                const goalTypeNames = {
+                                                                                    reduce_frequency: 'Reduzir Frequência',
+                                                                                    reduce_quantity: 'Reduzir Quantidade (mg)',
+                                                                                    increase_interval: 'Aumentar Intervalo',
+                                                                                    limit_last: 'Limitar Último Consumo',
+                                                                                    bedtime_before: 'Deitar Antes de',
+                                                                                    sleep_hours: 'Horas de Sono'
+                                                                                };
+
                                                                                 return (
                                                                                     <p>
-                                                                                        Sobre as tuas metas: cumpriste condições das tuas metas <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>{totalAchievements} vezes</strong> neste período!
+                                                                                        🎯 <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>Progresso de Metas:</strong> Cumpriste condições das tuas metas <strong>{totalAchievements} vezes</strong> neste período!
                                                                                         {goalsWithAchievements.length === uniqueGoals.length ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {uniqueGoals.length} metas ativas tiveram pelo menos um cumprimento - isso é incrível!</span></>
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {uniqueGoals.length} metas ativas tiveram cumprimentos - isso é incrível!</span></>
                                                                                         ) : goalsWithAchievements.length > 0 ? (
-                                                                                            <> Conseguiste progredir em {goalsWithAchievements.length} de {uniqueGoals.length} metas. Continua focado/a nas que ainda não atingiste.</>
+                                                                                            <> Progredir em {goalsWithAchievements.length} de {uniqueGoals.length} metas.</>
                                                                                         ) : (
-                                                                                            <> Ainda não atingiste nenhuma meta neste período, mas não desanimes - ajustar metas ou estratégias é parte do processo.</>
+                                                                                            <> Ainda não atingiste nenhuma meta neste período - ajustar metas é parte do processo.</>
+                                                                                        )}
+                                                                                        {bestGoal && bestGoal.percentage > 0 && (
+                                                                                            <>
+                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: cumpriste em <strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong> {bestGoal.goal.type.includes('cycle') || bestGoal.goal.type === 'limit_last' || bestGoal.goal.type === 'reduce_quantity' || bestGoal.goal.type === 'bedtime_before' ? 'dos ciclos' : 'dos dias'} ({bestGoal.achievements}/{bestGoal.totalPossible})
+                                                                                                {bestGoal.percentage >= 70 ? ' - excelente!' : bestGoal.percentage >= 40 ? '. Continua a trabalhar nesta meta!' : '. Há espaço para melhorar - revê as tuas estratégias.'}
+                                                                                            </>
                                                                                         )}
                                                                                     </p>
                                                                                 );
