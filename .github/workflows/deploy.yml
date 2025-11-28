@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - claude/dory-content-copy-01WCa4cSLm24HkMKdp75a6C2
+      - claude/novo-nep-app-em-construcao-01Ri1p3mELVUWyQG5ACPzJFf
 
 permissions:
   contents: read
