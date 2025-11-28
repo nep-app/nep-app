@@ -1468,7 +1468,7 @@ function HarmReductionTracker() {
                     'Tristeza': [
                         'Valida emoção: "Faz sentido sentir isto". Tristeza não é fraqueza, é informação sobre o que importa',
                         'Auto-cuidado radical: banho quente, refeição que gostas, roupa limpa. Corpo afeta mente',
-                        'Se pensamentos escuros: SOS Voz Amiga 213544545 (9h-24h) ou Conversa Amiga 808237327 (15h-22h). Não guardes só para ti'
+                        'Fala com alguém (amigo, familiar, terapeuta): partilhar alivia, não precisas resolver sozinho/a'
                     ],
                     'Dependência': [
                         'HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro',
