@@ -1430,22 +1430,58 @@ function HarmReductionTracker() {
                 const topTriggers = Object.entries(triggerCount).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
 
                 const strategies = {
-                    'Stress': ['Pratica respiração profunda (4-7-8)', 'Faz uma caminhada de 10 minutos', 'Ouve música relaxante'],
-                    'Ansiedade': ['Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas', 'Pratica grounding: pés no chão, respira fundo', 'Escreve os teus pensamentos num papel'],
-                    'Solidão': ['Liga a alguém de confiança', 'Vai a um espaço público (café, biblioteca)', 'Participa numa atividade de grupo'],
-                    'Festa': ['Define limite antes de sair', 'Leva alguém de confiança contigo', 'Planeia transporte seguro de volta'],
-                    'Trabalho': ['Faz pausas regulares (técnica pomodoro)', 'Define prioridades claras para o dia', 'Conversa com supervisor sobre carga de trabalho'],
-                    'Família': ['Estabelece limites saudáveis', 'Pratica auto-compaixão', 'Procura apoio externo (amigos, terapeuta)'],
-                    'Hábito': ['Muda a tua rotina habitual', 'Substitui o comportamento (chá, exercício)', 'Identifica o gatilho antes do hábito'],
-                    'Tristeza': ['Permite-te sentir sem julgamento', 'Pratica auto-cuidado básico', 'Liga para linha de apoio se necessário'],
-                    'Dependência': ['Liga para linha de apoio: SOS Voz Amiga (21 354 45 45)', 'Pratica técnica HALT (com fome/zangado/sozinho/cansado?)', 'Adia 15 minutos e reavalia']
+                    'Stress': [
+                        'Respiração 4-7-8: inspira 4seg, segura 7seg, expira 8seg. Repete 4x quando sentires tensão aumentar',
+                        'Técnica STOP: Stop (para), Take a breath (respira), Observe (observa o que sentes), Proceed (continua com escolha consciente)',
+                        'Escreve 3 coisas que consegues controlar agora (ex: beber água, sair 5min, avisar alguém)'
+                    ],
+                    'Ansiedade': [
+                        '5-4-3-2-1: Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas, 2 que cheiras, 1 que saboreias',
+                        'Gelo nas mãos ou rosto 30seg: sensação intensa traz-te ao presente (skill DBT - TIP)',
+                        'Desafia o pensamento: "É facto ou interpretação? Qual a probabilidade real? O que diria a um amigo?"'
+                    ],
+                    'Solidão': [
+                        'Mensagem para 3 pessoas (sem expectativa de resposta imediata): partilha algo neutro, cria conexão',
+                        'Sai de casa 15min: café, passeio, biblioteca. Presença de outros ajuda mesmo sem interação',
+                        'Atividade online com pessoas (discord, gaming, livestream): conexão conta, mesmo virtual'
+                    ],
+                    'Festa': [
+                        'Define limite ANTES: máximo X consumos, horário de saída, orçamento. Diz a alguém o teu plano',
+                        'Alterna: 1 bebida → 1 água/sumo. Mantém copo na mão (menos pressão social para beber)',
+                        'Identifica pessoa de confiança perto + transporte de volta planeado + local seguro se precisares sair'
+                    ],
+                    'Trabalho': [
+                        'Micro-pausas: cada 25min para 5min (lavar cara, esticar, snack). Evita burnout acumulado',
+                        'Prioriza 3 tarefas máximo/dia: resto é bonus. Pressão irrealista é gatilho para consumo',
+                        'Se overwhelmed: email/mensagem para chefe "preciso ajuste prazo/carga". Pedir ajuda ≠ fraqueza'
+                    ],
+                    'Família': [
+                        'Limites claros: "Não consigo falar sobre X agora" ou "Preciso de espaço, falo contigo amanhã"',
+                        'Auto-compaixão: "Estou a fazer o melhor que consigo com o que tenho agora". Culpa não ajuda',
+                        'Rede de apoio fora da família: amigo, terapeuta, grupo online. Não dependas só de quem te gatilha'
+                    ],
+                    'Hábito': [
+                        'Quebra padrão: muda 1 passo da rotina (caminho diferente, hora diferente, contexto diferente)',
+                        'Substitui: chá/café especial, duche frio, 10 flexões, 5min de jogo. Ocupa mãos + mente',
+                        'Adia 15min: "Posso fazer isto daqui a 15min se ainda quiser". Muitas vezes o impulso passa'
+                    ],
+                    'Tristeza': [
+                        'Valida emoção: "Faz sentido sentir isto". Tristeza não é fraqueza, é informação sobre o que importa',
+                        'Auto-cuidado radical: banho quente, refeição que gostas, roupa limpa. Corpo afeta mente',
+                        'Se pensamentos escuros: SOS Voz Amiga 213544545 (9h-24h) ou Conversa Amiga 808237327 (15h-22h). Não guardes só para ti'
+                    ],
+                    'Dependência': [
+                        'HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro',
+                        'Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico',
+                        'Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)'
+                    ]
                 };
 
                 if (topTriggers.length === 0) {
                     return [
-                        'Mantém-te hidratado/a ao longo do dia',
-                        'Pratica mindfulness: 5 minutos de respiração consciente',
-                        'Define um horário regular de sono'
+                        'Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro',
+                        'Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis',
+                        'Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional'
                     ];
                 }
 
