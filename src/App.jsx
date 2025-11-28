@@ -592,8 +592,10 @@ function HarmReductionTracker() {
                     cyclesWithBedtime.forEach(cycle => {
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                        const bedtimeOriginalMinutes = bedtimeMinutes;
 
-                        // Nota: Qualquer hora é válida para deitar
+                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
+                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
 
                         // Ajustar madrugada
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
@@ -605,7 +607,7 @@ function HarmReductionTracker() {
                             targetAdjusted += 1440;
                         }
 
-                        if (bedtimeMinutes <= targetAdjusted) successCount++;
+                        if (bedtimeMinutes <= targetAdjusted && isHealthyBedtime) successCount++;
                     });
 
                     return Math.min(100, (successCount / cyclesWithBedtime.length) * 100);
@@ -839,7 +841,7 @@ function HarmReductionTracker() {
 
                 if (goal.type === 'bedtime_before') {
                     // REGRA: Conta ciclos onde hora de deitar foi ATÉ o target (incluindo a hora exata)
-                    // Ex: target="02:00" → conta ciclos com bedtime <= 02:00
+                    // E hora entre 21:00-02:00
                     const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
@@ -855,9 +857,11 @@ function HarmReductionTracker() {
                         if (!cycle.bedtime) return;
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                        const bedtimeOriginalMinutes = bedtimeMinutes;
                         const originalBedtime = cycle.bedtime;
 
-                        // Nota: Qualquer hora é válida para deitar
+                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
+                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
 
                         // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
                         if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
@@ -870,8 +874,8 @@ function HarmReductionTracker() {
                             targetAdjusted += 1440;
                         }
 
-                        const isAchieved = bedtimeMinutes <= targetAdjusted; // Incluir a hora exata
-                        console.log('  🕐', originalBedtime, '→', bedtimeMinutes, 'min vs', targetAdjusted, 'min →', isAchieved ? '✅' : '❌');
+                        const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
+                        console.log('  🕐', originalBedtime, '→', bedtimeMinutes, 'min vs', targetAdjusted, 'min, healthy:', isHealthyBedtime, '→', isAchieved ? '✅' : '❌');
 
                         if (isAchieved) achievedCount++;
                     });
@@ -1007,8 +1011,10 @@ function HarmReductionTracker() {
                         }
                         const bedtimeParts = cycle.bedtime.split(':');
                         let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                        const bedtimeOriginalMinutes = bedtimeMinutes;
 
-                        // Nota: Qualquer hora é válida para deitar
+                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
+                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
 
                         total++;
 
@@ -1022,9 +1028,9 @@ function HarmReductionTracker() {
                             targetAdjusted += 1440;
                         }
 
-                        const isAchieved = bedtimeMinutes <= targetAdjusted;
+                        const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
                         if (isAchieved) achieved++;
-                        console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} → ${isAchieved ? '✅' : '❌'}`);
+                        console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} → healthy: ${isHealthyBedtime} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
