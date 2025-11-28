@@ -24,6 +24,11 @@ export const themeClasses = {
     ? 'bg-gray-800 border-gray-700 text-white'
     : 'bg-white border-gray-200 text-gray-900',
 
+  // Container without text color (for when children define their own text colors)
+  container: (isDark) => isDark
+    ? 'bg-gray-800 border-gray-700'
+    : 'bg-white border-gray-200',
+
   cardHover: (isDark) => isDark
     ? 'hover:bg-gray-750 hover:border-gray-600'
     : 'hover:bg-gray-50 hover:border-gray-300',
@@ -32,6 +37,10 @@ export const themeClasses = {
   bgPrimary: (isDark) => isDark ? 'bg-gray-900' : 'bg-gray-50',
   bgSecondary: (isDark) => isDark ? 'bg-gray-800' : 'bg-white',
   bgTertiary: (isDark) => isDark ? 'bg-gray-700' : 'bg-gray-100',
+  bgTertiaryAlt: (isDark) => isDark ? 'bg-gray-700' : 'bg-gray-200',
+
+  // Container variants
+  containerLight: (isDark) => isDark ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200',
 
   // Borders
   border: (isDark) => isDark ? 'border-gray-700' : 'border-gray-200',
@@ -39,8 +48,11 @@ export const themeClasses = {
 
   // Text colors
   textPrimary: (isDark) => isDark ? 'text-white' : 'text-gray-900',
+  textPrimaryAlt: (isDark) => isDark ? 'text-white' : 'text-gray-800',
   textSecondary: (isDark) => isDark ? 'text-gray-300' : 'text-gray-700',
+  textSecondaryAlt: (isDark) => isDark ? 'text-gray-300' : 'text-gray-600',
   textTertiary: (isDark) => isDark ? 'text-gray-400' : 'text-gray-600',
+  textTertiaryAlt: (isDark) => isDark ? 'text-gray-400' : 'text-gray-500',
   textMuted: (isDark) => isDark ? 'text-gray-500' : 'text-gray-400',
 
   // Inputs

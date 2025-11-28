@@ -13,6 +13,7 @@ import { useReminders } from './hooks/useReminders';
 import { POSITIVE_WORDS, NEGATIVE_WORDS } from './constants/sentimentWords';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
+import { themeClasses, cn, cx } from './utils/classNames';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -1574,15 +1575,15 @@ function HarmReductionTracker() {
                                     <div className="space-y-1">
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-5xl font-black text-purple-600 leading-none">N</span>
-                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>otas de</span>
+                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>otas de</span>
                                         </div>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-5xl font-black text-pink-600 leading-none">E</span>
-                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>xperiências e</span>
+                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>xperiências e</span>
                                         </div>
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-5xl font-black text-blue-600 leading-none">P</span>
-                                            <span className={'text-2xl font-light ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>adrões</span>
+                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>adrões</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1590,7 +1591,7 @@ function HarmReductionTracker() {
                                 {/* Subtítulo e Slogan - Direita */}
                                 <div className="flex flex-col items-end gap-3">
                                     <div className="text-right space-y-1">
-                                        <p className={'text-sm font-medium tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                        <p className={'text-sm font-medium tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
                                             <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
                                         </p>
                                         <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
@@ -1963,7 +1964,7 @@ function HarmReductionTracker() {
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
                                                                 {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
                                                             </div>
-                                                            {c.notes && <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>{c.notes}</div>}
+                                                            {c.notes && <div className={'text-xs mt-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>{c.notes}</div>}
                                                         </div>
                                                         <div className="flex gap-2 ml-2">
                                                             <button onClick={() => openEditConsumption(c)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit className="w-4 h-4" /></button>
@@ -1983,10 +1984,10 @@ function HarmReductionTracker() {
                             )}
                             {currentView === 'patterns' && (
                                 <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Padrões</h2>
+                                    <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Padrões</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
@@ -2003,7 +2004,7 @@ function HarmReductionTracker() {
                                                     <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
                                                         <Icons.ChevronLeft className="w-5 h-5" />
                                                     </button>
-                                                    <span className={'text-sm font-medium min-w-[120px] text-center ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
+                                                    <span className={'text-sm font-medium min-w-[120px] text-center ' + (themeClasses.textSecondary(darkMode))}>{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
                                                     <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
                                                         <Icons.ChevronRight className="w-5 h-5" />
                                                     </button>
@@ -2159,8 +2160,9 @@ function HarmReductionTracker() {
                                                             consumptionsByDate[dateKey].push(c);
                                                         });
                                                         totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
-                                                    } else if (g.type === 'limit_last') {
-                                                        // For limit_last: count all cycles
+                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity') {
+                                                        // For cycle-based goals: count all cycles
+                                                        // Note: reduce_quantity counts CYCLES with mg < target (not days!)
                                                         totalPossible = filteredCycles.length;
                                                     } else {
                                                         // For day-based goals: count unique days (excluding today)
@@ -2170,11 +2172,6 @@ function HarmReductionTracker() {
                                                         if (g.type === 'reduce_frequency') {
                                                             filteredConsumptions.forEach(c => {
                                                                 const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                                                                if (dateKey !== today) allDates.add(dateKey);
-                                                            });
-                                                        } else if (g.type === 'reduce_quantity') {
-                                                            filteredDailyLogs.forEach(log => {
-                                                                const dateKey = new Date(log.timestamp).toLocaleDateString('pt-PT');
                                                                 if (dateKey !== today) allDates.add(dateKey);
                                                             });
                                                         } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
@@ -2239,7 +2236,7 @@ function HarmReductionTracker() {
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>
+                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>
                                                                 <span className="text-xl">💡</span>
                                                                 Padrões Identificados
                                                             </h3>
@@ -2257,8 +2254,8 @@ function HarmReductionTracker() {
 
                                                     {/* Análise de Metas */}
                                                     {goalsAnalysis && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 🎯 Metas
                                                             </h3>
 
@@ -2272,11 +2269,11 @@ function HarmReductionTracker() {
                                                                         <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
                                                                             {goalsAnalysis.totalAchievements}
                                                                         </span>
-                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
                                                                             vezes
                                                                         </span>
                                                                     </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
                                                                         {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
                                                                     </div>
                                                                 </div>
@@ -2289,11 +2286,11 @@ function HarmReductionTracker() {
                                                                         <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
                                                                             {goalsAnalysis.avgAchievementsPerDay}
                                                                         </span>
-                                                                        <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
                                                                             cumprimentos
                                                                         </span>
                                                                     </div>
-                                                                    <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
                                                                         nos últimos {goalsAnalysis.periodDays} dias
                                                                     </div>
                                                                 </div>
@@ -2301,7 +2298,7 @@ function HarmReductionTracker() {
 
                                                             {/* Per-goal breakdown */}
                                                             <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
-                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
                                                                     Detalhes por Meta
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -2326,10 +2323,10 @@ function HarmReductionTracker() {
                                                                             <div key={goal.id} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
-                                                                                        <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                                        <div className={'text-sm font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
-                                                                                        <div className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        <div className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                             Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
@@ -2345,7 +2342,7 @@ function HarmReductionTracker() {
                                                                                 {/* Progress Bar */}
                                                                                 <div>
                                                                                     <div className="flex items-center justify-between mb-1">
-                                                                                        <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                        <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
                                                                                             {goal.achievementCount} / {goal.totalPossible}
                                                                                         </span>
                                                                                         <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : goal.successRate >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
@@ -2368,8 +2365,8 @@ function HarmReductionTracker() {
                                                     )}
 
                                                     {/* Mini Calendar (dinâmico baseado no filtro) */}
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border relative'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4'}>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border relative'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4'}>
                                                             📅 {patternsPeriod === 'hoje' ? 'Hoje' : patternsPeriod === 'semana' ? 'Esta Semana' : patternsPeriod === 'mes' ? 'Este Mês' : 'Todo o Período'}
                                                         </h3>
                                                         <div className="space-y-2 max-h-[400px] overflow-y-auto" style={{scrollbarWidth: 'thin'}}>
@@ -2835,24 +2832,24 @@ function HarmReductionTracker() {
                                                     {/* Period comparison header */}
                                                     <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200') + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
-                                                            <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                            <h3 className={'text-xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 📈 Análise de Progresso Temporal
                                                             </h3>
                                                             <div className={'text-4xl font-black ' + (progressScore >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : progressScore >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
                                                                 {progressScore}%
                                                             </div>
                                                         </div>
-                                                        <p className={'text-sm mb-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                        <p className={'text-sm mb-3 ' + (themeClasses.textSecondary(darkMode))}>
                                                             {patternsPeriod === 'hoje' ? 'Comparação entre hoje (até agora) vs ontem (dia completo)' :
                                                              patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
                                                              patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
                                                              `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
                                                         </p>
                                                         <div className="flex items-center gap-2">
-                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-200')}>
+                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + (themeClasses.bgTertiaryAlt(darkMode))}>
                                                                 <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
                                                             </div>
-                                                            <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                            <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
                                                                 {improvements} de {total} métricas em melhoria
                                                             </span>
                                                         </div>
@@ -2860,15 +2857,15 @@ function HarmReductionTracker() {
 
                                                     {/* Consumption metrics */}
                                                     {(progressData.frequency || progressData.dosage) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 💊 Consumo
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.frequency && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.frequency.label}
                                                                             </span>
                                                                             {progressData.frequency.change.direction !== 'stable' && (
@@ -2881,7 +2878,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.frequency.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 consumos/dia
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -2891,9 +2888,9 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                 )}
                                                                 {progressData.dosage && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.dosage.label}
                                                                             </span>
                                                                             {progressData.dosage.change.direction !== 'stable' && (
@@ -2906,7 +2903,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.dosage.recent.toFixed(0)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 mg/dia
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -2921,15 +2918,15 @@ function HarmReductionTracker() {
 
                                                     {/* Wellbeing metrics */}
                                                     {(progressData.sleep || progressData.mood || progressData.energy) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 💚 Bem-Estar
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.sleep && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.sleep.label}
                                                                             </span>
                                                                             {progressData.sleep.change.direction !== 'stable' && (
@@ -2942,7 +2939,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.sleep.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 horas
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -2952,9 +2949,9 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                 )}
                                                                 {progressData.mood && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.mood.label}
                                                                             </span>
                                                                             {progressData.mood.change.direction !== 'stable' && (
@@ -2967,7 +2964,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.mood.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -2977,9 +2974,9 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                 )}
                                                                 {progressData.energy && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.energy.label}
                                                                             </span>
                                                                             {progressData.energy.change.direction !== 'stable' && (
@@ -2992,7 +2989,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.energy.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -3007,15 +3004,15 @@ function HarmReductionTracker() {
 
                                                     {/* Lifestyle metrics */}
                                                     {(progressData.bedtimeConsistency || progressData.selfCare) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 🌙 Rotinas e Autocuidado
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.bedtimeConsistency && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.bedtimeConsistency.label}
                                                                             </span>
                                                                             {progressData.bedtimeConsistency.change.direction !== 'stable' && (
@@ -3033,7 +3030,7 @@ function HarmReductionTracker() {
                                                                             </span>
                                                                         </div>
                                                                         <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-3 py-2'}>
-                                                                            <p className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
                                                                                     ? 'Deitas-te sempre a horas semelhantes (variação <30min). Excelente para a qualidade do sono!'
                                                                                     : progressData.bedtimeConsistency.recent < 60
@@ -3044,9 +3041,9 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                 )}
                                                                 {progressData.avgBedtime && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.avgBedtime.label}
                                                                             </span>
                                                                             {progressData.avgBedtime.change.direction !== 'stable' && (
@@ -3074,7 +3071,7 @@ function HarmReductionTracker() {
                                                                                 feedback = 'Dormir de manhã pode indicar inversão do ciclo.';
                                                                             }
                                                                             return feedback ? (
-                                                                                <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                <div className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                     {feedback}
                                                                                 </div>
                                                                             ) : null;
@@ -3082,9 +3079,9 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                 )}
                                                                 {progressData.selfCare && (
-                                                                    <div className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.selfCare.label}
                                                                             </span>
                                                                             {progressData.selfCare.change.direction !== 'stable' && (
@@ -3097,7 +3094,7 @@ function HarmReductionTracker() {
                                                                             <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
                                                                                 {progressData.selfCare.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 atividades/ciclo
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
@@ -3112,8 +3109,8 @@ function HarmReductionTracker() {
 
                                                     {/* Emotional metrics */}
                                                     {(progressData.negativeEmotions || progressData.triggers) && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 🧠 Estado Emocional
                                                             </h3>
                                                             <div className="space-y-3">
@@ -3184,28 +3181,28 @@ function HarmReductionTracker() {
 
                                                     {/* Autocuidado Detalhado */}
                                                     {progressData.selfCareDetailed && (
-                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 💚 Análise de Autocuidado
                                                             </h3>
 
                                                             {/* Overall score */}
                                                             <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                    <span className={'text-sm font-semibold ' + (themeClasses.textSecondary(darkMode))}>
                                                                         Taxa geral de autocuidado
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
                                                                         {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
                                                                     </span>
                                                                 </div>
-                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-3 overflow-hidden'}>
+                                                                <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-3 overflow-hidden'}>
                                                                     <div
                                                                         className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'bg-green-500' : 'bg-orange-500')}
                                                                         style={{width: `${progressData.selfCareDetailed.recentOverall}%`}}
                                                                     ></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                <div className={'text-xs mt-2 italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                     {progressData.selfCareDetailed.suggestion}
                                                                 </div>
                                                             </div>
@@ -3213,20 +3210,20 @@ function HarmReductionTracker() {
                                                             {/* Complete cycles */}
                                                             <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                    <span className={'text-sm font-semibold ' + (themeClasses.textSecondary(darkMode))}>
                                                                         🎯 Ciclos completos (4 indicadores)
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? (darkMode ? 'text-blue-400' : 'text-blue-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
                                                                         {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
                                                                     </span>
                                                                 </div>
-                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-3 overflow-hidden'}>
+                                                                <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-3 overflow-hidden'}>
                                                                     <div
                                                                         className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'bg-blue-500' : 'bg-orange-500')}
                                                                         style={{width: `${progressData.selfCareDetailed.completeCycles.recent}%`}}
                                                                     ></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                <div className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
                                                                     {progressData.selfCareDetailed.completeCycles.recentCount} de {progressData.selfCareDetailed.completeCycles.recentTotal} ciclos com todos os indicadores
                                                                 </div>
                                                             </div>
@@ -3242,10 +3239,10 @@ function HarmReductionTracker() {
                                                                     };
                                                                     const area = areaNames[areaKey];
                                                                     return (
-                                                                        <div key={areaKey} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                        <div key={areaKey} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-3 border'}>
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <span className="text-lg">{area.emoji}</span>
-                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                <span className={'text-xs font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                     {area.name}
                                                                                 </span>
                                                                             </div>
@@ -3269,10 +3266,10 @@ function HarmReductionTracker() {
 
                                                     {/* Summary insights */}
                                                     <div className={(darkMode ? 'bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50' : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'text-lg font-semibold mb-3 ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                        <h3 className={'text-lg font-semibold mb-3 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                             💡 Resumo do Progresso
                                                         </h3>
-                                                        <div className={'text-sm leading-relaxed space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                        <div className={'text-sm leading-relaxed space-y-2 ' + (themeClasses.textSecondary(darkMode))}>
                                                             {progressScore >= 70 && (
                                                                 <p>🎉 <strong>Excelente progresso!</strong> A maioria das métricas mostra melhoria clara. Continua neste caminho!</p>
                                                             )}
@@ -3347,10 +3344,10 @@ function HarmReductionTracker() {
                                             return (
                                         <div className="space-y-4">
                                             {/* Por horário */}
-                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐 Consumo por Horário</h3>
+                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>🕐 Consumo por Horário</h3>
                                                 {Object.keys(byHour).length === 0 ? (
-                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                    <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
                                                 ) : (() => {
                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
                                                     const maxCount = Math.max(...Object.values(byHour));
@@ -3377,13 +3374,13 @@ function HarmReductionTracker() {
                                                                 // Cores por período
                                                                 let colorClass = '';
                                                                 if (block.label === 'Madrugada') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (themeClasses.bgTertiary(darkMode));
                                                                 } else if (block.label === 'Manhã') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (themeClasses.bgTertiary(darkMode));
                                                                 } else if (block.label === 'Tarde') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (themeClasses.bgTertiary(darkMode));
                                                                 } else {
-                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (darkMode ? 'bg-gray-700' : 'bg-gray-100');
+                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (themeClasses.bgTertiary(darkMode));
                                                                 }
 
                                                                 return (
@@ -3391,11 +3388,11 @@ function HarmReductionTracker() {
                                                                         <div className={'text-xl w-8 text-center'}>
                                                                             {block.icon}
                                                                         </div>
-                                                                        <div className={'text-sm font-medium w-16 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                        <div className={'text-sm font-medium w-16 ' + (themeClasses.textSecondary(darkMode))}>
                                                                             {block.range}h
                                                                         </div>
                                                                         <div className="flex-1">
-                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-8 overflow-hidden relative'}>
+                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-8 overflow-hidden relative'}>
                                                                                 <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
                                                                                     {blockCount > 0 && (
                                                                                         <span className="whitespace-nowrap">
@@ -3419,11 +3416,11 @@ function HarmReductionTracker() {
                                             </div>
 
                                             {/* Por período do dia */}
-                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌅 Por Período do Dia</h3>
+                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>🌅 Por Período do Dia</h3>
                                                 {(() => {
                                                     const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>;
+                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>;
 
                                                     const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
                                                     const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
@@ -3434,31 +3431,31 @@ function HarmReductionTracker() {
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                             <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌅</div>
-                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Manhã</div>
+                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Manhã</div>
                                                                 <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
                                                                 <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.manha}x</div>
+                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.manha}x</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">☀️</div>
-                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Tarde</div>
+                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Tarde</div>
                                                                 <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
                                                                 <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.tarde}x</div>
+                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.tarde}x</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌙</div>
-                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Noite</div>
+                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Noite</div>
                                                                 <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
                                                                 <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.noite}x</div>
+                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.noite}x</div>
                                                             </div>
                                                             <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">⭐</div>
-                                                                <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Madrugada</div>
+                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Madrugada</div>
                                                                 <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
                                                                 <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>{byPartOfDay.madrugada}x</div>
+                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.madrugada}x</div>
                                                             </div>
                                                         </div>
                                                     );
@@ -3466,11 +3463,11 @@ function HarmReductionTracker() {
                                             </div>
 
                                             {/* Por dia da semana */}
-                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📅 Por Dia da Semana</h3>
+                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>📅 Por Dia da Semana</h3>
                                                 <div className="space-y-3">
                                                     {Object.values(byWeekday).every(v => v === 0) ? (
-                                                        <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Sem dados</div>
+                                                        <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
                                                     ) : (() => {
                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
                                                         return Object.entries(byWeekday).map(([day, count]) => {
@@ -3478,7 +3475,7 @@ function HarmReductionTracker() {
                                                             return (
                                                                 <div key={day} className="flex items-center gap-2">
                                                                     <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
-                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (darkMode ? 'bg-gray-700' : 'bg-gray-100')}>
+                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
                                                                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
                                                                             <span>{count}x</span>
                                                                             <span>{percent}%</span>
@@ -3499,12 +3496,12 @@ function HarmReductionTracker() {
                             )}
                             {currentView === 'analyses' && (
                                 <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análises</h2>
+                                    <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Análises</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className={'text-sm font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Período de análise</div>
+                                            <div className={'text-sm font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>Período de análise</div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset >= 100 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 100 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
                                                     <Icons.ChevronLeft className="w-4 h-4" />
@@ -3525,7 +3522,7 @@ function HarmReductionTracker() {
                                             ))}
                                         </div>
                                         {patternsPeriod !== 'tudo' && (
-                                            <div className={'text-xs mt-2 text-center ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                            <div className={'text-xs mt-2 text-center ' + (themeClasses.textTertiary(darkMode))}>
                                                 {(() => {
                                                     const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
                                                     return new Date(dateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }) + ' - ' + new Date(dateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -3676,17 +3673,17 @@ function HarmReductionTracker() {
                                                                     <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
                                                                         <div className="flex items-center gap-3 mb-2">
                                                                             <span className="text-4xl">💬</span>
-                                                                            <h3 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                            <h3 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                                 O Teu Coach
                                                                             </h3>
                                                                         </div>
-                                                                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
                                                                             Resumo personalizado do período selecionado
                                                                         </p>
                                                                     </div>
                 
                                                                     {/* Narrative Summary */}
-                                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                         <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
                                                                             {/* Paragraph 1: Overview */}
                                                                             <p>
@@ -3990,7 +3987,7 @@ function HarmReductionTracker() {
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>{correlation.toFixed(2)}</strong>.
+                                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (themeClasses.textTertiary(darkMode)))}>{correlation.toFixed(2)}</strong>.
                                                                                         {correlation > 0.4 ? (
                                                                                             <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dormir bem melhora claramente o teu humor no dia seguinte!</span> Priorizar o sono é investir no teu bem-estar emocional.</>
                                                                                         ) : correlation < -0.2 ? (
@@ -4261,10 +4258,10 @@ function HarmReductionTracker() {
                                                     {analysisSubView === 'estrutural' && (
                                                         <div className="space-y-4">
                                                             {/* Análise de Intervalos Simplificada */}
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-white' : 'text-gray-800')}>⏱️ Intervalos Entre Consumos</h3>
+                                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏱️ Intervalos Entre Consumos</h3>
                                                                 {intervals.length === 0 ? (
-                                                                    <div className={'text-center py-4 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                    <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                         Sem intervalos (necessário ≥2 consumos)
                                                                     </div>
                                                                 ) : (() => {
@@ -4327,7 +4324,7 @@ function HarmReductionTracker() {
                                                                             </div>
 
                                                                             <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
-                                                                                <p className={`text-xs leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                                                <p className={`text-xs leading-relaxed ${themeClasses.textSecondary(darkMode)}`}>
                                                                                     {goodPercent >= 50
                                                                                         ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
                                                                                         : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
@@ -4340,10 +4337,10 @@ function HarmReductionTracker() {
 
                                                             {/* Gatilhos */}
                                                             {filteredCycles.length > 0 && filteredCycles.some(c => c.triggers && c.triggers.length > 0) && (
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
                                                                     <div className="flex items-center gap-2 mb-3">
                                                                         <span className="text-lg">⚡</span>
-                                                                        <h3 className={'font-semibold text-sm ' + (darkMode ? 'text-white' : 'text-gray-800')}>Análise de Gatilhos</h3>
+                                                                        <h3 className={'font-semibold text-sm ' + (themeClasses.textPrimaryAlt(darkMode))}>Análise de Gatilhos</h3>
                                                                     </div>
                                                                     {(() => {
                                                                         // Calcular gatilhos e média de consumos por gatilho
@@ -4434,7 +4431,7 @@ function HarmReductionTracker() {
                                                                             <div className="space-y-3">
                                                                                 {/* GATILHOS (situações/contextos) */}
                                                                                 <div>
-                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Análise de Gatilhos
                                                                                     </h4>
 
@@ -4489,7 +4486,7 @@ function HarmReductionTracker() {
 
                                                                                 {/* EMOÇÕES (estados emocionais) */}
                                                                                 <div>
-                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    <h4 className={'text-xs font-semibold mb-2 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Análise de Emoções
                                                                                     </h4>
 
@@ -4561,10 +4558,10 @@ function HarmReductionTracker() {
 
                                                         if (analysisConsumptions.length < 1) {
                                                             return (
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
+                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Sem consumos registados para análise.
                                                                     </p>
                                                                 </div>
@@ -4609,10 +4606,10 @@ function HarmReductionTracker() {
 
                                                         if (daysWithData.length < 1) {
                                                             return (
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
+                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Sem dados suficientes para análise de correlações neste momento.
                                                                     </p>
                                                                 </div>
@@ -4669,10 +4666,10 @@ function HarmReductionTracker() {
 
                                                         if (correlations.length === 0) {
                                                             return (
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
+                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Regista bem-estar (sono, humor, energia) para ver correlações com consumo.
                                                                     </p>
                                                                 </div>
@@ -4681,9 +4678,9 @@ function HarmReductionTracker() {
 
                                                         return (
                                                             <div className="space-y-4">
-                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>📊 Análise de Bem-Estar</h3>
-                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Análise de Bem-Estar</h3>
+                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Correlação entre nº de consumos e bem-estar nos dias com dados
                                                                     </p>
                                                                     <div className="space-y-3">
@@ -4701,20 +4698,20 @@ function HarmReductionTracker() {
                                                                             };
                                                                             const corrLabel = getCorrelationLabel(corr.correlation);
                                                                             return (
-                                                                                <div key={i} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border'}>
+                                                                                <div key={i} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                                     <div className="flex items-center justify-between mb-3">
                                                                                         <div className="flex items-center gap-2">
                                                                                             <span className="text-2xl">{corr.icon}</span>
                                                                                             <div>
-                                                                                                <div className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800')}>{corr.name}</div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Média: {corr.average}{corr.unit}</div>
+                                                                                                <div className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>{corr.name}</div>
+                                                                                                <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>Média: {corr.average}{corr.unit}</div>
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
                                                                                             {corrLabel.text}
                                                                                         </div>
                                                                                     </div>
-                                                                                    <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                    <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         {corrLabel.desc && <span>💡 {corrLabel.desc}</span>}
                                                                                         {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
                                                                                         <span className="ml-2">• {corr.dataPoints} dias</span>
@@ -4807,9 +4804,9 @@ function HarmReductionTracker() {
 
                                                                         if (bidirCorrelations.length > 0) {
                                                                             return (
-                                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>↔️ Consumo Afeta Bem-Estar</h3>
-                                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>↔️ Consumo Afeta Bem-Estar</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Correlação entre consumo hoje e bem-estar no dia seguinte
                                                                                     </p>
                                                                                     {bidirCorrelations.map((corr, i) => {
@@ -4921,9 +4918,9 @@ function HarmReductionTracker() {
 
                                                                         if (sleepMoodCorrelations.length > 0) {
                                                                             return (
-                                                                                <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                    <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>😴💭 Sono → Humor</h3>
-                                                                                    <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Como a qualidade/quantidade de sono influencia o humor
                                                                                     </p>
                                                                                     <div className="space-y-3">
@@ -5026,9 +5023,9 @@ function HarmReductionTracker() {
                                                                     };
 
                                                                     return (
-                                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🕐💊 Hora de Deitar vs Consumo</h3>
-                                                                            <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🕐💊 Hora de Deitar vs Consumo</h3>
+                                                                            <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                 Correlação entre a hora que te deitas e o consumo desse dia
                                                                             </p>
                                                                             {bedtimeConsumptionData.length >= 1 ? (
@@ -5061,7 +5058,7 @@ function HarmReductionTracker() {
                                                                                     </div>
                                                                                 </div>
                                                                             ) : (
-                                                                                <div className={'text-center py-6 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                                <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                     Sem dados de hora de deitar registados
                                                                                 </div>
                                                                             )}
@@ -5220,9 +5217,9 @@ function HarmReductionTracker() {
                                                                         const totalCons = consumptionTiming.start + consumptionTiming.middle + consumptionTiming.end;
 
                                                                         return (
-                                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔄 Análise Intraciclo Detalhada</h3>
-                                                                                <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                                <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intraciclo Detalhada</h3>
+                                                                                <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                     Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono (período entre acordar e voltar a dormir)
                                                                                 </p>
                                                                                 <div className="space-y-4">
@@ -5247,7 +5244,7 @@ function HarmReductionTracker() {
                                                                                                             {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                                                                         </span>
                                                                                                     </div>
-                                                                                                    <p className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                                    <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                                         💬 {trendText}
                                                                                                     </p>
                                                                                                 </>
@@ -5274,7 +5271,7 @@ function HarmReductionTracker() {
                                                                                                         {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                                                                     </span>
                                                                                                 </div>
-                                                                                                <p className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                                     💬 {trendText}
                                                                                                 </p>
                                                                                             </div>
@@ -5303,9 +5300,9 @@ function HarmReductionTracker() {
                                                                                                 <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏰ Padrão de Consumo no Ciclo</div>
                                                                                                 <div className="space-y-2 mb-3">
                                                                                                     <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Início (33%)</div>
+                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Início (33%)</div>
                                                                                                         <div className="flex-1">
-                                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
                                                                                                                 <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, startPct) + '%'}}>
                                                                                                                     {startPct}%
                                                                                                                 </div>
@@ -5313,9 +5310,9 @@ function HarmReductionTracker() {
                                                                                                         </div>
                                                                                                     </div>
                                                                                                     <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Meio (33%)</div>
+                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Meio (33%)</div>
                                                                                                         <div className="flex-1">
-                                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
                                                                                                                 <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, middlePct) + '%'}}>
                                                                                                                     {middlePct}%
                                                                                                                 </div>
@@ -5323,9 +5320,9 @@ function HarmReductionTracker() {
                                                                                                         </div>
                                                                                                     </div>
                                                                                                     <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fim (33%)</div>
+                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Fim (33%)</div>
                                                                                                         <div className="flex-1">
-                                                                                                            <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-6 overflow-hidden'}>
+                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
                                                                                                                 <div className={'h-full bg-purple-600 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, endPct) + '%'}}>
                                                                                                                     {endPct}%
                                                                                                                 </div>
@@ -5333,7 +5330,7 @@ function HarmReductionTracker() {
                                                                                                         </div>
                                                                                                     </div>
                                                                                                 </div>
-                                                                                                <p className={'text-xs italic ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                                     💬 {insight}
                                                                                                 </p>
                                                                                             </div>
@@ -5342,7 +5339,7 @@ function HarmReductionTracker() {
 
                                                                                     {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
                                                                                     <Suspense fallback={
-                                                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border text-center'}>
+                                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border text-center'}>
                                                                                             <div className="animate-pulse">
                                                                                                 <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mx-auto mb-4"></div>
                                                                                                 <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -5365,7 +5362,7 @@ function HarmReductionTracker() {
                                                                                             <div className={'text-2xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>
                                                                                                 {avgInterval}h
                                                                                             </div>
-                                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                            <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                                 Tempo médio entre consumos dentro do mesmo ciclo
                                                                                             </div>
                                                                                         </div>
@@ -5376,12 +5373,12 @@ function HarmReductionTracker() {
                                                                     }
 
                                                                     return (
-                                                                        <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (darkMode ? 'text-white' : 'text-gray-800')}>🔄 Análise Intraciclo Detalhada</h3>
-                                                                            <p className={'text-xs mb-4 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intraciclo Detalhada</h3>
+                                                                            <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                 Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono
                                                                             </p>
-                                                                            <div className={'text-center py-6 text-sm ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                            <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 Sem dados de ciclos com consumo e bem-estar registados
                                                                             </div>
                                                                         </div>
@@ -5397,10 +5394,10 @@ function HarmReductionTracker() {
                             )}
                             {currentView === 'history' && (
                                 <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Histórico</h2>
+                                    <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Histórico</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
@@ -5417,7 +5414,7 @@ function HarmReductionTracker() {
                                                     <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
                                                         <Icons.ChevronLeft className="w-5 h-5" />
                                                     </button>
-                                                    <span className={'text-sm font-medium min-w-[120px] text-center ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{getPeriodLabel(historyPeriod, historyPeriodOffset)}</span>
+                                                    <span className={'text-sm font-medium min-w-[120px] text-center ' + (themeClasses.textSecondary(darkMode))}>{getPeriodLabel(historyPeriod, historyPeriodOffset)}</span>
                                                     <button onClick={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))} disabled={historyPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (historyPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
                                                         <Icons.ChevronRight className="w-5 h-5" />
                                                     </button>
@@ -5523,13 +5520,13 @@ function HarmReductionTracker() {
                                         return (
                                             <div className="space-y-6">
                                                 {filteredReflections.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredReflections.slice(0, reflectionsToShow).map(r => (
                                                                 <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        <div className={'text-xs ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                             {(() => {
                                                                                 const d = safeDate(r.timestamp || r.date);
                                                                                 if (!d) return 'Data inválida';
@@ -5541,7 +5538,7 @@ function HarmReductionTracker() {
                                                                         <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>{r.question}</div>
-                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{r.answer}</div>
+                                                                    <div className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>{r.answer}</div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -5554,13 +5551,13 @@ function HarmReductionTracker() {
                                                 )}
 
                                                 {filteredThoughts.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.BookOpen className={'w-4 h-4 ' + (darkMode ? 'text-pink-400' : 'text-pink-600')} /> Pensamentos ({filteredThoughts.length})</h3>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.BookOpen className={'w-4 h-4 ' + (darkMode ? 'text-pink-400' : 'text-pink-600')} /> Pensamentos ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredThoughts.slice(0, thoughtsToShow).map(t => (
                                                                 <div key={t.id} className={(darkMode ? 'border-pink-500 bg-pink-900/30' : 'border-pink-400 bg-pink-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
-                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+                                                                        <div className={'text-xs ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                             {(() => {
                                                                                 const d = safeDate(t.timestamp || t.date);
                                                                                 if (!d) return 'Data inválida';
@@ -5571,7 +5568,7 @@ function HarmReductionTracker() {
                                                                         </div>
                                                                         <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{t.content}</div>
+                                                                    <div className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>{t.content}</div>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -5584,13 +5581,13 @@ function HarmReductionTracker() {
                                                 )}
 
                                                 {filteredWellbeing.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Heart className={'w-4 h-4 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')} /> Bem-Estar ({filteredWellbeing.length})</h3>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Heart className={'w-4 h-4 ' + (darkMode ? 'text-blue-400' : 'text-blue-600')} /> Bem-Estar ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredWellbeing.slice(0, wellbeingToShow).map(w => (
                                                                 <div key={w.id} className={(darkMode ? 'bg-blue-900/30 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
-                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                        <div className={'text-sm font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                             {(() => {
                                                                                 const d = safeDate(w.timestamp || w.date);
                                                                                 return d ? d.toLocaleDateString('pt-PT') : 'Data inválida';
@@ -5614,7 +5611,7 @@ function HarmReductionTracker() {
                                                                     </div>
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
-                                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>Emoções:</div>
+                                                                            <div className={'text-xs mb-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>Emoções:</div>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {w.emotions.map((emotion, i) => (
                                                                                     <span key={i} className={(darkMode ? 'bg-blue-800/50 text-blue-300' : 'bg-blue-100 text-blue-700') + ' text-xs px-2 py-1 rounded'}>
@@ -5641,14 +5638,14 @@ function HarmReductionTracker() {
                                                 )}
 
                                                 {filteredConsumptions.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredConsumptions.map(c => (
                                                                 <div key={c.id} className={(darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center">
                                                                         <div>
-                                                                            <div className={'font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                            <div className={'font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                                 {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
                                                                             </div>
                                                                             {c.notes && <div className={'text-sm mt-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {c.notes}</div>}
@@ -5665,13 +5662,13 @@ function HarmReductionTracker() {
                                                 )}
 
                                                 {filteredCycles.length > 0 && (
-                                                    <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-4 flex items-center gap-2'}>🌙 Ciclos ({filteredCycles.length})</h3>
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>🌙 Ciclos ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.map(cycle => (
                                                                 <div key={cycle.id} className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' p-3 rounded-lg border'}>
                                                                     <div className="flex justify-between items-center mb-2">
-                                                                        <div className={'text-sm font-medium ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+                                                                        <div className={'text-sm font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                             {(() => {
                                                                                 const d = safeDate(cycle.timestamp);
                                                                                 return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
@@ -5680,20 +5677,20 @@ function HarmReductionTracker() {
                                                                         <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     {cycle.bedtime && (
-                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Hora de deitar: </span>
+                                                                        <div className={'text-sm mb-1 ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={(themeClasses.textTertiary(darkMode))}>Hora de deitar: </span>
                                                                             <span className="font-medium">{cycle.bedtime}</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.triggers && cycle.triggers.length > 0 && (
-                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Gatilhos: </span>
+                                                                        <div className={'text-sm mb-1 ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={(themeClasses.textTertiary(darkMode))}>Gatilhos: </span>
                                                                             <span className="font-medium">{cycle.triggers.join(', ')}</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.mg && (
-                                                                        <div className={'text-sm mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
-                                                                            <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Consumo diário: </span>
+                                                                        <div className={'text-sm mb-1 ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={(themeClasses.textTertiary(darkMode))}>Consumo diário: </span>
                                                                             <span className="font-medium">{cycle.mg} mg</span>
                                                                         </div>
                                                                     )}
@@ -5722,9 +5719,9 @@ function HarmReductionTracker() {
 
                                                                         return cycleDailyLogs.length > 0 && (
                                                                             <div className={'text-xs mt-2 p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-gray-100')}>
-                                                                                <div className={'font-medium mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📝 Registos Diários:</div>
+                                                                                <div className={'font-medium mb-1 ' + (themeClasses.textTertiary(darkMode))}>📝 Registos Diários:</div>
                                                                                 {cycleDailyLogs.map(log => (
-                                                                                    <div key={log.id} className={'flex justify-between items-center py-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                    <div key={log.id} className={'flex justify-between items-center py-1 ' + (themeClasses.textSecondary(darkMode))}>
                                                                                         <div>
                                                                                             {log.mg && <span className="font-medium">{log.mg}mg</span>}
                                                                                             {log.notes && <span className="italic ml-2">- {log.notes}</span>}
