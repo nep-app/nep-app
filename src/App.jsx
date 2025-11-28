@@ -3592,7 +3592,7 @@ function HarmReductionTracker() {
                                                             >
                                                                 {subView === 'estrutural' && '📊 Estrutural'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
-                                                                {subView === 'coach' && '💬 Coach'}
+                                                                {subView === 'coach' && '💬 Reflexão Geral'}
                                                             </button>
                                                         ))}
                                                     </div>
