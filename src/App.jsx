@@ -1727,6 +1727,7 @@ function HarmReductionTracker() {
                                                 const targetStr = typeof bedtimeGoal.target === 'string' ? bedtimeGoal.target : String(bedtimeGoal.target).padStart(2, '0') + ':00';
                                                 const bedtimeParts = lastCycle.bedtime.split(':');
                                                 let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                                                const bedtimeOriginalMinutes = bedtimeMinutes; // Guardar hora original (sem ajuste +24h)
 
                                                 const targetParts = targetStr.split(':');
                                                 let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
@@ -1734,12 +1735,23 @@ function HarmReductionTracker() {
                                                 if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
                                                 if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
 
-                                                if (bedtimeMinutes <= targetMinutes) {
+                                                // Validar se hora é "saudável" (21:00-02:00)
+                                                const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120; // 21:00-02:00
+
+                                                if (bedtimeMinutes <= targetMinutes && isHealthyBedtime) {
                                                     alerts.push({
                                                         text: `Boa! Deitaste às ${lastCycle.bedtime}`,
                                                         emoji: '💤',
                                                         color: 'green',
                                                         type: 'positive'
+                                                    });
+                                                } else if (bedtimeMinutes <= targetMinutes && !isHealthyBedtime) {
+                                                    // Cumpriu a meta mas hora não é saudável
+                                                    alerts.push({
+                                                        text: `Cumpriu meta mas ${lastCycle.bedtime} é muito tarde/cedo`,
+                                                        emoji: '⚠️',
+                                                        color: 'orange',
+                                                        type: 'warning'
                                                     });
                                                 } else {
                                                     alerts.push({
