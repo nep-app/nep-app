@@ -1380,25 +1380,7 @@ return {
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
-                cycleId: currentCycle?.id,
-                cycleTimestamp: currentCycle?.timestamp,
-                cycleDate: currentCycle ? new Date(currentCycle.timestamp).toLocaleString('pt-PT') : null,
-                totalCycles: cycles.length,
-                consumosNesteCiclo: currentCycleCount,
-                totalConsumptions: consumptions.length,
-                consumptionsWithCycleId: consumptions.filter(c => c.cycleId).length,
-                consumptionsWithMatchingCycleId: consumptions.filter(c => c.cycleId === currentCycle?.id).length,
-                consumptionsWithoutCycleId: consumptions.filter(c => !c.cycleId).length,
-                consumptionsWithoutCycleIdAfterCycleStart: currentCycle ? consumptions.filter(c => !c.cycleId && c.timestamp >= currentCycle.timestamp).length : 0,
-                first5Consumptions: consumptions.slice(0, 5).map(c => ({
-                    id: c.id.substring(0, 8),
-                    cycleId: c.cycleId ? c.cycleId.substring(0, 8) : 'SEM CYCLEID',
-                    timestamp: c.timestamp,
-                    date: new Date(c.timestamp).toLocaleString('pt-PT'),
-                    matchesCycle: c.cycleId === currentCycle?.id,
-                    isAfterCycleStart: currentCycle ? c.timestamp >= currentCycle.timestamp : false
-                }))
-            });
+          
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
