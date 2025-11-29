@@ -1247,7 +1247,7 @@ function HarmReductionTracker() {
                     });
                 }
 
-                const percentage = total > 0 ? Math.round((achieved / total) * 100) : 0;
+                const percentage = total > 0 ? Math.min(100, Math.round((achieved / total) * 100)) : 0;
 
                 return { achieved, total, percentage };
             };
@@ -1621,7 +1621,7 @@ return {
                 }))
             });
             // ===== PRE-RENDER DATA PREPARATION =====
-            const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs]);
+            const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
 
             // Memoized coping strategies based on triggers
@@ -4269,7 +4269,7 @@ return {
                                                                                         totalPossible = analysisCycles.length;
                                                                                     }
 
-                                                                                    const percentage = totalPossible > 0 ? ((achievements / totalPossible) * 100).toFixed(0) : 0;
+                                                                                    const percentage = totalPossible > 0 ? Math.min(100, ((achievements / totalPossible) * 100)).toFixed(0) : 0;
 
                                                                                     return {
                                                                                         goal: g,
@@ -4304,7 +4304,7 @@ return {
                                                                                         )}
                                                                                         {bestGoal && bestGoal.percentage > 0 && (
                                                                                             <>
-                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: cumpriste em <strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong> {bestGoal.goal.type.includes('cycle') || bestGoal.goal.type === 'limit_last' || bestGoal.goal.type === 'reduce_quantity' || bestGoal.goal.type === 'bedtime_before' ? 'dos ciclos' : 'dos dias'} ({bestGoal.achievements}/{bestGoal.totalPossible})
+                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} {bestGoal.goal.type.includes('cycle') || bestGoal.goal.type === 'limit_last' || bestGoal.goal.type === 'reduce_quantity' || bestGoal.goal.type === 'bedtime_before' ? 'ciclos' : 'dias'} possíveis (<strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong>)
                                                                                                 {bestGoal.percentage >= 70 ? ' - excelente!' : bestGoal.percentage >= 40 ? '. Continua a trabalhar nesta meta!' : '. Há espaço para melhorar - revê as tuas estratégias.'}
                                                                                             </>
                                                                                         )}
@@ -5035,9 +5035,20 @@ return {
                                                             <div className="space-y-4">
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Análise de Bem-Estar</h3>
-                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Correlação entre nº de consumos e bem-estar nos dias com dados
                                                                     </p>
+
+                                                                    {/* Texto explicativo simples */}
+                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/30' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mb-4 border'}>
+                                                                        <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-blue-200' : 'text-blue-800')}>
+                                                                            💡 <strong>Como ler:</strong> Esta análise mostra se existe uma relação entre o número de consumos e o teu bem-estar.
+                                                                            <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}> Correlação negativa</strong> significa que mais consumos estão associados a pior bem-estar (ex: menos sono, humor mais baixo).
+                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> Correlação positiva</strong> é o oposto.
+                                                                            <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}> Sem correlação</strong> indica que não há padrão claro.
+                                                                        </p>
+                                                                    </div>
+
                                                                     <div className="space-y-3">
                                                                         {correlations.map((corr, i) => {
                                                                             const getCorrelationLabel = (r) => {
