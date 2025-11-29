@@ -10,7 +10,6 @@ import { useUI } from './contexts/UIContext';
 import { useToast } from './hooks/useToast';
 import { useAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
-import { POSITIVE_WORDS, NEGATIVE_WORDS } from './constants/sentimentWords';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
