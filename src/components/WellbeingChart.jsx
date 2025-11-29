@@ -166,47 +166,70 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       };
     }
 
-    // Calcular médias antes e depois dos consumos
-    const firstConsumptionTime = consumptionData[0].minutesSinceMidnight;
-    const lastConsumptionTime = consumptionData[consumptionData.length - 1].minutesSinceMidnight;
+    // BUGFIX: Em vez de comparar antes/depois de TODOS os consumos (que pode não ter dados),
+    // vamos dividir o dia em duas metades e comparar as médias
+    const allData = chartData.filter(d => d.mood !== null || d.energy !== null);
+    if (allData.length < 2) {
+      return {
+        text: 'Dados insuficientes para analisar impacto (pelo menos 2 registos necessários).',
+        type: 'neutral'
+      };
+    }
 
-    const beforeMood = moodData.filter(d => d.minutesSinceMidnight < firstConsumptionTime);
-    const afterMood = moodData.filter(d => d.minutesSinceMidnight > lastConsumptionTime);
-    const beforeEnergy = energyData.filter(d => d.minutesSinceMidnight < firstConsumptionTime);
-    const afterEnergy = energyData.filter(d => d.minutesSinceMidnight > lastConsumptionTime);
+    // Calcular mediana de tempo para dividir o dia
+    const sortedByTime = [...allData].sort((a, b) => a.minutesSinceMidnight - b.minutesSinceMidnight);
+    const medianIndex = Math.floor(sortedByTime.length / 2);
+    const medianTime = sortedByTime[medianIndex].minutesSinceMidnight;
+
+    // Dividir dados em primeira e segunda metade do dia
+    const firstHalfMood = moodData.filter(d => d.minutesSinceMidnight <= medianTime);
+    const secondHalfMood = moodData.filter(d => d.minutesSinceMidnight > medianTime);
+    const firstHalfEnergy = energyData.filter(d => d.minutesSinceMidnight <= medianTime);
+    const secondHalfEnergy = energyData.filter(d => d.minutesSinceMidnight > medianTime);
+
+    // Contar consumos em cada metade
+    const firstHalfCons = consumptionData.filter(d => d.minutesSinceMidnight <= medianTime).length;
+    const secondHalfCons = consumptionData.filter(d => d.minutesSinceMidnight > medianTime).length;
 
     let moodChange = null, energyChange = null;
 
-    if (beforeMood.length > 0 && afterMood.length > 0) {
-      const avgBefore = beforeMood.reduce((sum, d) => sum + d.mood, 0) / beforeMood.length;
-      const avgAfter = afterMood.reduce((sum, d) => sum + d.mood, 0) / afterMood.length;
-      moodChange = avgAfter - avgBefore;
+    if (firstHalfMood.length > 0 && secondHalfMood.length > 0) {
+      const avgFirst = firstHalfMood.reduce((sum, d) => sum + d.mood, 0) / firstHalfMood.length;
+      const avgSecond = secondHalfMood.reduce((sum, d) => sum + d.mood, 0) / secondHalfMood.length;
+      moodChange = avgSecond - avgFirst;
     }
 
-    if (beforeEnergy.length > 0 && afterEnergy.length > 0) {
-      const avgBefore = beforeEnergy.reduce((sum, d) => sum + d.energy, 0) / beforeEnergy.length;
-      const avgAfter = afterEnergy.reduce((sum, d) => sum + d.energy, 0) / afterEnergy.length;
-      energyChange = avgAfter - avgBefore;
+    if (firstHalfEnergy.length > 0 && secondHalfEnergy.length > 0) {
+      const avgFirst = firstHalfEnergy.reduce((sum, d) => sum + d.energy, 0) / firstHalfEnergy.length;
+      const avgSecond = secondHalfEnergy.reduce((sum, d) => sum + d.energy, 0) / secondHalfEnergy.length;
+      energyChange = avgSecond - avgFirst;
     }
 
     // Gerar texto explicativo
     if (moodChange === null && energyChange === null) {
       return {
-        text: 'Dados insuficientes antes/depois dos consumos para analisar impacto.',
+        text: 'Dados insuficientes em ambas as metades do dia.',
         type: 'neutral'
       };
     }
 
     const parts = [];
+    const moreConsInSecondHalf = secondHalfCons > firstHalfCons;
+
     if (moodChange !== null) {
-      if (moodChange > 1) parts.push('humor melhorou após consumos');
-      else if (moodChange < -1) parts.push('humor piorou após consumos');
+      if (moodChange > 1) parts.push('humor melhorou ao longo do dia');
+      else if (moodChange < -1) parts.push('humor piorou ao longo do dia');
       else parts.push('humor manteve-se estável');
     }
     if (energyChange !== null) {
-      if (energyChange > 1) parts.push('energia aumentou após consumos');
-      else if (energyChange < -1) parts.push('energia diminuiu após consumos');
+      if (energyChange > 1) parts.push('energia aumentou ao longo do dia');
+      else if (energyChange < -1) parts.push('energia diminuiu ao longo do dia');
       else parts.push('energia manteve-se estável');
+    }
+
+    // Adicionar contexto de consumos
+    if (moreConsInSecondHalf && consumptionData.length > 1) {
+      parts.push(`(mais consumos na 2ª metade: ${secondHalfCons} vs ${firstHalfCons})`);
     }
 
     const type = (moodChange && moodChange < -1) || (energyChange && energyChange < -1) ? 'negative' :

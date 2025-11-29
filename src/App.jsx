@@ -36,103 +36,118 @@ import { InfoBadge } from './components/ui/InfoBadge';
 import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 // ==========================================
-// CÓDIGO DE SENTIMENT ANALYSIS (INJETADO)
+// CÓDIGO DE SENTIMENT ANALYSIS V2.0
 // ==========================================
 
-// Função auxiliar de tokenização
-function tokenize(text) {
-  return text.toLowerCase()
-    .replace(/[.,;!?:]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 0);
-}
-
-// (Renomeada para não confundir com a tua função lá de baixo)
+// Versão V2.0 - com normalização de acentos e tratamento inteligente de palavrões
 function _calculateRawSentiment(text) {
-  const POSITIVE_WORDS = {
-    'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'fantástico': 3, 'incrível': 3,
-    'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnífico': 3,
-    'excepcional': 3, 'incrivel': 3, 'fantastico': 3, 'espetacular': 3,
-    'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2,
-    'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
-    'agradável': 2, 'agradavel': 2, 'tranquilo': 2, 'tranquila': 2,
-    'calmo': 2, 'calma': 2, 'confiante': 2, 'motivado': 2, 'motivada': 2,
-    'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2,
-    'bem': 1, 'ok': 1, 'okay': 1, 'razoável': 1, 'razoavel': 1,
-    'aceitável': 1, 'aceitavel': 1, 'normal': 1, 'esperançoso': 1, 'esperancoso': 1,
-    'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1, 'progresso': 1
+  const normalize = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  function tokenize(t) {
+    if (!t) return [];
+    const cleaned = String(t).replace(/\r?\n|\r/g, ' ').replace(/["""()<>[\]{},;:!?@#€$%&*+=\/\\|~`]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+    return cleaned.split(' ').map(w => normalize(w.trim())).filter(Boolean);
+  }
+
+  const POSITIVE_WORDS_RAW = {
+    'excelente': 3, 'otimo': 3, 'fantastico': 3, 'incrivel': 3, 'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnifico': 3,
+    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3,
+    'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2, 'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
+    'confiante': 2, 'motivado': 2, 'motivada': 2, 'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2, 'fixe': 2, 'bacano': 2, 'top': 2, 'nice': 2, 'capaz': 2,
+    'bem': 1, 'ok': 1, 'okay': 1, 'razoavel': 1, 'aceitavel': 1, 'normal': 1, 'esperancoso': 1, 'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1,
+    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1
   };
 
-  const NEGATIVE_WORDS = {
-    'horrível': 3, 'horrivel': 3, 'péssimo': 3, 'pessimo': 3, 'terrível': 3,
-    'terrivel': 3, 'deprimido': 3, 'deprimida': 3, 'desesperado': 3, 'desesperada': 3,
-    'miserável': 3, 'miseravel': 3, 'impossível': 3, 'impossivel': 3,
-    'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2,
-    'preocupada': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
-    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2,
-    'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2, 'vazia': 2,
-    'difícil': 2, 'dificil': 2, 'complicado': 2, 'complicada': 2,
-    'pior': 2, 'negativo': 2, 'negativa': 2,
-    'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
-    'aborrecida': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'incerta': 1,
-    'dúvida': 1, 'duvida': 1, 'problema': 1, 'falhar': 1, 'falhei': 1
+  const NEGATIVE_WORDS_RAW = {
+    'estupida': 3, 'estupido': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3, 'atrasada': 3, 'atrasado': 3, 'retardada': 3, 'morrer': 3, 'morte': 3,
+    'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
+    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2,
+    'dificil': 2, 'complicado': 2, 'pior': 2, 'negativo': 2, 'raiva': 2, 'fodido': 2, 'fodida': 2, 'lixado': 2, 'lixada': 2,
+    'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2, 'doente': 2, 'arrependido': 2, 'arrependida': 2, 'mania': 2,
+    'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1, 'sono': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'duvida': 1, 'problema': 1,
+    'meh': 1, 'nhe': 1, 'down': 1, 'estranha': 1, 'estranho': 1, 'medo': 2, 'desconfortavel': 1
   };
 
-  const NEGATIONS = ['não', 'nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer'];
-  
-  const INTENSIFIERS = {
-    'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8,
-    'incrivelmente': 1.8, 'inacreditavelmente': 1.8, 'demasiado': 1.5,
-    'realmente': 1.3, 'verdadeiramente': 1.3, 'profundamente': 1.5,
-    'completamente': 1.4, 'totalmente': 1.4
-  };
+  const SWEAR_WORDS = new Set(['merda', 'caralho', 'crl', 'fdss', 'fds', 'fodasse', 'foda-se', 'porra']);
+  const NEGATIONS_RAW = ['nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer', 'nada', 'naosei'];
+  const INTENSIFIERS_RAW = { 'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8, 'incrivelmente': 1.8, 'demasiado': 1.5, 'realmente': 1.3, 'profundamente': 1.5, 'completamente': 1.4, 'tao': 1.3, 'bue': 1.5, 'mega': 1.5, 'ganda': 1.5, 'tanto': 1.3 };
+  const REDUCERS_RAW = { 'pouco': 0.5, 'meio': 0.6, 'maisoumenos': 0.6, 'ligeiramente': 0.5, 'raramente': 0.4, 'assim': 0.8 };
+  const SELF_EVAL_VERBS = new Set(['sou', 'estou', 'to', 'sinto', 'ta', 'estava']);
+  const NEGATIVE_EXPRESSIONS = new Set(['que', 'uma', 'um', 'este', 'esta', 'isto', 'isso']);
 
-  const REDUCERS = {
-    'pouco': 0.5, 'meio': 0.6, 'mais ou menos': 0.6, 'um pouco': 0.7,
-    'ligeiramente': 0.5, 'raramente': 0.4, 'às vezes': 0.6, 'as vezes': 0.6
-  };
+  const POSITIVE_WORDS = {}, NEGATIVE_WORDS = {}, INTENSIFIERS = {}, REDUCERS = {};
+  Object.entries(POSITIVE_WORDS_RAW).forEach(([k, v]) => POSITIVE_WORDS[normalize(k)] = v);
+  Object.entries(NEGATIVE_WORDS_RAW).forEach(([k, v]) => NEGATIVE_WORDS[normalize(k)] = v);
+  const NEGATIONS = new Set(NEGATIONS_RAW.map(normalize));
+  Object.entries(INTENSIFIERS_RAW).forEach(([k, v]) => INTENSIFIERS[normalize(k)] = v);
+  Object.entries(REDUCERS_RAW).forEach(([k, v]) => REDUCERS[normalize(k)] = v);
 
-  function analyzeWordInContext(words, index, windowSize = 3) {
+  function isSwear(token) { return SWEAR_WORDS.has(token); }
+
+  function analyzeWordInContext(words, index, windowSize = 5) {
     const word = words[index];
-    let score = 0;
-    let multiplier = 1;
-    let hasNegation = false;
-
-    if (POSITIVE_WORDS[word]) score = POSITIVE_WORDS[word];
-    else if (NEGATIVE_WORDS[word]) score = -NEGATIVE_WORDS[word];
+    if (isSwear(word)) return 0;
+    let baseScore = 0;
+    if (POSITIVE_WORDS[word]) baseScore = POSITIVE_WORDS[word];
+    else if (NEGATIVE_WORDS[word]) baseScore = -NEGATIVE_WORDS[word];
     else return 0;
 
-    const contextBefore = words.slice(Math.max(0, index - windowSize), index);
-    for (let i = contextBefore.length - 1; i >= 0; i--) {
-      const contextWord = contextBefore[i];
-      if (NEGATIONS.includes(contextWord)) hasNegation = !hasNegation;
-      if (INTENSIFIERS[contextWord]) multiplier *= INTENSIFIERS[contextWord];
-      if (REDUCERS[contextWord]) multiplier *= REDUCERS[contextWord];
+    let multiplier = 1, hasNegation = false;
+    const start = Math.max(0, index - windowSize);
+    for (let i = index - 1; i >= start; i--) {
+      const ctx = words[i];
+      if (NEGATIONS.has(ctx)) {
+        const next = words[i + 1] || '';
+        if (!(next === 'sei' || next === 'se' || next === 'naosei')) hasNegation = !hasNegation;
+      }
+      if (INTENSIFIERS[ctx]) multiplier *= INTENSIFIERS[ctx];
+      if (REDUCERS[ctx]) multiplier *= REDUCERS[ctx];
     }
 
-    score *= multiplier;
+    let score = baseScore * multiplier;
     if (hasNegation) score *= -1;
+    const prev = words[index - 1] || '';
+    if (SELF_EVAL_VERBS.has(prev) && score < 0) score = score * 1.8;
     return score;
   }
 
-  if (!text || text.trim().length === 0) {
+  if (!text || String(text).trim().length === 0) {
     return { score: 0, magnitude: 0, classification: 'neutral', positiveCount: 0, negativeCount: 0, neutralCount: 0, details: [] };
   }
 
   const words = tokenize(text);
   const details = [];
-  let totalScore = 0;
-  let positiveCount = 0;
-  let negativeCount = 0;
-  let neutralCount = 0;
+  let totalScore = 0, positiveCount = 0, negativeCount = 0, neutralCount = 0;
 
   for (let i = 0; i < words.length; i++) {
-    const wordScore = analyzeWordInContext(words, i);
-    if (wordScore !== 0) {
-      totalScore += wordScore;
-      details.push({ word: words[i], score: wordScore, context: words.slice(Math.max(0, i - 3), i + 1).join(' ') });
-      if (wordScore > 0) positiveCount++;
-      else negativeCount++;
+    if (words[i] === 'consegui' && words[i+1] === 'nao' && words[i+2] === 'conseguir') {
+      totalScore += 1.5; positiveCount++;
+      details.push({ word: 'consegui nao conseguir', score: 1.5, context: words.slice(Math.max(0, i-3), i+3).join(' ') });
+      i += 2; continue;
+    }
+
+    if (isSwear(words[i])) {
+      const prev = words[i-1] || '';
+      if (SELF_EVAL_VERBS.has(prev)) {
+        const val = -3 * 1.5;
+        totalScore += val; negativeCount++;
+        details.push({ word: words[i], score: val, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
+      } else if (NEGATIVE_EXPRESSIONS.has(prev)) {
+        const val = -2;
+        totalScore += val; negativeCount++;
+        details.push({ word: words[i], score: val, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
+      } else {
+        neutralCount++;
+        details.push({ word: words[i], score: 0, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
+      }
+      continue;
+    }
+
+    const scoreForWord = analyzeWordInContext(words, i);
+    if (scoreForWord !== 0) {
+      totalScore += scoreForWord;
+      details.push({ word: words[i], score: scoreForWord, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
+      if (scoreForWord > 0) positiveCount++; else negativeCount++;
     } else {
       neutralCount++;
     }
@@ -145,7 +160,7 @@ function _calculateRawSentiment(text) {
   else if (totalScore < -2) classification = 'very_negative';
   else if (totalScore < -0.5) classification = 'negative';
 
-  return { score: totalScore, magnitude, classification, positiveCount, negativeCount, neutralCount, details };
+  return { score: Number(totalScore.toFixed(3)), magnitude: Number(magnitude.toFixed(3)), classification, positiveCount, negativeCount, neutralCount, details };
 }
 
 // Esta é a função principal que o teu código já chama!
@@ -638,7 +653,11 @@ function HarmReductionTracker() {
 
                 last7Dates.forEach(date => {
                     // Buscar primeiro nos cycles (novo método)
-                    const cycle = cycles.find(c => c.date === date && c.mg !== undefined && c.mg !== '');
+                    // BUGFIX: cycles antigos só têm timestamp, não date - fazer fallback
+                    const cycle = cycles.find(c => {
+                        const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                        return cycleDate === date && c.mg !== undefined && c.mg !== '';
+                    });
                     if (cycle) {
                         const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         if (!isNaN(mgValue) && mgValue > 0) {
@@ -5003,7 +5022,7 @@ return {
                                                                                                 <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>Média: {corr.average}{corr.unit}</div>
                                                                                             </div>
                                                                                         </div>
-                                                                                        <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
+                                                                                        <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'yellow' ? (darkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
                                                                                             {corrLabel.text}
                                                                                         </div>
                                                                                     </div>
