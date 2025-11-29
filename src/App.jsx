@@ -5493,11 +5493,8 @@ const getGoalAchievementCount = (goal) => {
                                     {(() => {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
-                                            period: historyPeriod,
-                                            offset: historyPeriodOffset,
-                                            dateRange: dateRange,
-                                            topic: historyTopic
-                                        });
+                                          
+                                   
 
                                         const tempFilteredReflections = filterByDateRange(reflections, dateRange);
                                         const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
@@ -5506,13 +5503,7 @@ const getGoalAchievementCount = (goal) => {
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
                                         const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
 
-                                            reflexões: tempFilteredReflections.length,
-                                            bemEstar: tempFilteredWellbeing.length,
-                                            registosDiarios: tempFilteredDailyLogs.length,
-                                            consumos: tempFilteredConsumptions.length,
-                                            ciclos: tempFilteredCycles.length,
-                                            pensamentos: tempFilteredThoughts.length
-                                        });
+                             
 
                                         // Apply topic filter
                                         let filteredReflections = tempFilteredReflections;
@@ -5554,12 +5545,7 @@ const getGoalAchievementCount = (goal) => {
                                             filteredReflections = [];
                                         }
 
-                                            reflexões: filteredReflections.length,
-                                            bemEstar: filteredWellbeing.length,
-                                            registosDiarios: filteredDailyLogs.length,
-                                            consumos: filteredConsumptions.length,
-                                            ciclos: filteredCycles.length
-                                        });
+                                  
 
                                         const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
