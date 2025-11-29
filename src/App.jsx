@@ -3838,6 +3838,7 @@ return {
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
                                                                                     <>
+                                                                                        📝 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Análise das tuas Reflexões</strong> ({sentimentAnalysis.noteCount} notas):
                                                                                         {(() => {
                                                                                             // Calcular sentimento com base na DISTRIBUIÇÃO em vez da média
                                                                                             const dist = sentimentAnalysis.distribution;
@@ -3853,32 +3854,82 @@ return {
                                                                                             else if (negativePercent >= 60) realOverall = 'negative';
                                                                                             else if (negativePercent >= 40 && negativePercent > positivePercent) realOverall = 'negative';
 
+                                                                                            // Correlação com consumo
+                                                                                            const consumptionsByDate = {};
+                                                                                            analysisConsumptions.forEach(c => {
+                                                                                                if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                                consumptionsByDate[c.date]++;
+                                                                                            });
+
+                                                                                            const reflectionsByDate = {};
+                                                                                            allNotes.forEach(note => {
+                                                                                                const noteDate = note.date || (note.timestamp ? new Date(note.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                                if (noteDate) {
+                                                                                                    if (!reflectionsByDate[noteDate]) reflectionsByDate[noteDate] = [];
+                                                                                                    reflectionsByDate[noteDate].push(note);
+                                                                                                }
+                                                                                            });
+
+                                                                                            // Encontrar dias com muitas reflexões negativas vs consumo
+                                                                                            let highNegDays = 0, highNegHighCons = 0;
+                                                                                            Object.entries(reflectionsByDate).forEach(([date, notes]) => {
+                                                                                                const negCount = notes.filter(n => n.sentiment && (n.sentiment.overall === 'negative' || n.sentiment.overall === 'very_negative')).length;
+                                                                                                if (negCount >= notes.length * 0.6 && notes.length >= 2) {
+                                                                                                    highNegDays++;
+                                                                                                    if (consumptionsByDate[date] && consumptionsByDate[date] > avgPerDay) {
+                                                                                                        highNegHighCons++;
+                                                                                                    }
+                                                                                                }
+                                                                                            });
+
                                                                                             return (
                                                                                                 <>
-                                                                                                    Ao analisar as tuas reflexões ({sentimentAnalysis.noteCount} notas),
+                                                                                                    <br/>
+                                                                                                    🔍 <strong className={(darkMode ? 'text-indigo-300' : 'text-indigo-700')}>Padrões emocionais:</strong>
                                                                                                     {realOverall === 'positive' ? (
-                                                                                                        <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> ({positivePercent}% notas positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. Isso é muito saudável!</>
+                                                                                                        <> Tom geral <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> ({positivePercent}% positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. </>
                                                                                                     ) : realOverall === 'negative' ? (
-                                                                                                        <> o tom geral é <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> ({negativePercent}% notas negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. Usa as estratégias de coping e considera procurar apoio adicional se necessário.</>
+                                                                                                        <> Tom geral <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> ({negativePercent}% negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. </>
                                                                                                     ) : (
-                                                                                                        <> o tom é equilibrado entre positivo ({positivePercent}%) e negativo ({negativePercent}%), com {neutralPercent}% neutro. Isso mostra que estás a navegar os altos e baixos da vida, o que é completamente humano e esperado.</>
+                                                                                                        <> Tom equilibrado entre positivo ({positivePercent}%) e negativo ({negativePercent}%), com {neutralPercent}% neutro - estás a navegar os altos e baixos. </>
+                                                                                                    )}
+                                                                                                    {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>📈 Tendência: a melhorar!</span>}
+                                                                                                    {sentimentAnalysis.trend === 'worsening' && <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>📉 Tendência: a piorar nos últimos dias.</span>}
+                                                                                                    {highNegDays > 0 && highNegHighCons / highNegDays > 0.6 && (
+                                                                                                        <> <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>⚠️ Padrão: dias com reflexões muito negativas coincidem com mais consumo</strong> ({highNegHighCons} de {highNegDays} dias). Humor baixo pode ser gatilho.</>
                                                                                                     )}
                                                                                                 </>
                                                                                             );
                                                                                         })()}
-                                                                                        {sentimentAnalysis.trend === 'improving' && <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>📈 Tendência emocional: a melhorar!</span> Isso é excelente.</>}
-                                                                                        {sentimentAnalysis.trend === 'worsening' && <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>📉 Tendência emocional: a piorar.</span> Presta atenção a este padrão e ativa estratégias de suporte.</>}
+                                                                                        <br/>
+                                                                                        💭 <strong className={(darkMode ? 'text-purple-300' : 'text-purple-700')}>Temas principais:</strong>
                                                                                         {(() => {
-                                                                                            // Mostrar 3 temas mais mencionados (em vez de 2)
+                                                                                            // Mostrar 3 temas mais mencionados com sentimento médio
                                                                                             const topThemes = Object.entries(sentimentThemes)
                                                                                                 .filter(([_, data]) => data.count > 2)
                                                                                                 .sort((a, b) => b[1].count - a[1].count)
                                                                                                 .slice(0, 3);
                                                                                             const themeNames = { sleep: 'sono', stress: 'stress/ansiedade', energy: 'energia', mood: 'humor', focus: 'foco/concentração', social: 'relações sociais', health: 'saúde física' };
                                                                                             if (topThemes.length > 0) {
-                                                                                                return <> Os temas mais presentes: <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{topThemes.map(([theme, data]) => `${themeNames[theme]} (${data.count}x)`).join(', ')}</strong>.</>;
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        {topThemes.map(([theme, data], idx) => {
+                                                                                                            const avgSent = data.avgSentiment || 0;
+                                                                                                            const sentColor = avgSent > 0.3 ? (darkMode ? 'text-green-400' : 'text-green-600') : avgSent < -0.3 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600');
+                                                                                                            return (
+                                                                                                                <span key={theme}>
+                                                                                                                    {idx > 0 && ', '}
+                                                                                                                    <strong className={sentColor}>{themeNames[theme]}</strong> ({data.count}x{avgSent > 0.3 ? '✓' : avgSent < -0.3 ? '⚠' : ''})
+                                                                                                                </span>
+                                                                                                            );
+                                                                                                        })}
+                                                                                                        .
+                                                                                                        {sentimentThemes.stress && sentimentThemes.stress.avgSentiment < -0.3 && <> <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>Nota:</strong> As tuas reflexões sobre stress/ansiedade tendem a ser negativas - este é um tema que merece atenção.</>}
+                                                                                                        {sentimentThemes.sleep && sentimentThemes.sleep.avgSentiment < -0.3 && <> <strong className={(darkMode ? 'text-cyan-300' : 'text-cyan-700')}>Nota:</strong> O sono é fonte frequente de preocupação nas tuas notas - melhorar a qualidade do sono pode ter grande impacto.</>}
+                                                                                                    </>
+                                                                                                );
                                                                                             }
-                                                                                            return null;
+                                                                                            return <> Escreve mais reflexões para identificar temas recorrentes.</>;
                                                                                         })()}
                                                                                     </>
                                                                                 ) : (
@@ -4188,13 +4239,15 @@ return {
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        Descobri uma correlação interessante: o sono de hoje e o humor de amanhã têm uma correlação de <strong className={(correlation > 0.4 ? (darkMode ? 'text-green-400' : 'text-green-600') : correlation < -0.2 ? (darkMode ? 'text-red-400' : 'text-red-600') : (themeClasses.textTertiary(darkMode)))}>{correlation.toFixed(2)}</strong>.
+                                                                                        💤➡️😊 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Sono e Humor:</strong> Analisei como o teu sono afeta o humor no dia seguinte.
                                                                                         {correlation > 0.4 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dormir bem melhora claramente o teu humor no dia seguinte!</span> Priorizar o sono é investir no teu bem-estar emocional.</>
-                                                                                        ) : correlation < -0.2 ? (
-                                                                                            <> Curiosamente, mais sono parece correlacionar-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta o humor.</>
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Correlação forte (+{correlation.toFixed(2)}):</span> Dormir bem <strong>melhora claramente</strong> o teu humor no dia seguinte! Nos dados, mais sono = humor melhor. <strong className={(darkMode ? 'text-green-300' : 'text-green-700')}>💡 Ação: Prioriza 7-8h de sono - é o teu melhor investimento emocional.</strong></>
+                                                                                        ) : correlation > 0.2 ? (
+                                                                                            <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Correlação moderada (+{correlation.toFixed(2)}):</span> Há uma ligação positiva entre sono e humor, mas outros fatores também influenciam. <strong className={(darkMode ? 'text-blue-300' : 'text-blue-700')}>💡 Ação: Melhora a qualidade do sono (ambiente escuro, horário regular).</strong></>
+                                                                                        ) : correlation < -0.3 ? (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Correlação negativa ({correlation.toFixed(2)}):</span> Curiosamente, mais sono associa-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta negativamente. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Ação: Foca na QUALIDADE do sono, não apenas quantidade. Considera consultar profissional de saúde.</strong></>
                                                                                         ) : (
-                                                                                            <> Não há uma relação clara entre sono e humor nos teus dados. Outros fatores podem estar a influenciar mais o teu estado emocional.</>
+                                                                                            <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Correlação fraca ({correlation.toFixed(2)}):</span> Não há uma relação linear clara nos teus dados. Isso não significa que o sono não importa - pode haver um padrão não-linear, ou outros fatores (consumo, stress, socialização) têm mais peso. <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>💡 Ação: Observa padrões específicos - talvez haja um "sweet spot" de horas de sono para ti.</strong></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -4249,22 +4302,26 @@ return {
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔍 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Impacto do Consumo:</strong> Analisei como o consumo hoje afeta o teu bem-estar no dia seguinte.
+                                                                                        🔍 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Impacto do Consumo:</strong> Analisei como o consumo de hoje afeta o teu bem-estar amanhã.
                                                                                         {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
                                                                                             <>
-                                                                                                {moodCorr < -0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Dias com mais consumo tendem a preceder dias com humor mais baixo (correlação: {moodCorr.toFixed(2)})</span> - isto mostra claramente o impacto emocional do consumo.</>
+                                                                                                {moodCorr < -0.5 ? (
+                                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Correlação forte ({moodCorr.toFixed(2)}):</span> Dias com mais consumo <strong>precedem claramente</strong> dias com humor mais baixo. <strong className={(darkMode ? 'text-red-300' : 'text-red-700')}>💡 O ciclo é evidente nos teus dados - consumir hoje = sentir-te pior amanhã.</strong></>
+                                                                                                ) : moodCorr < -0.3 ? (
+                                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Correlação moderada ({moodCorr.toFixed(2)}):</span> Há um padrão onde dias de mais consumo tendem a preceder humor mais baixo. O impacto emocional existe, embora outros fatores também influenciem. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Reduzir consumo pode melhorar o teu estado emocional.</strong></>
                                                                                                 ) : moodCorr > 0.3 ? (
-                                                                                                    <> Curiosamente, mais consumo correlaciona-se com melhor humor no dia seguinte (correlação: {moodCorr.toFixed(2)}) - isto pode indicar alívio temporário ou outros fatores em jogo.</>
+                                                                                                    <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Correlação positiva ({moodCorr.toFixed(2)}):</span> Curiosamente, mais consumo associa-se com melhor humor no dia seguinte - isto pode indicar alívio temporário, autocontrolo diferente em dias bons, ou outros fatores. <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>💡 Observa se este padrão se mantém a longo prazo.</strong></>
                                                                                                 ) : null}
                                                                                             </>
                                                                                         )}
                                                                                         {energyCorr !== null && Math.abs(energyCorr) >= 0.3 && (
                                                                                             <>
-                                                                                                {energyCorr < -0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Mais consumo também afeta negativamente os teus níveis de energia no dia seguinte (correlação: {energyCorr.toFixed(2)})</span> - o corpo está a recuperar.</>
+                                                                                                {energyCorr < -0.5 ? (
+                                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Na energia: correlação forte ({energyCorr.toFixed(2)})</span> - mais consumo resulta em fadiga clara no dia seguinte. <strong className={(darkMode ? 'text-red-300' : 'text-red-700')}>O teu corpo está a pedir descanso da substância.</strong></>
+                                                                                                ) : energyCorr < -0.3 ? (
+                                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Na energia: correlação moderada ({energyCorr.toFixed(2)})</span> - consumo afeta os teus níveis de energia no dia seguinte. O corpo está em recuperação. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Mais descanso e hidratação nos dias seguintes pode ajudar.</strong></>
                                                                                                 ) : energyCorr > 0.3 ? (
-                                                                                                    <> Mais consumo parece correlacionar-se com mais energia no dia seguinte (correlação: {energyCorr.toFixed(2)}) - observa se isto é sustentável a longo prazo.</>
+                                                                                                    <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Na energia: correlação positiva ({energyCorr.toFixed(2)})</span> - mais consumo associa-se com mais energia no dia seguinte. Observa se isto é sustentável ou se há um efeito rebote posterior.</>
                                                                                                 ) : null}
                                                                                             </>
                                                                                         )}
