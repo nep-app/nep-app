@@ -794,251 +794,100 @@ function HarmReductionTracker() {
                 return 0;
             };
 
-            const getGoalAchievementCount = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
-                // Usar dados filtrados se fornecidos, caso contrário usar todos os dados
-                const dataConsumptions = filteredConsumptions || consumptions;
-                const dataDailyLogs = filteredDailyLogs || dailyLogs;
-                const dataCycles = filteredCycles || cycles;
-                const dataWellbeing = filteredWellbeing || wellbeingLogs;
-
-                let achievedCount = 0;
-
-                if (goal.type === 'reduce_frequency') {
-                    // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
-                    // Ex: target=10 → conta dias com <10 consumos (0-9)
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
-                    const consumptionsByDate = {};
-
-                    dataConsumptions.forEach(c => {
-                        // Derivar data do timestamp para garantir consistência
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
-                        consumptionsByDate[dateKey]++;
-                    });
-
-                    // Remove dia atual da contagem
-                    const completedDays = { ...consumptionsByDate };
-                    delete completedDays[today];
-
-                        target: goal.target,
-                        totalDias: Object.keys(consumptionsByDate).length,
-                        diasCompletos: Object.keys(completedDays).length,
-                        hoje: today,
-                        consumosHoje: consumptionsByDate[today] || 0
-                    });
-
-                    Object.entries(completedDays).forEach(([date, count]) => {
-                        const isAchieved = count < goal.target;
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'reduce_quantity') {
-                    // REGRA: Conta ciclos com mg ABAIXO do target (excluindo o target)
-                    // Ex: target=200 → conta ciclos com <200mg
-                    // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
-                    // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
-                    const today = new Date().toLocaleDateString('pt-PT');
-
-                        target: goal.target,
-                        totalCycles: dataCycles.length,
-                        cyclesComMg: dataCycles.filter(c => c.mg && c.mg !== '').length,
-                        totalDailyLogs: dataDailyLogs.length,
-                        dailyLogsComMg: dataDailyLogs.filter(d => d.mg).length,
-                        hoje: today
-                    });
-
-                    // Debug: mostrar TODOS os cycles com detalhes
-                        id: c.id?.slice(0, 8),
-                        timestamp: c.timestamp,
-                        date_ISO: new Date(c.timestamp).toISOString().split('T')[0],
-                        date_PT: new Date(c.timestamp).toLocaleDateString('pt-PT'),
-                        mg: c.mg,
-                        mg_tipo: typeof c.mg
-                    })));
-
-                    // Debug: mostrar TODOS os dailyLogs com detalhes
-                        id: log.id?.slice(0, 8),
-                        date: log.date,
-                        cycleId: log.cycleId?.slice(0, 8) || 'SEM CYCLEID',
-                        mg: log.mg,
-                        mg_tipo: typeof log.mg
-                    })));
-
-                    dataCycles.forEach(cycle => {
-                        const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
-
-                        // Tentar buscar mg do cycle primeiro (novo lugar)
-                        let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
-                        let source = 'cycle';
-
-                        // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
-                        if (isNaN(mgValue) || mgValue <= 0) {
-                            // Tentar buscar pelo cycleId primeiro (dados recentes)
-                            let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
-
-                            // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
-                            if (!dailyLog || !dailyLog.mg) {
-                                const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
-                                dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
-                            }
-
-                            if (dailyLog && dailyLog.mg) {
-                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                source = 'dailyLog';
-                            }
-                        }
-
-                        // Debug: mostrar todos os ciclos
-                            cycleId: cycle.id,
-                            mg_original: cycle.mg,
-                            mg_tipo: typeof cycle.mg,
-                            mg_convertido: mgValue,
-                            source: source,
-                            valido: !isNaN(mgValue) && mgValue > 0
+const getGoalAchievementCount = (goal) => {
+                let achievedDays = 0;
+                
+                try {
+                    if (goal.type === 'reduce_frequency') {
+                        const consumptionsByDate = {};
+                        // Group all consumptions by date
+                        consumptions.forEach(c => {
+                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                            consumptionsByDate[c.date].push(c);
                         });
-
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
-                            const isAchieved = mgValue < parseFloat(goal.target);
-                            if (isAchieved) achievedCount++;
-                        } else {
-                        }
-                    });
-
-                }
-
-                if (goal.type === 'limit_last') {
-                    // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                        target: goal.target,
-                        totalCycles: dataCycles.length
-                    });
-
-                    dataCycles.forEach(cycle => {
-                        const isAchieved = cycle.lastBefore00 === true;
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'increase_interval') {
-                    // REGRA: Conta DIAS onde ≥50% dos intervalos são >target
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
-                    const consumptionsByDate = {};
-
-                    dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                        consumptionsByDate[dateKey].push(c);
-                    });
-
-                    // Remove dia atual da contagem
-                    delete consumptionsByDate[today];
-
-                        target: goal.target + 'h',
-                        totalConsumptions: dataConsumptions.length,
-                        totalDias: Object.keys(consumptionsByDate).length,
-                        hoje: today
-                    });
-
-                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
-                        if (dayConsumptions.length < 2) {
-                            return;
-                        }
-
-                        const sorted = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                        let longIntervals = 0;
-                        let totalIntervals = 0;
-                        const intervalDetails = [];
-
-                        for (let i = 1; i < sorted.length; i++) {
-                            const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
-                            totalIntervals++;
-                            const isLong = intervalHours > goal.target;
-                            if (isLong) longIntervals++;
-                            intervalDetails.push({
-                                from: new Date(sorted[i-1].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
-                                to: new Date(sorted[i].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
-                                hours: intervalHours.toFixed(1),
-                                isLong
-                            });
-                        }
-
-                        const percentage = (longIntervals / totalIntervals) * 100;
-                        const isAchieved = longIntervals >= totalIntervals / 2;
-
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'sleep_hours') {
-                    // REGRA: Conta dias com sono ≥ target (7h ou mais)
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
-
-                        target: goal.target + 'h',
-                        totalLogs: dataWellbeing.length,
-                        logsComSono: dataWellbeing.filter(w => w.sleep != null).length,
-                        hoje: today
-                    });
-
-                    dataWellbeing.forEach(log => {
-                        if (log.sleep != null) {
-                            const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                            if (logDate === today) {
-                                return; // Skip today
+                        // Check each day
+                        Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+                            const count = dayConsumptions.length;
+                            if (count === 0 || count > goal.target) return;
+                            // Check interval rule
+                            if (dayConsumptions.length <= 1) {
+                                achievedDays++;
+                                return;
                             }
-
-                            const isAchieved = parseFloat(log.sleep) >= parseFloat(goal.target);
-                            if (isAchieved) achievedCount++;
+                            const sorted = dayConsumptions.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                            let longIntervals = 0;
+                            for (let i = 1; i < sorted.length; i++) {
+                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
+                                if (diff >= 2) longIntervals++;
+                            }
+                            if (longIntervals >= (sorted.length - 1) / 2) {
+                                achievedDays++;
+                            }
+                        });
+                    } else if (goal.type === 'reduce_quantity') {
+                        dailyLogs.forEach(log => {
+                            if (log.mg < goal.target) achievedDays++;
+                        });
+                    } else if (goal.type === 'delay_first') {
+                        const firstOfDays = {};
+                        consumptions.forEach(c => {
+                            if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
+                                firstOfDays[c.date] = c.timestamp;
+                            }
+                        });
+                        const [tHour, tMin] = goal.target.split(':').map(Number);
+                        const targetMinutes = tHour * 60 + tMin;
+                        Object.values(firstOfDays).forEach(timestamp => {
+                            const d = new Date(timestamp);
+                            const minutes = d.getHours() * 60 + d.getMinutes();
+                            if (minutes >= targetMinutes) achievedDays++;
+                        });
+                    } else if (goal.type === 'limit_last') {
+                        cycles.forEach(cycle => {
+                            if (cycle.lastBefore00) achievedDays++;
+                        });
+                    } else if (goal.type === 'increase_interval') {
+                        if (consumptions.length >= 2) {
+                            const sorted = [...consumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                            for (let i = 1; i < sorted.length; i++) {
+                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                if (diff >= goal.target) achievedDays++;
+                            }
                         }
-                    });
+                    } else if (goal.type === 'sleep_hours') {
+                        wellbeingLogs.forEach(log => {
+                            if (log.sleep != null && parseFloat(log.sleep) >= parseFloat(goal.target)) achievedDays++;
+                        });
+                    } else if (goal.type === 'bedtime_before') {
+                        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                        const targetParts = targetStr.split(':');
+                        const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+                        
+                        cycles.forEach(cycle => {
+                            if (!cycle.bedtime) return;
+                            const bedtimeParts = cycle.bedtime.split(':');
+                            let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                            const bedtimeOriginalMinutes = bedtimeMinutes;
+                            
+                            // Meta SÓ é cumprida se hora for entre 21:00-02:00
+                            const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
+                            
+                            // Ajustar madrugada
+                            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
+                            let targetAdjusted = targetMinutes;
+                            if (targetMinutes >= 0 && targetMinutes < 360) targetAdjusted += 1440;
+                            
+                            const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
+                            if (isAchieved) achievedDays++;
+                        });
+                    }
+                } catch (e) {
+                    console.error('Erro ao calcular meta:', e);
+                    return 0;
                 }
 
-                if (goal.type === 'bedtime_before') {
-                    // REGRA: Conta ciclos onde hora de deitar foi ATÉ o target (incluindo a hora exata)
-                    // E hora entre 21:00-02:00
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                        target: goal.target,
-                        targetStr,
-                        targetMinutes,
-                        totalCycles: dataCycles.length
-                    });
-
-                    dataCycles.forEach(cycle => {
-                        if (!cycle.bedtime) return;
-                        const bedtimeParts = cycle.bedtime.split(':');
-                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-                        const bedtimeOriginalMinutes = bedtimeMinutes;
-                        const originalBedtime = cycle.bedtime;
-
-                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
-                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
-                            bedtimeMinutes += 1440; // +24h
-                        }
-
-                        // Ajustar target se for madrugada
-                        let targetAdjusted = targetMinutes;
-                        if (targetMinutes >= 0 && targetMinutes < 360) {
-                            targetAdjusted += 1440;
-                        }
-
-                        const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                return achievedCount;
+                return achievedDays;
             };
-
             // Get goal progress with percentage
             const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
                 const dataConsumptions = filteredConsumptions || consumptions;
