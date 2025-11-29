@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/nep-app/',
@@ -21,17 +20,19 @@ export default defineConfig({
       }
     },
     rollupOptions: {
+      input: {
+        main: './index.html',
+        sentiment: './src/utils/sentimentAnalysis.js'
+      },
       output: {
         format: 'es',
         entryFileNames: 'app.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name].[ext]',
-manualChunks: {
-  'vendor-react': ['react', 'react-dom'],
-  'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-  'vendor-charts': ['d3-scale', 'd3-shape', 'd3-array'],
-  'sentiment': ['./src/utils/sentimentAnalysis']
-}
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'vendor-charts': ['d3-scale', 'd3-shape', 'd3-array']
         }
       }
     }
