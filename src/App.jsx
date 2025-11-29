@@ -3594,7 +3594,7 @@ return {
                                                                         </div>
                                                                         <div className="flex-1">
                                                                             <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-8 overflow-hidden relative'}>
-                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(blockPercent, blockCount > 0 ? 8 : 0) + '%'}}>
+                                                                                <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(intensity * 100, blockCount > 0 ? 8 : 0) + '%'}}>
                                                                                     {blockCount > 0 && (
                                                                                         <span className="whitespace-nowrap">
                                                                                             {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
