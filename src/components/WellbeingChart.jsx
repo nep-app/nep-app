@@ -187,6 +187,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
     // Para cada consumo, encontrar bem-estar antes e depois
     const comparisons = [];
+    let totalBeforeData = 0;
+    let totalAfterData = 0;
 
     consumptionData.forEach(cons => {
       const consTime = cons.minutesSinceMidnight;
@@ -211,6 +213,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         d.minutesSinceMidnight <= consTime + WINDOW_AFTER
       );
 
+      totalBeforeData += beforeMood.length + beforeEnergy.length;
+      totalAfterData += afterMood.length + afterEnergy.length;
+
       // Calcular médias se houver dados
       if (beforeMood.length > 0 && afterMood.length > 0) {
         const avgBefore = beforeMood.reduce((sum, d) => sum + d.mood, 0) / beforeMood.length;
@@ -226,10 +231,36 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     });
 
     if (comparisons.length === 0) {
-      return {
-        text: 'Sem dados de bem-estar nas janelas de tempo (30-60min antes/depois dos consumos).',
-        type: 'neutral'
-      };
+      // Verificar se há dados de bem-estar no geral
+      if (moodData.length === 0 && energyData.length === 0) {
+        return {
+          text: 'Sem dados de bem-estar registados neste dia.',
+          type: 'neutral'
+        };
+      }
+
+      // Há dados de bem-estar, mas não nas janelas específicas
+      if (totalBeforeData === 0 && totalAfterData === 0) {
+        return {
+          text: 'Registe o seu bem-estar 30-60 minutos antes e depois dos consumos para ver análise de impacto.',
+          type: 'neutral'
+        };
+      } else if (totalBeforeData === 0) {
+        return {
+          text: 'Registe o seu bem-estar 30-60 minutos ANTES dos consumos para ver análise de impacto.',
+          type: 'neutral'
+        };
+      } else if (totalAfterData === 0) {
+        return {
+          text: 'Registe o seu bem-estar 30-60 minutos DEPOIS dos consumos para ver análise de impacto.',
+          type: 'neutral'
+        };
+      } else {
+        return {
+          text: 'Dados de bem-estar não coincidentes nas janelas de tempo. Registe antes E depois dos consumos.',
+          type: 'neutral'
+        };
+      }
     }
 
     // Agregar mudanças por tipo
