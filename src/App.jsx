@@ -836,13 +836,6 @@ function HarmReductionTracker() {
                     const completedDays = { ...consumptionsByDate };
                     delete completedDays[today];
 
-                        target: goal.target,
-                        totalDias: Object.keys(consumptionsByDate).length,
-                        diasCompletos: Object.keys(completedDays).length,
-                        hoje: today,
-                        consumosHoje: consumptionsByDate[today] || 0
-                    });
-
                     Object.entries(completedDays).forEach(([date, count]) => {
                         const isAchieved = count < goal.target;
                         if (isAchieved) achievedCount++;
@@ -855,31 +848,6 @@ function HarmReductionTracker() {
                     // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
                     // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
                     const today = new Date().toLocaleDateString('pt-PT');
-
-                        target: goal.target,
-                        totalCycles: dataCycles.length,
-                        cyclesComMg: dataCycles.filter(c => c.mg && c.mg !== '').length,
-                        totalDailyLogs: dataDailyLogs.length,
-                        dailyLogsComMg: dataDailyLogs.filter(d => d.mg).length,
-                        hoje: today
-                    });
-
-                    // Debug: mostrar TODOS os cycles com detalhes
-                        id: c.id?.slice(0, 8),
-                        timestamp: c.timestamp,
-                        date_ISO: new Date(c.timestamp).toISOString().split('T')[0],
-                        date_PT: new Date(c.timestamp).toLocaleDateString('pt-PT'),
-                        mg: c.mg,
-                        mg_tipo: typeof c.mg
-                    })));
-
-                    // Debug: mostrar TODOS os dailyLogs com detalhes
-                        id: log.id?.slice(0, 8),
-                        date: log.date,
-                        cycleId: log.cycleId?.slice(0, 8) || 'SEM CYCLEID',
-                        mg: log.mg,
-                        mg_tipo: typeof log.mg
-                    })));
 
                     dataCycles.forEach(cycle => {
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
@@ -905,15 +873,6 @@ function HarmReductionTracker() {
                             }
                         }
 
-                        // Debug: mostrar todos os ciclos
-                            cycleId: cycle.id,
-                            mg_original: cycle.mg,
-                            mg_tipo: typeof cycle.mg,
-                            mg_convertido: mgValue,
-                            source: source,
-                            valido: !isNaN(mgValue) && mgValue > 0
-                        });
-
                         if (!isNaN(mgValue) && mgValue > 0) {
                             // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
                             const isAchieved = mgValue < parseFloat(goal.target);
@@ -926,10 +885,6 @@ function HarmReductionTracker() {
 
                 if (goal.type === 'limit_last') {
                     // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                        target: goal.target,
-                        totalCycles: dataCycles.length
-                    });
-
                     dataCycles.forEach(cycle => {
                         const isAchieved = cycle.lastBefore00 === true;
                         if (isAchieved) achievedCount++;
@@ -950,12 +905,6 @@ function HarmReductionTracker() {
 
                     // Remove dia atual da contagem
                     delete consumptionsByDate[today];
-
-                        target: goal.target + 'h',
-                        totalConsumptions: dataConsumptions.length,
-                        totalDias: Object.keys(consumptionsByDate).length,
-                        hoje: today
-                    });
 
                     Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
                         if (dayConsumptions.length < 2) {
@@ -992,12 +941,6 @@ function HarmReductionTracker() {
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
                     const today = new Date().toLocaleDateString('pt-PT');
 
-                        target: goal.target + 'h',
-                        totalLogs: dataWellbeing.length,
-                        logsComSono: dataWellbeing.filter(w => w.sleep != null).length,
-                        hoje: today
-                    });
-
                     dataWellbeing.forEach(log => {
                         if (log.sleep != null) {
                             const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
@@ -1017,12 +960,6 @@ function HarmReductionTracker() {
                     const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                        target: goal.target,
-                        targetStr,
-                        targetMinutes,
-                        totalCycles: dataCycles.length
-                    });
 
                     dataCycles.forEach(cycle => {
                         if (!cycle.bedtime) return;
@@ -1546,25 +1483,6 @@ return {
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
-                cycleId: currentCycle?.id,
-                cycleTimestamp: currentCycle?.timestamp,
-                cycleDate: currentCycle ? new Date(currentCycle.timestamp).toLocaleString('pt-PT') : null,
-                totalCycles: cycles.length,
-                consumosNesteCiclo: currentCycleCount,
-                totalConsumptions: consumptions.length,
-                consumptionsWithCycleId: consumptions.filter(c => c.cycleId).length,
-                consumptionsWithMatchingCycleId: consumptions.filter(c => c.cycleId === currentCycle?.id).length,
-                consumptionsWithoutCycleId: consumptions.filter(c => !c.cycleId).length,
-                consumptionsWithoutCycleIdAfterCycleStart: currentCycle ? consumptions.filter(c => !c.cycleId && c.timestamp >= currentCycle.timestamp).length : 0,
-                first5Consumptions: consumptions.slice(0, 5).map(c => ({
-                    id: c.id.substring(0, 8),
-                    cycleId: c.cycleId ? c.cycleId.substring(0, 8) : 'SEM CYCLEID',
-                    timestamp: c.timestamp,
-                    date: new Date(c.timestamp).toLocaleString('pt-PT'),
-                    matchesCycle: c.cycleId === currentCycle?.id,
-                    isAfterCycleStart: currentCycle ? c.timestamp >= currentCycle.timestamp : false
-                }))
-            });
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
@@ -2173,22 +2091,11 @@ return {
                                     {(() => {
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                            period: patternsPeriod,
-                                            offset: patternsPeriodOffset,
-                                            dateRange: dateRange,
-                                            view: patternView
-                                        });
 
                                         const filteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
                                         const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
-
-                                            consumos: filteredConsumptions.length,
-                                            bemEstar: filteredWellbeingLogs.length,
-                                            ciclos: filteredCycles.length,
-                                            dailyLogs: filteredDailyLogs.length
-                                        });
 
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
@@ -2275,14 +2182,6 @@ return {
                                                                  uniqueDays || 1;
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
-
-                                                    totalGoals: goals.length,
-                                                    uniqueGoals: uniqueGoals.length,
-                                                    totalAchievements,
-                                                    period: patternsPeriod,
-                                                    filteredConsumptions: filteredConsumptions.length,
-                                                    filteredCycles: filteredCycles.length
-                                                });
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
@@ -3808,30 +3707,11 @@ return {
                                                                 ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0);
 
-                                                            // DEBUG: Ver o que está a ser analisado
-                                                                totalNotes: allNotes.length,
-                                                                sampleNotes: allNotes.slice(0, 5),
-                                                                consumptionNotes: analysisConsumptions.filter(c => c.notes && c.notes.length > 0).length,
-                                                                wellbeingNotes: analysisWellbeing.filter(w => w.notes && w.notes.length > 0).length,
-                                                                cycleNotes: analysisCycles.filter(c => c.notes && c.notes.length > 0).length,
-                                                                reflectionNotes: analysisReflections.filter(r => r.answer && r.answer.length > 0).length,
-                                                                dailyLogNotes: analysisDailyLogs.filter(d => d.notes && d.notes.length > 0).length,
-                                                                thoughtNotes: analysisThoughts.filter(t => t.content && t.content.length > 0).length
-                                                            });
-
                                                             // Usar análise avançada com negações, intensificadores e contexto
                                                             const sentimentAnalysis = analyzeMultipleNotes(allNotes);
                                                             const sentimentThemes = identifyThemes(allNotes);
                                                             const sentimentScore = sentimentAnalysis.score;
 
-                                                            // DEBUG: Ver resultado da análise
-                                                                noteCount: sentimentAnalysis.noteCount,
-                                                                score: sentimentScore,
-                                                                overall: sentimentAnalysis.overall,
-                                                                distribution: sentimentAnalysis.distribution,
-                                                                sampleAnalyses: sentimentAnalysis.analyses?.slice(0, 5)
-                                                            });
-                
                                                             return (
                                                                 <div className="space-y-4">
                                                                     {/* Header */}
@@ -4870,12 +4750,6 @@ return {
                                                     {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
-                                                            totalConsumptions: consumptions.length,
-                                                            analysisConsumptions: analysisConsumptions.length,
-                                                            totalWellbeing: wellbeingLogs.length,
-                                                            analysisWellbeing: analysisWellbeing.length
-                                                        });
-
                                                         if (analysisConsumptions.length < 1) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
@@ -5758,11 +5632,6 @@ return {
                                     {(() => {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
-                                            period: historyPeriod,
-                                            offset: historyPeriodOffset,
-                                            dateRange: dateRange,
-                                            topic: historyTopic
-                                        });
 
                                         const tempFilteredReflections = filterByDateRange(reflections, dateRange);
                                         const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
@@ -5770,14 +5639,6 @@ return {
                                         const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
                                         const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
-
-                                            reflexões: tempFilteredReflections.length,
-                                            bemEstar: tempFilteredWellbeing.length,
-                                            registosDiarios: tempFilteredDailyLogs.length,
-                                            consumos: tempFilteredConsumptions.length,
-                                            ciclos: tempFilteredCycles.length,
-                                            pensamentos: tempFilteredThoughts.length
-                                        });
 
                                         // Apply topic filter
                                         let filteredReflections = tempFilteredReflections;
@@ -5818,13 +5679,6 @@ return {
                                             filteredCycles = [];
                                             filteredReflections = [];
                                         }
-
-                                            reflexões: filteredReflections.length,
-                                            bemEstar: filteredWellbeing.length,
-                                            registosDiarios: filteredDailyLogs.length,
-                                            consumos: filteredConsumptions.length,
-                                            ciclos: filteredCycles.length
-                                        });
 
                                         const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
