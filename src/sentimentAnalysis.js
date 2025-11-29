@@ -3,7 +3,6 @@
  * Self-contained version to avoid scoping issues
  */
 
-// Função auxiliar de tokenização (pode ficar fora, é pura lógica)
 function tokenize(text) {
   return text.toLowerCase()
     .replace(/[.,;!?:]/g, ' ')
@@ -11,12 +10,7 @@ function tokenize(text) {
     .filter(word => word.length > 0);
 }
 
-/**
- * Analisa sentimento de um texto completo
- * Contém todos os dicionários internamente para garantir acesso
- */
 export function analyzeSentiment(text) {
-  // --- DEFINIÇÕES INTERNAS (SOLUÇÃO NUCLEAR) ---
   const POSITIVE_WORDS = {
     'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'fantástico': 3, 'incrível': 3,
     'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnífico': 3,
@@ -60,7 +54,6 @@ export function analyzeSentiment(text) {
     'ligeiramente': 0.5, 'raramente': 0.4, 'às vezes': 0.6, 'as vezes': 0.6
   };
 
-  // Função interna para analisar palavra no contexto (agora vê as variáveis!)
   function analyzeWordInContext(words, index, windowSize = 3) {
     const word = words[index];
     let score = 0;
@@ -83,7 +76,6 @@ export function analyzeSentiment(text) {
     if (hasNegation) score *= -1;
     return score;
   }
-  // ----------------------------------------
 
   if (!text || text.trim().length === 0) {
     return { score: 0, magnitude: 0, classification: 'neutral', positiveCount: 0, negativeCount: 0, neutralCount: 0, details: [] };
@@ -118,9 +110,6 @@ export function analyzeSentiment(text) {
   return { score: totalScore, magnitude, classification, positiveCount, negativeCount, neutralCount, details };
 }
 
-/**
- * Analisa múltiplas notas (usa a analyzeSentiment acima)
- */
 export function analyzeMultipleNotes(notes) {
   const validNotes = notes.filter(n => n && n.trim().length > 0);
 
@@ -165,39 +154,15 @@ export function analyzeMultipleNotes(notes) {
   return { overall, score: avgScore, magnitude: avgMagnitude, trend, noteCount: validNotes.length, distribution, analyses };
 }
 
-/**
- * Identifica temas (MANTIDA IGUAL porque já funciona)
- */
 export function identifyThemes(notes) {
   const themes = {
-    sleep: { 
-      keywords: ['dormir', 'sono', 'acordar', 'cama', 'insónia', 'insonia', 'sonolento'], 
-      count: 0 
-    },
-    stress: { 
-      keywords: ['stress', 'stressado', 'estresse', 'estressado', 'ansioso', 'preocupado', 'nervoso'], 
-      count: 0 
-    },
-    energy: { 
-      keywords: ['energia', 'cansado', 'cansaço', 'cansaco', 'fadiga', 'exausto', 'animado'], 
-      count: 0 
-    },
-    mood: { 
-      keywords: ['humor', 'triste', 'feliz', 'alegre', 'deprimido', 'irritado', 'zangado'], 
-      count: 0 
-    },
-    focus: { 
-      keywords: ['concentração', 'concentracao', 'foco', 'atenção', 'atencao', 'distração', 'distracao', 'confuso'], 
-      count: 0 
-    },
-    social: { 
-      keywords: ['amigos', 'família', 'familia', 'sozinho', 'isolado', 'pessoas', 'convívio', 'convivio'], 
-      count: 0 
-    },
-    health: { 
-      keywords: ['saúde', 'saude', 'dor', 'sintoma', 'corpo', 'físico', 'fisico', 'doente'], 
-      count: 0 
-    }
+    sleep: { keywords: ['dormir', 'sono', 'acordar', 'cama', 'insónia', 'insonia', 'sonolento'], count: 0 },
+    stress: { keywords: ['stress', 'stressado', 'estresse', 'estressado', 'ansioso', 'preocupado', 'nervoso'], count: 0 },
+    energy: { keywords: ['energia', 'cansado', 'cansaço', 'cansaco', 'fadiga', 'exausto', 'animado'], count: 0 },
+    mood: { keywords: ['humor', 'triste', 'feliz', 'alegre', 'deprimido', 'irritado', 'zangado'], count: 0 },
+    focus: { keywords: ['concentração', 'concentracao', 'foco', 'atenção', 'atencao', 'distração', 'distracao', 'confuso'], count: 0 },
+    social: { keywords: ['amigos', 'família', 'familia', 'sozinho', 'isolado', 'pessoas', 'convívio', 'convivio'], count: 0 },
+    health: { keywords: ['saúde', 'saude', 'dor', 'sintoma', 'corpo', 'físico', 'fisico', 'doente'], count: 0 }
   };
 
   const allText = notes.join(' ').toLowerCase();
@@ -213,4 +178,14 @@ export function identifyThemes(notes) {
   });
 
   return themes;
+}
+
+export function getSentimentDescription(classification) {
+  const descriptions = { very_positive: 'muito positivo', positive: 'positivo', neutral: 'neutro', negative: 'negativo', very_negative: 'muito negativo' };
+  return descriptions[classification] || 'neutro';
+}
+
+export function getTrendDescription(trend) {
+  const descriptions = { improving: 'a melhorar', stable: 'estável', worsening: 'a piorar' };
+  return descriptions[trend] || 'estável';
 }
