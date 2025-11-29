@@ -20,10 +20,6 @@ export default defineConfig({
       }
     },
     rollupOptions: {
-      input: {
-        main: './index.html',
-        sentiment: './src/utils/sentimentAnalysis.js'
-      },
       output: {
         format: 'es',
         entryFileNames: 'app.js',
