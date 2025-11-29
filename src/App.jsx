@@ -5757,7 +5757,10 @@ return {
                                                                         <div className={'text-sm font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                             {(() => {
                                                                                 const d = safeDate(w.timestamp || w.date);
-                                                                                return d ? d.toLocaleDateString('pt-PT') : 'Data inválida';
+                                                                                if (!d) return 'Data inválida';
+                                                                                const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
                                                                         <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>

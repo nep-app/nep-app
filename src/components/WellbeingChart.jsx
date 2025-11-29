@@ -189,6 +189,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     const comparisons = [];
     let totalBeforeData = 0;
     let totalAfterData = 0;
+    let consumptionsWithBefore = 0;
+    let consumptionsWithAfter = 0;
+    let consumptionsWithBoth = 0;
 
     consumptionData.forEach(cons => {
       const consTime = cons.minutesSinceMidnight;
@@ -212,6 +215,13 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
         d.minutesSinceMidnight > consTime + 30 &&
         d.minutesSinceMidnight <= consTime + WINDOW_AFTER
       );
+
+      const hasBefore = beforeMood.length > 0 || beforeEnergy.length > 0;
+      const hasAfter = afterMood.length > 0 || afterEnergy.length > 0;
+
+      if (hasBefore) consumptionsWithBefore++;
+      if (hasAfter) consumptionsWithAfter++;
+      if (hasBefore && hasAfter) consumptionsWithBoth++;
 
       totalBeforeData += beforeMood.length + beforeEnergy.length;
       totalAfterData += afterMood.length + afterEnergy.length;
@@ -242,22 +252,23 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       // Há dados de bem-estar, mas não nas janelas específicas
       if (totalBeforeData === 0 && totalAfterData === 0) {
         return {
-          text: 'Registe o seu bem-estar 30-60 minutos antes e depois dos consumos para ver análise de impacto.',
+          text: `Analisados ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''}: registe bem-estar 30-60min antes e depois para ver impacto.`,
           type: 'neutral'
         };
       } else if (totalBeforeData === 0) {
         return {
-          text: 'Registe o seu bem-estar 30-60 minutos ANTES dos consumos para ver análise de impacto.',
+          text: `${consumptionsWithAfter} de ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} têm dados depois. Registe também 30-60min ANTES para comparar.`,
           type: 'neutral'
         };
       } else if (totalAfterData === 0) {
         return {
-          text: 'Registe o seu bem-estar 30-60 minutos DEPOIS dos consumos para ver análise de impacto.',
+          text: `${consumptionsWithBefore} de ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} têm dados antes. Registe também 30-60min DEPOIS para comparar.`,
           type: 'neutral'
         };
       } else {
+        // Há dados antes e depois, mas não formam pares válidos (antes E depois do MESMO consumo)
         return {
-          text: 'Dados de bem-estar não coincidentes nas janelas de tempo. Registe antes E depois dos consumos.',
+          text: `${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} analisado${consumptionData.length !== 1 ? 's' : ''} (${consumptionsWithBefore} c/ dados antes, ${consumptionsWithAfter} c/ dados depois). Para análise válida, registe bem-estar antes E depois do mesmo consumo.`,
           type: 'neutral'
         };
       }
