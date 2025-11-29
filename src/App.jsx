@@ -4259,11 +4259,34 @@ return {
 
                                                                                     // Calcular total possível baseado no tipo de meta
                                                                                     let totalPossible = 0;
-                                                                                    if (g.type === 'reduce_frequency' || g.type === 'increase_interval' || g.type === 'sleep_hours') {
-                                                                                        // DIAS
-                                                                                        const byDate = {};
-                                                                                        analysisDailyLogs.forEach(d => { byDate[d.date] = true; });
-                                                                                        totalPossible = Object.keys(byDate).length;
+                                                                                    const today = new Date().toLocaleDateString('pt-PT');
+
+                                                                                    if (g.type === 'reduce_frequency') {
+                                                                                        // DIAS com consumos (excluindo hoje)
+                                                                                        const allDates = new Set();
+                                                                                        analysisConsumptions.forEach(c => {
+                                                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                                            if (dateKey !== today) allDates.add(dateKey);
+                                                                                        });
+                                                                                        totalPossible = allDates.size;
+                                                                                    } else if (g.type === 'increase_interval') {
+                                                                                        // DIAS com ≥2 consumos (excluindo hoje)
+                                                                                        const consumptionsByDate = {};
+                                                                                        analysisConsumptions.forEach(c => {
+                                                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                                            if (dateKey === today) return;
+                                                                                            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                                                                                            consumptionsByDate[dateKey].push(c);
+                                                                                        });
+                                                                                        totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
+                                                                                    } else if (g.type === 'sleep_hours') {
+                                                                                        // DIAS com bem-estar (excluindo hoje)
+                                                                                        const allDates = new Set();
+                                                                                        analysisWellbeing.forEach(w => {
+                                                                                            const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                            if (dateKey && dateKey !== today) allDates.add(dateKey);
+                                                                                        });
+                                                                                        totalPossible = allDates.size;
                                                                                     } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
                                                                                         // CICLOS
                                                                                         totalPossible = analysisCycles.length;
