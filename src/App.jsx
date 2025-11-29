@@ -1989,12 +1989,6 @@ return {
                                     {(() => {
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                            period: patternsPeriod,
-                                            offset: patternsPeriodOffset,
-                                            dateRange: dateRange,
-                                            view: patternView
-                                        });
-
                                         const filteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
