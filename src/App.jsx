@@ -4610,12 +4610,7 @@ const getGoalAchievementCount = (goal) => {
                                                     {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
-                                                            totalConsumptions: consumptions.length,
-                                                            analysisConsumptions: analysisConsumptions.length,
-                                                            totalWellbeing: wellbeingLogs.length,
-                                                            analysisWellbeing: analysisWellbeing.length
-                                                        });
-
+                                                 
                                                         if (analysisConsumptions.length < 1) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
