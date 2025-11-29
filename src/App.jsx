@@ -52,7 +52,7 @@ function _calculateRawSentiment(text) {
   const POSITIVE_WORDS = {
     'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'fantástico': 3, 'incrível': 3,
     'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnífico': 3,
-    'excepcional': 3, 'incrivel': 3, 'fantastico': 3, 'espetacular': 3,
+    'excepcional': 3, 'incrivel': 3, 'fantastico': 3,
     'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2,
     'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
     'agradável': 2, 'agradavel': 2, 'tranquilo': 2, 'tranquila': 2,
@@ -1994,12 +1994,6 @@ return {
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
                                         const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
 
-                                            consumos: filteredConsumptions.length,
-                                            bemEstar: filteredWellbeingLogs.length,
-                                            ciclos: filteredCycles.length,
-                                            dailyLogs: filteredDailyLogs.length
-                                        });
-
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
                                             if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
@@ -2085,14 +2079,6 @@ return {
                                                                  uniqueDays || 1;
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
-
-                                                    totalGoals: goals.length,
-                                                    uniqueGoals: uniqueGoals.length,
-                                                    totalAchievements,
-                                                    period: patternsPeriod,
-                                                    filteredConsumptions: filteredConsumptions.length,
-                                                    filteredCycles: filteredCycles.length
-                                                });
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
@@ -3618,30 +3604,11 @@ return {
                                                                 ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0);
 
-                                                            // DEBUG: Ver o que está a ser analisado
-                                                                totalNotes: allNotes.length,
-                                                                sampleNotes: allNotes.slice(0, 5),
-                                                                consumptionNotes: analysisConsumptions.filter(c => c.notes && c.notes.length > 0).length,
-                                                                wellbeingNotes: analysisWellbeing.filter(w => w.notes && w.notes.length > 0).length,
-                                                                cycleNotes: analysisCycles.filter(c => c.notes && c.notes.length > 0).length,
-                                                                reflectionNotes: analysisReflections.filter(r => r.answer && r.answer.length > 0).length,
-                                                                dailyLogNotes: analysisDailyLogs.filter(d => d.notes && d.notes.length > 0).length,
-                                                                thoughtNotes: analysisThoughts.filter(t => t.content && t.content.length > 0).length
-                                                            });
-
                                                             // Usar análise avançada com negações, intensificadores e contexto
                                                             const sentimentAnalysis = analyzeMultipleNotes(allNotes);
                                                             const sentimentThemes = identifyThemes(allNotes);
                                                             const sentimentScore = sentimentAnalysis.score;
 
-                                                            // DEBUG: Ver resultado da análise
-                                                                noteCount: sentimentAnalysis.noteCount,
-                                                                score: sentimentScore,
-                                                                overall: sentimentAnalysis.overall,
-                                                                distribution: sentimentAnalysis.distribution,
-                                                                sampleAnalyses: sentimentAnalysis.analyses?.slice(0, 5)
-                                                            });
-                
                                                             return (
                                                                 <div className="space-y-4">
                                                                     {/* Header */}
@@ -4680,12 +4647,6 @@ return {
                                                     {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
-                                                            totalConsumptions: consumptions.length,
-                                                            analysisConsumptions: analysisConsumptions.length,
-                                                            totalWellbeing: wellbeingLogs.length,
-                                                            analysisWellbeing: analysisWellbeing.length
-                                                        });
-
                                                         if (analysisConsumptions.length < 1) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
@@ -5568,26 +5529,12 @@ return {
                                     {(() => {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
-                                            period: historyPeriod,
-                                            offset: historyPeriodOffset,
-                                            dateRange: dateRange,
-                                            topic: historyTopic
-                                        });
-
                                         const tempFilteredReflections = filterByDateRange(reflections, dateRange);
                                         const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
                                         const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
                                         const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
                                         const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
-
-                                            reflexões: tempFilteredReflections.length,
-                                            bemEstar: tempFilteredWellbeing.length,
-                                            registosDiarios: tempFilteredDailyLogs.length,
-                                            consumos: tempFilteredConsumptions.length,
-                                            ciclos: tempFilteredCycles.length,
-                                            pensamentos: tempFilteredThoughts.length
-                                        });
 
                                         // Apply topic filter
                                         let filteredReflections = tempFilteredReflections;
@@ -5628,13 +5575,6 @@ return {
                                             filteredCycles = [];
                                             filteredReflections = [];
                                         }
-
-                                            reflexões: filteredReflections.length,
-                                            bemEstar: filteredWellbeing.length,
-                                            registosDiarios: filteredDailyLogs.length,
-                                            consumos: filteredConsumptions.length,
-                                            ciclos: filteredCycles.length
-                                        });
 
                                         const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
