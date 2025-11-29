@@ -672,10 +672,21 @@ function HarmReductionTracker() {
 
                 const avgTimes = (totalConsumptions / 7).toFixed(1);
 
-                // Calculate avgMg from dailyLogs
+                // Calculate avgMg from cycles (novo) ou dailyLogs (compatibilidade)
                 const mgValues = [];
 
                 last7Dates.forEach(date => {
+                    // Buscar primeiro nos cycles (novo método)
+                    const cycle = cycles.find(c => c.date === date && c.mg !== undefined && c.mg !== '');
+                    if (cycle) {
+                        const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+                        if (!isNaN(mgValue) && mgValue > 0) {
+                            mgValues.push(mgValue);
+                            return;
+                        }
+                    }
+
+                    // Fallback: buscar nos dailyLogs (compatibilidade)
                     const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
                     if (dailyLog) {
                         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
