@@ -796,44 +796,31 @@ function HarmReductionTracker() {
 
 const getGoalAchievementCount = (goal) => {
                 let achievedDays = 0;
-                
                 try {
                     if (goal.type === 'reduce_frequency') {
                         const consumptionsByDate = {};
-                        // Group all consumptions by date
                         consumptions.forEach(c => {
                             if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
                             consumptionsByDate[c.date].push(c);
                         });
-                        // Check each day
                         Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
                             const count = dayConsumptions.length;
                             if (count === 0 || count > goal.target) return;
-                            // Check interval rule
-                            if (dayConsumptions.length <= 1) {
-                                achievedDays++;
-                                return;
-                            }
+                            if (dayConsumptions.length <= 1) { achievedDays++; return; }
                             const sorted = dayConsumptions.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
                             let longIntervals = 0;
                             for (let i = 1; i < sorted.length; i++) {
                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
                                 if (diff >= 2) longIntervals++;
                             }
-                            if (longIntervals >= (sorted.length - 1) / 2) {
-                                achievedDays++;
-                            }
+                            if (longIntervals >= (sorted.length - 1) / 2) achievedDays++;
                         });
                     } else if (goal.type === 'reduce_quantity') {
-                        dailyLogs.forEach(log => {
-                            if (log.mg < goal.target) achievedDays++;
-                        });
+                        dailyLogs.forEach(log => { if (log.mg < goal.target) achievedDays++; });
                     } else if (goal.type === 'delay_first') {
                         const firstOfDays = {};
                         consumptions.forEach(c => {
-                            if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) {
-                                firstOfDays[c.date] = c.timestamp;
-                            }
+                            if (!firstOfDays[c.date] || c.timestamp < firstOfDays[c.date]) firstOfDays[c.date] = c.timestamp;
                         });
                         const [tHour, tMin] = goal.target.split(':').map(Number);
                         const targetMinutes = tHour * 60 + tMin;
@@ -843,9 +830,7 @@ const getGoalAchievementCount = (goal) => {
                             if (minutes >= targetMinutes) achievedDays++;
                         });
                     } else if (goal.type === 'limit_last') {
-                        cycles.forEach(cycle => {
-                            if (cycle.lastBefore00) achievedDays++;
-                        });
+                        cycles.forEach(cycle => { if (cycle.lastBefore00) achievedDays++; });
                     } else if (goal.type === 'increase_interval') {
                         if (consumptions.length >= 2) {
                             const sorted = [...consumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
@@ -859,33 +844,22 @@ const getGoalAchievementCount = (goal) => {
                             if (log.sleep != null && parseFloat(log.sleep) >= parseFloat(goal.target)) achievedDays++;
                         });
                     } else if (goal.type === 'bedtime_before') {
-                        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                        const targetParts = targetStr.split(':');
-                        const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-                        
-                        cycles.forEach(cycle => {
-                            if (!cycle.bedtime) return;
-                            const bedtimeParts = cycle.bedtime.split(':');
-                            let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-                            const bedtimeOriginalMinutes = bedtimeMinutes;
-                            
-                            // Meta SÓ é cumprida se hora for entre 21:00-02:00
-                            const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-                            
-                            // Ajustar madrugada
-                            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
-                            let targetAdjusted = targetMinutes;
-                            if (targetMinutes >= 0 && targetMinutes < 360) targetAdjusted += 1440;
-                            
-                            const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-                            if (isAchieved) achievedDays++;
-                        });
+                         const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+                         const targetParts = targetStr.split(':');
+                         const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+                         cycles.forEach(cycle => {
+                             if (!cycle.bedtime) return;
+                             const bedtimeParts = cycle.bedtime.split(':');
+                             let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+                             const bedtimeOriginalMinutes = bedtimeMinutes;
+                             const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
+                             if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
+                             let targetAdjusted = targetMinutes;
+                             if (targetMinutes >= 0 && targetMinutes < 360) targetAdjusted += 1440;
+                             if (bedtimeMinutes <= targetAdjusted && isHealthyBedtime) achievedDays++;
+                         });
                     }
-                } catch (e) {
-                    console.error('Erro ao calcular meta:', e);
-                    return 0;
-                }
-
+                } catch (e) { console.error('Erro meta:', e); return 0; }
                 return achievedDays;
             };
             // Get goal progress with percentage
@@ -1994,11 +1968,7 @@ return {
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
                                         const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
 
-                                            consumos: filteredConsumptions.length,
-                                            bemEstar: filteredWellbeingLogs.length,
-                                            ciclos: filteredCycles.length,
-                                            dailyLogs: filteredDailyLogs.length
-                                        });
+                          
 
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
@@ -3618,29 +3588,12 @@ return {
                                                                 ...analysisThoughts.map(t => t.content || '')
                                                             ].filter(n => n.length > 0);
 
-                                                            // DEBUG: Ver o que está a ser analisado
-                                                                totalNotes: allNotes.length,
-                                                                sampleNotes: allNotes.slice(0, 5),
-                                                                consumptionNotes: analysisConsumptions.filter(c => c.notes && c.notes.length > 0).length,
-                                                                wellbeingNotes: analysisWellbeing.filter(w => w.notes && w.notes.length > 0).length,
-                                                                cycleNotes: analysisCycles.filter(c => c.notes && c.notes.length > 0).length,
-                                                                reflectionNotes: analysisReflections.filter(r => r.answer && r.answer.length > 0).length,
-                                                                dailyLogNotes: analysisDailyLogs.filter(d => d.notes && d.notes.length > 0).length,
-                                                                thoughtNotes: analysisThoughts.filter(t => t.content && t.content.length > 0).length
-                                                            });
-
                                                             // Usar análise avançada com negações, intensificadores e contexto
                                                             const sentimentAnalysis = analyzeMultipleNotes(allNotes);
                                                             const sentimentThemes = identifyThemes(allNotes);
                                                             const sentimentScore = sentimentAnalysis.score;
 
-                                                            // DEBUG: Ver resultado da análise
-                                                                noteCount: sentimentAnalysis.noteCount,
-                                                                score: sentimentScore,
-                                                                overall: sentimentAnalysis.overall,
-                                                                distribution: sentimentAnalysis.distribution,
-                                                                sampleAnalyses: sentimentAnalysis.analyses?.slice(0, 5)
-                                                            });
+                                                     
                 
                                                             return (
                                                                 <div className="space-y-4">
