@@ -1103,24 +1103,13 @@ function HarmReductionTracker() {
                 let positiveCount = 0;
                 let negativeCount = 0;
 
-                POSITIVE_WORDS.forEach(word => {
-                    const regex = new RegExp('\\b' + word + '\\b', 'gi');
-                    const matches = lowerText.match(regex);
-                    if (matches) positiveCount += matches.length;
-                });
-
-                NEGATIVE_WORDS.forEach(word => {
-                    const regex = new RegExp('\\b' + word + '\\b', 'gi');
-                    const matches = lowerText.match(regex);
-                    if (matches) negativeCount += matches.length;
-                });
-
-                const score = positiveCount - negativeCount;
-                let label = 'neutro';
-                if (score > 1) label = 'positivo';
-                else if (score < -1) label = 'negativo';
-
-                return { score, positiveCount, negativeCount, label };
+               const sentimentResult = analyzeMultipleNotes([lowerText]);
+return { 
+    score: sentimentResult.score, 
+    positiveCount: sentimentResult.distribution.positive + sentimentResult.distribution.very_positive,
+    negativeCount: sentimentResult.distribution.negative + sentimentResult.distribution.very_negative, 
+    label: sentimentResult.overall 
+};
             };
 
             // Memoized temporal correlation analysis (optimized)
