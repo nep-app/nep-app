@@ -26,10 +26,12 @@ export default defineConfig({
         entryFileNames: 'app.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name].[ext]',
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'vendor-charts': ['d3-scale', 'd3-shape', 'd3-array']
+manualChunks: {
+  'vendor-react': ['react', 'react-dom'],
+  'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+  'vendor-charts': ['d3-scale', 'd3-shape', 'd3-array'],
+  'sentiment': ['./src/utils/sentimentAnalysis']
+}
         }
       }
     }
