@@ -150,14 +150,93 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     );
   }
 
+  // Análise do impacto do consumo no humor/energia
+  const analysis = useMemo(() => {
+    if (chartData.length === 0) return null;
+
+    const moodData = chartData.filter(d => d.mood !== null);
+    const energyData = chartData.filter(d => d.energy !== null);
+    const consumptionData = chartData.filter(d => d.hasConsumption);
+
+    if (moodData.length === 0 && energyData.length === 0) return null;
+    if (consumptionData.length === 0) {
+      return {
+        text: 'Sem consumos registados neste dia para analisar impacto.',
+        type: 'neutral'
+      };
+    }
+
+    // Calcular médias antes e depois dos consumos
+    const firstConsumptionTime = consumptionData[0].minutesSinceMidnight;
+    const lastConsumptionTime = consumptionData[consumptionData.length - 1].minutesSinceMidnight;
+
+    const beforeMood = moodData.filter(d => d.minutesSinceMidnight < firstConsumptionTime);
+    const afterMood = moodData.filter(d => d.minutesSinceMidnight > lastConsumptionTime);
+    const beforeEnergy = energyData.filter(d => d.minutesSinceMidnight < firstConsumptionTime);
+    const afterEnergy = energyData.filter(d => d.minutesSinceMidnight > lastConsumptionTime);
+
+    let moodChange = null, energyChange = null;
+
+    if (beforeMood.length > 0 && afterMood.length > 0) {
+      const avgBefore = beforeMood.reduce((sum, d) => sum + d.mood, 0) / beforeMood.length;
+      const avgAfter = afterMood.reduce((sum, d) => sum + d.mood, 0) / afterMood.length;
+      moodChange = avgAfter - avgBefore;
+    }
+
+    if (beforeEnergy.length > 0 && afterEnergy.length > 0) {
+      const avgBefore = beforeEnergy.reduce((sum, d) => sum + d.energy, 0) / beforeEnergy.length;
+      const avgAfter = afterEnergy.reduce((sum, d) => sum + d.energy, 0) / afterEnergy.length;
+      energyChange = avgAfter - avgBefore;
+    }
+
+    // Gerar texto explicativo
+    if (moodChange === null && energyChange === null) {
+      return {
+        text: 'Dados insuficientes antes/depois dos consumos para analisar impacto.',
+        type: 'neutral'
+      };
+    }
+
+    const parts = [];
+    if (moodChange !== null) {
+      if (moodChange > 1) parts.push('humor melhorou após consumos');
+      else if (moodChange < -1) parts.push('humor piorou após consumos');
+      else parts.push('humor manteve-se estável');
+    }
+    if (energyChange !== null) {
+      if (energyChange > 1) parts.push('energia aumentou após consumos');
+      else if (energyChange < -1) parts.push('energia diminuiu após consumos');
+      else parts.push('energia manteve-se estável');
+    }
+
+    const type = (moodChange && moodChange < -1) || (energyChange && energyChange < -1) ? 'negative' :
+                 (moodChange && moodChange > 1) || (energyChange && energyChange > 1) ? 'positive' : 'neutral';
+
+    return {
+      text: parts.join(', ') + '.',
+      type
+    };
+  }, [chartData]);
+
   return (
     <div className={`rounded-lg p-3 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
       {/* Header compacto */}
       <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
         <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-          📈 Evolução Humor/Energia ao longo do dia
+          📈 Impacto do Consumo no Humor/Energia
         </div>
       </div>
+
+      {/* Análise */}
+      {analysis && (
+        <div className={`text-xs p-2 rounded-lg mb-2 ${
+          analysis.type === 'negative' ? (darkMode ? 'bg-red-900/20 text-red-400 border border-red-800' : 'bg-red-50 text-red-700 border border-red-200') :
+          analysis.type === 'positive' ? (darkMode ? 'bg-green-900/20 text-green-400 border border-green-800' : 'bg-green-50 text-green-700 border border-green-200') :
+          (darkMode ? 'bg-gray-600/20 text-gray-300 border border-gray-600' : 'bg-gray-100 text-gray-600 border border-gray-300')
+        }`}>
+          <span className="font-medium">💡 Análise:</span> {analysis.text}
+        </div>
+      )}
 
       {/* SCATTER CHART */}
       <div className="w-full">

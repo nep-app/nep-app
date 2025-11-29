@@ -14,11 +14,6 @@ import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
 
-// DEBUG TEMPORARY - adiciona isto
-console.log('🔍 DEBUG sentiment functions:');
-console.log('identifyThemes test:', identifyThemes(['dormi mal', 'saúde em baixo']));
-console.log('analyzeMultipleNotes test:', analyzeMultipleNotes(['dormi mal', 'tou bué cansada']));
-console.log('analyzeMultipleNotes with your note:', analyzeMultipleNotes(['Fiquei orgulhosa']));
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
@@ -326,30 +321,14 @@ function HarmReductionTracker() {
                 if (hasAutoAssociatedRef.current) return; // Only run once
 
                 const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
-                if (consumptionsWithoutCycle.length === 0) {
-                    console.log('✅ Todos os consumos já têm cycleId');
-                    return;
-                }
+                if (consumptionsWithoutCycle.length === 0) return;
 
                 hasAutoAssociatedRef.current = true;
 
                 const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
-                console.log('🔄 ASSOCIAÇÃO AUTOMÁTICA DE CONSUMOS A CICLOS');
-                console.log(`📊 Total ciclos criados: ${sortedCycles.length}`);
-                console.log(`📊 Total consumos: ${consumptions.length}`);
-                console.log(`📊 Consumos com cycleId: ${consumptions.filter(c => c.cycleId).length}`);
-                console.log(`📊 Consumos SEM cycleId: ${consumptionsWithoutCycle.length}`);
-                console.log('\n🗓️ CICLOS (ordenados por timestamp):');
-                sortedCycles.forEach((cycle, i) => {
-                    console.log(`  ${i + 1}. Ciclo ${cycle.id.substring(0, 8)} → ${new Date(cycle.timestamp).toLocaleString('pt-PT')}`);
-                });
-
                 // Run association asynchronously to avoid blocking
                 (async () => {
-                    let updatedCount = 0;
-                    const consumptionsByCycle = {};
-
                     for (const consumption of consumptionsWithoutCycle) {
                         let assignedCycleId = null;
 
@@ -370,33 +349,18 @@ function HarmReductionTracker() {
                             assignedCycleId = sortedCycles[0].id;
                         }
 
-                        if (!consumptionsByCycle[assignedCycleId]) consumptionsByCycle[assignedCycleId] = [];
-                        consumptionsByCycle[assignedCycleId].push(consumption);
-
                         const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
                         await addConsumption(updatedConsumption);
-                        updatedCount++;
                     }
-
-                    console.log('\n✅ RESULTADO DA ASSOCIAÇÃO:');
-                    console.log(`📊 ${updatedCount} consumos associados`);
-                    console.log('\n📋 DISTRIBUIÇÃO POR CICLO:');
-                    sortedCycles.forEach((cycle, i) => {
-                        const count = consumptionsByCycle[cycle.id]?.length || 0;
-                        console.log(`  ${i + 1}. Ciclo ${cycle.id.substring(0, 8)} → ${count} consumos associados`);
-                    });
                 })();
             }, [user, db, cycles, consumptions]);
 
             const markConsumption = async () => {
                 try {
-                    console.log('🔍 markConsumption - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
                     const now = new Date();
                     const currentCycle = getCurrentCycleId();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
-                    console.log('📦 Item a guardar:', item);
                     await addConsumption(item);
-                    console.log('✅ Guardado com sucesso!');
                     showToast('✓ Consumo registado', 'success');
                 } catch (error) {
                     console.error('❌ ERRO COMPLETO:', error);
@@ -473,7 +437,6 @@ function HarmReductionTracker() {
 
             const submitWellbeing = async () => {
                 try {
-                    console.log('🔍 submitWellbeing - user:', user ? 'OK' : 'NULL', 'db:', db ? 'OK' : 'NULL');
 
                     // Validate sleep hours
                     if (wellbeingForm.sleep !== '') {
@@ -525,9 +488,7 @@ function HarmReductionTracker() {
                         emotions: wellbeingForm.emotions,
                         notes: sanitizeText(wellbeingForm.notes)
                     };
-                    console.log('📦 Item a guardar:', item);
                     await addWellbeingLog(item);
-                    console.log('✅ Guardado com sucesso!');
                     setWellbeingForm({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
                     showToast('✓ Bem-estar guardado', 'success');
@@ -583,6 +544,7 @@ function HarmReductionTracker() {
                     const item = {
                         id: genId(),
                         timestamp: new Date().toISOString(),
+                        date: getTodayKey(),
                         bedtime: cycleForm.bedtime,
                         triggers: cycleForm.triggers,
                         notes: cycleForm.notes,
@@ -590,7 +552,6 @@ function HarmReductionTracker() {
                         // Converter mg para número (se tiver valor)
                         ...(cycleForm.mg && cycleForm.mg !== '' ? { mg: parseFloat(cycleForm.mg) } : {})
                     };
-                    console.log('🌙 Novo ciclo:', item);
                     await addCycle(item);
                     setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
                     setShowCycleModal(false);
@@ -675,19 +636,12 @@ function HarmReductionTracker() {
                 // Calculate avgMg from cycles (novo) ou dailyLogs (compatibilidade)
                 const mgValues = [];
 
-                console.log('🔍 DEBUG getLast7Days mg:');
-                console.log('last7Dates:', last7Dates);
-                console.log('cycles (total):', cycles.length, cycles.slice(0, 3));
-                console.log('dailyLogs (total):', dailyLogs.length, dailyLogs.slice(0, 3));
-
                 last7Dates.forEach(date => {
                     // Buscar primeiro nos cycles (novo método)
                     const cycle = cycles.find(c => c.date === date && c.mg !== undefined && c.mg !== '');
-                    console.log(`  ${date}: cycle found?`, !!cycle, cycle ? { mg: cycle.mg, date: cycle.date } : 'none');
                     if (cycle) {
                         const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         if (!isNaN(mgValue) && mgValue > 0) {
-                            console.log(`    ✅ Cycle mg added: ${mgValue}`);
                             mgValues.push(mgValue);
                             return;
                         }
@@ -695,19 +649,15 @@ function HarmReductionTracker() {
 
                     // Fallback: buscar nos dailyLogs (compatibilidade)
                     const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-                    console.log(`  ${date}: dailyLog found?`, !!dailyLog, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'none');
                     if (dailyLog) {
                         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                         if (!isNaN(mgValue) && mgValue > 0) {
-                            console.log(`    ✅ DailyLog mg added: ${mgValue}`);
                             mgValues.push(mgValue);
                         }
                     }
                 });
 
-                console.log('mgValues collected:', mgValues);
                 const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
-                console.log('avgMg result:', avgMg);
 
                 return { avgTimes, avgMg };
             };
@@ -848,7 +798,6 @@ function HarmReductionTracker() {
                 const dataWellbeing = filteredWellbeing || wellbeingLogs;
 
                 let achievedCount = 0;
-                console.log('🎯 Calculando meta:', goal.type, 'target:', goal.target);
 
                 if (goal.type === 'reduce_frequency') {
                     // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
@@ -868,7 +817,6 @@ function HarmReductionTracker() {
                     const completedDays = { ...consumptionsByDate };
                     delete completedDays[today];
 
-                    console.log('📉 META REDUCE_FREQUENCY:', {
                         target: goal.target,
                         totalDias: Object.keys(consumptionsByDate).length,
                         diasCompletos: Object.keys(completedDays).length,
@@ -878,7 +826,6 @@ function HarmReductionTracker() {
 
                     Object.entries(completedDays).forEach(([date, count]) => {
                         const isAchieved = count < goal.target;
-                        console.log('  📅', date, '→', count, 'consumos →', isAchieved ? '✅' : '❌');
                         if (isAchieved) achievedCount++;
                     });
                 }
@@ -890,7 +837,6 @@ function HarmReductionTracker() {
                     // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
                     const today = new Date().toLocaleDateString('pt-PT');
 
-                    console.log('⚖️ META REDUCE_QUANTITY:', {
                         target: goal.target,
                         totalCycles: dataCycles.length,
                         cyclesComMg: dataCycles.filter(c => c.mg && c.mg !== '').length,
@@ -900,7 +846,6 @@ function HarmReductionTracker() {
                     });
 
                     // Debug: mostrar TODOS os cycles com detalhes
-                    console.log('🔍 CYCLES COMPLETOS:', dataCycles.map(c => ({
                         id: c.id?.slice(0, 8),
                         timestamp: c.timestamp,
                         date_ISO: new Date(c.timestamp).toISOString().split('T')[0],
@@ -910,7 +855,6 @@ function HarmReductionTracker() {
                     })));
 
                     // Debug: mostrar TODOS os dailyLogs com detalhes
-                    console.log('📋 DAILYLOGS COMPLETOS:', dataDailyLogs.map(log => ({
                         id: log.id?.slice(0, 8),
                         date: log.date,
                         cycleId: log.cycleId?.slice(0, 8) || 'SEM CYCLEID',
@@ -929,13 +873,11 @@ function HarmReductionTracker() {
                         if (isNaN(mgValue) || mgValue <= 0) {
                             // Tentar buscar pelo cycleId primeiro (dados recentes)
                             let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
-                            console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
 
                             // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
                             if (!dailyLog || !dailyLog.mg) {
                                 const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
                                 dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
-                                console.log(`    🔎 Fallback: Procurando dailyLog por data=${cycleDay}:`, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'NÃO ENCONTRADO');
                             }
 
                             if (dailyLog && dailyLog.mg) {
@@ -945,7 +887,6 @@ function HarmReductionTracker() {
                         }
 
                         // Debug: mostrar todos os ciclos
-                        console.log(`  📊 Ciclo ${cycleDate}:`, {
                             cycleId: cycle.id,
                             mg_original: cycle.mg,
                             mg_tipo: typeof cycle.mg,
@@ -957,26 +898,21 @@ function HarmReductionTracker() {
                         if (!isNaN(mgValue) && mgValue > 0) {
                             // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
                             const isAchieved = mgValue < parseFloat(goal.target);
-                            console.log(`  ${cycleDate}: ${isAchieved ? '✅' : '❌'} ${mgValue}mg ${isAchieved ? '<' : '>='} ${goal.target}mg (de ${source})`);
                             if (isAchieved) achievedCount++;
                         } else {
-                            console.log('    ⚠️ Valor mg inválido ou vazio');
                         }
                     });
 
-                    console.log('⚖️ TOTAL ACHIEVED:', achievedCount);
                 }
 
                 if (goal.type === 'limit_last') {
                     // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                    console.log('🌙 META LIMIT_LAST:', {
                         target: goal.target,
                         totalCycles: dataCycles.length
                     });
 
                     dataCycles.forEach(cycle => {
                         const isAchieved = cycle.lastBefore00 === true;
-                        console.log(`  🌙 Ciclo ${cycle.id?.slice(0, 8) || 'sem-id'} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
                         if (isAchieved) achievedCount++;
                     });
                 }
@@ -996,7 +932,6 @@ function HarmReductionTracker() {
                     // Remove dia atual da contagem
                     delete consumptionsByDate[today];
 
-                    console.log('⏱️ META INCREASE_INTERVAL:', {
                         target: goal.target + 'h',
                         totalConsumptions: dataConsumptions.length,
                         totalDias: Object.keys(consumptionsByDate).length,
@@ -1005,7 +940,6 @@ function HarmReductionTracker() {
 
                     Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
                         if (dayConsumptions.length < 2) {
-                            console.log('  📅', date, '→', dayConsumptions.length, 'consumo(s) → ⏭️ Precisa de ≥2');
                             return;
                         }
 
@@ -1029,8 +963,6 @@ function HarmReductionTracker() {
 
                         const percentage = (longIntervals / totalIntervals) * 100;
                         const isAchieved = longIntervals >= totalIntervals / 2;
-                        console.log('  📅', date, '→', longIntervals, 'de', totalIntervals, 'intervalos >' + goal.target + 'h (' + percentage.toFixed(0) + '%) →', isAchieved ? '✅' : '❌');
-                        console.log('    Detalhes:', intervalDetails);
 
                         if (isAchieved) achievedCount++;
                     });
@@ -1041,7 +973,6 @@ function HarmReductionTracker() {
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
                     const today = new Date().toLocaleDateString('pt-PT');
 
-                    console.log('😴 META SLEEP_HOURS:', {
                         target: goal.target + 'h',
                         totalLogs: dataWellbeing.length,
                         logsComSono: dataWellbeing.filter(w => w.sleep != null).length,
@@ -1052,12 +983,10 @@ function HarmReductionTracker() {
                         if (log.sleep != null) {
                             const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
                             if (logDate === today) {
-                                console.log('  😴', logDate, '→', log.sleep, 'h → ⏭️ Dia atual (ignorado)');
                                 return; // Skip today
                             }
 
                             const isAchieved = parseFloat(log.sleep) >= parseFloat(goal.target);
-                            console.log('  😴', logDate, '→', log.sleep, 'h →', isAchieved ? '✅' : '❌');
                             if (isAchieved) achievedCount++;
                         }
                     });
@@ -1070,7 +999,6 @@ function HarmReductionTracker() {
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
-                    console.log('🛏️ META BEDTIME_BEFORE:', {
                         target: goal.target,
                         targetStr,
                         targetMinutes,
@@ -1099,13 +1027,11 @@ function HarmReductionTracker() {
                         }
 
                         const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-                        console.log('  🕐', originalBedtime, '→', bedtimeMinutes, 'min vs', targetAdjusted, 'min, healthy:', isHealthyBedtime, '→', isAchieved ? '✅' : '❌');
 
                         if (isAchieved) achievedCount++;
                     });
                 }
 
-                console.log('🎯 Resultado:', achievedCount, 'vezes atingido');
                 return achievedCount;
             };
 
@@ -1163,7 +1089,6 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'reduce_quantity') {
-                    console.log('⚖️ META REDUCE_QUANTITY (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     dataCycles.forEach(cycle => {
                         const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
 
@@ -1175,13 +1100,11 @@ function HarmReductionTracker() {
                         if (isNaN(mgValue) || mgValue <= 0) {
                             // Tentar buscar pelo cycleId primeiro (dados recentes)
                             let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
-                            console.log(`    🔎 Procurando dailyLog com cycleId=${cycle.id?.slice(0, 8)}:`, dailyLog ? { mg: dailyLog.mg, cycleId: dailyLog.cycleId?.slice(0, 8) } : 'NÃO ENCONTRADO');
 
                             // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
                             if (!dailyLog || !dailyLog.mg) {
                                 const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
                                 dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
-                                console.log(`    🔎 Fallback: Procurando dailyLog por data=${cycleDay}:`, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'NÃO ENCONTRADO');
                             }
 
                             if (dailyLog && dailyLog.mg) {
@@ -1195,20 +1118,16 @@ function HarmReductionTracker() {
                             total++;
                             const isAchieved = mgValue < parseFloat(goal.target);
                             if (isAchieved) achieved++;
-                            console.log(`  ⚖️ Ciclo ${cycleDate} → ${mgValue}mg → ${isAchieved ? '✅' : '❌'} (de ${source})`);
                         } else {
-                            console.log(`  ⚖️ Ciclo ${cycleDate} → mg inválido/vazio`);
                         }
                     });
                 }
 
                 if (goal.type === 'limit_last') {
-                    console.log('🌙 META LIMIT_LAST (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     total = dataCycles.length;
                     dataCycles.forEach(cycle => {
                         const isAchieved = cycle.lastBefore00 === true;
                         if (isAchieved) achieved++;
-                        console.log(`  🌙 Ciclo ${cycle.id?.slice(0, 8) || 'sem-id'} → lastBefore00=${cycle.lastBefore00} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
@@ -1223,14 +1142,12 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'bedtime_before') {
-                    console.log('🛏️ META BEDTIME_BEFORE (STATS):', { target: goal.target, totalCycles: dataCycles.length });
                     const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
                     const targetParts = targetStr.split(':');
                     const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
                     dataCycles.forEach(cycle => {
                         if (!cycle.bedtime) {
-                            console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → sem bedtime → ⏭️ Ignorado`);
                             return;
                         }
                         const bedtimeParts = cycle.bedtime.split(':');
@@ -1254,7 +1171,6 @@ function HarmReductionTracker() {
 
                         const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
                         if (isAchieved) achieved++;
-                        console.log(`  🛏️ Ciclo ${cycle.id.slice(0, 8)} → ${cycle.bedtime} → healthy: ${isHealthyBedtime} → ${isAchieved ? '✅' : '❌'}`);
                     });
                 }
 
@@ -1611,7 +1527,6 @@ return {
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
-            console.log('🔄 Ciclo Atual:', {
                 cycleId: currentCycle?.id,
                 cycleTimestamp: currentCycle?.timestamp,
                 cycleDate: currentCycle ? new Date(currentCycle.timestamp).toLocaleString('pt-PT') : null,
@@ -2239,7 +2154,6 @@ return {
                                     {(() => {
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                        console.log('🔬 Análises - Filtro Temporal:', {
                                             period: patternsPeriod,
                                             offset: patternsPeriodOffset,
                                             dateRange: dateRange,
@@ -2251,7 +2165,6 @@ return {
                                         const filteredCycles = filterByDateRange(cycles, dateRange);
                                         const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
 
-                                        console.log('📊 Análises - Dados filtrados:', {
                                             consumos: filteredConsumptions.length,
                                             bemEstar: filteredWellbeingLogs.length,
                                             ciclos: filteredCycles.length,
@@ -2336,8 +2249,6 @@ return {
                                                 });
 
                                                 uniqueGoals.push(...Object.values(goalsByType));
-                                                console.log('📊 Total goals:', goals.length, 'Unique goals:', uniqueGoals.length);
-                                                console.log('📋 Goals by type:', Object.keys(goalsByType));
 
                                                 const periodDays = patternsPeriod === 'hoje' ? 1 :
                                                                  patternsPeriod === 'semana' ? 7 :
@@ -2346,7 +2257,6 @@ return {
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
-                                                console.log('📊 DASHBOARD - Goals analysis:', {
                                                     totalGoals: goals.length,
                                                     uniqueGoals: uniqueGoals.length,
                                                     totalAchievements,
@@ -3880,7 +3790,6 @@ return {
                                                             ].filter(n => n.length > 0);
 
                                                             // DEBUG: Ver o que está a ser analisado
-                                                            console.log('🔍 SENTIMENT ANALYSIS DEBUG:', {
                                                                 totalNotes: allNotes.length,
                                                                 sampleNotes: allNotes.slice(0, 5),
                                                                 consumptionNotes: analysisConsumptions.filter(c => c.notes && c.notes.length > 0).length,
@@ -3897,7 +3806,6 @@ return {
                                                             const sentimentScore = sentimentAnalysis.score;
 
                                                             // DEBUG: Ver resultado da análise
-                                                            console.log('📊 SENTIMENT RESULT:', {
                                                                 noteCount: sentimentAnalysis.noteCount,
                                                                 score: sentimentScore,
                                                                 overall: sentimentAnalysis.overall,
@@ -4943,7 +4851,6 @@ return {
                                                     {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
-                                                        console.log('🔍 DEBUG CORRELAÇÕES:', {
                                                             totalConsumptions: consumptions.length,
                                                             analysisConsumptions: analysisConsumptions.length,
                                                             totalWellbeing: wellbeingLogs.length,
@@ -4966,8 +4873,6 @@ return {
                                                         // Agregar dados por dia
                                                         const dailyData = {};
 
-                                                        console.log('🔍 Amostra consumo:', analysisConsumptions[0]);
-                                                        console.log('🔍 Amostra bem-estar:', analysisWellbeing[0]);
 
                                                         // Contar consumos por dia
                                                         analysisConsumptions.forEach(c => {
@@ -4986,8 +4891,6 @@ return {
                                                             if (w.energy != null && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
                                                         });
 
-                                                        console.log('🔍 dailyData keys:', Object.keys(dailyData));
-                                                        console.log('🔍 dailyData sample:', Object.entries(dailyData).slice(0, 3));
 
                                                         // Calcular correlações simples (comparar dias com mais vs menos consumo)
                                                         // IMPORTANTE: Filtrar apenas dias que têm PELO MENOS UM DADO DE BEM-ESTAR
@@ -4995,8 +4898,6 @@ return {
                                                             (d.sleep !== null || d.mood !== null || d.energy !== null)
                                                         );
 
-                                                        console.log('🔍 daysWithData length:', daysWithData.length);
-                                                        console.log('🔍 daysWithData sample:', daysWithData.slice(0, 3));
 
                                                         if (daysWithData.length < 1) {
                                                             return (
@@ -5083,13 +4984,13 @@ return {
                                                                             const getCorrelationLabel = (r) => {
                                                                                 if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
                                                                                 const abs = Math.abs(r);
-                                                                                if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior' };
-                                                                                if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior' };
-                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
-                                                                                if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor' };
-                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor' };
-                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
-                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                                if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior bem-estar' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior bem-estar' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Mais consumos → Ligeiramente pior bem-estar' };
+                                                                                if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor bem-estar' };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor bem-estar' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais consumos → Ligeiramente melhor bem-estar' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre consumo e bem-estar' };
                                                                             };
                                                                             const corrLabel = getCorrelationLabel(corr.correlation);
                                                                             return (
@@ -5141,13 +5042,13 @@ return {
                                                                     if (bidirectional.length >= 1) {
                                                                         const getCorrelationLabel = (r) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
-                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior amanhã' };
-                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior amanhã' };
-                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Algum impacto negativo' };
-                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor amanhã' };
-                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor amanhã' };
-                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Algum impacto positivo' };
-                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos hoje → Muito pior amanhã' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos hoje → Pior amanhã' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Mais consumos hoje → Ligeiramente pior amanhã' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos hoje → Muito melhor amanhã' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos hoje → Melhor amanhã' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais consumos hoje → Ligeiramente melhor amanhã' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre consumo e bem-estar' };
                                                                         };
 
                                                                         const bidirCorrelations = [];
@@ -5838,7 +5739,6 @@ return {
                                     {(() => {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
-                                        console.log('🔍 Histórico - Filtro Temporal:', {
                                             period: historyPeriod,
                                             offset: historyPeriodOffset,
                                             dateRange: dateRange,
@@ -5852,7 +5752,6 @@ return {
                                         const tempFilteredCycles = filterByDateRange(cycles, dateRange);
                                         const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
 
-                                        console.log('📊 Dados após filtro temporal:', {
                                             reflexões: tempFilteredReflections.length,
                                             bemEstar: tempFilteredWellbeing.length,
                                             registosDiarios: tempFilteredDailyLogs.length,
@@ -5901,7 +5800,6 @@ return {
                                             filteredReflections = [];
                                         }
 
-                                        console.log('✅ Dados após filtro de tópico:', {
                                             reflexões: filteredReflections.length,
                                             bemEstar: filteredWellbeing.length,
                                             registosDiarios: filteredDailyLogs.length,

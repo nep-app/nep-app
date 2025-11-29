@@ -23,9 +23,7 @@ export const DataProvider = ({ children }) => {
     // Enable offline persistence (original behavior)
     enableIndexedDbPersistence(dbInstance).catch((err) => {
       if (err.code === 'failed-precondition') {
-        console.log('Persistence: múltiplos tabs abertos');
       } else if (err.code === 'unimplemented') {
-        console.log('Persistence: browser não suporta');
       }
     });
 

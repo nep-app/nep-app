@@ -24,7 +24,6 @@ export const calculatePearsonCorrelation = (data, xKey, yKey) => {
  * Get start and end dates for a given period and offset
  */
 export const getDateRangeForPeriod = (period, offset = 0) => {
-    console.log('🕐 getDateRangeForPeriod called:', { period, offset });
     const now = new Date();
     now.setHours(23, 59, 59, 999); // End of today
     let start, end;
@@ -57,10 +56,8 @@ export const getDateRangeForPeriod = (period, offset = 0) => {
         start = new Date(end);
         start.setDate(start.getDate() - (periodDays - 1));
         start.setHours(0, 0, 0, 0);
-        console.log('✅ Period "tudo" → últimos 30 dias');
     }
 
-    console.log('✅ Returning date range:', { start, end });
     return { start, end };
 };
 
@@ -69,7 +66,6 @@ export const getDateRangeForPeriod = (period, offset = 0) => {
  */
 export const filterByDateRange = (items, dateRange, dateField = 'timestamp') => {
     if (!dateRange.start || !dateRange.end) {
-        console.log('⚠️ filterByDateRange: Sem range definido, retornando todos os items:', items.length);
         return items;
     }
 
@@ -79,7 +75,6 @@ export const filterByDateRange = (items, dateRange, dateField = 'timestamp') => 
         return isInRange;
     });
 
-    console.log(`🔎 filterByDateRange: ${items.length} items → ${filtered.length} filtrados (campo: ${dateField})`, {
         start: dateRange.start,
         end: dateRange.end
     });
