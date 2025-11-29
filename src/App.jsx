@@ -49,60 +49,71 @@ function tokenize(text) {
 
 // (Renomeada para não confundir com a tua função lá de baixo)
 function _calculateRawSentiment(text) {
+  // --- NOVOS DICIONÁRIOS (Versão Final e Completa - SINTAXE CORRIGIDA) ---
   const POSITIVE_WORDS = {
-    'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'brutal': 3, 'fantástico': 3, 'incrível': 3,
+    // Top Tier (+3)
+    'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'fantástico': 3, 'incrível': 3,
     'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnífico': 3,
-    'excepcional': 3, 'incrivel': 3, 'fantastico': 3, 'espetacular': 3,
+    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3,
+    
+    // Mid Tier (+2)
     'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2,
-    'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2, 'lindo': 2,
-    'agradável': 2, 'agradavel': 2, 'tranquilo': 2, 'tranquila': 2, 'fixe': 2,
-    'calmo': 2, 'calma': 2, 'confiante': 2, 'motivado': 2, 'motivada': 2, 'top': 2,
-    'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2,
+    'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
+    'confiante': 2, 'motivado': 2, 'motivada': 2, 'orgulhoso': 2, 'orgulhosa': 2,
+    'grato': 2, 'grata': 2, 'fixe': 2, 'bacano': 2, 'top': 2, 'nice': 2,
+    'capaz': 2,
+    
+    // Low Tier (+1)
     'bem': 1, 'ok': 1, 'okay': 1, 'razoável': 1, 'razoavel': 1,
-    'aceitável': 1, 'aceitavel': 1, 'normal': 1, 'esperançoso': 1, 'esperancoso': 1,
-    'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1, 'progresso': 1, 'bacano': 1
+    'aceitável': 1, 'aceitavel': 1, 'normal': 1, 'esperançoso': 1, 
+    'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1, 'progresso': 1,
+    'sobrevivi': 1, 'safe': 1
   };
 
   const NEGATIVE_WORDS = {
-    // ASNEIRAS & GÍRIA (Adicionadas agora)
+    // PESO PESADO (-3)
     'merda': 3, 'caralho': 3, 'crl': 3, 'foda-se': 3, 'fodasse': 3, 'fds': 3, 'puta': 3, 'cabra': 3,
-    'estúpida': 3, 'estupida': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3, 'fodido': 3,
-    'porra': 2, 'bosta': 2, 'treta': 2, 'lixo': 2, 'foder': 3, 'foda': 3,
-    'horrível': 3, 'horrivel': 3, 'péssimo': 3, 'pessimo': 3, 'terrível': 3,
-    'terrivel': 3, 'deprimido': 3, 'deprimida': 3, 'desesperado': 3, 'desesperada': 3,
-    'miserável': 3, 'miseravel': 3, 'impossível': 3, 'impossivel': 3,
+    'estúpida': 3, 'estupida': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3,
+    'atrasada': 3, 'atrasado': 3, 'retardada': 3, 'foder': 3, 'foda': 3,
+    'morrer': 3, 'morte': 3, 'destruido': 3, 'destruida': 3, 
+    
+    // SENTIMENTOS NEGATIVOS & SLANG (-2)
     'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2,
-    'preocupada': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
-    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'morrer': 2,
-    'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2, 'vazia': 2,
-    'difícil': 2, 'dificil': 2, 'complicado': 2, 'complicada': 2
+    'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
+    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2,
+    'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2,
+    'difícil': 2, 'dificil': 2, 'complicado': 2, 'complicada': 2,
     'pior': 2, 'negativo': 2, 'negativa': 2, 'raiva': 2, 'ridiculo': 2, 'ridicula': 2, 'ridículo': 2, 'ridícula': 2,
-    'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
-    'aborrecida': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'incerta': 1,
-    'dúvida': 1, 'duvida': 1, 'problema': 1, 'falhar': 1, 'falhei': 1,
-      'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2,
+    'fodido': 2, 'fodida': 2, 'lixado': 2, 'lixada': 2, 
+
+    // SINTOMAS & SÍNDROME (-2)
+    'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2,
     'doente': 2, 'arrependido': 2, 'arrependida': 2, 'mania': 2, 'psodivel': 2,
-    'sono': 1, 'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
+    'sono': 1, // 'Dormido mais' ou 'sem sono' - o contexto de negação inverte-o
+    
+    // LEVES (-1)
+    'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
     'confuso': 1, 'confusa': 1, 'incerto': 1, 'dúvida': 1, 'problema': 1,
     'meh': 1, 'nhé': 1
-
   };
 
-  const NEGATIONS = ['não', 'nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer'];
+  const NEGATIONS = ['não', 'nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer', 'nada'];
   
   const INTENSIFIERS = {
     'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8,
     'incrivelmente': 1.8, 'inacreditavelmente': 1.8, 'demasiado': 1.5,
     'realmente': 1.3, 'verdadeiramente': 1.3, 'profundamente': 1.5,
-    'completamente': 1.4, 'totalmente': 1.4
+    'completamente': 1.4, 'totalmente': 1.4,
+    'tão': 1.3, 'tao': 1.3, 'bué': 1.5, 'mega': 1.5, 'ganda': 1.5,
   };
 
   const REDUCERS = {
     'pouco': 0.5, 'meio': 0.6, 'mais ou menos': 0.6, 'um pouco': 0.7,
-    'ligeiramente': 0.5, 'raramente': 0.4, 'às vezes': 0.6, 'as vezes': 0.6
+    'ligeiramente': 0.5, 'raramente': 0.4, 'às vezes': 0.6, 'as vezes': 0.6,
+    'assim': 0.8 
   };
 
-  function analyzeWordInContext(words, index, windowSize = 3) {
+  function analyzeWordInContext(words, index, windowSize = 5) { // <--- Aumentei o "pescoço" para 5
     const word = words[index];
     let score = 0;
     let multiplier = 1;
@@ -155,7 +166,7 @@ function _calculateRawSentiment(text) {
   else if (totalScore < -2) classification = 'very_negative';
   else if (totalScore < -0.5) classification = 'negative';
 
-  return { score: totalScore, magnitude, classification, positiveCount, negativeCount, neutralCount, details };
+  return { score: totalScore, magnitude, classification, positiveCount, negativeCount, neutralCount, details: details };
 }
 
 // Esta é a função principal que o teu código já chama!
