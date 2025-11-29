@@ -1,5 +1,29 @@
 import { getTodayKey } from '../utils/helpers';
 
+// ===== ANALYTICS LOGIC =====
+
+export const analyzeSentiment = (note) => {
+    // Placeholder for sentiment analysis logic
+    return { score: 0, label: 'Neutral' };
+};
+
+export const analyzeMultipleNotes = (notes) => {
+    // Placeholder
+    return { score: 0, label: 'Neutral' };
+};
+
+export const identifyThemes = (notes) => {
+    return [];
+};
+
+export const calculateCorrelations = (data) => {
+    return [];
+};
+
+export const predictNextEpisode = (history) => {
+    return null;
+};
+
 // ===== CORRELATION & STATISTICS =====
 
 /**
@@ -73,10 +97,6 @@ export const filterByDateRange = (items, dateRange, dateField = 'timestamp') => 
         const itemDate = new Date(item[dateField]);
         const isInRange = itemDate >= dateRange.start && itemDate <= dateRange.end;
         return isInRange;
-    });
-
-        start: dateRange.start,
-        end: dateRange.end
     });
 
     return filtered;
