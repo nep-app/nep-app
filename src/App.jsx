@@ -50,36 +50,42 @@ function tokenize(text) {
 // (Renomeada para não confundir com a tua função lá de baixo)
 function _calculateRawSentiment(text) {
   const POSITIVE_WORDS = {
-    'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'fantástico': 3, 'incrível': 3,
+    'excelente': 3, 'ótimo': 3, 'óptimo': 3, 'brutal': 3, 'fantástico': 3, 'incrível': 3,
     'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnífico': 3,
     'excepcional': 3, 'incrivel': 3, 'fantastico': 3, 'espetacular': 3,
     'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2,
-    'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
-    'agradável': 2, 'agradavel': 2, 'tranquilo': 2, 'tranquila': 2,
-    'calmo': 2, 'calma': 2, 'confiante': 2, 'motivado': 2, 'motivada': 2,
+    'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2, 'lindo': 2,
+    'agradável': 2, 'agradavel': 2, 'tranquilo': 2, 'tranquila': 2, 'fixe': 2,
+    'calmo': 2, 'calma': 2, 'confiante': 2, 'motivado': 2, 'motivada': 2, 'top': 2,
     'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2,
     'bem': 1, 'ok': 1, 'okay': 1, 'razoável': 1, 'razoavel': 1,
     'aceitável': 1, 'aceitavel': 1, 'normal': 1, 'esperançoso': 1, 'esperancoso': 1,
-    'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1, 'progresso': 1
+    'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1, 'progresso': 1, 'bacano': 1
   };
 
   const NEGATIVE_WORDS = {
     // ASNEIRAS & GÍRIA (Adicionadas agora)
     'merda': 3, 'caralho': 3, 'crl': 3, 'foda-se': 3, 'fodasse': 3, 'fds': 3, 'puta': 3, 'cabra': 3,
-    'estúpida': 3, 'estupida': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3,
+    'estúpida': 3, 'estupida': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3, 'fodido': 3,
     'porra': 2, 'bosta': 2, 'treta': 2, 'lixo': 2, 'foder': 3, 'foda': 3,
     'horrível': 3, 'horrivel': 3, 'péssimo': 3, 'pessimo': 3, 'terrível': 3,
     'terrivel': 3, 'deprimido': 3, 'deprimida': 3, 'desesperado': 3, 'desesperada': 3,
     'miserável': 3, 'miseravel': 3, 'impossível': 3, 'impossivel': 3,
     'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2,
     'preocupada': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
-    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2,
+    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'morrer': 2,
     'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2, 'vazia': 2,
-    'difícil': 2, 'dificil': 2, 'complicado': 2, 'complicada': 2,
-    'pior': 2, 'negativo': 2, 'negativa': 2,
+    'difícil': 2, 'dificil': 2, 'complicado': 2, 'complicada': 2
+    'pior': 2, 'negativo': 2, 'negativa': 2, 'raiva': 2, 'ridiculo': 2, 'ridicula': 2, 'ridículo': 2, 'ridícula': 2,
     'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
     'aborrecida': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'incerta': 1,
-    'dúvida': 1, 'duvida': 1, 'problema': 1, 'falhar': 1, 'falhei': 1
+    'dúvida': 1, 'duvida': 1, 'problema': 1, 'falhar': 1, 'falhei': 1,
+      'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2,
+    'doente': 2, 'arrependido': 2, 'arrependida': 2, 'mania': 2, 'psodivel': 2,
+    'sono': 1, 'cansaço': 1, 'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1,
+    'confuso': 1, 'confusa': 1, 'incerto': 1, 'dúvida': 1, 'problema': 1,
+    'meh': 1, 'nhé': 1
+
   };
 
   const NEGATIONS = ['não', 'nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer'];
