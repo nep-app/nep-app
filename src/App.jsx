@@ -64,6 +64,10 @@ function _calculateRawSentiment(text) {
   };
 
   const NEGATIVE_WORDS = {
+    // ASNEIRAS & GÍRIA (Adicionadas agora)
+    'merda': 3, 'caralho': 3, 'crl': 3, 'foda-se': 3, 'fodasse': 3, 'fds': 3, 'puta': 3, 'cabra': 3,
+    'estúpida': 3, 'estupida': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3,
+    'porra': 2, 'bosta': 2, 'treta': 2, 'lixo': 2, 'foder': 3, 'foda': 3,
     'horrível': 3, 'horrivel': 3, 'péssimo': 3, 'pessimo': 3, 'terrível': 3,
     'terrivel': 3, 'deprimido': 3, 'deprimida': 3, 'desesperado': 3, 'desesperada': 3,
     'miserável': 3, 'miseravel': 3, 'impossível': 3, 'impossivel': 3,
