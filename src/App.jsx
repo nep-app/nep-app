@@ -15,6 +15,11 @@ import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './sentimentAnalysis';
 
+// DEBUG TEMPORARY - adiciona isto
+console.log('🔍 DEBUG sentiment functions:');
+console.log('identifyThemes test:', identifyThemes(['dormi mal', 'saúde em baixo']));
+console.log('analyzeMultipleNotes test:', analyzeMultipleNotes(['dormi mal', 'tou bué cansada']));
+console.log('analyzeMultipleNotes with your note:', analyzeMultipleNotes(['Fiquei orgulhosa']));
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
