@@ -5195,9 +5195,19 @@ return {
                                                                             return (
                                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                                     <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>↔️ Consumo Afeta Bem-Estar</h3>
-                                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Correlação entre consumo hoje e bem-estar no dia seguinte
                                                                                     </p>
+
+                                                                                    {/* Texto explicativo simples */}
+                                                                                    <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/30' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-3 mb-4 border'}>
+                                                                                        <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-purple-200' : 'text-purple-800')}>
+                                                                                            💡 <strong>Impacto Temporal:</strong> Este gráfico mostra como o consumo de <strong>hoje</strong> afeta o teu bem-estar de <strong>amanhã</strong>.
+                                                                                            <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}> Negativo</strong> = mais consumo hoje leva a pior sono/humor/energia amanhã.
+                                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> Positivo</strong> = o oposto.
+                                                                                        </p>
+                                                                                    </div>
+
                                                                                     {bidirCorrelations.map((corr, i) => {
                                                                                         const label = getCorrelationLabel(corr.correlation);
                                                                                         const colorClasses = {
