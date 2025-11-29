@@ -4004,26 +4004,42 @@ return {
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
                                                                                     <>
-                                                                                        Ao analisar as tuas reflexões ({sentimentAnalysis.noteCount} notas),
-                                                                                        {sentimentAnalysis.overall === 'very_positive' ? (
-                                                                                            <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>muito positivo</strong> (score: {sentimentScore.toFixed(1)}) - isso reflete resiliência e otimismo autênticos. Continua a cultivar essa perspetiva!</>
-                                                                                        ) : sentimentAnalysis.overall === 'positive' ? (
-                                                                                            <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> (score: {sentimentScore.toFixed(1)}). Há consciência dos desafios, mas também esperança. Isso é saudável!</>
-                                                                                        ) : sentimentAnalysis.overall === 'very_negative' ? (
-                                                                                            <> deteto um tom <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>muito negativo</strong> (score: {sentimentScore.toFixed(1)}). Quero que saibas que é completamente normal passar por fases difíceis. Estou aqui para te apoiar, e lembra-te: pequenos passos contam.</>
-                                                                                        ) : sentimentAnalysis.overall === 'negative' ? (
-                                                                                            <> o tom é <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> (score: {sentimentScore.toFixed(1)}). Reconheço que estás a enfrentar dificuldades. Usa as estratégias de coping e considera procurar apoio adicional se necessário.</>
-                                                                                        ) : (
-                                                                                            <> o tom é neutro ou misto (score: {sentimentScore.toFixed(1)}). Isso mostra que estás a navegar os altos e baixos da vida, o que é humano e esperado.</>
-                                                                                        )}
+                                                                                        {(() => {
+                                                                                            // Calcular sentimento com base na DISTRIBUIÇÃO em vez da média
+                                                                                            const dist = sentimentAnalysis.distribution;
+                                                                                            const total = sentimentAnalysis.noteCount;
+                                                                                            const positivePercent = Math.round(((dist.very_positive + dist.positive) / total) * 100);
+                                                                                            const negativePercent = Math.round(((dist.very_negative + dist.negative) / total) * 100);
+                                                                                            const neutralPercent = Math.round((dist.neutral / total) * 100);
+
+                                                                                            // Classificar com base na distribuição
+                                                                                            let realOverall = 'neutral';
+                                                                                            if (positivePercent >= 60) realOverall = 'positive';
+                                                                                            else if (positivePercent >= 40 && positivePercent > negativePercent) realOverall = 'positive';
+                                                                                            else if (negativePercent >= 60) realOverall = 'negative';
+                                                                                            else if (negativePercent >= 40 && negativePercent > positivePercent) realOverall = 'negative';
+
+                                                                                            return (
+                                                                                                <>
+                                                                                                    Ao analisar as tuas reflexões ({sentimentAnalysis.noteCount} notas),
+                                                                                                    {realOverall === 'positive' ? (
+                                                                                                        <> o tom geral é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> ({positivePercent}% notas positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. Isso é muito saudável!</>
+                                                                                                    ) : realOverall === 'negative' ? (
+                                                                                                        <> o tom geral é <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> ({negativePercent}% notas negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. Usa as estratégias de coping e considera procurar apoio adicional se necessário.</>
+                                                                                                    ) : (
+                                                                                                        <> o tom é equilibrado entre positivo ({positivePercent}%) e negativo ({negativePercent}%), com {neutralPercent}% neutro. Isso mostra que estás a navegar os altos e baixos da vida, o que é completamente humano e esperado.</>
+                                                                                                    )}
+                                                                                                </>
+                                                                                            );
+                                                                                        })()}
                                                                                         {sentimentAnalysis.trend === 'improving' && <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>📈 Tendência emocional: a melhorar!</span> Isso é excelente.</>}
                                                                                         {sentimentAnalysis.trend === 'worsening' && <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>📉 Tendência emocional: a piorar.</span> Presta atenção a este padrão e ativa estratégias de suporte.</>}
                                                                                         {(() => {
-                                                                                            // Mostrar tema mais mencionado
+                                                                                            // Mostrar 3 temas mais mencionados (em vez de 2)
                                                                                             const topThemes = Object.entries(sentimentThemes)
                                                                                                 .filter(([_, data]) => data.count > 2)
                                                                                                 .sort((a, b) => b[1].count - a[1].count)
-                                                                                                .slice(0, 2);
+                                                                                                .slice(0, 3);
                                                                                             const themeNames = { sleep: 'sono', stress: 'stress/ansiedade', energy: 'energia', mood: 'humor', focus: 'foco/concentração', social: 'relações sociais', health: 'saúde física' };
                                                                                             if (topThemes.length > 0) {
                                                                                                 return <> Os temas mais presentes: <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{topThemes.map(([theme, data]) => `${themeNames[theme]} (${data.count}x)`).join(', ')}</strong>.</>;
