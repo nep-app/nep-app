@@ -155,7 +155,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {/* Header compacto */}
       <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
         <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-          📈
+          📈 Evolução Humor/Energia ao longo do dia
         </div>
       </div>
 

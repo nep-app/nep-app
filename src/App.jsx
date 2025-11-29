@@ -3551,7 +3551,6 @@ return {
                                                     <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
                                                 ) : (() => {
                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
-                                                    const maxCount = Math.max(...Object.values(byHour));
 
                                                     // Agrupar horas em blocos de 3h para melhor visualização
                                                     const hourBlocks = [
@@ -3565,12 +3564,18 @@ return {
                                                         { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
                                                     ];
 
+                                                    // Calcular máximo dos BLOCOS (não das horas individuais)
+                                                    const blockCounts = hourBlocks.map(block =>
+                                                        block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0)
+                                                    );
+                                                    const maxBlockCount = Math.max(...blockCounts);
+
                                                     return (
                                                         <div className="space-y-2">
                                                             {hourBlocks.map(block => {
                                                                 const blockCount = block.hours.reduce((sum, h) => sum + (byHour[h] || 0), 0);
                                                                 const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
-                                                                const intensity = maxCount > 0 ? (blockCount / maxCount) : 0;
+                                                                const intensity = maxBlockCount > 0 ? (blockCount / maxBlockCount) : 0;
 
                                                                 // Cores por período
                                                                 let colorClass = '';
@@ -5057,20 +5062,10 @@ return {
                                                         return (
                                                             <div className="space-y-4">
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Análise de Bem-Estar</h3>
-                                                                    <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlação Consumos → Bem-estar</h3>
+                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                         Correlação entre nº de consumos e bem-estar nos dias com dados
                                                                     </p>
-
-                                                                    {/* Texto explicativo simples */}
-                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/30' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mb-4 border'}>
-                                                                        <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-blue-200' : 'text-blue-800')}>
-                                                                            💡 <strong>Como ler:</strong> Esta análise mostra se existe uma relação entre o número de consumos e o teu bem-estar.
-                                                                            <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}> Correlação negativa</strong> significa que mais consumos estão associados a pior bem-estar (ex: menos sono, humor mais baixo).
-                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> Correlação positiva</strong> é o oposto.
-                                                                            <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}> Sem correlação</strong> indica que não há padrão claro.
-                                                                        </p>
-                                                                    </div>
 
                                                                     <div className="space-y-3">
                                                                         {correlations.map((corr, i) => {
@@ -5171,7 +5166,7 @@ return {
                                                                                 icon: '😊',
                                                                                 correlation: moodCorr,
                                                                                 average: avgNextMood.toFixed(1),
-                                                                                unit: '/5',
+                                                                                unit: '/10',
                                                                                 dataPoints: moodData.length
                                                                             });
                                                                         }
@@ -5186,7 +5181,7 @@ return {
                                                                                 icon: '⚡',
                                                                                 correlation: energyCorr,
                                                                                 average: avgNextEnergy.toFixed(1),
-                                                                                unit: '/5',
+                                                                                unit: '/10',
                                                                                 dataPoints: energyData.length
                                                                             });
                                                                         }
@@ -5194,19 +5189,10 @@ return {
                                                                         if (bidirCorrelations.length > 0) {
                                                                             return (
                                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>↔️ Consumo Afeta Bem-Estar</h3>
-                                                                                    <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Impacto Temporal Consumo → Bem-estar</h3>
+                                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Correlação entre consumo hoje e bem-estar no dia seguinte
                                                                                     </p>
-
-                                                                                    {/* Texto explicativo simples */}
-                                                                                    <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/30' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-3 mb-4 border'}>
-                                                                                        <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-purple-200' : 'text-purple-800')}>
-                                                                                            💡 <strong>Impacto Temporal:</strong> Este gráfico mostra como o consumo de <strong>hoje</strong> afeta o teu bem-estar de <strong>amanhã</strong>.
-                                                                                            <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}> Negativo</strong> = mais consumo hoje leva a pior sono/humor/energia amanhã.
-                                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}> Positivo</strong> = o oposto.
-                                                                                        </p>
-                                                                                    </div>
 
                                                                                     {bidirCorrelations.map((corr, i) => {
                                                                                         const label = getCorrelationLabel(corr.correlation);
