@@ -675,12 +675,19 @@ function HarmReductionTracker() {
                 // Calculate avgMg from cycles (novo) ou dailyLogs (compatibilidade)
                 const mgValues = [];
 
+                console.log('🔍 DEBUG getLast7Days mg:');
+                console.log('last7Dates:', last7Dates);
+                console.log('cycles (total):', cycles.length, cycles.slice(0, 3));
+                console.log('dailyLogs (total):', dailyLogs.length, dailyLogs.slice(0, 3));
+
                 last7Dates.forEach(date => {
                     // Buscar primeiro nos cycles (novo método)
                     const cycle = cycles.find(c => c.date === date && c.mg !== undefined && c.mg !== '');
+                    console.log(`  ${date}: cycle found?`, !!cycle, cycle ? { mg: cycle.mg, date: cycle.date } : 'none');
                     if (cycle) {
                         const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
                         if (!isNaN(mgValue) && mgValue > 0) {
+                            console.log(`    ✅ Cycle mg added: ${mgValue}`);
                             mgValues.push(mgValue);
                             return;
                         }
@@ -688,15 +695,19 @@ function HarmReductionTracker() {
 
                     // Fallback: buscar nos dailyLogs (compatibilidade)
                     const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
+                    console.log(`  ${date}: dailyLog found?`, !!dailyLog, dailyLog ? { mg: dailyLog.mg, date: dailyLog.date } : 'none');
                     if (dailyLog) {
                         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
                         if (!isNaN(mgValue) && mgValue > 0) {
+                            console.log(`    ✅ DailyLog mg added: ${mgValue}`);
                             mgValues.push(mgValue);
                         }
                     }
                 });
 
+                console.log('mgValues collected:', mgValues);
                 const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
+                console.log('avgMg result:', avgMg);
 
                 return { avgTimes, avgMg };
             };
