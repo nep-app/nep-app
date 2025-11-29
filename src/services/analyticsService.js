@@ -75,10 +75,6 @@ export const filterByDateRange = (items, dateRange, dateField = 'timestamp') => 
         return isInRange;
     });
 
-        start: dateRange.start,
-        end: dateRange.end
-    });
-
     return filtered;
 };
 
