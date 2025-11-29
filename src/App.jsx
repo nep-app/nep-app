@@ -1059,25 +1059,7 @@ const getGoalAchievementCount = (goal) => {
                 getGoalProgress
             }), [consumptions, reflections, wellbeingLogs, cycles, goals]);
 
-            // ===== INTELLIGENT INSIGHTS & SENTIMENT ANALYSIS =====
-            // Analyze sentiment in text using keyword matching
-            const analyzeSentiment = (text) => {
-                if (!text || text.trim().length === 0) return { score: 0, label: 'neutro' };
-
-                const lowerText = text.toLowerCase();
-
-                let positiveCount = 0;
-                let negativeCount = 0;
-
-               const sentimentResult = analyzeMultipleNotes([lowerText]);
-return { 
-    score: sentimentResult.score, 
-    positiveCount: sentimentResult.distribution.positive + sentimentResult.distribution.very_positive,
-    negativeCount: sentimentResult.distribution.negative + sentimentResult.distribution.very_negative, 
-    label: sentimentResult.overall 
-};
-            };
-
+           
             // Memoized temporal correlation analysis (optimized)
             const temporalCorrelations = useMemo(() => {
                 if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
@@ -1971,7 +1953,8 @@ return {
                           
 
                                         // DASHBOARD (COMPACTO)
-                                        if (patternView === 'dashboard') {
+                                        if (patternView === 
+                                            'dashboard') {
                                             if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
                                             // Calculate metrics
@@ -2056,13 +2039,7 @@ return {
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
-                                                    totalGoals: goals.length,
-                                                    uniqueGoals: uniqueGoals.length,
-                                                    totalAchievements,
-                                                    period: patternsPeriod,
-                                                    filteredConsumptions: filteredConsumptions.length,
-                                                    filteredCycles: filteredCycles.length
-                                                });
+                                             
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
