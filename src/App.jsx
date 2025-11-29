@@ -13,7 +13,7 @@ import { useReminders } from './hooks/useReminders';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
-import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
+import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './sentimentAnalysis';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
