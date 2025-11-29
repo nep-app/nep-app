@@ -170,8 +170,47 @@ export function analyzeMultipleNotes(notes) {
  */
 export function identifyThemes(notes) {
   const themes = {
-    sleep: { keywords: ['dormir', 'sono', 'acordar', 'cama', 'insónia', 'insonia', 'sonolento'], count: 0 },
-    stress: { keywords: ['stress', 'stressado', 'estresse', 'estressado', 'ansioso', 'preocupado', 'nervoso'], count: 0 },
-    energy: { keywords: ['energia', 'cansado', 'cansaço', 'cansaco', 'fadiga', 'exausto', 'animado'], count: 0 },
-    mood: { keywords: ['humor', 'triste', 'feliz', 'alegre', 'deprimido', 'irritado', 'zangado'], count: 0 },
-    focus: { keywords: ['concentração', 'concentracao', 'foco', 'atenção', 'atencao', 'distração', 'distracao', '
+    sleep: { 
+      keywords: ['dormir', 'sono', 'acordar', 'cama', 'insónia', 'insonia', 'sonolento'], 
+      count: 0 
+    },
+    stress: { 
+      keywords: ['stress', 'stressado', 'estresse', 'estressado', 'ansioso', 'preocupado', 'nervoso'], 
+      count: 0 
+    },
+    energy: { 
+      keywords: ['energia', 'cansado', 'cansaço', 'cansaco', 'fadiga', 'exausto', 'animado'], 
+      count: 0 
+    },
+    mood: { 
+      keywords: ['humor', 'triste', 'feliz', 'alegre', 'deprimido', 'irritado', 'zangado'], 
+      count: 0 
+    },
+    focus: { 
+      keywords: ['concentração', 'concentracao', 'foco', 'atenção', 'atencao', 'distração', 'distracao', 'confuso'], 
+      count: 0 
+    },
+    social: { 
+      keywords: ['amigos', 'família', 'familia', 'sozinho', 'isolado', 'pessoas', 'convívio', 'convivio'], 
+      count: 0 
+    },
+    health: { 
+      keywords: ['saúde', 'saude', 'dor', 'sintoma', 'corpo', 'físico', 'fisico', 'doente'], 
+      count: 0 
+    }
+  };
+
+  const allText = notes.join(' ').toLowerCase();
+
+  Object.keys(themes).forEach(theme => {
+    themes[theme].keywords.forEach(keyword => {
+      const regex = new RegExp('\\b' + keyword + '\\b', 'g');
+      const matches = allText.match(regex);
+      if (matches) {
+        themes[theme].count += matches.length;
+      }
+    });
+  });
+
+  return themes;
+}
