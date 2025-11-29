@@ -166,17 +166,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       };
     }
 
-    // Opção 3: Analisar janelas de tempo (30-60min) antes e depois de cada consumo
-    const WINDOW_BEFORE = 60; // minutos antes do consumo
-    const WINDOW_AFTER = 60;  // minutos depois do consumo
-
-    if (consumptionData.length === 0) {
-      return {
-        text: 'Sem consumos registados para análise.',
-        type: 'neutral'
-      };
-    }
-
+    // Análise SIMPLIFICADA: para cada consumo, comparar TODOS os dados antes vs depois
     const allData = chartData.filter(d => d.mood !== null || d.energy !== null);
     if (allData.length < 2) {
       return {
@@ -185,46 +175,18 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       };
     }
 
-    // Para cada consumo, encontrar bem-estar antes e depois
     const comparisons = [];
-    let totalBeforeData = 0;
-    let totalAfterData = 0;
-    let consumptionsWithBefore = 0;
-    let consumptionsWithAfter = 0;
-    let consumptionsWithBoth = 0;
 
     consumptionData.forEach(cons => {
       const consTime = cons.minutesSinceMidnight;
 
-      // Bem-estar ANTES (30-60min antes)
-      const beforeMood = moodData.filter(d =>
-        d.minutesSinceMidnight >= consTime - WINDOW_BEFORE &&
-        d.minutesSinceMidnight < consTime - 30
-      );
-      const beforeEnergy = energyData.filter(d =>
-        d.minutesSinceMidnight >= consTime - WINDOW_BEFORE &&
-        d.minutesSinceMidnight < consTime - 30
-      );
+      // TODOS os dados ANTES do consumo
+      const beforeMood = moodData.filter(d => d.minutesSinceMidnight < consTime);
+      const beforeEnergy = energyData.filter(d => d.minutesSinceMidnight < consTime);
 
-      // Bem-estar DEPOIS (30-60min depois)
-      const afterMood = moodData.filter(d =>
-        d.minutesSinceMidnight > consTime + 30 &&
-        d.minutesSinceMidnight <= consTime + WINDOW_AFTER
-      );
-      const afterEnergy = energyData.filter(d =>
-        d.minutesSinceMidnight > consTime + 30 &&
-        d.minutesSinceMidnight <= consTime + WINDOW_AFTER
-      );
-
-      const hasBefore = beforeMood.length > 0 || beforeEnergy.length > 0;
-      const hasAfter = afterMood.length > 0 || afterEnergy.length > 0;
-
-      if (hasBefore) consumptionsWithBefore++;
-      if (hasAfter) consumptionsWithAfter++;
-      if (hasBefore && hasAfter) consumptionsWithBoth++;
-
-      totalBeforeData += beforeMood.length + beforeEnergy.length;
-      totalAfterData += afterMood.length + afterEnergy.length;
+      // TODOS os dados DEPOIS do consumo
+      const afterMood = moodData.filter(d => d.minutesSinceMidnight > consTime);
+      const afterEnergy = energyData.filter(d => d.minutesSinceMidnight > consTime);
 
       // Calcular médias se houver dados
       if (beforeMood.length > 0 && afterMood.length > 0) {
@@ -240,103 +202,12 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       }
     });
 
+    // Se não há comparações possíveis
     if (comparisons.length === 0) {
-      // Verificar se há dados de bem-estar no geral
-      if (moodData.length === 0 && energyData.length === 0) {
-        return {
-          text: 'Sem dados de bem-estar registados neste dia.',
-          type: 'neutral'
-        };
-      }
-
-      // Há dados de bem-estar, mas não nas janelas específicas
-      if (totalBeforeData === 0 && totalAfterData === 0) {
-        return {
-          text: `Analisados ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''}: registe bem-estar 30-60min antes e depois para ver impacto.`,
-          type: 'neutral'
-        };
-      } else if (totalBeforeData === 0) {
-        return {
-          text: `${consumptionsWithAfter} de ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} têm dados depois. Registe também 30-60min ANTES para comparar.`,
-          type: 'neutral'
-        };
-      } else if (totalAfterData === 0) {
-        return {
-          text: `${consumptionsWithBefore} de ${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} têm dados antes. Registe também 30-60min DEPOIS para comparar.`,
-          type: 'neutral'
-        };
-      } else {
-        // Há dados antes e depois, mas não nas janelas temporais ideais
-        // Fazer análise alternativa usando TODOS os dados do dia (não apenas nas janelas de 30-60 min)
-        const altComparisons = [];
-
-        consumptionData.forEach(cons => {
-          const consTime = cons.minutesSinceMidnight;
-
-          // Pegar TODOS os dados ANTES do consumo
-          const allBeforeMood = moodData.filter(d => d.minutesSinceMidnight < consTime);
-          const allBeforeEnergy = energyData.filter(d => d.minutesSinceMidnight < consTime);
-
-          // Pegar TODOS os dados DEPOIS do consumo
-          const allAfterMood = moodData.filter(d => d.minutesSinceMidnight > consTime);
-          const allAfterEnergy = energyData.filter(d => d.minutesSinceMidnight > consTime);
-
-          // Calcular médias se houver dados
-          if (allBeforeMood.length > 0 && allAfterMood.length > 0) {
-            const avgBefore = allBeforeMood.reduce((sum, d) => sum + d.mood, 0) / allBeforeMood.length;
-            const avgAfter = allAfterMood.reduce((sum, d) => sum + d.mood, 0) / allAfterMood.length;
-            altComparisons.push({ type: 'mood', change: avgAfter - avgBefore });
-          }
-
-          if (allBeforeEnergy.length > 0 && allAfterEnergy.length > 0) {
-            const avgBefore = allBeforeEnergy.reduce((sum, d) => sum + d.energy, 0) / allBeforeEnergy.length;
-            const avgAfter = allAfterEnergy.reduce((sum, d) => sum + d.energy, 0) / allAfterEnergy.length;
-            altComparisons.push({ type: 'energy', change: avgAfter - avgBefore });
-          }
-        });
-
-        if (altComparisons.length > 0) {
-          // Usar as comparações alternativas para gerar texto
-          const altMoodChanges = altComparisons.filter(c => c.type === 'mood').map(c => c.change);
-          const altEnergyChanges = altComparisons.filter(c => c.type === 'energy').map(c => c.change);
-
-          const avgMoodChange = altMoodChanges.length > 0
-            ? altMoodChanges.reduce((sum, v) => sum + v, 0) / altMoodChanges.length
-            : null;
-          const avgEnergyChange = altEnergyChanges.length > 0
-            ? altEnergyChanges.reduce((sum, v) => sum + v, 0) / altEnergyChanges.length
-            : null;
-
-          const parts = [];
-
-          if (avgMoodChange !== null) {
-            if (avgMoodChange > 0.5) parts.push('humor tende a melhorar após consumo');
-            else if (avgMoodChange < -0.5) parts.push('humor tende a piorar após consumo');
-            else parts.push('humor mantém-se estável após consumo');
-          }
-
-          if (avgEnergyChange !== null) {
-            if (avgEnergyChange > 0.5) parts.push('energia tende a aumentar após consumo');
-            else if (avgEnergyChange < -0.5) parts.push('energia tende a diminuir após consumo');
-            else parts.push('energia mantém-se estável após consumo');
-          }
-
-          const type = avgMoodChange !== null || avgEnergyChange !== null
-            ? (avgMoodChange < -0.5 || avgEnergyChange < -0.5 ? 'warning' : avgMoodChange > 0.5 || avgEnergyChange > 0.5 ? 'success' : 'neutral')
-            : 'neutral';
-
-          return {
-            text: `Análise geral: ${parts.join('; ')}. (Dados fora das janelas ideais de 30-60min)`,
-            type
-          };
-        } else {
-          // Se mesmo a análise alternativa não funcionou
-          return {
-            text: `${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} registado${consumptionData.length !== 1 ? 's' : ''}. Registe bem-estar antes E depois para análise de impacto.`,
-            type: 'neutral'
-          };
-        }
-      }
+      return {
+        text: `${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} registado${consumptionData.length !== 1 ? 's' : ''}. Registe bem-estar antes e depois para análise.`,
+        type: 'neutral'
+      };
     }
 
     // Agregar mudanças por tipo
