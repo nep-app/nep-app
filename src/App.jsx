@@ -2348,26 +2348,82 @@ return {
                                                 };
                                             }
 
-                                            // 2. CONSUMO - Dosagem (from dailyLogs)
+                                            // 2. CONSUMO - Dosagem (from cycles and dailyLogs)
+                                            // Helper para extrair dosagem de cycles + dailyLogs por data
+                                            const getMgForDate = (date, cyclesData, dailyLogsData) => {
+                                                // Primeiro tenta buscar nos cycles
+                                                const cycle = cyclesData.find(c => {
+                                                    const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                    return cycleDate === date && c.mg !== undefined && c.mg !== '';
+                                                });
+                                                if (cycle) {
+                                                    const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+                                                    if (!isNaN(mgValue) && mgValue > 0) {
+                                                        return mgValue;
+                                                    }
+                                                }
+
+                                                // Fallback: buscar nos dailyLogs
+                                                const dailyLog = dailyLogsData.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
+                                                if (dailyLog) {
+                                                    const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
+                                                    if (!isNaN(mgValue) && mgValue > 0) {
+                                                        return mgValue;
+                                                    }
+                                                }
+
+                                                return null;
+                                            };
+
+                                            // Filtrar cycles por período
+                                            const recentCyclesForDosage = cycles.filter(c => {
+                                                const d = new Date(c.timestamp);
+                                                return d >= recentStart && d <= recentEnd;
+                                            });
+                                            const previousCyclesForDosage = cycles.filter(c => {
+                                                const d = new Date(c.timestamp);
+                                                return d >= previousStart && d < previousEnd;
+                                            });
+
+                                            // Filtrar dailyLogs por período
                                             const recentDailyLogs = dailyLogs.filter(d => {
                                                 const date = new Date(d.date);
                                                 return date >= recentStart && date <= recentEnd;
                                             });
                                             const previousDailyLogs = dailyLogs.filter(d => {
                                                 const date = new Date(d.date);
-                                                return date >= previousStart && date < previousEnd;
+                                                return date >= previousStart && d < previousEnd;
                                             });
 
-                                            if (recentDailyLogs.length > 0 || previousDailyLogs.length > 0) {
-                                                const recentLogsWithDosage = recentDailyLogs.filter(d => d.mg && d.mg > 0);
-                                                const previousLogsWithDosage = previousDailyLogs.filter(d => d.mg && d.mg > 0);
+                                            // Obter todas as datas únicas dos períodos
+                                            const recentDates = new Set([
+                                                ...recentCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...recentDailyLogs.map(d => d.date)
+                                            ]);
+                                            const previousDates = new Set([
+                                                ...previousCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...previousDailyLogs.map(d => d.date)
+                                            ]);
 
-                                                // Média dos dias em que houve registo de dosagem
-                                                const recentAvgDosage = recentLogsWithDosage.length > 0
-                                                    ? recentLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / recentLogsWithDosage.length
+                                            // Coletar valores de dosagem
+                                            const recentMgValues = [];
+                                            recentDates.forEach(date => {
+                                                const mg = getMgForDate(date, recentCyclesForDosage, recentDailyLogs);
+                                                if (mg !== null) recentMgValues.push(mg);
+                                            });
+
+                                            const previousMgValues = [];
+                                            previousDates.forEach(date => {
+                                                const mg = getMgForDate(date, previousCyclesForDosage, previousDailyLogs);
+                                                if (mg !== null) previousMgValues.push(mg);
+                                            });
+
+                                            if (recentMgValues.length > 0 || previousMgValues.length > 0) {
+                                                const recentAvgDosage = recentMgValues.length > 0
+                                                    ? recentMgValues.reduce((sum, mg) => sum + mg, 0) / recentMgValues.length
                                                     : 0;
-                                                const previousAvgDosage = previousLogsWithDosage.length > 0
-                                                    ? previousLogsWithDosage.reduce((sum, d) => sum + d.mg, 0) / previousLogsWithDosage.length
+                                                const previousAvgDosage = previousMgValues.length > 0
+                                                    ? previousMgValues.reduce((sum, mg) => sum + mg, 0) / previousMgValues.length
                                                     : 0;
 
                                                 progressData.dosage = {
