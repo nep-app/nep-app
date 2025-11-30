@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import * as Icons from '../Icons';
+
+// Import markdown files as raw strings at build time
+import LICENSE_MD from '../../../LICENSE.md?raw';
+import TERMS_MD from '../../../TERMS_OF_USE.md?raw';
+import GOVERNANCE_MD from '../../../ETHICAL_GOVERNANCE.md?raw';
 
 export const LegalModal = ({
   isOpen,
@@ -7,46 +12,25 @@ export const LegalModal = ({
   darkMode,
   documentType // 'license', 'terms', 'governance'
 }) => {
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(true);
-
   const documentConfig = {
     license: {
       title: '📜 Licença',
-      file: '/LICENSE.md'
+      content: LICENSE_MD
     },
     terms: {
       title: '📋 Termos de Uso',
-      file: '/TERMS_OF_USE.md'
+      content: TERMS_MD
     },
     governance: {
       title: '⚖️ Governança Ética',
-      file: '/ETHICAL_GOVERNANCE.md'
+      content: GOVERNANCE_MD
     }
   };
 
-  useEffect(() => {
-    if (isOpen && documentType) {
-      setLoading(true);
-      const config = documentConfig[documentType];
-
-      fetch(config.file)
-        .then(res => res.text())
-        .then(text => {
-          setContent(text);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error('Error loading document:', error);
-          setContent('Erro ao carregar documento.');
-          setLoading(false);
-        });
-    }
-  }, [isOpen, documentType]);
-
   if (!isOpen) return null;
 
-  const config = documentConfig[documentType];
+  const config = documentType ? documentConfig[documentType] : null;
+  const content = config ? config.content : '';
 
   // Simple markdown-to-HTML converter for basic formatting
   const renderMarkdown = (text) => {
@@ -120,15 +104,9 @@ export const LegalModal = ({
         </div>
 
         <div className="overflow-y-auto flex-1 pr-2">
-          {loading ? (
-            <div className={'text-center py-12 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
-              A carregar documento...
-            </div>
-          ) : (
-            <div className="markdown-content">
-              {renderMarkdown(content)}
-            </div>
-          )}
+          <div className="markdown-content">
+            {renderMarkdown(content)}
+          </div>
         </div>
 
         <div className="mt-4 pt-4 border-t" style={{ borderColor: darkMode ? '#374151' : '#e5e7eb' }}>
