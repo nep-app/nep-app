@@ -29,6 +29,7 @@ const CycleModal = lazy(() => import('./components/modals/CycleModal').then(modu
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
+const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 
 // Import UI components
 import { AlertCard } from './components/ui/AlertCard';
@@ -70,6 +71,10 @@ function HarmReductionTracker() {
             const [wellbeingToShow, setWellbeingToShow] = useState(14);
             const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
             const [thoughtsToShow, setThoughtsToShow] = useState(10);
+
+            // Legal Modal State
+            const [showLegalModal, setShowLegalModal] = useState(false);
+            const [legalDocType, setLegalDocType] = useState(null); // 'license', 'terms', 'governance'
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
@@ -1496,8 +1501,85 @@ return {
 
             if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">A carregar... 🔄</div></div>);
 
-            // ALTERAÇÃO 3: Título do login "NEP app"
-            if (!user) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full"><h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">NEP app</h1><p className="text-gray-600 mb-6">Sincroniza entre dispositivos 💜</p><form onSubmit={handleAuth} className="space-y-4"><input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required /><input type="password" placeholder="Password (mínimo 6 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400" required />{authError && (<div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{authError}</div>)}<button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium">{isLogin ? 'Entrar' : 'Criar Conta'}</button><button type="button" onClick={() => setIsLogin(!isLogin)} className="w-full text-purple-600 text-sm hover:underline">{isLogin ? 'Criar conta nova' : 'Já tenho conta'}</button></form><p className="text-xs text-gray-500 mt-6">💡 Usa o mesmo email e password no PC e telemóvel para sincronizar</p></div></div>);
+            // Auth Screen
+            if (!user) return (
+                <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
+                        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+                            NEP App
+                        </h1>
+                        <p className="text-gray-600 mb-6">Sincroniza entre dispositivos 💜</p>
+                        <form onSubmit={handleAuth} className="space-y-4">
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                                required
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password (mínimo 6 caracteres)"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                                required
+                            />
+                            {authError && (
+                                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{authError}</div>
+                            )}
+                            {!isLogin && (
+                                <div className="bg-purple-50 p-3 rounded-lg text-xs text-purple-900">
+                                    <p className="mb-2">
+                                        Ao criar conta, concordas com os{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setLegalDocType('terms');
+                                                setShowLegalModal(true);
+                                            }}
+                                            className="text-purple-600 font-semibold hover:underline"
+                                        >
+                                            Termos de Uso
+                                        </button>
+                                        .
+                                    </p>
+                                </div>
+                            )}
+                            <button
+                                type="submit"
+                                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
+                            >
+                                {isLogin ? 'Entrar' : 'Criar Conta'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsLogin(!isLogin)}
+                                className="w-full text-purple-600 text-sm hover:underline"
+                            >
+                                {isLogin ? 'Criar conta nova' : 'Já tenho conta'}
+                            </button>
+                        </form>
+                        <p className="text-xs text-gray-500 mt-6">
+                            💡 Usa o mesmo email e password no PC e telemóvel para sincronizar
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2 text-center">
+                            Copyright © Teresa Castro
+                        </p>
+                    </div>
+
+                    {/* Legal Modal for auth screen */}
+                    <Suspense fallback={null}>
+                        <LegalModal
+                            isOpen={showLegalModal}
+                            onClose={() => setShowLegalModal(false)}
+                            darkMode={false}
+                            documentType={legalDocType}
+                        />
+                    </Suspense>
+                </div>
+            );
 
             return (
                 <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
@@ -5961,6 +6043,10 @@ return {
                                         exportToCSV={exportToCSV}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
+                                        onOpenLegalDoc={(docType) => {
+                                            setLegalDocType(docType);
+                                            setShowLegalModal(true);
+                                        }}
                                     />
                                 </Suspense>
                             )}
@@ -6045,6 +6131,15 @@ return {
                                 onClose={() => setShowThoughtsModal(false)}
                                 darkMode={darkMode}
                                 onSubmit={submitThoughts}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <LegalModal
+                                isOpen={showLegalModal}
+                                onClose={() => setShowLegalModal(false)}
+                                darkMode={darkMode}
+                                documentType={legalDocType}
                             />
                         </Suspense>
 
