@@ -75,7 +75,7 @@ function HarmReductionTracker() {
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
@@ -353,11 +353,12 @@ function HarmReductionTracker() {
                         triggers: cycleForm.triggers,
                         notes: cycleForm.notes,
                         lastBefore00: cycleForm.lastBefore00,
-                        // Converter mg para número (se tiver valor)
-                        ...(cycleForm.mg && cycleForm.mg !== '' ? { mg: parseFloat(cycleForm.mg) } : {})
+                        // Converter mg e sleep para número (se tiver valor)
+                        ...(cycleForm.mg && cycleForm.mg !== '' ? { mg: parseFloat(cycleForm.mg) } : {}),
+                        ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                     };
                     await addCycle(item);
-                    setCycleForm({ bedtime: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
+                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
@@ -550,11 +551,43 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'sleep_hours') {
-                    const recentLogs = wellbeingLogs.slice(0, 7);
-                    if (recentLogs.length === 0) return 0;
-                    const logsWithSleep = recentLogs.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
-                    if (logsWithSleep.length === 0) return 0;
-                    const avgSleep = logsWithSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / logsWithSleep.length;
+                    // Buscar sono dos últimos 7 dias de cycles e wellbeingLogs
+                    const last7Dates = [...Array(7)].map((_, i) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        return d.toISOString().split('T')[0];
+                    });
+
+                    const sleepValues = [];
+                    last7Dates.forEach(date => {
+                        // Primeiro tenta buscar em cycles
+                        const cycle = cycles.find(c => {
+                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
+                        });
+                        if (cycle) {
+                            const sleepValue = typeof cycle.sleep === 'number' ? cycle.sleep : parseFloat(cycle.sleep);
+                            if (!isNaN(sleepValue) && sleepValue > 0) {
+                                sleepValues.push(sleepValue);
+                                return;
+                            }
+                        }
+
+                        // Fallback: buscar em wellbeingLogs
+                        const wellbeing = wellbeingLogs.find(w => {
+                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
+                        });
+                        if (wellbeing) {
+                            const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
+                            if (!isNaN(sleepValue) && sleepValue > 0) {
+                                sleepValues.push(sleepValue);
+                            }
+                        }
+                    });
+
+                    if (sleepValues.length === 0) return 0;
+                    const avgSleep = sleepValues.reduce((sum, val) => sum + val, 0) / sleepValues.length;
                     if (avgSleep >= goal.target) return 100;
                     const progress = (avgSleep / goal.target) * 100;
                     return Math.max(0, Math.min(100, progress));
@@ -728,16 +761,38 @@ function HarmReductionTracker() {
                 if (goal.type === 'sleep_hours') {
                     // REGRA: Conta dias com sono ≥ target (7h ou mais)
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+                    // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
                     const today = new Date().toLocaleDateString('pt-PT');
 
-                    dataWellbeing.forEach(log => {
-                        if (log.sleep != null) {
-                            const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                            if (logDate === today) {
-                                return; // Skip today
-                            }
+                    // Coletar datas únicas de cycles e wellbeingLogs
+                    const allDates = new Set([
+                        ...dataCycles.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                        ...dataWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                    ]);
 
-                            const isAchieved = parseFloat(log.sleep) >= parseFloat(goal.target);
+                    allDates.forEach(date => {
+                        const dateObj = new Date(date);
+                        const dateStr = dateObj.toLocaleDateString('pt-PT');
+                        if (dateStr === today) return; // Skip today
+
+                        // Primeiro tenta buscar em cycles
+                        const cycle = dataCycles.find(c => {
+                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            return cycleDate === date && c.sleep != null;
+                        });
+                        if (cycle) {
+                            const isAchieved = parseFloat(cycle.sleep) >= parseFloat(goal.target);
+                            if (isAchieved) achievedCount++;
+                            return;
+                        }
+
+                        // Fallback: buscar em wellbeingLogs
+                        const wellbeing = dataWellbeing.find(w => {
+                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            return wDate === date && w.sleep != null;
+                        });
+                        if (wellbeing) {
+                            const isAchieved = parseFloat(wellbeing.sleep) >= parseFloat(goal.target);
                             if (isAchieved) achievedCount++;
                         }
                     });
@@ -877,12 +932,38 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'sleep_hours') {
-                    dataWellbeing.forEach(log => {
-                        if (log.sleep == null) return;
-                        const logDate = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                        if (logDate === today) return; // Skip today
-                        total++;
-                        if (parseFloat(log.sleep) >= parseFloat(goal.target)) achieved++;
+                    // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
+                    // Coletar datas únicas de cycles e wellbeingLogs
+                    const allDates = new Set([
+                        ...dataCycles.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                        ...dataWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                    ]);
+
+                    allDates.forEach(date => {
+                        const dateObj = new Date(date);
+                        const dateStr = dateObj.toLocaleDateString('pt-PT');
+                        if (dateStr === today) return; // Skip today
+
+                        // Primeiro tenta buscar em cycles
+                        const cycle = dataCycles.find(c => {
+                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            return cycleDate === date && c.sleep != null;
+                        });
+                        if (cycle) {
+                            total++;
+                            if (parseFloat(cycle.sleep) >= parseFloat(goal.target)) achieved++;
+                            return;
+                        }
+
+                        // Fallback: buscar em wellbeingLogs
+                        const wellbeing = dataWellbeing.find(w => {
+                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            return wDate === date && w.sleep != null;
+                        });
+                        if (wellbeing) {
+                            total++;
+                            if (parseFloat(wellbeing.sleep) >= parseFloat(goal.target)) achieved++;
+                        }
                     });
                 }
 
@@ -2434,16 +2515,65 @@ return {
                                                 };
                                             }
 
-                                            // 3. BEM-ESTAR - Sono
-                                            const recentSleepLogs = recentWellbeing.filter(w => w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep)));
-                                            const previousSleepLogs = previousWellbeing.filter(w => w.sleep !== undefined && w.sleep !== null && w.sleep !== '' && !isNaN(parseFloat(w.sleep)));
+                                            // 3. BEM-ESTAR - Sono (from cycles and wellbeingLogs)
+                                            // Helper para extrair sono de cycles + wellbeingLogs por data
+                                            const getSleepForDate = (date, cyclesData, wellbeingData) => {
+                                                // Primeiro tenta buscar nos cycles
+                                                const cycle = cyclesData.find(c => {
+                                                    const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                    return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
+                                                });
+                                                if (cycle) {
+                                                    const sleepValue = typeof cycle.sleep === 'number' ? cycle.sleep : parseFloat(cycle.sleep);
+                                                    if (!isNaN(sleepValue) && sleepValue > 0) {
+                                                        return sleepValue;
+                                                    }
+                                                }
 
-                                            if (recentSleepLogs.length > 0 || previousSleepLogs.length > 0) {
-                                                const recentAvgSleep = recentSleepLogs.length > 0
-                                                    ? recentSleepLogs.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / recentSleepLogs.length
+                                                // Fallback: buscar nos wellbeingLogs
+                                                const wellbeing = wellbeingData.find(w => {
+                                                    const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                    return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
+                                                });
+                                                if (wellbeing) {
+                                                    const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
+                                                    if (!isNaN(sleepValue) && sleepValue > 0) {
+                                                        return sleepValue;
+                                                    }
+                                                }
+
+                                                return null;
+                                            };
+
+                                            // Obter todas as datas únicas dos períodos para sono
+                                            const recentSleepDates = new Set([
+                                                ...recentCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...recentWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                                            ]);
+                                            const previousSleepDates = new Set([
+                                                ...previousCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...previousWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                                            ]);
+
+                                            // Coletar valores de sono
+                                            const recentSleepValues = [];
+                                            recentSleepDates.forEach(date => {
+                                                const sleep = getSleepForDate(date, recentCyclesForDosage, recentWellbeing);
+                                                if (sleep !== null) recentSleepValues.push(sleep);
+                                            });
+
+                                            const previousSleepValues = [];
+                                            previousSleepDates.forEach(date => {
+                                                const sleep = getSleepForDate(date, previousCyclesForDosage, previousWellbeing);
+                                                if (sleep !== null) previousSleepValues.push(sleep);
+                                            });
+
+                                            if (recentSleepValues.length > 0 || previousSleepValues.length > 0) {
+                                                const recentAvgSleep = recentSleepValues.length > 0
+                                                    ? recentSleepValues.reduce((sum, sleep) => sum + sleep, 0) / recentSleepValues.length
                                                     : 0;
-                                                const previousAvgSleep = previousSleepLogs.length > 0
-                                                    ? previousSleepLogs.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / previousSleepLogs.length
+                                                const previousAvgSleep = previousSleepValues.length > 0
+                                                    ? previousSleepValues.reduce((sum, sleep) => sum + sleep, 0) / previousSleepValues.length
                                                     : 0;
 
                                                 progressData.sleep = {
@@ -5535,12 +5665,18 @@ return {
                                         // Apply temporal filter
                                         const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
 
-                                        const tempFilteredReflections = filterByDateRange(reflections, dateRange);
-                                        const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange);
-                                        const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date');
-                                        const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange);
-                                        const tempFilteredCycles = filterByDateRange(cycles, dateRange);
-                                        const tempFilteredThoughts = filterByDateRange(thoughts, dateRange);
+                                        const tempFilteredReflections = filterByDateRange(reflections, dateRange)
+                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+                                        const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange)
+                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
+                                        const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date')
+                                            .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
+                                        const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange)
+                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                        const tempFilteredCycles = filterByDateRange(cycles, dateRange)
+                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                        const tempFilteredThoughts = filterByDateRange(thoughts, dateRange)
+                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
 
                                         // Apply topic filter
                                         let filteredReflections = tempFilteredReflections;

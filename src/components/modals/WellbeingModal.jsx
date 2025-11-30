@@ -36,19 +36,6 @@ export const WellbeingModal = ({
         </div>
         <div className="space-y-4">
           <div>
-            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Horas de sono</label>
-            <input
-              type="number"
-              min="0"
-              max="24"
-              step="0.5"
-              value={wellbeingForm.sleep}
-              onChange={(e) => setWellbeingForm({...wellbeingForm, sleep: e.target.value})}
-              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400'}
-              placeholder="Ex: 7.5"
-            />
-          </div>
-          <div>
             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Humor: {wellbeingForm.mood}/10</label>
             <input
               type="range"
