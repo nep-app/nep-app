@@ -1,10 +1,10 @@
 import React from 'react';
 
-export const StatCard = ({
+export const StatsWidget = ({
   label,
   value,
   subtext,
-  icon: Icon,
+  icon: IconOrEmoji,
   color = 'purple',
   darkMode
 }) => {
@@ -44,9 +44,13 @@ export const StatCard = ({
   return (
     <div className={`${colors.bg} rounded-xl p-4 border ${colors.border}`}>
       <div className="flex items-center gap-3">
-        {Icon && (
+        {IconOrEmoji && (
           <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colors.icon} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-            <Icon className="w-5 h-5 text-white" />
+            {typeof IconOrEmoji === 'string' ? (
+              <span className="text-xl">{IconOrEmoji}</span>
+            ) : (
+              <IconOrEmoji className="w-5 h-5 text-white" />
+            )}
           </div>
         )}
         <div className="flex-1 min-w-0">

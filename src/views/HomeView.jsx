@@ -4,7 +4,7 @@ import { MotivationalCard } from '../components/ui/MotivationalCard';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
-import { StatCard } from '../components/ui/StatCard';
+import { StatsWidget } from '../components/ui/StatsWidget';
 
 export function HomeView({
   darkMode,
@@ -275,25 +275,25 @@ export function HomeView({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <StatCard
+        <StatsWidget
           icon="📝"
           label="Registos"
           value={consumptions.length}
           darkMode={darkMode}
         />
-        <StatCard
+        <StatsWidget
           icon="🎯"
           label="Ciclos"
           value={cycles.length}
           darkMode={darkMode}
         />
-        <StatCard
+        <StatsWidget
           icon="💚"
           label="Bem-estar"
           value={wellbeingLogs.length}
           darkMode={darkMode}
         />
-        <StatCard
+        <StatsWidget
           icon="🎪"
           label="Metas"
           value={goals.length}
