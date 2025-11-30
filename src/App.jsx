@@ -78,7 +78,7 @@ function HarmReductionTracker() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
-            const [wellbeingForm, setWellbeingForm] = useState({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
@@ -247,15 +247,6 @@ function HarmReductionTracker() {
             const submitWellbeing = async () => {
                 try {
 
-                    // Validate sleep hours
-                    if (wellbeingForm.sleep !== '') {
-                        const sleepValidation = validateSleepHours(wellbeingForm.sleep);
-                        if (!sleepValidation.valid) {
-                            showToast('✗ ' + sleepValidation.error, 'error');
-                            return;
-                        }
-                    }
-
                     // Validate mood
                     if (wellbeingForm.mood !== '') {
                         const moodValidation = validateMoodEnergy(wellbeingForm.mood);
@@ -287,7 +278,6 @@ function HarmReductionTracker() {
                         date: getTodayKey(),
                         timestamp: new Date().toISOString(),
                         cycleId: currentCycle,
-                        sleep: wellbeingForm.sleep !== '' ? parseFloat(wellbeingForm.sleep) : null,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         water: wellbeingForm.water,
@@ -298,7 +288,7 @@ function HarmReductionTracker() {
                         notes: sanitizeText(wellbeingForm.notes)
                     };
                     await addWellbeingLog(item);
-                    setWellbeingForm({ sleep: '', mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
                     showToast('✓ Bem-estar guardado', 'success');
                 } catch (error) {
@@ -4060,15 +4050,8 @@ return {
                                                                                 const cyclesMgData = [];
 
                                                                                 analysisCycles.forEach(cycle => {
-                                                                                    // Somar mg de todos os consumos deste ciclo
-                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => {
-                                                                                        const cTime = new Date(c.timestamp);
-                                                                                        const wakeTime = new Date(cycle.wakeup);
-                                                                                        const bedTime = new Date(cycle.bedtime);
-                                                                                        return cTime >= bedTime && cTime <= wakeTime;
-                                                                                    });
-
-                                                                                    const cycleMg = cycleConsumptions.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+                                                                                    // Usar cycle.mg diretamente (fonte única de verdade)
+                                                                                    const cycleMg = parseFloat(cycle.mg) || 0;
                                                                                     if (cycleMg > 0) {
                                                                                         totalMg += cycleMg;
                                                                                         cyclesWithMg++;
@@ -4082,12 +4065,8 @@ return {
 
                                                                                 // Ciclos sem consumo após 00h
                                                                                 const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
-                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => {
-                                                                                        const cTime = new Date(c.timestamp);
-                                                                                        const wakeTime = new Date(cycle.wakeup);
-                                                                                        const bedTime = new Date(cycle.bedtime);
-                                                                                        return cTime >= bedTime && cTime <= wakeTime;
-                                                                                    });
+                                                                                    // Filtrar consumos deste ciclo pelo cycleId
+                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => c.cycleId === cycle.id);
 
                                                                                     // Verificar se algum consumo foi após 00h
                                                                                     const hasLateConsumption = cycleConsumptions.some(c => {
