@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc, enableIndexedDbPersistence, query, orderBy, limit } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const DataContext = createContext();
@@ -20,11 +20,9 @@ export const DataProvider = ({ children }) => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const dbInstance = getFirestore(firebaseApp);
 
-    // Enable offline persistence (original behavior)
+    // Enable offline persistence
     enableIndexedDbPersistence(dbInstance).catch((err) => {
-      if (err.code === 'failed-precondition') {
-      } else if (err.code === 'unimplemented') {
-      }
+      // Ignore errors (e.g. if already enabled or not supported)
     });
 
     return {
@@ -37,6 +35,9 @@ export const DataProvider = ({ children }) => {
   // User state
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Data Loading State
+  const [isFullHistoryLoaded, setIsFullHistoryLoaded] = useState(false);
 
   // Data states
   const [consumptions, setConsumptions] = useState([]);
@@ -73,47 +74,69 @@ export const DataProvider = ({ children }) => {
 
     const unsubscribers = [];
 
-    // Consumptions listener (estrutura original: users/{userId}/consumptions)
+    // Helper to create query based on loading state
+    // If full history not requested, limit to recent items (e.g. last 50)
+    // Consumptions: sort by timestamp desc
+    const consumptionsQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/consumptions`)
+        : query(collection(db, `users/${user.uid}/consumptions`), orderBy('timestamp', 'desc'), limit(100));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
+      onSnapshot(consumptionsQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setConsumptions(data);
       })
     );
 
-    // Daily logs listener
+    // Daily logs: sort by date desc
+    const dailyLogsQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/dailyLogs`)
+        : query(collection(db, `users/${user.uid}/dailyLogs`), orderBy('date', 'desc'), limit(30));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), (snapshot) => {
+      onSnapshot(dailyLogsQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
         setDailyLogs(data);
       })
     );
 
-    // Reflections listener
+    // Reflections: sort by date desc
+    const reflectionsQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/reflections`)
+        : query(collection(db, `users/${user.uid}/reflections`), orderBy('date', 'desc'), limit(30));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/reflections`), (snapshot) => {
+      onSnapshot(reflectionsQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
         setReflections(data);
       })
     );
 
-    // Wellbeing logs listener
+    // Wellbeing logs: sort by date desc
+    const wellbeingQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/wellbeingLogs`)
+        : query(collection(db, `users/${user.uid}/wellbeingLogs`), orderBy('date', 'desc'), limit(30));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), (snapshot) => {
+      onSnapshot(wellbeingQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
         setWellbeingLogs(data);
       })
     );
 
-    // Cycles listener
+    // Cycles: sort by timestamp desc
+    const cyclesQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/cycles`)
+        : query(collection(db, `users/${user.uid}/cycles`), orderBy('timestamp', 'desc'), limit(30));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/cycles`), (snapshot) => {
+      onSnapshot(cyclesQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setCycles(data);
       })
     );
 
-    // Goals listener
+    // Goals: small collection, always load all
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/goals`), (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data());
@@ -121,7 +144,7 @@ export const DataProvider = ({ children }) => {
       })
     );
 
-    // Coping strategies listener (se existir)
+    // Coping strategies: small collection, always load all
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/copingStrategies`), (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data());
@@ -129,18 +152,29 @@ export const DataProvider = ({ children }) => {
       })
     );
 
-    // Thoughts listener
+    // Thoughts: sort by timestamp desc
+    const thoughtsQuery = isFullHistoryLoaded
+        ? collection(db, `users/${user.uid}/thoughts`)
+        : query(collection(db, `users/${user.uid}/thoughts`), orderBy('timestamp', 'desc'), limit(30));
+
     unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/thoughts`), (snapshot) => {
+      onSnapshot(thoughtsQuery, (snapshot) => {
         const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setThoughts(data);
       })
     );
 
     return () => unsubscribers.forEach(unsub => unsub());
-  }, [user]);
+  }, [user, isFullHistoryLoaded]); // Re-run when user or loading preference changes
 
-  // CRUD operations (estrutura original: users/{userId}/collection)
+  // Action to load full history
+  const loadFullHistory = () => {
+      if (!isFullHistoryLoaded) {
+          setIsFullHistoryLoaded(true);
+      }
+  };
+
+  // CRUD operations
   const addConsumption = async (data) => {
     if (!user) return;
     return await setDoc(doc(db, `users/${user.uid}/consumptions`, data.id), data);
@@ -211,11 +245,19 @@ export const DataProvider = ({ children }) => {
     return await setDoc(doc(db, `users/${user.uid}/thoughts`, data.id), data);
   };
 
+  // Generic delete for any collection
+  const deleteItem = async (collectionName, id) => {
+      if (!user) return;
+      return await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id));
+  };
+
   const value = {
     auth,
     db,
     user,
     loading,
+    isFullHistoryLoaded,
+    loadFullHistory,
     consumptions,
     dailyLogs,
     reflections,
@@ -238,6 +280,7 @@ export const DataProvider = ({ children }) => {
     addCopingStrategy,
     deleteCopingStrategy,
     addThought,
+    deleteItem // Exporting generic delete
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
