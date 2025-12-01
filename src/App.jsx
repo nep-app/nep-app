@@ -1347,7 +1347,30 @@ return {
             const todayCount = todayConsumptions.length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
-            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && c.timestamp >= currentCycle.timestamp)).length : 0;
+
+            // Calculate cycle start time based on bedtime, not cycle creation timestamp
+            const getCycleStartTime = (cycle) => {
+                if (!cycle || !cycle.bedtime) return cycle.timestamp;
+
+                // Parse the bedtime (format "HH:MM") and create a timestamp
+                const cycleDate = new Date(cycle.timestamp);
+                const [hours, minutes] = cycle.bedtime.split(':').map(Number);
+
+                // Create a date with the bedtime
+                const bedtimeDate = new Date(cycleDate);
+                bedtimeDate.setHours(hours, minutes, 0, 0);
+
+                // If bedtime is after the cycle creation time (e.g., bedtime was yesterday)
+                // subtract one day
+                if (bedtimeDate > cycleDate) {
+                    bedtimeDate.setDate(bedtimeDate.getDate() - 1);
+                }
+
+                return bedtimeDate.toISOString();
+            };
+
+            const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
+            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && cycleStartTime && c.timestamp >= cycleStartTime)).length : 0;
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
