@@ -19,14 +19,14 @@ export const CycleModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' rounded-2xl p-6 max-w-md w-full max-h-[90vh] flex flex-col'} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>🌙 Novo Ciclo</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <Icons.X />
           </button>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto pr-2">
           <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
             Cria um novo ciclo quando acordas. Este registo documenta o período que acabou (desde o último acordar até agora).
           </p>
