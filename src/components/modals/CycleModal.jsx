@@ -27,9 +27,13 @@ export const CycleModal = ({
           </button>
         </div>
         <div className="space-y-4">
-          <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>Marcar um novo ciclo muda a frase motivacional e a reflexão diária.</p>
+          <p className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-600') + ''}>
+            Cria um novo ciclo quando acordas. Este registo documenta o período que acabou (desde o último acordar até agora).
+          </p>
           <div>
-            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Hora a que te deitaste</label>
+            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
+              Hora a que te deitaste <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(ciclo anterior)</span>
+            </label>
             <input
               type="time"
               value={cycleForm.bedtime}
@@ -38,7 +42,9 @@ export const CycleModal = ({
             />
           </div>
           <div>
-            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Horas de sono</label>
+            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
+              Horas de sono <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(última noite)</span>
+            </label>
             <input
               type="number"
               min="0"
@@ -73,13 +79,15 @@ export const CycleModal = ({
             </div>
           </div>
           <div>
-            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>Consumo diário (mg)</label>
+            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
+              Dosagem total consumida (mg) <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(pesada, ciclo anterior)</span>
+            </label>
             <input
               type="number"
               value={cycleForm.mg || ''}
               onChange={(e) => setCycleForm({...cycleForm, mg: e.target.value})}
-              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400'}
-              placeholder="Dosagem total do dia em mg"
+              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400'}
+              placeholder="Dosagem total pesada do período que acabou"
             />
           </div>
           <div>
