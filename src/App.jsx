@@ -127,26 +127,48 @@ function HarmReductionTracker() {
             // Auto-associate consumptions to cycles when data is loaded
             useEffect(() => {
                 if (!user || !db || cycles.length === 0 || consumptions.length === 0) return;
-                if (hasAutoAssociatedRef.current) return; // Only run once
 
-                const consumptionsWithoutCycle = consumptions.filter(c => !c.cycleId);
-                if (consumptionsWithoutCycle.length === 0) return;
+                // Create a unique key based on cycles and consumptions to avoid unnecessary reruns
+                const dataKey = `${cycles.map(c => c.id).join(',')}-${consumptions.map(c => c.id + c.cycleId).join(',')}`;
+                if (hasAutoAssociatedRef.current === dataKey) return;
 
-                hasAutoAssociatedRef.current = true;
+                hasAutoAssociatedRef.current = dataKey;
 
                 const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
+                // Helper function to calculate cycle start time based on bedtime
+                const getCycleStartTimestamp = (cycle) => {
+                    if (!cycle.bedtime) return cycle.timestamp;
+
+                    const cycleDate = new Date(cycle.timestamp);
+                    const [hours, minutes] = cycle.bedtime.split(':').map(Number);
+
+                    const bedtimeDate = new Date(cycleDate);
+                    bedtimeDate.setHours(hours, minutes, 0, 0);
+
+                    // If bedtime is after cycle creation time, subtract one day
+                    if (bedtimeDate > cycleDate) {
+                        bedtimeDate.setDate(bedtimeDate.getDate() - 1);
+                    }
+
+                    return bedtimeDate.toISOString();
+                };
+
                 // Run association asynchronously to avoid blocking
                 (async () => {
-                    for (const consumption of consumptionsWithoutCycle) {
+                    for (const consumption of consumptions) {
                         let assignedCycleId = null;
 
                         for (let i = 0; i < sortedCycles.length; i++) {
                             const cycle = sortedCycles[i];
                             const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
 
-                            const isAfterCycleStart = consumption.timestamp >= cycle.timestamp;
-                            const isBeforeNextCycle = !nextCycle || consumption.timestamp < nextCycle.timestamp;
+                            // Use bedtime as cycle start, not creation timestamp
+                            const cycleStart = getCycleStartTimestamp(cycle);
+                            const nextCycleStart = nextCycle ? getCycleStartTimestamp(nextCycle) : null;
+
+                            const isAfterCycleStart = consumption.timestamp >= cycleStart;
+                            const isBeforeNextCycle = !nextCycleStart || consumption.timestamp < nextCycleStart;
 
                             if (isAfterCycleStart && isBeforeNextCycle) {
                                 assignedCycleId = cycle.id;
@@ -158,8 +180,11 @@ function HarmReductionTracker() {
                             assignedCycleId = sortedCycles[0].id;
                         }
 
-                        const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
-                        await addConsumption(updatedConsumption);
+                        // Only update if the cycle assignment has changed
+                        if (consumption.cycleId !== assignedCycleId) {
+                            const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
+                            await addConsumption(updatedConsumption);
+                        }
                     }
                 })();
             }, [user, db, cycles, consumptions]);
@@ -1370,7 +1395,7 @@ return {
             };
 
             const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
-            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id || (!c.cycleId && cycleStartTime && c.timestamp >= cycleStartTime)).length : 0;
+            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
             const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
