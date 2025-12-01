@@ -98,6 +98,15 @@ export function calculateBadges(data) {
         badgesList.push({ id: 'selfcare_complete', title: 'Autocuidado Completo', description: 'Completaste todos os itens de autocuidado', icon: '⭐', color: 'yellow' });
     }
 
+    // Explorador de Emoções (10+ emoções diferentes registadas)
+    const uniqueEmotions = new Set();
+    wellbeingLogs.forEach(w => {
+        if (w.emotions) w.emotions.forEach(e => uniqueEmotions.add(e));
+    });
+    if (uniqueEmotions.size >= 10) {
+        badgesList.push({ id: 'emotion_explorer', title: 'Explorador de Emoções', description: `Registaste ${uniqueEmotions.size} emoções diferentes`, icon: '🎭', color: 'blue' });
+    }
+
     // ===== CICLOS (apenas o maior nível) =====
 
     const cycleCount = cycles.length;
@@ -128,6 +137,16 @@ export function calculateBadges(data) {
         }
     }
 
+    // Madrugador Saudável (ciclos com bedtime antes das 23h)
+    const earlyBedtimeCycles = cycles.filter(c => {
+        if (!c.bedtime) return false;
+        const [hours] = c.bedtime.split(':').map(Number);
+        return hours < 23;
+    });
+    if (earlyBedtimeCycles.length >= 5) {
+        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes das 23h`, icon: '🌙', color: 'indigo' });
+    }
+
     // ===== METAS =====
 
     // Goal completion badge
@@ -136,6 +155,38 @@ export function calculateBadges(data) {
         badgesList.push({ id: 'goal_3', title: 'Campeão de Metas', description: `${completedGoals.length} metas atingidas`, icon: '🏆', color: 'pink' });
     } else if (completedGoals.length >= 1) {
         badgesList.push({ id: 'goal_1', title: 'Meta Atingida', description: `${completedGoals.length} meta(s) completa(s)`, icon: '🎯', color: 'pink' });
+    }
+
+    // ===== COMBINAÇÕES E PADRÕES =====
+
+    // Diário Completo (reflexão + bem-estar + ciclo no mesmo dia)
+    const reflectionDates = new Set(reflections.map(r => r.date));
+    const wellbeingDates = new Set(wellbeingLogs.map(w => w.date));
+    const cycleDates = new Set(cycles.map(c => c.date));
+
+    const completeDiaryDays = [...reflectionDates].filter(date =>
+        wellbeingDates.has(date) && cycleDates.has(date)
+    );
+
+    if (completeDiaryDays.length >= 1) {
+        badgesList.push({ id: 'complete_diary', title: 'Diário Completo', description: `${completeDiaryDays.length} dia(s) com reflexão + bem-estar + ciclo`, icon: '📖', color: 'yellow' });
+    }
+
+    // Semana Equilibrada (atingir todas as metas pelo menos uma vez numa semana)
+    if (goals.length > 0) {
+        // Agrupar progresso de metas por semana
+        const now = new Date();
+        const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+
+        const goalsAchievedThisWeek = goals.filter(g => {
+            const progress = getGoalProgress(g);
+            return progress >= 100;
+        });
+
+        // Se todas as metas foram atingidas esta semana
+        if (goalsAchievedThisWeek.length === goals.length && goals.length >= 2) {
+            badgesList.push({ id: 'balanced_week', title: 'Semana Equilibrada', description: 'Atingiste todas as metas esta semana', icon: '⚖️', color: 'pink' });
+        }
     }
 
     // ===== REDUÇÃO E PROGRESSO =====
@@ -151,6 +202,24 @@ export function calculateBadges(data) {
             const reduction = firstWeekCount - lastWeekCount;
             if (reduction > 0) {
                 badgesList.push({ id: 'reduction', title: 'Redução de Consumo', description: `Reduziste ${reduction} consumos vs primeira semana`, icon: '📉', color: 'green' });
+            }
+        }
+    }
+
+    // Redução Significativa (50%+ comparando primeiro mês vs último mês)
+    if (consumptions.length > 0) {
+        const dates = [...new Set(consumptions.map(c => c.date))].sort();
+        if (dates.length >= 60) { // Pelo menos 60 dias de dados
+            const firstMonthDates = dates.slice(0, 30);
+            const lastMonthDates = dates.slice(-30);
+            const firstMonthCount = consumptions.filter(c => firstMonthDates.includes(c.date)).length;
+            const lastMonthCount = consumptions.filter(c => lastMonthDates.includes(c.date)).length;
+
+            if (firstMonthCount > 0) {
+                const reductionPercent = ((firstMonthCount - lastMonthCount) / firstMonthCount) * 100;
+                if (reductionPercent >= 50) {
+                    badgesList.push({ id: 'significant_reduction', title: 'Redução Significativa', description: `Reduziste ${Math.round(reductionPercent)}% do consumo (primeiro mês vs último)`, icon: '🎯', color: 'green' });
+                }
             }
         }
     }
