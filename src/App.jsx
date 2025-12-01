@@ -4564,7 +4564,68 @@ return {
                                                                                     </p>
                                                                                 );
                                                                             })()}
-                
+
+                                                                            {/* Paragraph: Análise de Energia nos Últimos Consumos */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 1) return null;
+
+                                                                                // Pegar os últimos 10 consumos (ou menos se não houver 10)
+                                                                                const sortedConsumptions = [...analysisConsumptions].sort((a, b) =>
+                                                                                    new Date(b.timestamp) - new Date(a.timestamp)
+                                                                                );
+                                                                                const last10Consumptions = sortedConsumptions.slice(0, 10);
+
+                                                                                // Para cada consumo, encontrar o check-in de bem-estar mais próximo no mesmo dia
+                                                                                let countWithLowEnergy = 0;
+                                                                                let countWithData = 0;
+
+                                                                                last10Consumptions.forEach(cons => {
+                                                                                    const consDate = cons.date;
+                                                                                    const consTime = new Date(cons.timestamp);
+
+                                                                                    // Encontrar check-ins de bem-estar do mesmo dia
+                                                                                    const sameDayWellbeing = analysisWellbeing.filter(w => {
+                                                                                        const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                        return wDate === consDate && w.energy != null;
+                                                                                    });
+
+                                                                                    if (sameDayWellbeing.length === 0) return;
+
+                                                                                    // Encontrar o check-in mais próximo (antes ou depois do consumo)
+                                                                                    const closestWellbeing = sameDayWellbeing.reduce((closest, current) => {
+                                                                                        const currentTime = new Date(current.timestamp);
+                                                                                        const closestTime = new Date(closest.timestamp);
+                                                                                        const currentDiff = Math.abs(currentTime - consTime);
+                                                                                        const closestDiff = Math.abs(closestTime - consTime);
+                                                                                        return currentDiff < closestDiff ? current : closest;
+                                                                                    });
+
+                                                                                    countWithData++;
+                                                                                    if (parseInt(closestWellbeing.energy) < 4) {
+                                                                                        countWithLowEnergy++;
+                                                                                    }
+                                                                                });
+
+                                                                                // Só mostrar se houver pelo menos 5 consumos com dados de energia
+                                                                                if (countWithData < 5) return null;
+
+                                                                                const percentage = Math.round((countWithLowEnergy / countWithData) * 100);
+
+                                                                                // Só mostrar se pelo menos 50% dos consumos tinham energia baixa
+                                                                                if (percentage < 50) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        ⚡ <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Energia e Consumo:</strong> Das últimas {countWithData} vezes que consumiste, <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>{countWithLowEnergy} tinham check-in com energia baixa (&lt;4)</strong>.
+                                                                                        {percentage >= 70 ? (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Isto sugere uma forte correlação entre cansaço e consumo.</span> Considera estratégias de gestão de energia (pausas, descanso, nutrição) como parte do teu plano de redução de danos.</>
+                                                                                        ) : (
+                                                                                            <> Isto sugere que o cansaço pode ser um gatilho. Identifica formas de recarregar energia antes de recorrer ao consumo.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 12: Autoconhecimento */}
                                                                             {(analysisWellbeing.length > 3 || analysisCycles.length > 2) && (
                                                                                 <p>
@@ -5393,6 +5454,112 @@ return {
                                                                                     Sem dados de hora de deitar registados
                                                                                 </div>
                                                                             )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
+
+                                                                {/* Gatilhos/Emoções → Consumo */}
+                                                                {(() => {
+                                                                    // Analisar gatilhos e emoções de alto risco
+                                                                    const triggerData = {};
+                                                                    const emotionData = {};
+
+                                                                    filteredCycles.forEach(cycle => {
+                                                                        if (!cycle.triggers || cycle.triggers.length === 0) return;
+                                                                        const cycleDate = safeToISODate(cycle.timestamp);
+                                                                        if (!cycleDate) return;
+                                                                        const dayConsumptions = filteredConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                        cycle.triggers.forEach(trigger => {
+                                                                            if (!triggerData[trigger]) {
+                                                                                triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                            }
+                                                                            triggerData[trigger].count++;
+                                                                            triggerData[trigger].totalConsumptions += dayConsumptions;
+                                                                            triggerData[trigger].days.push(dayConsumptions);
+                                                                        });
+                                                                    });
+
+                                                                    // Análise de emoções
+                                                                    analysisWellbeing.forEach(w => {
+                                                                        if (!w.emotions || w.emotions.length === 0) return;
+                                                                        const wDate = w.date || safeToISODate(w.timestamp);
+                                                                        if (!wDate) return;
+                                                                        const dayConsumptions = filteredConsumptions.filter(c => c.date === wDate).length;
+
+                                                                        w.emotions.forEach(emotion => {
+                                                                            if (!emotionData[emotion]) {
+                                                                                emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                            }
+                                                                            emotionData[emotion].count++;
+                                                                            emotionData[emotion].totalConsumptions += dayConsumptions;
+                                                                            emotionData[emotion].days.push(dayConsumptions);
+                                                                        });
+                                                                    });
+
+                                                                    // Calcular médias e identificar alto risco
+                                                                    const avgConsumptions = filteredConsumptions.length / Math.max(1, [...new Set(filteredConsumptions.map(c => c.date))].length);
+
+                                                                    const highRiskTriggers = Object.entries(triggerData)
+                                                                        .map(([trigger, data]) => ({
+                                                                            trigger,
+                                                                            avgConsumptions: data.totalConsumptions / data.count,
+                                                                            count: data.count
+                                                                        }))
+                                                                        .filter(t => t.avgConsumptions > avgConsumptions && t.count >= 2);
+
+                                                                    const highRiskEmotions = Object.entries(emotionData)
+                                                                        .map(([emotion, data]) => ({
+                                                                            emotion,
+                                                                            avgConsumptions: data.totalConsumptions / data.count,
+                                                                            count: data.count
+                                                                        }))
+                                                                        .filter(e => e.avgConsumptions > avgConsumptions && e.count >= 2);
+
+                                                                    // Identificar se ansiedade/stress estão presentes
+                                                                    const anxietyStressTriggers = highRiskTriggers.filter(t =>
+                                                                        t.trigger.toLowerCase().includes('ansiedade') ||
+                                                                        t.trigger.toLowerCase().includes('stress') ||
+                                                                        t.trigger.toLowerCase().includes('ansioso')
+                                                                    );
+
+                                                                    const anxietyStressEmotions = highRiskEmotions.filter(e =>
+                                                                        e.emotion.toLowerCase().includes('ansioso') ||
+                                                                        e.emotion.toLowerCase().includes('stress') ||
+                                                                        e.emotion.toLowerCase().includes('nervoso')
+                                                                    );
+
+                                                                    const hasAnxietyStress = anxietyStressTriggers.length > 0 || anxietyStressEmotions.length > 0;
+
+                                                                    if (!hasAnxietyStress) return null;
+
+                                                                    // Construir lista de gatilhos/emoções identificados
+                                                                    const identifiedItems = [];
+                                                                    anxietyStressTriggers.forEach(t => identifiedItems.push(t.trigger));
+                                                                    anxietyStressEmotions.forEach(e => identifiedItems.push(e.emotion));
+
+                                                                    return (
+                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>😰💊 Gatilhos Emocionais vs Consumo</h3>
+                                                                            <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                Correlação entre estados emocionais e padrões de consumo
+                                                                            </p>
+                                                                            <div className={(darkMode ? 'bg-orange-900/20 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border'}>
+                                                                                <div className="flex items-start gap-3">
+                                                                                    <span className="text-2xl">⚠️</span>
+                                                                                    <div className="flex-1">
+                                                                                        <div className={'font-semibold mb-2 ' + (darkMode ? 'text-orange-300' : 'text-orange-700')}>
+                                                                                            Padrão Identificado
+                                                                                        </div>
+                                                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-orange-200/90' : 'text-orange-900/90')}>
+                                                                                            Pareces mais propenso/a a consumir quando te sentes: <strong>{identifiedItems.join(', ')}</strong>.
+                                                                                        </div>
+                                                                                        <div className={'text-xs mt-3 ' + (darkMode ? 'text-orange-400/70' : 'text-orange-700/70')}>
+                                                                                            💡 Identificar este padrão é o primeiro passo. Prepara estratégias DBT (skills de tolerância ao distress) para quando estes estados surgirem.
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     );
                                                                 })()}

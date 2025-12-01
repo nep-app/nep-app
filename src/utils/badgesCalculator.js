@@ -137,14 +137,14 @@ export function calculateBadges(data) {
         }
     }
 
-    // Madrugador Saudável (ciclos com bedtime antes das 23h)
+    // Madrugador Saudável (ciclos com bedtime antes das 00h/meia-noite)
     const earlyBedtimeCycles = cycles.filter(c => {
         if (!c.bedtime) return false;
         const [hours] = c.bedtime.split(':').map(Number);
-        return hours < 23;
+        return hours < 24 && hours >= 0; // Antes da meia-noite (0h seria já o dia seguinte)
     });
     if (earlyBedtimeCycles.length >= 5) {
-        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes das 23h`, icon: '🌙', color: 'indigo' });
+        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes da meia-noite`, icon: '🌙', color: 'indigo' });
     }
 
     // ===== METAS =====
@@ -190,6 +190,54 @@ export function calculateBadges(data) {
     }
 
     // ===== REDUÇÃO E PROGRESSO =====
+
+    // Níveis progressivos diários (1, 3, 7, 14 dias de redução consecutiva)
+    if (consumptions.length > 0) {
+        const dates = [...new Set(consumptions.map(c => c.date))].sort();
+
+        // Agrupar consumos por dia
+        const dailyCounts = {};
+        consumptions.forEach(c => {
+            dailyCounts[c.date] = (dailyCounts[c.date] || 0) + 1;
+        });
+
+        // Encontrar sequências de redução consecutiva
+        let currentStreak = 0;
+        let maxStreak = 0;
+
+        for (let i = 1; i < dates.length; i++) {
+            const yesterday = dates[i - 1];
+            const today = dates[i];
+
+            // Verificar se os dias são consecutivos
+            const yesterdayDate = new Date(yesterday);
+            const todayDate = new Date(today);
+            const daysDiff = (todayDate - yesterdayDate) / (1000 * 60 * 60 * 24);
+
+            if (daysDiff === 1) {
+                // Verificar se houve redução
+                if (dailyCounts[today] < dailyCounts[yesterday]) {
+                    currentStreak++;
+                    maxStreak = Math.max(maxStreak, currentStreak);
+                } else {
+                    currentStreak = 0;
+                }
+            } else {
+                currentStreak = 0;
+            }
+        }
+
+        // Atribuir badges baseados no maior streak (apenas o maior nível)
+        if (maxStreak >= 14) {
+            badgesList.push({ id: 'daily_reduction_14', title: 'Redução Consistente', description: `${maxStreak} dias consecutivos de redução`, icon: '💎', color: 'purple' });
+        } else if (maxStreak >= 7) {
+            badgesList.push({ id: 'daily_reduction_7', title: 'Semana de Redução', description: `${maxStreak} dias consecutivos de redução`, icon: '🥇', color: 'yellow' });
+        } else if (maxStreak >= 3) {
+            badgesList.push({ id: 'daily_reduction_3', title: 'Redução em Progresso', description: `${maxStreak} dias consecutivos de redução`, icon: '🥈', color: 'gray' });
+        } else if (maxStreak >= 1) {
+            badgesList.push({ id: 'daily_reduction_1', title: 'Primeiro Dia de Redução', description: `Reduziste consumo comparado ao dia anterior`, icon: '🥉', color: 'orange' });
+        }
+    }
 
     // Reduction badge (compare first week vs last week)
     if (consumptions.length > 0) {
