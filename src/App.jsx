@@ -6158,6 +6158,12 @@ return {
                                                                             <span className="font-medium">{cycle.bedtime}</span>
                                                                         </div>
                                                                     )}
+                                                                    {cycle.sleep && (
+                                                                        <div className={'text-sm mb-1 ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={(themeClasses.textTertiary(darkMode))}>Horas de sono: </span>
+                                                                            <span className="font-medium">{cycle.sleep}h</span>
+                                                                        </div>
+                                                                    )}
                                                                     {cycle.triggers && cycle.triggers.length > 0 && (
                                                                         <div className={'text-sm mb-1 ' + (themeClasses.textSecondary(darkMode))}>
                                                                             <span className={(themeClasses.textTertiary(darkMode))}>Gatilhos: </span>
