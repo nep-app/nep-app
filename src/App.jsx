@@ -1983,11 +1983,11 @@ return {
                                                 <div className="text-2xl">🏆</div>
                                                 <div>
                                                     <h3 className={'font-bold ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
-                                                    <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length + (streaks.current >= 3 ? 1 : 0)} conquistas</p>
+                                                    <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</p>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {badges.slice(0, 4).map(badge => (
+                                            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                                                {badges.map(badge => (
                                                     <div key={badge.id} className={(darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-700/80 border-gray-600' : 'bg-gradient-to-br from-white to-gray-50 border-' + badge.color + '-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
                                                         <div className="text-xl">{badge.icon}</div>
                                                         <div className="flex-1 min-w-0">
@@ -1995,14 +1995,6 @@ return {
                                                         </div>
                                                     </div>
                                                 ))}
-                                                {streaks.current >= 3 && (
-                                                    <div className={(darkMode ? 'bg-gradient-to-br from-orange-900/80 to-red-900/80 border-orange-600' : 'bg-gradient-to-br from-orange-100 to-red-100 border-orange-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
-                                                        <div className="text-xl">💪</div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className={'font-bold text-xs ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>Streak! {streaks.current} dias</div>
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     )}

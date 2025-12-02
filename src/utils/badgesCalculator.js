@@ -6,19 +6,20 @@ export function calculateBadges(data) {
     const badgesList = [];
 
     // ===== MARCOS INICIAIS (Primeiras vezes) =====
+    // NOTA: Só mostram se ainda não atingiste níveis superiores
 
-    // First reflection
-    if (reflections.length >= 1) {
+    // First reflection (só se ainda não tens ≥5 reflexões)
+    if (reflections.length >= 1 && reflections.length < 5) {
         badgesList.push({ id: 'first_reflection', title: 'Primeira Reflexão', description: 'Começaste a jornada de autoconhecimento', icon: '🌱', color: 'green' });
     }
 
-    // First wellbeing check
-    if (wellbeingLogs.length >= 1) {
+    // First wellbeing check (só se ainda não tens ≥7 check-ins)
+    if (wellbeingLogs.length >= 1 && wellbeingLogs.length < 7) {
         badgesList.push({ id: 'first_wellbeing', title: 'Primeiro Check-in', description: 'Começaste a monitorizar o teu bem-estar', icon: '💚', color: 'blue' });
     }
 
-    // First cycle tracked
-    if (cycles.length >= 1) {
+    // First cycle tracked (só se ainda não tens ≥5 ciclos)
+    if (cycles.length >= 1 && cycles.length < 5) {
         badgesList.push({ id: 'first_cycle', title: 'Primeiro Ciclo', description: 'Registaste o teu primeiro ciclo', icon: '🎯', color: 'indigo' });
     }
 
@@ -137,14 +138,14 @@ export function calculateBadges(data) {
         }
     }
 
-    // Madrugador Saudável (ciclos com bedtime antes das 00h/meia-noite)
+    // Madrugador Saudável (ciclos com bedtime antes das 23h)
     const earlyBedtimeCycles = cycles.filter(c => {
         if (!c.bedtime) return false;
         const [hours] = c.bedtime.split(':').map(Number);
-        return hours < 24 && hours >= 0; // Antes da meia-noite (0h seria já o dia seguinte)
+        return hours < 23; // Antes das 23h
     });
     if (earlyBedtimeCycles.length >= 5) {
-        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes da meia-noite`, icon: '🌙', color: 'indigo' });
+        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes das 23h`, icon: '🌙', color: 'indigo' });
     }
 
     // ===== METAS =====
