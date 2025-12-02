@@ -138,14 +138,14 @@ export function calculateBadges(data) {
         }
     }
 
-    // Madrugador Saudável (ciclos com bedtime antes das 23h)
+    // Madrugador Saudável (ciclos com bedtime antes da meia-noite)
     const earlyBedtimeCycles = cycles.filter(c => {
         if (!c.bedtime) return false;
         const [hours] = c.bedtime.split(':').map(Number);
-        return hours < 23; // Antes das 23h
+        return hours < 24; // Antes da meia-noite (00h)
     });
     if (earlyBedtimeCycles.length >= 5) {
-        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes das 23h`, icon: '🌙', color: 'indigo' });
+        badgesList.push({ id: 'early_sleeper', title: 'Madrugador Saudável', description: `${earlyBedtimeCycles.length} ciclos com hora de deitar antes da meia-noite`, icon: '🌙', color: 'indigo' });
     }
 
     // ===== METAS =====
