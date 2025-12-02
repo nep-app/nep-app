@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const GoalModal = ({
   isOpen,
@@ -11,6 +12,13 @@ export const GoalModal = ({
   onSubmit
 }) => {
   const [selectedType, setSelectedType] = useState(null);
+
+  const handleSubmit = () => {
+    onSubmit();
+    setSelectedType(null);
+  };
+
+  useModalKeyboard(isOpen, onClose, selectedType ? handleSubmit : null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -35,11 +43,6 @@ export const GoalModal = ({
   };
 
   const handleBack = () => {
-    setSelectedType(null);
-  };
-
-  const handleSubmit = () => {
-    onSubmit();
     setSelectedType(null);
   };
 

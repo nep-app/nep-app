@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const EditConsumptionModal = ({
   isOpen,
@@ -10,6 +11,8 @@ export const EditConsumptionModal = ({
   onSubmit,
   safeDate
 }) => {
+  useModalKeyboard(isOpen, onClose, onSubmit);
+
   if (!isOpen || !editingConsumption) return null;
 
   return (

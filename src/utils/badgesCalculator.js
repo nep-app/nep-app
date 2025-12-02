@@ -1,6 +1,8 @@
 // Badge calculation logic extracted for better organization and reusability
 // NOTA: Cada tipo de conquista só mostra o maior nível atingido para evitar redundância
 
+import { sanitizeBadgeList } from './sanitize';
+
 export function calculateBadges(data) {
     const { consumptions, reflections, wellbeingLogs, cycles, goals, getGoalProgress } = data;
     const badgesList = [];
@@ -299,5 +301,6 @@ export function calculateBadges(data) {
         }
     }
 
-    return badgesList;
+    // Sanitizar todos os badges antes de retornar (proteção contra XSS)
+    return sanitizeBadgeList(badgesList);
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const ThoughtsModal = ({
   isOpen,
@@ -9,14 +10,16 @@ export const ThoughtsModal = ({
 }) => {
   const [thoughts, setThoughts] = useState('');
 
-  if (!isOpen) return null;
-
   const handleSubmit = () => {
     if (thoughts.trim().length > 0) {
       onSubmit(thoughts);
       setThoughts('');
     }
   };
+
+  useModalKeyboard(isOpen, onClose, handleSubmit);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>

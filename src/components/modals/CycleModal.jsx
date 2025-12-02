@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const CycleModal = ({
   isOpen,
@@ -9,6 +10,8 @@ export const CycleModal = ({
   setCycleForm,
   onSubmit
 }) => {
+  useModalKeyboard(isOpen, onClose, onSubmit);
+
   if (!isOpen) return null;
 
   const triggersList = [

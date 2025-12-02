@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 // Import markdown files as raw strings at build time
 import LICENSE_MD from '../../../LICENSE.md?raw';
@@ -12,6 +13,7 @@ export const LegalModal = ({
   darkMode,
   documentType // 'license', 'terms', 'governance'
 }) => {
+  useModalKeyboard(isOpen, onClose, null);
   const documentConfig = {
     license: {
       title: '📜 Licença',

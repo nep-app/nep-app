@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const ReflectionModal = ({
   isOpen,
@@ -10,6 +11,8 @@ export const ReflectionModal = ({
   setReflectionAnswer,
   onSubmit
 }) => {
+  useModalKeyboard(isOpen, onClose, onSubmit);
+
   if (!isOpen) return null;
 
   return (

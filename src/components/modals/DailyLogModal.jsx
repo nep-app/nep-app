@@ -1,5 +1,6 @@
 import React from 'react';
 import * as Icons from '../Icons';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const DailyLogModal = ({
   isOpen,
@@ -9,6 +10,8 @@ export const DailyLogModal = ({
   setDailyForm,
   onSubmit
 }) => {
+  useModalKeyboard(isOpen, onClose, onSubmit);
+
   if (!isOpen) return null;
 
   return (

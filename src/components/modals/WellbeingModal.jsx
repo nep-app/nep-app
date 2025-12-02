@@ -1,6 +1,7 @@
 import React from 'react';
 import * as Icons from '../Icons';
 import { EMOTIONS_LIST } from '../../constants/emotions';
+import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const WellbeingModal = ({
   isOpen,
@@ -12,6 +13,8 @@ export const WellbeingModal = ({
   wellbeingLogs = [],
   currentCycleId = null
 }) => {
+  useModalKeyboard(isOpen, onClose, onSubmit);
+
   if (!isOpen) return null;
 
   // Verificar se já existe registo de autocuidado neste ciclo
