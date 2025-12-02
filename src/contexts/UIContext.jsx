@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeLocalStorage } from '../utils/storage';
 
 const UIContext = createContext();
 
@@ -13,8 +14,7 @@ export const useUI = () => {
 export const UIProvider = ({ children }) => {
   // Theme
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
+    return safeLocalStorage.get('darkMode', false);
   });
 
   // Main navigation
@@ -47,7 +47,7 @@ export const UIProvider = ({ children }) => {
 
   // Persist dark mode to localStorage
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    safeLocalStorage.set('darkMode', darkMode);
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {

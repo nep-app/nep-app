@@ -1,26 +1,21 @@
 import { useState, useEffect } from 'react';
 import { getTodayKey } from '../utils/helpers';
+import { safeLocalStorage } from '../utils/storage';
 
 export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToast) => {
   const [reminderDismissed, setReminderDismissed] = useState(() => {
-    const dismissed = localStorage.getItem('reminderDismissed');
-    return dismissed ? JSON.parse(dismissed) : {};
+    return safeLocalStorage.get('reminderDismissed', {});
   });
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    try {
-      return localStorage.getItem('notificationsEnabled') === 'true';
-    } catch (e) {
-      console.error('Error reading notificationsEnabled:', e);
-      return false;
-    }
+    return safeLocalStorage.get('notificationsEnabled', false);
   });
 
   const dismissReminder = (type) => {
     const today = getTodayKey();
     const updated = { ...reminderDismissed, [type]: today };
     setReminderDismissed(updated);
-    localStorage.setItem('reminderDismissed', JSON.stringify(updated));
+    safeLocalStorage.set('reminderDismissed', updated);
   };
 
   const shouldShowReminder = (type) => {
@@ -41,7 +36,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
 
     if (Notification.permission === 'granted') {
       setNotificationsEnabled(true);
-      localStorage.setItem('notificationsEnabled', 'true');
+      safeLocalStorage.set('notificationsEnabled', true);
       showToast('✓ Notificações já estavam ativadas', 'success');
       return;
     }
@@ -50,7 +45,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         setNotificationsEnabled(true);
-        localStorage.setItem('notificationsEnabled', 'true');
+        safeLocalStorage.set('notificationsEnabled', true);
         showToast('✓ Notificações ativadas com sucesso', 'success');
       } else if (permission === 'denied') {
         showToast('✗ Negaste a permissão. Vai às definições do browser para ativar', 'error');
