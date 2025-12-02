@@ -1983,7 +1983,7 @@ return {
                                                 <div className="text-2xl">🏆</div>
                                                 <div>
                                                     <h3 className={'font-bold ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
-                                                    <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length + (streaks.current >= 3 ? 1 : 0)} vitórias</p>
+                                                    <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length + (streaks.current >= 3 ? 1 : 0)} conquistas</p>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
