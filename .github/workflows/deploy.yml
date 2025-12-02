@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - claude/novo-nep-app-em-construcao-01Ri1p3mELVUWyQG5ACPzJFf
+      - claude/aaa-mais-um-nep-app-01RMS932qZgZuuSugyiYbCwg
 
 permissions:
   contents: read

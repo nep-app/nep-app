@@ -1,7 +1,7 @@
 name: Forçar Deploy Vite
 on:
   push:
-    branches: ["claude/novo-nep-app-em-construcao-01Ri1p3mELVUWyQG5ACPzJFf"]
+    branches: ["claude/aaa-mais-um-nep-app-01RMS932qZgZuuSugyiYbCwg"]
   workflow_dispatch:
 
 permissions:
