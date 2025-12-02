@@ -1786,13 +1786,13 @@ return {
 
                                         // 3. META: Horas de sono (sleep_hours)
                                         const sleepGoal = goals.find(g => g.type === 'sleep_hours');
-                                        if (sleepGoal && wellbeingLogs.length > 0) {
-                                            const lastWellbeing = wellbeingLogs
-                                                .filter(w => w.sleep && !isNaN(parseFloat(w.sleep)))
+                                        if (sleepGoal && cycles.length > 0) {
+                                            const lastCycleWithSleep = cycles
+                                                .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
                                                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-                                            if (lastWellbeing) {
-                                                const sleepHours = parseFloat(lastWellbeing.sleep);
+                                            if (lastCycleWithSleep) {
+                                                const sleepHours = parseFloat(lastCycleWithSleep.sleep);
                                                 const targetSleep = parseFloat(sleepGoal.target);
 
                                                 if (sleepHours >= targetSleep) {
