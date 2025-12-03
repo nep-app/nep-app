@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
-import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange } from './utils/helpers';
+import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
 import * as Icons from './components/Icons';
@@ -148,7 +148,8 @@ function HarmReductionTracker() {
 
                     // If bedtime is after cycle creation time, subtract one day
                     if (bedtimeDate > cycleDate) {
-                        bedtimeDate.setDate(bedtimeDate.getDate() - 1);
+                        const adjustedDate = subtractDays(bedtimeDate, 1);
+                        bedtimeDate.setTime(adjustedDate.getTime());
                     }
 
                     return bedtimeDate.toISOString();
@@ -447,9 +448,8 @@ function HarmReductionTracker() {
             const getLast7Days = () => {
                 // Calculate avgTimes from actual consumptions in last 7 complete days
                 const last7Dates = [...Array(7)].map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (i + 1)); // Start from yesterday (exclude today)
-                    return d.toISOString().split('T')[0];
+                    const d = getDateDaysAgo(i + 1); // Start from yesterday (exclude today)
+                    return safeToISODate(d);
                 });
 
                 const totalConsumptions = last7Dates.reduce((sum, date) => {
@@ -497,9 +497,8 @@ function HarmReductionTracker() {
             const getAvgFrequencyLast7Days = () => {
                 // Exclude today (day 0) and get last 7 completed days (days 1-7)
                 const last7Dates = [...Array(7)].map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (i + 1)); // Start from yesterday
-                    return d.toISOString().split('T')[0];
+                    const d = getDateDaysAgo(i + 1); // Start from yesterday
+                    return safeToISODate(d);
                 });
 
                 let validDaysCount = 0;
@@ -573,9 +572,8 @@ function HarmReductionTracker() {
                 if (goal.type === 'sleep_hours') {
                     // Buscar sono dos últimos 7 dias de cycles e wellbeingLogs
                     const last7Dates = [...Array(7)].map((_, i) => {
-                        const d = new Date();
-                        d.setDate(d.getDate() - i);
-                        return d.toISOString().split('T')[0];
+                        const d = getDateDaysAgo(i);
+                        return safeToISODate(d);
                     });
 
                     const sleepValues = [];
@@ -1052,10 +1050,10 @@ function HarmReductionTracker() {
                 // Calculate current streak (working backwards from today)
                 if (allDates.includes(today)) {
                     currentStreak = 1;
-                    let checkDate = new Date(today);
                     for (let i = allDates.length - 2; i >= 0; i--) {
-                        checkDate.setDate(checkDate.getDate() - 1);
-                        const checkKey = checkDate.toISOString().split('T')[0];
+                        const daysAgo = allDates.length - 1 - i;
+                        const checkDate = getDateDaysAgo(daysAgo);
+                        const checkKey = safeToISODate(checkDate);
                         if (allDates[i] === checkKey) {
                             currentStreak++;
                         } else {
@@ -1388,7 +1386,8 @@ return {
                 // If bedtime is after the cycle creation time (e.g., bedtime was yesterday)
                 // subtract one day
                 if (bedtimeDate > cycleDate) {
-                    bedtimeDate.setDate(bedtimeDate.getDate() - 1);
+                    const adjustedDate = subtractDays(bedtimeDate, 1);
+                    bedtimeDate.setTime(adjustedDate.getTime());
                 }
 
                 return bedtimeDate.toISOString();
@@ -2440,32 +2439,26 @@ return {
                                             } else if (patternsPeriod === 'semana') {
                                                 // SEMANA: Esta semana vs semana anterior
                                                 periodDays = 7;
-                                                recentStart = new Date(now);
-                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentStart = subtractDays(now, periodDays);
                                                 recentEnd = now;
 
-                                                previousStart = new Date(now);
-                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousStart = subtractDays(now, periodDays * 2);
                                                 previousEnd = recentStart;
                                             } else if (patternsPeriod === 'mes') {
                                                 // MÊS: Este mês vs mês anterior
                                                 periodDays = 30;
-                                                recentStart = new Date(now);
-                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentStart = subtractDays(now, periodDays);
                                                 recentEnd = now;
 
-                                                previousStart = new Date(now);
-                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousStart = subtractDays(now, periodDays * 2);
                                                 previousEnd = recentStart;
                                             } else {
                                                 // TUDO: Últimos 30 dias vs 30 dias anteriores
                                                 periodDays = 30;
-                                                recentStart = new Date(now);
-                                                recentStart.setDate(now.getDate() - periodDays);
+                                                recentStart = subtractDays(now, periodDays);
                                                 recentEnd = now;
 
-                                                previousStart = new Date(now);
-                                                previousStart.setDate(now.getDate() - (periodDays * 2));
+                                                previousStart = subtractDays(now, periodDays * 2);
                                                 previousEnd = recentStart;
                                             }
 
@@ -4495,10 +4488,8 @@ return {
                                                                                     periodLabel = { recent: 'hoje', previous: 'ontem' };
                                                                                 } else if (patternsPeriod === 'semana') {
                                                                                     // Comparar esta semana vs semana anterior
-                                                                                    const sevenDaysAgo = new Date(now);
-                                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                                                                    const fourteenDaysAgo = new Date(now);
-                                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+                                                                                    const sevenDaysAgo = getDateDaysAgo(7);
+                                                                                    const fourteenDaysAgo = getDateDaysAgo(14);
                 
                                                                                     recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
                                                                                     previousPeriod = consumptions.filter(c => {
@@ -4520,10 +4511,8 @@ return {
                                                                                     periodLabel = { recent: 'neste mês', previous: 'no anterior' };
                                                                                 } else {
                                                                                     // 'tudo': Comparar últimos 7 dias vs 7 dias anteriores
-                                                                                    const sevenDaysAgo = new Date(now);
-                                                                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                                                                                    const fourteenDaysAgo = new Date(now);
-                                                                                    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+                                                                                    const sevenDaysAgo = getDateDaysAgo(7);
+                                                                                    const fourteenDaysAgo = getDateDaysAgo(14);
                 
                                                                                     recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
                                                                                     previousPeriod = consumptions.filter(c => {

@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
-import { getTodayKey as getTodayKeyHelper, safeToISODate } from '../utils/helpers';
+import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo } from '../utils/helpers';
 
 export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
   // Helper: Get last 7 days dates
   const getLast7Days = useMemo(() => {
     const days = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+      const d = getDateDaysAgo(i);
       days.push(safeToISODate(d));
     }
     return days;

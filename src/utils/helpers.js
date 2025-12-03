@@ -62,6 +62,48 @@ export const calculateDaysDifference = (date1, date2) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
+// ===== FUNÇÕES DE ARITMÉTICA DE DATAS (SEM MUTAÇÃO) =====
+
+/**
+ * Adiciona dias a uma data sem mutar o objeto original
+ * @param {Date|string} date - Data base
+ * @param {number} days - Número de dias a adicionar (positivo ou negativo)
+ * @returns {Date} Nova data com dias adicionados
+ */
+export const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+/**
+ * Subtrai dias de uma data sem mutar o objeto original
+ * @param {Date|string} date - Data base
+ * @param {number} days - Número de dias a subtrair
+ * @returns {Date} Nova data com dias subtraídos
+ */
+export const subtractDays = (date, days) => {
+  return addDays(date, -days);
+};
+
+/**
+ * Obtém data X dias atrás de hoje
+ * @param {number} days - Número de dias atrás
+ * @returns {Date} Data X dias atrás
+ */
+export const getDateDaysAgo = (days) => {
+  return subtractDays(new Date(), days);
+};
+
+/**
+ * Obtém data X dias no futuro
+ * @param {number} days - Número de dias no futuro
+ * @returns {Date} Data X dias à frente
+ */
+export const getDateDaysFromNow = (days) => {
+  return addDays(new Date(), days);
+};
+
 // ===== FUNÇÕES DE FORMATAÇÃO ADICIONAIS =====
 
 /**

@@ -1,4 +1,4 @@
-import { getTodayKey, safeToISODate, formatDateShort } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo } from '../utils/helpers';
 
 // ===== ANALYTICS LOGIC =====
 
@@ -54,31 +54,24 @@ export const getDateRangeForPeriod = (period, offset = 0) => {
 
     if (period === 'hoje') {
         // Today
-        end = new Date(now);
-        end.setDate(end.getDate() - offset);
+        end = subtractDays(now, offset);
         start = new Date(end);
         start.setHours(0, 0, 0, 0);
     } else if (period === 'semana') {
         // Week (last 7 days)
-        end = new Date(now);
-        end.setDate(end.getDate() - (offset * 7));
-        start = new Date(end);
-        start.setDate(start.getDate() - 6);
+        end = subtractDays(now, offset * 7);
+        start = subtractDays(end, 6);
         start.setHours(0, 0, 0, 0);
     } else if (period === 'mes') {
         // Month (last 30 days)
-        end = new Date(now);
-        end.setDate(end.getDate() - (offset * 30));
-        start = new Date(end);
-        start.setDate(start.getDate() - 29);
+        end = subtractDays(now, offset * 30);
+        start = subtractDays(end, 29);
         start.setHours(0, 0, 0, 0);
     } else {
         // tudo (últimos 30 dias - mesma lógica que Progresso)
         const periodDays = 30;
-        end = new Date(now);
-        end.setDate(end.getDate() - (offset * periodDays));
-        start = new Date(end);
-        start.setDate(start.getDate() - (periodDays - 1));
+        end = subtractDays(now, offset * periodDays);
+        start = subtractDays(end, periodDays - 1);
         start.setHours(0, 0, 0, 0);
     }
 
@@ -115,8 +108,7 @@ export const getPeriodLabel = (period, offset) => {
     }
 
     if (period === 'hoje') {
-        const date = new Date();
-        date.setDate(date.getDate() - offset);
+        const date = getDateDaysAgo(offset);
         return formatDateShort(date);
     }
     if (period === 'semana') return `${offset} ${offset === 1 ? 'semana' : 'semanas'} atrás`;
@@ -202,8 +194,7 @@ export const getTodayConsumptions = (consumptions) => {
 export const getLast7Days = (consumptions) => {
     const days = [];
     for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+        const date = getDateDaysAgo(i);
         const dateKey = safeToISODate(date);
         const count = consumptions.filter(c => c.date === dateKey).length;
         days.push({
