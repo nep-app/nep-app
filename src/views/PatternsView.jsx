@@ -6,6 +6,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
+import HeatmapChart from '../components/HeatmapChart';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -248,6 +249,14 @@ export function PatternsView({
                                                             <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-2xl font-bold'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Heatmap */}
+                                                    <HeatmapChart
+                                                        consumptions={consumptions}
+                                                        wellbeingLogs={wellbeingLogs}
+                                                        darkMode={darkMode}
+                                                        days={90}
+                                                    />
 
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
