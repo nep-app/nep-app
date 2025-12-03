@@ -13,9 +13,14 @@ const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, calculatePears
 
 export function AnalysesView({
     analysisSubView,
-    setAnalysisSubView
+    setAnalysisSubView,
+    patternsPeriod,
+    setPatternsPeriod,
+    patternsPeriodOffset,
+    setPatternsPeriodOffset,
+    getGoalAchievementCount
 }) {
-    const { consumptions, wellbeingLogs, cycles } = useData();
+    const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const { darkMode, currentCycle } = useUI();
     const metrics = useMetrics();
 

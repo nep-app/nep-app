@@ -28,7 +28,7 @@ export function HistoryView({
     openEditConsumption,
     deleteItem
 }) {
-    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, db } = useData();
+    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const { darkMode } = useUI();
     const metrics = useMetrics();
 

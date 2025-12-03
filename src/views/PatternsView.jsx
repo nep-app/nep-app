@@ -7,7 +7,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT, subtractDays } from '../utils/helpers';
 
-const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
 export function PatternsView({
     patternsPeriod,
@@ -15,7 +15,8 @@ export function PatternsView({
     patternsPeriodOffset,
     setPatternsPeriodOffset,
     patternView,
-    setPatternView
+    setPatternView,
+    getGoalAchievementCount
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const { darkMode } = useUI();

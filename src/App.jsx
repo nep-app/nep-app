@@ -1254,6 +1254,7 @@ return {
                                         setPatternsPeriodOffset={setPatternsPeriodOffset}
                                         patternView={patternView}
                                         setPatternView={setPatternView}
+                                        getGoalAchievementCount={getGoalAchievementCount}
                                     />
                                 </Suspense>
                             )}
@@ -1262,6 +1263,11 @@ return {
                                     <AnalysesView
                                         analysisSubView={analysisSubView}
                                         setAnalysisSubView={setAnalysisSubView}
+                                        patternsPeriod={patternsPeriod}
+                                        setPatternsPeriod={setPatternsPeriod}
+                                        patternsPeriodOffset={patternsPeriodOffset}
+                                        setPatternsPeriodOffset={setPatternsPeriodOffset}
+                                        getGoalAchievementCount={getGoalAchievementCount}
                                     />
                                 </Suspense>
                             )}
