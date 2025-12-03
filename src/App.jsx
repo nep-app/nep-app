@@ -6,11 +6,11 @@ import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
+import { useMetrics } from './contexts/MetricsContext';
 import { useUI } from './contexts/UIContext';
 import { useToast } from './hooks/useToast';
 import { useAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
-import { useAnalysis } from './hooks/useAnalysis';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -50,8 +50,8 @@ function HarmReductionTracker() {
             const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
             const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, consumptions, cycles, showToast);
 
-            // Use analysis hook for centralized metrics (eliminates duplications)
-            const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals);
+            // Use metrics context for centralized analytics and computations
+            const metrics = useMetrics();
 
             // App error state
             const [appError, setAppError] = useState(null);
@@ -262,7 +262,7 @@ function HarmReductionTracker() {
             const submitDailyLog = async () => {
                 try {
                     const currentCycle = getCurrentCycleId();
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: analysis.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: metrics.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
                     await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '' });
                     setShowDailyLogModal(false);
@@ -427,11 +427,10 @@ function HarmReductionTracker() {
             };
 
             // ===== 5. DATA PROCESSING & ANALYTICS =====
-            // NOTE: intervalStats, lastInterval, todayConsumptions, temporalCorrelations, bidirectionalAnalysis, streaks
-            // são todos calculados pelo hook useAnalysis (linha 54) - DUPLICAÇÕES REMOVIDAS
-
-            // Time since last consumption (not duplicated - unique calculation)
-            const getTimeSinceLastConsumption = () => analyticsService.calculateTimeSinceLastConsumption(consumptions);
+            // NOTE: All analytics metrics are now provided by MetricsContext (via useMetrics hook)
+            // Available metrics: intervalStats, lastInterval, todayConsumptions, streaks,
+            //                    temporalCorrelations, bidirectionalAnalysis, timeSinceLastConsumption,
+            //                    last7Days, avgFrequencyLast7Days, getGoalProgress
 
             // Date range and filtering functions from analytics service
             const getDateRangeForPeriod = (period, offset = 0) => analyticsService.getDateRangeForPeriod(period, offset);
@@ -439,208 +438,12 @@ function HarmReductionTracker() {
             const getPeriodLabel = (period, offset) => analyticsService.getPeriodLabel(period, offset);
             const excludeToday = (items, dateField = 'date') => analyticsService.excludeToday(items, dateField);
 
-            const getLast7Days = () => {
-                // Calculate avgTimes from actual consumptions in last 7 complete days
-                const last7Dates = [...Array(7)].map((_, i) => {
-                    const d = getDateDaysAgo(i + 1); // Start from yesterday (exclude today)
-                    return safeToISODate(d);
-                });
-
-                const totalConsumptions = last7Dates.reduce((sum, date) => {
-                    return sum + consumptions.filter(c => c.date === date).length;
-                }, 0);
-
-                const avgTimes = (totalConsumptions / 7).toFixed(1);
-
-                // Calculate avgMg from cycles (novo) ou dailyLogs (compatibilidade)
-                const mgValues = [];
-
-                last7Dates.forEach(date => {
-                    // Buscar primeiro nos cycles (novo método)
-                    // BUGFIX: cycles antigos só têm timestamp, não date - fazer fallback
-                    const cycle = cycles.find(c => {
-                        const cycleDate = getDateKeyFromItem(c);
-                        return cycleDate === date && c.mg !== undefined && c.mg !== '';
-                    });
-                    if (cycle) {
-                        const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            mgValues.push(mgValue);
-                            return;
-                        }
-                    }
-
-                    // Fallback: buscar nos dailyLogs (compatibilidade)
-                    const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-                    if (dailyLog) {
-                        const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            mgValues.push(mgValue);
-                        }
-                    }
-                });
-
-                const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
-
-                return { avgTimes, avgMg };
-            };
+            // REMOVED: getLast7Days - now in MetricsContext as metrics.last7Days
+            // REMOVED: getAvgFrequencyLast7Days - now in MetricsContext as metrics.avgFrequencyLast7Days
+            // REMOVED: getGoalProgress - now in MetricsContext as metrics.getGoalProgress(goal)
+            // REMOVED: getTimeSinceLastConsumption - now in MetricsContext as metrics.timeSinceLastConsumption
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
-
-            // Helper: Get average frequency with new rules (2h+ intervals)
-            const getAvgFrequencyLast7Days = () => {
-                // Exclude today (day 0) and get last 7 completed days (days 1-7)
-                const last7Dates = [...Array(7)].map((_, i) => {
-                    const d = getDateDaysAgo(i + 1); // Start from yesterday
-                    return safeToISODate(d);
-                });
-
-                let validDaysCount = 0;
-                let totalConsumptions = 0;
-
-                last7Dates.forEach(date => {
-                    const dayConsumptions = consumptions.filter(c => c.date === date);
-                    if (dayConsumptions.length === 0) return;
-
-                    // Check interval rule if more than 1 consumption
-                    if (dayConsumptions.length === 1) {
-                        validDaysCount++;
-                        totalConsumptions += 1;
-                        return;
-                    }
-
-                    const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
-                    let longIntervals = 0;
-                    for (let i = 1; i < sorted.length; i++) {
-                        const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);
-                        if (intervalHours >= 2) longIntervals++;
-                    }
-
-                    const totalIntervals = sorted.length - 1;
-                    if (longIntervals >= totalIntervals / 2) {
-                        validDaysCount++;
-                        totalConsumptions += dayConsumptions.length;
-                    }
-                });
-
-                return validDaysCount > 0 ? (totalConsumptions / validDaysCount) : 0;
-            };
-
-            // ALTERAÇÃO 2 e 7: Corrigir progresso de metas + adicionar meta "hora do último consumo"
-            const getGoalProgress = (goal) => {
-                if (goal.type === 'reduce_frequency') {
-                    const avgLast7 = getAvgFrequencyLast7Days();
-                    if (avgLast7 === 0) return 100; // No consumptions = goal achieved
-                    if (avgLast7 <= goal.target) return 100;
-                    const baseline = Math.max(avgLast7, goal.target * 2);
-                    const progress = ((baseline - avgLast7) / (baseline - goal.target)) * 100;
-                    return Math.max(0, Math.min(100, progress));
-                }
-                
-                if (goal.type === 'reduce_quantity') {
-                    const avgLast7Mg = parseFloat(getLast7Days().avgMg);
-                    if (avgLast7Mg === 0) return 0;
-                    if (avgLast7Mg < goal.target) return 100;
-                    const baseline = Math.max(avgLast7Mg, goal.target * 2);
-                    const progress = ((baseline - avgLast7Mg) / (baseline - goal.target)) * 100;
-                    return Math.max(0, Math.min(100, progress));
-                }
-                
-                if (goal.type === 'increase_interval') {
-                    if (!analysis.intervalStats) return 0;
-                    const avg = parseFloat(analysis.intervalStats.avgHours);
-                    if (avg >= goal.target) return 100;
-                    const progress = (avg / goal.target) * 100;
-                    return Math.max(0, Math.min(100, progress));
-                }
-                
-                // ALTERAÇÃO 7: Nova meta "Hora do último consumo diário"
-                if (goal.type === 'limit_last') {
-                    const recentCycles = cycles.slice(0, 15);
-                    if (recentCycles.length === 0) return 0;
-                    const successCycles = recentCycles.filter(c => c.lastBefore00 === true).length;
-                    return Math.min(100, (successCycles / recentCycles.length) * 100);
-                }
-
-                if (goal.type === 'sleep_hours') {
-                    // Buscar sono dos últimos 7 dias de cycles e wellbeingLogs
-                    const last7Dates = [...Array(7)].map((_, i) => {
-                        const d = getDateDaysAgo(i);
-                        return safeToISODate(d);
-                    });
-
-                    const sleepValues = [];
-                    last7Dates.forEach(date => {
-                        // Primeiro tenta buscar em cycles
-                        const cycle = cycles.find(c => {
-                            const cycleDate = getDateKeyFromItem(c);
-                            return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
-                        });
-                        if (cycle) {
-                            const sleepValue = typeof cycle.sleep === 'number' ? cycle.sleep : parseFloat(cycle.sleep);
-                            if (!isNaN(sleepValue) && sleepValue > 0) {
-                                sleepValues.push(sleepValue);
-                                return;
-                            }
-                        }
-
-                        // Fallback: buscar em wellbeingLogs
-                        const wellbeing = wellbeingLogs.find(w => {
-                            const wDate = getDateKeyFromItem(w);
-                            return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
-                        });
-                        if (wellbeing) {
-                            const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
-                            if (!isNaN(sleepValue) && sleepValue > 0) {
-                                sleepValues.push(sleepValue);
-                            }
-                        }
-                    });
-
-                    if (sleepValues.length === 0) return 0;
-                    const avgSleep = sleepValues.reduce((sum, val) => sum + val, 0) / sleepValues.length;
-                    if (avgSleep >= goal.target) return 100;
-                    const progress = (avgSleep / goal.target) * 100;
-                    return Math.max(0, Math.min(100, progress));
-                }
-
-                if (goal.type === 'bedtime_before') {
-                    const recentCycles = cycles.slice(0, 7);
-                    if (recentCycles.length === 0) return 0;
-                    const cyclesWithBedtime = recentCycles.filter(c => c.bedtime);
-                    if (cyclesWithBedtime.length === 0) return 0;
-
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                    let successCount = 0;
-                    cyclesWithBedtime.forEach(cycle => {
-                        const bedtimeParts = cycle.bedtime.split(':');
-                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-                        const bedtimeOriginalMinutes = bedtimeMinutes;
-
-                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
-                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-                        // Ajustar madrugada
-                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
-                            bedtimeMinutes += 1440;
-                        }
-
-                        let targetAdjusted = targetMinutes;
-                        if (targetMinutes >= 0 && targetMinutes < 360) {
-                            targetAdjusted += 1440;
-                        }
-
-                        if (bedtimeMinutes <= targetAdjusted && isHealthyBedtime) successCount++;
-                    });
-
-                    return Math.min(100, (successCount / cyclesWithBedtime.length) * 100);
-                }
-
-                return 0;
-            };
 
             const getGoalAchievementCount = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
                 // Usar dados filtrados se fornecidos, caso contrário usar todos os dados
@@ -1017,7 +820,7 @@ function HarmReductionTracker() {
             };
 
             // Streak calculation
-            // getStreaks() removed - using analysis.streaks from useAnalysis hook
+            // getStreaks() removed - using metrics.streaks from useAnalysis hook
 
             // ===== 7. BADGES & ACHIEVEMENTS =====
             // Memoized badges calculation (extracted to separate file for better organization)
@@ -1027,8 +830,8 @@ function HarmReductionTracker() {
                 wellbeingLogs,
                 cycles,
                 goals,
-                getGoalProgress
-            }), [consumptions, reflections, wellbeingLogs, cycles, goals]);
+                getGoalProgress: metrics.getGoalProgress
+            }), [consumptions, reflections, wellbeingLogs, cycles, goals, metrics.getGoalProgress]);
 
             // ===== INTELLIGENT INSIGHTS & SENTIMENT ANALYSIS =====
             // Analyze sentiment in text using keyword matching
@@ -1051,7 +854,7 @@ return {
 
             // Memoized temporal correlation analysis (optimized)
             // NOTE: temporalCorrelations and bidirectionalAnalysis removed (dead code - never used)
-            // If needed, these are available via analysis.temporalCorrelations and analysis.bidirectionalAnalysis from useAnalysis hook
+            // If needed, these are available via metrics.temporalCorrelations and metrics.bidirectionalAnalysis from useAnalysis hook
 
             // Analyze intra-day variation (how mood/energy change throughout the same day)
             const getIntraDayVariation = () => {
@@ -1121,7 +924,7 @@ return {
             };
 
             // Analyze emotional patterns (which emotions correlate with consumption)
-            const todayCount = analysis.todayConsumptions.length;
+            const todayCount = metrics.todayConsumptions.length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
 
@@ -1150,8 +953,8 @@ return {
             const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
             // ===== PRE-RENDER DATA PREPARATION =====
-            const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
-            const streaks = analysis.streaks;
+            const last7 = metrics.last7Days;
+            const streaks = metrics.streaks;
 
             // Memoized coping strategies based on triggers
             const copingStrategies = useMemo(() => {
@@ -1236,7 +1039,7 @@ return {
 
                 // Check interval quality
                 if (consumptions.length >= 2) {
-                    const lastIntervalData = analysis.lastInterval;
+                    const lastIntervalData = metrics.lastInterval;
                     if (lastIntervalData && !lastIntervalData.isShort) {
                         messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastIntervalData.hours}h`);
                     }
@@ -1270,7 +1073,7 @@ return {
                 }
 
                 return messages[0];
-            }, [streaks, consumptions, analysis.lastInterval, wellbeingLogs, dailyLogs]);
+            }, [streaks, consumptions, metrics.lastInterval, wellbeingLogs, dailyLogs]);
 
             // Render
             if (appError) return (
@@ -1429,7 +1232,7 @@ return {
 
 
                                     {(() => {
-                                        const timeSince = getTimeSinceLastConsumption();
+                                        const timeSince = metrics.timeSinceLastConsumption;
                                         if (timeSince) {
                                             const isLong = timeSince.hours >= 2;
                                             return (
@@ -1475,18 +1278,18 @@ return {
 
                                         // 1. META: Intervalo entre consumos (increase_interval)
                                         const intervalGoal = goals.find(g => g.type === 'increase_interval');
-                                        if (analysis.lastInterval && intervalGoal) {
+                                        if (metrics.lastInterval && intervalGoal) {
                                             const targetInterval = parseFloat(intervalGoal.target);
-                                            if (analysis.lastInterval.hours < targetInterval) {
+                                            if (metrics.lastInterval.hours < targetInterval) {
                                                 alerts.push({
-                                                    text: `Intervalo curto! ${analysis.lastInterval.hours}h`,
+                                                    text: `Intervalo curto! ${metrics.lastInterval.hours}h`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
                                                 });
                                             } else {
                                                 alerts.push({
-                                                    text: `Bom intervalo! ${analysis.lastInterval.hours}h`,
+                                                    text: `Bom intervalo! ${metrics.lastInterval.hours}h`,
                                                     emoji: '✨',
                                                     color: 'green',
                                                     type: 'positive'
@@ -1633,7 +1436,7 @@ return {
                                         // 6. META: Frequência diária (reduce_frequency)
                                         const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
                                         if (frequencyGoal) {
-                                            const todayCount = analysis.todayConsumptions.length;
+                                            const todayCount = metrics.todayConsumptions.length;
                                             const targetFrequency = parseInt(frequencyGoal.target);
 
                                             if (todayCount < targetFrequency) {
