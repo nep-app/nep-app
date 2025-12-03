@@ -3,6 +3,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
+import { safeToISODate } from '../utils/helpers';
 
 const DataContext = createContext();
 
@@ -76,7 +77,10 @@ export const DataProvider = ({ children }) => {
     // Consumptions listener (estrutura original: users/{userId}/consumptions)
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setConsumptions(data);
       })
     );
@@ -84,7 +88,10 @@ export const DataProvider = ({ children }) => {
     // Daily logs listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.date.localeCompare(a.date));
         setDailyLogs(data);
       })
     );
@@ -92,7 +99,10 @@ export const DataProvider = ({ children }) => {
     // Reflections listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/reflections`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.date.localeCompare(a.date));
         setReflections(data);
       })
     );
@@ -100,7 +110,10 @@ export const DataProvider = ({ children }) => {
     // Wellbeing logs listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.date.localeCompare(a.date));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.date.localeCompare(a.date));
         setWellbeingLogs(data);
       })
     );
@@ -108,7 +121,10 @@ export const DataProvider = ({ children }) => {
     // Cycles listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/cycles`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setCycles(data);
       })
     );
@@ -116,7 +132,10 @@ export const DataProvider = ({ children }) => {
     // Goals listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/goals`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data());
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        });
         setGoals(data);
       })
     );
@@ -124,7 +143,10 @@ export const DataProvider = ({ children }) => {
     // Coping strategies listener (se existir)
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/copingStrategies`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data());
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        });
         setCopingStrategies(data);
       })
     );
@@ -132,7 +154,10 @@ export const DataProvider = ({ children }) => {
     // Thoughts listener
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/thoughts`), (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data()).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        const data = snapshot.docs.map(doc => {
+          const item = doc.data();
+          return { ...item, date: item.date || safeToISODate(item.timestamp) };
+        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
         setThoughts(data);
       })
     );
