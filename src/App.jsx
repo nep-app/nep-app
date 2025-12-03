@@ -10,6 +10,7 @@ import { useUI } from './contexts/UIContext';
 import { useToast } from './hooks/useToast';
 import { useAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
+import { useAnalysis } from './hooks/useAnalysis';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -48,6 +49,9 @@ function HarmReductionTracker() {
             const { toasts, showToast } = useToast();
             const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
             const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, consumptions, cycles, showToast);
+
+            // Use analysis hook for centralized metrics (eliminates duplications)
+            const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals);
 
             // App error state
             const [appError, setAppError] = useState(null);
@@ -258,8 +262,7 @@ function HarmReductionTracker() {
             const submitDailyLog = async () => {
                 try {
                     const currentCycle = getCurrentCycleId();
-                    const todayConsumptions = consumptions.filter(c => c.date === getTodayKey()).length;
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: todayConsumptions, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: analysis.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
                     await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '' });
                     setShowDailyLogModal(false);
@@ -424,20 +427,11 @@ function HarmReductionTracker() {
             };
 
             // ===== 5. DATA PROCESSING & ANALYTICS =====
-            // Memoized interval statistics (optimized to prevent re-calculation)
-            const intervalStats = useMemo(() => analyticsService.calculateIntervalStats(consumptions), [consumptions]);
-            const getIntervalStats = () => intervalStats;
+            // NOTE: intervalStats, lastInterval, todayConsumptions, temporalCorrelations, bidirectionalAnalysis, streaks
+            // são todos calculados pelo hook useAnalysis (linha 54) - DUPLICAÇÕES REMOVIDAS
 
-            // Memoized last interval calculation
-            const lastInterval = useMemo(() => analyticsService.calculateLastInterval(consumptions), [consumptions]);
-            const getLastInterval = () => lastInterval;
-
-            // Time since last consumption
+            // Time since last consumption (not duplicated - unique calculation)
             const getTimeSinceLastConsumption = () => analyticsService.calculateTimeSinceLastConsumption(consumptions);
-
-            // Memoized today's consumptions
-            const todayConsumptions = useMemo(() => analyticsService.getTodayConsumptions(consumptions), [consumptions]);
-            const getTodayConsumptions = () => todayConsumptions;
 
             // Date range and filtering functions from analytics service
             const getDateRangeForPeriod = (period, offset = 0) => analyticsService.getDateRangeForPeriod(period, offset);
@@ -553,9 +547,8 @@ function HarmReductionTracker() {
                 }
                 
                 if (goal.type === 'increase_interval') {
-                    const intervalStats = getIntervalStats();
-                    if (!intervalStats) return 0;
-                    const avg = parseFloat(intervalStats.avgHours);
+                    if (!analysis.intervalStats) return 0;
+                    const avg = parseFloat(analysis.intervalStats.avgHours);
                     if (avg >= goal.target) return 100;
                     const progress = (avg / goal.target) * 100;
                     return Math.max(0, Math.min(100, progress));
@@ -1024,46 +1017,7 @@ function HarmReductionTracker() {
             };
 
             // Streak calculation
-            const getStreaks = () => {
-                if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
-
-                const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
-                const today = getTodayKey();
-
-                let currentStreak = 0;
-                let maxStreak = 1;
-                let streak = 1;
-
-                // Calculate max streak
-                for (let i = 1; i < allDates.length; i++) {
-                    const prev = new Date(allDates[i-1]);
-                    const curr = new Date(allDates[i]);
-                    const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
-                    if (diffDays === 1) {
-                        streak++;
-                        maxStreak = Math.max(maxStreak, streak);
-                    } else {
-                        streak = 1;
-                    }
-                }
-
-                // Calculate current streak (working backwards from today)
-                if (allDates.includes(today)) {
-                    currentStreak = 1;
-                    for (let i = allDates.length - 2; i >= 0; i--) {
-                        const daysAgo = allDates.length - 1 - i;
-                        const checkDate = getDateDaysAgo(daysAgo);
-                        const checkKey = safeToISODate(checkDate);
-                        if (allDates[i] === checkKey) {
-                            currentStreak++;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-
-                return { current: currentStreak, max: maxStreak };
-            };
+            // getStreaks() removed - using analysis.streaks from useAnalysis hook
 
             // ===== 7. BADGES & ACHIEVEMENTS =====
             // Memoized badges calculation (extracted to separate file for better organization)
@@ -1096,207 +1050,8 @@ return {
             };
 
             // Memoized temporal correlation analysis (optimized)
-            const temporalCorrelations = useMemo(() => {
-                if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
-
-                // Create daily data structure
-                const dailyData = {};
-
-                // Add wellbeing data
-                wellbeingLogs.forEach(w => {
-                    if (!dailyData[w.date]) dailyData[w.date] = {};
-                    dailyData[w.date].sleep = w.sleep;
-                    dailyData[w.date].mood = w.mood;
-                    dailyData[w.date].energy = w.energy;
-                });
-
-                // Add consumption counts
-                consumptions.forEach(c => {
-                    if (!dailyData[c.date]) dailyData[c.date] = {};
-                    dailyData[c.date].consumptions = (dailyData[c.date].consumptions || 0) + 1;
-                });
-
-                // Get sorted dates
-                const dates = Object.keys(dailyData).sort();
-
-                // Calculate lag-1 correlations (yesterday's value vs today's consumption)
-                const sleepLag1Data = [];
-                const moodLag1Data = [];
-
-                for (let i = 1; i < dates.length; i++) {
-                    const yesterday = dailyData[dates[i - 1]];
-                    const today = dailyData[dates[i]];
-
-                    if (yesterday.sleep && today.consumptions) {
-                        sleepLag1Data.push({ yesterdaySleep: yesterday.sleep, todayConsumptions: today.consumptions });
-                    }
-
-                    if (yesterday.mood && today.consumptions) {
-                        moodLag1Data.push({ yesterdayMood: yesterday.mood, todayConsumptions: today.consumptions });
-                    }
-                }
-
-                return {
-                    sleepLag1: {
-                        correlation: analyticsService.calculatePearsonCorrelation(sleepLag1Data, 'yesterdaySleep', 'todayConsumptions'),
-                        dataPoints: sleepLag1Data.length
-                    },
-                    moodLag1: {
-                        correlation: analyticsService.calculatePearsonCorrelation(moodLag1Data, 'yesterdayMood', 'todayConsumptions'),
-                        dataPoints: moodLag1Data.length
-                    }
-                };
-            }, [wellbeingLogs, consumptions]);
-
-            // Memoized bidirectional analysis (optimized)
-            const bidirectionalAnalysis = useMemo(() => {
-                if (wellbeingLogs.length < 2 || consumptions.length < 2) return null;
-
-                // Create daily data structure
-                const dailyData = {};
-
-                // Add wellbeing data
-                wellbeingLogs.forEach(w => {
-                    if (!dailyData[w.date]) dailyData[w.date] = {};
-                    const sleep = parseFloat(w.sleep);
-                    const mood = parseInt(w.mood);
-                    const energy = parseInt(w.energy);
-                    if (!isNaN(sleep) && sleep > 0) dailyData[w.date].sleep = sleep;
-                    if (!isNaN(mood) && mood > 0) dailyData[w.date].mood = mood;
-                    if (!isNaN(energy) && energy > 0) dailyData[w.date].energy = energy;
-                });
-
-                // Add consumption counts
-                consumptions.forEach(c => {
-                    if (!dailyData[c.date]) dailyData[c.date] = {};
-                    dailyData[c.date].consumptions = (dailyData[c.date].consumptions || 0) + 1;
-                });
-
-                // Get sorted dates
-                const dates = Object.keys(dailyData).sort();
-
-                // Same Day Impact: Today's consumption → Tonight's sleep
-                const consumptionToSleepSameDay = [];
-                dates.forEach(date => {
-                    const day = dailyData[date];
-                    if (day.consumptions && day.sleep) {
-                        consumptionToSleepSameDay.push({ consumptions: day.consumptions, sleep: day.sleep });
-                    }
-                });
-
-                // Same Day Impact: Morning consumption → Evening mood
-                const consumptionToMoodSameDay = [];
-                dates.forEach(date => {
-                    const day = dailyData[date];
-                    if (day.consumptions && day.mood) {
-                        consumptionToMoodSameDay.push({ consumptions: day.consumptions, mood: day.mood });
-                    }
-                });
-
-                // Same Day Impact: Consumption → Energy
-                const consumptionToEnergySameDay = [];
-                dates.forEach(date => {
-                    const day = dailyData[date];
-                    if (day.consumptions && day.energy) {
-                        consumptionToEnergySameDay.push({ consumptions: day.consumptions, energy: day.energy });
-                    }
-                });
-
-                // Next Day Impact: Today's consumption → Tomorrow's sleep
-                const consumptionToSleepNextDay = [];
-                for (let i = 0; i < dates.length - 1; i++) {
-                    const today = dailyData[dates[i]];
-                    const tomorrow = dailyData[dates[i + 1]];
-
-                    if (today.consumptions && tomorrow.sleep) {
-                        consumptionToSleepNextDay.push({ consumptions: today.consumptions, sleep: tomorrow.sleep });
-                    }
-                }
-
-                // Next Day Impact: Today's consumption → Tomorrow's mood
-                const consumptionToMoodNextDay = [];
-                for (let i = 0; i < dates.length - 1; i++) {
-                    const today = dailyData[dates[i]];
-                    const tomorrow = dailyData[dates[i + 1]];
-
-                    if (today.consumptions && tomorrow.mood) {
-                        consumptionToMoodNextDay.push({ consumptions: today.consumptions, mood: tomorrow.mood });
-                    }
-                }
-
-                // Next Day Impact: Today's consumption → Tomorrow's energy
-                const consumptionToEnergyNextDay = [];
-                for (let i = 0; i < dates.length - 1; i++) {
-                    const today = dailyData[dates[i]];
-                    const tomorrow = dailyData[dates[i + 1]];
-
-                    if (today.consumptions && tomorrow.energy) {
-                        consumptionToEnergyNextDay.push({ consumptions: today.consumptions, energy: tomorrow.energy });
-                    }
-                }
-
-                // NEW: Sleep → Mood correlations
-                // Same Day: Tonight's sleep → Mood (registered later or next morning)
-                const sleepToMoodSameDay = [];
-                dates.forEach(date => {
-                    const day = dailyData[date];
-                    if (day.sleep && day.mood) {
-                        sleepToMoodSameDay.push({ sleep: day.sleep, mood: day.mood });
-                    }
-                });
-
-                // Next Day: Tonight's sleep → Tomorrow's mood
-                const sleepToMoodNextDay = [];
-                for (let i = 0; i < dates.length - 1; i++) {
-                    const today = dailyData[dates[i]];
-                    const tomorrow = dailyData[dates[i + 1]];
-
-                    if (today.sleep && tomorrow.mood) {
-                        sleepToMoodNextDay.push({ sleep: today.sleep, mood: tomorrow.mood });
-                    }
-                }
-
-                return {
-                    sameDay: {
-                        sleep: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToSleepSameDay, 'consumptions', 'sleep'),
-                            dataPoints: consumptionToSleepSameDay.length
-                        },
-                        mood: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToMoodSameDay, 'consumptions', 'mood'),
-                            dataPoints: consumptionToMoodSameDay.length
-                        },
-                        energy: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToEnergySameDay, 'consumptions', 'energy'),
-                            dataPoints: consumptionToEnergySameDay.length
-                        }
-                    },
-                    nextDay: {
-                        sleep: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToSleepNextDay, 'consumptions', 'sleep'),
-                            dataPoints: consumptionToSleepNextDay.length
-                        },
-                        mood: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToMoodNextDay, 'consumptions', 'mood'),
-                            dataPoints: consumptionToMoodNextDay.length
-                        },
-                        energy: {
-                            correlation: analyticsService.calculatePearsonCorrelation(consumptionToEnergyNextDay, 'consumptions', 'energy'),
-                            dataPoints: consumptionToEnergyNextDay.length
-                        }
-                    },
-                    sleepToMood: {
-                        sameDay: {
-                            correlation: analyticsService.calculatePearsonCorrelation(sleepToMoodSameDay, 'sleep', 'mood'),
-                            dataPoints: sleepToMoodSameDay.length
-                        },
-                        nextDay: {
-                            correlation: analyticsService.calculatePearsonCorrelation(sleepToMoodNextDay, 'sleep', 'mood'),
-                            dataPoints: sleepToMoodNextDay.length
-                        }
-                    }
-                };
-            }, [wellbeingLogs, consumptions]);
+            // NOTE: temporalCorrelations and bidirectionalAnalysis removed (dead code - never used)
+            // If needed, these are available via analysis.temporalCorrelations and analysis.bidirectionalAnalysis from useAnalysis hook
 
             // Analyze intra-day variation (how mood/energy change throughout the same day)
             const getIntraDayVariation = () => {
@@ -1366,8 +1121,7 @@ return {
             };
 
             // Analyze emotional patterns (which emotions correlate with consumption)
-            // Note: intervalStats and todayConsumptions are already memoized above
-            const todayCount = todayConsumptions.length;
+            const todayCount = analysis.todayConsumptions.length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
 
@@ -1397,7 +1151,7 @@ return {
             const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = useMemo(() => getLast7Days(), [consumptions, dailyLogs, wellbeingLogs, cycles]);
-            const streaks = useMemo(() => getStreaks(), [consumptions, wellbeingLogs]);
+            const streaks = analysis.streaks;
 
             // Memoized coping strategies based on triggers
             const copingStrategies = useMemo(() => {
@@ -1721,19 +1475,18 @@ return {
 
                                         // 1. META: Intervalo entre consumos (increase_interval)
                                         const intervalGoal = goals.find(g => g.type === 'increase_interval');
-                                        const lastInterval = getLastInterval();
-                                        if (lastInterval && intervalGoal) {
+                                        if (analysis.lastInterval && intervalGoal) {
                                             const targetInterval = parseFloat(intervalGoal.target);
-                                            if (lastInterval.hours < targetInterval) {
+                                            if (analysis.lastInterval.hours < targetInterval) {
                                                 alerts.push({
-                                                    text: `Intervalo curto! ${lastInterval.hours}h`,
+                                                    text: `Intervalo curto! ${analysis.lastInterval.hours}h`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
                                                 });
                                             } else {
                                                 alerts.push({
-                                                    text: `Bom intervalo! ${lastInterval.hours}h`,
+                                                    text: `Bom intervalo! ${analysis.lastInterval.hours}h`,
                                                     emoji: '✨',
                                                     color: 'green',
                                                     type: 'positive'
@@ -1880,20 +1633,19 @@ return {
                                         // 6. META: Frequência diária (reduce_frequency)
                                         const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
                                         if (frequencyGoal) {
-                                            const today = getTodayKey();
-                                            const todayConsumptions = consumptions.filter(c => c.date === today).length;
+                                            const todayCount = analysis.todayConsumptions.length;
                                             const targetFrequency = parseInt(frequencyGoal.target);
 
-                                            if (todayConsumptions < targetFrequency) {
+                                            if (todayCount < targetFrequency) {
                                                 alerts.push({
-                                                    text: `Boa! Só ${todayConsumptions} ${todayConsumptions === 1 ? 'consumo' : 'consumos'} hoje`,
+                                                    text: `Boa! Só ${todayCount} ${todayCount === 1 ? 'consumo' : 'consumos'} hoje`,
                                                     emoji: '🎯',
                                                     color: 'green',
                                                     type: 'positive'
                                                 });
-                                            } else if (todayConsumptions >= targetFrequency) {
+                                            } else if (todayCount >= targetFrequency) {
                                                 alerts.push({
-                                                    text: `Atenção! Já ${todayConsumptions} consumos hoje`,
+                                                    text: `Atenção! Já ${todayCount} consumos hoje`,
                                                     emoji: '⚠️',
                                                     color: 'orange',
                                                     type: 'negative'
