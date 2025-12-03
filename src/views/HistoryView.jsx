@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { formatDateTime, formatDateShort, formatDateWithWeekday } from '../utils/helpers';
+import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 

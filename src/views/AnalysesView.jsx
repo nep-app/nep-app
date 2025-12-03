@@ -20,7 +20,7 @@ export function AnalysesView({
     setPatternsPeriodOffset,
     getGoalAchievementCount
 }) {
-    const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections } = useData();
+    const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { darkMode, currentCycle } = useUI();
     const metrics = useMetrics();
 
