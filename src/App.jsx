@@ -15,6 +15,7 @@ import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
+import { logger } from './utils/logger';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -110,11 +111,11 @@ function HarmReductionTracker() {
             // Global error handler
             useEffect(() => {
                 const handleError = (event) => {
-                    console.error('Global error:', event.error);
+                    logger.error('Global error:', event.error);
                     setAppError(event.error?.message || 'Erro desconhecido');
                 };
                 const handleUnhandledRejection = (event) => {
-                    console.error('Unhandled rejection:', event.reason);
+                    logger.error('Unhandled rejection:', event.reason);
                     setAppError(event.reason?.message || 'Erro desconhecido');
                 };
                 window.addEventListener('error', handleError);
@@ -206,9 +207,9 @@ function HarmReductionTracker() {
                     await addConsumption(item);
                     showToast('✓ Consumo registado', 'success');
                 } catch (error) {
-                    console.error('❌ ERRO COMPLETO:', error);
-                    console.error('❌ Mensagem:', error.message);
-                    console.error('❌ Stack:', error.stack);
+                    logger.error('❌ ERRO COMPLETO:', error);
+                    logger.error('❌ Mensagem:', error.message);
+                    logger.error('❌ Stack:', error.stack);
                     showToast('✗ Erro ao guardar consumo', 'error');
                 }
             };
@@ -238,7 +239,7 @@ function HarmReductionTracker() {
                     showToast('✓ Item apagado', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao apagar item', 'error');
-                    console.error('Erro ao apagar:', error);
+                    logger.error('Erro ao apagar:', error);
                 }
             };
 
@@ -254,7 +255,7 @@ function HarmReductionTracker() {
                     showToast('✓ Consumo editado', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao editar consumo', 'error');
-                    console.error('Erro ao editar:', error);
+                    logger.error('Erro ao editar:', error);
                 }
             };
 
@@ -273,7 +274,7 @@ function HarmReductionTracker() {
                     showToast('✓ Registo diário guardado', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao guardar registo', 'error');
-                    console.error(error);
+                    logger.error(error);
                 }
             };
 
@@ -325,9 +326,9 @@ function HarmReductionTracker() {
                     setShowWellbeingModal(false);
                     showToast('✓ Bem-estar guardado', 'success');
                 } catch (error) {
-                    console.error('❌ ERRO COMPLETO:', error);
-                    console.error('❌ Mensagem:', error.message);
-                    console.error('❌ Stack:', error.stack);
+                    logger.error('❌ ERRO COMPLETO:', error);
+                    logger.error('❌ Mensagem:', error.message);
+                    logger.error('❌ Stack:', error.stack);
                     showToast('✗ Erro ao guardar bem-estar', 'error');
                 }
             };
@@ -341,7 +342,7 @@ function HarmReductionTracker() {
                     showToast('✓ Reflexão guardada', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao guardar reflexão', 'error');
-                    console.error(error);
+                    logger.error(error);
                 }
             };
 
@@ -367,7 +368,7 @@ function HarmReductionTracker() {
                     showToast('✓ Pensamento guardado no diário', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao guardar pensamento', 'error');
-                    console.error(error);
+                    logger.error(error);
                 }
             };
 
@@ -391,7 +392,7 @@ function HarmReductionTracker() {
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
                     showToast('✗ Erro ao criar ciclo', 'error');
-                    console.error(error);
+                    logger.error(error);
                 }
             };
 
@@ -426,7 +427,7 @@ function HarmReductionTracker() {
                     setShowGoalModal(false);
                 } catch (error) {
                     showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');
-                    console.error(error);
+                    logger.error(error);
                 }
             };
 
@@ -1254,7 +1255,6 @@ return {
                                         setPatternsPeriodOffset={setPatternsPeriodOffset}
                                         patternView={patternView}
                                         setPatternView={setPatternView}
-                                        getGoalAchievementCount={getGoalAchievementCount}
                                     />
                                 </Suspense>
                             )}
@@ -1267,7 +1267,6 @@ return {
                                         setPatternsPeriod={setPatternsPeriod}
                                         patternsPeriodOffset={patternsPeriodOffset}
                                         setPatternsPeriodOffset={setPatternsPeriodOffset}
-                                        getGoalAchievementCount={getGoalAchievementCount}
                                     />
                                 </Suspense>
                             )}

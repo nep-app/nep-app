@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getTodayKey } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
+import { logger } from '../utils/logger';
 
 export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToast) => {
   const [reminderDismissed, setReminderDismissed] = useState(() => {
@@ -53,7 +54,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
         showToast('✗ Permissão não concedida', 'error');
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      logger.error('Error requesting notification permission:', error);
       showToast('✗ Erro ao pedir permissão de notificações', 'error');
     }
   };
@@ -68,7 +69,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
         });
       }
     } catch (e) {
-      console.error('Error showing notification:', e);
+      logger.error('Error showing notification:', e);
     }
   };
 
@@ -93,7 +94,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
           dismissReminder('wellbeing');
         }
       } catch (e) {
-        console.error('Error checking reminders:', e);
+        logger.error('Error checking reminders:', e);
       }
     };
 
@@ -102,7 +103,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
       const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
       return () => clearInterval(interval);
     } catch (e) {
-      console.error('Error setting up reminders:', e);
+      logger.error('Error setting up reminders:', e);
     }
   }, [user, wellbeingLogs, notificationsEnabled]);
 
@@ -151,7 +152,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
         dismissReminder('wellbeing-consumption');
       }
     } catch (e) {
-      console.error('Error checking wellbeing consumption reminder:', e);
+      logger.error('Error checking wellbeing consumption reminder:', e);
     }
   }, [user, consumptions, wellbeingLogs, cycles]);
 

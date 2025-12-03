@@ -10,7 +10,7 @@ import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrend
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
-const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, calculatePearsonCorrelation } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, calculatePearsonCorrelation, getGoalAchievementCount } = analyticsService;
 
 export function AnalysesView({
     analysisSubView,
@@ -18,8 +18,7 @@ export function AnalysesView({
     patternsPeriod,
     setPatternsPeriod,
     patternsPeriodOffset,
-    setPatternsPeriodOffset,
-    getGoalAchievementCount
+    setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { darkMode, currentCycle } = useUI();

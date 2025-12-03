@@ -1,4 +1,4 @@
-import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem } from '../utils/helpers';
 
 // ===== ANALYTICS LOGIC =====
 
@@ -213,4 +213,202 @@ export const calculateAvgFrequencyLast7Days = (consumptions) => {
     const last7Days = getLast7Days(consumptions);
     const totalConsumptions = last7Days.reduce((sum, day) => sum + day.count, 0);
     return (totalConsumptions / 7).toFixed(1);
+};
+
+// ===== GOAL ACHIEVEMENT TRACKING =====
+
+/**
+ * Calculate achievement count for a specific goal
+ * @param {Object} goal - The goal object with type and target
+ * @param {Array} consumptions - Array of consumption records (optional, defaults to all)
+ * @param {Array} dailyLogs - Array of daily logs (optional, defaults to all)
+ * @param {Array} cycles - Array of cycles (optional, defaults to all)
+ * @param {Array} wellbeingLogs - Array of wellbeing logs (optional, defaults to all)
+ * @returns {number} Number of times the goal was achieved
+ */
+export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, wellbeingLogs) => {
+    let achievedCount = 0;
+
+    if (goal.type === 'reduce_frequency') {
+        // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
+        // Ex: target=10 → conta dias com <10 consumos (0-9)
+        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+        const today = getTodayPT();
+        const consumptionsByDate = {};
+
+        consumptions.forEach(c => {
+            // Derivar data do timestamp para garantir consistência
+            const dateKey = timestampToPT(c.timestamp);
+            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
+            consumptionsByDate[dateKey]++;
+        });
+
+        // Remove dia atual da contagem
+        const completedDays = { ...consumptionsByDate };
+        delete completedDays[today];
+
+        Object.entries(completedDays).forEach(([date, count]) => {
+            const isAchieved = count < goal.target;
+            if (isAchieved) achievedCount++;
+        });
+    }
+
+    if (goal.type === 'reduce_quantity') {
+        // REGRA: Conta ciclos com mg ABAIXO do target (excluindo o target)
+        // Ex: target=200 → conta ciclos com <200mg
+        // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
+        // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
+        const today = getTodayPT();
+
+        cycles.forEach(cycle => {
+            const cycleDate = timestampToPT(cycle.timestamp);
+
+            // Tentar buscar mg do cycle primeiro (novo lugar)
+            let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+            let source = 'cycle';
+
+            // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
+            if (isNaN(mgValue) || mgValue <= 0) {
+                // Tentar buscar pelo cycleId primeiro (dados recentes)
+                let dailyLog = dailyLogs.find(log => log.cycleId === cycle.id);
+
+                // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
+                if (!dailyLog || !dailyLog.mg) {
+                    const cycleDay = safeToISODate(cycle.timestamp);
+                    dailyLog = dailyLogs.find(log => log.date === cycleDay && log.mg);
+                }
+
+                if (dailyLog && dailyLog.mg) {
+                    mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
+                    source = 'dailyLog';
+                }
+            }
+
+            if (!isNaN(mgValue) && mgValue > 0) {
+                // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
+                const isAchieved = mgValue < parseFloat(goal.target);
+                if (isAchieved) achievedCount++;
+            }
+        });
+    }
+
+    if (goal.type === 'limit_last') {
+        // REGRA: Conta CICLOS onde user marcou lastBefore00=true
+        cycles.forEach(cycle => {
+            const isAchieved = cycle.lastBefore00 === true;
+            if (isAchieved) achievedCount++;
+        });
+    }
+
+    if (goal.type === 'increase_interval') {
+        // REGRA: Conta DIAS onde ≥50% dos intervalos são >target
+        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+        const today = getTodayPT();
+        const consumptionsByDate = {};
+
+        consumptions.forEach(c => {
+            const dateKey = timestampToPT(c.timestamp);
+            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+            consumptionsByDate[dateKey].push(c);
+        });
+
+        // Remove dia atual da contagem
+        delete consumptionsByDate[today];
+
+        Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
+            if (dayConsumptions.length < 2) {
+                return;
+            }
+
+            const sorted = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            let longIntervals = 0;
+            let totalIntervals = 0;
+
+            for (let i = 1; i < sorted.length; i++) {
+                const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
+                totalIntervals++;
+                const isLong = intervalHours > goal.target;
+                if (isLong) longIntervals++;
+            }
+
+            const isAchieved = longIntervals >= totalIntervals / 2;
+
+            if (isAchieved) achievedCount++;
+        });
+    }
+
+    if (goal.type === 'sleep_hours') {
+        // REGRA: Conta dias com sono ≥ target (7h ou mais)
+        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
+        // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
+        const today = getTodayPT();
+
+        // Coletar datas únicas de cycles e wellbeingLogs
+        const allDates = new Set([
+            ...cycles.map(c => getDateKeyFromItem(c)),
+            ...wellbeingLogs.map(w => getDateKeyFromItem(w))
+        ]);
+
+        allDates.forEach(date => {
+            const dateObj = new Date(date);
+            const dateStr = dateObj.toLocaleDateString('pt-PT');
+            if (dateStr === today) return; // Skip today
+
+            // Primeiro tenta buscar em cycles
+            const cycle = cycles.find(c => {
+                const cycleDate = getDateKeyFromItem(c);
+                return cycleDate === date && c.sleep != null;
+            });
+            if (cycle) {
+                const isAchieved = parseFloat(cycle.sleep) >= parseFloat(goal.target);
+                if (isAchieved) achievedCount++;
+                return;
+            }
+
+            // Fallback: buscar em wellbeingLogs
+            const wellbeing = wellbeingLogs.find(w => {
+                const wDate = getDateKeyFromItem(w);
+                return wDate === date && w.sleep != null;
+            });
+            if (wellbeing) {
+                const isAchieved = parseFloat(wellbeing.sleep) >= parseFloat(goal.target);
+                if (isAchieved) achievedCount++;
+            }
+        });
+    }
+
+    if (goal.type === 'bedtime_before') {
+        // REGRA: Conta ciclos onde hora de deitar foi ATÉ o target (incluindo a hora exata)
+        // E hora entre 21:00-02:00
+        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+        const targetParts = targetStr.split(':');
+        const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+        cycles.forEach(cycle => {
+            if (!cycle.bedtime) return;
+            const bedtimeParts = cycle.bedtime.split(':');
+            let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+            const bedtimeOriginalMinutes = bedtimeMinutes;
+
+            // Meta SÓ é cumprida se hora for entre 21:00-02:00
+            const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
+
+            // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
+            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
+                bedtimeMinutes += 1440; // +24h
+            }
+
+            // Ajustar target se for madrugada
+            let targetAdjusted = targetMinutes;
+            if (targetMinutes >= 0 && targetMinutes < 360) {
+                targetAdjusted += 1440;
+            }
+
+            const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
+
+            if (isAchieved) achievedCount++;
+        });
+    }
+
+    return achievedCount;
 };

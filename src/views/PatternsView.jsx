@@ -8,7 +8,7 @@ import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
 import HeatmapChart from '../components/HeatmapChart';
 
-const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount } = analyticsService;
 
 export function PatternsView({
     patternsPeriod,
@@ -16,8 +16,7 @@ export function PatternsView({
     patternsPeriodOffset,
     setPatternsPeriodOffset,
     patternView,
-    setPatternView,
-    getGoalAchievementCount
+    setPatternView
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const { darkMode } = useUI();
