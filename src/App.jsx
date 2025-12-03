@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
-import { getTodayKey, genId, safeToISODate, safeDate } from './utils/helpers';
+import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
 import * as Icons from './components/Icons';
@@ -465,7 +465,7 @@ function HarmReductionTracker() {
                     // Buscar primeiro nos cycles (novo método)
                     // BUGFIX: cycles antigos só têm timestamp, não date - fazer fallback
                     const cycle = cycles.find(c => {
-                        const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                        const cycleDate = getDateKeyFromItem(c);
                         return cycleDate === date && c.mg !== undefined && c.mg !== '';
                     });
                     if (cycle) {
@@ -582,7 +582,7 @@ function HarmReductionTracker() {
                     last7Dates.forEach(date => {
                         // Primeiro tenta buscar em cycles
                         const cycle = cycles.find(c => {
-                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            const cycleDate = getDateKeyFromItem(c);
                             return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
                         });
                         if (cycle) {
@@ -595,7 +595,7 @@ function HarmReductionTracker() {
 
                         // Fallback: buscar em wellbeingLogs
                         const wellbeing = wellbeingLogs.find(w => {
-                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            const wDate = getDateKeyFromItem(w);
                             return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
                         });
                         if (wellbeing) {
@@ -664,12 +664,12 @@ function HarmReductionTracker() {
                     // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
                     // Ex: target=10 → conta dias com <10 consumos (0-9)
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
+                    const today = getTodayPT();
                     const consumptionsByDate = {};
 
                     dataConsumptions.forEach(c => {
                         // Derivar data do timestamp para garantir consistência
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        const dateKey = timestampToPT(c.timestamp);
                         if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
                         consumptionsByDate[dateKey]++;
                     });
@@ -689,10 +689,10 @@ function HarmReductionTracker() {
                     // Ex: target=200 → conta ciclos com <200mg
                     // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
                     // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
-                    const today = new Date().toLocaleDateString('pt-PT');
+                    const today = getTodayPT();
 
                     dataCycles.forEach(cycle => {
-                        const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                        const cycleDate = timestampToPT(cycle.timestamp);
 
                         // Tentar buscar mg do cycle primeiro (novo lugar)
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
@@ -705,7 +705,7 @@ function HarmReductionTracker() {
 
                             // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
                             if (!dailyLog || !dailyLog.mg) {
-                                const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                const cycleDay = safeToISODate(cycle.timestamp);
                                 dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
                             }
 
@@ -736,11 +736,11 @@ function HarmReductionTracker() {
                 if (goal.type === 'increase_interval') {
                     // REGRA: Conta DIAS onde ≥50% dos intervalos são >target
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = new Date().toLocaleDateString('pt-PT');
+                    const today = getTodayPT();
                     const consumptionsByDate = {};
 
                     dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        const dateKey = timestampToPT(c.timestamp);
                         if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
                         consumptionsByDate[dateKey].push(c);
                     });
@@ -782,12 +782,12 @@ function HarmReductionTracker() {
                     // REGRA: Conta dias com sono ≥ target (7h ou mais)
                     // IMPORTANTE: Exclui dia atual (que ainda não acabou)
                     // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
-                    const today = new Date().toLocaleDateString('pt-PT');
+                    const today = getTodayPT();
 
                     // Coletar datas únicas de cycles e wellbeingLogs
                     const allDates = new Set([
-                        ...dataCycles.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
-                        ...dataWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                        ...dataCycles.map(c => getDateKeyFromItem(c)),
+                        ...dataWellbeing.map(w => getDateKeyFromItem(w))
                     ]);
 
                     allDates.forEach(date => {
@@ -797,7 +797,7 @@ function HarmReductionTracker() {
 
                         // Primeiro tenta buscar em cycles
                         const cycle = dataCycles.find(c => {
-                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            const cycleDate = getDateKeyFromItem(c);
                             return cycleDate === date && c.sleep != null;
                         });
                         if (cycle) {
@@ -808,7 +808,7 @@ function HarmReductionTracker() {
 
                         // Fallback: buscar em wellbeingLogs
                         const wellbeing = dataWellbeing.find(w => {
-                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            const wDate = getDateKeyFromItem(w);
                             return wDate === date && w.sleep != null;
                         });
                         if (wellbeing) {
@@ -865,7 +865,7 @@ function HarmReductionTracker() {
                 let achieved = 0;
                 let total = 0;
 
-                const today = new Date().toLocaleDateString('pt-PT');
+                const today = getTodayPT();
 
                 if (goal.type === 'increase_interval') {
                     const consumptionsByCycle = {};
@@ -896,7 +896,7 @@ function HarmReductionTracker() {
                 if (goal.type === 'reduce_frequency') {
                     const consumptionsByDate = {};
                     dataConsumptions.forEach(c => {
-                        const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                        const dateKey = timestampToPT(c.timestamp);
                         if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
                         consumptionsByDate[dateKey]++;
                     });
@@ -910,7 +910,7 @@ function HarmReductionTracker() {
 
                 if (goal.type === 'reduce_quantity') {
                     dataCycles.forEach(cycle => {
-                        const cycleDate = new Date(cycle.timestamp).toLocaleDateString('pt-PT');
+                        const cycleDate = timestampToPT(cycle.timestamp);
 
                         // Tentar buscar mg do cycle primeiro (novo lugar)
                         let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
@@ -923,7 +923,7 @@ function HarmReductionTracker() {
 
                             // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
                             if (!dailyLog || !dailyLog.mg) {
-                                const cycleDay = new Date(cycle.timestamp).toISOString().split('T')[0];
+                                const cycleDay = safeToISODate(cycle.timestamp);
                                 dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
                             }
 
@@ -955,8 +955,8 @@ function HarmReductionTracker() {
                     // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
                     // Coletar datas únicas de cycles e wellbeingLogs
                     const allDates = new Set([
-                        ...dataCycles.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
-                        ...dataWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                        ...dataCycles.map(c => getDateKeyFromItem(c)),
+                        ...dataWellbeing.map(w => getDateKeyFromItem(w))
                     ]);
 
                     allDates.forEach(date => {
@@ -966,7 +966,7 @@ function HarmReductionTracker() {
 
                         // Primeiro tenta buscar em cycles
                         const cycle = dataCycles.find(c => {
-                            const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                            const cycleDate = getDateKeyFromItem(c);
                             return cycleDate === date && c.sleep != null;
                         });
                         if (cycle) {
@@ -977,7 +977,7 @@ function HarmReductionTracker() {
 
                         // Fallback: buscar em wellbeingLogs
                         const wellbeing = dataWellbeing.find(w => {
-                            const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                            const wDate = getDateKeyFromItem(w);
                             return wDate === date && w.sleep != null;
                         });
                         if (wellbeing) {
@@ -2008,7 +2008,7 @@ return {
                                                     <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
                                                         <div className="flex-1">
                                                             <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
-                                                                {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
+                                                                {formatDateTime(c.timestamp)}
                                                             </div>
                                                             {c.notes && <div className={'text-xs mt-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>{c.notes}</div>}
                                                         </div>
@@ -2173,10 +2173,10 @@ return {
 
                                                     if (g.type === 'increase_interval') {
                                                         // For increase_interval: count days with ≥2 consumptions (need at least 2 to have intervals)
-                                                        const today = new Date().toLocaleDateString('pt-PT');
+                                                        const today = getTodayPT();
                                                         const consumptionsByDate = {};
                                                         filteredConsumptions.forEach(c => {
-                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                            const dateKey = timestampToPT(c.timestamp);
                                                             if (dateKey === today) return; // Skip today
                                                             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
                                                             consumptionsByDate[dateKey].push(c);
@@ -2188,12 +2188,12 @@ return {
                                                         totalPossible = filteredCycles.length;
                                                     } else {
                                                         // For day-based goals: count unique days (excluding today)
-                                                        const today = new Date().toLocaleDateString('pt-PT');
+                                                        const today = getTodayPT();
                                                         const allDates = new Set();
 
                                                         if (g.type === 'reduce_frequency') {
                                                             filteredConsumptions.forEach(c => {
-                                                                const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                const dateKey = timestampToPT(c.timestamp);
                                                                 if (dateKey !== today) allDates.add(dateKey);
                                                             });
                                                         } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
@@ -2546,7 +2546,7 @@ return {
                                             const getMgForDate = (date, cyclesData, dailyLogsData) => {
                                                 // Primeiro tenta buscar nos cycles
                                                 const cycle = cyclesData.find(c => {
-                                                    const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                    const cycleDate = getDateKeyFromItem(c);
                                                     return cycleDate === date && c.mg !== undefined && c.mg !== '';
                                                 });
                                                 if (cycle) {
@@ -2590,11 +2590,11 @@ return {
 
                                             // Obter todas as datas únicas dos períodos
                                             const recentDates = new Set([
-                                                ...recentCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...recentCyclesForDosage.map(c => getDateKeyFromItem(c)),
                                                 ...recentDailyLogs.map(d => d.date)
                                             ]);
                                             const previousDates = new Set([
-                                                ...previousCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
+                                                ...previousCyclesForDosage.map(c => getDateKeyFromItem(c)),
                                                 ...previousDailyLogs.map(d => d.date)
                                             ]);
 
@@ -2632,7 +2632,7 @@ return {
                                             const getSleepForDate = (date, cyclesData, wellbeingData) => {
                                                 // Primeiro tenta buscar nos cycles
                                                 const cycle = cyclesData.find(c => {
-                                                    const cycleDate = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                    const cycleDate = getDateKeyFromItem(c);
                                                     return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
                                                 });
                                                 if (cycle) {
@@ -2644,7 +2644,7 @@ return {
 
                                                 // Fallback: buscar nos wellbeingLogs
                                                 const wellbeing = wellbeingData.find(w => {
-                                                    const wDate = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                    const wDate = getDateKeyFromItem(w);
                                                     return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
                                                 });
                                                 if (wellbeing) {
@@ -2659,12 +2659,12 @@ return {
 
                                             // Obter todas as datas únicas dos períodos para sono
                                             const recentSleepDates = new Set([
-                                                ...recentCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
-                                                ...recentWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                                                ...recentCyclesForDosage.map(c => getDateKeyFromItem(c)),
+                                                ...recentWellbeing.map(w => getDateKeyFromItem(w))
                                             ]);
                                             const previousSleepDates = new Set([
-                                                ...previousCyclesForDosage.map(c => c.date || new Date(c.timestamp).toISOString().split('T')[0]),
-                                                ...previousWellbeing.map(w => w.date || new Date(w.timestamp).toISOString().split('T')[0])
+                                                ...previousCyclesForDosage.map(c => getDateKeyFromItem(c)),
+                                                ...previousWellbeing.map(w => getDateKeyFromItem(w))
                                             ]);
 
                                             // Coletar valores de sono
@@ -4209,13 +4209,13 @@ return {
 
                                                                                     // Calcular total possível baseado no tipo de meta
                                                                                     let totalPossible = 0;
-                                                                                    const today = new Date().toLocaleDateString('pt-PT');
+                                                                                    const today = getTodayPT();
 
                                                                                     if (g.type === 'reduce_frequency') {
                                                                                         // DIAS com consumos (excluindo hoje)
                                                                                         const allDates = new Set();
                                                                                         analysisConsumptions.forEach(c => {
-                                                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                                            const dateKey = timestampToPT(c.timestamp);
                                                                                             if (dateKey !== today) allDates.add(dateKey);
                                                                                         });
                                                                                         totalPossible = allDates.size;
@@ -4223,7 +4223,7 @@ return {
                                                                                         // DIAS com ≥2 consumos (excluindo hoje)
                                                                                         const consumptionsByDate = {};
                                                                                         analysisConsumptions.forEach(c => {
-                                                                                            const dateKey = new Date(c.timestamp).toLocaleDateString('pt-PT');
+                                                                                            const dateKey = timestampToPT(c.timestamp);
                                                                                             if (dateKey === today) return;
                                                                                             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
                                                                                             consumptionsByDate[dateKey].push(c);
@@ -6122,7 +6122,7 @@ return {
                                                                     <div className="flex justify-between items-center">
                                                                         <div>
                                                                             <div className={'font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                                {new Date(c.timestamp).toLocaleDateString('pt-PT')} - {new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}
+                                                                                {formatDateTime(c.timestamp)}
                                                                             </div>
                                                                             {c.notes && <div className={'text-sm mt-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>💭 {c.notes}</div>}
                                                                         </div>

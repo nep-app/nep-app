@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getTodayKey as getTodayKeyHelper, safeToISODate } from '../utils/helpers';
 
 export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
   // Helper: Get last 7 days dates
@@ -7,14 +8,14 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      days.push(d.toISOString().split('T')[0]);
+      days.push(safeToISODate(d));
     }
     return days;
   }, []);
 
   // Helper: Get today's key
   const getTodayKey = useMemo(() => {
-    return new Date().toISOString().split('T')[0];
+    return getTodayKeyHelper();
   }, []);
 
   // Memoized interval statistics
@@ -47,7 +48,7 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
 
   // Memoized today's consumptions
   const todayConsumptions = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayKeyHelper();
     return consumptions.filter(c => c.date === today);
   }, [consumptions]);
 

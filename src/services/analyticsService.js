@@ -1,4 +1,4 @@
-import { getTodayKey } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort } from '../utils/helpers';
 
 // ===== ANALYTICS LOGIC =====
 
@@ -117,7 +117,7 @@ export const getPeriodLabel = (period, offset) => {
     if (period === 'hoje') {
         const date = new Date();
         date.setDate(date.getDate() - offset);
-        return date.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' });
+        return formatDateShort(date);
     }
     if (period === 'semana') return `${offset} ${offset === 1 ? 'semana' : 'semanas'} atrás`;
     if (period === 'mes') return `${offset} ${offset === 1 ? 'mês' : 'meses'} atrás`;
@@ -204,7 +204,7 @@ export const getLast7Days = (consumptions) => {
     for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = safeToISODate(date);
         const count = consumptions.filter(c => c.date === dateKey).length;
         days.push({
             date: dateKey,
