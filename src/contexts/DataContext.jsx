@@ -138,7 +138,7 @@ export const DataProvider = ({ children }) => {
     );
 
     return () => unsubscribers.forEach(unsub => unsub());
-  }, [user]);
+  }, [user, db]);
 
   // CRUD operations (estrutura original: users/{userId}/collection)
   const addConsumption = async (data) => {
