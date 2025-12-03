@@ -1236,7 +1236,7 @@ return {
 
                 // Check interval quality
                 if (consumptions.length >= 2) {
-                    const lastIntervalData = lastInterval;
+                    const lastIntervalData = analysis.lastInterval;
                     if (lastIntervalData && !lastIntervalData.isShort) {
                         messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastIntervalData.hours}h`);
                     }
@@ -1270,7 +1270,7 @@ return {
                 }
 
                 return messages[0];
-            }, [streaks, consumptions, lastInterval, wellbeingLogs, dailyLogs]);
+            }, [streaks, consumptions, analysis.lastInterval, wellbeingLogs, dailyLogs]);
 
             // Render
             if (appError) return (
