@@ -6,6 +6,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, getDateDaysAgo } from '../utils/helpers';
+import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
