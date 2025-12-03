@@ -15,18 +15,26 @@ export const useData = () => {
   return context;
 };
 
+// Global flag to ensure persistence is only enabled once
+let persistenceEnabled = false;
+
 export const DataProvider = ({ children }) => {
   // Initialize Firebase (only once)
   const { app, auth, db } = useMemo(() => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const dbInstance = getFirestore(firebaseApp);
 
-    // Enable offline persistence (original behavior)
-    enableIndexedDbPersistence(dbInstance).catch((err) => {
-      if (err.code === 'failed-precondition') {
-      } else if (err.code === 'unimplemented') {
-      }
-    });
+    // Enable offline persistence (only once, globally)
+    if (!persistenceEnabled) {
+      persistenceEnabled = true;
+      enableIndexedDbPersistence(dbInstance).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          // Multiple tabs open, persistence can only be enabled in one tab at a time
+        } else if (err.code === 'unimplemented') {
+          // Browser doesn't support persistence
+        }
+      });
+    }
 
     return {
       app: firebaseApp,
