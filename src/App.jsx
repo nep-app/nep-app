@@ -16,6 +16,7 @@ import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
 import { logger } from './utils/logger';
+import { ChunkErrorErrorBoundary } from './components/ChunkErrorErrorBoundary';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -1230,85 +1231,86 @@ return {
                         </div>
 
                         <div className={(darkMode ? 'bg-gray-800/50' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
-                            {currentView === 'home' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <HomeViewRefactored
-                                        currentReflection={currentReflection}
-                                        markConsumption={markConsumption}
-                                        openEditConsumption={openEditConsumption}
-                                        deleteItem={deleteItem}
-                                        last7={last7}
-                                        copingStrategies={copingStrategies}
-                                        badges={badges}
-                                        currentCycleCount={currentCycleCount}
-                                        consumptionsToShow={consumptionsToShow}
-                                        setConsumptionsToShow={setConsumptionsToShow}
-                                    />
-                                </Suspense>
-                            )}
-                            {currentView === 'patterns' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <PatternsView
-                                        patternsPeriod={patternsPeriod}
-                                        setPatternsPeriod={setPatternsPeriod}
-                                        patternsPeriodOffset={patternsPeriodOffset}
-                                        setPatternsPeriodOffset={setPatternsPeriodOffset}
-                                        patternView={patternView}
-                                        setPatternView={setPatternView}
-                                    />
-                                </Suspense>
-                            )}
-                            {currentView === 'analyses' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <AnalysesView
-                                        analysisSubView={analysisSubView}
-                                        setAnalysisSubView={setAnalysisSubView}
-                                        patternsPeriod={patternsPeriod}
-                                        setPatternsPeriod={setPatternsPeriod}
-                                        patternsPeriodOffset={patternsPeriodOffset}
-                                        setPatternsPeriodOffset={setPatternsPeriodOffset}
-                                    />
-                                </Suspense>
-                            )}
-                            {currentView === 'history' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <HistoryView
-                                        historyPeriod={historyPeriod}
-                                        setHistoryPeriod={setHistoryPeriod}
-                                        historyPeriodOffset={historyPeriodOffset}
-                                        setHistoryPeriodOffset={setHistoryPeriodOffset}
-                                        historyTopic={historyTopic}
-                                        setHistoryTopic={setHistoryTopic}
-                                        reflectionsToShow={reflectionsToShow}
-                                        setReflectionsToShow={setReflectionsToShow}
-                                        wellbeingToShow={wellbeingToShow}
-                                        setWellbeingToShow={setWellbeingToShow}
-                                        cyclesHistoryToShow={cyclesHistoryToShow}
-                                        setCyclesHistoryToShow={setCyclesHistoryToShow}
-                                        thoughtsToShow={thoughtsToShow}
-                                        setThoughtsToShow={setThoughtsToShow}
-                                        openEditConsumption={openEditConsumption}
-                                        deleteItem={deleteItem}
-                                    />
-                                </Suspense>
-                            )}
-                            {currentView === 'settings' && (
-                                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
-                                    <SettingsView
-                                        darkMode={darkMode}
-                                        user={user}
-                                        handleLogout={handleLogout}
-                                        exportToCSV={exportToCSV}
-                                        notificationsEnabled={notificationsEnabled}
-                                        requestNotificationPermission={requestNotificationPermission}
-                                        onOpenLegalDoc={(docType) => {
-                                            setLegalDocType(docType);
-                                            setShowLegalModal(true);
-                                        }}
-                                    />
-                                </Suspense>
-                            )}
-
+                            <ChunkErrorErrorBoundary>
+                                {currentView === 'home' && (
+                                    <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                        <HomeViewRefactored
+                                            currentReflection={currentReflection}
+                                            markConsumption={markConsumption}
+                                            openEditConsumption={openEditConsumption}
+                                            deleteItem={deleteItem}
+                                            last7={last7}
+                                            copingStrategies={copingStrategies}
+                                            badges={badges}
+                                            currentCycleCount={currentCycleCount}
+                                            consumptionsToShow={consumptionsToShow}
+                                            setConsumptionsToShow={setConsumptionsToShow}
+                                        />
+                                    </Suspense>
+                                )}
+                                {currentView === 'patterns' && (
+                                    <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                        <PatternsView
+                                            patternsPeriod={patternsPeriod}
+                                            setPatternsPeriod={setPatternsPeriod}
+                                            patternsPeriodOffset={patternsPeriodOffset}
+                                            setPatternsPeriodOffset={setPatternsPeriodOffset}
+                                            patternView={patternView}
+                                            setPatternView={setPatternView}
+                                        />
+                                    </Suspense>
+                                )}
+                                {currentView === 'analyses' && (
+                                    <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                        <AnalysesView
+                                            analysisSubView={analysisSubView}
+                                            setAnalysisSubView={setAnalysisSubView}
+                                            patternsPeriod={patternsPeriod}
+                                            setPatternsPeriod={setPatternsPeriod}
+                                            patternsPeriodOffset={patternsPeriodOffset}
+                                            setPatternsPeriodOffset={setPatternsPeriodOffset}
+                                        />
+                                    </Suspense>
+                                )}
+                                {currentView === 'history' && (
+                                    <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                        <HistoryView
+                                            historyPeriod={historyPeriod}
+                                            setHistoryPeriod={setHistoryPeriod}
+                                            historyPeriodOffset={historyPeriodOffset}
+                                            setHistoryPeriodOffset={setHistoryPeriodOffset}
+                                            historyTopic={historyTopic}
+                                            setHistoryTopic={setHistoryTopic}
+                                            reflectionsToShow={reflectionsToShow}
+                                            setReflectionsToShow={setReflectionsToShow}
+                                            wellbeingToShow={wellbeingToShow}
+                                            setWellbeingToShow={setWellbeingToShow}
+                                            cyclesHistoryToShow={cyclesHistoryToShow}
+                                            setCyclesHistoryToShow={setCyclesHistoryToShow}
+                                            thoughtsToShow={thoughtsToShow}
+                                            setThoughtsToShow={setThoughtsToShow}
+                                            openEditConsumption={openEditConsumption}
+                                            deleteItem={deleteItem}
+                                        />
+                                    </Suspense>
+                                )}
+                                {currentView === 'settings' && (
+                                    <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                                        <SettingsView
+                                            darkMode={darkMode}
+                                            user={user}
+                                            handleLogout={handleLogout}
+                                            exportToCSV={exportToCSV}
+                                            notificationsEnabled={notificationsEnabled}
+                                            requestNotificationPermission={requestNotificationPermission}
+                                            onOpenLegalDoc={(docType) => {
+                                                setLegalDocType(docType);
+                                                setShowLegalModal(true);
+                                            }}
+                                        />
+                                    </Suspense>
+                                )}
+                            </ChunkErrorErrorBoundary>
                         </div>
 
                         {/* Modals - Lazy loaded with Suspense */}
