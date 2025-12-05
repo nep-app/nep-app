@@ -3,31 +3,27 @@ import { useHomeStats } from '../useHomeStats';
 import { describe, it, expect } from 'vitest';
 
 describe('useHomeStats', () => {
-  it('should return null timeSince when metrics is null', () => {
-    const metrics = { timeSinceLastConsumption: null, last7Days: {} };
-    const cycles = [];
-    const currentCycleCount = 0;
-    const badges = [];
-
-    const { result } = renderHook(() => useHomeStats(metrics, cycles, currentCycleCount, badges));
-    expect(result.current.timeSince).toBeNull();
+  it('returns default stats for empty data', () => {
+    const { result } = renderHook(() => useHomeStats(null));
+    expect(result.current).toEqual({
+      streak: 0,
+      mood: 0,
+      craving: 0,
+      trend: 'stable'
+    });
   });
 
-  it('should return formatted timeSince when metrics exists', () => {
-    const metrics = {
-      timeSinceLastConsumption: { hours: 3, value: 3, unit: 'h' },
-      last7Days: {}
-    };
-    const cycles = [];
-    const currentCycleCount = 0;
-    const badges = [];
+  it('calculates stats correctly', () => {
+    const mockData = [
+      { date: '2023-10-01', mood: 8, craving: 2, consumption: 0 },
+      { date: '2023-10-02', mood: 6, craving: 4, consumption: 0 }
+    ];
 
-    const { result } = renderHook(() => useHomeStats(metrics, cycles, currentCycleCount, badges));
-    expect(result.current.timeSince).toEqual({
-      hours: 3,
-      value: 3,
-      unit: 'h',
-      isLong: true
-    });
+    const { result } = renderHook(() => useHomeStats(mockData));
+
+    // Streak logic might depend on "today", so exact value varies,
+    // but mood should be average.
+    expect(result.current.mood).toBe(7); // (8+6)/2
+    expect(result.current.craving).toBe(3); // (2+4)/2
   });
 });

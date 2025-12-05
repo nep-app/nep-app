@@ -16,7 +16,7 @@ import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
 import { logger } from './utils/logger';
-import { ChunkErrorErrorBoundary } from './components/ChunkErrorErrorBoundary';
+import ChunkErrorErrorBoundary from './components/ChunkErrorErrorBoundary';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));

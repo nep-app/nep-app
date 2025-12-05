@@ -1,40 +1,34 @@
-import React, { Component } from 'react';
+import React from 'react';
 
-// Error Boundary specifically for catching ChunkLoadErrors (lazy loading failures)
-export class ChunkErrorErrorBoundary extends Component {
+class ChunkErrorErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    // Check if the error is a chunk load error
+    if (error.name === 'ChunkLoadError' || error.message.includes('Loading chunk')) {
+      return { hasError: true };
+    }
+    return { hasError: false };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Check if it's a ChunkLoadError or related dynamic import failure
-    if (error.name === 'ChunkLoadError' || error.message.includes('Failed to fetch dynamically imported module') || error.message.includes('Importing a module script failed')) {
-      console.log('Chunk load error detected, reloading page...');
-      // Force reload to get fresh assets
+    if (this.state.hasError) {
+      console.error('Chunk load error detected:', error);
+      // Reload the page to fetch the new version
       window.location.reload();
-    } else {
-        // Propagate other errors or handle them if needed
-        console.error('Non-chunk error caught in boundary:', error);
     }
   }
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center p-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">A atualizar a aplicação...</p>
-          </div>
-        </div>
-      );
+      return <div className="p-4 text-center">A atualizar a aplicação...</div>;
     }
 
     return this.props.children;
   }
 }
+
+export default ChunkErrorErrorBoundary;
