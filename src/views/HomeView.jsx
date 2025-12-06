@@ -276,25 +276,25 @@ export function HomeView({
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          icon="📝"
+          icon={() => <span className="text-xl">📝</span>}
           label="Registos"
           value={consumptions.length}
           darkMode={darkMode}
         />
         <StatCard
-          icon="🎯"
+          icon={() => <span className="text-xl">🎯</span>}
           label="Ciclos"
           value={cycles.length}
           darkMode={darkMode}
         />
         <StatCard
-          icon="💚"
+          icon={() => <span className="text-xl">💚</span>}
           label="Bem-estar"
           value={wellbeingLogs.length}
           darkMode={darkMode}
         />
         <StatCard
-          icon="🎪"
+          icon={() => <span className="text-xl">🎪</span>}
           label="Metas"
           value={goals.length}
           darkMode={darkMode}
