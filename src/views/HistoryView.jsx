@@ -334,13 +334,11 @@ export function HistoryView({
 
                                                                     {/* Registos Diários deste ciclo */}
                                                                     {(() => {
-                                                                        // Buscar dailyLogs que pertencem a este ciclo (por cycleId ou por data)
+                                                                        // Buscar dailyLogs que pertencem a este ciclo (por data)
                                                                         const cycleDailyLogs = filteredDailyLogs.filter(log => {
-                                                                            // Primeiro tenta por cycleId (novo sistema)
-                                                                            if (log.cycleId && log.cycleId === cycle.id) return true;
-                                                                            // Fallback: comparar por data (antigo sistema)
+                                                                            // Comparar por data
                                                                             if (log.date && cycle.date && log.date === cycle.date) return true;
-                                                                            // Fallback adicional: derivar data do timestamp
+                                                                            // Fallback: derivar data do timestamp
                                                                             if (log.timestamp && cycle.timestamp) {
                                                                                 const logDate = new Date(log.timestamp).toISOString().split('T')[0];
                                                                                 const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];

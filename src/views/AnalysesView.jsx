@@ -503,8 +503,11 @@ export function AnalysesView({
 
                                                                                 // Ciclos sem consumo após 00h
                                                                                 const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
-                                                                                    // Filtrar consumos deste ciclo pelo cycleId
-                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => c.cycleId === cycle.id);
+                                                                                    // Derivar data do ciclo
+                                                                                    const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+
+                                                                                    // Filtrar consumos deste dia
+                                                                                    const cycleConsumptions = analysisConsumptions.filter(c => c.date === cycleDate);
 
                                                                                     // Verificar se algum consumo foi após 00h
                                                                                     const hasLateConsumption = cycleConsumptions.some(c => {
@@ -1950,25 +1953,25 @@ export function AnalysesView({
                                                                     );
                                                                 })()}
 
-                                                                {/* Análise Intraciclo */}
+                                                                {/* Análise Intra-dia */}
                                                                 {(() => {
-                                                                    const cycleData = {};
+                                                                    const dayData = {};
 
                                                                     analysisConsumptions.forEach(c => {
-                                                                        if (!c.cycleId) return;
-                                                                        if (!cycleData[c.cycleId]) cycleData[c.cycleId] = { consumptions: [], wellbeing: [] };
-                                                                        cycleData[c.cycleId].consumptions.push({ timestamp: c.timestamp, type: 'consumption' });
+                                                                        if (!c.date) return;
+                                                                        if (!dayData[c.date]) dayData[c.date] = { consumptions: [], wellbeing: [] };
+                                                                        dayData[c.date].consumptions.push({ timestamp: c.timestamp, type: 'consumption' });
                                                                     });
 
                                                                     analysisWellbeing.forEach(w => {
-                                                                        if (!w.cycleId) return;
-                                                                        if (!cycleData[w.cycleId]) cycleData[w.cycleId] = { consumptions: [], wellbeing: [] };
+                                                                        if (!w.date) return;
+                                                                        if (!dayData[w.date]) dayData[w.date] = { consumptions: [], wellbeing: [] };
                                                                         if (w.mood && !isNaN(parseInt(w.mood))) {
-                                                                            cycleData[w.cycleId].wellbeing.push({ timestamp: w.timestamp, mood: parseInt(w.mood), energy: parseInt(w.energy) || null });
+                                                                            dayData[w.date].wellbeing.push({ timestamp: w.timestamp, mood: parseInt(w.mood), energy: parseInt(w.energy) || null });
                                                                         }
                                                                     });
 
-                                                                    const cyclesWithData = Object.values(cycleData).filter(c => c.consumptions.length > 0 && c.wellbeing.length >= 1);
+                                                                    const cyclesWithData = Object.values(dayData).filter(c => c.consumptions.length > 0 && c.wellbeing.length >= 1);
 
                                                                     if (cyclesWithData.length >= 1) {
                                                                         // 1. Evolução de Humor e Energia ao longo do ciclo

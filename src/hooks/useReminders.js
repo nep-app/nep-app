@@ -112,15 +112,14 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
     if (!user || !cycles || cycles.length === 0) return;
 
     try {
-      // Get current cycle
-      const currentCycle = cycles[0];
-      if (!currentCycle) return;
+      // Get today's date
+      const today = new Date().toISOString().split('T')[0];
 
-      // Get consumptions in current cycle
-      const currentCycleConsumptions = consumptions.filter(c => c.cycleId === currentCycle.id);
+      // Get consumptions today
+      const currentCycleConsumptions = consumptions.filter(c => c.date === today);
 
-      // Get wellbeing logs in current cycle
-      const currentCycleWellbeing = wellbeingLogs.filter(w => w.cycleId === currentCycle.id);
+      // Get wellbeing logs today
+      const currentCycleWellbeing = wellbeingLogs.filter(w => w.date === today);
 
       if (currentCycleConsumptions.length === 0) return;
 

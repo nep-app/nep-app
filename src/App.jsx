@@ -60,7 +60,6 @@ function HarmReductionTracker() {
 
             // App error state
             const [appError, setAppError] = useState(null);
-            const hasAutoAssociatedRef = React.useRef(false);
 
             // UI Navigation State
             const [currentView, setCurrentView] = useState('home');
@@ -133,77 +132,11 @@ function HarmReductionTracker() {
 
             // Firebase initialization and listeners now handled by DataContext
 
-            // Auto-associate consumptions to cycles when data is loaded
-            useEffect(() => {
-                if (!user || !db || cycles.length === 0 || consumptions.length === 0) return;
-
-                // Create a unique key based on cycles and consumptions to avoid unnecessary reruns
-                const dataKey = `${cycles.map(c => c.id).join(',')}-${consumptions.map(c => c.id + c.cycleId).join(',')}`;
-                if (hasAutoAssociatedRef.current === dataKey) return;
-
-                hasAutoAssociatedRef.current = dataKey;
-
-                const sortedCycles = [...cycles].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-                // Helper function to calculate cycle start time based on bedtime
-                const getCycleStartTimestamp = (cycle) => {
-                    if (!cycle.bedtime) return cycle.timestamp;
-
-                    const cycleDate = new Date(cycle.timestamp);
-                    const [hours, minutes] = cycle.bedtime.split(':').map(Number);
-
-                    const bedtimeDate = new Date(cycleDate);
-                    bedtimeDate.setHours(hours, minutes, 0, 0);
-
-                    // If bedtime is after cycle creation time, subtract one day
-                    if (bedtimeDate > cycleDate) {
-                        const adjustedDate = subtractDays(bedtimeDate, 1);
-                        bedtimeDate.setTime(adjustedDate.getTime());
-                    }
-
-                    return bedtimeDate.toISOString();
-                };
-
-                // Run association asynchronously to avoid blocking
-                (async () => {
-                    for (const consumption of consumptions) {
-                        let assignedCycleId = null;
-
-                        for (let i = 0; i < sortedCycles.length; i++) {
-                            const cycle = sortedCycles[i];
-                            const nextCycle = i < sortedCycles.length - 1 ? sortedCycles[i + 1] : null;
-
-                            // Use bedtime as cycle start, not creation timestamp
-                            const cycleStart = getCycleStartTimestamp(cycle);
-                            const nextCycleStart = nextCycle ? getCycleStartTimestamp(nextCycle) : null;
-
-                            const isAfterCycleStart = consumption.timestamp >= cycleStart;
-                            const isBeforeNextCycle = !nextCycleStart || consumption.timestamp < nextCycleStart;
-
-                            if (isAfterCycleStart && isBeforeNextCycle) {
-                                assignedCycleId = cycle.id;
-                                break;
-                            }
-                        }
-
-                        if (!assignedCycleId) {
-                            assignedCycleId = sortedCycles[0].id;
-                        }
-
-                        // Only update if the cycle assignment has changed
-                        if (consumption.cycleId !== assignedCycleId) {
-                            const updatedConsumption = { ...consumption, cycleId: assignedCycleId };
-                            await addConsumption(updatedConsumption);
-                        }
-                    }
-                })();
-            }, [user, db, cycles, consumptions]);
 
             const markConsumption = async () => {
                 try {
                     const now = new Date();
-                    const currentCycle = getCurrentCycleId();
-                    const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), cycleId: currentCycle, notes: '' };
+                    const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
                     await addConsumption(item);
                     showToast('✓ Consumo registado', 'success');
                 } catch (error) {
@@ -259,15 +192,9 @@ function HarmReductionTracker() {
                 }
             };
 
-            const getCurrentCycleId = () => {
-                if (cycles.length === 0) return null;
-                return cycles[0].id; // Most recent cycle (sorted by timestamp desc)
-            };
-
             const submitDailyLog = async () => {
                 try {
-                    const currentCycle = getCurrentCycleId();
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), cycleId: currentCycle, times: metrics.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: metrics.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
                     await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '' });
                     setShowDailyLogModal(false);
@@ -306,12 +233,10 @@ function HarmReductionTracker() {
                         return;
                     }
 
-                    const currentCycle = getCurrentCycleId();
                     const item = {
                         id: genId(),
                         date: getTodayKey(),
                         timestamp: new Date().toISOString(),
-                        cycleId: currentCycle,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         water: wellbeingForm.water,
@@ -355,12 +280,10 @@ function HarmReductionTracker() {
                         return;
                     }
 
-                    const currentCycle = getCurrentCycleId();
                     const item = {
                         id: genId(),
                         date: getTodayKey(),
                         timestamp: new Date().toISOString(),
-                        cycleId: currentCycle,
                         content: sanitizeText(thoughtsText)
                     };
                     await addThought(item);
@@ -450,210 +373,6 @@ function HarmReductionTracker() {
 
             const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
 
-            const getGoalAchievementCount = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
-                // Usar dados filtrados se fornecidos, caso contrário usar todos os dados
-                const dataConsumptions = filteredConsumptions || consumptions;
-                const dataDailyLogs = filteredDailyLogs || dailyLogs;
-                const dataCycles = filteredCycles || cycles;
-                const dataWellbeing = filteredWellbeing || wellbeingLogs;
-
-                let achievedCount = 0;
-
-                if (goal.type === 'reduce_frequency') {
-                    // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
-                    // Ex: target=10 → conta dias com <10 consumos (0-9)
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = getTodayPT();
-                    const consumptionsByDate = {};
-
-                    dataConsumptions.forEach(c => {
-                        // Derivar data do timestamp para garantir consistência
-                        const dateKey = timestampToPT(c.timestamp);
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
-                        consumptionsByDate[dateKey]++;
-                    });
-
-                    // Remove dia atual da contagem
-                    const completedDays = { ...consumptionsByDate };
-                    delete completedDays[today];
-
-                    Object.entries(completedDays).forEach(([date, count]) => {
-                        const isAchieved = count < goal.target;
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'reduce_quantity') {
-                    // REGRA: Conta ciclos com mg ABAIXO do target (excluindo o target)
-                    // Ex: target=200 → conta ciclos com <200mg
-                    // IMPORTANTE: Exclui ciclo atual (que ainda não acabou)
-                    // COMPATIBILIDADE: Busca mg de cycles.mg (novo) ou soma dailyLogs.mg pelo cycleId (antigo)
-                    const today = getTodayPT();
-
-                    dataCycles.forEach(cycle => {
-                        const cycleDate = timestampToPT(cycle.timestamp);
-
-                        // Tentar buscar mg do cycle primeiro (novo lugar)
-                        let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
-                        let source = 'cycle';
-
-                        // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
-                        if (isNaN(mgValue) || mgValue <= 0) {
-                            // Tentar buscar pelo cycleId primeiro (dados recentes)
-                            let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
-
-                            // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
-                            if (!dailyLog || !dailyLog.mg) {
-                                const cycleDay = safeToISODate(cycle.timestamp);
-                                dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
-                            }
-
-                            if (dailyLog && dailyLog.mg) {
-                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                source = 'dailyLog';
-                            }
-                        }
-
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
-                            const isAchieved = mgValue < parseFloat(goal.target);
-                            if (isAchieved) achievedCount++;
-                        } else {
-                        }
-                    });
-
-                }
-
-                if (goal.type === 'limit_last') {
-                    // REGRA: Conta CICLOS onde user marcou lastBefore00=true
-                    dataCycles.forEach(cycle => {
-                        const isAchieved = cycle.lastBefore00 === true;
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'increase_interval') {
-                    // REGRA: Conta DIAS onde ≥50% dos intervalos são >target
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    const today = getTodayPT();
-                    const consumptionsByDate = {};
-
-                    dataConsumptions.forEach(c => {
-                        const dateKey = timestampToPT(c.timestamp);
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                        consumptionsByDate[dateKey].push(c);
-                    });
-
-                    // Remove dia atual da contagem
-                    delete consumptionsByDate[today];
-
-                    Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
-                        if (dayConsumptions.length < 2) {
-                            return;
-                        }
-
-                        const sorted = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                        let longIntervals = 0;
-                        let totalIntervals = 0;
-                        const intervalDetails = [];
-
-                        for (let i = 1; i < sorted.length; i++) {
-                            const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
-                            totalIntervals++;
-                            const isLong = intervalHours > goal.target;
-                            if (isLong) longIntervals++;
-                            intervalDetails.push({
-                                from: new Date(sorted[i-1].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
-                                to: new Date(sorted[i].timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'}),
-                                hours: intervalHours.toFixed(1),
-                                isLong
-                            });
-                        }
-
-                        const percentage = (longIntervals / totalIntervals) * 100;
-                        const isAchieved = longIntervals >= totalIntervals / 2;
-
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                if (goal.type === 'sleep_hours') {
-                    // REGRA: Conta dias com sono ≥ target (7h ou mais)
-                    // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-                    // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
-                    const today = getTodayPT();
-
-                    // Coletar datas únicas de cycles e wellbeingLogs
-                    const allDates = new Set([
-                        ...dataCycles.map(c => getDateKeyFromItem(c)),
-                        ...dataWellbeing.map(w => getDateKeyFromItem(w))
-                    ]);
-
-                    allDates.forEach(date => {
-                        const dateObj = new Date(date);
-                        const dateStr = dateObj.toLocaleDateString('pt-PT');
-                        if (dateStr === today) return; // Skip today
-
-                        // Primeiro tenta buscar em cycles
-                        const cycle = dataCycles.find(c => {
-                            const cycleDate = getDateKeyFromItem(c);
-                            return cycleDate === date && c.sleep != null;
-                        });
-                        if (cycle) {
-                            const isAchieved = parseFloat(cycle.sleep) >= parseFloat(goal.target);
-                            if (isAchieved) achievedCount++;
-                            return;
-                        }
-
-                        // Fallback: buscar em wellbeingLogs
-                        const wellbeing = dataWellbeing.find(w => {
-                            const wDate = getDateKeyFromItem(w);
-                            return wDate === date && w.sleep != null;
-                        });
-                        if (wellbeing) {
-                            const isAchieved = parseFloat(wellbeing.sleep) >= parseFloat(goal.target);
-                            if (isAchieved) achievedCount++;
-                        }
-                    });
-                }
-
-                if (goal.type === 'bedtime_before') {
-                    // REGRA: Conta ciclos onde hora de deitar foi ATÉ o target (incluindo a hora exata)
-                    // E hora entre 21:00-02:00
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                    dataCycles.forEach(cycle => {
-                        if (!cycle.bedtime) return;
-                        const bedtimeParts = cycle.bedtime.split(':');
-                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-                        const bedtimeOriginalMinutes = bedtimeMinutes;
-                        const originalBedtime = cycle.bedtime;
-
-                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
-                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-                        // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
-                            bedtimeMinutes += 1440; // +24h
-                        }
-
-                        // Ajustar target se for madrugada
-                        let targetAdjusted = targetMinutes;
-                        if (targetMinutes >= 0 && targetMinutes < 360) {
-                            targetAdjusted += 1440;
-                        }
-
-                        const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-
-                        if (isAchieved) achievedCount++;
-                    });
-                }
-
-                return achievedCount;
-            };
-
             // Get goal progress with percentage
             const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
                 const dataConsumptions = filteredConsumptions || consumptions;
@@ -667,14 +386,15 @@ function HarmReductionTracker() {
                 const today = getTodayPT();
 
                 if (goal.type === 'increase_interval') {
-                    const consumptionsByCycle = {};
+                    const consumptionsByDay = {};
                     dataConsumptions.forEach(c => {
-                        if (!c.cycleId) return;
-                        if (!consumptionsByCycle[c.cycleId]) consumptionsByCycle[c.cycleId] = [];
-                        consumptionsByCycle[c.cycleId].push(c);
+                        const dateKey = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                        if (!dateKey) return;
+                        if (!consumptionsByDay[dateKey]) consumptionsByDay[dateKey] = [];
+                        consumptionsByDay[dateKey].push(c);
                     });
 
-                    Object.values(consumptionsByCycle).forEach(cycleConsumptions => {
+                    Object.values(consumptionsByDay).forEach(cycleConsumptions => {
                         if (cycleConsumptions.length < 2) return; // Skip cycles with <2 consumptions
                         total++;
 
@@ -708,37 +428,21 @@ function HarmReductionTracker() {
                 }
 
                 if (goal.type === 'reduce_quantity') {
-                    dataCycles.forEach(cycle => {
-                        const cycleDate = timestampToPT(cycle.timestamp);
+                    // Agrupar dailyLogs por data
+                    const mgByDate = {};
+                    dataDailyLogs.forEach(log => {
+                        if (!log.date || !log.mg) return;
+                        if (!mgByDate[log.date]) mgByDate[log.date] = 0;
+                        const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
+                        if (!isNaN(mgValue)) mgByDate[log.date] += mgValue;
+                    });
 
-                        // Tentar buscar mg do cycle primeiro (novo lugar)
-                        let mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
-                        let source = 'cycle';
-
-                        // Se não tiver no cycle, buscar do dailyLog (compatibilidade)
-                        if (isNaN(mgValue) || mgValue <= 0) {
-                            // Tentar buscar pelo cycleId primeiro (dados recentes)
-                            let dailyLog = dataDailyLogs.find(log => log.cycleId === cycle.id);
-
-                            // Se não encontrou pelo cycleId, tentar por data (dados antigos sem cycleId)
-                            if (!dailyLog || !dailyLog.mg) {
-                                const cycleDay = safeToISODate(cycle.timestamp);
-                                dailyLog = dataDailyLogs.find(log => log.date === cycleDay && log.mg);
-                            }
-
-                            if (dailyLog && dailyLog.mg) {
-                                mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                source = 'dailyLog';
-                            }
-                        }
-
-                        if (!isNaN(mgValue) && mgValue > 0) {
-                            // NÃO ignorar baseado em data, porque mg é sempre do dia anterior
-                            total++;
-                            const isAchieved = mgValue < parseFloat(goal.target);
-                            if (isAchieved) achieved++;
-                        } else {
-                        }
+                    // Contar dias (excluindo hoje)
+                    Object.entries(mgByDate).forEach(([date, totalMg]) => {
+                        if (date === today) return; // Excluir dia atual
+                        total++;
+                        const isAchieved = totalMg < parseFloat(goal.target);
+                        if (isAchieved) achieved++;
                     });
                 }
 
@@ -956,7 +660,8 @@ return {
             };
 
             const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
-            const currentCycleCount = currentCycle ? consumptions.filter(c => c.cycleId === currentCycle.id).length : 0;
+            const today = getTodayKey();
+            const currentCycleCount = consumptions.filter(c => c.date === today).length;
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = metrics.last7Days;
             const streaks = metrics.streaks;
@@ -1332,7 +1037,6 @@ return {
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
                                 wellbeingLogs={wellbeingLogs}
-                                currentCycleId={getCurrentCycleId()}
                             />
                         </Suspense>
 
