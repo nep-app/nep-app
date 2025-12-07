@@ -182,8 +182,25 @@ export function PatternsView({
                                                             analyticsService.getAllDaysSinceFirstRecord(filteredConsumptions) :
                                                             [];
                                                         totalPossible = allDays.length;
-                                                    } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before' || g.type === 'limit_last') {
-                                                        // NOVA LÓGICA: Dias COM consumptions (exclui hoje)
+                                                    } else if (g.type === 'sleep_hours') {
+                                                        // sleep_hours: Dias com dados de sono (cycles ou wellbeing)
+                                                        const today = getTodayKey();
+                                                        const daysWithSleep = new Set();
+                                                        cycles.forEach(c => {
+                                                            const dateKey = getDateKeyFromItem(c);
+                                                            if (dateKey && dateKey !== today && c.sleep != null && c.sleep !== '') {
+                                                                daysWithSleep.add(dateKey);
+                                                            }
+                                                        });
+                                                        wellbeingLogs.forEach(w => {
+                                                            const dateKey = getDateKeyFromItem(w);
+                                                            if (dateKey && dateKey !== today && w.sleep != null && w.sleep !== '') {
+                                                                daysWithSleep.add(dateKey);
+                                                            }
+                                                        });
+                                                        totalPossible = daysWithSleep.size;
+                                                    } else if (g.type === 'bedtime_before' || g.type === 'limit_last') {
+                                                        // bedtime_before e limit_last: Dias COM consumptions (exclui hoje)
                                                         const today = getTodayPT();
                                                         const daysWithConsumptions = new Set();
                                                         filteredConsumptions.forEach(c => {
@@ -192,13 +209,23 @@ export function PatternsView({
                                                         });
                                                         totalPossible = daysWithConsumptions.size;
                                                     } else if (g.type === 'reduce_quantity') {
-                                                        // reduce_quantity usa dailyLogs
+                                                        // reduce_quantity: dailyLogs + cycles.mg (dados antigos)
                                                         const today = getTodayKey();
-                                                        const daysWithLogs = new Set();
+                                                        const daysWithMg = new Set();
+                                                        // dailyLogs (novo)
                                                         filteredDailyLogs.forEach(log => {
-                                                            if (log.date && log.date !== today) daysWithLogs.add(log.date);
+                                                            if (log.date && log.date !== today && log.mg) {
+                                                                daysWithMg.add(log.date);
+                                                            }
                                                         });
-                                                        totalPossible = daysWithLogs.size;
+                                                        // cycles.mg (dados antigos)
+                                                        cycles.forEach(c => {
+                                                            const dateKey = getDateKeyFromItem(c);
+                                                            if (dateKey && dateKey !== today && c.mg) {
+                                                                daysWithMg.add(dateKey);
+                                                            }
+                                                        });
+                                                        totalPossible = daysWithMg.size;
                                                     } else {
                                                         // Fallback: contar dias únicos
                                                         totalPossible = 0;

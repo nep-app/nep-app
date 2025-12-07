@@ -287,13 +287,25 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // IMPORTANTE: Exclui dia atual (que ainda não acabou)
         const today = getTodayKey();
 
-        // Agrupar dailyLogs por data
+        // Agrupar mg por data (dailyLogs + cycles antigos)
         const mgByDate = {};
+
+        // Ler mg de dailyLogs (novo sistema)
         dailyLogs.forEach(log => {
             if (!log.date || !log.mg) return;
             if (!mgByDate[log.date]) mgByDate[log.date] = 0;
             const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
             if (!isNaN(mgValue)) mgByDate[log.date] += mgValue;
+        });
+
+        // Ler mg de cycles (dados antigos - antes de removermos o campo)
+        cycles.forEach(cycle => {
+            if (!cycle.mg) return;
+            const dateKey = getDateKeyFromItem(cycle);
+            if (!dateKey) return;
+            if (!mgByDate[dateKey]) mgByDate[dateKey] = 0;
+            const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
+            if (!isNaN(mgValue)) mgByDate[dateKey] += mgValue;
         });
 
         // Contar dias abaixo do target (excluindo hoje)
@@ -368,24 +380,29 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'sleep_hours') {
-        // REGRA: Conta TODOS OS DIAS com consumptions
-        // Dias COM consumptions mas SEM dados de sono = 0h (falha na meta)
-        // Dias SEM consumptions = não relevantes (não contam)
-        const allDays = getAllDaysSinceFirstRecord(consumptions);
+        // REGRA: Conta TODOS OS DIAS com dados de sono (cycles ou wellbeing)
+        // Não importa se teve ou não consumptions
+        // Buscar todas as datas únicas com dados de sono
+        const today = getTodayKey();
+        const datesWithSleep = new Set();
 
-        // Mapear consumptions por dia (usar ISO format)
-        const consumptionsByDate = {};
-        consumptions.forEach(c => {
-            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
-            consumptionsByDate[dateKey] = true;
+        cycles.forEach(c => {
+            const dateKey = getDateKeyFromItem(c);
+            if (dateKey && dateKey !== today && c.sleep != null && c.sleep !== '') {
+                datesWithSleep.add(dateKey);
+            }
         });
 
-        // Verificar cada dia
-        allDays.forEach(date => {
-            // Só conta dias com consumptions
-            if (!consumptionsByDate[date]) return;
+        wellbeingLogs.forEach(w => {
+            const dateKey = getDateKeyFromItem(w);
+            if (dateKey && dateKey !== today && w.sleep != null && w.sleep !== '') {
+                datesWithSleep.add(dateKey);
+            }
+        });
 
-            // Buscar dados de sono para este dia
+        // Para cada dia com dados de sono, verificar se atingiu a meta
+        datesWithSleep.forEach(date => {
+            // Buscar dados de sono para este dia (priorizar cycle)
             const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.sleep != null);
             const wellbeing = wellbeingLogs.find(w => getDateKeyFromItem(w) === date && w.sleep != null);
 
