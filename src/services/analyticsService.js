@@ -7,7 +7,7 @@ import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysA
  * @param {Array} consumptions - Array de consumptions
  * @returns {Array} Array de datas em formato ISO (YYYY-MM-DD)
  */
-const getAllDaysSinceFirstRecord = (consumptions) => {
+export const getAllDaysSinceFirstRecord = (consumptions) => {
     if (!consumptions || consumptions.length === 0) return [];
 
     // Encontrar primeiro consumption
@@ -265,10 +265,10 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Dias sem consumptions (0 consumos) contam como alcançados (se target > 0)
         const allDays = getAllDaysSinceFirstRecord(consumptions);
 
-        // Contar consumptions por dia
+        // Contar consumptions por dia (usar ISO format para consistência)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
+            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
             consumptionsByDate[dateKey]++;
         });
@@ -310,10 +310,10 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Dias SEM consumptions = não relevantes (não contam)
         const allDays = getAllDaysSinceFirstRecord(consumptions);
 
-        // Mapear consumptions por dia
+        // Mapear consumptions por dia (usar ISO format)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
+            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
             consumptionsByDate[dateKey] = true;
         });
 
@@ -373,10 +373,10 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Dias SEM consumptions = não relevantes (não contam)
         const allDays = getAllDaysSinceFirstRecord(consumptions);
 
-        // Mapear consumptions por dia
+        // Mapear consumptions por dia (usar ISO format)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
+            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
             consumptionsByDate[dateKey] = true;
         });
 
@@ -404,10 +404,10 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         const targetParts = targetStr.split(':');
         const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
-        // Mapear consumptions por dia
+        // Mapear consumptions por dia (usar ISO format)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
+            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
             consumptionsByDate[dateKey] = true;
         });
 

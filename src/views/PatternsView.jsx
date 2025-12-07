@@ -176,28 +176,32 @@ export function PatternsView({
                                                             consumptionsByDate[dateKey].push(c);
                                                         });
                                                         totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
-                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity') {
-                                                        // For cycle-based goals: count all cycles
-                                                        // Note: reduce_quantity counts CYCLES with mg < target (not days!)
-                                                        totalPossible = filteredCycles.length;
-                                                    } else {
-                                                        // For day-based goals: count unique days (excluding today)
+                                                    } else if (g.type === 'reduce_frequency') {
+                                                        // NOVA LÓGICA: Todos os dias desde primeiro registo (exclui hoje)
+                                                        const allDays = analyticsService.getAllDaysSinceFirstRecord ?
+                                                            analyticsService.getAllDaysSinceFirstRecord(filteredConsumptions) :
+                                                            [];
+                                                        totalPossible = allDays.length;
+                                                    } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before' || g.type === 'limit_last') {
+                                                        // NOVA LÓGICA: Dias COM consumptions (exclui hoje)
                                                         const today = getTodayPT();
-                                                        const allDates = new Set();
-
-                                                        if (g.type === 'reduce_frequency') {
-                                                            filteredConsumptions.forEach(c => {
-                                                                const dateKey = timestampToPT(c.timestamp);
-                                                                if (dateKey !== today) allDates.add(dateKey);
-                                                            });
-                                                        } else if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
-                                                            filteredWellbeingLogs.forEach(log => {
-                                                                const dateKey = new Date(log.timestamp).toLocaleDateString('pt-PT');
-                                                                if (dateKey !== today) allDates.add(dateKey);
-                                                            });
-                                                        }
-
-                                                        totalPossible = allDates.size;
+                                                        const daysWithConsumptions = new Set();
+                                                        filteredConsumptions.forEach(c => {
+                                                            const dateKey = timestampToPT(c.timestamp);
+                                                            if (dateKey !== today) daysWithConsumptions.add(dateKey);
+                                                        });
+                                                        totalPossible = daysWithConsumptions.size;
+                                                    } else if (g.type === 'reduce_quantity') {
+                                                        // reduce_quantity usa dailyLogs
+                                                        const today = getTodayKey();
+                                                        const daysWithLogs = new Set();
+                                                        filteredDailyLogs.forEach(log => {
+                                                            if (log.date && log.date !== today) daysWithLogs.add(log.date);
+                                                        });
+                                                        totalPossible = daysWithLogs.size;
+                                                    } else {
+                                                        // Fallback: contar dias únicos
+                                                        totalPossible = 0;
                                                     }
 
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;

@@ -444,9 +444,9 @@ export function AnalysesView({
                                                                                 const cyclesWithValidBedtime = analysisCycles.filter(c => {
                                                                                     return c.bedtime; // Aceitar qualquer hora
                                                                                 });
-                
+
                                                                                 if (cyclesWithValidBedtime.length === 0) return null;
-                
+
                                                                                 const getBedtimeMinutes = (bedtime) => {
                                                                                     const [hours, minutes] = bedtime.split(':').map(Number);
                                                                                     // Ajustar madrugada/tarde (00:00-17:59) para 24:00-41:59
@@ -454,14 +454,39 @@ export function AnalysesView({
                                                                                     if (hours >= 0 && hours < 18) return (hours + 24) * 60 + minutes;
                                                                                     return hours * 60 + minutes;
                                                                                 };
-                
+
                                                                                 const avgBedtimeMinutes = cyclesWithValidBedtime.reduce((sum, c) => sum + getBedtimeMinutes(c.bedtime), 0) / cyclesWithValidBedtime.length;
                                                                                 // Converter de volta para 0-23h se necessário
                                                                                 const adjustedMinutes = avgBedtimeMinutes >= 1440 ? avgBedtimeMinutes - 1440 : avgBedtimeMinutes;
                                                                                 const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
                                                                                 const avgBedtimeMins = Math.round(adjustedMinutes % 60);
                                                                                 const avgBedtimeStr = `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
-                
+
+                                                                                // Calcular dias sem dormir (dias com consumptions mas sem dados de sono)
+                                                                                const uniqueConsumptionDates = new Set();
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (c.date) uniqueConsumptionDates.add(c.date);
+                                                                                });
+
+                                                                                let daysWithoutSleep = 0;
+                                                                                uniqueConsumptionDates.forEach(date => {
+                                                                                    const hasSleepInCycle = analysisCycles.some(c => {
+                                                                                        const cycleDate = c.date || (c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : null);
+                                                                                        return cycleDate === date && c.sleep != null && c.sleep !== '';
+                                                                                    });
+                                                                                    const hasSleepInWellbeing = analysisWellbeing.some(w => {
+                                                                                        const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+                                                                                        return wDate === date && w.sleep != null && w.sleep !== '';
+                                                                                    });
+
+                                                                                    if (!hasSleepInCycle && !hasSleepInWellbeing) {
+                                                                                        daysWithoutSleep++;
+                                                                                    }
+                                                                                });
+
+                                                                                const totalDaysWithConsumptions = uniqueConsumptionDates.size;
+                                                                                const pctDaysWithoutSleep = totalDaysWithConsumptions > 0 ? Math.round((daysWithoutSleep / totalDaysWithConsumptions) * 100) : 0;
+
                                                                                 return (
                                                                                     <p>
                                                                                         Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{avgBedtimeStr}</strong>.
@@ -473,6 +498,9 @@ export function AnalysesView({
                                                                                             <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
                                                                                         ) : (
                                                                                             <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
+                                                                                        )}
+                                                                                        {daysWithoutSleep > 0 && (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Dias sem dormir: {daysWithoutSleep} {daysWithoutSleep === 1 ? 'dia' : 'dias'} ({pctDaysWithoutSleep}%).</span> Registar dados de sono ajuda a entender melhor o impacto no teu bem-estar.</>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -2112,12 +2140,12 @@ export function AnalysesView({
                                                                                 <div className="space-y-4">
                                                                                     {/* Evolução de Humor */}
                                                                                     <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Ciclo</div>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Dia</div>
 
                                                                                         {avgMoodStart && avgMoodEnd && (() => {
                                                                                             const diff = parseFloat(avgMoodEnd) - parseFloat(avgMoodStart);
                                                                                             const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                                                                            const trendText = diff > 0.5 ? 'O teu humor melhora ao longo do ciclo!' : diff < -0.5 ? 'O teu humor piora ao longo do ciclo.' : 'O teu humor mantém-se estável no ciclo.';
+                                                                                            const trendText = diff > 0.5 ? 'O teu humor melhora durante o dia!' : diff < -0.5 ? 'O teu humor piora durante o dia.' : 'O teu humor mantém-se estável no dia.';
 
                                                                                             return (
                                                                                                 <>
@@ -2143,11 +2171,11 @@ export function AnalysesView({
                                                                                     {avgEnergyStart && avgEnergyEnd && (() => {
                                                                                         const diff = parseFloat(avgEnergyEnd) - parseFloat(avgEnergyStart);
                                                                                         const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                                                                        const trendText = diff > 0.5 ? 'A tua energia aumenta ao longo do ciclo!' : diff < -0.5 ? 'A tua energia diminui ao longo do ciclo.' : 'A tua energia mantém-se estável no ciclo.';
+                                                                                        const trendText = diff > 0.5 ? 'A tua energia aumenta durante o dia!' : diff < -0.5 ? 'A tua energia diminui durante o dia.' : 'A tua energia mantém-se estável no dia.';
 
                                                                                         return (
                                                                                             <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border'}>
-                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Ciclo</div>
+                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Dia</div>
                                                                                                 <div className="flex items-center justify-between mb-3">
                                                                                                     <div className="flex items-center gap-2">
                                                                                                         <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyStart}</span>
@@ -2177,14 +2205,14 @@ export function AnalysesView({
                                                                                         } else if (startPct >= 50) {
                                                                                             insight = `Consumos concentram-se no início do ciclo (${startPct}%). Isto pode indicar consumo logo após acordar.`;
                                                                                         } else if (Math.max(startPct, middlePct, endPct) - Math.min(startPct, middlePct, endPct) < 15) {
-                                                                                            insight = 'Distribuição equilibrada de consumos ao longo do ciclo.';
+                                                                                            insight = 'Distribuição equilibrada de consumos durante o dia.';
                                                                                         } else {
-                                                                                            insight = 'Padrão variável de consumo ao longo do ciclo.';
+                                                                                            insight = 'Padrão variável de consumo durante o dia.';
                                                                                         }
 
                                                                                         return (
                                                                                             <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏰ Padrão de Consumo no Ciclo</div>
+                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏰ Padrão de Consumo no Dia</div>
                                                                                                 <div className="space-y-2 mb-3">
                                                                                                     <div className="flex items-center gap-2">
                                                                                                         <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Início (33%)</div>
