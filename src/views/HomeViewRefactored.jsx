@@ -117,9 +117,9 @@ export function HomeViewRefactored({
             const targetMg = parseFloat(quantityGoal.target);
             const mgValue = typeof lastCycleWithMg.mg === 'number' ? lastCycleWithMg.mg : parseFloat(lastCycleWithMg.mg);
 
-            // Tanto ciclos como registos diários referem-se ao ciclo que terminou
-            // Por isso, mostrar "último ciclo" para ambos
-            const dateLabel = 'último ciclo';
+            // Tanto ciclos como registos diários referem-se ao dia anterior
+            // Por isso, mostrar "de ontem" para ambos
+            const dateLabel = 'de ontem';
 
             if (mgValue >= targetMg) {
               alerts.push({
@@ -295,7 +295,7 @@ export function HomeViewRefactored({
 
       <div className="grid grid-cols-2 gap-3">
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>
-          <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-xs font-medium mb-1'}>Este Ciclo</div>
+          <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-xs font-medium mb-1'}>Hoje</div>
           <div className="flex items-baseline gap-1">
             <span className={'text-2xl font-black ' + (darkMode ? 'text-purple-300' : 'text-purple-600')}>{currentCycleCount}</span>
             <span className={(darkMode ? 'text-purple-400' : 'text-purple-500') + ' text-sm font-medium'}>x</span>

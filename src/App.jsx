@@ -661,7 +661,7 @@ return {
 
             const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
             const today = getTodayKey();
-            const currentCycleCount = consumptions.filter(c => c.date === today).length;
+            const currentCycleCount = consumptions.filter(c => getDateKeyFromItem(c) === today).length;
             // ===== PRE-RENDER DATA PREPARATION =====
             const last7 = metrics.last7Days;
             const streaks = metrics.streaks;

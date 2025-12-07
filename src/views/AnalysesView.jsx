@@ -522,7 +522,7 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Ciclos:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerCycle.toFixed(0)}mg por ciclo</strong> (dados de {cyclesWithMg} {cyclesWithMg === 1 ? 'ciclo' : 'ciclos'}).
+                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Dias:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerCycle.toFixed(0)}mg por dia</strong> (dados de {cyclesWithMg} {cyclesWithMg === 1 ? 'dia' : 'dias'}).
                                                                                         {avgMgPerCycle > 300 ? (
                                                                                             <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
                                                                                         ) : avgMgPerCycle > 200 ? (
@@ -2105,9 +2105,9 @@ export function AnalysesView({
 
                                                                         return (
                                                                             <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intraciclo Detalhada</h3>
+                                                                                <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intra-dia Detalhada</h3>
                                                                                 <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                    Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono (período entre acordar e voltar a dormir)
+                                                                                    Como evoluem humor, energia e consumo durante o mesmo dia (00:00-23:59)
                                                                                 </p>
                                                                                 <div className="space-y-4">
                                                                                     {/* Evolução de Humor */}
@@ -2261,9 +2261,9 @@ export function AnalysesView({
 
                                                                     return (
                                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intraciclo Detalhada</h3>
+                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intra-dia Detalhada</h3>
                                                                             <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                Como evoluem humor, energia e consumo dentro do mesmo ciclo de sono
+                                                                                Como evoluem humor, energia e consumo durante o mesmo dia
                                                                             </p>
                                                                             <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                 Sem dados de ciclos com consumo e bem-estar registados

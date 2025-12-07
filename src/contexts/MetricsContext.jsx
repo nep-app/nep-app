@@ -36,7 +36,7 @@ export const MetricsProvider = ({ children }) => {
     });
 
     const totalConsumptions = last7Dates.reduce((sum, date) => {
-      return sum + consumptions.filter(c => c.date === date).length;
+      return sum + consumptions.filter(c => getDateKeyFromItem(c) === date).length;
     }, 0);
 
     const avgTimes = (totalConsumptions / 7).toFixed(1);
@@ -85,7 +85,7 @@ export const MetricsProvider = ({ children }) => {
     let totalConsumptions = 0;
 
     last7Dates.forEach(date => {
-      const dayConsumptions = consumptions.filter(c => c.date === date);
+      const dayConsumptions = consumptions.filter(c => getDateKeyFromItem(c) === date);
       if (dayConsumptions.length === 0) return;
 
       // Check interval rule if more than 1 consumption

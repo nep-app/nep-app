@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo } from '../utils/helpers';
+import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
 
 export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
   // Helper: Get last 7 days dates
@@ -48,7 +48,7 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
   // Memoized today's consumptions
   const todayConsumptions = useMemo(() => {
     const today = getTodayKeyHelper();
-    return consumptions.filter(c => c.date === today);
+    return consumptions.filter(c => getDateKeyFromItem(c) === today);
   }, [consumptions]);
 
   // Memoized temporal correlations (ALREADY OPTIMIZED)

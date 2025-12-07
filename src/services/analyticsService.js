@@ -196,7 +196,7 @@ export const getLast7Days = (consumptions) => {
     for (let i = 6; i >= 0; i--) {
         const date = getDateDaysAgo(i);
         const dateKey = safeToISODate(date);
-        const count = consumptions.filter(c => c.date === dateKey).length;
+        const count = consumptions.filter(c => getDateKeyFromItem(c) === dateKey).length;
         days.push({
             date: dateKey,
             label: i === 0 ? 'Hoje' : date.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric' }),

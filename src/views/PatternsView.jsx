@@ -337,8 +337,8 @@ export function PatternsView({
                                                                         };
                                                                         const explanations = {
                                                                             'reduce_frequency': `Dias com <${goal.target} consumos`,
-                                                                            'reduce_quantity': `Ciclos com <${goal.target}mg`,
-                                                                            'limit_last': `Ciclos com último antes da meia-noite`,
+                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
+                                                                            'limit_last': `Dias com último antes da meia-noite`,
                                                                             'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
                                                                             'sleep_hours': `Noites com ≥${goal.target}h de sono`,
                                                                             'bedtime_before': `Noites a dormir antes de ${goal.target}`
@@ -805,7 +805,7 @@ export function PatternsView({
                                                     recent: recentAvgSelfCare,
                                                     previous: previousAvgSelfCare,
                                                     change: calculateChange(recentAvgSelfCare, previousAvgSelfCare, false), // More is better
-                                                    label: 'Atividades de autocuidado por ciclo'
+                                                    label: 'Atividades de autocuidado por dia'
                                                 };
                                             }
 
@@ -939,7 +939,7 @@ export function PatternsView({
                                                     recent: recentAvgTriggers,
                                                     previous: previousAvgTriggers,
                                                     change: calculateChange(recentAvgTriggers, previousAvgTriggers, true), // Lower is better
-                                                    label: 'Gatilhos por ciclo'
+                                                    label: 'Gatilhos por dia'
                                                 };
                                             }
 

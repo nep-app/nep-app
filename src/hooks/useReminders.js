@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getTodayKey } from '../utils/helpers';
+import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
 
@@ -113,13 +113,13 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
 
     try {
       // Get today's date
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayKey();
 
       // Get consumptions today
-      const currentCycleConsumptions = consumptions.filter(c => c.date === today);
+      const currentCycleConsumptions = consumptions.filter(c => getDateKeyFromItem(c) === today);
 
       // Get wellbeing logs today
-      const currentCycleWellbeing = wellbeingLogs.filter(w => w.date === today);
+      const currentCycleWellbeing = wellbeingLogs.filter(w => getDateKeyFromItem(w) === today);
 
       if (currentCycleConsumptions.length === 0) return;
 
