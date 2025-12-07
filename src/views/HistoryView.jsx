@@ -287,6 +287,49 @@ export function HistoryView({
                                                     </div>
                                                 )}
 
+                                                {filteredDailyLogs.length > 0 && (
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>📊 Registos de mg ({filteredDailyLogs.length})</h3>
+                                                        <div className="space-y-3">
+                                                            {filteredDailyLogs.map(log => (
+                                                                <div key={log.id} className={(darkMode ? 'bg-pink-900/30 border-pink-700/50' : 'bg-pink-50 border-pink-200') + ' p-3 rounded-lg border'}>
+                                                                    <div className="flex justify-between items-center">
+                                                                        <div className="flex-1">
+                                                                            <div className={'font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                                {(() => {
+                                                                                    const d = safeDate(log.timestamp || log.date);
+                                                                                    if (!d) return 'Data inválida';
+                                                                                    const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                    const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                    return dateStr + timeStr;
+                                                                                })()}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-3">
+                                                                                {log.mg && (
+                                                                                    <div className={'text-sm ' + (darkMode ? 'text-pink-300' : 'text-pink-700')}>
+                                                                                        <span className="font-bold text-lg">{log.mg}</span> mg
+                                                                                    </div>
+                                                                                )}
+                                                                                {log.times != null && (
+                                                                                    <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            {log.notes && (
+                                                                                <div className={'text-sm mt-1 italic ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                    💭 {log.notes}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {filteredCycles.length > 0 && (
                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>🌙 Ciclos ({filteredCycles.length})</h3>
