@@ -71,10 +71,10 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
   // Get intensity color based on value
   const getConsumptionColor = (count) => {
     if (!count || count === 0) return darkMode ? '#1f2937' : '#f3f4f6';
-    if (count === 1) return darkMode ? '#7c3aed40' : '#ddd6fe';
-    if (count === 2) return darkMode ? '#7c3aed70' : '#c4b5fd';
-    if (count === 3) return darkMode ? '#7c3aeda0' : '#a78bfa';
-    if (count >= 4) return darkMode ? '#7c3aed' : '#8b5cf6';
+    if (count >= 1 && count <= 3) return darkMode ? '#7c3aed40' : '#ddd6fe';
+    if (count >= 4 && count <= 6) return darkMode ? '#7c3aed70' : '#c4b5fd';
+    if (count >= 7 && count <= 9) return darkMode ? '#7c3aeda0' : '#a78bfa';
+    if (count >= 10) return darkMode ? '#7c3aed' : '#8b5cf6';
     return darkMode ? '#1f2937' : '#f3f4f6';
   };
 
@@ -296,7 +296,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
             {view === 'consumptions' ? 'Menos consumos' : 'Bem-estar baixo'}
           </div>
           <div className="flex gap-1">
-            {[0, 1, 2, 3, 4].map(level => (
+            {[0, 2, 5, 8, 10].map(level => (
               <div
                 key={level}
                 style={{
@@ -304,7 +304,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
                   height: 12,
                   backgroundColor: view === 'consumptions'
                     ? getConsumptionColor(level)
-                    : getWellbeingColor(level === 0 ? null : level * 2.5),
+                    : getWellbeingColor(level === 0 ? null : level * 1),
                   borderRadius: 2,
                 }}
               />

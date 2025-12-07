@@ -2278,7 +2278,7 @@ export function AnalysesView({
                                                                                                 {avgInterval}h
                                                                                             </div>
                                                                                             <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                Tempo médio entre consumos dentro do mesmo ciclo
+                                                                                                Tempo médio entre consumos dentro do mesmo dia
                                                                                             </div>
                                                                                         </div>
                                                                                     )}
