@@ -82,18 +82,6 @@ export const CycleModal = ({
             </div>
           </div>
           <div>
-            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
-              Dosagem total consumida (mg) <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(pesada, dia anterior)</span>
-            </label>
-            <input
-              type="number"
-              value={cycleForm.mg || ''}
-              onChange={(e) => setCycleForm({...cycleForm, mg: e.target.value})}
-              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400'}
-              placeholder="Dosagem total pesada de ontem"
-            />
-          </div>
-          <div>
             <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Notas sobre este ciclo (opcional)</label>
             <textarea
               value={cycleForm.notes}

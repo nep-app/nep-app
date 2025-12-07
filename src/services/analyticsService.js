@@ -1,5 +1,36 @@
 import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem } from '../utils/helpers';
 
+// ===== HELPER FUNCTIONS =====
+
+/**
+ * Gera array de todos os dias desde o primeiro consumption até ontem
+ * @param {Array} consumptions - Array de consumptions
+ * @returns {Array} Array de datas em formato ISO (YYYY-MM-DD)
+ */
+const getAllDaysSinceFirstRecord = (consumptions) => {
+    if (!consumptions || consumptions.length === 0) return [];
+
+    // Encontrar primeiro consumption
+    const timestamps = consumptions.map(c => new Date(c.timestamp).getTime()).filter(t => !isNaN(t));
+    if (timestamps.length === 0) return [];
+
+    const firstTimestamp = Math.min(...timestamps);
+    const firstDate = new Date(firstTimestamp);
+    const today = new Date();
+
+    // Gerar todos os dias desde firstDate até ontem
+    const days = [];
+    const current = new Date(firstDate);
+    current.setHours(0, 0, 0, 0);
+
+    while (current < today) {
+        days.push(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+    }
+
+    return days;
+};
+
 // ===== ANALYTICS LOGIC =====
 
 export const analyzeSentiment = (note) => {
@@ -230,24 +261,21 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     let achievedCount = 0;
 
     if (goal.type === 'reduce_frequency') {
-        // REGRA: Conta dias com consumos ABAIXO do target (excluindo o target)
-        // Ex: target=10 → conta dias com <10 consumos (0-9)
-        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-        const today = getTodayPT();
-        const consumptionsByDate = {};
+        // REGRA: Conta TODOS OS DIAS desde primeiro registo com consumos <target
+        // Dias sem consumptions (0 consumos) contam como alcançados (se target > 0)
+        const allDays = getAllDaysSinceFirstRecord(consumptions);
 
+        // Contar consumptions por dia
+        const consumptionsByDate = {};
         consumptions.forEach(c => {
-            // Derivar data do timestamp para garantir consistência
             const dateKey = timestampToPT(c.timestamp);
             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
             consumptionsByDate[dateKey]++;
         });
 
-        // Remove dia atual da contagem
-        const completedDays = { ...consumptionsByDate };
-        delete completedDays[today];
-
-        Object.entries(completedDays).forEach(([date, count]) => {
+        // Verificar cada dia
+        allDays.forEach(date => {
+            const count = consumptionsByDate[date] || 0; // Dias sem consumptions = 0
             const isAchieved = count < goal.target;
             if (isAchieved) achievedCount++;
         });
@@ -277,24 +305,27 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'limit_last') {
-        // REGRA: Conta DIAS onde último consumo foi antes das 00:00
-        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-        const today = getTodayKey();
+        // REGRA: Conta TODOS OS DIAS com consumptions
+        // Dias COM consumptions mas SEM lastBefore00 marcado = falha
+        // Dias SEM consumptions = não relevantes (não contam)
+        const allDays = getAllDaysSinceFirstRecord(consumptions);
 
-        // Agrupar cycles por data (um ciclo por dia)
-        const cyclesByDate = {};
-        cycles.forEach(cycle => {
-            const dateKey = safeToISODate(cycle.timestamp) || cycle.date;
-            if (!dateKey || dateKey === today) return; // Excluir dia atual
-            // Se já existe ciclo para este dia, manter o mais recente
-            if (!cyclesByDate[dateKey] || cycle.timestamp > cyclesByDate[dateKey].timestamp) {
-                cyclesByDate[dateKey] = cycle;
-            }
+        // Mapear consumptions por dia
+        const consumptionsByDate = {};
+        consumptions.forEach(c => {
+            const dateKey = timestampToPT(c.timestamp);
+            consumptionsByDate[dateKey] = true;
         });
 
-        // Contar dias onde lastBefore00=true
-        Object.values(cyclesByDate).forEach(cycle => {
-            const isAchieved = cycle.lastBefore00 === true;
+        // Verificar cada dia
+        allDays.forEach(date => {
+            // Só conta dias com consumptions
+            if (!consumptionsByDate[date]) return;
+
+            // Buscar cycle para este dia
+            const cycle = cycles.find(c => getDateKeyFromItem(c) === date);
+
+            const isAchieved = cycle && cycle.lastBefore00 === true;
             if (isAchieved) achievedCount++;
         });
     }
@@ -337,66 +368,62 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'sleep_hours') {
-        // REGRA: Conta DIAS com sono ≥ target (7h ou mais)
-        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-        // Busca sono de cycles.sleep (primário) ou wellbeingLogs.sleep (fallback)
-        const today = getTodayKey();
+        // REGRA: Conta TODOS OS DIAS com consumptions
+        // Dias COM consumptions mas SEM dados de sono = 0h (falha na meta)
+        // Dias SEM consumptions = não relevantes (não contam)
+        const allDays = getAllDaysSinceFirstRecord(consumptions);
 
-        // Coletar datas únicas de cycles e wellbeingLogs
-        const allDates = new Set([
-            ...cycles.map(c => getDateKeyFromItem(c)),
-            ...wellbeingLogs.map(w => getDateKeyFromItem(w))
-        ]);
+        // Mapear consumptions por dia
+        const consumptionsByDate = {};
+        consumptions.forEach(c => {
+            const dateKey = timestampToPT(c.timestamp);
+            consumptionsByDate[dateKey] = true;
+        });
 
-        allDates.forEach(date => {
-            if (!date || date === today) return; // Excluir dia atual
+        // Verificar cada dia
+        allDays.forEach(date => {
+            // Só conta dias com consumptions
+            if (!consumptionsByDate[date]) return;
 
-            // Primeiro tenta buscar em cycles (primário)
-            const cycle = cycles.find(c => {
-                const cycleDate = getDateKeyFromItem(c);
-                return cycleDate === date && c.sleep != null;
-            });
-            if (cycle) {
-                const isAchieved = parseFloat(cycle.sleep) >= parseFloat(goal.target);
-                if (isAchieved) achievedCount++;
-                return;
-            }
+            // Buscar dados de sono para este dia
+            const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.sleep != null);
+            const wellbeing = wellbeingLogs.find(w => getDateKeyFromItem(w) === date && w.sleep != null);
 
-            // Fallback: buscar em wellbeingLogs (dados antigos)
-            const wellbeing = wellbeingLogs.find(w => {
-                const wDate = getDateKeyFromItem(w);
-                return wDate === date && w.sleep != null;
-            });
-            if (wellbeing) {
-                const isAchieved = parseFloat(wellbeing.sleep) >= parseFloat(goal.target);
-                if (isAchieved) achievedCount++;
-            }
+            const sleep = cycle ? parseFloat(cycle.sleep) : (wellbeing ? parseFloat(wellbeing.sleep) : 0);
+            const isAchieved = sleep >= parseFloat(goal.target);
+            if (isAchieved) achievedCount++;
         });
     }
 
     if (goal.type === 'bedtime_before') {
-        // REGRA: Conta DIAS onde hora de deitar foi ATÉ o target (incluindo a hora exata)
-        // E hora entre 21:00-02:00
-        // IMPORTANTE: Exclui dia atual (que ainda não acabou)
-        const today = getTodayKey();
+        // REGRA: Conta TODOS OS DIAS com consumptions
+        // Dias COM consumptions mas SEM bedtime = falha
+        // Dias SEM consumptions = não relevantes (não contam)
+        const allDays = getAllDaysSinceFirstRecord(consumptions);
         const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
         const targetParts = targetStr.split(':');
         const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
-        // Agrupar cycles por data (um ciclo por dia)
-        const cyclesByDate = {};
-        cycles.forEach(cycle => {
-            const dateKey = safeToISODate(cycle.timestamp) || cycle.date;
-            if (!dateKey || dateKey === today) return; // Excluir dia atual
-            // Se já existe ciclo para este dia, manter o mais recente
-            if (!cyclesByDate[dateKey] || cycle.timestamp > cyclesByDate[dateKey].timestamp) {
-                cyclesByDate[dateKey] = cycle;
-            }
+        // Mapear consumptions por dia
+        const consumptionsByDate = {};
+        consumptions.forEach(c => {
+            const dateKey = timestampToPT(c.timestamp);
+            consumptionsByDate[dateKey] = true;
         });
 
-        // Contar dias onde bedtime <= target
-        Object.values(cyclesByDate).forEach(cycle => {
-            if (!cycle.bedtime) return;
+        // Verificar cada dia
+        allDays.forEach(date => {
+            // Só conta dias com consumptions
+            if (!consumptionsByDate[date]) return;
+
+            // Buscar cycle para este dia
+            const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.bedtime);
+
+            if (!cycle || !cycle.bedtime) {
+                // Sem dados de bedtime = falha
+                return;
+            }
+
             const bedtimeParts = cycle.bedtime.split(':');
             let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
             const bedtimeOriginalMinutes = bedtimeMinutes;
@@ -405,8 +432,8 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
 
             // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) { // 0-5:59
-                bedtimeMinutes += 1440; // +24h
+            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
+                bedtimeMinutes += 1440;
             }
 
             // Ajustar target se for madrugada
@@ -416,7 +443,6 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             }
 
             const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-
             if (isAchieved) achievedCount++;
         });
     }

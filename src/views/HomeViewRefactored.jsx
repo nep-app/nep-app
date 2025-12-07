@@ -24,7 +24,7 @@ export function HomeViewRefactored({
 }) {
   const { consumptions, goals, cycles, dailyLogs } = useData();
   const metrics = useMetrics();
-  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowReflectionModal, setShowCycleModal } = useUI();
+  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   return (
     <div className="space-y-6">
@@ -282,10 +282,14 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-xl p-4 font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <Icons.Brain className="w-5 h-5 mb-2" />
           <div className="text-sm">Reflexão diária</div>
+        </button>
+        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-xl mb-1">📊</div>
+          <div className="text-sm">Registar mg</div>
         </button>
         <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-xl p-4 font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-xl mb-1">🌙</div>

@@ -88,7 +88,7 @@ function HarmReductionTracker() {
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
@@ -305,12 +305,11 @@ function HarmReductionTracker() {
                         triggers: cycleForm.triggers,
                         notes: cycleForm.notes,
                         lastBefore00: cycleForm.lastBefore00,
-                        // Converter mg e sleep para número (se tiver valor)
-                        ...(cycleForm.mg && cycleForm.mg !== '' ? { mg: parseFloat(cycleForm.mg) } : {}),
+                        // Converter sleep para número (se tiver valor)
                         ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                     };
                     await addCycle(item);
-                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, mg: '' });
+                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
