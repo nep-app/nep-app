@@ -14,21 +14,27 @@ function _calculateRawSentiment(text) {
 
   const POSITIVE_WORDS_RAW = {
     'excelente': 3, 'otimo': 3, 'fantastico': 3, 'incrivel': 3, 'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnifico': 3,
-    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3,
+    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3, 'demais': 3, 'brilhante': 3, 'impecavel': 3,
     'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2, 'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
     'confiante': 2, 'motivado': 2, 'motivada': 2, 'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2, 'fixe': 2, 'bacano': 2, 'top': 2, 'nice': 2, 'capaz': 2,
+    'giro': 2, 'bestial': 2, 'calmo': 2, 'calma': 2, 'tranquilo': 2, 'tranquila': 2, 'relaxado': 2, 'relaxada': 2,
+    'focado': 2, 'focada': 2, 'produtivo': 2, 'produtiva': 2, 'equilibrado': 2, 'equilibrada': 2, 'energico': 2, 'energica': 2,
     'bem': 1, 'ok': 1, 'okay': 1, 'razoavel': 1, 'aceitavel': 1, 'normal': 1, 'esperancoso': 1, 'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1,
-    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1
+    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1, 'decente': 1, 'estavel': 1
   };
 
   const NEGATIVE_WORDS_RAW = {
     'estupida': 3, 'estupido': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3, 'atrasada': 3, 'atrasado': 3, 'retardada': 3, 'morrer': 3, 'morte': 3,
+    'horrivel': 3, 'pessimo': 3, 'terrivel': 3,
     'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
     'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2,
     'dificil': 2, 'complicado': 2, 'pior': 2, 'negativo': 2, 'raiva': 2, 'fodido': 2, 'fodida': 2, 'lixado': 2, 'lixada': 2,
     'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2, 'doente': 2, 'arrependido': 2, 'arrependida': 2, 'mania': 2,
+    'nervoso': 2, 'nervosa': 2, 'irritado': 2, 'irritada': 2, 'zangado': 2, 'zangada': 2, 'infeliz': 2,
+    'deprimido': 2, 'deprimida': 2, 'esgotado': 2, 'esgotada': 2, 'exausto': 2, 'exausta': 2, 'fraco': 2, 'fraca': 2,
     'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1, 'sono': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'duvida': 1, 'problema': 1,
-    'meh': 1, 'nhe': 1, 'down': 1, 'estranha': 1, 'estranho': 1, 'medo': 2, 'desconfortavel': 1
+    'meh': 1, 'nhe': 1, 'down': 1, 'estranha': 1, 'estranho': 1, 'medo': 2, 'desconfortavel': 1,
+    'desconcentrado': 1, 'desconcentrada': 1, 'distraido': 1, 'distraida': 1, 'desanimado': 1, 'desanimada': 1
   };
 
   const SWEAR_WORDS = new Set(['merda', 'caralho', 'crl', 'fdss', 'fds', 'fodasse', 'foda-se', 'porra']);
@@ -118,10 +124,10 @@ function _calculateRawSentiment(text) {
 
   const magnitude = details.reduce((sum, d) => sum + Math.abs(d.score), 0);
   let classification = 'neutral';
-  if (totalScore > 2) classification = 'very_positive';
-  else if (totalScore > 0.5) classification = 'positive';
-  else if (totalScore < -2) classification = 'very_negative';
-  else if (totalScore < -0.5) classification = 'negative';
+  if (totalScore > 1.5) classification = 'very_positive';
+  else if (totalScore > 0.3) classification = 'positive';
+  else if (totalScore < -1.5) classification = 'very_negative';
+  else if (totalScore < -0.3) classification = 'negative';
 
   return { score: Number(totalScore.toFixed(3)), magnitude: Number(magnitude.toFixed(3)), classification, positiveCount, negativeCount, neutralCount, details };
 }
@@ -154,10 +160,10 @@ export function analyzeMultipleNotes(notes) {
   };
 
   let overall = 'neutral';
-  if (avgScore > 2) overall = 'very_positive';
-  else if (avgScore > 0.5) overall = 'positive';
-  else if (avgScore < -2) overall = 'very_negative';
-  else if (avgScore < -0.5) overall = 'negative';
+  if (avgScore > 1.5) overall = 'very_positive';
+  else if (avgScore > 0.3) overall = 'positive';
+  else if (avgScore < -1.5) overall = 'very_negative';
+  else if (avgScore < -0.3) overall = 'negative';
 
   let trend = 'stable';
   if (analyses.length >= 4) {
