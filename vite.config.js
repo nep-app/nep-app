@@ -22,9 +22,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         format: 'es',
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        entryFileNames: 'app.js',
+        chunkFileNames: 'chunks/[name]-[hash].js',
+        assetFileNames: '[name].[ext]',
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
           'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
