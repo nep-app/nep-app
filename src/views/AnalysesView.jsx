@@ -217,11 +217,10 @@ export function AnalysesView({
                                                                         <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
                                                                             {/* Paragraph 1: Overview */}
                                                                             <p>
-                                                                                Olá! Vamos refletir sobre este período juntos.
                                                                                 {totalConsumptions > 0 ? (
-                                                                                    <> Registaste <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'}</strong> ao longo de {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'}, com uma média de <strong>{avgPerDay} consumos/dia</strong>.</>
+                                                                                    <>📊 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Visão Geral:</strong> {totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'} em {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'} (média {avgPerDay}/dia). Vamos explorar os padrões:</>
                                                                                 ) : (
-                                                                                    <> Não tens consumos registados neste período - isso é excelente! </>
+                                                                                    <>🎉 Nenhum consumo registado neste período - excelente!</>
                                                                                 )}
                                                                             </p>
                 
@@ -380,64 +379,159 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
-                                                                            {/* Paragraph 3b: Hourly Consumption Analysis */}
+                                                                            {/* NOVO: Paragraph 4 - Janelas de Vulnerabilidade */}
                                                                             {(() => {
-                                                                                if (totalConsumptions === 0) return null;
-                
-                                                                                // Calcular consumos por hora (inicializar todas as 24 horas com 0)
+                                                                                if (analysisConsumptions.length < 10) return null;
+
+                                                                                // Calcular consumos por hora
                                                                                 const byHour = {};
-                                                                                for (let h = 0; h < 24; h++) {
-                                                                                    byHour[h] = 0;
-                                                                                }
-                
+                                                                                for (let h = 0; h < 24; h++) byHour[h] = 0;
+
                                                                                 analysisConsumptions.forEach(c => {
                                                                                     const hour = new Date(c.timestamp).getHours();
                                                                                     byHour[hour]++;
                                                                                 });
-                
-                                                                                if (analysisConsumptions.length === 0) return null;
-                
-                                                                                // Encontrar hora com mais e menos consumos (todas as 24 horas)
-                                                                                const hourEntries = Object.entries(byHour).map(([h, count]) => ({ hour: parseInt(h), count }));
-                                                                                hourEntries.sort((a, b) => b.count - a.count);
-                
-                                                                                const worstHour = hourEntries[0];
-                                                                                const bestHour = hourEntries[hourEntries.length - 1];
-                
-                                                                                const formatHourRange = (h) => `${String(h).padStart(2, '0')}:00-${String(h + 1).padStart(2, '0')}:00`;
-                
-                                                                                // Só mostrar se houver variação significativa entre horas
-                                                                                // Se melhor hora tem 0, qualquer pior hora > 0 é significativo
-                                                                                // Caso contrário, pior hora precisa ter pelo menos 2x mais que melhor
-                                                                                const hasSignificantVariation = bestHour.count === 0
-                                                                                    ? worstHour.count > 0
-                                                                                    : worstHour.count >= bestHour.count * 2;
-                
-                                                                                if (!hasSignificantVariation) return null;
-                
+
+                                                                                // Detectar janelas de 4h com maior concentração
+                                                                                let maxWindowCount = 0, maxWindowStart = 0;
+                                                                                for (let start = 0; start < 24; start++) {
+                                                                                    let windowCount = 0;
+                                                                                    for (let i = 0; i < 4; i++) {
+                                                                                        windowCount += byHour[(start + i) % 24];
+                                                                                    }
+                                                                                    if (windowCount > maxWindowCount) {
+                                                                                        maxWindowCount = windowCount;
+                                                                                        maxWindowStart = start;
+                                                                                    }
+                                                                                }
+
+                                                                                const concentrationPercent = Math.round((maxWindowCount / analysisConsumptions.length) * 100);
+
+                                                                                // Só mostrar se concentração >= 50%
+                                                                                if (concentrationPercent < 50) return null;
+
+                                                                                const formatWindow = (start) => {
+                                                                                    const end = (start + 4) % 24;
+                                                                                    return `${String(start).padStart(2, '0')}h-${String(end).padStart(2, '0')}h`;
+                                                                                };
+
+                                                                                // Categorizar janela
+                                                                                let windowType = '';
+                                                                                if (maxWindowStart >= 22 || maxWindowStart <= 2) windowType = 'noite/madrugada';
+                                                                                else if (maxWindowStart >= 6 && maxWindowStart <= 11) windowType = 'manhã';
+                                                                                else if (maxWindowStart >= 12 && maxWindowStart <= 17) windowType = 'tarde';
+                                                                                else windowType = 'fim de tarde/noite';
+
                                                                                 return (
                                                                                     <p>
-                                                                                        A tua <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>hora de maior risco</strong> é das <strong>{formatHourRange(worstHour.hour)}</strong> ({worstHour.count} {worstHour.count === 1 ? 'consumo' : 'consumos'}).
-                                                                                        {bestHour.count === 0 ? (
-                                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> <strong>nunca registas consumos</strong>. <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                                        ⏰ <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Janela de Vulnerabilidade:</strong> <strong>{concentrationPercent}%</strong> dos teus consumos acontecem entre <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{formatWindow(maxWindowStart)}</strong> ({windowType}).
+                                                                                        {concentrationPercent >= 70 ? (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⚠️ Concentração muito alta! Esta é a tua janela crítica - planeia atividades alternativas ou estratégias de distração nesse horário.</span></>
                                                                                         ) : (
-                                                                                            <> Por outro lado, das <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{formatHourRange(bestHour.hour)}</strong> registas menos consumos ({bestHour.count}x). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>O que fazes diferente nesse horário? Esse padrão pode ser uma pista valiosa para estratégias de redução de risco.</span></>
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Identificar este padrão é o primeiro passo. Que rotinas/gatilhos existem nesse período?</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
                                                                             })()}
-                
-                                                                            {/* Paragraph 4: Wellbeing Integration */}
-                                                                            {(avgMood || avgEnergy || avgSleep) && (
-                                                                                <p>
-                                                                                    Sobre o teu bem-estar geral:
-                                                                                    {avgSleep && <> estás a dormir em média <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>{avgSleep} horas</strong>{parseFloat(avgSleep) < 6 ? ', o que é abaixo do recomendado - o sono é fundamental para a recuperação e regulação emocional' : parseFloat(avgSleep) > 9 ? ', o que pode indicar necessidade de descanso extra ou até depressão - observa como te sentes' : parseFloat(avgSleep) >= 7 && parseFloat(avgSleep) <= 9 ? ' - excelente! Esse é o intervalo ideal para a maioria das pessoas' : ' - um valor razoável'}.</>}
-                                                                                    {avgMood && <> O teu humor médio foi de <strong className={(parseFloat(avgMood) >= 7 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(avgMood) >= 5 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-red-400' : 'text-red-600'))}>{avgMood}/10</strong>{parseFloat(avgMood) >= 7 ? ' - isso é muito positivo!' : parseFloat(avgMood) >= 5 ? ' - moderado, com espaço para melhorias.' : ' - isto preocupa-me. Como te podes apoiar melhor?'}.</>}
-                                                                                    {avgEnergy && <> Energia média: <strong className={(parseFloat(avgEnergy) >= 7 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{avgEnergy}/10</strong>{parseFloat(avgEnergy) < 5 ? '. Níveis baixos de energia podem estar relacionados com o consumo, sono ou alimentação.' : '.'}.</>}
-                                                                                </p>
-                                                                            )}
-                
-                                                                            {/* Paragraph 5: Emotional Tone & Encouragement (ANÁLISE AVANÇADA) */}
+
+                                                                            {/* NOVO: Paragraph 5 - Cascata de Consumo */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 15) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                // Ordenar por data
+                                                                                const sortedDates = Object.keys(consumptionsByDate).sort();
+
+                                                                                // Detectar cascatas: dia difícil (≥10) seguido de mais dias difíceis
+                                                                                let cascadeEvents = 0, longestCascade = 0, currentCascade = 0;
+
+                                                                                sortedDates.forEach((date, idx) => {
+                                                                                    if (consumptionsByDate[date] >= 10) {
+                                                                                        currentCascade++;
+                                                                                        if (currentCascade > longestCascade) longestCascade = currentCascade;
+                                                                                        if (currentCascade === 2) cascadeEvents++; // Conta quando começa cascata (2º dia)
+                                                                                    } else {
+                                                                                        currentCascade = 0;
+                                                                                    }
+                                                                                });
+
+                                                                                if (cascadeEvents === 0 && longestCascade < 2) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🌊 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Efeito Cascata:</strong>
+                                                                                        {longestCascade >= 2 ? (
+                                                                                            <> Detectei <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{cascadeEvents} {cascadeEvents === 1 ? 'episódio' : 'episódios'} de cascata</strong> (dias difíceis consecutivos). O mais longo foi de <strong>{longestCascade} dias</strong>.
+                                                                                            {longestCascade >= 3 ? (
+                                                                                                <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Cascatas longas são preocupantes - um dia mau leva a outro. Quando detetas o primeiro dia difícil, é crucial intervir logo no dia seguinte para quebrar o ciclo.</span></>
+                                                                                            ) : (
+                                                                                                <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Padrão: depois de um dia difícil, há risco de continuar. Quebra o ciclo no 2º dia!</span></>
+                                                                                            )}</>
+                                                                                        ) : (
+                                                                                            <> Não deteto efeito cascata significativo - geralmente consegues recuperar após dias difíceis. <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Boa resiliência!</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Paragraph 6 - Perfil de Recuperação */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 20) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const dailyCounts = Object.values(consumptionsByDate);
+                                                                                const avgDaily = dailyCounts.reduce((a, b) => a + b, 0) / dailyCounts.length;
+
+                                                                                // Ordenar por data
+                                                                                const sortedDates = Object.keys(consumptionsByDate).sort();
+
+                                                                                // Detectar recuperações: dias após dia difícil (≥10)
+                                                                                const recoveryTimes = [];
+                                                                                sortedDates.forEach((date, idx) => {
+                                                                                    if (consumptionsByDate[date] >= 10 && idx < sortedDates.length - 1) {
+                                                                                        // Procurar quando volta à média
+                                                                                        for (let j = idx + 1; j < sortedDates.length; j++) {
+                                                                                            if (consumptionsByDate[sortedDates[j]] <= avgDaily) {
+                                                                                                recoveryTimes.push(j - idx);
+                                                                                                break;
+                                                                                            }
+                                                                                            // Limite de 7 dias
+                                                                                            if (j - idx >= 7) break;
+                                                                                        }
+                                                                                    }
+                                                                                });
+
+                                                                                if (recoveryTimes.length === 0) return null;
+
+                                                                                const avgRecovery = (recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length).toFixed(1);
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🔄 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Perfil de Recuperação:</strong> Em média, levas <strong>{avgRecovery} {parseFloat(avgRecovery) === 1 ? 'dia' : 'dias'}</strong> para voltar ao normal após um dia difícil.
+                                                                                        {parseFloat(avgRecovery) <= 1.5 ? (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
+                                                                                        ) : parseFloat(avgRecovery) <= 3 ? (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
+                                                                                        ) : (
+                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* Paragraph 7: Emotional Tone & Encouragement (ANÁLISE AVANÇADA) */}
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
                                                                                     <>
@@ -539,24 +633,8 @@ export function AnalysesView({
                                                                                     <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
                                                                                 )}
                                                                             </p>
-                
-                                                                            {/* Paragraph 6: Highlights */}
-                                                                            {bestDate && totalConsumptions > 0 && (
-                                                                                <p>
-                                                                                    {bestCount <= 2 ? (
-                                                                                        <>
-                                                                                            Destaco o dia <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{new Date(bestDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong>, onde tiveste apenas {bestCount} {bestCount === 1 ? 'consumo' : 'consumos'}.
-                                                                                            <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> O que fizeste diferente nesse dia? Identificar essas estratégias pode ser a chave para replicar esse sucesso.</span>
-                                                                                        </>
-                                                                                    ) : worstDate && worstCount >= 8 ? (
-                                                                                        <>
-                                                                                            Repara que em <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{new Date(worstDate).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}</strong> houve {worstCount} consumos. Não te culpes - em vez disso, pergunta-te: o que aconteceu? Houve gatilhos específicos? Stress? Tédio? Compreender é o primeiro passo para prevenir.
-                                                                                        </>
-                                                                                    ) : null}
-                                                                                </p>
-                                                                            )}
-                
-                                                                            {/* Paragraph 7: Bedtime & Sleep Patterns */}
+
+                                                                            {/* Paragraph 8: Bedtime & Sleep Patterns */}
                                                                             {(() => {
                                                                                 // Nota: Qualquer hora é válida para deitar
                                                                                 const cyclesWithValidBedtime = analysisCycles.filter(c => {
