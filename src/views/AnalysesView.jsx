@@ -946,16 +946,25 @@ export function AnalysesView({
                                                                                     });
                                                                                     periodLabel = { recent: 'neste mês', previous: 'no anterior' };
                                                                                 } else {
-                                                                                    // 'tudo': Comparar últimos 7 dias vs 7 dias anteriores
-                                                                                    const sevenDaysAgo = getDateDaysAgo(7);
-                                                                                    const fourteenDaysAgo = getDateDaysAgo(14);
-                
-                                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
-                                                                                    previousPeriod = consumptions.filter(c => {
-                                                                                        const d = new Date(c.timestamp);
-                                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
-                                                                                    });
-                                                                                    periodLabel = { recent: 'na última semana', previous: 'na anterior' };
+                                                                                    // 'tudo': Dividir TODO o histórico em 2 metades e comparar
+                                                                                    if (consumptions.length < 6) return null; // Mínimo 6 consumos (3 por metade)
+
+                                                                                    // Ordenar por data
+                                                                                    const sorted = [...consumptions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                                    const midpoint = Math.floor(sorted.length / 2);
+
+                                                                                    previousPeriod = sorted.slice(0, midpoint);
+                                                                                    recentPeriod = sorted.slice(midpoint);
+
+                                                                                    // Validar que cada metade tem pelo menos 3 dias únicos
+                                                                                    const getUniqueDays = (data) => {
+                                                                                        const days = new Set(data.map(c => new Date(c.timestamp).toDateString()));
+                                                                                        return days.size;
+                                                                                    };
+
+                                                                                    if (getUniqueDays(previousPeriod) < 3 || getUniqueDays(recentPeriod) < 3) return null;
+
+                                                                                    periodLabel = { recent: 'na segunda metade', previous: 'na primeira metade' };
                                                                                 }
                 
                                                                                 if (recentPeriod.length === 0 || previousPeriod.length === 0) return null;
