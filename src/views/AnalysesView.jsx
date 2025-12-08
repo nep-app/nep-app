@@ -225,43 +225,161 @@ export function AnalysesView({
                                                                                 )}
                                                                             </p>
                 
-                                                                            {/* Paragraph 2: Patterns and Progress */}
-                                                                            {totalConsumptions > 0 && (
-                                                                                <p>
-                                                                                    {intervals.length > 0 ? (
-                                                                                        <>
-                                                                                            Notei que tens um intervalo médio de <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgInterval} horas</strong> entre consumos.
-                                                                                            {goodPercent >= 50 ? (
-                                                                                                <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>Isso é fantástico - {goodPercent}% dos teus intervalos são ≥2h!</span> Estás a conseguir espaçar bem os consumos, o que demonstra grande controlo.</>
-                                                                                            ) : (
-                                                                                                <> Há espaço para melhorar aqui - atualmente {goodPercent}% dos intervalos são ≥2h. Pequenas mudanças, como adicionar uma atividade entre consumos, podem fazer grande diferença.</>
-                                                                                            )}
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <> Neste período ainda não tenho dados suficientes sobre intervalos, mas vamos continuar a acompanhar juntos.</>
-                                                                                    )}
-                                                                                </p>
-                                                                            )}
+                                                                            {/* NOVO: Paragraph 2 - Dias Perfeitos vs Difíceis */}
+                                                                            {(() => {
+                                                                                if (totalConsumptions === 0) return null;
+
+                                                                                // Agrupar consumos por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = { count: 0, cycles: [], wellbeing: [] };
+                                                                                    consumptionsByDate[c.date].count++;
+                                                                                });
+
+                                                                                // Adicionar dados de ciclos
+                                                                                analysisCycles.forEach(cycle => {
+                                                                                    const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                                    if (consumptionsByDate[cycleDate]) {
+                                                                                        consumptionsByDate[cycleDate].cycles.push(cycle);
+                                                                                    }
+                                                                                });
+
+                                                                                // Adicionar dados de wellbeing
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                    if (wDate && consumptionsByDate[wDate]) {
+                                                                                        consumptionsByDate[wDate].wellbeing.push(w);
+                                                                                    }
+                                                                                });
+
+                                                                                const perfectDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= 7);
+                                                                                const difficultDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count >= 10);
+
+                                                                                if (perfectDays.length === 0 && difficultDays.length === 0) return null;
+
+                                                                                // Calcular médias
+                                                                                const calcAvgSleep = (days) => {
+                                                                                    const sleepData = days.flatMap(([_, d]) => d.cycles.filter(c => c.sleep).map(c => parseFloat(c.sleep)));
+                                                                                    return sleepData.length > 0 ? (sleepData.reduce((a, b) => a + b, 0) / sleepData.length).toFixed(1) : null;
+                                                                                };
+
+                                                                                const calcAvgMood = (days) => {
+                                                                                    const moodData = days.flatMap(([_, d]) => d.wellbeing.filter(w => w.mood).map(w => parseInt(w.mood)));
+                                                                                    return moodData.length > 0 ? (moodData.reduce((a, b) => a + b, 0) / moodData.length).toFixed(1) : null;
+                                                                                };
+
+                                                                                const perfectSleep = calcAvgSleep(perfectDays);
+                                                                                const difficultSleep = calcAvgSleep(difficultDays);
+                                                                                const perfectMood = calcAvgMood(perfectDays);
+                                                                                const difficultMood = calcAvgMood(difficultDays);
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🏆 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias Perfeitos vs Difíceis:</strong>
+                                                                                        {perfectDays.length > 0 && <> Tiveste <strong>{perfectDays.length} {perfectDays.length === 1 ? 'dia perfeito' : 'dias perfeitos'}</strong> (≤7 consumos){perfectSleep && <> com média de <strong>{perfectSleep}h sono</strong></>}{perfectMood && <> e humor de <strong>{perfectMood}/10</strong></>}.</>}
+                                                                                        {difficultDays.length > 0 && <> {perfectDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥10 consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
+                                                                                        {perfectSleep && difficultSleep && parseFloat(perfectSleep) > parseFloat(difficultSleep) + 1 && (
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Padrão claro: dormir mais ({(parseFloat(perfectSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias perfeitos!</span></>
+                                                                                        )}
+                                                                                        {perfectMood && difficultMood && parseFloat(perfectMood) > parseFloat(difficultMood) + 1.5 && (
+                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💡 Humor também é fator: dias perfeitos têm +{(parseFloat(perfectMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
                 
-                                                                            {/* Paragraph 3: Time Patterns */}
-                                                                            {totalConsumptions > 0 && maxPartOfDay[1] > 0 && (
-                                                                                <p>
-                                                                                    Reparei que a maioria dos teus consumos ({Math.round((maxPartOfDay[1] / totalConsumptions) * 100)}%) acontece à <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{partNames[maxPartOfDay[0]]}</strong>.
-                                                                                    {maxPartOfDay[0] === 'madrugada' && (
-                                                                                        <> Consumir durante a madrugada pode indicar dificuldades com o sono ou ansiedade noturna. Tens pensado no que te leva a consumir nesse período? Talvez seja útil explorar técnicas de relaxamento para a noite.</>
-                                                                                    )}
-                                                                                    {maxPartOfDay[0] === 'noite' && (
-                                                                                        <> A noite é um período comum para consumo, muitas vezes ligado ao descontrair após o dia. Considera se há formas alternativas de relaxar que te fazem sentir bem.</>
-                                                                                    )}
-                                                                                    {maxPartOfDay[0] === 'tarde' && (
-                                                                                        <> As tardes podem ser desafiantes, especialmente se há rotinas ou gatilhos específicos. Identifica o que precede esses momentos.</>
-                                                                                    )}
-                                                                                    {maxPartOfDay[0] === 'manha' && (
-                                                                                        <> Consumir pela manhã pode estar relacionado com o acordar ou com a gestão de ansiedade matinal. Observa como te sentes ao acordar e se há padrões.</>
-                                                                                    )}
-                                                                                </p>
-                                                                            )}
-                
+                                                                            {/* NOVO: Paragraph 3 - Dias da Semana */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 7) return null;
+
+                                                                                // Agrupar por dia da semana
+                                                                                const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                                                                                const byDayOfWeek = {};
+                                                                                for (let i = 0; i < 7; i++) byDayOfWeek[i] = [];
+
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    const dayOfWeek = new Date(c.timestamp).getDay();
+                                                                                    byDayOfWeek[dayOfWeek].push(c);
+                                                                                });
+
+                                                                                // Calcular médias (total consumos / número de ocorrências desse dia)
+                                                                                const avgByDay = {};
+                                                                                Object.keys(byDayOfWeek).forEach(day => {
+                                                                                    const consumptions = byDayOfWeek[day];
+                                                                                    if (consumptions.length === 0) {
+                                                                                        avgByDay[day] = 0;
+                                                                                        return;
+                                                                                    }
+                                                                                    // Contar quantos dias únicos
+                                                                                    const uniqueDates = new Set(consumptions.map(c => c.date));
+                                                                                    avgByDay[day] = consumptions.length / uniqueDates.size;
+                                                                                });
+
+                                                                                const sortedDays = Object.entries(avgByDay).sort((a, b) => b[1] - a[1]);
+                                                                                const worstDay = sortedDays[0];
+                                                                                const bestDay = sortedDays[sortedDays.length - 1];
+
+                                                                                // Só mostrar se diferença significativa
+                                                                                if (worstDay[1] - bestDay[1] < 2) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        📅 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Padrão Semanal:</strong> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{dayNames[worstDay[0]]}s</strong> são os teus dias mais difíceis (média de <strong>{worstDay[1].toFixed(1)} consumos</strong>), enquanto <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{dayNames[bestDay[0]]}s</strong> são melhores (média {bestDay[1].toFixed(1)}).
+                                                                                        {parseInt(worstDay[0]) >= 1 && parseInt(worstDay[0]) <= 5 ? (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Dia de semana difícil pode estar ligado a stress de trabalho/rotina. Planeia estratégias preventivas às {dayNames[worstDay[0]]}s.</span></>
+                                                                                        ) : (
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Fins de semana tendem a ser mais desafiantes - talvez por mudança de rotina ou tédio. Estrutura atividades para esse dia.</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Paragraph 3c - Streaks/Momentum */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 5) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const dailyCounts = Object.values(consumptionsByDate).sort((a, b) => a - b);
+                                                                                const median = dailyCounts[Math.floor(dailyCounts.length / 2)];
+
+                                                                                // Ordenar por data
+                                                                                const sortedDates = Object.keys(consumptionsByDate).sort();
+                                                                                let maxStreak = 0, currentStreak = 0, maxStreakEnd = null, isCurrentStreakActive = false;
+
+                                                                                sortedDates.forEach((date, idx) => {
+                                                                                    if (consumptionsByDate[date] <= median) {
+                                                                                        currentStreak++;
+                                                                                        if (currentStreak > maxStreak) {
+                                                                                            maxStreak = currentStreak;
+                                                                                            maxStreakEnd = date;
+                                                                                        }
+                                                                                        if (idx === sortedDates.length - 1) isCurrentStreakActive = true;
+                                                                                    } else {
+                                                                                        currentStreak = 0;
+                                                                                        isCurrentStreakActive = false;
+                                                                                    }
+                                                                                });
+
+                                                                                if (maxStreak < 2) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🔥 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Momentum:</strong> O teu recorde é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'} consecutivos</strong> com consumo controlado (≤{median} consumos/dia).
+                                                                                        {isCurrentStreakActive && maxStreak === currentStreak ? (
+                                                                                            <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🎉 E estás nessa streak AGORA! Continua - cada dia conta!</span></>
+                                                                                        ) : maxStreakEnd ? (
+                                                                                            <> O último foi até {new Date(maxStreakEnd).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}. <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Conseguiste uma vez, consegues de novo!</span></>
+                                                                                        ) : null}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 3b: Hourly Consumption Analysis */}
                                                                             {(() => {
                                                                                 if (totalConsumptions === 0) return null;
