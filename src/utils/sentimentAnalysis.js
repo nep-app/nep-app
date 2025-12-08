@@ -20,7 +20,7 @@ function _calculateRawSentiment(text) {
     'giro': 2, 'bestial': 2, 'calmo': 2, 'calma': 2, 'tranquilo': 2, 'tranquila': 2, 'relaxado': 2, 'relaxada': 2,
     'focado': 2, 'focada': 2, 'produtivo': 2, 'produtiva': 2, 'equilibrado': 2, 'equilibrada': 2, 'energico': 2, 'energica': 2,
     'bem': 1, 'ok': 1, 'okay': 1, 'razoavel': 1, 'aceitavel': 1, 'normal': 1, 'esperancoso': 1, 'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1,
-    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1, 'decente': 1, 'estavel': 1, 'lol': 1, 'vontade': 2
+    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1, 'decente': 1, 'estavel': 1, 'vontade': 2
   };
 
   const NEGATIVE_WORDS_RAW = {
@@ -40,7 +40,7 @@ function _calculateRawSentiment(text) {
   const SWEAR_WORDS = new Set(['merda', 'caralho', 'crl', 'fdss', 'fds', 'fodasse', 'foda-se', 'porra']);
   const NEGATIONS_RAW = ['nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer', 'nada', 'naosei'];
   const INTENSIFIERS_RAW = { 'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8, 'incrivelmente': 1.8, 'demasiado': 1.5, 'realmente': 1.3, 'profundamente': 1.5, 'completamente': 1.4, 'tao': 1.3, 'bue': 1.5, 'mega': 1.5, 'ganda': 1.5, 'tanto': 1.3, 'cheia': 1.3, 'cheio': 1.3, 'sempre': 1.4 };
-  const REDUCERS_RAW = { 'pouco': 0.5, 'meio': 0.6, 'maisoumenos': 0.6, 'ligeiramente': 0.5, 'raramente': 0.4, 'assim': 0.8 };
+  const REDUCERS_RAW = { 'pouco': 0.5, 'meio': 0.6, 'maisoumenos': 0.6, 'ligeiramente': 0.5, 'raramente': 0.4, 'assim': 0.8, 'lol': 0.5 };
   const SELF_EVAL_VERBS = new Set(['sou', 'estou', 'to', 'sinto', 'ta', 'estava']);
   const NEGATIVE_EXPRESSIONS = new Set(['que', 'uma', 'um', 'este', 'esta', 'isto', 'isso']);
 
