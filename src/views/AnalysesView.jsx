@@ -706,10 +706,11 @@ export function AnalysesView({
                                                                             {(() => {
                                                                                 if (analysisCycles.length === 0) return null;
 
-                                                                                // Calcular mg total e média por ciclo
+                                                                                // Calcular mg total e média por DIA (não por ciclo)
                                                                                 let totalMg = 0;
                                                                                 let cyclesWithMg = 0;
                                                                                 const cyclesMgData = [];
+                                                                                const datesWithMg = new Set();
 
                                                                                 analysisCycles.forEach(cycle => {
                                                                                     // Usar cycle.mg diretamente (fonte única de verdade)
@@ -718,12 +719,16 @@ export function AnalysesView({
                                                                                         totalMg += cycleMg;
                                                                                         cyclesWithMg++;
                                                                                         cyclesMgData.push(cycleMg);
+                                                                                        // Adicionar data única
+                                                                                        const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                                        datesWithMg.add(cycleDate);
                                                                                     }
                                                                                 });
 
                                                                                 if (cyclesWithMg === 0) return null;
 
-                                                                                const avgMgPerCycle = totalMg / cyclesWithMg;
+                                                                                const uniqueDaysWithMg = datesWithMg.size;
+                                                                                const avgMgPerDay = totalMg / uniqueDaysWithMg;
 
                                                                                 // Ciclos sem consumo após 00h
                                                                                 const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
@@ -746,17 +751,17 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Dias:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerCycle.toFixed(0)}mg por dia</strong> (dados de {cyclesWithMg} {cyclesWithMg === 1 ? 'dia' : 'dias'}).
-                                                                                        {avgMgPerCycle > 300 ? (
+                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Quantidade:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerDay.toFixed(0)}mg por dia</strong> (dados de {uniqueDaysWithMg} {uniqueDaysWithMg === 1 ? 'dia' : 'dias'}).
+                                                                                        {avgMgPerDay > 300 ? (
                                                                                             <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
-                                                                                        ) : avgMgPerCycle > 200 ? (
+                                                                                        ) : avgMgPerDay > 200 ? (
                                                                                             <> Esta é uma quantidade moderada-alta. Há espaço para redução se esse for um objetivo teu.</>
-                                                                                        ) : avgMgPerCycle > 100 ? (
+                                                                                        ) : avgMgPerDay > 100 ? (
                                                                                             <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Esta é uma quantidade moderada.</span> Se estás a trabalhar na redução, estás no caminho certo.</>
                                                                                         ) : (
                                                                                             <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Esta é uma quantidade relativamente baixa!</span> Bom trabalho na gestão de quantidade.</>
                                                                                         )}
-                                                                                        {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{pctNoLate}%</strong> dos dias não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>}
+                                                                                        {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{pctNoLate}%</strong> dos dias não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>
                                                                                     </p>
                                                                                 );
                                                                             })()}
