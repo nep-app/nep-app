@@ -531,6 +531,331 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
+                                                                            {/* NOVO: Outliers - Dias mais altos */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 5) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const dailyCounts = Object.entries(consumptionsByDate).map(([date, count]) => ({date, count}));
+                                                                                const avgDaily = dailyCounts.reduce((sum, d) => sum + d.count, 0) / dailyCounts.length;
+
+                                                                                // Top 3 dias mais altos
+                                                                                const topDays = dailyCounts.sort((a, b) => b.count - a.count).slice(0, 3);
+
+                                                                                if (topDays.length === 0 || topDays[0].count < avgDaily + 2) return null;
+
+                                                                                const top1 = topDays[0];
+                                                                                const diffFromAvg = (top1.count - avgDaily).toFixed(0);
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        📍 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Outliers:</strong> {new Date(top1.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })} teve <strong>{top1.count} consumos</strong> — {diffFromAvg} acima da tua média de {avgDaily.toFixed(1)}. É {topDays.length === 1 ? 'o teu dia mais alto' : `um dos teus ${topDays.length} dias mais altos`}.
+                                                                                        {topDays.length > 1 && (
+                                                                                            <> Outros picos: {topDays.slice(1).map((d, i) => (
+                                                                                                <span key={d.date}>
+                                                                                                    {i > 0 && ', '}
+                                                                                                    {new Date(d.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })} ({d.count})
+                                                                                                </span>
+                                                                                            ))}.</>
+                                                                                        )}
+                                                                                        <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Outliers não são falhas — são dados. Que gap de necessidades foi preenchido nesses dias?</span></>
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Clusters de Comportamento */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
+
+                                                                                // Agrupar dados por dia
+                                                                                const dailyData = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!dailyData[c.date]) dailyData[c.date] = { consumos: 0, sono: null, humor: null };
+                                                                                    dailyData[c.date].consumos++;
+                                                                                });
+
+                                                                                analysisCycles.forEach(cycle => {
+                                                                                    const cDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                                    if (dailyData[cDate] && cycle.sleep) {
+                                                                                        dailyData[cDate].sono = parseFloat(cycle.sleep);
+                                                                                    }
+                                                                                });
+
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                    if (wDate && dailyData[wDate] && w.mood) {
+                                                                                        dailyData[wDate].humor = parseInt(w.mood);
+                                                                                    }
+                                                                                });
+
+                                                                                // Definir clusters manualmente
+                                                                                const clusters = {
+                                                                                    altaPressao: [], // ≥10 consumos + <6h sono + humor ≥5
+                                                                                    paradoxo: [],    // ≤7 consumos + ≥7h sono + humor <5
+                                                                                    equilibrio: []   // consumo médio + humor ≥6
+                                                                                };
+
+                                                                                Object.entries(dailyData).forEach(([date, d]) => {
+                                                                                    if (d.consumos >= 10 && d.sono !== null && d.sono < 6 && d.humor !== null && d.humor >= 5) {
+                                                                                        clusters.altaPressao.push(date);
+                                                                                    } else if (d.consumos <= 7 && d.sono !== null && d.sono >= 7 && d.humor !== null && d.humor < 5) {
+                                                                                        clusters.paradoxo.push(date);
+                                                                                    } else if (d.consumos >= 7 && d.consumos < 10 && d.humor !== null && d.humor >= 6) {
+                                                                                        clusters.equilibrio.push(date);
+                                                                                    }
+                                                                                });
+
+                                                                                const hasAnyClusters = clusters.altaPressao.length > 0 || clusters.paradoxo.length > 0 || clusters.equilibrio.length > 0;
+                                                                                if (!hasAnyClusters) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🔬 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Padrões de Comportamento:</strong>
+                                                                                        {clusters.altaPressao.length > 0 && (
+                                                                                            <> <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Dias "Alta Pressão"</strong> ({clusters.altaPressao.length}): Muito consumo + pouco sono + humor estável. Estás a "pedalar no limiar" — funcionas, mas à custa de estimulação.</>
+                                                                                        )}
+                                                                                        {clusters.paradoxo.length > 0 && (
+                                                                                            <> <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Dias "Paradoxo"</strong> ({clusters.paradoxo.length}): Pouco consumo + muito sono + humor baixo. Sono não compensa humor baixo — possível depressão mascarada ou outro fator.</>
+                                                                                        )}
+                                                                                        {clusters.equilibrio.length > 0 && (
+                                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias "Equilíbrio"</strong> ({clusters.equilibrio.length}): Consumo moderado + humor bom. Este é o teu sweet spot atual.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Micro-comparações temporais */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 14) return null;
+
+                                                                                const now = new Date();
+                                                                                const last7Days = analysisConsumptions.filter(c => {
+                                                                                    const cDate = new Date(c.timestamp);
+                                                                                    const diffDays = (now - cDate) / (1000 * 60 * 60 * 24);
+                                                                                    return diffDays <= 7;
+                                                                                });
+
+                                                                                const previous21Days = analysisConsumptions.filter(c => {
+                                                                                    const cDate = new Date(c.timestamp);
+                                                                                    const diffDays = (now - cDate) / (1000 * 60 * 60 * 24);
+                                                                                    return diffDays > 7 && diffDays <= 28;
+                                                                                });
+
+                                                                                if (last7Days.length < 3 || previous21Days.length < 10) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const last7ByDate = {};
+                                                                                last7Days.forEach(c => {
+                                                                                    if (!last7ByDate[c.date]) last7ByDate[c.date] = 0;
+                                                                                    last7ByDate[c.date]++;
+                                                                                });
+
+                                                                                const prev21ByDate = {};
+                                                                                previous21Days.forEach(c => {
+                                                                                    if (!prev21ByDate[c.date]) prev21ByDate[c.date] = 0;
+                                                                                    prev21ByDate[c.date]++;
+                                                                                });
+
+                                                                                const avgLast7 = Object.values(last7ByDate).reduce((a, b) => a + b, 0) / Object.keys(last7ByDate).length;
+                                                                                const avgPrev21 = Object.values(prev21ByDate).reduce((a, b) => a + b, 0) / Object.keys(prev21ByDate).length;
+
+                                                                                const percentChange = ((avgLast7 - avgPrev21) / avgPrev21 * 100).toFixed(0);
+
+                                                                                if (Math.abs(percentChange) < 5) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        📈 <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Micro-tendência:</strong> Últimos 7 dias: média de <strong>{avgLast7.toFixed(1)} consumos/dia</strong> vs {avgPrev21.toFixed(1)} nas 3 semanas anteriores
+                                                                                        ({percentChange > 0 ? '+' : ''}{percentChange}%).
+                                                                                        {percentChange > 15 ? (
+                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Aumento significativo. Sistema a desviar — identificar causa antes que normalize.</span></>
+                                                                                        ) : percentChange < -15 ? (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Redução clara. O que mudou? Replicar essas condições.</span></>
+                                                                                        ) : percentChange > 0 ? (
+                                                                                            <> Ligeira subida — monitorizar.</>
+                                                                                        ) : (
+                                                                                            <> Ligeira descida — bom sinal.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Narrativas Dinâmicas - Emoções específicas */}
+                                                                            {(() => {
+                                                                                if (analysisWellbeing.length < 5) return null;
+
+                                                                                // Análise por emoção específica
+                                                                                const emotionImpact = {};
+                                                                                const consumptionsByDate = {};
+
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                    if (!wDate || !w.emotions || w.emotions.length === 0) return;
+
+                                                                                    const dayConsumptions = consumptionsByDate[wDate] || 0;
+
+                                                                                    w.emotions.forEach(emotion => {
+                                                                                        if (!emotionImpact[emotion]) emotionImpact[emotion] = { days: 0, totalCons: 0 };
+                                                                                        emotionImpact[emotion].days++;
+                                                                                        emotionImpact[emotion].totalCons += dayConsumptions;
+                                                                                    });
+                                                                                });
+
+                                                                                const avgDaily = Object.values(consumptionsByDate).reduce((a, b) => a + b, 0) / Object.keys(consumptionsByDate).length;
+
+                                                                                // Encontrar emoções com impacto claro
+                                                                                const emotionsWithAvg = Object.entries(emotionImpact)
+                                                                                    .filter(([_, data]) => data.days >= 2)
+                                                                                    .map(([emotion, data]) => ({
+                                                                                        emotion,
+                                                                                        avg: data.totalCons / data.days,
+                                                                                        days: data.days,
+                                                                                        diff: (data.totalCons / data.days) - avgDaily
+                                                                                    }))
+                                                                                    .filter(e => Math.abs(e.diff) >= 2);
+
+                                                                                if (emotionsWithAvg.length === 0) return null;
+
+                                                                                // Top risco e top protetor
+                                                                                const topRisk = emotionsWithAvg.sort((a, b) => b.diff - a.diff)[0];
+                                                                                const topProtector = emotionsWithAvg.sort((a, b) => a.diff - b.diff)[0];
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🎭 <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>Gatilhos Emocionais Validados:</strong>
+                                                                                        {topRisk && topRisk.diff > 0 && (
+                                                                                            <> Emoção <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>{topRisk.emotion}</strong> correlaciona com +{topRisk.diff.toFixed(1)} consumos acima da média ({topRisk.days} dias). É gatilho validado, não especulação.</>
+                                                                                        )}
+                                                                                        {topProtector && topProtector.diff < 0 && (
+                                                                                            <> Emoção <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{topProtector.emotion}</strong> correlaciona com {Math.abs(topProtector.diff).toFixed(1)} consumos ABAIXO da média. Factor protetor — cultivar.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Contexto Autocuidado (água, comida, social) */}
+                                                                            {(() => {
+                                                                                if (analysisWellbeing.length < 5) return null;
+
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const avgDaily = Object.values(consumptionsByDate).reduce((a, b) => a + b, 0) / Object.keys(consumptionsByDate).length;
+
+                                                                                // Analisar impacto de cada área
+                                                                                const areas = { water: [], food: [], social: [] };
+
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                    if (!wDate) return;
+
+                                                                                    const dayCons = consumptionsByDate[wDate] || 0;
+
+                                                                                    if (w.water === true) areas.water.push(dayCons);
+                                                                                    if (w.food === true) areas.food.push(dayCons);
+                                                                                    if (w.social === true) areas.social.push(dayCons);
+                                                                                });
+
+                                                                                const impacts = [];
+                                                                                const areaNames = { water: 'água suficiente', food: 'refeições nutritivas', social: 'socialização' };
+
+                                                                                Object.entries(areas).forEach(([area, values]) => {
+                                                                                    if (values.length < 3) return;
+
+                                                                                    const avgWith = values.reduce((a, b) => a + b, 0) / values.length;
+                                                                                    const percentDiff = ((avgWith - avgDaily) / avgDaily * 100).toFixed(0);
+
+                                                                                    if (Math.abs(percentDiff) >= 10) {
+                                                                                        impacts.push({ area, percentDiff: parseFloat(percentDiff), days: values.length });
+                                                                                    }
+                                                                                });
+
+                                                                                if (impacts.length === 0) return null;
+
+                                                                                // Ordenar por impacto
+                                                                                impacts.sort((a, b) => a.percentDiff - b.percentDiff);
+                                                                                const topImpact = impacts[0];
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        💧 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Contexto Autocuidado:</strong>
+                                                                                        {topImpact.percentDiff < 0 ? (
+                                                                                            <> Nos dias com <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Factor protetor claro — não é coincidência.</>
+                                                                                        ) : (
+                                                                                            <> Nos dias com <strong>{areaNames[topImpact.area]}</strong>, consumiste <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topImpact.percentDiff}% mais</strong>. Correlação inesperada — explorar.</>
+                                                                                        )}
+                                                                                        {impacts.length > 1 && impacts[1].percentDiff < 0 && (
+                                                                                            <> Também: {areaNames[impacts[1].area]} reduz {Math.abs(impacts[1].percentDiff)}%.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* NOVO: Micro-Tempo - Intervalos em dias difíceis */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 20) return null;
+
+                                                                                // Agrupar por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                                                                                    consumptionsByDate[c.date].push(c);
+                                                                                });
+
+                                                                                // Calcular intervalos por tipo de dia
+                                                                                const intervalsHigh = []; // Dias ≥10 consumos
+                                                                                const intervalsNormal = []; // Dias <10 consumos
+
+                                                                                Object.entries(consumptionsByDate).forEach(([date, consumptions]) => {
+                                                                                    if (consumptions.length < 2) return;
+
+                                                                                    // Ordenar por timestamp
+                                                                                    const sorted = [...consumptions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                                                                                    // Calcular intervalos
+                                                                                    for (let i = 1; i < sorted.length; i++) {
+                                                                                        const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                                                        if (consumptions.length >= 10) {
+                                                                                            intervalsHigh.push(diff);
+                                                                                        } else {
+                                                                                            intervalsNormal.push(diff);
+                                                                                        }
+                                                                                    }
+                                                                                });
+
+                                                                                if (intervalsHigh.length < 5 || intervalsNormal.length < 5) return null;
+
+                                                                                const avgHigh = intervalsHigh.reduce((a, b) => a + b, 0) / intervalsHigh.length;
+                                                                                const avgNormal = intervalsNormal.reduce((a, b) => a + b, 0) / intervalsNormal.length;
+
+                                                                                if (Math.abs(avgHigh - avgNormal) < 0.5) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        ⏱️ <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Micro-Tempo:</strong> Em dias difíceis (≥10 consumos), o intervalo médio cai para <strong>{avgHigh.toFixed(1)}h</strong> (vs {avgNormal.toFixed(1)}h em dias normais).
+                                                                                        {avgHigh < 2 ? (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Indica padrão de redosing compulsivo quando frequência é alta. Tática: pré-dosagem/espaçamento forçado nesses dias.</span></>
+                                                                                        ) : (
+                                                                                            <> Padrão de aceleração em dias de pressão — sistema a responder a stress.</>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 7: Emotional Tone & Encouragement (ANÁLISE AVANÇADA) */}
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
