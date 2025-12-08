@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// ===== FIRESTORE SECURITY RULES =====
+// Estas regras protegem os teus dados garantindo que:
+// 1. Utilizadores autenticados só acedem aos SEUS próprios dados
+// 2. Não há acesso sem autenticação
+// 3. Validações básicas de dados
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function validateString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function validateNumber(value, min, max) {
+      return value is number && value >= min && value <= max;
+    }
+
+    // User data - cada utilizador só acede aos seus dados
+    match /users/{userId}/{document=**} {
+      // Permitir leitura e escrita APENAS se o user autenticado é o dono dos dados
+      allow read, write: if isOwner(userId);
+    }
+
+    // Validações específicas por coleção (opcional mas recomendado)
+    match /users/{userId}/consumptions/{consumptionId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['id', 'timestamp', 'date'])
+        && validateString(request.resource.data.note, 2000);
+    }
+
+    match /users/{userId}/wellbeingLogs/{logId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['id', 'timestamp', 'date'])
+        && (request.resource.data.sleep == null || validateNumber(request.resource.data.sleep, 0, 24))
+        && (request.resource.data.mood == null || validateNumber(request.resource.data.mood, 1, 10))
+        && (request.resource.data.energy == null || validateNumber(request.resource.data.energy, 1, 10))
+        && validateString(request.resource.data.notes, 2000);
+    }
+
+    match /users/{userId}/thoughts/{thoughtId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['id', 'timestamp', 'content'])
+        && validateString(request.resource.data.content, 5000);
+    }
+
+    match /users/{userId}/reflections/{reflectionId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && validateString(request.resource.data.answer, 2000);
+    }
+
+    match /users/{userId}/dailyLogs/{logId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && validateString(request.resource.data.notes, 2000);
+    }
+
+    match /users/{userId}/cycles/{cycleId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && validateString(request.resource.data.notes, 2000);
+    }
+
+    match /users/{userId}/goals/{goalId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+    }
+
+    // Negar acesso a tudo o resto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
