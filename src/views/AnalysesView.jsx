@@ -1,4 +1,5 @@
 import React, { useMemo, lazy, Suspense } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -41,14 +42,30 @@ export function AnalysesView({
     const advancedInsights = useAdvancedInsights(analysisConsumptions, analysisWellbeing, analysisCycles, analysisReflections, analysisDailyLogs, analysisThoughts, patternsPeriod);
 
     // Calculate structural data for other tabs
-    const { sorted, intervals } = useMemo(() => {
+    const { sorted, intervals, hourlyData, weeklyData } = useMemo(() => {
         const sortedData = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
         const intervalsData = [];
         for (let i = 1; i < sortedData.length; i++) {
             const diff = (new Date(sortedData[i].timestamp) - new Date(sortedData[i-1].timestamp)) / (1000 * 60 * 60);
             intervalsData.push({ hours: diff, date: sortedData[i].date });
         }
-        return { sorted: sortedData, intervals: intervalsData };
+
+        // Hourly
+        const hourly = Array(24).fill(0).map((_, i) => ({ name: `${i}`, count: 0, fullMark: `${i}h` }));
+        sortedData.forEach(c => {
+            const h = new Date(c.timestamp).getHours();
+            hourly[h].count++;
+        });
+
+        // Weekly
+        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const weekly = days.map(d => ({ name: d, count: 0 }));
+        sortedData.forEach(c => {
+            const d = new Date(c.timestamp).getDay();
+            weekly[d].count++;
+        });
+
+        return { sorted: sortedData, intervals: intervalsData, hourlyData: hourly, weeklyData: weekly };
     }, [analysisConsumptions]);
 
     // Calculate correlations for 'correlacoes' tab
@@ -224,6 +241,46 @@ export function AnalysesView({
                 {/* ESTRUTURAL */}
                 {analysisSubView === 'estrutural' && (
                     <div className="space-y-4">
+                        {/* Distribuição Horária */}
+                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Distribuição Horária</h3>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={hourlyData}>
+                                        <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#4b5563'} fontSize={12} interval={2} />
+                                        <YAxis stroke={darkMode ? '#9ca3af' : '#4b5563'} fontSize={12} allowDecimals={false} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb' }}
+                                            labelStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }}
+                                        />
+                                        <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]}>
+                                            {hourlyData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.count > (Math.max(...hourlyData.map(h=>h.count)) * 0.8) ? '#ec4899' : '#8b5cf6'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Distribuição Semanal */}
+                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>📅 Distribuição Semanal</h3>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={weeklyData}>
+                                        <XAxis dataKey="name" stroke={darkMode ? '#9ca3af' : '#4b5563'} fontSize={12} />
+                                        <YAxis stroke={darkMode ? '#9ca3af' : '#4b5563'} fontSize={12} allowDecimals={false} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb' }}
+                                            labelStyle={{ color: darkMode ? '#e5e7eb' : '#374151' }}
+                                        />
+                                        <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
                         {/* Análise de Intervalos Simplificada */}
                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                             <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏱️ Intervalos Entre Consumos</h3>
