@@ -899,25 +899,34 @@ export function AnalysesView({
                                                                                     .map(([date, _]) => date);
 
                                                                                 if (highFreqDates.length >= 3 && analysisWellbeing.length >= 5) {
-                                                                                    // Verificar emoções comuns nesses dias
-                                                                                    const emotionsInHighDays = {};
+                                                                                    // Verificar emoções comuns nesses dias (contar DIAS únicos, não ocorrências)
+                                                                                    const emotionDaysCount = {};
 
                                                                                     analysisWellbeing.forEach(w => {
                                                                                         const wDate = w.date || safeToISODate(w.timestamp);
                                                                                         if (!wDate || !highFreqDates.includes(wDate) || !w.emotions) return;
 
-                                                                                        w.emotions.forEach(emotion => {
-                                                                                            if (!emotionsInHighDays[emotion]) emotionsInHighDays[emotion] = 0;
-                                                                                            emotionsInHighDays[emotion]++;
+                                                                                        // Usar Set para contar cada emoção apenas uma vez por dia
+                                                                                        const uniqueEmotions = new Set(w.emotions);
+                                                                                        uniqueEmotions.forEach(emotion => {
+                                                                                            if (!emotionDaysCount[emotion]) emotionDaysCount[emotion] = new Set();
+                                                                                            emotionDaysCount[emotion].add(wDate);
                                                                                         });
                                                                                     });
 
-                                                                                    const sortedEmotions = Object.entries(emotionsInHighDays)
+                                                                                    // Converter Sets para contagens
+                                                                                    const emotionCounts = {};
+                                                                                    Object.entries(emotionDaysCount).forEach(([emotion, datesSet]) => {
+                                                                                        emotionCounts[emotion] = datesSet.size;
+                                                                                    });
+
+                                                                                    const sortedEmotions = Object.entries(emotionCounts)
                                                                                         .sort((a, b) => b[1] - a[1]);
 
                                                                                     if (sortedEmotions.length > 0 && sortedEmotions[0][1] >= 2) {
                                                                                         const topEmotion = sortedEmotions[0];
-                                                                                        const percent = (topEmotion[1] / highFreqDates.length * 100).toFixed(0);
+                                                                                        const daysWithEmotion = topEmotion[1];
+                                                                                        const percent = (daysWithEmotion / highFreqDates.length * 100).toFixed(0);
 
                                                                                         if (percent >= 50) {
                                                                                             return (
