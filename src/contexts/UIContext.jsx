@@ -12,10 +12,8 @@ export const useUI = () => {
 };
 
 export const UIProvider = ({ children }) => {
-  // Theme
-  const [darkMode, setDarkMode] = useState(() => {
-    return safeLocalStorage.get('darkMode', false);
-  });
+  // Theme - sempre dark mode
+  const [darkMode, setDarkMode] = useState(true);
 
   // Main navigation
   const [selectedTab, setSelectedTab] = useState('dashboard');
@@ -45,15 +43,10 @@ export const UIProvider = ({ children }) => {
   // Education modal content
   const [educationContent, setEducationContent] = useState({ title: '', content: '' });
 
-  // Persist dark mode to localStorage
+  // Garantir dark mode sempre ativo
   useEffect(() => {
-    safeLocalStorage.set('darkMode', darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Helper to open education modal
   const openEducationModal = (title, content) => {

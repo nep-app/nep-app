@@ -8,15 +8,8 @@
     <meta http-equiv="Expires" content="0">
     <title>NEP app</title>
     <script>
-        // Aplicar dark mode ANTES do React carregar para evitar flash
-        (function() {
-            try {
-                const darkMode = localStorage.getItem('darkMode');
-                if (darkMode === 'true') {
-                    document.documentElement.classList.add('dark');
-                }
-            } catch (e) {}
-        })();
+        // Forçar dark mode sempre (modo padrão)
+        document.documentElement.classList.add('dark');
     </script>
     <style>
         body { margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s; }
