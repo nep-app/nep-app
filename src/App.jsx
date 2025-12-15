@@ -85,7 +85,7 @@ function HarmReductionTracker() {
             const [legalDocType, setLegalDocType] = useState(null); // 'license', 'terms', 'governance'
 
             // Form States
-            const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
+            const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
@@ -194,9 +194,22 @@ function HarmReductionTracker() {
 
             const submitDailyLog = async () => {
                 try {
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: metrics.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    // Usar data escolhida ou hoje
+                    const selectedDate = dailyForm.date || getTodayKey();
+
+                    // Criar timestamp baseado na data escolhida (meio-dia para evitar problemas de timezone)
+                    const timestamp = new Date(selectedDate + 'T12:00:00').toISOString();
+
+                    const item = {
+                        id: genId(),
+                        date: selectedDate,
+                        timestamp: timestamp,
+                        times: metrics.todayConsumptions.length,
+                        mg: parseInt(dailyForm.mg),
+                        notes: dailyForm.notes
+                    };
                     await addDailyLog(item);
-                    setDailyForm({ mg: 30, notes: '' });
+                    setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
                     setShowDailyLogModal(false);
                     showToast('✓ Registo diário guardado', 'success');
                 } catch (error) {

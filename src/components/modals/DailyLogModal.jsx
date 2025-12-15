@@ -14,6 +14,9 @@ export const DailyLogModal = ({
 
   if (!isOpen) return null;
 
+  // Calcular data de hoje em formato YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' rounded-2xl p-6 max-w-md w-full shadow-2xl'} onClick={(e) => e.stopPropagation()}>
@@ -24,6 +27,16 @@ export const DailyLogModal = ({
           </button>
         </div>
         <div className="space-y-4">
+          <div>
+            <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Data do registo</label>
+            <input
+              type="date"
+              value={dailyForm.date || today}
+              onChange={(e) => setDailyForm({...dailyForm, date: e.target.value})}
+              max={today}
+              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'}
+            />
+          </div>
           <div>
             <label className={'block text-sm font-medium mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Total aproximado (mg)</label>
             <input
