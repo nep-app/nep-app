@@ -856,6 +856,148 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
+                                                                            {/* NOVO: Trigger Mapping "Se isto então aquilo" */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
+
+                                                                                // 1. Consumos tardios (00h-06h) vs sono
+                                                                                const lateConsumptions = analysisConsumptions.filter(c => {
+                                                                                    const hour = new Date(c.timestamp).getHours();
+                                                                                    return hour >= 0 && hour < 6;
+                                                                                });
+
+                                                                                if (lateConsumptions.length >= 5) {
+                                                                                    // Verificar sono nesses dias
+                                                                                    const lateDates = new Set(lateConsumptions.map(c => c.date));
+                                                                                    const cyclesWithLate = analysisCycles.filter(cycle => {
+                                                                                        const cDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                                                                        return lateDates.has(cDate) && cycle.sleep;
+                                                                                    });
+
+                                                                                    const lowSleepCount = cyclesWithLate.filter(c => parseFloat(c.sleep) < 6).length;
+                                                                                    const percentLowSleep = cyclesWithLate.length > 0 ? (lowSleepCount / cyclesWithLate.length * 100).toFixed(0) : 0;
+
+                                                                                    if (percentLowSleep >= 60) {
+                                                                                        return (
+                                                                                            <p>
+                                                                                                🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> <strong>{percentLowSleep}%</strong> dos consumos tardios (00h-06h) aconteceram em dias com <strong>&lt;6h sono</strong>.
+                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Privação de sono não é só correlação — é trigger directo de consumo nocturno. Atacar o sono = reduzir consumo tardio.</span></>
+                                                                                            </p>
+                                                                                        );
+                                                                                    }
+                                                                                }
+
+                                                                                // 2. Dias com alta frequência (≥10) vs triggers específicos
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const highFreqDates = Object.entries(consumptionsByDate)
+                                                                                    .filter(([_, count]) => count >= 10)
+                                                                                    .map(([date, _]) => date);
+
+                                                                                if (highFreqDates.length >= 3 && analysisWellbeing.length >= 5) {
+                                                                                    // Verificar emoções comuns nesses dias
+                                                                                    const emotionsInHighDays = {};
+
+                                                                                    analysisWellbeing.forEach(w => {
+                                                                                        const wDate = w.date || safeToISODate(w.timestamp);
+                                                                                        if (!wDate || !highFreqDates.includes(wDate) || !w.emotions) return;
+
+                                                                                        w.emotions.forEach(emotion => {
+                                                                                            if (!emotionsInHighDays[emotion]) emotionsInHighDays[emotion] = 0;
+                                                                                            emotionsInHighDays[emotion]++;
+                                                                                        });
+                                                                                    });
+
+                                                                                    const sortedEmotions = Object.entries(emotionsInHighDays)
+                                                                                        .sort((a, b) => b[1] - a[1]);
+
+                                                                                    if (sortedEmotions.length > 0 && sortedEmotions[0][1] >= 2) {
+                                                                                        const topEmotion = sortedEmotions[0];
+                                                                                        const percent = (topEmotion[1] / highFreqDates.length * 100).toFixed(0);
+
+                                                                                        if (percent >= 50) {
+                                                                                            return (
+                                                                                                <p>
+                                                                                                    🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥10 consumos), registaste emoção <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topEmotion[0]}</strong>.
+                                                                                                    <> Este é o teu trigger primário validado — não é especulação. Desenvolver estratégias para esta emoção específica tem ROI alto.</>
+                                                                                                </p>
+                                                                                            );
+                                                                                        }
+                                                                                    }
+                                                                                }
+
+                                                                                return null;
+                                                                            })()}
+
+                                                                            {/* NOVO: Feedback Emocional Menos Binário */}
+                                                                            {(() => {
+                                                                                if (analysisWellbeing.length < 10) return null;
+
+                                                                                // Agrupar emoções por tipo
+                                                                                const emotionTypes = {
+                                                                                    ansiedade: ['😰 Ansioso/a', '😓 Stressado/a', '😩 Overwhelmed'],
+                                                                                    frustração: ['😫 Frustrado/a', '😤 Irritado/a', '😕 Confuso/a'],
+                                                                                    tristeza: ['😢 Triste', '😔 Inseguro/a', '🥺 Solitário/a'],
+                                                                                    apatia: ['😞 Apático/a', '🔌 Desconectado/a', '😐 Ambivalente'],
+                                                                                    energia: ['💪 Motivado/a', '⚡ Okay', '🌟 Produtiva/o'],
+                                                                                    positivas: ['😊 Feliz', '🎉 Entusiasmado/a', '🌈 Otimista', '😌 Calmo/a']
+                                                                                };
+
+                                                                                const typeCounts = {};
+                                                                                const moodValues = [];
+
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    if (w.emotions && w.emotions.length > 0) {
+                                                                                        w.emotions.forEach(emotion => {
+                                                                                            Object.entries(emotionTypes).forEach(([type, list]) => {
+                                                                                                if (list.includes(emotion)) {
+                                                                                                    if (!typeCounts[type]) typeCounts[type] = 0;
+                                                                                                    typeCounts[type]++;
+                                                                                                }
+                                                                                            });
+                                                                                        });
+                                                                                    }
+                                                                                    if (w.mood) moodValues.push(parseInt(w.mood));
+                                                                                });
+
+                                                                                if (Object.keys(typeCounts).length === 0 || moodValues.length < 5) return null;
+
+                                                                                // Calcular desvio-padrão de humor (oscilação vertical)
+                                                                                const avgMood = moodValues.reduce((a, b) => a + b, 0) / moodValues.length;
+                                                                                const variance = moodValues.reduce((sum, val) => sum + Math.pow(val - avgMood, 2), 0) / moodValues.length;
+                                                                                const stdDev = Math.sqrt(variance).toFixed(1);
+
+                                                                                // Diversidade de tipos (variação horizontal)
+                                                                                const numTypes = Object.keys(typeCounts).length;
+
+                                                                                const verticalOscillation = parseFloat(stdDev) > 2.5 ? 'alta' : parseFloat(stdDev) > 1.5 ? 'moderada' : 'baixa';
+                                                                                const horizontalVariation = numTypes >= 4 ? 'alta' : numTypes >= 2 ? 'moderada' : 'baixa';
+
+                                                                                // Tipo emocional dominante
+                                                                                const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+                                                                                const dominantType = sortedTypes[0];
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🧠 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Perfil Emocional:</strong> Oscilação de <strong>intensidade</strong> (vertical): <strong className={(verticalOscillation === 'alta' ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-blue-400' : 'text-blue-600'))}>{verticalOscillation}</strong> (desvio {stdDev}). Variação de <strong>tipo</strong> (horizontal): <strong className={(horizontalVariation === 'alta' ? (darkMode ? 'text-cyan-400' : 'text-cyan-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>{horizontalVariation}</strong> ({numTypes} tipos).
+                                                                                        {verticalOscillation === 'baixa' && horizontalVariation === 'alta' ? (
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Padrão: humor estável mas emoções variadas — não és volátil, és multifacetada. Útil para identificar gatilhos específicos por tipo.</span></>
+                                                                                        ) : verticalOscillation === 'alta' && horizontalVariation === 'baixa' ? (
+                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão: oscilações grandes dentro de poucos tipos emocionais. Instabilidade concentrada — focar regulação emocional.</span></>
+                                                                                        ) : verticalOscillation === 'alta' && horizontalVariation === 'alta' ? (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Padrão: alta volatilidade em múltiplas dimensões. Sistema emocional sob pressão — priorizar estabilização.</span></>
+                                                                                        ) : (
+                                                                                            <> Emocionalmente estável com pouca variação — pode indicar regulação eficaz ou desconexão emocional.</>
+                                                                                        )}
+                                                                                        {dominantType && <> Tipo dominante: <strong>{dominantType[0]}</strong> ({dominantType[1]}x).</>}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 7: Emotional Tone & Encouragement (ANÁLISE AVANÇADA) */}
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
@@ -958,6 +1100,105 @@ export function AnalysesView({
                                                                                     <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
                                                                                 )}
                                                                             </p>
+
+                                                                            {/* NOVO: Reflexão Final Realista */}
+                                                                            {(() => {
+                                                                                if (totalConsumptions === 0) return null;
+
+                                                                                // Calcular dados-chave
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
+                                                                                    consumptionsByDate[c.date]++;
+                                                                                });
+
+                                                                                const dailyCounts = Object.values(consumptionsByDate);
+                                                                                const perfectDays = dailyCounts.filter(c => c <= 7).length;
+                                                                                const difficultDays = dailyCounts.filter(c => c >= 10).length;
+
+                                                                                // Verificar se há melhoria ou esforço
+                                                                                let hasEffort = false;
+                                                                                if (perfectDays > 0 || avgPerDay < 12) hasEffort = true;
+
+                                                                                // Verificar limites
+                                                                                let hasLimits = false;
+                                                                                if (difficultDays >= dailyCounts.length * 0.3 || avgPerDay > 10) hasLimits = true;
+
+                                                                                // Áreas para optimizar
+                                                                                const optimizationAreas = [];
+
+                                                                                if (difficultDays > 0) optimizationAreas.push('frequência (reduzir dias ≥10)');
+
+                                                                                if (analysisCycles.length > 0) {
+                                                                                    const avgSleep = analysisCycles
+                                                                                        .filter(c => c.sleep)
+                                                                                        .reduce((sum, c) => sum + parseFloat(c.sleep), 0) / analysisCycles.filter(c => c.sleep).length;
+                                                                                    if (avgSleep < 7) optimizationAreas.push('sono (aumentar para 7-8h)');
+                                                                                }
+
+                                                                                if (analysisWellbeing.length > 0) {
+                                                                                    const avgMood = analysisWellbeing
+                                                                                        .filter(w => w.mood)
+                                                                                        .reduce((sum, w) => sum + parseInt(w.mood), 0) / analysisWellbeing.filter(w => w.mood).length;
+                                                                                    if (avgMood < 6) optimizationAreas.push('regulação emocional');
+                                                                                }
+
+                                                                                const lateConsumptions = analysisConsumptions.filter(c => {
+                                                                                    const hour = new Date(c.timestamp).getHours();
+                                                                                    return hour >= 0 && hour < 6;
+                                                                                });
+                                                                                if (lateConsumptions.length / analysisConsumptions.length > 0.2) {
+                                                                                    optimizationAreas.push('timing (evitar consumo nocturno)');
+                                                                                }
+
+                                                                                // Calcular intervalos
+                                                                                const intervals = [];
+                                                                                Object.values(consumptionsByDate).forEach((_, date) => {
+                                                                                    const dayConsumptions = analysisConsumptions
+                                                                                        .filter(c => c.date === Object.keys(consumptionsByDate)[date])
+                                                                                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                                                                                    for (let i = 1; i < dayConsumptions.length; i++) {
+                                                                                        const diff = (new Date(dayConsumptions[i].timestamp) - new Date(dayConsumptions[i-1].timestamp)) / (1000 * 60 * 60);
+                                                                                        intervals.push(diff);
+                                                                                    }
+                                                                                });
+
+                                                                                if (intervals.length > 0) {
+                                                                                    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                                                                                    if (avgInterval < 2.5) optimizationAreas.push('espaçamento (aumentar intervalo entre consumos)');
+                                                                                }
+
+                                                                                return (
+                                                                                    <p className={(darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200') + ' p-4 rounded-lg border'}>
+                                                                                        💭 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-700')}>Síntese:</strong>
+                                                                                        {hasEffort && hasLimits ? (
+                                                                                            <> Os teus dados mostram <strong>esforço consistente</strong>{perfectDays > 0 && ` (${perfectDays} dias perfeitos)`}, mas também <strong>limites claros</strong>{difficultDays > 0 && ` (${difficultDays} dias difíceis)`}.</>
+                                                                                        ) : hasEffort ? (
+                                                                                            <> Os dados mostram controlo razoável — média de {avgPerDay} consumos/dia. Sistema estável mas há espaço para optimização.</>
+                                                                                        ) : hasLimits ? (
+                                                                                            <> Os dados revelam pressão significativa — média de {avgPerDay} consumos/dia com {difficultDays} dias ≥10. Sistema sob stress.</>
+                                                                                        ) : (
+                                                                                            <> Dados em construção — ainda a mapear o teu padrão baseline.</>
+                                                                                        )}
+                                                                                        {optimizationAreas.length > 0 && (
+                                                                                            <> <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>A questão agora: o que queres optimizar no próximo ciclo?</strong> {optimizationAreas.length === 1 ? (
+                                                                                                <> Foca em <strong>{optimizationAreas[0]}</strong>.</>
+                                                                                            ) : optimizationAreas.length === 2 ? (
+                                                                                                <> Duas opções: <strong>{optimizationAreas[0]}</strong> ou <strong>{optimizationAreas[1]}</strong>. Escolhe um eixo.</>
+                                                                                            ) : (
+                                                                                                <> Opções: {optimizationAreas.slice(0, 3).map((area, i) => (
+                                                                                                    <span key={i}>
+                                                                                                        {i > 0 && ', '}
+                                                                                                        <strong>{area}</strong>
+                                                                                                    </span>
+                                                                                                ))}. Escolhe <strong>um eixo</strong> — não tentes optimizar tudo em simultâneo.</>
+                                                                                            )}</>
+                                                                                        )}
+                                                                                        {!hasEffort && !hasLimits && <> Continua a registar dados — padrões emergem com o tempo.</>}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
 
                                                                             {/* Paragraph 8: Bedtime & Sleep Patterns */}
                                                                             {(() => {
