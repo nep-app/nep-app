@@ -22,7 +22,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         format: 'es',
-        entryFileNames: 'app.js',
+        entryFileNames: 'app-[hash].js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: '[name].[ext]',
         manualChunks: {
