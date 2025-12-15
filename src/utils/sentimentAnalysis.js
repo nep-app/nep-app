@@ -124,20 +124,20 @@ function _calculateRawSentiment(text) {
     return { score: 0, magnitude: 0, classification: 'neutral', positiveCount: 0, negativeCount: 0, neutralCount: 0, details: [] };
   }
 
-  // Primeiro: extrair emojis
-  const emojiData = extractEmojis(text);
+  // Emojis removidos - utilizador não usa emojis nas notas de texto
+  // const emojiData = extractEmojis(text);
 
   const words = tokenize(text);
   const details = [];
   let totalScore = 0, positiveCount = 0, negativeCount = 0, neutralCount = 0;
 
-  // Adicionar score dos emojis
-  if (emojiData.emojiCount > 0) {
-    totalScore += emojiData.emojiScore;
-    if (emojiData.emojiScore > 0) positiveCount++;
-    else if (emojiData.emojiScore < 0) negativeCount++;
-    details.push({ word: `[${emojiData.emojiCount} emojis]`, score: emojiData.emojiScore, context: 'emoji analysis' });
-  }
+  // Score dos emojis desativado
+  // if (emojiData.emojiCount > 0) {
+  //   totalScore += emojiData.emojiScore;
+  //   if (emojiData.emojiScore > 0) positiveCount++;
+  //   else if (emojiData.emojiScore < 0) negativeCount++;
+  //   details.push({ word: `[${emojiData.emojiCount} emojis]`, score: emojiData.emojiScore, context: 'emoji analysis' });
+  // }
 
   for (let i = 0; i < words.length; i++) {
     // Frases positivas

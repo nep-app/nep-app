@@ -224,7 +224,7 @@ export function AnalysesView({
                                                                                 )}
                                                                             </p>
                 
-                                                                            {/* NOVO: Paragraph 2 - Dias Perfeitos vs Difíceis */}
+                                                                            {/* NOVO: Paragraph 2 - Dias Bons vs Difíceis */}
                                                                             {(() => {
                                                                                 if (totalConsumptions === 0) return null;
 
@@ -251,10 +251,10 @@ export function AnalysesView({
                                                                                     }
                                                                                 });
 
-                                                                                const perfectDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= 7);
+                                                                                const goodDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= 7);
                                                                                 const difficultDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count >= 10);
 
-                                                                                if (perfectDays.length === 0 && difficultDays.length === 0) return null;
+                                                                                if (goodDays.length === 0 && difficultDays.length === 0) return null;
 
                                                                                 // Calcular médias
                                                                                 const calcAvgSleep = (days) => {
@@ -267,21 +267,21 @@ export function AnalysesView({
                                                                                     return moodData.length > 0 ? (moodData.reduce((a, b) => a + b, 0) / moodData.length).toFixed(1) : null;
                                                                                 };
 
-                                                                                const perfectSleep = calcAvgSleep(perfectDays);
+                                                                                const goodSleep = calcAvgSleep(goodDays);
                                                                                 const difficultSleep = calcAvgSleep(difficultDays);
-                                                                                const perfectMood = calcAvgMood(perfectDays);
+                                                                                const goodMood = calcAvgMood(goodDays);
                                                                                 const difficultMood = calcAvgMood(difficultDays);
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🏆 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias Perfeitos vs Difíceis:</strong>
-                                                                                        {perfectDays.length > 0 && <> Tiveste <strong>{perfectDays.length} {perfectDays.length === 1 ? 'dia perfeito' : 'dias perfeitos'}</strong> (≤7 consumos){perfectSleep && <> com média de <strong>{perfectSleep}h sono</strong></>}{perfectMood && <> e humor de <strong>{perfectMood}/10</strong></>}.</>}
-                                                                                        {difficultDays.length > 0 && <> {perfectDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥10 consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
-                                                                                        {perfectSleep && difficultSleep && parseFloat(perfectSleep) > parseFloat(difficultSleep) + 1 && (
-                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Padrão claro: dormir mais ({(parseFloat(perfectSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias perfeitos!</span></>
+                                                                                        🏆 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias Bons vs Difíceis:</strong>
+                                                                                        {goodDays.length > 0 && <> Tiveste <strong>{goodDays.length} {goodDays.length === 1 ? 'dia bom' : 'dias bons'}</strong> (≤7 consumos){goodSleep && <> com média de <strong>{goodSleep}h sono</strong></>}{goodMood && <> e humor de <strong>{goodMood}/10</strong></>}.</>}
+                                                                                        {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥10 consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
+                                                                                        {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Padrão claro: dormir mais ({(parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias bons!</span></>
                                                                                         )}
-                                                                                        {perfectMood && difficultMood && parseFloat(perfectMood) > parseFloat(difficultMood) + 1.5 && (
-                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💡 Humor também é fator: dias perfeitos têm +{(parseFloat(perfectMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
+                                                                                        {goodMood && difficultMood && parseFloat(goodMood) > parseFloat(difficultMood) + 1.5 && (
+                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💡 Humor também é fator: dias bons têm +{(parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -1122,12 +1122,12 @@ export function AnalysesView({
                                                                                 });
 
                                                                                 const dailyCounts = Object.values(consumptionsByDate);
-                                                                                const perfectDays = dailyCounts.filter(c => c <= 7).length;
+                                                                                const goodDays = dailyCounts.filter(c => c <= 7).length;
                                                                                 const difficultDays = dailyCounts.filter(c => c >= 10).length;
 
                                                                                 // Verificar se há melhoria ou esforço
                                                                                 let hasEffort = false;
-                                                                                if (perfectDays > 0 || avgPerDay < 12) hasEffort = true;
+                                                                                if (goodDays > 0 || avgPerDay < 12) hasEffort = true;
 
                                                                                 // Verificar limites
                                                                                 let hasLimits = false;
@@ -1182,7 +1182,7 @@ export function AnalysesView({
                                                                                     <p className={(darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200') + ' p-4 rounded-lg border'}>
                                                                                         💭 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-700')}>Síntese:</strong>
                                                                                         {hasEffort && hasLimits ? (
-                                                                                            <> Os teus dados mostram <strong>esforço consistente</strong>{perfectDays > 0 && ` (${perfectDays} dias perfeitos)`}, mas também <strong>limites claros</strong>{difficultDays > 0 && ` (${difficultDays} dias difíceis)`}.</>
+                                                                                            <> Os teus dados mostram <strong>esforço consistente</strong>{goodDays > 0 && ` (${goodDays} dias bons)`}, mas também <strong>limites claros</strong>{difficultDays > 0 && ` (${difficultDays} dias difíceis)`}.</>
                                                                                         ) : hasEffort ? (
                                                                                             <> Os dados mostram controlo razoável — média de {avgPerDay} consumos/dia. Sistema estável mas há espaço para optimização.</>
                                                                                         ) : hasLimits ? (
