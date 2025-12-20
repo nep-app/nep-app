@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
@@ -219,6 +219,47 @@ function HarmReductionTracker() {
                 } catch (error) {
                     showToast('✗ Erro ao guardar registo', 'error');
                     logger.error(error);
+                }
+            };
+
+            // Função de migração para corrigir o campo "times" nos dailyLogs antigos
+            const fixDailyLogsTimes = async () => {
+                try {
+                    showToast('🔧 A corrigir registos antigos...', 'info');
+                    let fixed = 0;
+                    let errors = 0;
+
+                    for (const log of dailyLogs) {
+                        try {
+                            // Contar consumos do mesmo dia
+                            const consumptionsOnDate = consumptions.filter(c => c.date === log.date);
+                            const correctTimes = consumptionsOnDate.length;
+
+                            // Se o times estiver errado, corrigir
+                            if (log.times !== correctTimes) {
+                                const logRef = doc(db, `users/${user.uid}/dailyLogs`, log.id);
+                                await updateDoc(logRef, { times: correctTimes });
+                                fixed++;
+                                logger.info(`Fixed dailyLog ${log.id}: ${log.times} -> ${correctTimes}`);
+                            }
+                        } catch (error) {
+                            logger.error(`Error fixing dailyLog ${log.id}:`, error);
+                            errors++;
+                        }
+                    }
+
+                    if (fixed > 0) {
+                        showToast(`✓ Corrigidos ${fixed} registos!`, 'success');
+                    } else {
+                        showToast('✓ Todos os registos já estavam corretos', 'success');
+                    }
+
+                    if (errors > 0) {
+                        showToast(`⚠️ ${errors} erros durante a correção`, 'error');
+                    }
+                } catch (error) {
+                    showToast('✗ Erro ao corrigir registos', 'error');
+                    logger.error('Migration error:', error);
                 }
             };
 
@@ -1030,6 +1071,7 @@ return {
                                         exportToCSV={exportToCSV}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
+                                        fixDailyLogsTimes={fixDailyLogsTimes}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
