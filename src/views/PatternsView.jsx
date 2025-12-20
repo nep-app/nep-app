@@ -56,11 +56,12 @@ export function PatternsView({
 
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['dashboard', 'progress', 'temporal'].map(view => (
+                                        {['dashboard', 'progress', 'temporal', 'estrutural'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
                                                 {view === 'progress' && '📈 Progresso'}
                                                 {view === 'temporal' && '⏰ Temporal'}
+                                                {view === 'estrutural' && '📐 Estrutural'}
                                             </button>
                                         ))}
                                     </div>
@@ -1700,6 +1701,99 @@ export function PatternsView({
                                                 </div>
                                             </div>
                                         </div>
+                                            );
+                                        }
+
+                                        // ESTRUTURAL
+                                        if (patternView === 'estrutural') {
+                                            // Calcular intervalos entre consumos
+                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const intervals = [];
+                                            for (let i = 1; i < sorted.length; i++) {
+                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
+                                                intervals.push({ hours: diff, date: sorted[i].date });
+                                            }
+
+                                            return (
+                                                <div className="space-y-4">
+                                                    {/* Análise de Intervalos */}
+                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏱️ Intervalos Entre Consumos</h3>
+                                                        {intervals.length === 0 ? (
+                                                            <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                Sem intervalos (necessário ≥2 consumos)
+                                                            </div>
+                                                        ) : (() => {
+                                                            const goodIntervals = intervals.filter(i => i.hours >= 2);
+                                                            const shortIntervals = intervals.filter(i => i.hours < 2);
+                                                            const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
+                                                            const maxInterval = Math.max(...intervals.map(i => i.hours));
+                                                            const goodPercent = ((goodIntervals.length / intervals.length) * 100).toFixed(0);
+                                                            const shortPercent = ((shortIntervals.length / intervals.length) * 100).toFixed(0);
+
+                                                            return (
+                                                                <>
+                                                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                                                        <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{intervals.length}</div>
+                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total</div>
+                                                                        </div>
+                                                                        <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgInterval.toFixed(1)}h</div>
+                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                                        </div>
+                                                                        <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{maxInterval.toFixed(1)}h</div>
+                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="space-y-3">
+                                                                        {/* Bons intervalos (≥2h) */}
+                                                                        <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-4`}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                    <span>✅</span>
+                                                                                    <span>Intervalos Bons (≥2h)</span>
+                                                                                </div>
+                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                    {goodIntervals.length} ({goodPercent}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                                <div className="bg-green-500 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Intervalos curtos (<2h) */}
+                                                                        <div className={`${darkMode ? 'bg-orange-900/20 border border-orange-700/50' : 'bg-orange-50 border border-orange-200'} rounded-lg p-4`}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                    <span>⚠️</span>
+                                                                                    <span>Intervalos Curtos (&lt;2h)</span>
+                                                                                </div>
+                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                    {shortIntervals.length} ({shortPercent}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                                <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
+                                                                        <p className={`text-xs leading-relaxed ${themeClasses.textSecondary(darkMode)}`}>
+                                                                            {goodPercent >= 50
+                                                                                ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
+                                                                                : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
+                                                                        </p>
+                                                                    </div>
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </div>
                                             );
                                         }
                                         return null;
