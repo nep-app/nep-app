@@ -1584,12 +1584,25 @@ export function AnalysesView({
                                                                                         });
                                                                                         totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
                                                                                     } else if (g.type === 'sleep_hours') {
-                                                                                        // DIAS com bem-estar (excluindo hoje)
+                                                                                        // DIAS com sono registado (cycles ou wellbeing, excluindo hoje)
                                                                                         const allDates = new Set();
-                                                                                        analysisWellbeing.forEach(w => {
-                                                                                            const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
-                                                                                            if (dateKey && dateKey !== today) allDates.add(dateKey);
+
+                                                                                        // Adicionar dias de cycles com sono
+                                                                                        analysisCycles.forEach(c => {
+                                                                                            if (c.sleep && !isNaN(parseFloat(c.sleep))) {
+                                                                                                const dateKey = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                                if (dateKey && dateKey !== today) allDates.add(dateKey);
+                                                                                            }
                                                                                         });
+
+                                                                                        // Adicionar dias de wellbeing com sono (Set elimina duplicados automaticamente)
+                                                                                        analysisWellbeing.forEach(w => {
+                                                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) {
+                                                                                                const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                                if (dateKey && dateKey !== today) allDates.add(dateKey);
+                                                                                            }
+                                                                                        });
+
                                                                                         totalPossible = allDates.size;
                                                                                     } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
                                                                                         // CICLOS
