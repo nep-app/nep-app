@@ -225,7 +225,6 @@ function HarmReductionTracker() {
             // Função de migração para corrigir o campo "times" nos dailyLogs antigos
             const fixDailyLogsTimes = async () => {
                 try {
-                    showToast('🔧 A corrigir registos antigos...', 'info');
                     let fixed = 0;
                     let errors = 0;
 
@@ -248,20 +247,31 @@ function HarmReductionTracker() {
                         }
                     }
 
-                    if (fixed > 0) {
-                        showToast(`✓ Corrigidos ${fixed} registos!`, 'success');
-                    } else {
-                        showToast('✓ Todos os registos já estavam corretos', 'success');
-                    }
+                    // Marcar migração como completa
+                    localStorage.setItem('dailyLogsMigrationV1', 'done');
 
-                    if (errors > 0) {
-                        showToast(`⚠️ ${errors} erros durante a correção`, 'error');
+                    if (fixed > 0) {
+                        showToast(`✓ Corrigidos ${fixed} registos de mg automaticamente`, 'success');
+                        logger.info(`Migration completed: ${fixed} records fixed, ${errors} errors`);
                     }
                 } catch (error) {
-                    showToast('✗ Erro ao corrigir registos', 'error');
                     logger.error('Migration error:', error);
                 }
             };
+
+            // Executar migração automaticamente uma vez
+            useEffect(() => {
+                const migrationDone = localStorage.getItem('dailyLogsMigrationV1');
+
+                if (!migrationDone && user && dailyLogs.length > 0 && consumptions.length > 0) {
+                    // Esperar 2 segundos após carregar para não interferir com a UI
+                    const timer = setTimeout(() => {
+                        fixDailyLogsTimes();
+                    }, 2000);
+
+                    return () => clearTimeout(timer);
+                }
+            }, [user, dailyLogs.length, consumptions.length]);
 
             const submitWellbeing = async () => {
                 try {
@@ -1071,7 +1081,6 @@ return {
                                         exportToCSV={exportToCSV}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
-                                        fixDailyLogsTimes={fixDailyLogsTimes}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);

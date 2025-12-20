@@ -8,7 +8,6 @@ export const SettingsView = ({
     exportToCSV,
     notificationsEnabled,
     requestNotificationPermission,
-    fixDailyLogsTimes,
     onOpenLegalDoc
 }) => {
     return (
@@ -55,21 +54,6 @@ export const SettingsView = ({
                         <Icons.Download className="w-4 h-4" />
                         Exportar Dados (CSV)
                     </button>
-
-                    {fixDailyLogsTimes && (
-                        <>
-                            <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-800') + ' p-3 rounded-lg border text-sm'}>
-                                <strong>⚠️ Migração de Dados:</strong> Clica abaixo para corrigir o número de consumos nos registos de mg antigos.
-                            </div>
-                            <button
-                                onClick={fixDailyLogsTimes}
-                                className={(darkMode ? 'bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-400 border-yellow-700/50' : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300') + ' w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2'}
-                            >
-                                <Icons.Settings className="w-4 h-4" />
-                                Corrigir Registos Antigos
-                            </button>
-                        </>
-                    )}
                 </div>
             </div>
 
