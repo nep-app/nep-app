@@ -1283,6 +1283,149 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
+                                                                            {/* Paragraph 8b: Score de Sono */}
+                                                                            {(() => {
+                                                                                // Combinar dados de sono de cycles e wellbeing
+                                                                                const allSleepData = [];
+
+                                                                                // Adicionar dados de cycles
+                                                                                analysisCycles.forEach(c => {
+                                                                                    if (c.sleep && c.bedtime) {
+                                                                                        const date = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                                                        allSleepData.push({
+                                                                                            date,
+                                                                                            sleep: parseFloat(c.sleep),
+                                                                                            bedtime: c.bedtime,
+                                                                                            timestamp: c.timestamp
+                                                                                        });
+                                                                                    }
+                                                                                });
+
+                                                                                // Adicionar dados de wellbeing (se não houver em cycles)
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    if (w.sleep) {
+                                                                                        const date = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                                                                        // Só adicionar se não houver já dados deste dia em cycles
+                                                                                        if (!allSleepData.some(s => s.date === date)) {
+                                                                                            allSleepData.push({
+                                                                                                date,
+                                                                                                sleep: parseFloat(w.sleep),
+                                                                                                bedtime: null,
+                                                                                                timestamp: w.timestamp
+                                                                                            });
+                                                                                        }
+                                                                                    }
+                                                                                });
+
+                                                                                if (allSleepData.length < 3) return null; // Precisamos de pelo menos 3 dias
+
+                                                                                // Ordenar por data
+                                                                                allSleepData.sort((a, b) => new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date));
+
+                                                                                // 1. SCORE DE HORAS (0-5 pontos)
+                                                                                const avgSleep = allSleepData.reduce((sum, s) => sum + s.sleep, 0) / allSleepData.length;
+                                                                                let hoursScore = 0;
+                                                                                if (avgSleep >= 7 && avgSleep <= 8) {
+                                                                                    hoursScore = 5; // Perfeito
+                                                                                } else if (avgSleep >= 6 && avgSleep < 7) {
+                                                                                    hoursScore = 3.5; // Razoável
+                                                                                } else if (avgSleep > 8 && avgSleep <= 9) {
+                                                                                    hoursScore = 4; // Bom mas um pouco acima
+                                                                                } else if (avgSleep >= 5 && avgSleep < 6) {
+                                                                                    hoursScore = 2; // Insuficiente
+                                                                                } else if (avgSleep > 9) {
+                                                                                    hoursScore = 3; // Muito sono pode indicar problemas
+                                                                                } else {
+                                                                                    hoursScore = 1; // <5h muito mau
+                                                                                }
+
+                                                                                // 2. SCORE DE REGULARIDADE (0-5 pontos)
+                                                                                let regularityScore = 0;
+                                                                                const dataWithBedtime = allSleepData.filter(s => s.bedtime);
+
+                                                                                if (dataWithBedtime.length >= 3) {
+                                                                                    const getBedtimeMinutes = (bedtime) => {
+                                                                                        const [hours, minutes] = bedtime.split(':').map(Number);
+                                                                                        // Normalizar madrugada (0-6h) para 24-30h
+                                                                                        if (hours >= 0 && hours < 6) return (hours + 24) * 60 + minutes;
+                                                                                        return hours * 60 + minutes;
+                                                                                    };
+
+                                                                                    const bedtimeMinutes = dataWithBedtime.map(s => getBedtimeMinutes(s.bedtime));
+                                                                                    const avgBedtime = bedtimeMinutes.reduce((a, b) => a + b, 0) / bedtimeMinutes.length;
+
+                                                                                    // Calcular desvio padrão
+                                                                                    const variance = bedtimeMinutes.reduce((sum, bt) => sum + Math.pow(bt - avgBedtime, 2), 0) / bedtimeMinutes.length;
+                                                                                    const stdDev = Math.sqrt(variance);
+
+                                                                                    // Converter desvio para horas
+                                                                                    const stdDevHours = stdDev / 60;
+
+                                                                                    if (stdDevHours < 0.5) {
+                                                                                        regularityScore = 5; // Muito regular (±30 min)
+                                                                                    } else if (stdDevHours < 1) {
+                                                                                        regularityScore = 4; // Bom (±1h)
+                                                                                    } else if (stdDevHours < 1.5) {
+                                                                                        regularityScore = 3; // Razoável (±1.5h)
+                                                                                    } else if (stdDevHours < 2) {
+                                                                                        regularityScore = 2; // Irregular (±2h)
+                                                                                    } else {
+                                                                                        regularityScore = 1; // Muito irregular
+                                                                                    }
+                                                                                } else {
+                                                                                    // Se não temos bedtime suficiente, dar score neutro
+                                                                                    regularityScore = 2.5;
+                                                                                }
+
+                                                                                // 3. SCORE FINAL (0-10)
+                                                                                const finalScore = hoursScore + regularityScore;
+
+                                                                                // 4. TENDÊNCIA (comparar primeira metade vs segunda metade)
+                                                                                let trend = 'stable';
+                                                                                if (allSleepData.length >= 6) {
+                                                                                    const midpoint = Math.floor(allSleepData.length / 2);
+                                                                                    const firstHalf = allSleepData.slice(0, midpoint);
+                                                                                    const secondHalf = allSleepData.slice(midpoint);
+
+                                                                                    const avgFirst = firstHalf.reduce((sum, s) => sum + s.sleep, 0) / firstHalf.length;
+                                                                                    const avgSecond = secondHalf.reduce((sum, s) => sum + s.sleep, 0) / secondHalf.length;
+
+                                                                                    const diff = avgSecond - avgFirst;
+
+                                                                                    if (diff > 0.5) trend = 'improving'; // A melhorar
+                                                                                    else if (diff < -0.5) trend = 'worsening'; // A piorar
+                                                                                }
+
+                                                                                // Determinar cor do score
+                                                                                const scoreColor = finalScore >= 8 ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                                  finalScore >= 6 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
+                                                                                                  (darkMode ? 'text-red-400' : 'text-red-600');
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        💤 <strong>Score de Sono:</strong>{' '}
+                                                                                        <span className={'text-xl font-bold ' + scoreColor}>
+                                                                                            {finalScore.toFixed(1)}/10
+                                                                                        </span>
+                                                                                        {trend === 'improving' && <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>↗️ A melhorar</span></>}
+                                                                                        {trend === 'worsening' && <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>↘️ A piorar</span></>}
+                                                                                        {trend === 'stable' && <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>→ Estável</span></>}
+                                                                                        {' '}
+                                                                                        <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                            (Horas: {hoursScore.toFixed(1)}/5, Regularidade: {regularityScore.toFixed(1)}/5)
+                                                                                        </span>
+                                                                                        .
+                                                                                        {finalScore >= 8 ? (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a dormir {avgSleep.toFixed(1)}h em média — mantém esta rotina.</span></>
+                                                                                        ) : finalScore >= 6 ? (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Razoável. Dormes {avgSleep.toFixed(1)}h em média{regularityScore < 3 ? ' mas a tua rotina é irregular — tenta deitar-te à mesma hora' : ''}.</span></>
+                                                                                        ) : (
+                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Alerta: {avgSleep.toFixed(1)}h é insuficiente{regularityScore < 3 ? ' e irregular' : ''}. Prioriza dormir 7-8h e criar uma rotina consistente.</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* Paragraph 7b: Análise de Ciclos (mg e padrões) */}
                                                                             {(() => {
                                                                                 if (analysisCycles.length === 0) return null;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
@@ -7,6 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
+import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -31,6 +32,16 @@ export function HistoryView({
     const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const { darkMode } = useUI();
     const metrics = useMetrics();
+
+    const [expandedAnalysis, setExpandedAnalysis] = useState(null);
+
+    const toggleAnalysis = (id, text) => {
+        if (expandedAnalysis === id) {
+            setExpandedAnalysis(null);
+        } else {
+            setExpandedAnalysis(id);
+        }
+    };
 
     return (
                                 <div className="space-y-6">
@@ -146,7 +157,11 @@ export function HistoryView({
                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
                                                         <div className="space-y-4">
-                                                            {filteredReflections.slice(0, reflectionsToShow).map(r => (
+                                                            {filteredReflections.slice(0, reflectionsToShow).map(r => {
+                                                                const analysis = r.answer ? analyzeNote(r.answer) : null;
+                                                                const isExpanded = expandedAnalysis === `reflection-${r.id}`;
+
+                                                                return (
                                                                 <div key={r.id} className={(darkMode ? 'border-purple-500 bg-purple-900/30' : 'border-purple-400 bg-purple-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className={'text-xs ' + (themeClasses.textTertiaryAlt(darkMode))}>
@@ -162,8 +177,54 @@ export function HistoryView({
                                                                     </div>
                                                                     <div className={'text-sm font-medium mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>{r.question}</div>
                                                                     <div className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>{r.answer}</div>
+
+                                                                    {analysis && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => toggleAnalysis(`reflection-${r.id}`)}
+                                                                                className={'text-xs mt-2 px-2 py-1 rounded transition-colors ' + (darkMode ? 'bg-purple-800/50 text-purple-300 hover:bg-purple-800' : 'bg-purple-100 text-purple-700 hover:bg-purple-200')}
+                                                                            >
+                                                                                {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                            </button>
+
+                                                                            {isExpanded && (
+                                                                                <div className={'mt-2 p-3 rounded text-xs ' + (darkMode ? 'bg-gray-800/50 border border-gray-700' : 'bg-white border border-purple-200')}>
+                                                                                    <div className="mb-2">
+                                                                                        <span className={'font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>Classificação: </span>
+                                                                                        <span className={
+                                                                                            analysis.classification.includes('positive') ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                            analysis.classification.includes('negative') ? (darkMode ? 'text-red-400' : 'text-red-600') :
+                                                                                            (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                        }>
+                                                                                            {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                        </span>
+                                                                                    </div>
+
+                                                                                    {analysis.details && analysis.details.length > 0 && (
+                                                                                        <div>
+                                                                                            <div className={'font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>Palavras detectadas:</div>
+                                                                                            <div className="space-y-1">
+                                                                                                {analysis.details
+                                                                                                    .filter(d => Math.abs(d.score) > 0.1)
+                                                                                                    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
+                                                                                                    .slice(0, 10)
+                                                                                                    .map((d, i) => (
+                                                                                                    <div key={i} className={(themeClasses.textSecondary(darkMode))}>
+                                                                                                        • "<span className="font-medium">{d.word}</span>"
+                                                                                                        <span className={d.score > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                            {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
                                                                 </div>
-                                                            ))}
+                                                            )})}
                                                         </div>
                                                         {filteredReflections.length > reflectionsToShow && (
                                                             <button onClick={() => setReflectionsToShow(prev => prev + 10)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
@@ -177,7 +238,11 @@ export function HistoryView({
                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                         <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.BookOpen className={'w-4 h-4 ' + (darkMode ? 'text-pink-400' : 'text-pink-600')} /> Pensamentos ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
-                                                            {filteredThoughts.slice(0, thoughtsToShow).map(t => (
+                                                            {filteredThoughts.slice(0, thoughtsToShow).map(t => {
+                                                                const analysis = t.content ? analyzeNote(t.content) : null;
+                                                                const isExpanded = expandedAnalysis === `thought-${t.id}`;
+
+                                                                return (
                                                                 <div key={t.id} className={(darkMode ? 'border-pink-500 bg-pink-900/30' : 'border-pink-400 bg-pink-50') + ' border-l-4 pl-4 py-2 rounded-r-lg'}>
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className={'text-xs ' + (themeClasses.textTertiaryAlt(darkMode))}>
@@ -192,8 +257,54 @@ export function HistoryView({
                                                                         <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>{t.content}</div>
+
+                                                                    {analysis && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => toggleAnalysis(`thought-${t.id}`)}
+                                                                                className={'text-xs mt-2 px-2 py-1 rounded transition-colors ' + (darkMode ? 'bg-pink-800/50 text-pink-300 hover:bg-pink-800' : 'bg-pink-100 text-pink-700 hover:bg-pink-200')}
+                                                                            >
+                                                                                {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                            </button>
+
+                                                                            {isExpanded && (
+                                                                                <div className={'mt-2 p-3 rounded text-xs ' + (darkMode ? 'bg-gray-800/50 border border-gray-700' : 'bg-white border border-pink-200')}>
+                                                                                    <div className="mb-2">
+                                                                                        <span className={'font-medium ' + (themeClasses.textPrimaryAlt(darkMode))}>Classificação: </span>
+                                                                                        <span className={
+                                                                                            analysis.classification.includes('positive') ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                            analysis.classification.includes('negative') ? (darkMode ? 'text-red-400' : 'text-red-600') :
+                                                                                            (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                        }>
+                                                                                            {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                        </span>
+                                                                                    </div>
+
+                                                                                    {analysis.details && analysis.details.length > 0 && (
+                                                                                        <div>
+                                                                                            <div className={'font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>Palavras detectadas:</div>
+                                                                                            <div className="space-y-1">
+                                                                                                {analysis.details
+                                                                                                    .filter(d => Math.abs(d.score) > 0.1)
+                                                                                                    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
+                                                                                                    .slice(0, 10)
+                                                                                                    .map((d, i) => (
+                                                                                                    <div key={i} className={(themeClasses.textSecondary(darkMode))}>
+                                                                                                        • "<span className="font-medium">{d.word}</span>"
+                                                                                                        <span className={d.score > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                            {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
                                                                 </div>
-                                                            ))}
+                                                            )})}
                                                         </div>
                                                         {filteredThoughts.length > thoughtsToShow && (
                                                             <button onClick={() => setThoughtsToShow(prev => prev + 10)} className={(darkMode ? 'text-pink-400 hover:text-pink-300' : 'text-pink-600 hover:text-pink-700') + ' text-sm font-medium mt-3 w-full py-2'}>

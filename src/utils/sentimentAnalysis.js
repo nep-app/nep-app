@@ -271,6 +271,11 @@ function _calculateRawSentiment(text) {
   return { score: Number(totalScore.toFixed(3)), magnitude: Number(magnitude.toFixed(3)), classification, positiveCount, negativeCount, neutralCount, details };
 }
 
+// Exportar análise individual para debug
+export function analyzeNote(text) {
+  return _calculateRawSentiment(text);
+}
+
 // Esta é a função principal que o teu código já chama!
 export function analyzeMultipleNotes(notes) {
   const validNotes = notes.filter(n => n && n.trim().length > 0);

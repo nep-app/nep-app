@@ -7,7 +7,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '2.0.0'; // Incrementar quando houver updates
+const APP_VERSION = '3.0.0'; // Incrementar quando houver updates
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
