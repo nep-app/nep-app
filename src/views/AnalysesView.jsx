@@ -115,15 +115,17 @@ export function AnalysesView({
                                                 <div className="space-y-4">
                                                     {/* Sub-tab navigation */}
                                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                                        {['estrutural', 'correlacoes', 'coach'].map(subView => (
+                                                        {['coach', 'correlacoes', 'emocoes', 'gatilhos', 'estrutural'].map(subView => (
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
-                                                                {subView === 'estrutural' && '📊 Estrutural'}
-                                                                {subView === 'correlacoes' && '🔗 Correlações'}
                                                                 {subView === 'coach' && '💬 Reflexão Geral'}
+                                                                {subView === 'correlacoes' && '🔗 Correlações'}
+                                                                {subView === 'emocoes' && '🌈 Emoções'}
+                                                                {subView === 'gatilhos' && '⚡ Gatilhos'}
+                                                                {subView === 'estrutural' && '📊 Estrutural'}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -2088,6 +2090,414 @@ export function AnalysesView({
                                                                 </div>
                                                             );
                                                         return null;
+                                                    })()}
+
+                                                    {/* EMOÇÕES */}
+                                                    {analysisSubView === 'emocoes' && (() => {
+                                                        const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
+
+                                                        if (allEmotions.length === 0) {
+                                                            return (
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-4xl mb-3">🌈</div>
+                                                                    <p className={'text-lg font-medium mb-2 ' + (themeClasses.textPrimary(darkMode))}>
+                                                                        Sem dados emocionais
+                                                                    </p>
+                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        Regista as tuas emoções no Bem-estar para veres análises detalhadas aqui.
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        // Categorizar emoções
+                                                        const positiveEmotions = allEmotions.filter(e => getEmotionCategory(e) === 'positive');
+                                                        const negativeEmotions = allEmotions.filter(e => getEmotionCategory(e) === 'negative');
+                                                        const neutralEmotions = allEmotions.filter(e => getEmotionCategory(e) === 'neutral');
+
+                                                        const totalCategorized = positiveEmotions.length + negativeEmotions.length;
+                                                        const positivePercent = totalCategorized > 0 ? (positiveEmotions.length / totalCategorized) * 100 : 0;
+                                                        const negativePercent = totalCategorized > 0 ? (negativeEmotions.length / totalCategorized) * 100 : 0;
+
+                                                        // Top emoções
+                                                        const emotionFreq = {};
+                                                        allEmotions.forEach(e => { emotionFreq[e] = (emotionFreq[e] || 0) + 1; });
+                                                        const topEmotions = Object.entries(emotionFreq)
+                                                            .sort((a, b) => b[1] - a[1])
+                                                            .slice(0, 10)
+                                                            .map(([emotion, count]) => ({
+                                                                emotion,
+                                                                count,
+                                                                percent: (count / allEmotions.length) * 100,
+                                                                category: getEmotionCategory(emotion)
+                                                            }));
+
+                                                        // Emoções por dia da semana
+                                                        const emotionsByWeekday = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+                                                        analysisWellbeing.forEach(w => {
+                                                            if (w.emotions && w.emotions.length > 0) {
+                                                                const date = w.timestamp ? new Date(w.timestamp) : null;
+                                                                if (date) {
+                                                                    const day = date.getDay();
+                                                                    w.emotions.forEach(e => emotionsByWeekday[day].push(e));
+                                                                }
+                                                            }
+                                                        });
+
+                                                        const weekdayStats = Object.entries(emotionsByWeekday).map(([day, emotions]) => {
+                                                            const pos = emotions.filter(e => getEmotionCategory(e) === 'positive').length;
+                                                            const neg = emotions.filter(e => getEmotionCategory(e) === 'negative').length;
+                                                            const total = pos + neg;
+                                                            return {
+                                                                day: parseInt(day),
+                                                                total: emotions.length,
+                                                                positivePercent: total > 0 ? (pos / total) * 100 : 0
+                                                            };
+                                                        }).filter(s => s.total > 0);
+
+                                                        const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                                                        const bestDay = weekdayStats.reduce((best, curr) =>
+                                                            curr.positivePercent > best.positivePercent ? curr : best,
+                                                            weekdayStats[0] || { day: 0, positivePercent: 0 }
+                                                        );
+                                                        const worstDay = weekdayStats.reduce((worst, curr) =>
+                                                            curr.positivePercent < worst.positivePercent ? curr : worst,
+                                                            weekdayStats[0] || { day: 0, positivePercent: 0 }
+                                                        );
+
+                                                        return (
+                                                            <div className="space-y-4">
+                                                                {/* Overview */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        🌈 Panorama Emocional
+                                                                    </h3>
+                                                                    <div className="grid grid-cols-3 gap-4 mb-4">
+                                                                        <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                {positivePercent.toFixed(0)}%
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-green-300/70' : 'text-green-600/70')}>
+                                                                                Positivas
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-green-400/60' : 'text-green-600/60')}>
+                                                                                {positiveEmotions.length} emoções
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                {negativePercent.toFixed(0)}%
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                                Negativas
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-purple-400/60' : 'text-purple-600/60')}>
+                                                                                {negativeEmotions.length} emoções
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                {allEmotions.length}
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400/70' : 'text-gray-600/70')}>
+                                                                                Total
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400/60' : 'text-gray-600/60')}>
+                                                                                registadas
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className={'flex items-center h-4 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-800' : 'bg-gray-200')}>
+                                                                        <div
+                                                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                                                                            style={{width: positivePercent + '%'}}
+                                                                        />
+                                                                        <div
+                                                                            className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
+                                                                            style={{width: negativePercent + '%'}}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Top 10 Emoções */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        ⭐ Top 10 Emoções Mais Frequentes
+                                                                    </h3>
+                                                                    <div className="space-y-2">
+                                                                        {topEmotions.map((item, idx) => (
+                                                                            <div key={idx} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
+                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'text-xs font-bold w-6 text-center ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            #{idx + 1}
+                                                                                        </span>
+                                                                                        <span className={'text-sm font-medium ' + (
+                                                                                            item.category === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                            item.category === 'negative' ? (darkMode ? 'text-purple-400' : 'text-purple-600') :
+                                                                                            (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                        )}>
+                                                                                            {item.emotion}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            {item.count}× ({item.percent.toFixed(0)}%)
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                    <div
+                                                                                        className={'h-full transition-all duration-500 ' + (
+                                                                                            item.category === 'positive' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                                                                                            item.category === 'negative' ? 'bg-gradient-to-r from-purple-500 to-indigo-500' :
+                                                                                            'bg-gradient-to-r from-gray-500 to-gray-400'
+                                                                                        )}
+                                                                                        style={{width: item.percent + '%'}}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Padrões por Dia da Semana */}
+                                                                {weekdayStats.length > 0 && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                            📅 Padrões por Dia da Semana
+                                                                        </h3>
+                                                                        <div className="space-y-3 mb-4">
+                                                                            {weekdayStats
+                                                                                .sort((a, b) => b.positivePercent - a.positivePercent)
+                                                                                .map((stat, idx) => (
+                                                                                <div key={stat.day} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <span className={'text-sm font-medium ' + (themeClasses.textPrimary(darkMode))}>
+                                                                                            {weekdayNames[stat.day]}
+                                                                                        </span>
+                                                                                        <span className={'text-xs ' + (
+                                                                                            stat.positivePercent >= 60 ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                            stat.positivePercent >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
+                                                                                            (darkMode ? 'text-purple-400' : 'text-purple-600')
+                                                                                        )}>
+                                                                                            {stat.positivePercent.toFixed(0)}% positivas
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className={'h-2 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                        <div
+                                                                                            className={'h-full transition-all duration-500 ' + (
+                                                                                                stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                                                                                                stat.positivePercent >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                                                                                                'bg-gradient-to-r from-purple-500 to-indigo-500'
+                                                                                            )}
+                                                                                            style={{width: stat.positivePercent + '%'}}
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        {weekdayStats.length >= 2 && (
+                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                                <p className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                    💡 <strong>Insight:</strong> Os teus dias emocionalmente mais positivos tendem a ser às <strong>{weekdayNames[bestDay.day]}s</strong> ({bestDay.positivePercent.toFixed(0)}% positivas),
+                                                                                    enquanto às <strong>{weekdayNames[worstDay.day]}s</strong> tendes a sentir mais emoções desafiantes ({worstDay.positivePercent.toFixed(0)}% positivas).
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* GATILHOS */}
+                                                    {analysisSubView === 'gatilhos' && (() => {
+                                                        const allTriggers = analysisCycles.flatMap(c => c.triggers || []);
+
+                                                        if (allTriggers.length === 0) {
+                                                            return (
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-4xl mb-3">⚡</div>
+                                                                    <p className={'text-lg font-medium mb-2 ' + (themeClasses.textPrimary(darkMode))}>
+                                                                        Sem gatilhos registados
+                                                                    </p>
+                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        Identifica e regista os teus gatilhos ao criar novos ciclos para veres análises detalhadas aqui.
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        // Frequência de gatilhos
+                                                        const triggerFreq = {};
+                                                        allTriggers.forEach(t => { triggerFreq[t] = (triggerFreq[t] || 0) + 1; });
+                                                        const topTriggers = Object.entries(triggerFreq)
+                                                            .sort((a, b) => b[1] - a[1])
+                                                            .map(([trigger, count]) => ({
+                                                                trigger,
+                                                                count,
+                                                                percent: (count / allTriggers.length) * 100
+                                                            }));
+
+                                                        // Gatilhos por dia da semana
+                                                        const triggersByWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+                                                        analysisCycles.forEach(c => {
+                                                            if (c.triggers && c.triggers.length > 0) {
+                                                                const date = c.timestamp ? new Date(c.timestamp) : null;
+                                                                if (date) {
+                                                                    const day = date.getDay();
+                                                                    triggersByWeekday[day] += c.triggers.length;
+                                                                }
+                                                            }
+                                                        });
+
+                                                        const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                                                        const mostTriggersDay = Object.entries(triggersByWeekday)
+                                                            .reduce((max, [day, count]) => count > max.count ? { day: parseInt(day), count } : max, { day: 0, count: 0 });
+
+                                                        // Ciclos com gatilhos vs sem gatilhos
+                                                        const cyclesWithTriggers = analysisCycles.filter(c => c.triggers && c.triggers.length > 0).length;
+                                                        const cyclesWithoutTriggers = analysisCycles.length - cyclesWithTriggers;
+
+                                                        return (
+                                                            <div className="space-y-4">
+                                                                {/* Overview */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        ⚡ Panorama de Gatilhos
+                                                                    </h3>
+                                                                    <div className="grid grid-cols-3 gap-4">
+                                                                        <div className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                {allTriggers.length}
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-red-300/70' : 'text-red-600/70')}>
+                                                                                Total de gatilhos
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-red-400/60' : 'text-red-600/60')}>
+                                                                                identificados
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-orange-900/20 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>
+                                                                                {topTriggers.length}
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-orange-300/70' : 'text-orange-600/70')}>
+                                                                                Tipos diferentes
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-orange-400/60' : 'text-orange-600/60')}>
+                                                                                de gatilhos
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>
+                                                                                {(allTriggers.length / analysisCycles.length).toFixed(1)}
+                                                                            </div>
+                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-yellow-300/70' : 'text-yellow-600/70')}>
+                                                                                Média
+                                                                            </div>
+                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-yellow-400/60' : 'text-yellow-600/60')}>
+                                                                                por ciclo
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Top Gatilhos */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        🎯 Gatilhos Mais Frequentes
+                                                                    </h3>
+                                                                    <div className="space-y-2">
+                                                                        {topTriggers.map((item, idx) => (
+                                                                            <div key={idx} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
+                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'text-xs font-bold w-6 text-center ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            #{idx + 1}
+                                                                                        </span>
+                                                                                        <span className={'text-sm font-medium ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                            {item.trigger}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            {item.count}× ({item.percent.toFixed(0)}%)
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                    <div
+                                                                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
+                                                                                        style={{width: item.percent + '%'}}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Padrões Temporais */}
+                                                                {Object.values(triggersByWeekday).some(count => count > 0) && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                            📅 Distribuição por Dia da Semana
+                                                                        </h3>
+                                                                        <div className="space-y-3 mb-4">
+                                                                            {Object.entries(triggersByWeekday)
+                                                                                .map(([day, count]) => ({
+                                                                                    day: parseInt(day),
+                                                                                    count,
+                                                                                    percent: allTriggers.length > 0 ? (count / allTriggers.length) * 100 : 0
+                                                                                }))
+                                                                                .filter(stat => stat.count > 0)
+                                                                                .sort((a, b) => b.count - a.count)
+                                                                                .map((stat) => (
+                                                                                <div key={stat.day} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
+                                                                                    <div className="flex items-center justify-between mb-2">
+                                                                                        <span className={'text-sm font-medium ' + (themeClasses.textPrimary(darkMode))}>
+                                                                                            {weekdayNames[stat.day]}
+                                                                                        </span>
+                                                                                        <span className={'text-xs ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                            {stat.count} gatilhos ({stat.percent.toFixed(0)}%)
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className={'h-2 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                        <div
+                                                                                            className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
+                                                                                            style={{width: stat.percent + '%'}}
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        {mostTriggersDay.count > 0 && (
+                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                                <p className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                    💡 <strong>Insight:</strong> A maior parte dos teus gatilhos ocorre às <strong>{weekdayNames[mostTriggersDay.day]}s</strong> ({mostTriggersDay.count} gatilhos).
+                                                                                    {mostTriggersDay.day >= 1 && mostTriggersDay.day <= 5 && ' Considera planear estratégias de prevenção para este dia da semana.'}
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Consciencialização */}
+                                                                <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-3 ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>
+                                                                        🧠 Consciencialização
+                                                                    </h3>
+                                                                    <p className={'text-sm mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                        Identificaste gatilhos em <strong>{cyclesWithTriggers}</strong> de {analysisCycles.length} ciclos ({((cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%).
+                                                                    </p>
+                                                                    <p className={'text-sm ' + (darkMode ? 'text-purple-300/80' : 'text-purple-600')}>
+                                                                        Reconhecer os teus gatilhos é um passo fundamental para desenvolver estratégias de prevenção eficazes.
+                                                                        Cada gatilho identificado é uma oportunidade de aprendizagem e crescimento.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        );
                                                     })()}
 
                                                     {/* ESTRUTURAL */}

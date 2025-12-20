@@ -999,19 +999,6 @@ export function PatternsView({
                                                 progressData.topEmotions = topEmotions;
                                             }
 
-                                            // Só mostrar gatilhos se houver pelo menos um gatilho registado
-                                            if (recentTriggers.length > 0 || previousTriggers.length > 0) {
-                                                const recentAvgTriggers = recentCycles.length > 0 ? recentTriggers.length / recentCycles.length : 0;
-                                                const previousAvgTriggers = previousCycles.length > 0 ? previousTriggers.length / previousCycles.length : 0;
-
-                                                progressData.triggers = {
-                                                    recent: recentAvgTriggers,
-                                                    previous: previousAvgTriggers,
-                                                    change: calculateChange(recentAvgTriggers, previousAvgTriggers, true), // Lower is better
-                                                    label: 'Gatilhos por dia'
-                                                };
-                                            }
-
                                             // Calculate overall progress score (0-100)
                                             // Excluir métricas com isNew (dados novos sem comparação válida)
                                             const scorableMetrics = Object.values(progressData).filter(m => m.change && m.change.direction !== 'stable' && !m.change.isNew);
@@ -1300,7 +1287,7 @@ export function PatternsView({
                                                     )}
 
                                                     {/* Emotional metrics */}
-                                                    {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions || progressData.triggers) && (
+                                                    {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions) && (
                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 🧠 Estado Emocional
@@ -1392,34 +1379,6 @@ export function PatternsView({
                                                                                     </span>
                                                                                 </div>
                                                                             ))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.triggers && (
-                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-red-900/20 to-orange-900/20 border-red-700/50' : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200') + ' rounded-lg p-3 border'}>
-                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                            <span className="text-lg">⚡</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-700')}>
-                                                                                Gatilhos Identificados
-                                                                            </span>
-                                                                            {progressData.triggers.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.triggers.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
-                                                                                    {progressData.triggers.change.direction === 'up' ? '↑' : '↓'}{progressData.triggers.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-3xl font-black ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
-                                                                                    {progressData.triggers.recent.toFixed(1)}
-                                                                                </span>
-                                                                                <span className={'text-xs font-medium ' + (darkMode ? 'text-red-300/70' : 'text-red-600/70')}>
-                                                                                    /ciclo
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
-                                                                                era {progressData.triggers.previous.toFixed(1)}
-                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
