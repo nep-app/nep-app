@@ -53,7 +53,7 @@ function HarmReductionTracker() {
             // Use custom hooks
             const { toasts, showToast } = useToast();
             const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
-            const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, consumptions, cycles, showToast);
+            const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast);
 
             // Use metrics context for centralized analytics and computations
             const metrics = useMetrics();
@@ -197,14 +197,18 @@ function HarmReductionTracker() {
                     // Usar data escolhida ou hoje
                     const selectedDate = dailyForm.date || getTodayKey();
 
-                    // Criar timestamp baseado na data escolhida (meio-dia para evitar problemas de timezone)
-                    const timestamp = new Date(selectedDate + 'T12:00:00').toISOString();
+                    // Usar timestamp REAL (hora atual de submissão)
+                    const timestamp = new Date().toISOString();
+
+                    // Contar consumos do dia SELECIONADO (não de hoje)
+                    const consumptionsOnSelectedDate = consumptions.filter(c => c.date === selectedDate);
+                    const timesCount = consumptionsOnSelectedDate.length;
 
                     const item = {
                         id: genId(),
                         date: selectedDate,
                         timestamp: timestamp,
-                        times: metrics.todayConsumptions.length,
+                        times: timesCount,
                         mg: parseInt(dailyForm.mg),
                         notes: dailyForm.notes
                     };
@@ -262,6 +266,14 @@ function HarmReductionTracker() {
                     await addWellbeingLog(item);
                     setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
                     setShowWellbeingModal(false);
+
+                    // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
+                    if (dismissReminder) {
+                        const dismissed = JSON.parse(localStorage.getItem('reminderDismissed') || '{}');
+                        delete dismissed['wellbeing-consumption'];
+                        localStorage.setItem('reminderDismissed', JSON.stringify(dismissed));
+                    }
+
                     showToast('✓ Bem-estar guardado', 'success');
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);

@@ -3,7 +3,7 @@ import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
 
-export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToast) => {
+export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast) => {
   const [reminderDismissed, setReminderDismissed] = useState(() => {
     return safeLocalStorage.get('reminderDismissed', {});
   });
@@ -86,12 +86,27 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
         // Only show reminders between 10h and 22h
         if (hour < 10 || hour > 22) return;
 
-        // Check if user hasn't logged wellbeing today
-        const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
-        if (!hasWellbeingToday && shouldShowReminder('wellbeing') && hour >= 18) {
-          showToast('💭 Lembrete: Ainda não registaste bem-estar hoje', 'info');
-          showBrowserNotification('Lembrete - NEP', 'Ainda não registaste bem-estar hoje');
-          dismissReminder('wellbeing');
+        // Check what's missing today (wellbeing, reflection, mg from yesterday)
+        if (hour >= 18 && shouldShowReminder('daily-check')) {
+          const missing = [];
+
+          const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+          if (!hasWellbeingToday) missing.push('bem-estar');
+
+          const hasReflectionToday = reflections.some(r => r.date === today);
+          if (!hasReflectionToday) missing.push('reflexão');
+
+          // Calculate yesterday's date
+          const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const hasMgYesterday = dailyLogs.some(d => d.date === yesterday);
+          if (!hasMgYesterday) missing.push('mg de ontem');
+
+          if (missing.length > 0) {
+            const message = '💭 Lembrete: Falta registar: ' + missing.join(', ');
+            showToast(message, 'info');
+            showBrowserNotification('Lembrete - NEP', 'Falta registar: ' + missing.join(', '));
+            dismissReminder('daily-check');
+          }
         }
       } catch (e) {
         logger.error('Error checking reminders:', e);
@@ -105,7 +120,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
     } catch (e) {
       logger.error('Error setting up reminders:', e);
     }
-  }, [user, wellbeingLogs, notificationsEnabled]);
+  }, [user, wellbeingLogs, reflections, dailyLogs, notificationsEnabled]);
 
   // Check for wellbeing reminder after every 2 consumptions
   useEffect(() => {
@@ -144,10 +159,14 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, showToas
         ).length;
       }
 
-      // Show reminder if 2 or more consumptions without wellbeing
-      if (consumptionsSinceLastWellbeing >= 2 && shouldShowReminder('wellbeing-consumption')) {
-        showToast('💚 Lembrete: Já tens 2 consumos! Regista o teu bem-estar', 'info');
-        showBrowserNotification('Lembrete - NEP', 'Já tens 2 consumos! Regista o teu bem-estar');
+      // Show reminder ONLY at multiples of 2 (2, 4, 6, 8...)
+      // Isto evita mostrar aos 3, 5, 7... consumos
+      const isMultipleOf2 = consumptionsSinceLastWellbeing % 2 === 0;
+      const shouldNotify = consumptionsSinceLastWellbeing >= 2 && isMultipleOf2;
+
+      if (shouldNotify && shouldShowReminder('wellbeing-consumption')) {
+        showToast('💚 Lembrete: Já tens ' + consumptionsSinceLastWellbeing + ' consumos! Regista o teu bem-estar', 'info');
+        showBrowserNotification('Lembrete - NEP', 'Já tens ' + consumptionsSinceLastWellbeing + ' consumos! Regista o teu bem-estar');
         dismissReminder('wellbeing-consumption');
       }
     } catch (e) {

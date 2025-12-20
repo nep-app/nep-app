@@ -7,6 +7,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT } from '../utils/helpers';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
+import { calculateBadges } from '../utils/badgesCalculator';
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
@@ -251,8 +252,17 @@ export function AnalysesView({
                                                                                     }
                                                                                 });
 
-                                                                                const goodDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= 7);
-                                                                                const difficultDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count >= 10);
+                                                                                // Buscar meta de redução de frequência para definir thresholds dinâmicos
+                                                                                const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
+
+                                                                                // Se não houver meta, não mostrar esta secção
+                                                                                if (!frequencyGoal) return null;
+
+                                                                                const goodThreshold = Math.max(1, frequencyGoal.target - 1); // Meta - 1
+                                                                                const difficultThreshold = frequencyGoal.target + 1; // Meta + 1
+
+                                                                                const goodDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= goodThreshold);
+                                                                                const difficultDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count >= difficultThreshold);
 
                                                                                 if (goodDays.length === 0 && difficultDays.length === 0) return null;
 
@@ -275,8 +285,8 @@ export function AnalysesView({
                                                                                 return (
                                                                                     <p>
                                                                                         🏆 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias Bons vs Difíceis:</strong>
-                                                                                        {goodDays.length > 0 && <> Tiveste <strong>{goodDays.length} {goodDays.length === 1 ? 'dia bom' : 'dias bons'}</strong> (≤7 consumos){goodSleep && <> com média de <strong>{goodSleep}h sono</strong></>}{goodMood && <> e humor de <strong>{goodMood}/10</strong></>}.</>}
-                                                                                        {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥10 consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
+                                                                                        {goodDays.length > 0 && <> Tiveste <strong>{goodDays.length} {goodDays.length === 1 ? 'dia bom' : 'dias bons'}</strong> (≤{goodThreshold} consumos){goodSleep && <> com média de <strong>{goodSleep}h sono</strong></>}{goodMood && <> e humor de <strong>{goodMood}/10</strong></>}.</>}
+                                                                                        {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥{difficultThreshold} consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
                                                                                         {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
                                                                                             <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Padrão claro: dormir mais ({(parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias bons!</span></>
                                                                                         )}
@@ -1122,8 +1132,14 @@ export function AnalysesView({
                                                                                 });
 
                                                                                 const dailyCounts = Object.values(consumptionsByDate);
-                                                                                const goodDays = dailyCounts.filter(c => c <= 7).length;
-                                                                                const difficultDays = dailyCounts.filter(c => c >= 10).length;
+
+                                                                                // Buscar meta para thresholds dinâmicos
+                                                                                const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
+                                                                                const goodThreshold = frequencyGoal ? Math.max(1, frequencyGoal.target - 1) : 7;
+                                                                                const difficultThreshold = frequencyGoal ? frequencyGoal.target + 1 : 10;
+
+                                                                                const goodDays = dailyCounts.filter(c => c <= goodThreshold).length;
+                                                                                const difficultDays = dailyCounts.filter(c => c >= difficultThreshold).length;
 
                                                                                 // Verificar se há melhoria ou esforço
                                                                                 let hasEffort = false;
@@ -1824,6 +1840,34 @@ export function AnalysesView({
                                                                                         ) : (
                                                                                             <> Isto sugere que o cansaço pode ser um gatilho. Identifica formas de recarregar energia antes de recorrer ao consumo.</>
                                                                                         )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
+                                                                            {/* Paragraph 11b: Conquistas e Progresso */}
+                                                                            {(() => {
+                                                                                const badges = calculateBadges({
+                                                                                    consumptions: analysisConsumptions,
+                                                                                    reflections: analysisReflections,
+                                                                                    wellbeingLogs: analysisWellbeing,
+                                                                                    cycles: analysisCycles,
+                                                                                    goals,
+                                                                                    getGoalProgress: metrics.getGoalProgress
+                                                                                });
+
+                                                                                if (badges.length === 0) return null;
+
+                                                                                // Agrupar badges por tipo
+                                                                                const progressBadges = badges.filter(b =>
+                                                                                    b.id.includes('reflection') || b.id.includes('wellbeing') || b.id.includes('cycles') ||
+                                                                                    b.id.includes('goal') || b.id.includes('reduction') || b.id.includes('tracking')
+                                                                                );
+
+                                                                                const milestones = progressBadges.slice(0, 5).map(b => b.title).join(', ');
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🏆 <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Conquistas e Progresso:</strong> Conseguiste <strong>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</strong> até agora{milestones && <>, incluindo: {milestones}</>}. Cada marco é uma prova do teu compromisso com a mudança. Continua assim!
                                                                                     </p>
                                                                                 );
                                                                             })()}

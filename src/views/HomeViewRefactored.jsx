@@ -333,29 +333,6 @@ export function HomeViewRefactored({
         )}
       </div>
 
-      {/* Conquistas */}
-      {badges.length > 0 && (
-        <div className={(darkMode ? 'bg-gradient-to-br from-yellow-900/30 via-orange-900/20 to-amber-900/30 border-yellow-700/50' : 'bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 border-yellow-300') + ' rounded-xl p-4 border-2'}>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="text-2xl">🏆</div>
-            <div>
-              <h3 className={'font-bold ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>Conquistas</h3>
-              <p className={'text-xs ' + (darkMode ? 'text-yellow-400/70' : 'text-yellow-700/70')}>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
-            {badges.map(badge => (
-              <div key={badge.id} className={(darkMode ? 'bg-gradient-to-br from-gray-800/80 to-gray-700/80 border-gray-600' : 'bg-gradient-to-br from-white to-gray-50 border-' + badge.color + '-300') + ' rounded-lg p-3 border flex items-center gap-2'}>
-                <div className="text-xl">{badge.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <div className={'font-bold text-xs truncate ' + (darkMode ? 'text-gray-100' : 'text-' + badge.color + '-800')}>{badge.title}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {consumptions.length > 0 && (
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
           <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>Consumos Recentes</h3>
