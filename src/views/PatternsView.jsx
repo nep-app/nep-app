@@ -6,6 +6,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
+import { getEmotionCategory } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount } = analyticsService;
@@ -939,10 +940,25 @@ export function PatternsView({
                                             const recentTriggers = recentCycles.flatMap(c => c.triggers || []);
                                             const previousTriggers = previousCycles.flatMap(c => c.triggers || []);
 
-                                            // Count negative emotions
-                                            const negativeEmotions = ['😰 Ansioso/a', '😢 Triste', '😤 Irritado/a', '😓 Stressado/a', '😫 Frustrado/a', '🥺 Solitário/a', '😖 Culpado/a', '😞 Envergonhado/a', '😣 Arrependido/a', '😩 Overwhelmed', '🔌 Desconectado/a', '😔 Inseguro/a', '😕 Confuso/a', '😐 Entediado/a', '🔥 Com craving', '😴 Cansado/a', '🤗 Vulnerável'];
-                                            const recentNegativeCount = recentEmotions.filter(e => negativeEmotions.includes(e)).length;
-                                            const previousNegativeCount = previousEmotions.filter(e => negativeEmotions.includes(e)).length;
+                                            // Count emotions by category (usando getEmotionCategory)
+                                            const recentNegativeCount = recentEmotions.filter(e => getEmotionCategory(e) === 'negative').length;
+                                            const previousNegativeCount = previousEmotions.filter(e => getEmotionCategory(e) === 'negative').length;
+                                            const recentPositiveCount = recentEmotions.filter(e => getEmotionCategory(e) === 'positive').length;
+                                            const previousPositiveCount = previousEmotions.filter(e => getEmotionCategory(e) === 'positive').length;
+
+                                            // Top 3 emoções mais frequentes (período recente)
+                                            const emotionFreq = {};
+                                            recentEmotions.forEach(e => {
+                                                emotionFreq[e] = (emotionFreq[e] || 0) + 1;
+                                            });
+                                            const topEmotions = Object.entries(emotionFreq)
+                                                .sort((a, b) => b[1] - a[1])
+                                                .slice(0, 3)
+                                                .map(([emotion, count]) => ({
+                                                    emotion,
+                                                    count,
+                                                    category: getEmotionCategory(emotion)
+                                                }));
 
                                             // Só mostrar emoções negativas se houver pelo menos uma emoção negativa registada
                                             if (recentNegativeCount > 0 || previousNegativeCount > 0) {
@@ -959,6 +975,28 @@ export function PatternsView({
                                                     previousCount: previousNegativeCount,
                                                     previousTotal: previousEmotions.length
                                                 };
+                                            }
+
+                                            // Emoções positivas
+                                            if (recentPositiveCount > 0 || previousPositiveCount > 0) {
+                                                const recentPositivePercent = recentEmotions.length > 0 ? (recentPositiveCount / recentEmotions.length) * 100 : 0;
+                                                const previousPositivePercent = previousEmotions.length > 0 ? (previousPositiveCount / previousEmotions.length) * 100 : 0;
+
+                                                progressData.positiveEmotions = {
+                                                    recent: recentPositivePercent,
+                                                    previous: previousPositivePercent,
+                                                    change: calculateChange(recentPositivePercent, previousPositivePercent, false), // Higher is better
+                                                    label: 'Emoções positivas (% do total)',
+                                                    recentCount: recentPositiveCount,
+                                                    recentTotal: recentEmotions.length,
+                                                    previousCount: previousPositiveCount,
+                                                    previousTotal: previousEmotions.length
+                                                };
+                                            }
+
+                                            // Top emoções
+                                            if (topEmotions.length > 0) {
+                                                progressData.topEmotions = topEmotions;
                                             }
 
                                             // Só mostrar gatilhos se houver pelo menos um gatilho registado
@@ -1262,7 +1300,7 @@ export function PatternsView({
                                                     )}
 
                                                     {/* Emotional metrics */}
-                                                    {(progressData.negativeEmotions || progressData.triggers) && (
+                                                    {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions || progressData.triggers) && (
                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
                                                                 🧠 Estado Emocional
@@ -1298,6 +1336,62 @@ export function PatternsView({
                                                                             <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
                                                                                 era {progressData.negativeEmotions.previous.toFixed(0)}%
                                                                             </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.positiveEmotions && (
+                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700/50' : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200') + ' rounded-lg p-3 border'}>
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-lg">😊</span>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                Emoções Positivas
+                                                                            </span>
+                                                                            {progressData.positiveEmotions.change.direction !== 'stable' && (
+                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
+                                                                                    {progressData.positiveEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.positiveEmotions.change.percent.toFixed(0)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div>
+                                                                                <div className="flex items-baseline gap-1">
+                                                                                    <span className={'text-3xl font-black ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                        {progressData.positiveEmotions.recent.toFixed(0)}%
+                                                                                    </span>
+                                                                                    <span className={'text-xs font-medium ' + (darkMode ? 'text-green-300/70' : 'text-green-600/70')}>
+                                                                                        do total
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-green-400/60' : 'text-green-600/60')}>
+                                                                                    {progressData.positiveEmotions.recentCount} de {progressData.positiveEmotions.recentTotal} emoções
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                                era {progressData.positiveEmotions.previous.toFixed(0)}%
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {progressData.topEmotions && (
+                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200') + ' rounded-lg p-3 border'}>
+                                                                        <div className="flex items-center gap-2 mb-3">
+                                                                            <span className="text-lg">🌟</span>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                                Top 3 Emoções
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            {progressData.topEmotions.map((item, idx) => (
+                                                                                <div key={idx} className="flex items-center justify-between">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'text-xs font-bold ' + (darkMode ? 'text-blue-400/50' : 'text-blue-600/50')}>#{idx + 1}</span>
+                                                                                        <span className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>{item.emotion}</span>
+                                                                                    </div>
+                                                                                    <span className={'text-xs px-2 py-0.5 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                                        {item.count}×
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
                                                                         </div>
                                                                     </div>
                                                                 )}

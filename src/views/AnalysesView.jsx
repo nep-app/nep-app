@@ -8,6 +8,7 @@ import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT } from '../utils/helpers';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 import { calculateBadges } from '../utils/badgesCalculator';
+import { getEmotionCategory } from '../constants/emotions';
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
@@ -296,7 +297,47 @@ export function AnalysesView({
                                                                                     </p>
                                                                                 );
                                                                             })()}
-                
+
+                                                                            {/* NOVO: Paragraph Emoções */}
+                                                                            {(() => {
+                                                                                if (analysisWellbeing.length === 0) return null;
+
+                                                                                // Contar emoções por categoria
+                                                                                const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
+                                                                                if (allEmotions.length === 0) return null;
+
+                                                                                const positiveCount = allEmotions.filter(e => getEmotionCategory(e) === 'positive').length;
+                                                                                const negativeCount = allEmotions.filter(e => getEmotionCategory(e) === 'negative').length;
+                                                                                const totalEmotions = positiveCount + negativeCount;
+                                                                                if (totalEmotions === 0) return null;
+
+                                                                                const positivePercent = Math.round((positiveCount / totalEmotions) * 100);
+
+                                                                                // Top 3 emoções
+                                                                                const emotionFreq = {};
+                                                                                allEmotions.forEach(e => { emotionFreq[e] = (emotionFreq[e] || 0) + 1; });
+                                                                                const topEmotions = Object.entries(emotionFreq)
+                                                                                    .sort((a, b) => b[1] - a[1])
+                                                                                    .slice(0, 3)
+                                                                                    .map(([emotion]) => emotion);
+
+                                                                                // Determinar se é maioritariamente positivo ou negativo
+                                                                                const isPositive = positivePercent >= 50;
+                                                                                const balanceLabel = positivePercent >= 70 ? 'muito positivo' : positivePercent >= 50 ? 'positivo' : positivePercent >= 30 ? 'misto' : 'desafiante';
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🌈 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Estado Emocional:</strong> Balanço <strong className={(darkMode ? (isPositive ? 'text-green-400' : 'text-orange-400') : (isPositive ? 'text-green-600' : 'text-orange-600'))}>{balanceLabel}</strong> ({positivePercent}% emoções positivas).
+                                                                                        {topEmotions.length > 0 && <> As tuas emoções mais frequentes foram <strong>{topEmotions.join(', ')}</strong>.</>}
+                                                                                        {positivePercent >= 60 ? (
+                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✨ Ótimo! Mantém estas práticas que te fazem sentir bem.</span></>
+                                                                                        ) : positivePercent < 40 ? (
+                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💜 Lembra-te: períodos difíceis passam. Procura apoio se precisares.</span></>
+                                                                                        ) : null}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* NOVO: Paragraph 3 - Dias da Semana */}
                                                                             {(() => {
                                                                                 if (analysisConsumptions.length < 7) return null;
