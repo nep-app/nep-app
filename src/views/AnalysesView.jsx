@@ -2468,18 +2468,64 @@ export function AnalysesView({
 
                                                                     <div className="space-y-3">
                                                                         {correlations.map((corr, i) => {
-                                                                            const getCorrelationLabel = (r) => {
+                                                                            const getCorrelationLabel = (r, metricName) => {
                                                                                 if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+
+                                                                                // Determinar se é sono (negativo = mau), humor/energia (positivo = bom)
+                                                                                const isSleep = metricName.toLowerCase().includes('sono');
+                                                                                const metricLower = metricName.toLowerCase();
+
                                                                                 const abs = Math.abs(r);
-                                                                                if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos → Muito pior bem-estar' };
-                                                                                if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos → Pior bem-estar' };
-                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Mais consumos → Ligeiramente pior bem-estar' };
-                                                                                if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos → Muito melhor bem-estar' };
-                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos → Melhor bem-estar' };
-                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais consumos → Ligeiramente melhor bem-estar' };
-                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre consumo e bem-estar' };
+
+                                                                                if (r < -0.7) {
+                                                                                    return {
+                                                                                        text: 'Forte Negativa',
+                                                                                        color: 'red',
+                                                                                        desc: `Mais consumos → Muito ${isSleep ? 'menos' : 'pior'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                if (r < -0.4) {
+                                                                                    return {
+                                                                                        text: 'Negativa',
+                                                                                        color: 'orange',
+                                                                                        desc: `Mais consumos → ${isSleep ? 'Menos' : 'Pior'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                if (r < -0.2) {
+                                                                                    return {
+                                                                                        text: 'Fraca Negativa',
+                                                                                        color: 'yellow',
+                                                                                        desc: `Mais consumos → Ligeiramente ${isSleep ? 'menos' : 'pior'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                if (r > 0.7) {
+                                                                                    return {
+                                                                                        text: 'Forte Positiva',
+                                                                                        color: 'green',
+                                                                                        desc: `Mais consumos → Muito ${isSleep ? 'mais' : 'melhor'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                if (r > 0.4) {
+                                                                                    return {
+                                                                                        text: 'Positiva',
+                                                                                        color: 'green',
+                                                                                        desc: `Mais consumos → ${isSleep ? 'Mais' : 'Melhor'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                if (r > 0.2) {
+                                                                                    return {
+                                                                                        text: 'Fraca Positiva',
+                                                                                        color: 'green',
+                                                                                        desc: `Mais consumos → Ligeiramente ${isSleep ? 'mais' : 'melhor'} ${metricLower}`
+                                                                                    };
+                                                                                }
+                                                                                return {
+                                                                                    text: 'Sem Correlação',
+                                                                                    color: 'gray',
+                                                                                    desc: `Sem relação clara entre consumo e ${metricLower}`
+                                                                                };
                                                                             };
-                                                                            const corrLabel = getCorrelationLabel(corr.correlation);
+                                                                            const corrLabel = getCorrelationLabel(corr.correlation, corr.name);
                                                                             return (
                                                                                 <div key={i} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
                                                                                     <div className="flex items-center justify-between mb-3">
@@ -2527,15 +2573,59 @@ export function AnalysesView({
                                                                     });
 
                                                                     if (bidirectional.length >= 1) {
-                                                                        const getCorrelationLabel = (r) => {
+                                                                        const getCorrelationLabel = (r, metricName) => {
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
-                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais consumos hoje → Muito pior amanhã' };
-                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais consumos hoje → Pior amanhã' };
-                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Mais consumos hoje → Ligeiramente pior amanhã' };
-                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais consumos hoje → Muito melhor amanhã' };
-                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais consumos hoje → Melhor amanhã' };
-                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais consumos hoje → Ligeiramente melhor amanhã' };
-                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre consumo e bem-estar' };
+
+                                                                            const isSleep = metricName.toLowerCase().includes('sono');
+                                                                            const metricLower = metricName.toLowerCase();
+
+                                                                            if (r < -0.7) {
+                                                                                return {
+                                                                                    text: 'Forte Negativa',
+                                                                                    color: 'red',
+                                                                                    desc: `Mais consumos hoje → Muito ${isSleep ? 'menos' : 'pior'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            if (r < -0.4) {
+                                                                                return {
+                                                                                    text: 'Negativa',
+                                                                                    color: 'orange',
+                                                                                    desc: `Mais consumos hoje → ${isSleep ? 'Menos' : 'Pior'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            if (r < -0.2) {
+                                                                                return {
+                                                                                    text: 'Fraca Negativa',
+                                                                                    color: 'yellow',
+                                                                                    desc: `Mais consumos hoje → Ligeiramente ${isSleep ? 'menos' : 'pior'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            if (r > 0.7) {
+                                                                                return {
+                                                                                    text: 'Forte Positiva',
+                                                                                    color: 'green',
+                                                                                    desc: `Mais consumos hoje → Muito ${isSleep ? 'mais' : 'melhor'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            if (r > 0.4) {
+                                                                                return {
+                                                                                    text: 'Positiva',
+                                                                                    color: 'green',
+                                                                                    desc: `Mais consumos hoje → ${isSleep ? 'Mais' : 'Melhor'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            if (r > 0.2) {
+                                                                                return {
+                                                                                    text: 'Fraca Positiva',
+                                                                                    color: 'green',
+                                                                                    desc: `Mais consumos hoje → Ligeiramente ${isSleep ? 'mais' : 'melhor'} ${metricLower} amanhã`
+                                                                                };
+                                                                            }
+                                                                            return {
+                                                                                text: 'Sem Correlação',
+                                                                                color: 'gray',
+                                                                                desc: `Sem relação clara entre consumo e ${metricLower}`
+                                                                            };
                                                                         };
 
                                                                         const bidirCorrelations = [];
@@ -2594,7 +2684,7 @@ export function AnalysesView({
                                                                                     </p>
 
                                                                                     {bidirCorrelations.map((corr, i) => {
-                                                                                        const label = getCorrelationLabel(corr.correlation);
+                                                                                        const label = getCorrelationLabel(corr.correlation, corr.name);
                                                                                         const colorClasses = {
                                                                                             red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
                                                                                             orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
