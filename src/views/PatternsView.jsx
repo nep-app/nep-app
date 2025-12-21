@@ -161,83 +161,43 @@ export function PatternsView({
 
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
+                                                // Calcular dias únicos com consumos (base para TODAS as metas exceto sleep_hours/bedtime_before)
+                                                const today = getTodayPT();
+                                                const daysWithConsumptions = new Set();
+                                                filteredConsumptions.forEach(c => {
+                                                    const dateKey = c.date || safeToISODate(c.timestamp);
+                                                    if (dateKey && dateKey !== today) daysWithConsumptions.add(dateKey);
+                                                });
+                                                const totalDaysWithConsumptions = daysWithConsumptions.size;
+
+                                                // Calcular dias únicos com sono (para sleep_hours e bedtime_before)
+                                                const daysWithSleep = new Set();
+                                                filteredCycles.forEach(c => {
+                                                    const dateKey = c.date || safeToISODate(c.timestamp);
+                                                    if (dateKey && dateKey !== today && c.sleep != null && c.sleep !== '') {
+                                                        daysWithSleep.add(dateKey);
+                                                    }
+                                                });
+                                                filteredWellbeingLogs.forEach(w => {
+                                                    const dateKey = w.date || safeToISODate(w.timestamp);
+                                                    if (dateKey && dateKey !== today && w.sleep != null && w.sleep !== '') {
+                                                        daysWithSleep.add(dateKey);
+                                                    }
+                                                });
+                                                const totalDaysWithSleep = daysWithSleep.size;
+
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
 
-                                                    // Calculate total possible based on goal type
+                                                    // TODAS as metas usam o mesmo total baseado no tipo
                                                     let totalPossible = 0;
 
-                                                    console.log(`[DEBUG METAS DASHBOARD] Processando meta: ${g.type}`);
-
-                                                    if (g.type === 'increase_interval') {
-                                                        // For increase_interval: count days with ≥2 consumptions (need at least 2 to have intervals)
-                                                        const today = getTodayPT();
-                                                        const consumptionsByDate = {};
-                                                        filteredConsumptions.forEach(c => {
-                                                            const dateKey = timestampToPT(c.timestamp);
-                                                            if (dateKey === today) return; // Skip today
-                                                            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                                                            consumptionsByDate[dateKey].push(c);
-                                                        });
-                                                        totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
-                                                        console.log(`[DEBUG] increase_interval: ${totalPossible} dias com ≥2 consumos (de ${Object.keys(consumptionsByDate).length} dias totais)`);
-                                                    } else if (g.type === 'reduce_frequency') {
-                                                        // NOVA LÓGICA: Todos os dias desde primeiro registo (exclui hoje)
-                                                        const allDays = analyticsService.getAllDaysSinceFirstRecord ?
-                                                            analyticsService.getAllDaysSinceFirstRecord(filteredConsumptions) :
-                                                            [];
-                                                        totalPossible = allDays.length;
-                                                        console.log(`[DEBUG] reduce_frequency: ${totalPossible} dias desde primeiro registo`);
-                                                    } else if (g.type === 'sleep_hours') {
-                                                        // sleep_hours: Dias com dados de sono (cycles ou wellbeing)
-                                                        const today = getTodayKey();
-                                                        const daysWithSleep = new Set();
-                                                        cycles.forEach(c => {
-                                                            const dateKey = getDateKeyFromItem(c);
-                                                            if (dateKey && dateKey !== today && c.sleep != null && c.sleep !== '') {
-                                                                daysWithSleep.add(dateKey);
-                                                            }
-                                                        });
-                                                        wellbeingLogs.forEach(w => {
-                                                            const dateKey = getDateKeyFromItem(w);
-                                                            if (dateKey && dateKey !== today && w.sleep != null && w.sleep !== '') {
-                                                                daysWithSleep.add(dateKey);
-                                                            }
-                                                        });
-                                                        totalPossible = daysWithSleep.size;
-                                                        console.log(`[DEBUG] sleep_hours: ${totalPossible} dias com sono registado`);
-                                                    } else if (g.type === 'bedtime_before' || g.type === 'limit_last') {
-                                                        // bedtime_before e limit_last: Dias COM consumptions (exclui hoje)
-                                                        const today = getTodayPT();
-                                                        const daysWithConsumptions = new Set();
-                                                        filteredConsumptions.forEach(c => {
-                                                            const dateKey = timestampToPT(c.timestamp);
-                                                            if (dateKey !== today) daysWithConsumptions.add(dateKey);
-                                                        });
-                                                        totalPossible = daysWithConsumptions.size;
-                                                        console.log(`[DEBUG] ${g.type}: ${totalPossible} dias com consumos`);
-                                                    } else if (g.type === 'reduce_quantity') {
-                                                        // reduce_quantity: dailyLogs + cycles.mg (dados antigos)
-                                                        const today = getTodayKey();
-                                                        const daysWithMg = new Set();
-                                                        // dailyLogs (novo)
-                                                        filteredDailyLogs.forEach(log => {
-                                                            if (log.date && log.date !== today && log.mg) {
-                                                                daysWithMg.add(log.date);
-                                                            }
-                                                        });
-                                                        // cycles.mg (dados antigos)
-                                                        cycles.forEach(c => {
-                                                            const dateKey = getDateKeyFromItem(c);
-                                                            if (dateKey && dateKey !== today && c.mg) {
-                                                                daysWithMg.add(dateKey);
-                                                            }
-                                                        });
-                                                        totalPossible = daysWithMg.size;
-                                                        console.log(`[DEBUG] reduce_quantity: ${totalPossible} dias com dosagens`);
+                                                    if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
+                                                        // Metas de sono: usar dias com sono no período
+                                                        totalPossible = totalDaysWithSleep;
                                                     } else {
-                                                        // Fallback: contar dias únicos
-                                                        totalPossible = 0;
+                                                        // Todas as outras: usar dias com consumos no período
+                                                        totalPossible = totalDaysWithConsumptions;
                                                     }
 
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;
@@ -465,7 +425,6 @@ export function PatternsView({
                                         }
                                         // ANÁLISE DE PROGRESSO TEMPORAL
                                         if (patternView === 'progress') {
-                                            console.log('[DEBUG PROGRESS] Executando análise de progresso, período:', patternsPeriod);
                                             // Define two periods to compare: recent vs previous
                                             const now = new Date();
                                             let recentStart, recentEnd, previousStart, previousEnd, periodDays;
@@ -625,8 +584,6 @@ export function PatternsView({
                                                 return date >= previousStart && date <= previousEnd;
                                             });
 
-                                            console.log(`[DEBUG DOSAGEM] recentDailyLogs: ${recentDailyLogs.length}, previousDailyLogs: ${previousDailyLogs.length}`);
-
                                             // Obter todas as datas únicas dos períodos
                                             const recentDates = new Set([
                                                 ...recentCyclesForDosage.map(c => getDateKeyFromItem(c)),
@@ -657,11 +614,6 @@ export function PatternsView({
                                                 const previousAvgDosage = previousMgValues.length > 0
                                                     ? previousMgValues.reduce((sum, mg) => sum + mg, 0) / previousMgValues.length
                                                     : 0;
-
-                                                console.log(`[DEBUG DOSAGEM] Semana atual (${recentDates.size} dias):`, Array.from(recentDates).sort());
-                                                console.log(`[DEBUG DOSAGEM] Valores mg semana atual:`, recentMgValues, `média = ${recentAvgDosage.toFixed(0)}mg`);
-                                                console.log(`[DEBUG DOSAGEM] Semana anterior (${previousDates.size} dias):`, Array.from(previousDates).sort());
-                                                console.log(`[DEBUG DOSAGEM] Valores mg semana anterior:`, previousMgValues, `média = ${previousAvgDosage.toFixed(0)}mg`);
 
                                                 progressData.dosage = {
                                                     recent: recentAvgDosage,
