@@ -115,16 +115,16 @@ export function AnalysesView({
                                                 <div className="space-y-4">
                                                     {/* Sub-tab navigation */}
                                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                                        {['coach', 'correlacoes', 'emocoes', 'gatilhos'].map(subView => (
+                                                        {['correlacoes', 'emocoes', 'gatilhos', 'coach'].map(subView => (
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
-                                                                {subView === 'coach' && '💬 Reflexão Geral'}
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
                                                                 {subView === 'emocoes' && '🌈 Emoções'}
                                                                 {subView === 'gatilhos' && '⚡ Gatilhos'}
+                                                                {subView === 'coach' && '💬 Reflexão Geral'}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -1646,9 +1646,9 @@ export function AnalysesView({
 
                                                                                         totalPossible = allDates.size;
                                                                                     } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
-                                                                                        // DIAS (não ciclos!) - contar dias únicos com ciclos
+                                                                                        // DIAS com consumos (não ciclos!)
                                                                                         const allDates = new Set();
-                                                                                        analysisCycles.forEach(c => {
+                                                                                        analysisConsumptions.forEach(c => {
                                                                                             const dateKey = c.date || safeToISODate(c.timestamp);
                                                                                             if (dateKey) allDates.add(dateKey);
                                                                                         });
@@ -2228,11 +2228,11 @@ export function AnalysesView({
                                                                         📊 Emoções Mais Frequentes & Padrões Semanais
                                                                     </h3>
                                                                     <div className="grid md:grid-cols-2 gap-4">
-                                                                        {/* Top 5 Emoções */}
+                                                                        {/* Top 10 Emoções */}
                                                                         <div>
-                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>⭐ Top 5 Emoções</div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>⭐ Top 10 Emoções</div>
                                                                             <div className="space-y-2">
-                                                                                {topEmotions.slice(0, 5).map((item, idx) => (
+                                                                                {topEmotions.slice(0, 10).map((item, idx) => (
                                                                                     <div key={idx} className="flex items-center justify-between">
                                                                                         <div className="flex items-center gap-2 flex-1">
                                                                                             <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>
@@ -2498,11 +2498,11 @@ export function AnalysesView({
                                                                         📊 Gatilhos Mais Frequentes & Padrões Semanais
                                                                     </h3>
                                                                     <div className="grid md:grid-cols-2 gap-4">
-                                                                        {/* Top 5 Gatilhos */}
+                                                                        {/* Top 10 Gatilhos */}
                                                                         <div>
-                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>🎯 Top 5 Gatilhos</div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>🎯 Top 10 Gatilhos</div>
                                                                             <div className="space-y-2">
-                                                                                {topTriggers.slice(0, 5).map((item, idx) => (
+                                                                                {topTriggers.slice(0, 10).map((item, idx) => (
                                                                                     <div key={idx} className="flex items-center justify-between">
                                                                                         <div className="flex items-center gap-2 flex-1">
                                                                                             <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>

@@ -1796,9 +1796,9 @@ export function PatternsView({
 
                                                     {/* Análise de Dosagens */}
                                                     {(() => {
-                                                        const consumptionsWithDosage = filteredConsumptions.filter(c => c.dosage_mg && c.dosage_mg > 0);
+                                                        const dailyLogsWithDosage = filteredDailyLogs.filter(log => log.mg && log.mg > 0);
 
-                                                        if (consumptionsWithDosage.length === 0) {
+                                                        if (dailyLogsWithDosage.length === 0) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
@@ -1810,14 +1810,14 @@ export function PatternsView({
                                                         }
 
                                                         // Calcular estatísticas
-                                                        const dosages = consumptionsWithDosage.map(c => c.dosage_mg);
+                                                        const dosages = dailyLogsWithDosage.map(log => log.mg);
                                                         const totalDosage = dosages.reduce((sum, d) => sum + d, 0);
                                                         const avgDosage = totalDosage / dosages.length;
                                                         const maxDosage = Math.max(...dosages);
                                                         const minDosage = Math.min(...dosages);
 
                                                         // Calcular tendência (primeira metade vs segunda metade do período)
-                                                        const sortedByDate = [...consumptionsWithDosage].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                                                        const sortedByDate = [...dailyLogsWithDosage].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
                                                         const midpoint = Math.floor(sortedByDate.length / 2);
                                                         const firstHalf = sortedByDate.slice(0, midpoint);
                                                         const secondHalf = sortedByDate.slice(midpoint);
@@ -1829,8 +1829,8 @@ export function PatternsView({
                                                         let trendBg = darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200';
 
                                                         if (firstHalf.length > 0 && secondHalf.length > 0) {
-                                                            const avgFirst = firstHalf.reduce((sum, c) => sum + c.dosage_mg, 0) / firstHalf.length;
-                                                            const avgSecond = secondHalf.reduce((sum, c) => sum + c.dosage_mg, 0) / secondHalf.length;
+                                                            const avgFirst = firstHalf.reduce((sum, log) => sum + log.mg, 0) / firstHalf.length;
+                                                            const avgSecond = secondHalf.reduce((sum, log) => sum + log.mg, 0) / secondHalf.length;
                                                             const change = ((avgSecond - avgFirst) / avgFirst) * 100;
                                                             trendPercent = Math.abs(change);
 
@@ -1847,11 +1847,11 @@ export function PatternsView({
                                                             }
                                                         }
 
-                                                        // Distribuição por faixas de dosagem
+                                                        // Distribuição por faixas de dosagem (ajustado para mg diários)
                                                         const ranges = {
-                                                            baixa: dosages.filter(d => d < 7).length,
-                                                            media: dosages.filter(d => d >= 7 && d < 12).length,
-                                                            alta: dosages.filter(d => d >= 12).length
+                                                            baixa: dosages.filter(d => d < 100).length,
+                                                            media: dosages.filter(d => d >= 100 && d < 200).length,
+                                                            alta: dosages.filter(d => d >= 200).length
                                                         };
 
                                                         return (
@@ -1901,7 +1901,7 @@ export function PatternsView({
                                                                         <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                                                                                    🟢 Baixa (&lt;7mg)
+                                                                                    🟢 Baixa (&lt;100mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
                                                                                     {ranges.baixa} ({((ranges.baixa / dosages.length) * 100).toFixed(0)}%)
@@ -1917,7 +1917,7 @@ export function PatternsView({
                                                                         <div className={`${darkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                                                                                    🟡 Média (7-12mg)
+                                                                                    🟡 Média (100-200mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
                                                                                     {ranges.media} ({((ranges.media / dosages.length) * 100).toFixed(0)}%)
@@ -1933,7 +1933,7 @@ export function PatternsView({
                                                                         <div className={`${darkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
-                                                                                    🔴 Alta (≥12mg)
+                                                                                    🔴 Alta (≥200mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
                                                                                     {ranges.alta} ({((ranges.alta / dosages.length) * 100).toFixed(0)}%)

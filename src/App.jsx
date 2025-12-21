@@ -71,7 +71,7 @@ function HarmReductionTracker() {
             const [historyTopic, setHistoryTopic] = useState('todos'); // todos, consumo, reflexoes, ciclos, bem-estar, dbt
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
-            const [analysisSubView, setAnalysisSubView] = useState('estrutural'); // For analyses tab: temporal, structural, correlations
+            const [analysisSubView, setAnalysisSubView] = useState('correlacoes'); // For analyses tab: correlacoes, emocoes, gatilhos, coach
 
             // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
