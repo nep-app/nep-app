@@ -1763,9 +1763,37 @@ export function PatternsView({
 
                                                     {/* Análise de Dosagens */}
                                                     {(() => {
-                                                        const dailyLogsWithDosage = filteredDailyLogs.filter(log => log.mg && log.mg > 0);
+                                                        // Combinar dailyLogs.mg (novo) + cycles.mg (antigo)
+                                                        const allDosageRecords = [];
 
-                                                        if (dailyLogsWithDosage.length === 0) {
+                                                        // Adicionar dailyLogs com mg
+                                                        filteredDailyLogs.forEach(log => {
+                                                            if (log.mg && log.mg > 0) {
+                                                                allDosageRecords.push({
+                                                                    mg: log.mg,
+                                                                    date: log.date,
+                                                                    timestamp: log.timestamp
+                                                                });
+                                                            }
+                                                        });
+
+                                                        // Adicionar cycles antigos com mg
+                                                        filteredCycles.forEach(cycle => {
+                                                            if (cycle.mg && cycle.mg > 0) {
+                                                                const dateKey = cycle.date || safeToISODate(cycle.timestamp);
+                                                                // Só adicionar se não existir já um dailyLog para esta data
+                                                                const hasDaily = allDosageRecords.some(r => r.date === dateKey);
+                                                                if (!hasDaily) {
+                                                                    allDosageRecords.push({
+                                                                        mg: cycle.mg,
+                                                                        date: dateKey,
+                                                                        timestamp: cycle.timestamp
+                                                                    });
+                                                                }
+                                                            }
+                                                        });
+
+                                                        if (allDosageRecords.length === 0) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
@@ -1777,14 +1805,14 @@ export function PatternsView({
                                                         }
 
                                                         // Calcular estatísticas
-                                                        const dosages = dailyLogsWithDosage.map(log => log.mg);
+                                                        const dosages = allDosageRecords.map(r => r.mg);
                                                         const totalDosage = dosages.reduce((sum, d) => sum + d, 0);
                                                         const avgDosage = totalDosage / dosages.length;
                                                         const maxDosage = Math.max(...dosages);
                                                         const minDosage = Math.min(...dosages);
 
                                                         // Calcular tendência (primeira metade vs segunda metade do período)
-                                                        const sortedByDate = [...dailyLogsWithDosage].sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+                                                        const sortedByDate = [...allDosageRecords].sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                                         const midpoint = Math.floor(sortedByDate.length / 2);
                                                         const firstHalf = sortedByDate.slice(0, midpoint);
                                                         const secondHalf = sortedByDate.slice(midpoint);
@@ -1828,7 +1856,7 @@ export function PatternsView({
                                                                 {/* Estatísticas Gerais */}
                                                                 <div className="grid grid-cols-4 gap-3 mb-4">
                                                                     <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{dailyLogsWithDosage.length}</div>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{allDosageRecords.length}</div>
                                                                         <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Registos</div>
                                                                     </div>
                                                                     <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
