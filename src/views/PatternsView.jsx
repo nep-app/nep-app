@@ -1816,11 +1816,35 @@ export function PatternsView({
                                                             }
                                                         }
 
-                                                        // Distribuição por faixas de dosagem (ajustado para mg diários)
+                                                        // Distribuição por faixas de dosagem (dinâmica)
+                                                        // Tentar usar meta de reduce_quantity, senão usar percentis dos dados
+                                                        let lowThreshold, highThreshold;
+                                                        let rangeMethod = 'percentis';
+
+                                                        // Procurar meta ativa de reduce_quantity
+                                                        const reduceQuantityGoal = goals
+                                                            .filter(g => g.type === 'reduce_quantity' && !g.completed)
+                                                            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+                                                        if (reduceQuantityGoal && reduceQuantityGoal.target) {
+                                                            // Usar meta como referência: 75% e 125% da meta
+                                                            const target = parseFloat(reduceQuantityGoal.target);
+                                                            lowThreshold = target * 0.75;
+                                                            highThreshold = target * 1.25;
+                                                            rangeMethod = 'meta';
+                                                        } else {
+                                                            // Usar percentis 33 e 66 dos dados
+                                                            const sorted = [...dosages].sort((a, b) => a - b);
+                                                            const p33 = sorted[Math.floor(sorted.length * 0.33)];
+                                                            const p66 = sorted[Math.floor(sorted.length * 0.66)];
+                                                            lowThreshold = p33;
+                                                            highThreshold = p66;
+                                                        }
+
                                                         const ranges = {
-                                                            baixa: dosages.filter(d => d < 100).length,
-                                                            media: dosages.filter(d => d >= 100 && d < 200).length,
-                                                            alta: dosages.filter(d => d >= 200).length
+                                                            baixa: dosages.filter(d => d < lowThreshold).length,
+                                                            media: dosages.filter(d => d >= lowThreshold && d < highThreshold).length,
+                                                            alta: dosages.filter(d => d >= highThreshold).length
                                                         };
 
                                                         return (
@@ -1864,13 +1888,20 @@ export function PatternsView({
 
                                                                 {/* Distribuição */}
                                                                 <div className="space-y-3">
-                                                                    <div className={'text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Distribuição de Dosagens</div>
+                                                                    <div className={'text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                        Distribuição de Dosagens
+                                                                        {rangeMethod === 'meta' && (
+                                                                            <span className={`text-xs ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                                (baseado na tua meta de {reduceQuantityGoal.target}mg)
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
 
                                                                     {ranges.baixa > 0 && (
                                                                         <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                                                                                    🟢 Baixa (&lt;100mg)
+                                                                                    🟢 Baixa (&lt;{Math.round(lowThreshold)}mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
                                                                                     {ranges.baixa} ({((ranges.baixa / dosages.length) * 100).toFixed(0)}%)
@@ -1886,7 +1917,7 @@ export function PatternsView({
                                                                         <div className={`${darkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
-                                                                                    🟡 Média (100-200mg)
+                                                                                    🟡 Média ({Math.round(lowThreshold)}-{Math.round(highThreshold)}mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
                                                                                     {ranges.media} ({((ranges.media / dosages.length) * 100).toFixed(0)}%)
@@ -1902,7 +1933,7 @@ export function PatternsView({
                                                                         <div className={`${darkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
-                                                                                    🔴 Alta (≥200mg)
+                                                                                    🔴 Alta (≥{Math.round(highThreshold)}mg)
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
                                                                                     {ranges.alta} ({((ranges.alta / dosages.length) * 100).toFixed(0)}%)
