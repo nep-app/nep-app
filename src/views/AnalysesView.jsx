@@ -1599,18 +1599,61 @@ export function AnalysesView({
                                                                                 });
                                                                                 const uniqueGoals = Object.values(goalsByType);
 
-                                                                                // Calcular total de dias no período (todas as metas devem ter o mesmo denominador)
-                                                                                // Usar o número total de dias do calendário, não apenas dias com atividade
-                                                                                const startDate = new Date(dateRange.start);
-                                                                                const endDate = new Date(dateRange.end);
-                                                                                const totalDaysInPeriod = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos os dias
-
                                                                                 // Calcular detalhes para cada meta
                                                                                 const goalDetails = uniqueGoals.map(g => {
                                                                                     const achievements = getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing);
 
-                                                                                    // Todas as metas usam o mesmo total (dias no período)
-                                                                                    const totalPossible = totalDaysInPeriod;
+                                                                                    // Calcular total possível baseado no tipo de meta
+                                                                                    let totalPossible = 0;
+
+                                                                                    if (g.type === 'reduce_frequency') {
+                                                                                        // DIAS com consumos (usar .date se existir, senão extrair de timestamp)
+                                                                                        const allDates = new Set();
+                                                                                        analysisConsumptions.forEach(c => {
+                                                                                            const dateKey = c.date || safeToISODate(c.timestamp);
+                                                                                            if (dateKey) allDates.add(dateKey);
+                                                                                        });
+                                                                                        totalPossible = allDates.size;
+                                                                                    } else if (g.type === 'increase_interval') {
+                                                                                        // DIAS com ≥2 consumos
+                                                                                        const consumptionsByDate = {};
+                                                                                        analysisConsumptions.forEach(c => {
+                                                                                            const dateKey = c.date || safeToISODate(c.timestamp);
+                                                                                            if (!dateKey) return;
+                                                                                            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+                                                                                            consumptionsByDate[dateKey].push(c);
+                                                                                        });
+                                                                                        totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
+                                                                                    } else if (g.type === 'sleep_hours') {
+                                                                                        // DIAS com sono registado (cycles ou wellbeing)
+                                                                                        const allDates = new Set();
+
+                                                                                        // Adicionar dias de cycles com sono
+                                                                                        analysisCycles.forEach(c => {
+                                                                                            if (c.sleep && !isNaN(parseFloat(c.sleep))) {
+                                                                                                const dateKey = c.date || safeToISODate(c.timestamp);
+                                                                                                if (dateKey) allDates.add(dateKey);
+                                                                                            }
+                                                                                        });
+
+                                                                                        // Adicionar dias de wellbeing com sono (Set elimina duplicados automaticamente)
+                                                                                        analysisWellbeing.forEach(w => {
+                                                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) {
+                                                                                                const dateKey = w.date || safeToISODate(w.timestamp);
+                                                                                                if (dateKey) allDates.add(dateKey);
+                                                                                            }
+                                                                                        });
+
+                                                                                        totalPossible = allDates.size;
+                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
+                                                                                        // DIAS (não ciclos!) - contar dias únicos com ciclos
+                                                                                        const allDates = new Set();
+                                                                                        analysisCycles.forEach(c => {
+                                                                                            const dateKey = c.date || safeToISODate(c.timestamp);
+                                                                                            if (dateKey) allDates.add(dateKey);
+                                                                                        });
+                                                                                        totalPossible = allDates.size;
+                                                                                    }
 
                                                                                     const percentage = totalPossible > 0 ? Math.min(100, ((achievements / totalPossible) * 100)).toFixed(0) : 0;
 
@@ -1647,7 +1690,7 @@ export function AnalysesView({
                                                                                         )}
                                                                                         {bestGoal && bestGoal.percentage > 0 && (
                                                                                             <>
-                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} {bestGoal.goal.type.includes('cycle') || bestGoal.goal.type === 'limit_last' || bestGoal.goal.type === 'reduce_quantity' || bestGoal.goal.type === 'bedtime_before' ? 'ciclos' : 'dias'} possíveis (<strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong>)
+                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} dias possíveis (<strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong>)
                                                                                                 {bestGoal.percentage >= 70 ? ' - excelente!' : bestGoal.percentage >= 40 ? '. Continua a trabalhar nesta meta!' : '. Há espaço para melhorar - revê as tuas estratégias.'}
                                                                                             </>
                                                                                         )}
