@@ -106,6 +106,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
             showToast(message, 'info');
             showBrowserNotification('Lembrete - NEP', 'Falta registar: ' + missing.join(', '));
             dismissReminder('daily-check');
+          } else {
+            // Se já não falta nada, dismiss também para não mostrar mais hoje
+            dismissReminder('daily-check');
           }
         }
       } catch (e) {
@@ -114,13 +117,12 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     };
 
     try {
-      checkReminders();
       const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
       return () => clearInterval(interval);
     } catch (e) {
       logger.error('Error setting up reminders:', e);
     }
-  }, [user, wellbeingLogs, reflections, dailyLogs, notificationsEnabled]);
+  }, [user, notificationsEnabled]);
 
   // Check for wellbeing reminder after every 2 consumptions
   useEffect(() => {
