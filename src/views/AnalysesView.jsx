@@ -1599,57 +1599,32 @@ export function AnalysesView({
                                                                                 });
                                                                                 const uniqueGoals = Object.values(goalsByType);
 
+                                                                                // Calcular total de dias no período (todas as metas devem ter o mesmo denominador)
+                                                                                const today = getTodayPT();
+                                                                                const allDatesInPeriod = new Set();
+
+                                                                                // Adicionar todos os dias onde houve alguma atividade
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    const dateKey = timestampToPT(c.timestamp);
+                                                                                    if (dateKey !== today) allDatesInPeriod.add(dateKey);
+                                                                                });
+                                                                                analysisCycles.forEach(c => {
+                                                                                    const dateKey = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                    if (dateKey && dateKey !== today) allDatesInPeriod.add(dateKey);
+                                                                                });
+                                                                                analysisWellbeing.forEach(w => {
+                                                                                    const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
+                                                                                    if (dateKey && dateKey !== today) allDatesInPeriod.add(dateKey);
+                                                                                });
+
+                                                                                const totalDaysInPeriod = allDatesInPeriod.size;
+
                                                                                 // Calcular detalhes para cada meta
                                                                                 const goalDetails = uniqueGoals.map(g => {
                                                                                     const achievements = getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing);
 
-                                                                                    // Calcular total possível baseado no tipo de meta
-                                                                                    let totalPossible = 0;
-                                                                                    const today = getTodayPT();
-
-                                                                                    if (g.type === 'reduce_frequency') {
-                                                                                        // DIAS com consumos (excluindo hoje)
-                                                                                        const allDates = new Set();
-                                                                                        analysisConsumptions.forEach(c => {
-                                                                                            const dateKey = timestampToPT(c.timestamp);
-                                                                                            if (dateKey !== today) allDates.add(dateKey);
-                                                                                        });
-                                                                                        totalPossible = allDates.size;
-                                                                                    } else if (g.type === 'increase_interval') {
-                                                                                        // DIAS com ≥2 consumos (excluindo hoje)
-                                                                                        const consumptionsByDate = {};
-                                                                                        analysisConsumptions.forEach(c => {
-                                                                                            const dateKey = timestampToPT(c.timestamp);
-                                                                                            if (dateKey === today) return;
-                                                                                            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-                                                                                            consumptionsByDate[dateKey].push(c);
-                                                                                        });
-                                                                                        totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
-                                                                                    } else if (g.type === 'sleep_hours') {
-                                                                                        // DIAS com sono registado (cycles ou wellbeing, excluindo hoje)
-                                                                                        const allDates = new Set();
-
-                                                                                        // Adicionar dias de cycles com sono
-                                                                                        analysisCycles.forEach(c => {
-                                                                                            if (c.sleep && !isNaN(parseFloat(c.sleep))) {
-                                                                                                const dateKey = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString('pt-PT') : null);
-                                                                                                if (dateKey && dateKey !== today) allDates.add(dateKey);
-                                                                                            }
-                                                                                        });
-
-                                                                                        // Adicionar dias de wellbeing com sono (Set elimina duplicados automaticamente)
-                                                                                        analysisWellbeing.forEach(w => {
-                                                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) {
-                                                                                                const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
-                                                                                                if (dateKey && dateKey !== today) allDates.add(dateKey);
-                                                                                            }
-                                                                                        });
-
-                                                                                        totalPossible = allDates.size;
-                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
-                                                                                        // CICLOS
-                                                                                        totalPossible = analysisCycles.length;
-                                                                                    }
+                                                                                    // Todas as metas usam o mesmo total (dias no período)
+                                                                                    const totalPossible = totalDaysInPeriod;
 
                                                                                     const percentage = totalPossible > 0 ? Math.min(100, ((achievements / totalPossible) * 100)).toFixed(0) : 0;
 
