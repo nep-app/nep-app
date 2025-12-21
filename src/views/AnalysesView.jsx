@@ -1614,6 +1614,7 @@ export function AnalysesView({
                                                                                             if (dateKey) allDates.add(dateKey);
                                                                                         });
                                                                                         totalPossible = allDates.size;
+                                                                                        console.log(`[DEBUG] reduce_frequency: ${totalPossible} dias com consumos`, Array.from(allDates).sort());
                                                                                     } else if (g.type === 'increase_interval') {
                                                                                         // DIAS com ≥2 consumos
                                                                                         const consumptionsByDate = {};
@@ -1624,6 +1625,11 @@ export function AnalysesView({
                                                                                             consumptionsByDate[dateKey].push(c);
                                                                                         });
                                                                                         totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
+                                                                                        console.log(`[DEBUG] increase_interval: ${totalPossible} dias com ≥2 consumos`);
+                                                                                        console.log(`[DEBUG] Dias totais com consumos: ${Object.keys(consumptionsByDate).length}`);
+                                                                                        Object.entries(consumptionsByDate).forEach(([date, consumos]) => {
+                                                                                            if (consumos.length < 2) console.log(`[DEBUG]   ${date}: ${consumos.length} consumos (excluído!)`);
+                                                                                        });
                                                                                     } else if (g.type === 'sleep_hours') {
                                                                                         // DIAS com sono registado (cycles ou wellbeing)
                                                                                         const allDates = new Set();
@@ -1645,14 +1651,33 @@ export function AnalysesView({
                                                                                         });
 
                                                                                         totalPossible = allDates.size;
-                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'bedtime_before') {
-                                                                                        // DIAS com consumos (não ciclos!)
+                                                                                        console.log(`[DEBUG] sleep_hours: ${totalPossible} dias com sono`, Array.from(allDates).sort());
+                                                                                    } else if (g.type === 'bedtime_before') {
+                                                                                        // DIAS com sono registado (NÃO consumos!)
+                                                                                        const allDates = new Set();
+                                                                                        analysisCycles.forEach(c => {
+                                                                                            if (c.sleep && !isNaN(parseFloat(c.sleep))) {
+                                                                                                const dateKey = c.date || safeToISODate(c.timestamp);
+                                                                                                if (dateKey) allDates.add(dateKey);
+                                                                                            }
+                                                                                        });
+                                                                                        analysisWellbeing.forEach(w => {
+                                                                                            if (w.sleep && !isNaN(parseFloat(w.sleep))) {
+                                                                                                const dateKey = w.date || safeToISODate(w.timestamp);
+                                                                                                if (dateKey) allDates.add(dateKey);
+                                                                                            }
+                                                                                        });
+                                                                                        totalPossible = allDates.size;
+                                                                                        console.log(`[DEBUG] bedtime_before: ${totalPossible} dias com sono`);
+                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity') {
+                                                                                        // DIAS com consumos
                                                                                         const allDates = new Set();
                                                                                         analysisConsumptions.forEach(c => {
                                                                                             const dateKey = c.date || safeToISODate(c.timestamp);
                                                                                             if (dateKey) allDates.add(dateKey);
                                                                                         });
                                                                                         totalPossible = allDates.size;
+                                                                                        console.log(`[DEBUG] ${g.type}: ${totalPossible} dias com consumos`);
                                                                                     }
 
                                                                                     const percentage = totalPossible > 0 ? Math.min(100, ((achievements / totalPossible) * 100)).toFixed(0) : 0;
