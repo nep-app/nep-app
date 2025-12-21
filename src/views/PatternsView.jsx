@@ -87,7 +87,7 @@ export function PatternsView({
                                             const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
 
                                             // Calculate average interval
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
@@ -396,7 +396,7 @@ export function PatternsView({
                                                         <div className="space-y-2 max-h-[400px] overflow-y-auto" style={{scrollbarWidth: 'thin'}}>
                                                             {dates.reverse().map(date => {
                                                                 const count = byDate[date];
-                                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === date).sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === date).sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                                                 return (
                                                                     <div key={date} className={(darkMode ? 'border-gray-700' : 'border-gray-200') + ' border rounded-lg p-3'}>
                                                                         <div className="flex justify-between items-center mb-2">
@@ -1674,7 +1674,7 @@ export function PatternsView({
                                         // ESTRUTURAL
                                         if (patternView === 'estrutural') {
                                             // Calcular intervalos entre consumos
-                                            const sorted = [...filteredConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
+                                            const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
@@ -1784,7 +1784,7 @@ export function PatternsView({
                                                         const minDosage = Math.min(...dosages);
 
                                                         // Calcular tendência (primeira metade vs segunda metade do período)
-                                                        const sortedByDate = [...dailyLogsWithDosage].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                                                        const sortedByDate = [...dailyLogsWithDosage].sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                                         const midpoint = Math.floor(sortedByDate.length / 2);
                                                         const firstHalf = sortedByDate.slice(0, midpoint);
                                                         const secondHalf = sortedByDate.slice(midpoint);
