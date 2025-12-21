@@ -648,6 +648,11 @@ export function PatternsView({
                                                     ? previousMgValues.reduce((sum, mg) => sum + mg, 0) / previousMgValues.length
                                                     : 0;
 
+                                                console.log(`[DEBUG DOSAGEM] Semana atual (${recentDates.size} dias):`, Array.from(recentDates).sort());
+                                                console.log(`[DEBUG DOSAGEM] Valores mg semana atual:`, recentMgValues, `média = ${recentAvgDosage.toFixed(0)}mg`);
+                                                console.log(`[DEBUG DOSAGEM] Semana anterior (${previousDates.size} dias):`, Array.from(previousDates).sort());
+                                                console.log(`[DEBUG DOSAGEM] Valores mg semana anterior:`, previousMgValues, `média = ${previousAvgDosage.toFixed(0)}mg`);
+
                                                 progressData.dosage = {
                                                     recent: recentAvgDosage,
                                                     previous: previousAvgDosage,
