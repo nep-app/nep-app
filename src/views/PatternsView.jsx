@@ -458,6 +458,7 @@ export function PatternsView({
                                         }
                                         // ANÁLISE DE PROGRESSO TEMPORAL
                                         if (patternView === 'progress') {
+                                            console.log('[DEBUG PROGRESS] Executando análise de progresso, período:', patternsPeriod);
                                             // Define two periods to compare: recent vs previous
                                             const now = new Date();
                                             let recentStart, recentEnd, previousStart, previousEnd, periodDays;
@@ -614,8 +615,10 @@ export function PatternsView({
                                             });
                                             const previousDailyLogs = dailyLogs.filter(d => {
                                                 const date = new Date(d.date);
-                                                return date >= previousStart && d < previousEnd;
+                                                return date >= previousStart && date <= previousEnd;
                                             });
+
+                                            console.log(`[DEBUG DOSAGEM] recentDailyLogs: ${recentDailyLogs.length}, previousDailyLogs: ${previousDailyLogs.length}`);
 
                                             // Obter todas as datas únicas dos períodos
                                             const recentDates = new Set([
