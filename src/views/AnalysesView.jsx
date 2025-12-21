@@ -2306,6 +2306,108 @@ export function AnalysesView({
                                                                         )}
                                                                     </div>
                                                                 )}
+
+                                                                {/* Correlação Emoções vs Consumo */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        🔍 Emoções vs Consumo
+                                                                    </h3>
+                                                                    {(() => {
+                                                                        // Análise de emoções correlacionadas com consumo
+                                                                        const emotionData = {};
+
+                                                                        // Para cada registo de bem-estar
+                                                                        analysisWellbeing.forEach(log => {
+                                                                            if (!log.emotions || log.emotions.length === 0) return;
+
+                                                                            const logDate = safeToISODate(log.timestamp);
+                                                                            if (!logDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = analysisConsumptions.filter(c => c.date === logDate).length;
+
+                                                                            log.emotions.forEach(emotion => {
+                                                                                if (!emotionData[emotion]) {
+                                                                                    emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                emotionData[emotion].count++;
+                                                                                emotionData[emotion].totalConsumptions += dayConsumptions;
+                                                                                emotionData[emotion].days.push(logDate);
+                                                                            });
+                                                                        });
+
+                                                                        // Calcular média de consumos para cada emoção e ordenar
+                                                                        const emotionsWithAvg = Object.entries(emotionData).map(([emotion, data]) => ({
+                                                                            emotion,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Emoções com MAIOR consumo (top 3)
+                                                                        const highRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2) // Apenas emoções registadas 2+ vezes
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 3);
+
+                                                                        // Emoções com MENOR consumo (bottom 2)
+                                                                        const lowRiskEmotions = emotionsWithAvg
+                                                                            .filter(e => e.count >= 2 && e.avgConsumptions < 10) // Menos de 10 consumos em média
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        if (highRiskEmotions.length === 0 && lowRiskEmotions.length === 0) {
+                                                                            return (
+                                                                                <div className={'text-center py-4 text-sm ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500') + ' rounded-lg'}>
+                                                                                    Sem dados suficientes para correlação (necessário ≥2 ocorrências por emoção)
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                        return (
+                                                                            <div className="space-y-3">
+                                                                                {/* Emoções de ALTO risco (mais consumo) */}
+                                                                                {highRiskEmotions.length > 0 && (
+                                                                                    <div>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                            🔴 Alto Risco (mais consumo)
+                                                                                        </div>
+                                                                                        {highRiskEmotions.map(e => (
+                                                                                            <div key={e.emotion} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{e.emotion}</span>
+                                                                                                    <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                    ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Emoções de BAIXO risco (menos consumo) */}
+                                                                                {lowRiskEmotions.length > 0 && (
+                                                                                    <div>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                            🟢 Baixo Risco (menos consumo)
+                                                                                        </div>
+                                                                                        {lowRiskEmotions.map(e => (
+                                                                                            <div key={e.emotion} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{e.emotion}</span>
+                                                                                                    <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                    ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })()}
@@ -2481,6 +2583,108 @@ export function AnalysesView({
                                                                         )}
                                                                     </div>
                                                                 )}
+
+                                                                {/* Correlação Gatilhos vs Consumo */}
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                        🔍 Gatilhos vs Consumo
+                                                                    </h3>
+                                                                    {(() => {
+                                                                        // Calcular gatilhos e média de consumos por gatilho
+                                                                        const triggerData = {};
+
+                                                                        analysisCycles.forEach(cycle => {
+                                                                            if (!cycle.triggers || cycle.triggers.length === 0) return;
+
+                                                                            // Encontrar data do ciclo usando o timestamp
+                                                                            const cycleDate = safeToISODate(cycle.timestamp);
+                                                                            if (!cycleDate) return;
+
+                                                                            // Contar consumos nesse dia
+                                                                            const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
+
+                                                                            cycle.triggers.forEach(trigger => {
+                                                                                if (!triggerData[trigger]) {
+                                                                                    triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
+                                                                                }
+                                                                                triggerData[trigger].count++;
+                                                                                triggerData[trigger].totalConsumptions += dayConsumptions;
+                                                                                triggerData[trigger].days.push(cycleDate);
+                                                                            });
+                                                                        });
+
+                                                                        // Calcular média de consumos para cada gatilho
+                                                                        const triggersWithAvg = Object.entries(triggerData).map(([trigger, data]) => ({
+                                                                            trigger,
+                                                                            count: data.count,
+                                                                            avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
+                                                                        }));
+
+                                                                        // Gatilhos com MAIOR consumo (top 3)
+                                                                        const highRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2)
+                                                                            .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
+                                                                            .slice(0, 3);
+
+                                                                        // Gatilhos com MENOR consumo (bottom 2)
+                                                                        const lowRiskTriggers = triggersWithAvg
+                                                                            .filter(t => t.count >= 2 && t.avgConsumptions < 10)
+                                                                            .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
+                                                                            .slice(0, 2);
+
+                                                                        if (highRiskTriggers.length === 0 && lowRiskTriggers.length === 0) {
+                                                                            return (
+                                                                                <div className={'text-center py-4 text-sm ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500') + ' rounded-lg'}>
+                                                                                    Sem dados suficientes para correlação (necessário ≥2 ocorrências por gatilho)
+                                                                                </div>
+                                                                            );
+                                                                        }
+
+                                                                        return (
+                                                                            <div className="space-y-3">
+                                                                                {/* Gatilhos de ALTO risco (mais consumo) */}
+                                                                                {highRiskTriggers.length > 0 && (
+                                                                                    <div>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                            🔴 Alto Risco (mais consumo)
+                                                                                        </div>
+                                                                                        {highRiskTriggers.map(t => (
+                                                                                            <div key={t.trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{t.trigger}</span>
+                                                                                                    <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                    ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Gatilhos de BAIXO risco (menos consumo) */}
+                                                                                {lowRiskTriggers.length > 0 && (
+                                                                                    <div>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                            🟢 Baixo Risco (menos consumo)
+                                                                                        </div>
+                                                                                        {lowRiskTriggers.map(t => (
+                                                                                            <div key={t.trigger} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{t.trigger}</span>
+                                                                                                    <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                                                                </div>
+                                                                                                <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                    ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                </div>
 
                                                                 {/* Consciencialização */}
                                                                 <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-xl p-6 border'}>
