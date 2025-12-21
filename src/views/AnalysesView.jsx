@@ -1600,24 +1600,10 @@ export function AnalysesView({
                                                                                 const uniqueGoals = Object.values(goalsByType);
 
                                                                                 // Calcular total de dias no período (todas as metas devem ter o mesmo denominador)
-                                                                                const today = getTodayPT();
-                                                                                const allDatesInPeriod = new Set();
-
-                                                                                // Adicionar todos os dias onde houve alguma atividade
-                                                                                analysisConsumptions.forEach(c => {
-                                                                                    const dateKey = timestampToPT(c.timestamp);
-                                                                                    if (dateKey !== today) allDatesInPeriod.add(dateKey);
-                                                                                });
-                                                                                analysisCycles.forEach(c => {
-                                                                                    const dateKey = c.date || (c.timestamp ? new Date(c.timestamp).toLocaleDateString('pt-PT') : null);
-                                                                                    if (dateKey && dateKey !== today) allDatesInPeriod.add(dateKey);
-                                                                                });
-                                                                                analysisWellbeing.forEach(w => {
-                                                                                    const dateKey = w.date || (w.timestamp ? new Date(w.timestamp).toLocaleDateString('pt-PT') : null);
-                                                                                    if (dateKey && dateKey !== today) allDatesInPeriod.add(dateKey);
-                                                                                });
-
-                                                                                const totalDaysInPeriod = allDatesInPeriod.size;
+                                                                                // Usar o número total de dias do calendário, não apenas dias com atividade
+                                                                                const startDate = new Date(dateRange.start);
+                                                                                const endDate = new Date(dateRange.end);
+                                                                                const totalDaysInPeriod = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos os dias
 
                                                                                 // Calcular detalhes para cada meta
                                                                                 const goalDetails = uniqueGoals.map(g => {
@@ -2193,94 +2179,77 @@ export function AnalysesView({
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Top 10 Emoções */}
+                                                                {/* Top Emoções + Padrões por Dia (compacto) */}
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                        ⭐ Top 10 Emoções Mais Frequentes
+                                                                        📊 Emoções Mais Frequentes & Padrões Semanais
                                                                     </h3>
-                                                                    <div className="space-y-2">
-                                                                        {topEmotions.map((item, idx) => (
-                                                                            <div key={idx} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
-                                                                                <div className="flex items-center justify-between mb-1">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className={'text-xs font-bold w-6 text-center ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                            #{idx + 1}
-                                                                                        </span>
-                                                                                        <span className={'text-sm font-medium ' + (
-                                                                                            item.category === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                                                                                            item.category === 'negative' ? (darkMode ? 'text-purple-400' : 'text-purple-600') :
-                                                                                            (darkMode ? 'text-gray-400' : 'text-gray-600')
-                                                                                        )}>
-                                                                                            {item.emotion}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-2">
+                                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                                        {/* Top 5 Emoções */}
+                                                                        <div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>⭐ Top 5 Emoções</div>
+                                                                            <div className="space-y-2">
+                                                                                {topEmotions.slice(0, 5).map((item, idx) => (
+                                                                                    <div key={idx} className="flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-2 flex-1">
+                                                                                            <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>
+                                                                                            <span className={'text-sm truncate ' + (
+                                                                                                item.category === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                                item.category === 'negative' ? (darkMode ? 'text-purple-400' : 'text-purple-600') :
+                                                                                                (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                            )}>{item.emotion}</span>
+                                                                                        </div>
                                                                                         <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
                                                                                             {item.count}× ({item.percent.toFixed(0)}%)
                                                                                         </span>
                                                                                     </div>
-                                                                                </div>
-                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
-                                                                                    <div
-                                                                                        className={'h-full transition-all duration-500 ' + (
-                                                                                            item.category === 'positive' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                                                                                            item.category === 'negative' ? 'bg-gradient-to-r from-purple-500 to-indigo-500' :
-                                                                                            'bg-gradient-to-r from-gray-500 to-gray-400'
-                                                                                        )}
-                                                                                        style={{width: item.percent + '%'}}
-                                                                                    />
-                                                                                </div>
+                                                                                ))}
                                                                             </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Padrões por Dia da Semana */}
-                                                                {weekdayStats.length > 0 && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                            📅 Padrões por Dia da Semana
-                                                                        </h3>
-                                                                        <div className="space-y-3 mb-4">
-                                                                            {weekdayStats
-                                                                                .sort((a, b) => b.positivePercent - a.positivePercent)
-                                                                                .map((stat, idx) => (
-                                                                                <div key={stat.day} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
-                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                        <span className={'text-sm font-medium ' + (themeClasses.textPrimary(darkMode))}>
-                                                                                            {weekdayNames[stat.day]}
-                                                                                        </span>
-                                                                                        <span className={'text-xs ' + (
-                                                                                            stat.positivePercent >= 60 ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                                                                                            stat.positivePercent >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
-                                                                                            (darkMode ? 'text-purple-400' : 'text-purple-600')
-                                                                                        )}>
-                                                                                            {stat.positivePercent.toFixed(0)}% positivas
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className={'h-2 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
-                                                                                        <div
-                                                                                            className={'h-full transition-all duration-500 ' + (
-                                                                                                stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                                                                                                stat.positivePercent >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                                                                                                'bg-gradient-to-r from-purple-500 to-indigo-500'
-                                                                                            )}
-                                                                                            style={{width: stat.positivePercent + '%'}}
-                                                                                        />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
                                                                         </div>
-                                                                        {weekdayStats.length >= 2 && (
-                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                <p className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
-                                                                                    💡 <strong>Insight:</strong> Os teus dias emocionalmente mais positivos tendem a ser às <strong>{weekdayNames[bestDay.day]}s</strong> ({bestDay.positivePercent.toFixed(0)}% positivas),
-                                                                                    enquanto às <strong>{weekdayNames[worstDay.day]}s</strong> tendes a sentir mais emoções desafiantes ({worstDay.positivePercent.toFixed(0)}% positivas).
-                                                                                </p>
+
+                                                                        {/* Padrões por Dia da Semana */}
+                                                                        {weekdayStats.length > 0 && (
+                                                                            <div>
+                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📅 Por Dia da Semana</div>
+                                                                                <div className="space-y-2">
+                                                                                    {weekdayStats
+                                                                                        .sort((a, b) => b.positivePercent - a.positivePercent)
+                                                                                        .map((stat) => (
+                                                                                        <div key={stat.day} className="flex items-center justify-between">
+                                                                                            <span className={'text-sm w-16 ' + (themeClasses.textPrimary(darkMode))}>{weekdayNames[stat.day]}</span>
+                                                                                            <div className="flex-1 mx-2">
+                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                                    <div
+                                                                                                        className={'h-full transition-all duration-500 ' + (
+                                                                                                            stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                                                                                                            stat.positivePercent >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                                                                                                            'bg-gradient-to-r from-purple-500 to-indigo-500'
+                                                                                                        )}
+                                                                                                        style={{width: stat.positivePercent + '%'}}
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <span className={'text-xs w-12 text-right ' + (
+                                                                                                stat.positivePercent >= 60 ? (darkMode ? 'text-green-400' : 'text-green-600') :
+                                                                                                stat.positivePercent >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
+                                                                                                (darkMode ? 'text-purple-400' : 'text-purple-600')
+                                                                                            )}>
+                                                                                                {stat.positivePercent.toFixed(0)}%
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                {weekdayStats.length >= 2 && (
+                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mt-3 border'}>
+                                                                                        <p className={'text-xs ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                            💡 Melhor dia: <strong>{weekdayNames[bestDay.day]}s</strong> ({bestDay.positivePercent.toFixed(0)}%). Mais desafiante: <strong>{weekdayNames[worstDay.day]}s</strong> ({worstDay.positivePercent.toFixed(0)}%).
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                )}
+                                                                </div>
 
                                                                 {/* Correlação Emoções vs Consumo */}
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
@@ -2480,84 +2449,71 @@ export function AnalysesView({
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Top Gatilhos */}
+                                                                {/* Top Gatilhos + Padrões por Dia (compacto) */}
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                        🎯 Gatilhos Mais Frequentes
+                                                                        📊 Gatilhos Mais Frequentes & Padrões Semanais
                                                                     </h3>
-                                                                    <div className="space-y-2">
-                                                                        {topTriggers.map((item, idx) => (
-                                                                            <div key={idx} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
-                                                                                <div className="flex items-center justify-between mb-1">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className={'text-xs font-bold w-6 text-center ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                            #{idx + 1}
-                                                                                        </span>
-                                                                                        <span className={'text-sm font-medium ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
-                                                                                            {item.trigger}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className="flex items-center gap-2">
+                                                                    <div className="grid md:grid-cols-2 gap-4">
+                                                                        {/* Top 5 Gatilhos */}
+                                                                        <div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>🎯 Top 5 Gatilhos</div>
+                                                                            <div className="space-y-2">
+                                                                                {topTriggers.slice(0, 5).map((item, idx) => (
+                                                                                    <div key={idx} className="flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-2 flex-1">
+                                                                                            <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>
+                                                                                            <span className={'text-sm truncate ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{item.trigger}</span>
+                                                                                        </div>
                                                                                         <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
                                                                                             {item.count}× ({item.percent.toFixed(0)}%)
                                                                                         </span>
                                                                                     </div>
-                                                                                </div>
-                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
-                                                                                    <div
-                                                                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
-                                                                                        style={{width: item.percent + '%'}}
-                                                                                    />
-                                                                                </div>
+                                                                                ))}
                                                                             </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Padrões Temporais */}
-                                                                {Object.values(triggersByWeekday).some(count => count > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                            📅 Distribuição por Dia da Semana
-                                                                        </h3>
-                                                                        <div className="space-y-3 mb-4">
-                                                                            {Object.entries(triggersByWeekday)
-                                                                                .map(([day, count]) => ({
-                                                                                    day: parseInt(day),
-                                                                                    count,
-                                                                                    percent: allTriggers.length > 0 ? (count / allTriggers.length) * 100 : 0
-                                                                                }))
-                                                                                .filter(stat => stat.count > 0)
-                                                                                .sort((a, b) => b.count - a.count)
-                                                                                .map((stat) => (
-                                                                                <div key={stat.day} className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-3'}>
-                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                        <span className={'text-sm font-medium ' + (themeClasses.textPrimary(darkMode))}>
-                                                                                            {weekdayNames[stat.day]}
-                                                                                        </span>
-                                                                                        <span className={'text-xs ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
-                                                                                            {stat.count} gatilhos ({stat.percent.toFixed(0)}%)
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className={'h-2 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
-                                                                                        <div
-                                                                                            className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
-                                                                                            style={{width: stat.percent + '%'}}
-                                                                                        />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
                                                                         </div>
-                                                                        {mostTriggersDay.count > 0 && (
-                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                <p className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
-                                                                                    💡 <strong>Insight:</strong> A maior parte dos teus gatilhos ocorre às <strong>{weekdayNames[mostTriggersDay.day]}s</strong> ({mostTriggersDay.count} gatilhos).
-                                                                                    {mostTriggersDay.day >= 1 && mostTriggersDay.day <= 5 && ' Considera planear estratégias de prevenção para este dia da semana.'}
-                                                                                </p>
+
+                                                                        {/* Padrões por Dia da Semana */}
+                                                                        {Object.values(triggersByWeekday).some(count => count > 0) && (
+                                                                            <div>
+                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📅 Por Dia da Semana</div>
+                                                                                <div className="space-y-2">
+                                                                                    {Object.entries(triggersByWeekday)
+                                                                                        .map(([day, count]) => ({
+                                                                                            day: parseInt(day),
+                                                                                            count,
+                                                                                            percent: allTriggers.length > 0 ? (count / allTriggers.length) * 100 : 0
+                                                                                        }))
+                                                                                        .filter(stat => stat.count > 0)
+                                                                                        .sort((a, b) => b.count - a.count)
+                                                                                        .map((stat) => (
+                                                                                        <div key={stat.day} className="flex items-center justify-between">
+                                                                                            <span className={'text-sm w-16 ' + (themeClasses.textPrimary(darkMode))}>{weekdayNames[stat.day]}</span>
+                                                                                            <div className="flex-1 mx-2">
+                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                                    <div
+                                                                                                        className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
+                                                                                                        style={{width: stat.percent + '%'}}
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <span className={'text-xs w-12 text-right ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                                {stat.count}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                                {mostTriggersDay.count > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mt-3 border'}>
+                                                                                        <p className={'text-xs ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                            💡 Dia com mais gatilhos: <strong>{weekdayNames[mostTriggersDay.day]}s</strong> ({mostTriggersDay.count}).
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                )}
+                                                                </div>
 
                                                                 {/* Correlação Gatilhos vs Consumo */}
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>

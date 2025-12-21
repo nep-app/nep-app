@@ -1793,6 +1793,161 @@ export function PatternsView({
                                                             );
                                                         })()}
                                                     </div>
+
+                                                    {/* Análise de Dosagens */}
+                                                    {(() => {
+                                                        const consumptionsWithDosage = filteredConsumptions.filter(c => c.dosage_mg && c.dosage_mg > 0);
+
+                                                        if (consumptionsWithDosage.length === 0) {
+                                                            return (
+                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
+                                                                    <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                        Sem dosagens registadas neste período
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        // Calcular estatísticas
+                                                        const dosages = consumptionsWithDosage.map(c => c.dosage_mg);
+                                                        const totalDosage = dosages.reduce((sum, d) => sum + d, 0);
+                                                        const avgDosage = totalDosage / dosages.length;
+                                                        const maxDosage = Math.max(...dosages);
+                                                        const minDosage = Math.min(...dosages);
+
+                                                        // Calcular tendência (primeira metade vs segunda metade do período)
+                                                        const sortedByDate = [...consumptionsWithDosage].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+                                                        const midpoint = Math.floor(sortedByDate.length / 2);
+                                                        const firstHalf = sortedByDate.slice(0, midpoint);
+                                                        const secondHalf = sortedByDate.slice(midpoint);
+
+                                                        let trendIcon = '➡️';
+                                                        let trendText = 'Estáveis';
+                                                        let trendPercent = 0;
+                                                        let trendColor = darkMode ? 'text-blue-400' : 'text-blue-600';
+                                                        let trendBg = darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200';
+
+                                                        if (firstHalf.length > 0 && secondHalf.length > 0) {
+                                                            const avgFirst = firstHalf.reduce((sum, c) => sum + c.dosage_mg, 0) / firstHalf.length;
+                                                            const avgSecond = secondHalf.reduce((sum, c) => sum + c.dosage_mg, 0) / secondHalf.length;
+                                                            const change = ((avgSecond - avgFirst) / avgFirst) * 100;
+                                                            trendPercent = Math.abs(change);
+
+                                                            if (change > 5) {
+                                                                trendIcon = '📈';
+                                                                trendText = `Aumentaram ${trendPercent.toFixed(0)}%`;
+                                                                trendColor = darkMode ? 'text-red-400' : 'text-red-600';
+                                                                trendBg = darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200';
+                                                            } else if (change < -5) {
+                                                                trendIcon = '📉';
+                                                                trendText = `Diminuíram ${trendPercent.toFixed(0)}%`;
+                                                                trendColor = darkMode ? 'text-green-400' : 'text-green-600';
+                                                                trendBg = darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200';
+                                                            }
+                                                        }
+
+                                                        // Distribuição por faixas de dosagem
+                                                        const ranges = {
+                                                            baixa: dosages.filter(d => d < 7).length,
+                                                            media: dosages.filter(d => d >= 7 && d < 12).length,
+                                                            alta: dosages.filter(d => d >= 12).length
+                                                        };
+
+                                                        return (
+                                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
+
+                                                                {/* Estatísticas Gerais */}
+                                                                <div className="grid grid-cols-4 gap-3 mb-4">
+                                                                    <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{consumptionsWithDosage.length}</div>
+                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Registos</div>
+                                                                    </div>
+                                                                    <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgDosage.toFixed(1)}mg</div>
+                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                                    </div>
+                                                                    <div className={`${darkMode ? 'bg-orange-900/30 border border-orange-700/50' : 'bg-orange-50 border-orange-200'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>{maxDosage}mg</div>
+                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                                    </div>
+                                                                    <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{minDosage}mg</div>
+                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Mínimo</div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Tendência */}
+                                                                <div className={`${trendBg} rounded-lg p-4 border mb-4`}>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <div>
+                                                                            <div className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Tendência no período</div>
+                                                                            <div className={`text-2xl font-bold ${trendColor}`}>
+                                                                                {trendIcon} {trendText}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                        Comparação entre primeira e segunda metade do período
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Distribuição */}
+                                                                <div className="space-y-3">
+                                                                    <div className={'text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Distribuição de Dosagens</div>
+
+                                                                    {ranges.baixa > 0 && (
+                                                                        <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-3`}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                    🟢 Baixa (&lt;7mg)
+                                                                                </div>
+                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                    {ranges.baixa} ({((ranges.baixa / dosages.length) * 100).toFixed(0)}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                                <div className="bg-green-500 h-full transition-all duration-500" style={{width: ((ranges.baixa / dosages.length) * 100) + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {ranges.media > 0 && (
+                                                                        <div className={`${darkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200'} rounded-lg p-3`}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                                                                                    🟡 Média (7-12mg)
+                                                                                </div>
+                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                                                                                    {ranges.media} ({((ranges.media / dosages.length) * 100).toFixed(0)}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                                <div className="bg-yellow-500 h-full transition-all duration-500" style={{width: ((ranges.media / dosages.length) * 100) + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {ranges.alta > 0 && (
+                                                                        <div className={`${darkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'} rounded-lg p-3`}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
+                                                                                    🔴 Alta (≥12mg)
+                                                                                </div>
+                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
+                                                                                    {ranges.alta} ({((ranges.alta / dosages.length) * 100).toFixed(0)}%)
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                                <div className="bg-red-500 h-full transition-all duration-500" style={{width: ((ranges.alta / dosages.length) * 100) + '%'}}></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             );
                                         }
