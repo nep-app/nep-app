@@ -1828,7 +1828,7 @@ export function PatternsView({
                                                                 {/* Estatísticas Gerais */}
                                                                 <div className="grid grid-cols-4 gap-3 mb-4">
                                                                     <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{consumptionsWithDosage.length}</div>
+                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{dailyLogsWithDosage.length}</div>
                                                                         <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Registos</div>
                                                                     </div>
                                                                     <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
