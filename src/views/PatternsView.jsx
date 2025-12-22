@@ -257,6 +257,106 @@ export function PatternsView({
                                                         days={90}
                                                     />
 
+                                                    {/* Evolução da Frequência */}
+                                                    {Object.keys(byDate).length > 0 && (
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                📈 Evolução da Frequência
+                                                            </h3>
+                                                            {(() => {
+                                                                // Preparar dados ordenados por data
+                                                                const sortedDates = Object.keys(byDate).sort();
+                                                                const maxCount = Math.max(...Object.values(byDate));
+
+                                                                // Determinar quantos dias mostrar baseado no período
+                                                                let daysToShow = sortedDates.length;
+                                                                if (patternsPeriod === 'hoje') daysToShow = Math.min(7, sortedDates.length);
+                                                                else if (patternsPeriod === 'semana') daysToShow = Math.min(14, sortedDates.length);
+                                                                else if (patternsPeriod === 'mes') daysToShow = Math.min(30, sortedDates.length);
+                                                                else daysToShow = Math.min(60, sortedDates.length);
+
+                                                                const recentDates = sortedDates.slice(-daysToShow);
+
+                                                                return (
+                                                                    <div className="space-y-4">
+                                                                        {/* Gráfico de barras */}
+                                                                        <div className="flex items-end justify-between gap-1 h-40">
+                                                                            {recentDates.map((date, idx) => {
+                                                                                const count = byDate[date];
+                                                                                const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                                                                                const isToday = date === new Date().toISOString().split('T')[0];
+
+                                                                                return (
+                                                                                    <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                                                                                        {/* Tooltip */}
+                                                                                        <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + (darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-800 text-white')}>
+                                                                                            {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}: {count}x
+                                                                                        </div>
+
+                                                                                        {/* Barra */}
+                                                                                        <div
+                                                                                            className={'w-full rounded-t transition-all duration-300 ' + (
+                                                                                                isToday
+                                                                                                    ? 'bg-gradient-to-t from-yellow-500 to-orange-500'
+                                                                                                    : count >= 10
+                                                                                                        ? 'bg-gradient-to-t from-red-500 to-red-400'
+                                                                                                        : count > 6
+                                                                                                            ? 'bg-gradient-to-t from-orange-500 to-orange-400'
+                                                                                                            : count > 3
+                                                                                                                ? 'bg-gradient-to-t from-blue-500 to-blue-400'
+                                                                                                                : 'bg-gradient-to-t from-green-500 to-green-400'
+                                                                                            )}
+                                                                                            style={{ height: `${Math.max(heightPercent, 2)}%` }}
+                                                                                        />
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+
+                                                                        {/* Eixo X - Datas */}
+                                                                        <div className="flex items-center justify-between gap-1 w-full">
+                                                                            {recentDates.filter((_, idx) => {
+                                                                                // Mostrar apenas algumas labels para não ficar congestionado
+                                                                                if (recentDates.length <= 7) return true;
+                                                                                if (recentDates.length <= 14) return idx % 2 === 0;
+                                                                                if (recentDates.length <= 30) return idx % 4 === 0 || idx === recentDates.length - 1;
+                                                                                return idx % 7 === 0 || idx === recentDates.length - 1;
+                                                                            }).map(date => (
+                                                                                <div key={date} className={'text-xs flex-1 text-center ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+
+                                                                        {/* Legenda */}
+                                                                        <div className={'text-xs mt-2 pt-3 border-t flex items-center justify-center gap-4 flex-wrap ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-green-500 to-green-400"></div>
+                                                                                <span>1-3</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-blue-500 to-blue-400"></div>
+                                                                                <span>4-6</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-orange-500 to-orange-400"></div>
+                                                                                <span>7-9</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-red-500 to-red-400"></div>
+                                                                                <span>10+</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-yellow-500 to-orange-500"></div>
+                                                                                <span>Hoje</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    )}
+
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
                                                         <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
@@ -387,39 +487,6 @@ export function PatternsView({
                                                             </div>
                                                         </div>
                                                     )}
-
-                                                    {/* Mini Calendar (dinâmico baseado no filtro) */}
-                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border relative'}>
-                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4'}>
-                                                            📅 {patternsPeriod === 'hoje' ? 'Hoje' : patternsPeriod === 'semana' ? 'Esta Semana' : patternsPeriod === 'mes' ? 'Este Mês' : 'Todo o Período'}
-                                                        </h3>
-                                                        <div className="space-y-2 max-h-[400px] overflow-y-auto" style={{scrollbarWidth: 'thin'}}>
-                                                            {dates.reverse().map(date => {
-                                                                const count = byDate[date];
-                                                                const dayConsumptions = filteredConsumptions.filter(c => c.date === date).sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
-                                                                return (
-                                                                    <div key={date} className={(darkMode ? 'border-gray-700' : 'border-gray-200') + ' border rounded-lg p-3'}>
-                                                                        <div className="flex justify-between items-center mb-2">
-                                                                            <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-800')}>{new Date(date).toLocaleDateString('pt-PT', {weekday: 'short', day: '2-digit', month: 'short'})}</div>
-                                                                            <div className={'text-lg font-bold ' + (count >= 10 ? (darkMode ? 'text-red-400' : 'text-red-600') : count > 6 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : count > 3 ? (darkMode ? 'text-yellow-500' : 'text-yellow-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{count}x</div>
-                                                                        </div>
-                                                                        <div className="flex flex-wrap gap-1">
-                                                                            {dayConsumptions.map((c, i) => (
-                                                                                <span key={i} className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700')}>{new Date(c.timestamp).toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}</span>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                        {dates.length > 3 && (
-                                                            <div className={'absolute bottom-2 left-1/2 transform -translate-x-1/2 pointer-events-none ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
-                                                                <svg className="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                                </svg>
-                                                            </div>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             );
                                         }
