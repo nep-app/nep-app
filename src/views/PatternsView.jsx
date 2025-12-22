@@ -277,30 +277,18 @@ export function PatternsView({
 
                                                                 const recentDates = sortedDates.slice(-daysToShow);
 
-                                                                console.log('📈 Gráfico Debug:', {
-                                                                    totalDates: sortedDates.length,
-                                                                    daysToShow,
-                                                                    recentDatesCount: recentDates.length,
-                                                                    maxCount,
-                                                                    byDate,
-                                                                    sampleDates: recentDates.slice(0, 5)
-                                                                });
-
                                                                 return (
                                                                     <div className="space-y-4">
                                                                         {/* Gráfico de barras */}
-                                                                        <div className="flex items-end justify-between gap-1 h-40">
+                                                                        <div className="flex items-end justify-between gap-1 h-48 relative">
                                                                             {recentDates.map((date, idx) => {
                                                                                 const count = byDate[date];
                                                                                 const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                                                                                const heightPx = Math.max((heightPercent / 100) * 192, 8); // 192px = h-48, min 8px
                                                                                 const isToday = date === new Date().toISOString().split('T')[0];
 
-                                                                                if (idx < 3) {
-                                                                                    console.log(`Barra ${idx} - Data: ${date}, Count: ${count}, Height: ${heightPercent}%`);
-                                                                                }
-
                                                                                 return (
-                                                                                    <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative">
+                                                                                    <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative" style={{ minWidth: '2px' }}>
                                                                                         {/* Tooltip */}
                                                                                         <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + (darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-800 text-white')}>
                                                                                             {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}: {count}x
@@ -319,7 +307,7 @@ export function PatternsView({
                                                                                                                 ? 'bg-gradient-to-t from-blue-500 to-blue-400'
                                                                                                                 : 'bg-gradient-to-t from-green-500 to-green-400'
                                                                                             )}
-                                                                                            style={{ height: `${Math.max(heightPercent, 2)}%` }}
+                                                                                            style={{ height: `${heightPx}px`, minHeight: '8px' }}
                                                                                         />
                                                                                     </div>
                                                                                 );
