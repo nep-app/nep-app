@@ -2798,6 +2798,370 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // ===== NOVAS CORRELAÇÕES =====
+
+                                                        // 1. BEM-ESTAR → CONSUMO (INVERSAS - causas de consumo)
+                                                        const inverseCorrelations = [];
+
+                                                        // Humor → Consumo (humor baixo causa mais consumo?)
+                                                        if (moodData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(moodData, 'mood', 'consumptions');
+                                                            const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
+                                                            inverseCorrelations.push({
+                                                                name: 'Humor → Consumo',
+                                                                icon: '😊',
+                                                                correlation: corr,
+                                                                average: avgMood.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: moodData.length,
+                                                                type: 'inverse'
+                                                            });
+                                                        }
+
+                                                        // Energia → Consumo (energia baixa causa mais consumo?)
+                                                        if (energyData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(energyData, 'energy', 'consumptions');
+                                                            const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
+                                                            inverseCorrelations.push({
+                                                                name: 'Energia → Consumo',
+                                                                icon: '⚡',
+                                                                correlation: corr,
+                                                                average: avgEnergy.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: energyData.length,
+                                                                type: 'inverse'
+                                                            });
+                                                        }
+
+                                                        // 2. SONO ANTERIOR → CONSUMO HOJE
+                                                        const sleepToConsumptionNext = [];
+                                                        const sortedDates = Object.keys(dailyData).sort();
+                                                        const sleepToConsNextData = [];
+
+                                                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                            const today = sortedDates[i];
+                                                            const tomorrow = sortedDates[i + 1];
+
+                                                            if (dailyData[today].sleep !== null && dailyData[tomorrow].consumptions > 0) {
+                                                                sleepToConsNextData.push({
+                                                                    sleep: dailyData[today].sleep,
+                                                                    consumptions: dailyData[tomorrow].consumptions
+                                                                });
+                                                            }
+                                                        }
+
+                                                        if (sleepToConsNextData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(sleepToConsNextData, 'sleep', 'consumptions');
+                                                            const avgSleep = sleepToConsNextData.reduce((sum, d) => sum + d.sleep, 0) / sleepToConsNextData.length;
+                                                            sleepToConsumptionNext.push({
+                                                                name: 'Sono ontem → Consumo hoje',
+                                                                icon: '😴',
+                                                                correlation: corr,
+                                                                average: avgSleep.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: sleepToConsNextData.length
+                                                            });
+                                                        }
+
+                                                        // 3. EMOÇÕES NEGATIVAS → CONSUMO
+                                                        const emotionsToConsumption = [];
+                                                        const emotionData = {};
+
+                                                        // Agregar emoções por dia
+                                                        analysisWellbeing.forEach(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            if (!wDate || !w.emotions || !Array.isArray(w.emotions)) return;
+
+                                                            if (!emotionData[wDate]) {
+                                                                emotionData[wDate] = { negative: 0, total: 0, consumptions: dailyData[wDate]?.consumptions || 0 };
+                                                            }
+
+                                                            w.emotions.forEach(emotion => {
+                                                                emotionData[wDate].total++;
+                                                                const category = getEmotionCategory(emotion);
+                                                                if (category === 'negative') emotionData[wDate].negative++;
+                                                            });
+                                                        });
+
+                                                        const emotionCorrelationData = Object.values(emotionData).filter(d => d.total > 0);
+
+                                                        if (emotionCorrelationData.length >= 2) {
+                                                            // Calcular % de emoções negativas
+                                                            const dataWithPercent = emotionCorrelationData.map(d => ({
+                                                                negativePercent: (d.negative / d.total) * 100,
+                                                                consumptions: d.consumptions
+                                                            }));
+
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dataWithPercent, 'negativePercent', 'consumptions');
+                                                            const avgNegative = dataWithPercent.reduce((sum, d) => sum + d.negativePercent, 0) / dataWithPercent.length;
+
+                                                            emotionsToConsumption.push({
+                                                                name: 'Emoções Negativas → Consumo',
+                                                                icon: '😩',
+                                                                correlation: corr,
+                                                                average: avgNegative.toFixed(0),
+                                                                unit: '%',
+                                                                dataPoints: dataWithPercent.length
+                                                            });
+                                                        }
+
+                                                        // 4. AUTOCUIDADO → CONSUMO
+                                                        const selfCareToConsumption = [];
+                                                        const selfCareData = {};
+
+                                                        // Agregar autocuidado por dia
+                                                        analysisWellbeing.forEach(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            if (!wDate) return;
+
+                                                            if (!selfCareData[wDate]) {
+                                                                selfCareData[wDate] = { count: 0, consumptions: dailyData[wDate]?.consumptions || 0 };
+                                                            }
+
+                                                            // Contar quantas áreas de autocuidado foram cumpridas
+                                                            ['water', 'food', 'rest', 'social'].forEach(area => {
+                                                                if (w[area] === true) selfCareData[wDate].count++;
+                                                            });
+                                                        });
+
+                                                        const selfCareCorrelationData = Object.values(selfCareData).filter(d => d.count >= 0);
+
+                                                        if (selfCareCorrelationData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(selfCareCorrelationData, 'count', 'consumptions');
+                                                            const avgSelfCare = selfCareCorrelationData.reduce((sum, d) => sum + d.count, 0) / selfCareCorrelationData.length;
+
+                                                            selfCareToConsumption.push({
+                                                                name: 'Autocuidado → Consumo',
+                                                                icon: '💚',
+                                                                correlation: corr,
+                                                                average: avgSelfCare.toFixed(1),
+                                                                unit: '/4',
+                                                                dataPoints: selfCareCorrelationData.length
+                                                            });
+                                                        }
+
+                                                        // 5. CONSUMO ONTEM → CONSUMO HOJE (autocorrelação)
+                                                        const consumptionAutocorrelation = [];
+                                                        const autocorrData = [];
+
+                                                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                            const today = sortedDates[i];
+                                                            const tomorrow = sortedDates[i + 1];
+
+                                                            if (dailyData[today].consumptions > 0 && dailyData[tomorrow].consumptions > 0) {
+                                                                autocorrData.push({
+                                                                    yesterday: dailyData[today].consumptions,
+                                                                    today: dailyData[tomorrow].consumptions
+                                                                });
+                                                            }
+                                                        }
+
+                                                        if (autocorrData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(autocorrData, 'yesterday', 'today');
+                                                            const avgYesterday = autocorrData.reduce((sum, d) => sum + d.yesterday, 0) / autocorrData.length;
+
+                                                            consumptionAutocorrelation.push({
+                                                                name: 'Consumo Ontem → Hoje',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgYesterday.toFixed(1),
+                                                                unit: '/dia',
+                                                                dataPoints: autocorrData.length
+                                                            });
+                                                        }
+
+                                                        // 6. CONSUMO → EMOÇÕES (impacto no estado emocional)
+                                                        const consumptionToEmotions = [];
+
+                                                        if (emotionCorrelationData.length >= 2) {
+                                                            // Já calculamos emoções por dia antes
+                                                            const dataWithPercent = emotionCorrelationData.map(d => ({
+                                                                negativePercent: (d.negative / d.total) * 100,
+                                                                consumptions: d.consumptions
+                                                            }));
+
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dataWithPercent, 'consumptions', 'negativePercent');
+                                                            const avgConsumptions = dataWithPercent.reduce((sum, d) => sum + d.consumptions, 0) / dataWithPercent.length;
+
+                                                            consumptionToEmotions.push({
+                                                                name: 'Consumo → Emoções Negativas',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgConsumptions.toFixed(1),
+                                                                unit: '/dia',
+                                                                dataPoints: dataWithPercent.length
+                                                            });
+                                                        }
+
+                                                        // 7. CONSUMO → AUTOCUIDADO
+                                                        const consumptionToSelfCare = [];
+
+                                                        if (selfCareCorrelationData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(selfCareCorrelationData, 'consumptions', 'count');
+                                                            const avgCons = selfCareCorrelationData.reduce((sum, d) => sum + d.consumptions, 0) / selfCareCorrelationData.length;
+
+                                                            consumptionToSelfCare.push({
+                                                                name: 'Consumo → Autocuidado',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgCons.toFixed(1),
+                                                                unit: '/dia',
+                                                                dataPoints: selfCareCorrelationData.length
+                                                            });
+                                                        }
+
+                                                        // 8. DOSAGEM → BEM-ESTAR (dose alta vs baixa têm impacto diferente?)
+                                                        const dosageToWellbeing = [];
+
+                                                        // Agregar dosagem por dia
+                                                        const dosageData = {};
+                                                        [...analysisCycles, ...analysisDailyLogs].forEach(item => {
+                                                            const itemDate = item.date || safeToISODate(item.timestamp);
+                                                            if (!itemDate || !item.mg) return;
+
+                                                            const mg = typeof item.mg === 'number' ? item.mg : parseFloat(item.mg);
+                                                            if (isNaN(mg) || mg <= 0) return;
+
+                                                            if (!dosageData[itemDate]) {
+                                                                dosageData[itemDate] = { totalMg: 0, sleep: dailyData[itemDate]?.sleep || null, mood: dailyData[itemDate]?.mood || null, energy: dailyData[itemDate]?.energy || null };
+                                                            }
+
+                                                            dosageData[itemDate].totalMg += mg;
+                                                        });
+
+                                                        // Dosagem → Sono
+                                                        const dosageSleepData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.sleep !== null);
+                                                        if (dosageSleepData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dosageSleepData, 'totalMg', 'sleep');
+                                                            const avgDosage = dosageSleepData.reduce((sum, d) => sum + d.totalMg, 0) / dosageSleepData.length;
+
+                                                            dosageToWellbeing.push({
+                                                                name: 'Dosagem → Sono',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgDosage.toFixed(0),
+                                                                unit: 'mg',
+                                                                dataPoints: dosageSleepData.length,
+                                                                metric: 'sono'
+                                                            });
+                                                        }
+
+                                                        // Dosagem → Humor
+                                                        const dosageMoodData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.mood !== null);
+                                                        if (dosageMoodData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dosageMoodData, 'totalMg', 'mood');
+                                                            const avgDosage = dosageMoodData.reduce((sum, d) => sum + d.totalMg, 0) / dosageMoodData.length;
+
+                                                            dosageToWellbeing.push({
+                                                                name: 'Dosagem → Humor',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgDosage.toFixed(0),
+                                                                unit: 'mg',
+                                                                dataPoints: dosageMoodData.length,
+                                                                metric: 'humor'
+                                                            });
+                                                        }
+
+                                                        // Dosagem → Energia
+                                                        const dosageEnergyData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.energy !== null);
+                                                        if (dosageEnergyData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dosageEnergyData, 'totalMg', 'energy');
+                                                            const avgDosage = dosageEnergyData.reduce((sum, d) => sum + d.totalMg, 0) / dosageEnergyData.length;
+
+                                                            dosageToWellbeing.push({
+                                                                name: 'Dosagem → Energia',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgDosage.toFixed(0),
+                                                                unit: 'mg',
+                                                                dataPoints: dosageEnergyData.length,
+                                                                metric: 'energia'
+                                                            });
+                                                        }
+
+                                                        // 9. PRIMEIRO CONSUMO → TOTAL DO DIA
+                                                        const firstConsToTotal = [];
+
+                                                        // Calcular hora do primeiro consumo e total por dia
+                                                        const firstConsData = {};
+                                                        analysisConsumptions.forEach(c => {
+                                                            if (!firstConsData[c.date]) {
+                                                                firstConsData[c.date] = { firstHour: 24, total: 0 };
+                                                            }
+
+                                                            const hour = new Date(c.timestamp).getHours() + new Date(c.timestamp).getMinutes() / 60;
+                                                            if (hour < firstConsData[c.date].firstHour) {
+                                                                firstConsData[c.date].firstHour = hour;
+                                                            }
+                                                            firstConsData[c.date].total++;
+                                                        });
+
+                                                        const firstConsCorrelationData = Object.values(firstConsData).filter(d => d.total > 0);
+
+                                                        if (firstConsCorrelationData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(firstConsCorrelationData, 'firstHour', 'total');
+                                                            const avgFirstHour = firstConsCorrelationData.reduce((sum, d) => sum + d.firstHour, 0) / firstConsCorrelationData.length;
+
+                                                            firstConsToTotal.push({
+                                                                name: 'Primeiro Consumo → Total do Dia',
+                                                                icon: '🌅',
+                                                                correlation: corr,
+                                                                average: Math.floor(avgFirstHour) + ':' + String(Math.round((avgFirstHour % 1) * 60)).padStart(2, '0'),
+                                                                unit: '',
+                                                                dataPoints: firstConsCorrelationData.length
+                                                            });
+                                                        }
+
+                                                        // 10. INTERVALO → DOSAGEM
+                                                        const intervalToDosage = [];
+
+                                                        // Calcular intervalos e dosagens
+                                                        const intervalDosageData = [];
+                                                        const consumptionsByDate = {};
+
+                                                        analysisConsumptions.forEach(c => {
+                                                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                                                            consumptionsByDate[c.date].push(c);
+                                                        });
+
+                                                        Object.entries(consumptionsByDate).forEach(([date, cons]) => {
+                                                            if (cons.length < 2) return;
+
+                                                            // Ordenar por timestamp
+                                                            cons.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                                                            // Calcular intervalos médios do dia
+                                                            const intervals = [];
+                                                            for (let i = 1; i < cons.length; i++) {
+                                                                const diff = (new Date(cons[i].timestamp) - new Date(cons[i-1].timestamp)) / (1000 * 60 * 60);
+                                                                intervals.push(diff);
+                                                            }
+
+                                                            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+
+                                                            // Buscar dosagem do dia
+                                                            const dayDosage = dosageData[date]?.totalMg || null;
+
+                                                            if (dayDosage) {
+                                                                intervalDosageData.push({ interval: avgInterval, dosage: dayDosage });
+                                                            }
+                                                        });
+
+                                                        if (intervalDosageData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(intervalDosageData, 'interval', 'dosage');
+                                                            const avgInterval = intervalDosageData.reduce((sum, d) => sum + d.interval, 0) / intervalDosageData.length;
+
+                                                            intervalToDosage.push({
+                                                                name: 'Intervalo → Dosagem',
+                                                                icon: '⏱️',
+                                                                correlation: corr,
+                                                                average: avgInterval.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: intervalDosageData.length
+                                                            });
+                                                        }
+
                                                         if (correlations.length === 0) {
                                                             return (
                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
@@ -3504,65 +3868,6 @@ export function AnalysesView({
                                                                                         );
                                                                                     })()}
 
-                                                                                    {/* Padrão Temporal de Consumo */}
-                                                                                    {totalCons > 0 && (() => {
-                                                                                        const startPct = Math.round(consumptionTiming.start / totalCons * 100);
-                                                                                        const middlePct = Math.round(consumptionTiming.middle / totalCons * 100);
-                                                                                        const endPct = Math.round(consumptionTiming.end / totalCons * 100);
-
-                                                                                        let insight = '';
-                                                                                        if (endPct >= 50) {
-                                                                                            insight = `Consumos concentram-se no final do ciclo (${endPct}%). Considera espaçar melhor ao longo do dia para evitar picos antes de dormir.`;
-                                                                                        } else if (startPct >= 50) {
-                                                                                            insight = `Consumos concentram-se no início do ciclo (${startPct}%). Isto pode indicar consumo logo após acordar.`;
-                                                                                        } else if (Math.max(startPct, middlePct, endPct) - Math.min(startPct, middlePct, endPct) < 15) {
-                                                                                            insight = 'Distribuição equilibrada de consumos durante o dia.';
-                                                                                        } else {
-                                                                                            insight = 'Padrão variável de consumo durante o dia.';
-                                                                                        }
-
-                                                                                        return (
-                                                                                            <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏰ Padrão de Consumo no Dia</div>
-                                                                                                <div className="space-y-2 mb-3">
-                                                                                                    <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Início (33%)</div>
-                                                                                                        <div className="flex-1">
-                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
-                                                                                                                <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, startPct) + '%'}}>
-                                                                                                                    {startPct}%
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Meio (33%)</div>
-                                                                                                        <div className="flex-1">
-                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
-                                                                                                                <div className={'h-full bg-purple-500 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, middlePct) + '%'}}>
-                                                                                                                    {middlePct}%
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center gap-2">
-                                                                                                        <div className={'text-xs w-20 ' + (themeClasses.textTertiary(darkMode))}>Fim (33%)</div>
-                                                                                                        <div className="flex-1">
-                                                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-6 overflow-hidden'}>
-                                                                                                                <div className={'h-full bg-purple-600 flex items-center px-2 text-white text-xs font-bold'} style={{width: Math.max(5, endPct) + '%'}}>
-                                                                                                                    {endPct}%
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    💬 {insight}
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })()}
-
                                                                                     {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
                                                                                     <Suspense fallback={
                                                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border text-center'}>
@@ -3580,19 +3885,6 @@ export function AnalysesView({
                                                                                             selectedCycle={currentCycle}
                                                                                         />
                                                                                     </Suspense>
-
-                                                                                    {/* Intervalo Médio */}
-                                                                                    {avgInterval && (
-                                                                                        <div className={(darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
-                                                                                            <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-indigo-300' : 'text-indigo-800')}>⏱️ Intervalo Médio Entre Consumos</div>
-                                                                                            <div className={'text-2xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>
-                                                                                                {avgInterval}h
-                                                                                            </div>
-                                                                                            <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                Tempo médio entre consumos dentro do mesmo dia
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                         );
