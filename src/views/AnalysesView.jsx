@@ -2879,6 +2879,64 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // HUMOR ONTEM → CONSUMO HOJE
+                                                        const moodToConsumptionNext = [];
+                                                        const moodToConsNextData = [];
+
+                                                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                            const today = sortedDates[i];
+                                                            const tomorrow = sortedDates[i + 1];
+
+                                                            if (dailyData[today].mood !== null && dailyData[tomorrow].consumptions > 0) {
+                                                                moodToConsNextData.push({
+                                                                    mood: dailyData[today].mood,
+                                                                    consumptions: dailyData[tomorrow].consumptions
+                                                                });
+                                                            }
+                                                        }
+
+                                                        if (moodToConsNextData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(moodToConsNextData, 'mood', 'consumptions');
+                                                            const avgMood = moodToConsNextData.reduce((sum, d) => sum + d.mood, 0) / moodToConsNextData.length;
+                                                            moodToConsumptionNext.push({
+                                                                name: 'Humor ontem → Consumo hoje',
+                                                                icon: '😊',
+                                                                correlation: corr,
+                                                                average: avgMood.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: moodToConsNextData.length
+                                                            });
+                                                        }
+
+                                                        // ENERGIA ONTEM → CONSUMO HOJE
+                                                        const energyToConsumptionNext = [];
+                                                        const energyToConsNextData = [];
+
+                                                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                            const today = sortedDates[i];
+                                                            const tomorrow = sortedDates[i + 1];
+
+                                                            if (dailyData[today].energy !== null && dailyData[tomorrow].consumptions > 0) {
+                                                                energyToConsNextData.push({
+                                                                    energy: dailyData[today].energy,
+                                                                    consumptions: dailyData[tomorrow].consumptions
+                                                                });
+                                                            }
+                                                        }
+
+                                                        if (energyToConsNextData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(energyToConsNextData, 'energy', 'consumptions');
+                                                            const avgEnergy = energyToConsNextData.reduce((sum, d) => sum + d.energy, 0) / energyToConsNextData.length;
+                                                            energyToConsumptionNext.push({
+                                                                name: 'Energia ontem → Consumo hoje',
+                                                                icon: '⚡',
+                                                                correlation: corr,
+                                                                average: avgEnergy.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: energyToConsNextData.length
+                                                            });
+                                                        }
+
                                                         // 3. EMOÇÕES NEGATIVAS → CONSUMO
                                                         const emotionsToConsumption = [];
                                                         const emotionData = {};
@@ -3248,6 +3306,103 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // BEDTIME → HUMOR/ENERGIA (dia seguinte)
+                                                        const bedtimeToNextDayWellbeing = [];
+
+                                                        // Bedtime → Humor amanhã
+                                                        const bedtimeToMoodData = [];
+                                                        sortedDates.forEach((date, i) => {
+                                                            if (i >= sortedDates.length - 1) return;
+
+                                                            const todayCycle = analysisCycles.find(c => {
+                                                                const cycleDate = safeToISODate(c.timestamp);
+                                                                return cycleDate === date;
+                                                            });
+
+                                                            if (!todayCycle?.bedtime) return;
+
+                                                            const tomorrowDate = sortedDates[i + 1];
+                                                            const tomorrowMood = dailyData[tomorrowDate]?.mood;
+                                                            if (tomorrowMood === null || tomorrowMood === undefined) return;
+
+                                                            // Converter bedtime para minutos
+                                                            const [h, m] = todayCycle.bedtime.split(':').map(Number);
+                                                            let bedtimeMinutes = h * 60 + m;
+                                                            if (h >= 0 && h < 18) bedtimeMinutes += 1440;
+
+                                                            bedtimeToMoodData.push({
+                                                                bedtime: bedtimeMinutes,
+                                                                mood: tomorrowMood
+                                                            });
+                                                        });
+
+                                                        if (bedtimeToMoodData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(bedtimeToMoodData, 'bedtime', 'mood');
+                                                            const avgBedtime = bedtimeToMoodData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeToMoodData.length;
+
+                                                            bedtimeToNextDayWellbeing.push({
+                                                                name: 'Bedtime → Humor Amanhã',
+                                                                icon: '🌙',
+                                                                correlation: corr,
+                                                                average: (() => {
+                                                                    const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
+                                                                    const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                    const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                    return `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+                                                                })(),
+                                                                unit: '',
+                                                                dataPoints: bedtimeToMoodData.length,
+                                                                type: 'bedtimeImpact'
+                                                            });
+                                                        }
+
+                                                        // Bedtime → Energia amanhã
+                                                        const bedtimeToEnergyData = [];
+                                                        sortedDates.forEach((date, i) => {
+                                                            if (i >= sortedDates.length - 1) return;
+
+                                                            const todayCycle = analysisCycles.find(c => {
+                                                                const cycleDate = safeToISODate(c.timestamp);
+                                                                return cycleDate === date;
+                                                            });
+
+                                                            if (!todayCycle?.bedtime) return;
+
+                                                            const tomorrowDate = sortedDates[i + 1];
+                                                            const tomorrowEnergy = dailyData[tomorrowDate]?.energy;
+                                                            if (tomorrowEnergy === null || tomorrowEnergy === undefined) return;
+
+                                                            // Converter bedtime para minutos
+                                                            const [h, m] = todayCycle.bedtime.split(':').map(Number);
+                                                            let bedtimeMinutes = h * 60 + m;
+                                                            if (h >= 0 && h < 18) bedtimeMinutes += 1440;
+
+                                                            bedtimeToEnergyData.push({
+                                                                bedtime: bedtimeMinutes,
+                                                                energy: tomorrowEnergy
+                                                            });
+                                                        });
+
+                                                        if (bedtimeToEnergyData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(bedtimeToEnergyData, 'bedtime', 'energy');
+                                                            const avgBedtime = bedtimeToEnergyData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeToEnergyData.length;
+
+                                                            bedtimeToNextDayWellbeing.push({
+                                                                name: 'Bedtime → Energia Amanhã',
+                                                                icon: '🌙',
+                                                                correlation: corr,
+                                                                average: (() => {
+                                                                    const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
+                                                                    const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                    const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                    return `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+                                                                })(),
+                                                                unit: '',
+                                                                dataPoints: bedtimeToEnergyData.length,
+                                                                type: 'bedtimeImpact'
+                                                            });
+                                                        }
+
                                                         // 12-15. X → DOSAGEM (Humor, Energia, Emoções, Sono)
                                                         const wellbeingToDosage = [];
 
@@ -3328,6 +3483,100 @@ export function AnalysesView({
                                                                     unit: '%',
                                                                     dataPoints: emotionsDosageData.length,
                                                                     type: 'wellbeing'
+                                                                });
+                                                            }
+                                                        }
+
+                                                        // Gatilhos → Dosagem
+                                                        const triggersData = {};
+                                                        analysisWellbeing.forEach(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            if (!wDate || !w.triggers || !Array.isArray(w.triggers)) return;
+
+                                                            if (!triggersData[wDate]) {
+                                                                triggersData[wDate] = { count: 0, dosage: dosageData[wDate]?.totalMg || null };
+                                                            }
+
+                                                            triggersData[wDate].count += w.triggers.length;
+                                                        });
+
+                                                        const triggersDosageData = Object.values(triggersData).filter(d => d.dosage !== null && d.count > 0);
+
+                                                        if (triggersDosageData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(triggersDosageData, 'count', 'dosage');
+                                                            const avgTriggers = triggersDosageData.reduce((sum, d) => sum + d.count, 0) / triggersDosageData.length;
+
+                                                            wellbeingToDosage.push({
+                                                                name: 'Gatilhos → Dosagem',
+                                                                icon: '⚠️',
+                                                                correlation: corr,
+                                                                average: avgTriggers.toFixed(1),
+                                                                unit: '/dia',
+                                                                dataPoints: triggersDosageData.length,
+                                                                type: 'wellbeing'
+                                                            });
+                                                        }
+
+                                                        // DOSAGEM → BEM-ESTAR - Autocuidado e Emoções (adicionados ao array existente)
+
+                                                        // Dosagem → Autocuidado
+                                                        const dosageToSelfCareData = [];
+                                                        analysisWellbeing.forEach(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            if (!wDate) return;
+
+                                                            const dayDosage = dosageData[wDate]?.totalMg;
+                                                            if (!dayDosage || dayDosage === 0) return;
+
+                                                            if (w.selfCare && Array.isArray(w.selfCare) && w.selfCare.length > 0) {
+                                                                dosageToSelfCareData.push({
+                                                                    dosage: dayDosage,
+                                                                    selfCareCount: w.selfCare.length
+                                                                });
+                                                            }
+                                                        });
+
+                                                        if (dosageToSelfCareData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(dosageToSelfCareData, 'dosage', 'selfCareCount');
+                                                            const avgDosage = dosageToSelfCareData.reduce((sum, d) => sum + d.dosage, 0) / dosageToSelfCareData.length;
+
+                                                            dosageToWellbeing.push({
+                                                                name: 'Dosagem → Autocuidado',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgDosage.toFixed(0),
+                                                                unit: 'mg',
+                                                                dataPoints: dosageToSelfCareData.length,
+                                                                type: 'dosageImpact'
+                                                            });
+                                                        }
+
+                                                        // Dosagem → Emoções (% negativas)
+                                                        if (emotionCorrelationData.length >= 2) {
+                                                            const dosageToEmotionsData = [];
+
+                                                            Object.keys(emotionData).forEach(date => {
+                                                                const dayDosage = dosageData[date]?.totalMg;
+                                                                if (!dayDosage || dayDosage === 0 || emotionData[date].total === 0) return;
+
+                                                                dosageToEmotionsData.push({
+                                                                    dosage: dayDosage,
+                                                                    negativePercent: (emotionData[date].negative / emotionData[date].total) * 100
+                                                                });
+                                                            });
+
+                                                            if (dosageToEmotionsData.length >= 2) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(dosageToEmotionsData, 'dosage', 'negativePercent');
+                                                                const avgDosage = dosageToEmotionsData.reduce((sum, d) => sum + d.dosage, 0) / dosageToEmotionsData.length;
+
+                                                                dosageToWellbeing.push({
+                                                                    name: 'Dosagem → Emoções',
+                                                                    icon: '💊',
+                                                                    correlation: corr,
+                                                                    average: avgDosage.toFixed(0),
+                                                                    unit: 'mg',
+                                                                    dataPoints: dosageToEmotionsData.length,
+                                                                    type: 'dosageImpact'
                                                                 });
                                                             }
                                                         }
@@ -3510,7 +3759,36 @@ export function AnalysesView({
                                                                                 }
                                                                             }
 
-                                                                            // Lógica padrão para correlações diretas (Consumo/Dosagem → X)
+                                                                            // Lógica padrão para correlações diretas (Consumo/Dosagem/Bedtime → X)
+
+                                                                            // Bedtime → Humor/Energia Amanhã (deitar tarde → pior humor/energia = mau)
+                                                                            if (name.includes('Bedtime →') && (name.includes('Humor') || name.includes('Energia'))) {
+                                                                                const metricLower = name.includes('Humor') ? 'humor' : 'energia';
+                                                                                // Correlação positiva = deitar tarde → pior métrica = mau
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Deitar cedo → Melhor ${metricLower} amanhã` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Deitar cedo → Ligeiramente melhor ${metricLower} amanhã` };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Deitar tarde → Pior ${metricLower} amanhã` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Deitar tarde → Ligeiramente pior ${metricLower} amanhã` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `Hora de deitar não afeta ${metricLower} amanhã` };
+                                                                            }
+
+                                                                            // Dosagem → Autocuidado (mais dosagem → menos autocuidado = mau)
+                                                                            if (name.includes('Dosagem →') && name.includes('Autocuidado')) {
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Mais dosagem → Menos autocuidado' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Mais dosagem → Ligeiramente menos autocuidado' };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais dosagem → Mais autocuidado' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais dosagem → Ligeiramente mais autocuidado' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Dosagem não afeta autocuidado' };
+                                                                            }
+
+                                                                            // Dosagem → Emoções (mais dosagem → mais emoções negativas = mau)
+                                                                            if (name.includes('Dosagem →') && name.includes('Emoções')) {
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais dosagem → Mais emoções negativas' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais dosagem → Ligeiramente mais emoções negativas' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais dosagem → Menos emoções negativas' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais dosagem → Ligeiramente menos emoções negativas' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Dosagem não afeta emoções' };
+                                                                            }
 
                                                                             // Consumo → Bedtime (mais consumo → deitar tarde = mau)
                                                                             if (name.includes('Consumo →') && name.includes('Bedtime')) {
@@ -3657,7 +3935,7 @@ export function AnalysesView({
                                                                 )}
 
                                                                 {/* 🔄 BEM-ESTAR ⇄ CONSUMO (temporal - entre dias) */}
-                                                                {(sleepToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.length > 0) && (
+                                                                {(sleepToConsumptionNext.length > 0 || moodToConsumptionNext.length > 0 || energyToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                         <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Impacto Temporal (entre dias)</h3>
                                                                         <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
@@ -3678,19 +3956,31 @@ export function AnalysesView({
                                                                                 </div>
                                                                             )}
 
-                                                                            {/* Humor temporal */}
-                                                                            {consumptionToNextDayWellbeing.some(c => c.name === 'Consumo → Humor Amanhã') && (
+                                                                            {/* Humor ontem ⇄ Consumo hoje */}
+                                                                            {(moodToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.some(c => c.name === 'Consumo → Humor Amanhã')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    <div></div>
-                                                                                    {window.renderCorrelationCard(consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Humor Amanhã'), false)}
+                                                                                    {moodToConsumptionNext.length > 0 ?
+                                                                                        window.renderCorrelationCard(moodToConsumptionNext[0], true) :
+                                                                                        <div></div>
+                                                                                    }
+                                                                                    {consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Humor Amanhã') ?
+                                                                                        window.renderCorrelationCard(consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Humor Amanhã'), false) :
+                                                                                        <div></div>
+                                                                                    }
                                                                                 </div>
                                                                             )}
 
-                                                                            {/* Energia temporal */}
-                                                                            {consumptionToNextDayWellbeing.some(c => c.name === 'Consumo → Energia Amanhã') && (
+                                                                            {/* Energia ontem ⇄ Consumo hoje */}
+                                                                            {(energyToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.some(c => c.name === 'Consumo → Energia Amanhã')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    <div></div>
-                                                                                    {window.renderCorrelationCard(consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Energia Amanhã'), false)}
+                                                                                    {energyToConsumptionNext.length > 0 ?
+                                                                                        window.renderCorrelationCard(energyToConsumptionNext[0], true) :
+                                                                                        <div></div>
+                                                                                    }
+                                                                                    {consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Energia Amanhã') ?
+                                                                                        window.renderCorrelationCard(consumptionToNextDayWellbeing.find(c => c.name === 'Consumo → Energia Amanhã'), false) :
+                                                                                        <div></div>
+                                                                                    }
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -3763,50 +4053,59 @@ export function AnalysesView({
                                                                         }
 
                                                                         if (sleepMoodCorrelations.length > 0) {
+                                                                            const renderSleepMoodCard = (corr) => {
+                                                                                const label = getCorrelationLabel(corr.correlation);
+                                                                                const colorClasses = {
+                                                                                    red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                                    orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                                    yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                                    green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                                    gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                                };
+                                                                                return (
+                                                                                    <div className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
+                                                                                        <div className="flex items-center justify-between mb-2">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="text-xl">{corr.icon}</span>
+                                                                                                <span className="font-semibold">{corr.name}</span>
+                                                                                            </div>
+                                                                                            <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
+                                                                                                {label.text}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="flex items-center justify-between text-sm">
+                                                                                            <div>
+                                                                                                <span className="opacity-75">Sono: </span>
+                                                                                                <span className="font-bold">{corr.avgSleep}h</span>
+                                                                                                <span className="opacity-75"> • Humor: </span>
+                                                                                                <span className="font-bold">{corr.avgMood}/10</span>
+                                                                                            </div>
+                                                                                            <div className="opacity-75">
+                                                                                                r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        {label.desc && (
+                                                                                            <div className="text-xs opacity-75 mt-2">💡 {label.desc}</div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                );
+                                                                            };
+
                                                                             return (
                                                                                 <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
                                                                                     <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
                                                                                     <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
                                                                                         Como a qualidade/quantidade de sono influencia o humor
                                                                                     </p>
-                                                                                    <div className="space-y-3">
-                                                                                        {sleepMoodCorrelations.map((corr, i) => {
-                                                                                            const label = getCorrelationLabel(corr.correlation);
-                                                                                            const colorClasses = {
-                                                                                                red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
-                                                                                                orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                                                yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                                                                                green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
-                                                                                                gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
-                                                                                            };
-                                                                                            return (
-                                                                                                <div key={i} className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
-                                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                                        <div className="flex items-center gap-2">
-                                                                                                            <span className="text-xl">{corr.icon}</span>
-                                                                                                            <span className="font-semibold">{corr.name}</span>
-                                                                                                        </div>
-                                                                                                        <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
-                                                                                                            {label.text}
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    <div className="flex items-center justify-between text-sm">
-                                                                                                        <div>
-                                                                                                            <span className="opacity-75">Sono: </span>
-                                                                                                            <span className="font-bold">{corr.avgSleep}h</span>
-                                                                                                            <span className="opacity-75"> • Humor: </span>
-                                                                                                            <span className="font-bold">{corr.avgMood}/10</span>
-                                                                                                        </div>
-                                                                                                        <div className="opacity-75">
-                                                                                                            r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    {label.desc && (
-                                                                                                        <div className="text-xs opacity-75 mt-2">💡 {label.desc}</div>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            );
-                                                                                        })}
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                        {sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)') ?
+                                                                                            renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)')) :
+                                                                                            <div></div>
+                                                                                        }
+                                                                                        {sleepMoodCorrelations.find(c => c.name === 'Sono → Humor amanhã') ?
+                                                                                            renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono → Humor amanhã')) :
+                                                                                            <div></div>
+                                                                                        }
                                                                                     </div>
                                                                                 </div>
                                                                             );
@@ -3905,6 +4204,26 @@ export function AnalysesView({
                                                                     );
                                                                 })()}
 
+                                                                {/* 🌙 BEDTIME → HUMOR/ENERGIA (dia seguinte) */}
+                                                                {bedtimeToNextDayWellbeing.length > 0 && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
+                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            Como a hora de deitar afeta o humor e energia do dia seguinte
+                                                                        </p>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                            {bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Humor Amanhã') ?
+                                                                                window.renderCorrelationCard(bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Humor Amanhã'), false) :
+                                                                                <div></div>
+                                                                            }
+                                                                            {bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Energia Amanhã') ?
+                                                                                window.renderCorrelationCard(bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Energia Amanhã'), false) :
+                                                                                <div></div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* 🔄 BEM-ESTAR ⇄ DOSAGEM */}
                                                                 {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
@@ -3940,11 +4259,31 @@ export function AnalysesView({
                                                                                 </div>
                                                                             )}
 
-                                                                            {/* Emoções Negativas → Dosagem (sem inverso) */}
-                                                                            {wellbeingToDosage.some(c => c.name === 'Emoções Negativas → Dosagem') && (
+                                                                            {/* Gatilhos → Dosagem | Emoções Negativas → Dosagem */}
+                                                                            {(wellbeingToDosage.some(c => c.name === 'Gatilhos → Dosagem') || wellbeingToDosage.some(c => c.name === 'Emoções Negativas → Dosagem')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem'), true)}
-                                                                                    <div></div>
+                                                                                    {wellbeingToDosage.find(c => c.name === 'Gatilhos → Dosagem') ?
+                                                                                        window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Gatilhos → Dosagem'), true) :
+                                                                                        <div></div>
+                                                                                    }
+                                                                                    {wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem') ?
+                                                                                        window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem'), true) :
+                                                                                        <div></div>
+                                                                                    }
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Dosagem → Autocuidado | Dosagem → Emoções */}
+                                                                            {(dosageToWellbeing.some(c => c.name === 'Dosagem → Autocuidado') || dosageToWellbeing.some(c => c.name === 'Dosagem → Emoções')) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado') ?
+                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado'), false) :
+                                                                                        <div></div>
+                                                                                    }
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções') ?
+                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções'), false) :
+                                                                                        <div></div>
+                                                                                    }
                                                                                 </div>
                                                                             )}
 
@@ -4129,22 +4468,51 @@ export function AnalysesView({
                                                                                     Como evoluem humor, energia e consumo durante o mesmo dia (00:00-23:59)
                                                                                 </p>
                                                                                 <div className="space-y-4">
-                                                                                    {/* Evolução de Humor */}
-                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Dia</div>
+                                                                                    {/* Evolução de Humor e Energia */}
+                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                        {/* Evolução de Humor */}
+                                                                                        <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Dia</div>
 
-                                                                                        {avgMoodStart && avgMoodEnd && (() => {
-                                                                                            const diff = parseFloat(avgMoodEnd) - parseFloat(avgMoodStart);
+                                                                                            {avgMoodStart && avgMoodEnd && (() => {
+                                                                                                const diff = parseFloat(avgMoodEnd) - parseFloat(avgMoodStart);
+                                                                                                const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
+                                                                                                const trendText = diff > 0.5 ? 'O teu humor melhora durante o dia!' : diff < -0.5 ? 'O teu humor piora durante o dia.' : 'O teu humor mantém-se estável no dia.';
+
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        <div className="flex items-center justify-between mb-3">
+                                                                                                            <div className="flex items-center gap-2">
+                                                                                                                <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodStart}</span>
+                                                                                                                <span className="text-xl">{arrow}</span>
+                                                                                                                <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodEnd}</span>
+                                                                                                            </div>
+                                                                                                            <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : diff < -0.5 ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'))}>
+                                                                                                                {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                            💬 {trendText}
+                                                                                                        </p>
+                                                                                                    </>
+                                                                                                );
+                                                                                            })()}
+                                                                                        </div>
+
+                                                                                        {/* Evolução de Energia */}
+                                                                                        {avgEnergyStart && avgEnergyEnd && (() => {
+                                                                                            const diff = parseFloat(avgEnergyEnd) - parseFloat(avgEnergyStart);
                                                                                             const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                                                                            const trendText = diff > 0.5 ? 'O teu humor melhora durante o dia!' : diff < -0.5 ? 'O teu humor piora durante o dia.' : 'O teu humor mantém-se estável no dia.';
+                                                                                            const trendText = diff > 0.5 ? 'A tua energia aumenta durante o dia!' : diff < -0.5 ? 'A tua energia diminui durante o dia.' : 'A tua energia mantém-se estável no dia.';
 
                                                                                             return (
-                                                                                                <>
+                                                                                                <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Dia</div>
                                                                                                     <div className="flex items-center justify-between mb-3">
                                                                                                         <div className="flex items-center gap-2">
-                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodStart}</span>
+                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyStart}</span>
                                                                                                             <span className="text-xl">{arrow}</span>
-                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodEnd}</span>
+                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyEnd}</span>
                                                                                                         </div>
                                                                                                         <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : diff < -0.5 ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'))}>
                                                                                                             {diff > 0 ? '+' : ''}{diff.toFixed(1)}
@@ -4153,36 +4521,10 @@ export function AnalysesView({
                                                                                                     <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                                         💬 {trendText}
                                                                                                     </p>
-                                                                                                </>
+                                                                                                </div>
                                                                                             );
                                                                                         })()}
                                                                                     </div>
-
-                                                                                    {/* Evolução de Energia */}
-                                                                                    {avgEnergyStart && avgEnergyEnd && (() => {
-                                                                                        const diff = parseFloat(avgEnergyEnd) - parseFloat(avgEnergyStart);
-                                                                                        const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                                                                        const trendText = diff > 0.5 ? 'A tua energia aumenta durante o dia!' : diff < -0.5 ? 'A tua energia diminui durante o dia.' : 'A tua energia mantém-se estável no dia.';
-
-                                                                                        return (
-                                                                                            <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border'}>
-                                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Dia</div>
-                                                                                                <div className="flex items-center justify-between mb-3">
-                                                                                                    <div className="flex items-center gap-2">
-                                                                                                        <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyStart}</span>
-                                                                                                        <span className="text-xl">{arrow}</span>
-                                                                                                        <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyEnd}</span>
-                                                                                                    </div>
-                                                                                                    <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : diff < -0.5 ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'))}>
-                                                                                                        {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    💬 {trendText}
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        );
-                                                                                    })()}
 
                                                                                     {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
                                                                                     <Suspense fallback={
