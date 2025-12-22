@@ -1,4 +1,4 @@
-import React, { useMemo, lazy, Suspense } from 'react';
+import React, { useMemo, lazy, Suspense, useState } from 'react';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -25,6 +25,23 @@ export function AnalysesView({
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { darkMode, currentCycle } = useUI();
     const metrics = useMetrics();
+
+    // Estados para acordeões de correlações (mobile)
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const [expandedSections, setExpandedSections] = useState({
+        wellbeingConsumption: !isMobile,
+        temporalImpact: !isMobile,
+        sleepMood: !isMobile,
+        bedtimeConsumption: !isMobile,
+        bedtimeWellbeing: !isMobile,
+        wellbeingDosage: !isMobile,
+        temporalPatterns: !isMobile,
+        intraDayAnalysis: !isMobile
+    });
+
+    const toggleSection = (section) => {
+        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    };
 
     return (
                                 <div className="space-y-6">
@@ -3825,8 +3842,16 @@ export function AnalysesView({
 
                                                                         const label = getLabel(corr.correlation, corr.name);
 
+                                                                        const colorClasses = {
+                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
+                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
+                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
+                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                        };
+
                                                                         return (
-                                                                            <div key={corr.name} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                            <div key={corr.name} className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
                                                                                 <div className="flex items-center justify-between mb-3">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className="text-2xl">{corr.icon}</span>
@@ -3859,12 +3884,19 @@ export function AnalysesView({
 
                                                                 {/* 🔄 BEM-ESTAR ⇄ CONSUMO (mesmo dia) */}
                                                                 {(inverseCorrelations.length > 0 || sameDaySleepToConsumption.length > 0 || correlations.length > 0 || emotionsToConsumption.length > 0 || selfCareToConsumption.length > 0 || consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || consumptionAutocorrelation.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Consumo (mesmo dia)</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Relação bidirecional: o que te leva a consumir e como o consumo te afeta no mesmo dia
-                                                                        </p>
-                                                                        <div className="space-y-3">
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingConsumption')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Consumo (mesmo dia)</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Relação bidirecional: o que te leva a consumir e como o consumo te afeta no mesmo dia
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.wellbeingConsumption ? '▼' : '▶'}
+                                                                            </button>
+                                                                        </div>
+                                                                        {expandedSections.wellbeingConsumption && <div className="space-y-3 mt-4">
                                                                             {/* Humor ⇄ Consumo */}
                                                                             {(inverseCorrelations.some(c => c.name === 'Humor → Consumo') || correlations.some(c => c.name === 'Consumo → Humor')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3930,18 +3962,25 @@ export function AnalysesView({
                                                                                     <div></div>
                                                                                 </div>
                                                                             )}
-                                                                        </div>
+                                                                        </div>}
                                                                     </div>
                                                                 )}
 
                                                                 {/* 🔄 BEM-ESTAR ⇄ CONSUMO (temporal - entre dias) */}
                                                                 {(sleepToConsumptionNext.length > 0 || moodToConsumptionNext.length > 0 || energyToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Impacto Temporal (entre dias)</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Como o consumo e bem-estar de um dia afetam o dia seguinte
-                                                                        </p>
-                                                                        <div className="space-y-3">
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalImpact')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Impacto Temporal (entre dias)</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Como o consumo e bem-estar de um dia afetam o dia seguinte
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.temporalImpact ? '▼' : '▶'}
+                                                                            </button>
+                                                                        </div>
+                                                                        {expandedSections.temporalImpact && <div className="space-y-3 mt-4">
                                                                             {/* Sono ontem ⇄ Consumo hoje */}
                                                                             {(sleepToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.some(c => c.name === 'Consumo → Sono Amanhã')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3983,7 +4022,7 @@ export function AnalysesView({
                                                                                     }
                                                                                 </div>
                                                                             )}
-                                                                        </div>
+                                                                        </div>}
                                                                     </div>
                                                                 )}
 
@@ -4092,12 +4131,19 @@ export function AnalysesView({
                                                                             };
 
                                                                             return (
-                                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                                    <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
-                                                                                    <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                        Como a qualidade/quantidade de sono influencia o humor
-                                                                                    </p>
-                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                                    <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('sleepMood')}>
+                                                                                        <div>
+                                                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
+                                                                                            <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                Como a qualidade/quantidade de sono influencia o humor
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                            {expandedSections.sleepMood ? '▼' : '▶'}
+                                                                                        </button>
+                                                                                    </div>
+                                                                                    {expandedSections.sleepMood && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                                                         {sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)') ?
                                                                                             renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)')) :
                                                                                             <div></div>
@@ -4106,7 +4152,7 @@ export function AnalysesView({
                                                                                             renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono → Humor amanhã')) :
                                                                                             <div></div>
                                                                                         }
-                                                                                    </div>
+                                                                                    </div>}
                                                                                 </div>
                                                                             );
                                                                         }
@@ -4185,13 +4231,20 @@ export function AnalysesView({
                                                                     } : null;
 
                                                                     return (
-                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Hora de Deitar ⇄ Consumo</h3>
-                                                                            <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                Relação bidirecional entre hora de deitar e consumo
-                                                                            </p>
-                                                                            {(bedtimeToConsCard || consumptionToBedtime.length > 0) ? (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                            <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeConsumption')}>
+                                                                                <div>
+                                                                                    <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Hora de Deitar ⇄ Consumo</h3>
+                                                                                    <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        Relação bidirecional entre hora de deitar e consumo
+                                                                                    </p>
+                                                                                </div>
+                                                                                <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                    {expandedSections.bedtimeConsumption ? '▼' : '▶'}
+                                                                                </button>
+                                                                            </div>
+                                                                            {expandedSections.bedtimeConsumption && ((bedtimeToConsCard || consumptionToBedtime.length > 0) ? (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                                                     {bedtimeToConsCard ? window.renderCorrelationCard(bedtimeToConsCard, true) : <div></div>}
                                                                                     {consumptionToBedtime.length > 0 ? window.renderCorrelationCard(consumptionToBedtime[0], false) : <div></div>}
                                                                                 </div>
@@ -4199,19 +4252,26 @@ export function AnalysesView({
                                                                                 <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
                                                                                     Sem dados de hora de deitar registados
                                                                                 </div>
-                                                                            )}
+                                                                            ))}
                                                                         </div>
                                                                     );
                                                                 })()}
 
                                                                 {/* 🌙 BEDTIME → HUMOR/ENERGIA (dia seguinte) */}
                                                                 {bedtimeToNextDayWellbeing.length > 0 && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Como a hora de deitar afeta o humor e energia do dia seguinte
-                                                                        </p>
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeWellbeing')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Como a hora de deitar afeta o humor e energia do dia seguinte
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.bedtimeWellbeing ? '▼' : '▶'}
+                                                                            </button>
+                                                                        </div>
+                                                                        {expandedSections.bedtimeWellbeing && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                                             {bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Humor Amanhã') ?
                                                                                 window.renderCorrelationCard(bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Humor Amanhã'), false) :
                                                                                 <div></div>
@@ -4220,18 +4280,25 @@ export function AnalysesView({
                                                                                 window.renderCorrelationCard(bedtimeToNextDayWellbeing.find(c => c.name === 'Bedtime → Energia Amanhã'), false) :
                                                                                 <div></div>
                                                                             }
-                                                                        </div>
+                                                                        </div>}
                                                                     </div>
                                                                 )}
 
                                                                 {/* 🔄 BEM-ESTAR ⇄ DOSAGEM */}
                                                                 {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Dosagem</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Como bem-estar afeta dosagem e vice-versa
-                                                                        </p>
-                                                                        <div className="space-y-3">
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Dosagem</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Como bem-estar afeta dosagem e vice-versa
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.wellbeingDosage ? '▼' : '▶'}
+                                                                            </button>
+                                                                        </div>
+                                                                        {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
                                                                             {/* Humor ⇄ Dosagem */}
                                                                             {(wellbeingToDosage.some(c => c.name === 'Humor → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Humor')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -4294,20 +4361,27 @@ export function AnalysesView({
                                                                                     <div></div>
                                                                                 </div>
                                                                             )}
-                                                                        </div>
+                                                                        </div>}
                                                                     </div>
                                                                 )}
 
                                                                 {/* ⏰ PADRÕES TEMPORAIS */}
                                                                 {firstConsToTotal.length > 0 && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Padrões Temporais</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Como o horário do primeiro consumo influencia o resto do dia
-                                                                        </p>
-                                                                        <div className="space-y-3">
-                                                                            {firstConsToTotal.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalPatterns')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Padrões Temporais</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Como o horário do primeiro consumo influencia o resto do dia
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.temporalPatterns ? '▼' : '▶'}
+                                                                            </button>
                                                                         </div>
+                                                                        {expandedSections.temporalPatterns && <div className="space-y-3 mt-4">
+                                                                            {firstConsToTotal.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                        </div>}
                                                                     </div>
                                                                 )}
 
