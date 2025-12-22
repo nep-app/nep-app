@@ -3267,6 +3267,120 @@ export function AnalysesView({
                                                                     </div>
                                                                 </div>
 
+                                                                {/* Helper function para renderizar correlações */}
+                                                                {(() => {
+                                                                    // Define a função aqui para ser usada em todas as seções abaixo
+                                                                    window.renderCorrelationCard = (corr, isInverse = false) => {
+                                                                        const getLabel = (r, name) => {
+                                                                            if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+
+                                                                            const isSleep = name.toLowerCase().includes('sono');
+                                                                            const isNegativeEmotion = name.toLowerCase().includes('emoções negativas') || name.toLowerCase().includes('emoções') && name.includes('→ Consumo');
+                                                                            const isSelfCare = name.toLowerCase().includes('autocuidado');
+                                                                            const isDosage = name.toLowerCase().includes('dosagem');
+                                                                            const isInterval = name.toLowerCase().includes('intervalo');
+                                                                            const isFirstCons = name.toLowerCase().includes('primeiro consumo');
+
+                                                                            // Para correlações inversas (X → Consumo), inverter lógica
+                                                                            if (isInverse) {
+                                                                                // Autocuidado alto → menos consumo = bom (negativa é boa)
+                                                                                if (isSelfCare) {
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais autocuidado → Menos consumo' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais autocuidado → Ligeiramente menos consumo' };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais autocuidado → Mais consumo' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais autocuidado → Ligeiramente mais consumo' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Autocuidado não afeta consumo' };
+                                                                                }
+
+                                                                                // Humor/energia baixos → mais consumo (negativa é má)
+                                                                                if (name.includes('Humor →') || name.includes('Energia →')) {
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${name.split(' →')[0]} baixo → Mais consumo` };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${name.split(' →')[0]} baixo → Ligeiramente mais consumo` };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${name.split(' →')[0]} alto → Menos consumo` };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${name.split(' →')[0]} alto → Ligeiramente menos consumo` };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: `${name.split(' →')[0]} não afeta consumo` };
+                                                                                }
+
+                                                                                // Sono baixo → mais consumo (negativa é má)
+                                                                                if (name.includes('Sono') && name.includes('→ Consumo')) {
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Menos sono → Mais consumo' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Menos sono → Ligeiramente mais consumo' };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Mais sono → Mais consumo' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Mais sono → Ligeiramente mais consumo' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Sono não afeta consumo' };
+                                                                                }
+
+                                                                                // Emoções negativas → mais consumo (positiva é má)
+                                                                                if (isNegativeEmotion) {
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais consumo' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais consumo' };
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos consumo' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos consumo' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam consumo' };
+                                                                                }
+                                                                            }
+
+                                                                            // Lógica padrão para correlações diretas
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: '' };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: '' };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: '' };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: '' };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: '' };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: '' };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: '' };
+                                                                        };
+
+                                                                        const label = getLabel(corr.correlation, corr.name);
+
+                                                                        return (
+                                                                            <div key={corr.name} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                                <div className="flex items-center justify-between mb-3">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-2xl">{corr.icon}</span>
+                                                                                        <div>
+                                                                                            <div className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>{corr.name}</div>
+                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>Média: {corr.average}{corr.unit}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (
+                                                                                        label.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') :
+                                                                                        label.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') :
+                                                                                        label.color === 'yellow' ? (darkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-700') :
+                                                                                        label.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') :
+                                                                                        (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')
+                                                                                    )}>
+                                                                                        {label.text}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    {label.desc && <span>💡 {label.desc}</span>}
+                                                                                    {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
+                                                                                    <span className="ml-2">• {corr.dataPoints} dias</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    };
+
+                                                                    return null;
+                                                                })()}
+
+                                                                {/* 🔥 CAUSAS DE CONSUMO */}
+                                                                {(inverseCorrelations.length > 0 || sleepToConsumptionNext.length > 0 || emotionsToConsumption.length > 0 || selfCareToConsumption.length > 0 || consumptionAutocorrelation.length > 0) && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔥 Causas de Consumo</h3>
+                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            O que te leva a consumir? Identificar gatilhos e padrões
+                                                                        </p>
+                                                                        <div className="space-y-3">
+                                                                            {inverseCorrelations.map(corr => window.renderCorrelationCard(corr, true))}
+                                                                            {sleepToConsumptionNext.map(corr => window.renderCorrelationCard(corr, true))}
+                                                                            {emotionsToConsumption.map(corr => window.renderCorrelationCard(corr, true))}
+                                                                            {selfCareToConsumption.map(corr => window.renderCorrelationCard(corr, true))}
+                                                                            {consumptionAutocorrelation.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
                                                                 {/* Consumo → Bem-estar (dia seguinte) */}
                                                                 {(() => {
                                                                     const bidirectional = [];
@@ -3655,6 +3769,47 @@ export function AnalysesView({
                                                                         </div>
                                                                     );
                                                                 })()}
+
+                                                                {/* 📊 IMPACTOS DO CONSUMO (adicionais) */}
+                                                                {(consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || dosageToWellbeing.length > 0) && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Impactos Adicionais do Consumo</h3>
+                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            Como o consumo e dosagem afetam o teu estado emocional e autocuidado
+                                                                        </p>
+                                                                        <div className="space-y-3">
+                                                                            {consumptionToEmotions.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            {consumptionToSelfCare.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            {dosageToWellbeing.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* ⏰ PADRÕES TEMPORAIS */}
+                                                                {firstConsToTotal.length > 0 && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Padrões Temporais</h3>
+                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            Como o horário do primeiro consumo influencia o resto do dia
+                                                                        </p>
+                                                                        <div className="space-y-3">
+                                                                            {firstConsToTotal.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {/* 📐 PADRÕES ESTRUTURAIS */}
+                                                                {intervalToDosage.length > 0 && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📐 Padrões Estruturais</h3>
+                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            Relação entre intervalos e dosagens - padrões de compensação
+                                                                        </p>
+                                                                        <div className="space-y-3">
+                                                                            {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
 
                                                                 {/* Análise Intra-dia */}
                                                                 {(() => {
