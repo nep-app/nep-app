@@ -3587,7 +3587,7 @@ export function AnalysesView({
                                                                 const avgDosage = dosageToEmotionsData.reduce((sum, d) => sum + d.dosage, 0) / dosageToEmotionsData.length;
 
                                                                 dosageToWellbeing.push({
-                                                                    name: 'Dosagem → Emoções',
+                                                                    name: 'Dosagem → Emoções Negativas',
                                                                     icon: '💊',
                                                                     correlation: corr,
                                                                     average: avgDosage.toFixed(0),
@@ -4340,15 +4340,15 @@ export function AnalysesView({
                                                                                 </div>
                                                                             )}
 
-                                                                            {/* Dosagem → Autocuidado | Dosagem → Emoções */}
-                                                                            {(dosageToWellbeing.some(c => c.name === 'Dosagem → Autocuidado') || dosageToWellbeing.some(c => c.name === 'Dosagem → Emoções')) && (
+                                                                            {/* Dosagem → Autocuidado | Dosagem → Emoções Negativas */}
+                                                                            {(dosageToWellbeing.some(c => c.name === 'Dosagem → Autocuidado') || dosageToWellbeing.some(c => c.name === 'Dosagem → Emoções Negativas')) && (
                                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                                     {dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado') ?
                                                                                         window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado'), false) :
                                                                                         <div></div>
                                                                                     }
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções') ?
-                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções'), false) :
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções Negativas') ?
+                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções Negativas'), false) :
                                                                                         <div></div>
                                                                                     }
                                                                                 </div>
