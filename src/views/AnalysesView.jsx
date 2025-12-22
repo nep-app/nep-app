@@ -3337,49 +3337,49 @@ export function AnalysesView({
                                                         });
 
                                                         // Consumo → Sono amanhã
-                                                        const sleepData = bidirectional.filter(d => d.nextSleep !== null);
-                                                        if (sleepData.length >= 2) {
+                                                        const nextSleepData = bidirectional.filter(d => d.nextSleep !== null);
+                                                        if (nextSleepData.length >= 2) {
                                                             const sleepCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
-                                                            const avgNextSleep = sleepData.reduce((sum, d) => sum + d.nextSleep, 0) / sleepData.length;
+                                                            const avgNextSleep = nextSleepData.reduce((sum, d) => sum + d.nextSleep, 0) / nextSleepData.length;
                                                             consumptionToNextDayWellbeing.push({
                                                                 name: 'Consumo → Sono Amanhã',
                                                                 icon: '💊',
                                                                 correlation: sleepCorr,
                                                                 average: avgNextSleep.toFixed(1),
                                                                 unit: 'h',
-                                                                dataPoints: sleepData.length,
+                                                                dataPoints: nextSleepData.length,
                                                                 type: 'consumptionImpact'
                                                             });
                                                         }
 
                                                         // Consumo → Humor amanhã
-                                                        const moodData = bidirectional.filter(d => d.nextMood !== null);
-                                                        if (moodData.length >= 2) {
+                                                        const nextMoodData = bidirectional.filter(d => d.nextMood !== null);
+                                                        if (nextMoodData.length >= 2) {
                                                             const moodCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
-                                                            const avgNextMood = moodData.reduce((sum, d) => sum + d.nextMood, 0) / moodData.length;
+                                                            const avgNextMood = nextMoodData.reduce((sum, d) => sum + d.nextMood, 0) / nextMoodData.length;
                                                             consumptionToNextDayWellbeing.push({
                                                                 name: 'Consumo → Humor Amanhã',
                                                                 icon: '💊',
                                                                 correlation: moodCorr,
                                                                 average: avgNextMood.toFixed(1),
                                                                 unit: '/10',
-                                                                dataPoints: moodData.length,
+                                                                dataPoints: nextMoodData.length,
                                                                 type: 'consumptionImpact'
                                                             });
                                                         }
 
                                                         // Consumo → Energia amanhã
-                                                        const energyData = bidirectional.filter(d => d.nextEnergy !== null);
-                                                        if (energyData.length >= 2) {
+                                                        const nextEnergyData = bidirectional.filter(d => d.nextEnergy !== null);
+                                                        if (nextEnergyData.length >= 2) {
                                                             const energyCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
-                                                            const avgNextEnergy = energyData.reduce((sum, d) => sum + d.nextEnergy, 0) / energyData.length;
+                                                            const avgNextEnergy = nextEnergyData.reduce((sum, d) => sum + d.nextEnergy, 0) / nextEnergyData.length;
                                                             consumptionToNextDayWellbeing.push({
                                                                 name: 'Consumo → Energia Amanhã',
                                                                 icon: '💊',
                                                                 correlation: energyCorr,
                                                                 average: avgNextEnergy.toFixed(1),
                                                                 unit: '/10',
-                                                                dataPoints: energyData.length,
+                                                                dataPoints: nextEnergyData.length,
                                                                 type: 'consumptionImpact'
                                                             });
                                                         }
