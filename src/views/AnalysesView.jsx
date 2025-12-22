@@ -2815,58 +2815,9 @@ export function AnalysesView({
                                                             });
                                                         }
 
-                                                        // Criar também Sono → Consumo (mesmo dia)
-                                                        const sameDaySleepToConsumption = [];
-                                                        if (sleepData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(sleepData, 'sleep', 'consumptions');
-                                                            const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
-                                                            sameDaySleepToConsumption.push({
-                                                                name: 'Sono → Consumo',
-                                                                icon: '😴',
-                                                                correlation: corr,
-                                                                average: avgSleep.toFixed(1),
-                                                                unit: 'h',
-                                                                dataPoints: sleepData.length,
-                                                                type: 'inverse'
-                                                            });
-                                                        }
+                                                        // ===== CORRELAÇÕES TEMPORAIS (entre dias) =====
 
-                                                        // ===== NOVAS CORRELAÇÕES =====
-
-                                                        // 1. BEM-ESTAR → CONSUMO (INVERSAS - causas de consumo)
-                                                        const inverseCorrelations = [];
-
-                                                        // Humor → Consumo (humor baixo causa mais consumo?)
-                                                        if (moodData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(moodData, 'mood', 'consumptions');
-                                                            const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
-                                                            inverseCorrelations.push({
-                                                                name: 'Humor → Consumo',
-                                                                icon: '😊',
-                                                                correlation: corr,
-                                                                average: avgMood.toFixed(1),
-                                                                unit: '/10',
-                                                                dataPoints: moodData.length,
-                                                                type: 'inverse'
-                                                            });
-                                                        }
-
-                                                        // Energia → Consumo (energia baixa causa mais consumo?)
-                                                        if (energyData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(energyData, 'energy', 'consumptions');
-                                                            const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
-                                                            inverseCorrelations.push({
-                                                                name: 'Energia → Consumo',
-                                                                icon: '⚡',
-                                                                correlation: corr,
-                                                                average: avgEnergy.toFixed(1),
-                                                                unit: '/10',
-                                                                dataPoints: energyData.length,
-                                                                type: 'inverse'
-                                                            });
-                                                        }
-
-                                                        // 2. SONO ANTERIOR → CONSUMO HOJE
+                                                        // SONO ANTERIOR → CONSUMO HOJE
                                                         const sleepToConsumptionNext = [];
                                                         const sortedDates = Object.keys(dailyData).sort();
                                                         const sleepToConsNextData = [];
@@ -2954,11 +2905,10 @@ export function AnalysesView({
                                                             });
                                                         }
 
-                                                        // 3. EMOÇÕES NEGATIVAS → CONSUMO
-                                                        const emotionsToConsumption = [];
-                                                        const emotionData = {};
+                                                        // ===== DADOS AGREGADOS (usados por CONSUMO → X) =====
 
                                                         // Agregar emoções por dia
+                                                        const emotionData = {};
                                                         analysisWellbeing.forEach(w => {
                                                             const wDate = w.date || safeToISODate(w.timestamp);
                                                             if (!wDate || !w.emotions || !Array.isArray(w.emotions)) return;
@@ -2973,34 +2923,10 @@ export function AnalysesView({
                                                                 if (category === 'negative') emotionData[wDate].negative++;
                                                             });
                                                         });
-
                                                         const emotionCorrelationData = Object.values(emotionData).filter(d => d.total > 0);
 
-                                                        if (emotionCorrelationData.length >= 2) {
-                                                            // Calcular % de emoções negativas
-                                                            const dataWithPercent = emotionCorrelationData.map(d => ({
-                                                                negativePercent: (d.negative / d.total) * 100,
-                                                                consumptions: d.consumptions
-                                                            }));
-
-                                                            const corr = analyticsService.calculatePearsonCorrelation(dataWithPercent, 'negativePercent', 'consumptions');
-                                                            const avgNegative = dataWithPercent.reduce((sum, d) => sum + d.negativePercent, 0) / dataWithPercent.length;
-
-                                                            emotionsToConsumption.push({
-                                                                name: 'Emoções Negativas → Consumo',
-                                                                icon: '😩',
-                                                                correlation: corr,
-                                                                average: avgNegative.toFixed(0),
-                                                                unit: '%',
-                                                                dataPoints: dataWithPercent.length
-                                                            });
-                                                        }
-
-                                                        // 4. AUTOCUIDADO → CONSUMO
-                                                        const selfCareToConsumption = [];
-                                                        const selfCareData = {};
-
                                                         // Agregar autocuidado por dia
+                                                        const selfCareData = {};
                                                         analysisWellbeing.forEach(w => {
                                                             const wDate = w.date || safeToISODate(w.timestamp);
                                                             if (!wDate) return;
@@ -3014,24 +2940,9 @@ export function AnalysesView({
                                                                 if (w[area] === true) selfCareData[wDate].count++;
                                                             });
                                                         });
-
                                                         const selfCareCorrelationData = Object.values(selfCareData).filter(d => d.count >= 0);
 
-                                                        if (selfCareCorrelationData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(selfCareCorrelationData, 'count', 'consumptions');
-                                                            const avgSelfCare = selfCareCorrelationData.reduce((sum, d) => sum + d.count, 0) / selfCareCorrelationData.length;
-
-                                                            selfCareToConsumption.push({
-                                                                name: 'Autocuidado → Consumo',
-                                                                icon: '💚',
-                                                                correlation: corr,
-                                                                average: avgSelfCare.toFixed(1),
-                                                                unit: '/4',
-                                                                dataPoints: selfCareCorrelationData.length
-                                                            });
-                                                        }
-
-                                                        // 5. CONSUMO ONTEM → CONSUMO HOJE (autocorrelação)
+                                                        // CONSUMO ONTEM → CONSUMO HOJE (autocorrelação)
                                                         const consumptionAutocorrelation = [];
                                                         const autocorrData = [];
 
@@ -3420,59 +3331,8 @@ export function AnalysesView({
                                                             });
                                                         }
 
-                                                        // 12-15. X → DOSAGEM (Humor, Energia, Emoções, Sono)
+                                                        // CONTEXTO → DOSAGEM (apenas direcionais: Emoções Negativas e Gatilhos)
                                                         const wellbeingToDosage = [];
-
-                                                        // Humor → Dosagem
-                                                        const moodToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.mood !== null);
-                                                        if (moodToDosageData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(moodToDosageData, 'mood', 'totalMg');
-                                                            const avgMood = moodToDosageData.reduce((sum, d) => sum + d.mood, 0) / moodToDosageData.length;
-
-                                                            wellbeingToDosage.push({
-                                                                name: 'Humor → Dosagem',
-                                                                icon: '😊',
-                                                                correlation: corr,
-                                                                average: avgMood.toFixed(1),
-                                                                unit: '/10',
-                                                                dataPoints: moodToDosageData.length,
-                                                                type: 'wellbeing'
-                                                            });
-                                                        }
-
-                                                        // Energia → Dosagem
-                                                        const energyToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.energy !== null);
-                                                        if (energyToDosageData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(energyToDosageData, 'energy', 'totalMg');
-                                                            const avgEnergy = energyToDosageData.reduce((sum, d) => sum + d.energy, 0) / energyToDosageData.length;
-
-                                                            wellbeingToDosage.push({
-                                                                name: 'Energia → Dosagem',
-                                                                icon: '⚡',
-                                                                correlation: corr,
-                                                                average: avgEnergy.toFixed(1),
-                                                                unit: '/10',
-                                                                dataPoints: energyToDosageData.length,
-                                                                type: 'wellbeing'
-                                                            });
-                                                        }
-
-                                                        // Sono → Dosagem
-                                                        const sleepToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.sleep !== null);
-                                                        if (sleepToDosageData.length >= 2) {
-                                                            const corr = analyticsService.calculatePearsonCorrelation(sleepToDosageData, 'sleep', 'totalMg');
-                                                            const avgSleep = sleepToDosageData.reduce((sum, d) => sum + d.sleep, 0) / sleepToDosageData.length;
-
-                                                            wellbeingToDosage.push({
-                                                                name: 'Sono → Dosagem',
-                                                                icon: '😴',
-                                                                correlation: corr,
-                                                                average: avgSleep.toFixed(1),
-                                                                unit: 'h',
-                                                                dataPoints: sleepToDosageData.length,
-                                                                type: 'wellbeing'
-                                                            });
-                                                        }
 
                                                         // Emoções Negativas → Dosagem
                                                         if (emotionCorrelationData.length >= 2) {
@@ -3882,86 +3742,32 @@ export function AnalysesView({
                                                                     return null;
                                                                 })()}
 
-                                                                {/* 🔄 BEM-ESTAR ⇄ CONSUMO (mesmo dia) */}
-                                                                {(inverseCorrelations.length > 0 || sameDaySleepToConsumption.length > 0 || correlations.length > 0 || emotionsToConsumption.length > 0 || selfCareToConsumption.length > 0 || consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || consumptionAutocorrelation.length > 0) && (
+                                                                {/* 💊 CONSUMO → BEM-ESTAR (mesmo dia) */}
+                                                                {(correlations.length > 0 || consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || consumptionAutocorrelation.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingConsumption')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Consumo (mesmo dia)</h3>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Consumo → Bem-estar (mesmo dia)</h3>
                                                                                 <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                    Relação bidirecional: o que te leva a consumir e como o consumo te afeta no mesmo dia
+                                                                                    Como o consumo afeta o bem-estar no mesmo dia
                                                                                 </p>
                                                                             </div>
                                                                             <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
                                                                                 {expandedSections.wellbeingConsumption ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
-                                                                        {expandedSections.wellbeingConsumption && <div className="space-y-3 mt-4">
-                                                                            {/* Humor ⇄ Consumo */}
-                                                                            {(inverseCorrelations.some(c => c.name === 'Humor → Consumo') || correlations.some(c => c.name === 'Consumo → Humor')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {inverseCorrelations.find(c => c.name === 'Humor → Consumo') ?
-                                                                                        window.renderCorrelationCard(inverseCorrelations.find(c => c.name === 'Humor → Consumo'), true) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                    {correlations.find(c => c.name === 'Consumo → Humor') ?
-                                                                                        window.renderCorrelationCard(correlations.find(c => c.name === 'Consumo → Humor'), false) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                </div>
-                                                                            )}
+                                                                        {expandedSections.wellbeingConsumption && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                                                            {/* Consumo → Humor/Energia/Sono */}
+                                                                            {correlations.map(corr => window.renderCorrelationCard(corr, false))}
 
-                                                                            {/* Energia ⇄ Consumo */}
-                                                                            {(inverseCorrelations.some(c => c.name === 'Energia → Consumo') || correlations.some(c => c.name === 'Consumo → Energia')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {inverseCorrelations.find(c => c.name === 'Energia → Consumo') ?
-                                                                                        window.renderCorrelationCard(inverseCorrelations.find(c => c.name === 'Energia → Consumo'), true) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                    {correlations.find(c => c.name === 'Consumo → Energia') ?
-                                                                                        window.renderCorrelationCard(correlations.find(c => c.name === 'Consumo → Energia'), false) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                </div>
-                                                                            )}
+                                                                            {/* Consumo → Emoções Negativas */}
+                                                                            {consumptionToEmotions.map(corr => window.renderCorrelationCard(corr, false))}
 
-                                                                            {/* Sono ⇄ Consumo */}
-                                                                            {(sameDaySleepToConsumption.length > 0 || correlations.some(c => c.name === 'Consumo → Sono')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {sameDaySleepToConsumption.length > 0 ?
-                                                                                        window.renderCorrelationCard(sameDaySleepToConsumption[0], true) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                    {correlations.find(c => c.name === 'Consumo → Sono') ?
-                                                                                        window.renderCorrelationCard(correlations.find(c => c.name === 'Consumo → Sono'), false) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                </div>
-                                                                            )}
+                                                                            {/* Consumo → Autocuidado */}
+                                                                            {consumptionToSelfCare.map(corr => window.renderCorrelationCard(corr, false))}
 
-                                                                            {/* Emoções ⇄ Consumo (bidirectional) */}
-                                                                            {(emotionsToConsumption.length > 0 || consumptionToEmotions.length > 0) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {emotionsToConsumption.length > 0 ? window.renderCorrelationCard(emotionsToConsumption[0], true) : <div></div>}
-                                                                                    {consumptionToEmotions.length > 0 ? window.renderCorrelationCard(consumptionToEmotions[0], false) : <div></div>}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Autocuidado ⇄ Consumo (bidirectional) */}
-                                                                            {(selfCareToConsumption.length > 0 || consumptionToSelfCare.length > 0) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {selfCareToConsumption.length > 0 ? window.renderCorrelationCard(selfCareToConsumption[0], true) : <div></div>}
-                                                                                    {consumptionToSelfCare.length > 0 ? window.renderCorrelationCard(consumptionToSelfCare[0], false) : <div></div>}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Consumo Ontem → Hoje (sem par) */}
-                                                                            {consumptionAutocorrelation.length > 0 && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {window.renderCorrelationCard(consumptionAutocorrelation[0], false)}
-                                                                                    <div></div>
-                                                                                </div>
-                                                                            )}
+                                                                            {/* Consumo Ontem → Hoje */}
+                                                                            {consumptionAutocorrelation.map(corr => window.renderCorrelationCard(corr, false))}
                                                                         </div>}
                                                                     </div>
                                                                 )}
@@ -4284,83 +4090,29 @@ export function AnalysesView({
                                                                     </div>
                                                                 )}
 
-                                                                {/* 🔄 BEM-ESTAR ⇄ DOSAGEM */}
+                                                                {/* 💊 DOSAGEM ⇄ CONTEXTO */}
                                                                 {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Dosagem</h3>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Dosagem ⇄ Contexto</h3>
                                                                                 <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                    Como bem-estar afeta dosagem e vice-versa
+                                                                                    Como o contexto afeta a dosagem e vice-versa
                                                                                 </p>
                                                                             </div>
                                                                             <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
                                                                                 {expandedSections.wellbeingDosage ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
-                                                                        {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
-                                                                            {/* Humor ⇄ Dosagem */}
-                                                                            {(wellbeingToDosage.some(c => c.name === 'Humor → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Humor')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {wellbeingToDosage.find(c => c.name === 'Humor → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Humor → Dosagem'), true)}
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Humor') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Humor'), false)}
-                                                                                    {!wellbeingToDosage.find(c => c.name === 'Humor → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Humor') && <div></div>}
-                                                                                </div>
-                                                                            )}
+                                                                        {expandedSections.wellbeingDosage && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                                                            {/* Gatilhos/Emoções Negativas → Dosagem */}
+                                                                            {wellbeingToDosage.map(corr => window.renderCorrelationCard(corr, true))}
 
-                                                                            {/* Energia ⇄ Dosagem */}
-                                                                            {(wellbeingToDosage.some(c => c.name === 'Energia → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Energia')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {wellbeingToDosage.find(c => c.name === 'Energia → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Energia → Dosagem'), true)}
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Energia') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Energia'), false)}
-                                                                                    {!wellbeingToDosage.find(c => c.name === 'Energia → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Energia') && <div></div>}
-                                                                                </div>
-                                                                            )}
+                                                                            {/* Dosagem → X (Humor/Energia/Sono/Autocuidado/Emoções Negativas) */}
+                                                                            {dosageToWellbeing.map(corr => window.renderCorrelationCard(corr, false))}
 
-                                                                            {/* Sono ⇄ Dosagem */}
-                                                                            {(wellbeingToDosage.some(c => c.name === 'Sono → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Sono')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {wellbeingToDosage.find(c => c.name === 'Sono → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Sono → Dosagem'), true)}
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Sono') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Sono'), false)}
-                                                                                    {!wellbeingToDosage.find(c => c.name === 'Sono → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Sono') && <div></div>}
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Gatilhos → Dosagem | Emoções Negativas → Dosagem */}
-                                                                            {(wellbeingToDosage.some(c => c.name === 'Gatilhos → Dosagem') || wellbeingToDosage.some(c => c.name === 'Emoções Negativas → Dosagem')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {wellbeingToDosage.find(c => c.name === 'Gatilhos → Dosagem') ?
-                                                                                        window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Gatilhos → Dosagem'), true) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                    {wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem') ?
-                                                                                        window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem'), true) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Dosagem → Autocuidado | Dosagem → Emoções Negativas */}
-                                                                            {(dosageToWellbeing.some(c => c.name === 'Dosagem → Autocuidado') || dosageToWellbeing.some(c => c.name === 'Dosagem → Emoções Negativas')) && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado') ?
-                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Autocuidado'), false) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções Negativas') ?
-                                                                                        window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Emoções Negativas'), false) :
-                                                                                        <div></div>
-                                                                                    }
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Intervalo → Dosagem (sem inverso) */}
-                                                                            {intervalToDosage.length > 0 && (
-                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                                    {window.renderCorrelationCard(intervalToDosage[0], false)}
-                                                                                    <div></div>
-                                                                                </div>
-                                                                            )}
+                                                                            {/* Intervalo → Dosagem */}
+                                                                            {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
                                                                         </div>}
                                                                     </div>
                                                                 )}

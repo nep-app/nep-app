@@ -275,7 +275,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {/* SCATTER CHART */}
       <div className="w-full">
         <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 5, left: 20 }}>
+            <LineChart data={chartData} margin={{ top: 20, right: 5, bottom: 5, left: -5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
             <XAxis
               type="number"
