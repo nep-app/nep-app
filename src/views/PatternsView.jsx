@@ -957,6 +957,7 @@ export function PatternsView({
                                                     lowAreas,
                                                     suggestion,
                                                     change: calculateChange(recentOverall, previousOverall, false),
+                                                    label: 'Taxa geral de autocuidado',
                                                     // Ciclos completos (onde completaste os 4 indicadores)
                                                     completeCycles: {
                                                         recent: recentCompleteCyclesPercent,
@@ -1083,9 +1084,13 @@ export function PatternsView({
                                                                             <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.frequency.label}
                                                                             </span>
-                                                                            {progressData.frequency.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.frequency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                    {progressData.frequency.change.direction === 'up' ? '↑' : '↓'} {progressData.frequency.change.percent.toFixed(0)}%
+                                                                            {progressData.frequency.recent !== progressData.frequency.previous && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
+                                                                                    progressData.frequency.change.direction !== 'stable'
+                                                                                        ? (progressData.frequency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))
+                                                                                        : (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600')
+                                                                                )}>
+                                                                                    {progressData.frequency.recent > progressData.frequency.previous ? '↑' : '↓'} {progressData.frequency.change.percent.toFixed(1)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1108,9 +1113,13 @@ export function PatternsView({
                                                                             <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
                                                                                 {progressData.dosage.label}
                                                                             </span>
-                                                                            {progressData.dosage.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.dosage.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                    {progressData.dosage.change.direction === 'up' ? '↑' : '↓'} {progressData.dosage.change.percent.toFixed(0)}%
+                                                                            {progressData.dosage.recent !== progressData.dosage.previous && (
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
+                                                                                    progressData.dosage.change.direction !== 'stable'
+                                                                                        ? (progressData.dosage.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))
+                                                                                        : (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600')
+                                                                                )}>
+                                                                                    {progressData.dosage.recent > progressData.dosage.previous ? '↑' : '↓'} {progressData.dosage.change.percent.toFixed(1)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1232,7 +1241,7 @@ export function PatternsView({
                                                                             </span>
                                                                             {progressData.bedtimeConsistency.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.bedtimeConsistency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
-                                                                                    {progressData.bedtimeConsistency.change.isImprovement ? 'Melhor' : 'Pior'} {progressData.bedtimeConsistency.change.percent.toFixed(0)}%
+                                                                                    {progressData.bedtimeConsistency.change.isImprovement ? '↓' : '↑'} {progressData.bedtimeConsistency.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
