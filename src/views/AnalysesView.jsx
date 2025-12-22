@@ -3081,20 +3081,49 @@ export function AnalysesView({
                                                         }
 
                                                         // 9. PRIMEIRO CONSUMO → TOTAL DO DIA
+                                                        // Usa timestamp do "Novo Ciclo" como referência
                                                         const firstConsToTotal = [];
 
-                                                        // Calcular hora do primeiro consumo e total por dia
-                                                        const firstConsData = {};
+                                                        // Agrupar consumos por data
+                                                        const consumptionsByDateForFirst = {};
                                                         analysisConsumptions.forEach(c => {
-                                                            if (!firstConsData[c.date]) {
-                                                                firstConsData[c.date] = { firstHour: 24, total: 0 };
+                                                            if (!consumptionsByDateForFirst[c.date]) consumptionsByDateForFirst[c.date] = [];
+                                                            consumptionsByDateForFirst[c.date].push(c);
+                                                        });
+
+                                                        // Calcular hora do primeiro consumo (após ciclo) e total por dia
+                                                        const firstConsData = {};
+                                                        Object.entries(consumptionsByDateForFirst).forEach(([date, cons]) => {
+                                                            // Encontrar o ciclo desse dia
+                                                            const dayCycle = analysisCycles.find(cycle => safeToISODate(cycle.timestamp) === date);
+
+                                                            if (!dayCycle) {
+                                                                // Sem ciclo registrado, usar lógica antiga (primeiro por timestamp)
+                                                                const sortedCons = cons.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                const firstCons = sortedCons[0];
+                                                                const hour = new Date(firstCons.timestamp).getHours() + new Date(firstCons.timestamp).getMinutes() / 60;
+                                                                firstConsData[date] = { firstHour: hour, total: cons.length };
+                                                                return;
                                                             }
 
-                                                            const hour = new Date(c.timestamp).getHours() + new Date(c.timestamp).getMinutes() / 60;
-                                                            if (hour < firstConsData[c.date].firstHour) {
-                                                                firstConsData[c.date].firstHour = hour;
+                                                            // Filtrar consumos que acontecem APÓS o timestamp do ciclo
+                                                            const cycleTime = new Date(dayCycle.timestamp).getTime();
+                                                            const consumptionsAfterCycle = cons.filter(c => new Date(c.timestamp).getTime() >= cycleTime);
+
+                                                            if (consumptionsAfterCycle.length === 0) {
+                                                                // Nenhum consumo após ciclo, usar o primeiro cronologicamente
+                                                                const sortedCons = cons.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                const firstCons = sortedCons[0];
+                                                                const hour = new Date(firstCons.timestamp).getHours() + new Date(firstCons.timestamp).getMinutes() / 60;
+                                                                firstConsData[date] = { firstHour: hour, total: cons.length };
+                                                                return;
                                                             }
-                                                            firstConsData[c.date].total++;
+
+                                                            // Ordenar consumos após ciclo por timestamp e pegar o primeiro
+                                                            const sortedAfterCycle = consumptionsAfterCycle.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                            const firstCons = sortedAfterCycle[0];
+                                                            const hour = new Date(firstCons.timestamp).getHours() + new Date(firstCons.timestamp).getMinutes() / 60;
+                                                            firstConsData[date] = { firstHour: hour, total: cons.length };
                                                         });
 
                                                         const firstConsCorrelationData = Object.values(firstConsData).filter(d => d.total > 0);
@@ -3160,6 +3189,131 @@ export function AnalysesView({
                                                                 unit: 'h',
                                                                 dataPoints: intervalDosageData.length
                                                             });
+                                                        }
+
+                                                        // 11. CONSUMO → BEDTIME (dia seguinte)
+                                                        const consumptionToBedtime = [];
+                                                        const consToBedtimeData = [];
+
+                                                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                                                            const today = sortedDates[i];
+                                                            const tomorrow = sortedDates[i + 1];
+
+                                                            // Consumos hoje
+                                                            const todayConsumptions = dailyData[today]?.consumptions || 0;
+                                                            if (todayConsumptions === 0) continue;
+
+                                                            // Bedtime amanhã
+                                                            const tomorrowCycle = analysisCycles.find(c => safeToISODate(c.timestamp) === tomorrow);
+                                                            if (!tomorrowCycle?.bedtime) continue;
+
+                                                            // Converter bedtime para minutos
+                                                            const [h, m] = tomorrowCycle.bedtime.split(':').map(Number);
+                                                            let bedtimeMinutes = h * 60 + m;
+                                                            if (h >= 0 && h < 18) bedtimeMinutes += 1440;
+
+                                                            consToBedtimeData.push({
+                                                                consumptions: todayConsumptions,
+                                                                bedtime: bedtimeMinutes
+                                                            });
+                                                        }
+
+                                                        if (consToBedtimeData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(consToBedtimeData, 'consumptions', 'bedtime');
+                                                            const avgCons = consToBedtimeData.reduce((sum, d) => sum + d.consumptions, 0) / consToBedtimeData.length;
+
+                                                            consumptionToBedtime.push({
+                                                                name: 'Consumo → Bedtime Amanhã',
+                                                                icon: '💊',
+                                                                correlation: corr,
+                                                                average: avgCons.toFixed(1),
+                                                                unit: '/dia',
+                                                                dataPoints: consToBedtimeData.length
+                                                            });
+                                                        }
+
+                                                        // 12-15. X → DOSAGEM (Humor, Energia, Emoções, Sono)
+                                                        const wellbeingToDosage = [];
+
+                                                        // Humor → Dosagem
+                                                        const moodToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.mood !== null);
+                                                        if (moodToDosageData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(moodToDosageData, 'mood', 'totalMg');
+                                                            const avgMood = moodToDosageData.reduce((sum, d) => sum + d.mood, 0) / moodToDosageData.length;
+
+                                                            wellbeingToDosage.push({
+                                                                name: 'Humor → Dosagem',
+                                                                icon: '😊',
+                                                                correlation: corr,
+                                                                average: avgMood.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: moodToDosageData.length,
+                                                                type: 'wellbeing'
+                                                            });
+                                                        }
+
+                                                        // Energia → Dosagem
+                                                        const energyToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.energy !== null);
+                                                        if (energyToDosageData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(energyToDosageData, 'energy', 'totalMg');
+                                                            const avgEnergy = energyToDosageData.reduce((sum, d) => sum + d.energy, 0) / energyToDosageData.length;
+
+                                                            wellbeingToDosage.push({
+                                                                name: 'Energia → Dosagem',
+                                                                icon: '⚡',
+                                                                correlation: corr,
+                                                                average: avgEnergy.toFixed(1),
+                                                                unit: '/10',
+                                                                dataPoints: energyToDosageData.length,
+                                                                type: 'wellbeing'
+                                                            });
+                                                        }
+
+                                                        // Sono → Dosagem
+                                                        const sleepToDosageData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.sleep !== null);
+                                                        if (sleepToDosageData.length >= 2) {
+                                                            const corr = analyticsService.calculatePearsonCorrelation(sleepToDosageData, 'sleep', 'totalMg');
+                                                            const avgSleep = sleepToDosageData.reduce((sum, d) => sum + d.sleep, 0) / sleepToDosageData.length;
+
+                                                            wellbeingToDosage.push({
+                                                                name: 'Sono → Dosagem',
+                                                                icon: '😴',
+                                                                correlation: corr,
+                                                                average: avgSleep.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: sleepToDosageData.length,
+                                                                type: 'wellbeing'
+                                                            });
+                                                        }
+
+                                                        // Emoções Negativas → Dosagem
+                                                        if (emotionCorrelationData.length >= 2) {
+                                                            const emotionsDosageData = [];
+
+                                                            Object.keys(emotionData).forEach(date => {
+                                                                const dayDosage = dosageData[date]?.totalMg;
+                                                                if (!dayDosage || emotionData[date].total === 0) return;
+
+                                                                emotionsDosageData.push({
+                                                                    negativePercent: (emotionData[date].negative / emotionData[date].total) * 100,
+                                                                    dosage: dayDosage
+                                                                });
+                                                            });
+
+                                                            if (emotionsDosageData.length >= 2) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(emotionsDosageData, 'negativePercent', 'dosage');
+                                                                const avgNegative = emotionsDosageData.reduce((sum, d) => sum + d.negativePercent, 0) / emotionsDosageData.length;
+
+                                                                wellbeingToDosage.push({
+                                                                    name: 'Emoções Negativas → Dosagem',
+                                                                    icon: '😩',
+                                                                    correlation: corr,
+                                                                    average: avgNegative.toFixed(0),
+                                                                    unit: '%',
+                                                                    dataPoints: emotionsDosageData.length,
+                                                                    type: 'wellbeing'
+                                                                });
+                                                            }
                                                         }
 
                                                         if (correlations.length === 0) {
@@ -3280,9 +3434,19 @@ export function AnalysesView({
                                                                             const isDosage = name.toLowerCase().includes('dosagem');
                                                                             const isInterval = name.toLowerCase().includes('intervalo');
                                                                             const isFirstCons = name.toLowerCase().includes('primeiro consumo');
+                                                                            const isBedtime = name.toLowerCase().includes('bedtime');
 
                                                                             // Para correlações inversas (X → Consumo), inverter lógica
                                                                             if (isInverse) {
+                                                                                // Bedtime → Consumo (deitar cedo = menos consumo = bom)
+                                                                                if (isBedtime && name.includes('→ Consumo')) {
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Deitar tarde → Mais consumo' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Deitar tarde → Ligeiramente mais consumo' };
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo → Menos consumo' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Deitar cedo → Ligeiramente menos consumo' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não afeta consumo' };
+                                                                                }
+
                                                                                 // Autocuidado alto → menos consumo = bom (negativa é boa)
                                                                                 if (isSelfCare) {
                                                                                     if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais autocuidado → Menos consumo' };
@@ -3292,35 +3456,76 @@ export function AnalysesView({
                                                                                     return { text: 'Sem Correlação', color: 'gray', desc: 'Autocuidado não afeta consumo' };
                                                                                 }
 
-                                                                                // Humor/energia baixos → mais consumo (negativa é má)
+                                                                                // Humor/energia baixos → mais consumo (negativa é má) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
-                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${name.split(' →')[0]} baixo → Mais consumo` };
-                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${name.split(' →')[0]} baixo → Ligeiramente mais consumo` };
-                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${name.split(' →')[0]} alto → Menos consumo` };
-                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${name.split(' →')[0]} alto → Ligeiramente menos consumo` };
-                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: `${name.split(' →')[0]} não afeta consumo` };
+                                                                                    const target = name.split(' →')[1].trim();
+                                                                                    const metricName = name.split(' →')[0];
+
+                                                                                    if (target === 'Consumo') {
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais consumo` };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais consumo` };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos consumo` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo` };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo` };
+                                                                                    } else if (target === 'Dosagem') {
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais dosagem` };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais dosagem` };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos dosagem` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta dosagem` };
+                                                                                    }
                                                                                 }
 
-                                                                                // Sono baixo → mais consumo (negativa é má)
-                                                                                if (name.includes('Sono') && name.includes('→ Consumo')) {
-                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Menos sono → Mais consumo' };
-                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Menos sono → Ligeiramente mais consumo' };
-                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Mais sono → Mais consumo' };
-                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Mais sono → Ligeiramente mais consumo' };
-                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Sono não afeta consumo' };
+                                                                                // Sono baixo → mais consumo/dosagem (negativa é má)
+                                                                                if (name.includes('Sono →')) {
+                                                                                    const target = name.split(' →')[1].trim();
+
+                                                                                    if (target === 'Consumo' || target.includes('Consumo')) {
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Menos sono → Mais consumo' };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Menos sono → Ligeiramente mais consumo' };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Mais sono → Mais consumo' };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Mais sono → Ligeiramente mais consumo' };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: 'Sono não afeta consumo' };
+                                                                                    } else if (target === 'Dosagem') {
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Menos sono → Mais dosagem' };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Menos sono → Ligeiramente mais dosagem' };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Mais sono → Mais dosagem' };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Mais sono → Ligeiramente mais dosagem' };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: 'Sono não afeta dosagem' };
+                                                                                    }
                                                                                 }
 
-                                                                                // Emoções negativas → mais consumo (positiva é má)
-                                                                                if (isNegativeEmotion) {
-                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais consumo' };
-                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais consumo' };
-                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos consumo' };
-                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos consumo' };
-                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam consumo' };
+                                                                                // Emoções negativas → mais consumo/dosagem (positiva é má)
+                                                                                if (name.includes('Emoções Negativas →')) {
+                                                                                    const target = name.split(' →')[1].trim();
+
+                                                                                    if (target === 'Consumo') {
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais consumo' };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais consumo' };
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos consumo' };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos consumo' };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam consumo' };
+                                                                                    } else if (target === 'Dosagem') {
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais dosagem' };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais dosagem' };
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos dosagem' };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos dosagem' };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam dosagem' };
+                                                                                    }
                                                                                 }
                                                                             }
 
-                                                                            // Lógica padrão para correlações diretas
+                                                                            // Lógica padrão para correlações diretas (Consumo/Dosagem → X)
+                                                                            // Consumo → Bedtime (mais consumo → deitar tarde = mau)
+                                                                            if (name.includes('Consumo →') && name.includes('Bedtime')) {
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais consumo → Deitar mais tarde' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais consumo → Ligeiramente deitar mais tarde' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais consumo → Deitar mais cedo' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais consumo → Ligeiramente deitar mais cedo' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Consumo não afeta hora de deitar' };
+                                                                            }
+
+                                                                            // Lógica genérica
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: '' };
                                                                             if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: '' };
                                                                             if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: '' };
@@ -3364,19 +3569,63 @@ export function AnalysesView({
                                                                     return null;
                                                                 })()}
 
-                                                                {/* 🔥 CAUSAS DE CONSUMO */}
-                                                                {(inverseCorrelations.length > 0 || sleepToConsumptionNext.length > 0 || emotionsToConsumption.length > 0 || selfCareToConsumption.length > 0 || consumptionAutocorrelation.length > 0) && (
+                                                                {/* 🔄 BEM-ESTAR ⇄ CONSUMO */}
+                                                                {(inverseCorrelations.length > 0 || sleepToConsumptionNext.length > 0 || emotionsToConsumption.length > 0 || selfCareToConsumption.length > 0 || consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || consumptionAutocorrelation.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔥 Causas de Consumo</h3>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Consumo</h3>
                                                                         <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            O que te leva a consumir? Identificar gatilhos e padrões
+                                                                            Relação bidirecional: o que te leva a consumir e como o consumo te afeta
                                                                         </p>
                                                                         <div className="space-y-3">
-                                                                            {inverseCorrelations.map(corr => window.renderCorrelationCard(corr, true))}
-                                                                            {sleepToConsumptionNext.map(corr => window.renderCorrelationCard(corr, true))}
-                                                                            {emotionsToConsumption.map(corr => window.renderCorrelationCard(corr, true))}
-                                                                            {selfCareToConsumption.map(corr => window.renderCorrelationCard(corr, true))}
-                                                                            {consumptionAutocorrelation.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            {/* Humor (apenas → Consumo) */}
+                                                                            {inverseCorrelations.filter(c => c.name === 'Humor → Consumo').length > 0 && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(inverseCorrelations.find(c => c.name === 'Humor → Consumo'), true)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Energia (apenas → Consumo) */}
+                                                                            {inverseCorrelations.filter(c => c.name === 'Energia → Consumo').length > 0 && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(inverseCorrelations.find(c => c.name === 'Energia → Consumo'), true)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Sono ontem → Consumo hoje */}
+                                                                            {sleepToConsumptionNext.length > 0 && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(sleepToConsumptionNext[0], true)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Emoções ⇄ Consumo (bidirectional) */}
+                                                                            {(emotionsToConsumption.length > 0 || consumptionToEmotions.length > 0) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {emotionsToConsumption.length > 0 && window.renderCorrelationCard(emotionsToConsumption[0], true)}
+                                                                                    {consumptionToEmotions.length > 0 && window.renderCorrelationCard(consumptionToEmotions[0], false)}
+                                                                                    {emotionsToConsumption.length === 0 && consumptionToEmotions.length > 0 && <div></div>}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Autocuidado ⇄ Consumo (bidirectional) */}
+                                                                            {(selfCareToConsumption.length > 0 || consumptionToSelfCare.length > 0) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {selfCareToConsumption.length > 0 && window.renderCorrelationCard(selfCareToConsumption[0], true)}
+                                                                                    {consumptionToSelfCare.length > 0 && window.renderCorrelationCard(consumptionToSelfCare[0], false)}
+                                                                                    {selfCareToConsumption.length === 0 && consumptionToSelfCare.length > 0 && <div></div>}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Consumo Ontem → Hoje */}
+                                                                            {consumptionAutocorrelation.length > 0 && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(consumptionAutocorrelation[0], false)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -3726,40 +3975,33 @@ export function AnalysesView({
                                                                         gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
                                                                     };
 
+                                                                    // Preparar card para renderizar Bedtime → Consumo
+                                                                    const bedtimeToConsCard = bedtimeConsumptionData.length >= 1 ? {
+                                                                        name: 'Bedtime → Consumo',
+                                                                        icon: '🕐',
+                                                                        correlation: correlation,
+                                                                        average: (() => {
+                                                                            const avgBedtime = bedtimeConsumptionData.reduce((s, d) => s + d.bedtime, 0) / bedtimeConsumptionData.length;
+                                                                            const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
+                                                                            const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
+                                                                            const avgBedtimeMins = Math.round(adjustedMinutes % 60);
+                                                                            return `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
+                                                                        })(),
+                                                                        unit: '',
+                                                                        dataPoints: bedtimeConsumptionData.length,
+                                                                        type: 'bedtime'
+                                                                    } : null;
+
                                                                     return (
                                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🕐💊 Hora de Deitar vs Consumo</h3>
+                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Hora de Deitar ⇄ Consumo</h3>
                                                                             <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                Correlação entre a hora que te deitas e o consumo desse dia
+                                                                                Relação bidirecional entre hora de deitar e consumo
                                                                             </p>
-                                                                            {bedtimeConsumptionData.length >= 1 ? (
-                                                                                <div className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
-                                                                                    <div className="flex items-center justify-between mb-2">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <span className="text-xl">🕐➡️💊</span>
-                                                                                            <span className="font-semibold">Bedtime → Consumo</span>
-                                                                                        </div>
-                                                                                        <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
-                                                                                            {label.text}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-sm mb-2">
-                                                                                        <span className="opacity-75">Hora média de deitar: </span>
-                                                                                        <span className="font-bold">{(() => {
-                                                                                            const avgBedtime = bedtimeConsumptionData.reduce((s, d) => s + d.bedtime, 0) / bedtimeConsumptionData.length;
-                                                                                            const adjustedMinutes = avgBedtime >= 1440 ? avgBedtime - 1440 : avgBedtime;
-                                                                                            const avgBedtimeHours = Math.floor(adjustedMinutes / 60);
-                                                                                            const avgBedtimeMins = Math.round(adjustedMinutes % 60);
-                                                                                            return `${String(avgBedtimeHours).padStart(2, '0')}:${String(avgBedtimeMins).padStart(2, '0')}`;
-                                                                                        })()}</span>
-                                                                                        <span className="opacity-75"> • Consumo médio: </span>
-                                                                                        <span className="font-bold">{(bedtimeConsumptionData.reduce((s, d) => s + d.consumptions, 0) / bedtimeConsumptionData.length).toFixed(1)}/dia</span>
-                                                                                    </div>
-                                                                                    <div className="text-xs opacity-75">
-                                                                                        {label.desc && <span>💡 {label.desc}</span>}
-                                                                                        {correlation !== null && <span className="ml-2">• r = {correlation.toFixed(2)}</span>}
-                                                                                        <span className="ml-2">• {bedtimeConsumptionData.length} dias</span>
-                                                                                    </div>
+                                                                            {(bedtimeToConsCard || consumptionToBedtime.length > 0) ? (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {bedtimeToConsCard ? window.renderCorrelationCard(bedtimeToConsCard, true) : <div></div>}
+                                                                                    {consumptionToBedtime.length > 0 ? window.renderCorrelationCard(consumptionToBedtime[0], false) : <div></div>}
                                                                                 </div>
                                                                             ) : (
                                                                                 <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
@@ -3770,17 +4012,56 @@ export function AnalysesView({
                                                                     );
                                                                 })()}
 
-                                                                {/* 📊 IMPACTOS DO CONSUMO (adicionais) */}
-                                                                {(consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || dosageToWellbeing.length > 0) && (
+                                                                {/* 🔄 BEM-ESTAR ⇄ DOSAGEM */}
+                                                                {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Impactos Adicionais do Consumo</h3>
+                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Bem-estar ⇄ Dosagem</h3>
                                                                         <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Como o consumo e dosagem afetam o teu estado emocional e autocuidado
+                                                                            Como bem-estar afeta dosagem e vice-versa
                                                                         </p>
                                                                         <div className="space-y-3">
-                                                                            {consumptionToEmotions.map(corr => window.renderCorrelationCard(corr, false))}
-                                                                            {consumptionToSelfCare.map(corr => window.renderCorrelationCard(corr, false))}
-                                                                            {dosageToWellbeing.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            {/* Humor ⇄ Dosagem */}
+                                                                            {(wellbeingToDosage.some(c => c.name === 'Humor → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Humor')) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {wellbeingToDosage.find(c => c.name === 'Humor → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Humor → Dosagem'), true)}
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Humor') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Humor'), false)}
+                                                                                    {!wellbeingToDosage.find(c => c.name === 'Humor → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Humor') && <div></div>}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Energia ⇄ Dosagem */}
+                                                                            {(wellbeingToDosage.some(c => c.name === 'Energia → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Energia')) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {wellbeingToDosage.find(c => c.name === 'Energia → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Energia → Dosagem'), true)}
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Energia') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Energia'), false)}
+                                                                                    {!wellbeingToDosage.find(c => c.name === 'Energia → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Energia') && <div></div>}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Sono ⇄ Dosagem */}
+                                                                            {(wellbeingToDosage.some(c => c.name === 'Sono → Dosagem') || dosageToWellbeing.some(c => c.name === 'Dosagem → Sono')) && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {wellbeingToDosage.find(c => c.name === 'Sono → Dosagem') && window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Sono → Dosagem'), true)}
+                                                                                    {dosageToWellbeing.find(c => c.name === 'Dosagem → Sono') && window.renderCorrelationCard(dosageToWellbeing.find(c => c.name === 'Dosagem → Sono'), false)}
+                                                                                    {!wellbeingToDosage.find(c => c.name === 'Sono → Dosagem') && dosageToWellbeing.find(c => c.name === 'Dosagem → Sono') && <div></div>}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Emoções Negativas → Dosagem (sem inverso) */}
+                                                                            {wellbeingToDosage.some(c => c.name === 'Emoções Negativas → Dosagem') && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(wellbeingToDosage.find(c => c.name === 'Emoções Negativas → Dosagem'), true)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Intervalo → Dosagem (sem inverso) */}
+                                                                            {intervalToDosage.length > 0 && (
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    {window.renderCorrelationCard(intervalToDosage[0], false)}
+                                                                                    <div></div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 )}
@@ -3794,19 +4075,6 @@ export function AnalysesView({
                                                                         </p>
                                                                         <div className="space-y-3">
                                                                             {firstConsToTotal.map(corr => window.renderCorrelationCard(corr, false))}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {/* 📐 PADRÕES ESTRUTURAIS */}
-                                                                {intervalToDosage.length > 0 && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📐 Padrões Estruturais</h3>
-                                                                        <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            Relação entre intervalos e dosagens - padrões de compensação
-                                                                        </p>
-                                                                        <div className="space-y-3">
-                                                                            {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
                                                                         </div>
                                                                     </div>
                                                                 )}
