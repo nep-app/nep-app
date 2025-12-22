@@ -269,7 +269,7 @@ export function HomeViewRefactored({
         <GradientButton
           onClick={() => setShowGoalModal(true)}
           icon={Icons.Target}
-          variant="pink"
+          variant="orange"
         >
           Metas
         </GradientButton>
@@ -283,15 +283,15 @@ export function HomeViewRefactored({
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-xl p-4 font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+        <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-xl p-4 font-medium hover:from-emerald-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <Icons.Brain className="w-5 h-5 mb-2" />
           <div className="text-sm">Reflexão diária</div>
         </button>
-        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-xl p-4 font-medium hover:from-pink-600 hover:to-rose-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-4 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-xl mb-1">📊</div>
           <div className="text-sm">Registar mg</div>
         </button>
-        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-xl p-4 font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-4 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-xl mb-1">🌙</div>
           <div className="text-sm">Novo Ciclo</div>
         </button>
