@@ -277,6 +277,15 @@ export function PatternsView({
 
                                                                 const recentDates = sortedDates.slice(-daysToShow);
 
+                                                                console.log('📈 Gráfico Debug:', {
+                                                                    totalDates: sortedDates.length,
+                                                                    daysToShow,
+                                                                    recentDatesCount: recentDates.length,
+                                                                    maxCount,
+                                                                    byDate,
+                                                                    sampleDates: recentDates.slice(0, 5)
+                                                                });
+
                                                                 return (
                                                                     <div className="space-y-4">
                                                                         {/* Gráfico de barras */}
@@ -285,6 +294,10 @@ export function PatternsView({
                                                                                 const count = byDate[date];
                                                                                 const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
                                                                                 const isToday = date === new Date().toISOString().split('T')[0];
+
+                                                                                if (idx < 3) {
+                                                                                    console.log(`Barra ${idx} - Data: ${date}, Count: ${count}, Height: ${heightPercent}%`);
+                                                                                }
 
                                                                                 return (
                                                                                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative">
