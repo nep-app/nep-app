@@ -3348,7 +3348,7 @@ export function AnalysesView({
                                                             const compositeData = [];
 
                                                             Object.entries(dailyData).forEach(([date, data]) => {
-                                                                const cons = consumptionsByDay[date] || 0;
+                                                                const cons = data.consumptions || 0;
                                                                 if (cons > 0 && data.mood !== null && data.sleep !== null) {
                                                                     compositeData.push({
                                                                         date,
@@ -3414,7 +3414,7 @@ export function AnalysesView({
                                                             const sortedDates = Object.keys(dailyData).sort();
                                                             sortedDates.forEach((date, idx) => {
                                                                 const today = dailyData[date];
-                                                                const todayCons = consumptionsByDay[date] || 0;
+                                                                const todayCons = today.consumptions || 0;
 
                                                                 if (todayCons > 0 && idx >= 2) {
                                                                     // Olhar para os 2 dias anteriores
