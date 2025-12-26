@@ -9,6 +9,7 @@ import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, 
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 import { calculateBadges } from '../utils/badgesCalculator';
 import { getEmotionCategory } from '../constants/emotions';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
@@ -4303,6 +4304,171 @@ export function AnalysesView({
                                                                         </div>}
                                                                     </div>
                                                                 )}
+
+                                                                {/* 📊 IMPACTO MÉDIO AGREGADO (Multi-dia) */}
+                                                                {(() => {
+                                                                    // Agregar TODOS os consumos de TODOS os dias e calcular impacto médio
+                                                                    const aggregatedImpact = [];
+
+                                                                    analysisConsumptions.forEach(cons => {
+                                                                        const consTime = new Date(cons.timestamp);
+
+                                                                        // Encontrar registos de bem-estar em janela temporal (-2h a +4h)
+                                                                        const nearbyWellbeing = analysisWellbeing.filter(w => {
+                                                                            const wTime = new Date(w.timestamp);
+                                                                            const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                            return hoursDiff >= -2 && hoursDiff <= 4 && w.mood;
+                                                                        });
+
+                                                                        nearbyWellbeing.forEach(w => {
+                                                                            const wTime = new Date(w.timestamp);
+                                                                            const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                            aggregatedImpact.push({
+                                                                                timeOffset: hoursDiff,
+                                                                                mood: parseInt(w.mood),
+                                                                                energy: w.energy ? parseInt(w.energy) : null
+                                                                            });
+                                                                        });
+                                                                    });
+
+                                                                    if (aggregatedImpact.length < 10) return null; // Precisamos dados suficientes
+
+                                                                    // Agrupar por janelas temporais
+                                                                    const timeWindows = [
+                                                                        { label: '-2h', min: -2.5, max: -1.5, data: [] },
+                                                                        { label: '-1h', min: -1.5, max: -0.5, data: [] },
+                                                                        { label: '0h', min: -0.25, max: 0.25, data: [] },
+                                                                        { label: '+30min', min: 0.25, max: 0.75, data: [] },
+                                                                        { label: '+1h', min: 0.75, max: 1.5, data: [] },
+                                                                        { label: '+2h', min: 1.5, max: 2.5, data: [] },
+                                                                        { label: '+4h', min: 3.5, max: 4.5, data: [] }
+                                                                    ];
+
+                                                                    aggregatedImpact.forEach(point => {
+                                                                        timeWindows.forEach(window => {
+                                                                            if (point.timeOffset >= window.min && point.timeOffset < window.max) {
+                                                                                window.data.push(point);
+                                                                            }
+                                                                        });
+                                                                    });
+
+                                                                    // Calcular médias por janela
+                                                                    const chartData = timeWindows
+                                                                        .filter(w => w.data.length >= 2)
+                                                                        .map(w => ({
+                                                                            time: w.label,
+                                                                            humor: (w.data.reduce((s, d) => s + d.mood, 0) / w.data.length).toFixed(1),
+                                                                            energia: w.data.filter(d => d.energy).length > 0 ?
+                                                                                (w.data.filter(d => d.energy).reduce((s, d) => s + d.energy, 0) / w.data.filter(d => d.energy).length).toFixed(1) : null,
+                                                                            count: w.data.length
+                                                                        }));
+
+                                                                    if (chartData.length < 3) return null;
+
+                                                                    // Métricas de latência
+                                                                    const baseline = chartData.find(d => d.time === '0h');
+                                                                    const post30min = chartData.find(d => d.time === '+30min');
+                                                                    const post1h = chartData.find(d => d.time === '+1h');
+                                                                    const post2h = chartData.find(d => d.time === '+2h');
+
+                                                                    let latency = [];
+                                                                    if (baseline && post30min) {
+                                                                        latency.push({
+                                                                            window: '30min pós',
+                                                                            delta: (parseFloat(post30min.humor) - parseFloat(baseline.humor)).toFixed(1),
+                                                                            isPeak: false
+                                                                        });
+                                                                    }
+                                                                    if (baseline && post1h) {
+                                                                        latency.push({
+                                                                            window: '1h pós',
+                                                                            delta: (parseFloat(post1h.humor) - parseFloat(baseline.humor)).toFixed(1),
+                                                                            isPeak: false
+                                                                        });
+                                                                    }
+                                                                    if (baseline && post2h) {
+                                                                        latency.push({
+                                                                            window: '2h pós',
+                                                                            delta: (parseFloat(post2h.humor) - parseFloat(baseline.humor)).toFixed(1),
+                                                                            isPeak: false
+                                                                        });
+                                                                    }
+
+                                                                    // Identificar pico
+                                                                    if (latency.length > 0) {
+                                                                        const maxIdx = latency.reduce((maxI, curr, i, arr) => parseFloat(curr.delta) > parseFloat(arr[maxI].delta) ? i : maxI, 0);
+                                                                        latency[maxIdx].isPeak = true;
+                                                                    }
+
+                                                                    return (
+                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                            <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('intraDayAnalysis')}>
+                                                                                <div>
+                                                                                    <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Impacto Médio do Consumo (Agregado)</h3>
+                                                                                    <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        Evolução média do humor/energia antes e depois de TODOS os consumos
+                                                                                    </p>
+                                                                                </div>
+                                                                                <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                    {expandedSections.intraDayAnalysis ? '▼' : '▶'}
+                                                                                </button>
+                                                                            </div>
+                                                                            {expandedSections.intraDayAnalysis && (
+                                                                                <div className="space-y-4 mt-4">
+                                                                                    {/* Latência Temporal */}
+                                                                                    {latency.length > 0 && (
+                                                                                        <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Latência de Efeito</div>
+                                                                                            <div className="grid grid-cols-3 gap-3">
+                                                                                                {latency.map(lat => (
+                                                                                                    <div key={lat.window} className={'text-center p-2 rounded ' + (lat.isPeak ? (darkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-100 border border-yellow-300') : '')}>
+                                                                                                        <div className={'text-xs opacity-75'}>{lat.window}</div>
+                                                                                                        <div className={'text-xl font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                            {lat.delta > 0 ? '+' : ''}{lat.delta}
+                                                                                                        </div>
+                                                                                                        {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ PICO</div>}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                            <p className={'text-xs italic mt-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                Mudança média no humor comparando com o momento do consumo (0h)
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* Gráfico Agregado */}
+                                                                                    <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-4'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (themeClasses.textSecondary(darkMode))}>📈 Evolução Temporal</div>
+                                                                                        <div style={{ width: '100%', height: 200 }}>
+                                                                                            <ResponsiveContainer>
+                                                                                                <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
+                                                                                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                                                                                                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                                                                                                    <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                                                                                                    <Tooltip
+                                                                                                        contentStyle={{
+                                                                                                            backgroundColor: darkMode ? '#1f2937' : '#fff',
+                                                                                                            border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                                                                                                            borderRadius: '6px',
+                                                                                                            fontSize: '12px'
+                                                                                                        }}
+                                                                                                    />
+                                                                                                    <Line type="monotone" dataKey="humor" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name="Humor" />
+                                                                                                    {chartData.some(d => d.energia) && (
+                                                                                                        <Line type="monotone" dataKey="energia" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} name="Energia" />
+                                                                                                    )}
+                                                                                                </LineChart>
+                                                                                            </ResponsiveContainer>
+                                                                                        </div>
+                                                                                        <p className={'text-xs italic mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            Eixo X: Tempo relativo ao consumo | Eixo Y: Humor/Energia (0-10)
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
 
                                                                 {/* Análise Intra-dia */}
                                                                 {(() => {
