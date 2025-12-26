@@ -9,7 +9,7 @@ import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, 
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 import { calculateBadges } from '../utils/badgesCalculator';
 import { getEmotionCategory } from '../constants/emotions';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const WellbeingChart = lazy(() => import('../components/WellbeingChart'));
 
@@ -3083,6 +3083,73 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // DOSAGEM SEMANAL (gráfico de tendência)
+                                                        const weeklyDosage = [];
+
+                                                        if (analysisConsumptions.length >= 7) {
+                                                            // Helper: obter ISO week number
+                                                            const getISOWeek = (date) => {
+                                                                const d = new Date(date);
+                                                                d.setHours(0, 0, 0, 0);
+                                                                d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+                                                                const yearStart = new Date(d.getFullYear(), 0, 1);
+                                                                const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                                                                return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+                                                            };
+
+                                                            // Agrupar dosagem por semana
+                                                            const weeklyData = {};
+                                                            analysisConsumptions.forEach(c => {
+                                                                const mg = parseFloat(c.mg);
+                                                                if (!mg || mg <= 0) return;
+
+                                                                const week = getISOWeek(c.timestamp);
+                                                                if (!weeklyData[week]) {
+                                                                    weeklyData[week] = { week, totalMg: 0, count: 0 };
+                                                                }
+                                                                weeklyData[week].totalMg += mg;
+                                                                weeklyData[week].count++;
+                                                            });
+
+                                                            // Converter para array e ordenar por semana
+                                                            const sortedWeeks = Object.values(weeklyData).sort((a, b) => a.week.localeCompare(b.week));
+
+                                                            if (sortedWeeks.length >= 2) {
+                                                                // Calcular tendência (últimas 4 semanas vs primeiras 4)
+                                                                const recentWeeks = sortedWeeks.slice(-4);
+                                                                const oldWeeks = sortedWeeks.slice(0, Math.min(4, sortedWeeks.length - 4));
+                                                                const avgRecent = recentWeeks.reduce((s, w) => s + w.totalMg, 0) / recentWeeks.length;
+                                                                const avgOld = oldWeeks.length > 0 ? oldWeeks.reduce((s, w) => s + w.totalMg, 0) / oldWeeks.length : avgRecent;
+                                                                const trendPct = oldWeeks.length > 0 ? ((avgRecent - avgOld) / avgOld * 100) : 0;
+
+                                                                let trendLabel = 'Estável';
+                                                                let trendIcon = '➡️';
+                                                                if (trendPct > 15) {
+                                                                    trendLabel = 'A Aumentar';
+                                                                    trendIcon = '📈';
+                                                                } else if (trendPct < -15) {
+                                                                    trendLabel = 'A Reduzir';
+                                                                    trendIcon = '📉';
+                                                                }
+
+                                                                // Preparar dados para gráfico (últimas 12 semanas máximo)
+                                                                const chartData = sortedWeeks.slice(-12).map(w => ({
+                                                                    week: w.week.replace(/^\d{4}-W/, 'S'),
+                                                                    dosagem: w.totalMg,
+                                                                    count: w.count
+                                                                }));
+
+                                                                weeklyDosage.push({
+                                                                    chartData,
+                                                                    avgWeekly: (sortedWeeks.reduce((s, w) => s + w.totalMg, 0) / sortedWeeks.length).toFixed(0),
+                                                                    trend: trendLabel,
+                                                                    trendIcon,
+                                                                    trendPct: trendPct.toFixed(0),
+                                                                    weeks: sortedWeeks.length
+                                                                });
+                                                            }
+                                                        }
+
                                                         // 9. PRIMEIRO CONSUMO → TOTAL DO DIA
                                                         // Usa timestamp do "Novo Ciclo" como referência
                                                         const firstConsToTotal = [];
@@ -4237,6 +4304,86 @@ export function AnalysesView({
 
                                                                             {/* Intervalo → Dosagem */}
                                                                             {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
+
+                                                                            {/* Gráfico de Dosagem Semanal */}
+                                                                            {weeklyDosage.length > 0 && (
+                                                                                <div className="md:col-span-2">
+                                                                                    <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 flex items-center justify-between ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>
+                                                                                            <span>📊 Dosagem Semanal</span>
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <span className="text-xs opacity-75">{weeklyDosage[0].weeks} {weeklyDosage[0].weeks === 1 ? 'semana' : 'semanas'}</span>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Métricas de Tendência */}
+                                                                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Média Semanal</div>
+                                                                                                <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                                    {weeklyDosage[0].avgWeekly}mg
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className={'text-center p-3 rounded ' + (
+                                                                                                weeklyDosage[0].trend === 'A Reduzir'
+                                                                                                    ? (darkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-100 border border-green-300')
+                                                                                                    : weeklyDosage[0].trend === 'A Aumentar'
+                                                                                                        ? (darkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-100 border border-red-300')
+                                                                                                        : (darkMode ? 'bg-gray-800/50' : 'bg-white')
+                                                                                            )}>
+                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Tendência (4 sem)</div>
+                                                                                                <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (
+                                                                                                    weeklyDosage[0].trend === 'A Reduzir'
+                                                                                                        ? (darkMode ? 'text-green-400' : 'text-green-600')
+                                                                                                        : weeklyDosage[0].trend === 'A Aumentar'
+                                                                                                            ? (darkMode ? 'text-red-400' : 'text-red-600')
+                                                                                                            : (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                                )}>
+                                                                                                    <span>{weeklyDosage[0].trendIcon}</span>
+                                                                                                    <span className="text-sm">{weeklyDosage[0].trendPct}%</span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {/* Gráfico de Barras */}
+                                                                                        <div style={{ width: '100%', height: 200 }}>
+                                                                                            <ResponsiveContainer>
+                                                                                                <BarChart data={weeklyDosage[0].chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
+                                                                                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                                                                                                    <XAxis
+                                                                                                        dataKey="week"
+                                                                                                        tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                                                                                                    />
+                                                                                                    <YAxis
+                                                                                                        tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                                                                                                        label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                                                                                                    />
+                                                                                                    <Tooltip
+                                                                                                        contentStyle={{
+                                                                                                            backgroundColor: darkMode ? '#1f2937' : '#fff',
+                                                                                                            border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                                                                                                            borderRadius: '6px',
+                                                                                                            fontSize: '12px'
+                                                                                                        }}
+                                                                                                        formatter={(value, name, props) => [
+                                                                                                            `${value}mg (${props.payload.count} consumos)`,
+                                                                                                            'Dosagem Total'
+                                                                                                        ]}
+                                                                                                    />
+                                                                                                    <Bar
+                                                                                                        dataKey="dosagem"
+                                                                                                        fill={darkMode ? '#a78bfa' : '#8b5cf6'}
+                                                                                                        radius={[4, 4, 0, 0]}
+                                                                                                    />
+                                                                                                </BarChart>
+                                                                                            </ResponsiveContainer>
+                                                                                        </div>
+                                                                                        <p className={'text-xs italic mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            Últimas {Math.min(12, weeklyDosage[0].weeks)} semanas | Eixo Y: Dosagem total (mg)
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>}
                                                                     </div>
                                                                 )}
