@@ -3921,7 +3921,7 @@ export function AnalysesView({
                                                                             const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                                                                             const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
                                                                             sleepMoodCorrelations.push({
-                                                                                name: 'Sono → Humor (mesmo dia)',
+                                                                                name: 'Sono (última noite) → Humor hoje',
                                                                                 icon: '😴➡️😊',
                                                                                 correlation: corr,
                                                                                 avgSleep: avgSleep.toFixed(1),
@@ -3989,7 +3989,7 @@ export function AnalysesView({
                                                                                         <div>
                                                                                             <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
                                                                                             <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                Como a qualidade/quantidade de sono influencia o humor
+                                                                                                Como o sono da última noite influencia o humor do dia
                                                                                             </p>
                                                                                         </div>
                                                                                         <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
@@ -3997,8 +3997,8 @@ export function AnalysesView({
                                                                                         </button>
                                                                                     </div>
                                                                                     {expandedSections.sleepMood && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                                                                                        {sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)') ?
-                                                                                            renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono → Humor (mesmo dia)')) :
+                                                                                        {sleepMoodCorrelations.find(c => c.name === 'Sono (última noite) → Humor hoje') ?
+                                                                                            renderSleepMoodCard(sleepMoodCorrelations.find(c => c.name === 'Sono (última noite) → Humor hoje')) :
                                                                                             <div></div>
                                                                                         }
                                                                                         {sleepMoodCorrelations.find(c => c.name === 'Sono → Humor amanhã') ?
