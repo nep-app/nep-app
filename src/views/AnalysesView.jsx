@@ -3191,6 +3191,82 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // CONSUMO POR PERÍODO DO DIA
+                                                        const consumptionByPeriod = [];
+
+                                                        if (analysisConsumptions.length >= 10 && analysisWellbeing.length >= 5) {
+                                                            // Agrupar consumos por data e período
+                                                            const periodData = {};
+
+                                                            analysisConsumptions.forEach(c => {
+                                                                const hour = new Date(c.timestamp).getHours();
+                                                                let period = '';
+                                                                if (hour >= 6 && hour < 12) period = 'morning';
+                                                                else if (hour >= 12 && hour < 18) period = 'afternoon';
+                                                                else if (hour >= 18 && hour < 24) period = 'evening';
+                                                                else period = 'night';
+
+                                                                if (!periodData[c.date]) {
+                                                                    periodData[c.date] = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+                                                                }
+                                                                periodData[c.date][period]++;
+                                                            });
+
+                                                            // Juntar com bem-estar
+                                                            const periodWellbeingData = { morning: [], afternoon: [], evening: [] };
+
+                                                            Object.entries(periodData).forEach(([date, periods]) => {
+                                                                const wellbeing = analysisWellbeing.find(w => (w.date || safeToISODate(w.timestamp)) === date);
+                                                                if (!wellbeing) return;
+
+                                                                if (wellbeing.mood) {
+                                                                    if (periods.morning > 0) periodWellbeingData.morning.push({ cons: periods.morning, mood: parseInt(wellbeing.mood) });
+                                                                    if (periods.afternoon > 0) periodWellbeingData.afternoon.push({ cons: periods.afternoon, mood: parseInt(wellbeing.mood) });
+                                                                    if (periods.evening > 0) periodWellbeingData.evening.push({ cons: periods.evening, mood: parseInt(wellbeing.mood) });
+                                                                }
+                                                            });
+
+                                                            // Calcular correlações
+                                                            if (periodWellbeingData.morning.length >= 3) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.morning, 'cons', 'mood');
+                                                                const avgCons = periodWellbeingData.morning.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.morning.length;
+                                                                consumptionByPeriod.push({
+                                                                    name: 'Consumo Manhã → Humor',
+                                                                    icon: '🌅',
+                                                                    period: '6h-12h',
+                                                                    correlation: corr,
+                                                                    average: avgCons.toFixed(1),
+                                                                    dataPoints: periodWellbeingData.morning.length
+                                                                });
+                                                            }
+
+                                                            if (periodWellbeingData.afternoon.length >= 3) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.afternoon, 'cons', 'mood');
+                                                                const avgCons = periodWellbeingData.afternoon.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.afternoon.length;
+                                                                consumptionByPeriod.push({
+                                                                    name: 'Consumo Tarde → Humor',
+                                                                    icon: '☀️',
+                                                                    period: '12h-18h',
+                                                                    correlation: corr,
+                                                                    average: avgCons.toFixed(1),
+                                                                    dataPoints: periodWellbeingData.afternoon.length
+                                                                });
+                                                            }
+
+                                                            if (periodWellbeingData.evening.length >= 3) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.evening, 'cons', 'mood');
+                                                                const avgCons = periodWellbeingData.evening.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.evening.length;
+                                                                consumptionByPeriod.push({
+                                                                    name: 'Consumo Noite → Humor',
+                                                                    icon: '🌙',
+                                                                    period: '18h-00h',
+                                                                    correlation: corr,
+                                                                    average: avgCons.toFixed(1),
+                                                                    dataPoints: periodWellbeingData.evening.length
+                                                                });
+                                                            }
+                                                        }
+
                                                         // 10. INTERVALO → DOSAGEM
                                                         const intervalToDosage = [];
 
@@ -4165,7 +4241,7 @@ export function AnalysesView({
                                                                 )}
 
                                                                 {/* ⏰ PADRÕES TEMPORAIS */}
-                                                                {(firstConsToTotal.length > 0 || temporalDispersion.length > 0) && (
+                                                                {(firstConsToTotal.length > 0 || temporalDispersion.length > 0 || consumptionByPeriod.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalPatterns')}>
                                                                             <div>
@@ -4214,6 +4290,16 @@ export function AnalysesView({
                                                                                     </div>
                                                                                 </div>
                                                                             ))}
+
+                                                                            {/* Consumo por Período */}
+                                                                            {consumptionByPeriod.map(period => window.renderCorrelationCard({
+                                                                                name: `${period.name} (${period.period})`,
+                                                                                icon: period.icon,
+                                                                                correlation: period.correlation,
+                                                                                average: period.average,
+                                                                                unit: 'cons',
+                                                                                dataPoints: period.dataPoints
+                                                                            }, false))}
                                                                         </div>}
                                                                     </div>
                                                                 )}
