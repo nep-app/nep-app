@@ -1362,10 +1362,10 @@ export function PatternsView({
                                                                         <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-3 py-2'}>
                                                                             <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
-                                                                                    ? 'Deitas-te sempre a horas semelhantes (variação <30min). Excelente para a qualidade do sono!'
+                                                                                    ? '🎯 Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.'
                                                                                     : progressData.bedtimeConsistency.recent < 60
-                                                                                    ? 'Variação moderada nas horas de deitar. Tenta manter uma rotina mais regular.'
-                                                                                    : `Horas de deitar muito variáveis (±${(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h). Rotinas consistentes melhoram o sono.`}
+                                                                                    ? `⚖️ Variação moderada (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h nas horas de deitar). Há alguma consistência, mas podes melhorar. Tenta definir uma janela de 30min (ex: 23h-23h30) para deitar, mesmo aos fins-de-semana.`
+                                                                                    : `🌪️ Horas muito variáveis (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda.`}
                                                                             </p>
                                                                         </div>
                                                                     </div>
