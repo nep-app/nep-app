@@ -37,7 +37,8 @@ export function AnalysesView({
         bedtimeWellbeing: !isMobile,
         wellbeingDosage: !isMobile,
         temporalPatterns: !isMobile,
-        intraDayAnalysis: !isMobile
+        intraDayAnalysis: !isMobile,
+        experimental: !isMobile
     });
 
     const toggleSection = (section) => {
@@ -3335,6 +3336,164 @@ export function AnalysesView({
                                                             }
                                                         }
 
+                                                        // ⚗️ FEATURES EXPERIMENTAIS
+                                                        const experimentalFeatures = {
+                                                            compositeTriggers: [],
+                                                            antecedents: [],
+                                                            satisfaction: []
+                                                        };
+
+                                                        if (analysisConsumptions.length >= 10 && analysisWellbeing.length >= 10) {
+                                                            // 1. GATILHOS COMPOSTOS (combinações de fatores)
+                                                            const compositeData = [];
+
+                                                            Object.entries(dailyData).forEach(([date, data]) => {
+                                                                const cons = consumptionsByDay[date] || 0;
+                                                                if (cons > 0 && data.mood !== null && data.sleep !== null) {
+                                                                    compositeData.push({
+                                                                        date,
+                                                                        cons,
+                                                                        lowMood: parseInt(data.mood) <= 4,
+                                                                        poorSleep: parseInt(data.sleep) <= 5,
+                                                                        lowEnergy: data.energy ? parseInt(data.energy) <= 4 : null,
+                                                                        mood: parseInt(data.mood),
+                                                                        sleep: parseInt(data.sleep),
+                                                                        energy: data.energy ? parseInt(data.energy) : null
+                                                                    });
+                                                                }
+                                                            });
+
+                                                            if (compositeData.length >= 10) {
+                                                                // Analisar: Humor Baixo + Sono Mau
+                                                                const lowMoodPoorSleep = compositeData.filter(d => d.lowMood && d.poorSleep);
+                                                                const normalDays = compositeData.filter(d => !d.lowMood || !d.poorSleep);
+
+                                                                if (lowMoodPoorSleep.length >= 3 && normalDays.length >= 3) {
+                                                                    const avgConsWhenBoth = lowMoodPoorSleep.reduce((s, d) => s + d.cons, 0) / lowMoodPoorSleep.length;
+                                                                    const avgConsNormal = normalDays.reduce((s, d) => s + d.cons, 0) / normalDays.length;
+                                                                    const increasePct = avgConsNormal > 0 ? ((avgConsWhenBoth - avgConsNormal) / avgConsNormal * 100) : 0;
+
+                                                                    if (Math.abs(increasePct) > 10) {
+                                                                        experimentalFeatures.compositeTriggers.push({
+                                                                            name: 'Humor Baixo + Sono Mau',
+                                                                            icon: '😔💤',
+                                                                            avgCons: avgConsWhenBoth.toFixed(1),
+                                                                            normalCons: avgConsNormal.toFixed(1),
+                                                                            increase: increasePct.toFixed(0),
+                                                                            occurrences: lowMoodPoorSleep.length
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // Analisar: Humor Baixo + Energia Baixa
+                                                                const hasEnergy = compositeData.filter(d => d.lowEnergy !== null);
+                                                                if (hasEnergy.length >= 10) {
+                                                                    const lowMoodLowEnergy = hasEnergy.filter(d => d.lowMood && d.lowEnergy);
+                                                                    const normalDaysEnergy = hasEnergy.filter(d => !d.lowMood || !d.lowEnergy);
+
+                                                                    if (lowMoodLowEnergy.length >= 3 && normalDaysEnergy.length >= 3) {
+                                                                        const avgConsWhenBoth = lowMoodLowEnergy.reduce((s, d) => s + d.cons, 0) / lowMoodLowEnergy.length;
+                                                                        const avgConsNormal = normalDaysEnergy.reduce((s, d) => s + d.cons, 0) / normalDaysEnergy.length;
+                                                                        const increasePct = avgConsNormal > 0 ? ((avgConsWhenBoth - avgConsNormal) / avgConsNormal * 100) : 0;
+
+                                                                        if (Math.abs(increasePct) > 10) {
+                                                                            experimentalFeatures.compositeTriggers.push({
+                                                                                name: 'Humor Baixo + Energia Baixa',
+                                                                                icon: '😔⚡',
+                                                                                avgCons: avgConsWhenBoth.toFixed(1),
+                                                                                normalCons: avgConsNormal.toFixed(1),
+                                                                                increase: increasePct.toFixed(0),
+                                                                                occurrences: lowMoodLowEnergy.length
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // 2. ANTECEDENTES 24-48h (padrões antes de consumir)
+                                                            const sortedDates = Object.keys(dailyData).sort();
+                                                            sortedDates.forEach((date, idx) => {
+                                                                const today = dailyData[date];
+                                                                const todayCons = consumptionsByDay[date] || 0;
+
+                                                                if (todayCons > 0 && idx >= 2) {
+                                                                    // Olhar para os 2 dias anteriores
+                                                                    const yesterday = dailyData[sortedDates[idx - 1]];
+                                                                    const dayBefore = dailyData[sortedDates[idx - 2]];
+
+                                                                    if (yesterday?.mood && dayBefore?.mood) {
+                                                                        // Detectar tendência de declínio de humor
+                                                                        const moodDecline = parseInt(dayBefore.mood) - parseInt(yesterday.mood) > 1;
+                                                                        const poorSleepStreak = yesterday.sleep && parseInt(yesterday.sleep) <= 5 && dayBefore.sleep && parseInt(dayBefore.sleep) <= 5;
+
+                                                                        if (moodDecline) {
+                                                                            experimentalFeatures.antecedents.push({
+                                                                                date,
+                                                                                pattern: 'Declínio de Humor (2 dias)',
+                                                                                icon: '📉😔',
+                                                                                cons: todayCons
+                                                                            });
+                                                                        }
+
+                                                                        if (poorSleepStreak) {
+                                                                            experimentalFeatures.antecedents.push({
+                                                                                date,
+                                                                                pattern: 'Sono Mau Consecutivo (2+ dias)',
+                                                                                icon: '💤💤',
+                                                                                cons: todayCons
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }
+                                                            });
+
+                                                            // 3. SATISFAÇÃO/EFICÁCIA (melhoria pós-consumo)
+                                                            const satisfactionData = [];
+
+                                                            analysisConsumptions.forEach(cons => {
+                                                                const consTime = new Date(cons.timestamp);
+
+                                                                // Encontrar bem-estar ANTES (-2h a 0h) e DEPOIS (+1h a +3h)
+                                                                const beforeRecords = analysisWellbeing.filter(w => {
+                                                                    const wTime = new Date(w.timestamp);
+                                                                    const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                    return hoursDiff >= -2 && hoursDiff <= 0 && w.mood;
+                                                                });
+
+                                                                const afterRecords = analysisWellbeing.filter(w => {
+                                                                    const wTime = new Date(w.timestamp);
+                                                                    const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                    return hoursDiff >= 1 && hoursDiff <= 3 && w.mood;
+                                                                });
+
+                                                                if (beforeRecords.length > 0 && afterRecords.length > 0) {
+                                                                    const avgBefore = beforeRecords.reduce((s, r) => s + parseInt(r.mood), 0) / beforeRecords.length;
+                                                                    const avgAfter = afterRecords.reduce((s, r) => s + parseInt(r.mood), 0) / afterRecords.length;
+                                                                    const improvement = avgAfter - avgBefore;
+
+                                                                    satisfactionData.push({
+                                                                        before: avgBefore,
+                                                                        after: avgAfter,
+                                                                        improvement,
+                                                                        effective: improvement > 0.5
+                                                                    });
+                                                                }
+                                                            });
+
+                                                            if (satisfactionData.length >= 5) {
+                                                                const avgImprovement = satisfactionData.reduce((s, d) => s + d.improvement, 0) / satisfactionData.length;
+                                                                const effectiveCount = satisfactionData.filter(d => d.effective).length;
+                                                                const effectiveRate = (effectiveCount / satisfactionData.length * 100);
+
+                                                                experimentalFeatures.satisfaction.push({
+                                                                    avgImprovement: avgImprovement.toFixed(1),
+                                                                    effectiveRate: effectiveRate.toFixed(0),
+                                                                    totalEvents: satisfactionData.length,
+                                                                    effectiveCount
+                                                                });
+                                                            }
+                                                        }
+
                                                         // 10. INTERVALO → DOSAGEM
                                                         const intervalToDosage = [];
 
@@ -4616,6 +4775,142 @@ export function AnalysesView({
                                                                         </div>
                                                                     );
                                                                 })()}
+
+                                                                {/* ⚗️ FEATURES EXPERIMENTAIS */}
+                                                                {(experimentalFeatures.compositeTriggers.length > 0 || experimentalFeatures.antecedents.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
+                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border border-dashed'}>
+                                                                        <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('experimental')}>
+                                                                            <div>
+                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>⚗️ Features Experimentais</h3>
+                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    Análises avançadas: gatilhos compostos, antecedentes e eficácia
+                                                                                </p>
+                                                                            </div>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                {expandedSections.experimental ? '▼' : '▶'}
+                                                                            </button>
+                                                                        </div>
+                                                                        {expandedSections.experimental && (
+                                                                            <div className="space-y-4 mt-4">
+                                                                                {/* Gatilhos Compostos */}
+                                                                                {experimentalFeatures.compositeTriggers.length > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-orange-900/20 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>
+                                                                                            🧩 Gatilhos Compostos
+                                                                                        </div>
+                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            Combinações de fatores que precedem consumo elevado
+                                                                                        </p>
+                                                                                        <div className="space-y-2">
+                                                                                            {experimentalFeatures.compositeTriggers.map((trigger, idx) => (
+                                                                                                <div key={idx} className={'p-3 rounded border ' + (darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200')}>
+                                                                                                    <div className="flex items-start justify-between">
+                                                                                                        <div className="flex-1">
+                                                                                                            <div className="flex items-center gap-2 mb-1">
+                                                                                                                <span className="text-lg">{trigger.icon}</span>
+                                                                                                                <span className={'font-semibold text-sm ' + (themeClasses.textSecondary(darkMode))}>
+                                                                                                                    {trigger.name}
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                                {trigger.occurrences} {trigger.occurrences === 1 ? 'ocorrência' : 'ocorrências'} registadas
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div className="text-right">
+                                                                                                            <div className={'text-2xl font-bold ' + (parseFloat(trigger.increase) > 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>
+                                                                                                                {trigger.increase > 0 ? '+' : ''}{trigger.increase}%
+                                                                                                            </div>
+                                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                                {trigger.avgCons} vs {trigger.normalCons} cons
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Antecedentes */}
+                                                                                {experimentalFeatures.antecedents.length > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                                            🔍 Padrões Antecedentes (24-48h)
+                                                                                        </div>
+                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            O que aconteceu ANTES de consumir
+                                                                                        </p>
+                                                                                        <div className="space-y-1">
+                                                                                            {/* Agrupar por padrão */}
+                                                                                            {(() => {
+                                                                                                const grouped = {};
+                                                                                                experimentalFeatures.antecedents.forEach(a => {
+                                                                                                    if (!grouped[a.pattern]) grouped[a.pattern] = { ...a, count: 0 };
+                                                                                                    grouped[a.pattern].count++;
+                                                                                                });
+                                                                                                return Object.values(grouped).map((pattern, idx) => (
+                                                                                                    <div key={idx} className={'flex items-center justify-between p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                        <div className="flex items-center gap-2">
+                                                                                                            <span className="text-base">{pattern.icon}</span>
+                                                                                                            <span className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>
+                                                                                                                {pattern.pattern}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className={'text-xs font-semibold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                                                            {pattern.count}x
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ));
+                                                                                            })()}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* Satisfação/Eficácia */}
+                                                                                {experimentalFeatures.satisfaction.length > 0 && (
+                                                                                    <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-green-300' : 'text-green-800')}>
+                                                                                            ✅ Eficácia do Consumo
+                                                                                        </div>
+                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            Melhoria de humor nas 1-3h após consumo
+                                                                                        </p>
+                                                                                        {experimentalFeatures.satisfaction.map((sat, idx) => (
+                                                                                            <div key={idx} className="grid grid-cols-2 gap-3">
+                                                                                                <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                    <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                        Melhoria Média
+                                                                                                    </div>
+                                                                                                    <div className={'text-3xl font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                        {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
+                                                                                                    </div>
+                                                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                        pontos (0-10)
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                    <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                        Taxa de Eficácia
+                                                                                                    </div>
+                                                                                                    <div className={'text-3xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                        {sat.effectiveRate}%
+                                                                                                    </div>
+                                                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                        {sat.effectiveCount}/{sat.totalEvents} eventos
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    ⚠️ Estas análises são experimentais e requerem dados detalhados de bem-estar
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
 
                                                                 {/* Análise Intra-dia */}
                                                                 {(() => {
