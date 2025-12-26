@@ -4441,7 +4441,7 @@ export function AnalysesView({
                                                                 )}
 
                                                                 {/* 💊 DOSAGEM ⇄ CONTEXTO */}
-                                                                {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
+                                                                {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0 || weeklyDosage.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
                                                                             <div>
@@ -4724,7 +4724,7 @@ export function AnalysesView({
                                                                                     {/* Latência Temporal */}
                                                                                     {latency.length > 0 && (
                                                                                         <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Latência de Efeito</div>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Evolução Pós-Consumo</div>
                                                                                             <div className="grid grid-cols-3 gap-3">
                                                                                                 {latency.map(lat => (
                                                                                                     <div key={lat.window} className={'text-center p-2 rounded ' + (lat.isPeak ? (darkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-100 border border-yellow-300') : '')}>
@@ -4732,12 +4732,12 @@ export function AnalysesView({
                                                                                                         <div className={'text-xl font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
                                                                                                             {lat.delta > 0 ? '+' : ''}{lat.delta}
                                                                                                         </div>
-                                                                                                        {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ PICO</div>}
+                                                                                                        {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ MAIOR MUDANÇA</div>}
                                                                                                     </div>
                                                                                                 ))}
                                                                                             </div>
                                                                                             <p className={'text-xs italic mt-3 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                Mudança média no humor comparando com o momento do consumo (0h)
+                                                                                                Mudança vs momento do consumo (0h). ⚠️ Negativo = humor piora APÓS consumir. Diferente da "Eficácia" abaixo que compara antes vs depois.
                                                                                             </p>
                                                                                         </div>
                                                                                     )}
