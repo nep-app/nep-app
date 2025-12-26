@@ -108,6 +108,59 @@ export function PatternsView({
                                                 else byPartOfDay.madrugada++;
                                             });
 
+                                            // Calculate consumption trend (last 30 days)
+                                            const calculateTrend = () => {
+                                                const today = new Date();
+                                                const thirtyDaysAgo = new Date(today);
+                                                thirtyDaysAgo.setDate(today.getDate() - 30);
+
+                                                const last30Days = consumptions.filter(c => {
+                                                    const cDate = new Date(c.timestamp || c.createdAt);
+                                                    return cDate >= thirtyDaysAgo && cDate <= today;
+                                                });
+
+                                                if (last30Days.length < 7) return null; // Precisa pelo menos 7 dias de dados
+
+                                                // Agrupar por dia
+                                                const dailyCounts = {};
+                                                for (let i = 0; i <= 30; i++) {
+                                                    const d = new Date(thirtyDaysAgo);
+                                                    d.setDate(d.getDate() + i);
+                                                    const key = d.toISOString().split('T')[0];
+                                                    dailyCounts[key] = 0;
+                                                }
+
+                                                last30Days.forEach(c => {
+                                                    const key = (c.date || safeToISODate(c.timestamp));
+                                                    if (dailyCounts[key] !== undefined) dailyCounts[key]++;
+                                                });
+
+                                                // Regressão linear simples: y = mx + b
+                                                const points = Object.entries(dailyCounts).map(([date, count], idx) => ({ x: idx, y: count }));
+                                                const n = points.length;
+                                                const sumX = points.reduce((s, p) => s + p.x, 0);
+                                                const sumY = points.reduce((s, p) => s + p.y, 0);
+                                                const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+                                                const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
+
+                                                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                                                const intercept = (sumY - slope * sumX) / n;
+
+                                                // Projeção para 10 dias à frente
+                                                const currentAvg = sumY / n;
+                                                const projection10Days = slope * (n + 10) + intercept;
+
+                                                return {
+                                                    slope: slope,
+                                                    direction: Math.abs(slope) < 0.02 ? 'stable' : slope > 0 ? 'increasing' : 'decreasing',
+                                                    slopePerDay: slope.toFixed(2),
+                                                    currentAvg: currentAvg.toFixed(1),
+                                                    projection: projection10Days > 0 ? projection10Days.toFixed(1) : 0
+                                                };
+                                            };
+
+                                            const trend = calculateTrend();
+
                                             // Generate insights
                                             const insights = [];
 
@@ -248,6 +301,59 @@ export function PatternsView({
                                                             <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-2xl font-bold'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
+
+                                                    {/* Tendência (30 dias) */}
+                                                    {trend && (
+                                                        <div className={
+                                                            (trend.direction === 'increasing'
+                                                                ? (darkMode ? 'bg-red-900/30 border-red-700/50' : 'bg-red-50 border-red-200')
+                                                                : trend.direction === 'decreasing'
+                                                                    ? (darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200')
+                                                                    : (darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-100 border-gray-300')
+                                                            ) + ' rounded-lg p-4 border'
+                                                        }>
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className={'text-xs font-semibold uppercase tracking-wide ' + (
+                                                                    trend.direction === 'increasing'
+                                                                        ? (darkMode ? 'text-red-400' : 'text-red-700')
+                                                                        : trend.direction === 'decreasing'
+                                                                            ? (darkMode ? 'text-green-400' : 'text-green-700')
+                                                                            : (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                )}>
+                                                                    📈 Tendência (30 dias)
+                                                                </div>
+                                                                <span className={'text-2xl ' + (
+                                                                    trend.direction === 'increasing' ? '⚠️' :
+                                                                    trend.direction === 'decreasing' ? '✅' : '➖'
+                                                                )}></span>
+                                                            </div>
+                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                {trend.direction === 'increasing' && (
+                                                                    <>
+                                                                        <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Escalada detectada:</strong> +{trend.slopePerDay} consumos/dia em média.
+                                                                        <br />
+                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            Projeção 10 dias: ~{trend.projection} consumos/dia
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                                {trend.direction === 'decreasing' && (
+                                                                    <>
+                                                                        <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Redução em progresso:</strong> {trend.slopePerDay} consumos/dia em média.
+                                                                        <br />
+                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            Continua assim! Projeção 10 dias: ~{trend.projection} consumos/dia
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                                {trend.direction === 'stable' && (
+                                                                    <>
+                                                                        <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Padrão estável:</strong> ~{trend.currentAvg} consumos/dia (variação mínima)
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     {/* Heatmap */}
                                                     <HeatmapChart
