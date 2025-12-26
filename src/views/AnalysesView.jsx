@@ -3144,6 +3144,53 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // DISPERSÃO TEMPORAL (Desvio-padrão das horas de consumo)
+                                                        const temporalDispersion = [];
+
+                                                        if (analysisConsumptions.length >= 5) {
+                                                            // Calcular hora decimal de cada consumo
+                                                            const consumptionHours = analysisConsumptions.map(c => {
+                                                                const d = new Date(c.timestamp);
+                                                                return d.getHours() + d.getMinutes() / 60;
+                                                            });
+
+                                                            // Calcular média
+                                                            const meanHour = consumptionHours.reduce((sum, h) => sum + h, 0) / consumptionHours.length;
+
+                                                            // Calcular desvio-padrão
+                                                            const squaredDiffs = consumptionHours.map(h => Math.pow(h - meanHour, 2));
+                                                            const variance = squaredDiffs.reduce((sum, sq) => sum + sq, 0) / squaredDiffs.length;
+                                                            const stdDev = Math.sqrt(variance);
+
+                                                            // Classificação
+                                                            let pattern = '';
+                                                            let emoji = '';
+                                                            if (stdDev < 2) {
+                                                                pattern = 'Muito Regular';
+                                                                emoji = '🎯';
+                                                            } else if (stdDev < 4) {
+                                                                pattern = 'Regular';
+                                                                emoji = '📍';
+                                                            } else if (stdDev < 6) {
+                                                                pattern = 'Moderado';
+                                                                emoji = '🔀';
+                                                            } else {
+                                                                pattern = 'Caótico';
+                                                                emoji = '🌪️';
+                                                            }
+
+                                                            temporalDispersion.push({
+                                                                name: 'Dispersão Temporal',
+                                                                icon: emoji,
+                                                                correlation: stdDev / 12, // Normalizar para [-1, 1], assumindo máximo 12h de desvio
+                                                                average: stdDev.toFixed(1),
+                                                                unit: 'h',
+                                                                dataPoints: consumptionHours.length,
+                                                                pattern: pattern,
+                                                                type: 'dispersion'
+                                                            });
+                                                        }
+
                                                         // 10. INTERVALO → DOSAGEM
                                                         const intervalToDosage = [];
 
@@ -4118,21 +4165,55 @@ export function AnalysesView({
                                                                 )}
 
                                                                 {/* ⏰ PADRÕES TEMPORAIS */}
-                                                                {firstConsToTotal.length > 0 && (
+                                                                {(firstConsToTotal.length > 0 || temporalDispersion.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalPatterns')}>
                                                                             <div>
                                                                                 <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Padrões Temporais</h3>
                                                                                 <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                    Como o horário do primeiro consumo influencia o resto do dia
+                                                                                    Regularidade e timing dos consumos
                                                                                 </p>
                                                                             </div>
                                                                             <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
                                                                                 {expandedSections.temporalPatterns ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
-                                                                        {expandedSections.temporalPatterns && <div className="space-y-3 mt-4">
+                                                                        {expandedSections.temporalPatterns && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                                             {firstConsToTotal.map(corr => window.renderCorrelationCard(corr, false))}
+
+                                                                            {/* Dispersão Temporal com card especial */}
+                                                                            {temporalDispersion.map(disp => (
+                                                                                <div key={disp.name} className={'rounded-lg p-4 border ' + (
+                                                                                    disp.pattern === 'Muito Regular' || disp.pattern === 'Regular'
+                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        : disp.pattern === 'Caótico'
+                                                                                            ? (darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200')
+                                                                                            : (darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200')
+                                                                                )}>
+                                                                                    <div className="flex items-start justify-between mb-2">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-2xl">{disp.icon}</span>
+                                                                                            <div className="font-semibold text-sm">{disp.name}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-baseline gap-1 mb-1">
+                                                                                        <span className="text-3xl font-black">{disp.average}</span>
+                                                                                        <span className="text-sm opacity-75">{disp.unit}</span>
+                                                                                    </div>
+                                                                                    <div className={'text-xs opacity-75 mb-2'}>
+                                                                                        Padrão: <strong>{disp.pattern}</strong>
+                                                                                    </div>
+                                                                                    <div className={'text-xs leading-relaxed opacity-90'}>
+                                                                                        {disp.pattern === 'Muito Regular' && 'Consumos ocorrem em horários muito consistentes - padrão previsível.'}
+                                                                                        {disp.pattern === 'Regular' && 'Consumos ocorrem em horários relativamente consistentes.'}
+                                                                                        {disp.pattern === 'Moderado' && 'Consumos variam moderadamente ao longo do dia.'}
+                                                                                        {disp.pattern === 'Caótico' && 'Consumos ocorrem em horários muito variados - padrão imprevisível.'}
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                        {disp.dataPoints} consumos analisados
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
                                                                         </div>}
                                                                     </div>
                                                                 )}
