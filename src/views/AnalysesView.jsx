@@ -4241,9 +4241,10 @@ export function AnalysesView({
                                                                                 ? `${parts[0]} e ${parts[1]} ${r > 0 ? 'variam na mesma direção' : 'variam em direções opostas'}`
                                                                                 : 'Relação detectada entre variáveis';
 
+                                                                            // Regra simples: Negativo = Vermelho (forte -> escuro), Positivo = Verde (forte -> escuro)
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: genericDesc };
-                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: genericDesc };
-                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: genericDesc };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: genericDesc };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: genericDesc };
                                                                             if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: genericDesc };
                                                                             if (r > 0.4) return { text: 'Positiva', color: 'green', desc: genericDesc };
                                                                             if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: genericDesc };
@@ -4641,7 +4642,7 @@ export function AnalysesView({
                                                                 )}
 
                                                                 {/* 💊 DOSAGEM ⇄ CONTEXTO */}
-                                                                {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0 || weeklyDosage.length > 0) && (
+                                                                {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
                                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
                                                                             <div>
@@ -4663,86 +4664,6 @@ export function AnalysesView({
 
                                                                             {/* Intervalo → Dosagem */}
                                                                             {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
-
-                                                                            {/* Gráfico de Dosagem Semanal */}
-                                                                            {weeklyDosage.length > 0 && (
-                                                                                <div className="md:col-span-2">
-                                                                                    <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 flex items-center justify-between ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>
-                                                                                            <span>📊 Dosagem Semanal</span>
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <span className="text-xs opacity-75">{weeklyDosage[0].weeks} {weeklyDosage[0].weeks === 1 ? 'semana' : 'semanas'}</span>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Métricas de Tendência */}
-                                                                                        <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Média Semanal</div>
-                                                                                                <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
-                                                                                                    {weeklyDosage[0].avgWeekly}mg
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <div className={'text-center p-3 rounded ' + (
-                                                                                                weeklyDosage[0].trend === 'A Reduzir'
-                                                                                                    ? (darkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-100 border border-green-300')
-                                                                                                    : weeklyDosage[0].trend === 'A Aumentar'
-                                                                                                        ? (darkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-100 border border-red-300')
-                                                                                                        : (darkMode ? 'bg-gray-800/50' : 'bg-white')
-                                                                                            )}>
-                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Tendência (4 sem)</div>
-                                                                                                <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (
-                                                                                                    weeklyDosage[0].trend === 'A Reduzir'
-                                                                                                        ? (darkMode ? 'text-green-400' : 'text-green-600')
-                                                                                                        : weeklyDosage[0].trend === 'A Aumentar'
-                                                                                                            ? (darkMode ? 'text-red-400' : 'text-red-600')
-                                                                                                            : (darkMode ? 'text-gray-400' : 'text-gray-600')
-                                                                                                )}>
-                                                                                                    <span>{weeklyDosage[0].trendIcon}</span>
-                                                                                                    <span className="text-sm">{weeklyDosage[0].trendPct}%</span>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-
-                                                                                        {/* Gráfico de Barras */}
-                                                                                        <div style={{ width: '100%', height: 200 }}>
-                                                                                            <ResponsiveContainer>
-                                                                                                <BarChart data={weeklyDosage[0].chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
-                                                                                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                                                                                                    <XAxis
-                                                                                                        dataKey="week"
-                                                                                                        tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                                                                                                    />
-                                                                                                    <YAxis
-                                                                                                        tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                                                                                                        label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                                                                                                    />
-                                                                                                    <Tooltip
-                                                                                                        contentStyle={{
-                                                                                                            backgroundColor: darkMode ? '#1f2937' : '#fff',
-                                                                                                            border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
-                                                                                                            borderRadius: '6px',
-                                                                                                            fontSize: '12px'
-                                                                                                        }}
-                                                                                                        formatter={(value, name, props) => [
-                                                                                                            `${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`,
-                                                                                                            'Dosagem Total'
-                                                                                                        ]}
-                                                                                                    />
-                                                                                                    <Bar
-                                                                                                        dataKey="dosagem"
-                                                                                                        fill={darkMode ? '#a78bfa' : '#8b5cf6'}
-                                                                                                        radius={[4, 4, 0, 0]}
-                                                                                                    />
-                                                                                                </BarChart>
-                                                                                            </ResponsiveContainer>
-                                                                                        </div>
-                                                                                        <p className={'text-xs italic mt-2 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            Últimas {Math.min(12, weeklyDosage[0].weeks)} semanas | Eixo Y: Dosagem total (mg)
-                                                                                        </p>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
                                                                         </div>}
                                                                     </div>
                                                                 )}
@@ -4979,24 +4900,67 @@ export function AnalysesView({
                                                                             </div>
                                                                             {expandedSections.intraDayAnalysis && (
                                                                                 <div className="space-y-4 mt-4">
-                                                                                    {/* Latência Temporal */}
-                                                                                    {latency.length > 0 && (
-                                                                                        <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Evolução Pós-Consumo</div>
-                                                                                            <div className="grid grid-cols-3 gap-3">
-                                                                                                {latency.map(lat => (
-                                                                                                    <div key={lat.window} className={'text-center p-2 rounded ' + (lat.isPeak ? (darkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-100 border border-yellow-300') : '')}>
-                                                                                                        <div className={'text-xs opacity-75'}>{lat.window}</div>
-                                                                                                        <div className={'text-xl font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
-                                                                                                            {lat.delta > 0 ? '+' : ''}{lat.delta}
-                                                                                                        </div>
-                                                                                                        {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ MAIOR MUDANÇA</div>}
-                                                                                                    </div>
-                                                                                                ))}
+                                                                                    {/* Latência Temporal + Eficácia (INTEGRADAS) */}
+                                                                                    {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
+                                                                                        <div className="space-y-3">
+                                                                                            {/* Texto explicativo inicial */}
+                                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 border'}>
+                                                                                                <p className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>💡 Como interpretar estas duas métricas:</p>
+                                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                    <span className="font-semibold">Evolução Pós-Consumo:</span> Compara humor no momento exato do consumo (0h) com 30min/1h/2h depois. Valores negativos indicam que o humor piora após o pico inicial.
+                                                                                                </p>
+                                                                                                <p className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                    <span className="font-semibold">Eficácia do Consumo:</span> Compara humor ANTES de consumir com 1-3h DEPOIS. Valores positivos indicam melhoria geral face ao estado inicial.
+                                                                                                </p>
+                                                                                                <p className={'text-xs mt-2 font-semibold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                                                    ⚠️ É possível ter evolução negativa mas eficácia positiva: significa que apesar do humor baixar após o pico, ainda fica melhor que antes de consumir.
+                                                                                                </p>
                                                                                             </div>
-                                                                                            <p className={'text-xs italic mt-3 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                Mudança vs momento do consumo (0h). ⚠️ Negativo = humor piora APÓS consumir. Diferente da "Eficácia" abaixo que compara antes vs depois.
-                                                                                            </p>
+
+                                                                                            {/* Evolução Pós-Consumo */}
+                                                                                            {latency.length > 0 && (
+                                                                                                <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Evolução Pós-Consumo</div>
+                                                                                                    <p className={'text-xs mb-3 opacity-75'}>Mudança vs momento do consumo (0h)</p>
+                                                                                                    <div className="grid grid-cols-3 gap-3">
+                                                                                                        {latency.map(lat => (
+                                                                                                            <div key={lat.window} className={'text-center p-2 rounded ' + (lat.isPeak ? (darkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-100 border border-yellow-300') : '')}>
+                                                                                                                <div className={'text-xs opacity-75'}>{lat.window}</div>
+                                                                                                                <div className={'text-xl font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                    {lat.delta > 0 ? '+' : ''}{lat.delta}
+                                                                                                                </div>
+                                                                                                                {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ MAIOR MUDANÇA</div>}
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+
+                                                                                            {/* Eficácia do Consumo */}
+                                                                                            {experimentalFeatures.satisfaction.length > 0 && (
+                                                                                                <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-green-300' : 'text-green-800')}>✅ Eficácia do Consumo</div>
+                                                                                                    <p className={'text-xs mb-3 opacity-75'}>Melhoria antes vs 1-3h depois</p>
+                                                                                                    {experimentalFeatures.satisfaction.map((sat, idx) => (
+                                                                                                        <div key={idx} className="grid grid-cols-2 gap-3">
+                                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Melhoria Média</div>
+                                                                                                                <div className={'text-3xl font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                    {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
+                                                                                                                </div>
+                                                                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>pontos (0-10)</div>
+                                                                                                            </div>
+                                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Taxa de Eficácia</div>
+                                                                                                                <div className={'text-3xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                                    {sat.effectiveRate}%
+                                                                                                                </div>
+                                                                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{sat.effectiveCount}/{sat.totalEvents} eventos</div>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                     )}
 
@@ -5121,44 +5085,6 @@ export function AnalysesView({
                                                                                                 ));
                                                                                             })()}
                                                                                         </div>
-                                                                                    </div>
-                                                                                )}
-
-                                                                                {/* Satisfação/Eficácia */}
-                                                                                {experimentalFeatures.satisfaction.length > 0 && (
-                                                                                    <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-green-300' : 'text-green-800')}>
-                                                                                            ✅ Eficácia do Consumo
-                                                                                        </div>
-                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            Melhoria de humor nas 1-3h após consumo
-                                                                                        </p>
-                                                                                        {experimentalFeatures.satisfaction.map((sat, idx) => (
-                                                                                            <div key={idx} className="grid grid-cols-2 gap-3">
-                                                                                                <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                    <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                        Melhoria Média
-                                                                                                    </div>
-                                                                                                    <div className={'text-3xl font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
-                                                                                                        {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
-                                                                                                    </div>
-                                                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                        pontos (0-10)
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                    <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                        Taxa de Eficácia
-                                                                                                    </div>
-                                                                                                    <div className={'text-3xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
-                                                                                                        {sat.effectiveRate}%
-                                                                                                    </div>
-                                                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                        {sat.effectiveCount}/{sat.totalEvents} eventos
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        ))}
                                                                                     </div>
                                                                                 )}
 
