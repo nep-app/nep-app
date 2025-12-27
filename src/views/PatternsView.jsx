@@ -1856,33 +1856,7 @@ export function PatternsView({
                                                 </div>
                                             </div>
 
-                                            {/* 📅 PADRÃO SEMANAL (compacto) */}
-                                            {Object.keys(byDate).length >= 7 && (() => {
-                                                const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                                const dayData = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-                                                Object.entries(byDate).forEach(([date, count]) => {
-                                                    const dayOfWeek = new Date(date).getDay();
-                                                    dayData[dayOfWeek].push(count);
-                                                });
-                                                const dayAverages = {};
-                                                Object.entries(dayData).forEach(([day, counts]) => {
-                                                    if (counts.length > 0) dayAverages[day] = counts.reduce((sum, c) => sum + c, 0) / counts.length;
-                                                });
-                                                if (Object.keys(dayAverages).length < 3) return null;
-                                                const bestDay = Object.entries(dayAverages).reduce((best, [day, avg]) => avg < best.avg ? { day: parseInt(day), avg } : best, { day: 0, avg: Infinity });
-                                                const worstDay = Object.entries(dayAverages).reduce((worst, [day, avg]) => avg > worst.avg ? { day: parseInt(day), avg } : worst, { day: 0, avg: -Infinity });
-                                                return (
-                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border mt-4'}>
-                                                        <h3 className={'font-semibold text-sm mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📅 Padrão Semanal</h3>
-                                                        <p className={'text-xs mb-0 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                            <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{dayNames[bestDay.day]}s</span> melhor dia ({bestDay.avg.toFixed(1)}/dia).
-                                                            <span className={'font-semibold ml-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{dayNames[worstDay.day]}s</span> mais desafiante ({worstDay.avg.toFixed(1)}/dia).
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })()}
-
-                                            {/* 📆 CICLO MENSUAL (compacto) */}
+                                            {/* 📆 CICLO MENSUAL */}
                                             {Object.keys(byDate).length >= 15 && (() => {
                                                 const dayOfMonthData = {};
                                                 for (let i = 1; i <= 31; i++) dayOfMonthData[i] = [];
@@ -1895,21 +1869,56 @@ export function PatternsView({
                                                 });
                                                 const sortedDays = Object.entries(dayOfMonthAverages).filter(([_, avg]) => avg > 0).sort(([,a], [,b]) => b - a);
                                                 if (sortedDays.length < 5) return null;
+
                                                 const days2025 = sortedDays.filter(([day]) => parseInt(day) >= 20 && parseInt(day) <= 25);
                                                 const avgDays2025 = days2025.length > 0 ? days2025.reduce((sum, [_, avg]) => sum + avg, 0) / days2025.length : 0;
                                                 const overallAvg = sortedDays.reduce((sum, [_, avg]) => sum + avg, 0) / sortedDays.length;
                                                 const hasPeak2025 = avgDays2025 > overallAvg * 1.2;
                                                 const maxDay = sortedDays[0];
+                                                const minDay = sortedDays[sortedDays.length - 1];
+
                                                 return (
                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border mt-4'}>
-                                                        <h3 className={'font-semibold text-sm mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>📆 Ciclo Mensual</h3>
-                                                        <p className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                        <h3 className={'font-semibold mb-3 ' + (themeClasses.textPrimaryAlt(darkMode))}>📆 Ciclo Mensual</h3>
+
+                                                        {/* Top 5 dias com mais consumo */}
+                                                        <div className="space-y-2 mb-4">
+                                                            <div className={'text-xs font-semibold mb-2 ' + (themeClasses.textSecondary(darkMode))}>Dias do mês com mais consumo:</div>
+                                                            {sortedDays.slice(0, 5).map(([day, avg]) => {
+                                                                const dayNum = parseInt(day);
+                                                                const maxAvg = parseFloat(sortedDays[0][1]);
+                                                                const widthPercent = (avg / maxAvg) * 100;
+                                                                const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
+                                                                return (
+                                                                    <div key={day} className="flex items-center gap-2">
+                                                                        <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
+                                                                        <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                            <div
+                                                                                className={'h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all ' + (isPeak ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-purple-500 to-pink-500')}
+                                                                                style={{width: `${widthPercent}%`}}
+                                                                            >
+                                                                                <span>{avg.toFixed(1)}/dia</span>
+                                                                                {isPeak && <span>🔥</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                        {/* Resumo interpretativo */}
+                                                        <div className={'pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
                                                             {hasPeak2025 ? (
-                                                                <>Pico entre <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>dias 20-25</span> ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média). Padrão hormonal?</>
+                                                                <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                                                    🔍 <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão detectado:</span> Pico de consumo entre dias <strong>20-25</strong> do mês ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia de média). Possível relação com ciclo hormonal.
+                                                                </p>
                                                             ) : (
-                                                                <>Pico: <span className={'font-semibold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>dia {maxDay[0]}</span> ({maxDay[1].toFixed(1)}/dia).</>
+                                                                <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                                                    📊 Dia <span className={'font-semibold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{maxDay[0]}</span> tem mais consumo ({parseFloat(maxDay[1]).toFixed(1)}/dia).
+                                                                    Dia <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{minDay[0]}</span> tem menos ({parseFloat(minDay[1]).toFixed(1)}/dia).
+                                                                </p>
                                                             )}
-                                                        </p>
+                                                        </div>
                                                     </div>
                                                 );
                                             })()}

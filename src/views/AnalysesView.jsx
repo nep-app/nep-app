@@ -3561,7 +3561,7 @@ export function AnalysesView({
                                                                         if (moodDecline) {
                                                                             experimentalFeatures.antecedents.push({
                                                                                 date,
-                                                                                pattern: 'Declínio de Humor (2 dias)',
+                                                                                pattern: 'Humor desceu nos 2 dias anteriores',
                                                                                 icon: '📉😔',
                                                                                 cons: todayCons
                                                                             });
@@ -4060,15 +4060,15 @@ export function AnalysesView({
                                                                                 // Humor/energia baixos → mais consumo (negativa é má) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
                                                                                     const target = name.split(' →')[1].trim();
-                                                                                    const metricName = name.split(' →')[0];
+                                                                                    const metricName = name.split(' →')[0].trim();
 
-                                                                                    if (target === 'Consumo') {
+                                                                                    if (target.includes('Consumo')) {
                                                                                         if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais consumo` };
                                                                                         if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais consumo` };
                                                                                         if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos consumo` };
                                                                                         if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo` };
-                                                                                    } else if (target === 'Dosagem') {
+                                                                                    } else if (target.includes('Dosagem')) {
                                                                                         if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais dosagem` };
                                                                                         if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais dosagem` };
                                                                                         if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos dosagem` };
@@ -4237,9 +4237,32 @@ export function AnalysesView({
 
                                                                             // Lógica genérica (fallback com descrição baseada no nome)
                                                                             const parts = name.split(' → ');
-                                                                            const genericDesc = parts.length === 2
-                                                                                ? `${parts[0]} e ${parts[1]} ${r > 0 ? 'variam na mesma direção' : 'variam em direções opostas'}`
-                                                                                : 'Relação detectada entre variáveis';
+                                                                            let genericDesc = 'Relação detectada entre variáveis';
+
+                                                                            if (parts.length === 2) {
+                                                                                const [var1, var2] = parts;
+
+                                                                                // Criar descrição clara baseada no tipo de relação
+                                                                                if (r < 0) {
+                                                                                    // Correlação negativa: quando um sobe, o outro desce
+                                                                                    if (var1.toLowerCase().includes('consumo') && var2.toLowerCase().includes('autocuidado')) {
+                                                                                        genericDesc = 'Mais consumo → Menos autocuidado';
+                                                                                    } else if (var1.toLowerCase().includes('ontem') && var2.toLowerCase().includes('hoje')) {
+                                                                                        const metric = var1.replace(' ontem', '').replace(' Ontem', '');
+                                                                                        genericDesc = `${metric} alto ontem → ${metric} baixo hoje (ou vice-versa)`;
+                                                                                    } else {
+                                                                                        genericDesc = `Mais ${var1} → Menos ${var2}`;
+                                                                                    }
+                                                                                } else if (r > 0) {
+                                                                                    // Correlação positiva: quando um sobe, o outro sobe
+                                                                                    if (var1.toLowerCase().includes('ontem') && var2.toLowerCase().includes('hoje')) {
+                                                                                        const metric = var1.replace(' ontem', '').replace(' Ontem', '');
+                                                                                        genericDesc = `${metric} ontem tende a repetir-se hoje`;
+                                                                                    } else {
+                                                                                        genericDesc = `Mais ${var1} → Mais ${var2}`;
+                                                                                    }
+                                                                                }
+                                                                            }
 
                                                                             // Regra simples: Negativo = Vermelho (forte -> escuro), Positivo = Verde (forte -> escuro)
                                                                             if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: genericDesc };
@@ -4906,15 +4929,28 @@ export function AnalysesView({
                                                                                             {/* Texto explicativo inicial */}
                                                                                             <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 border'}>
                                                                                                 <p className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>💡 Como interpretar estas duas métricas:</p>
-                                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    <span className="font-semibold">Evolução Pós-Consumo:</span> Compara humor no momento exato do consumo (0h) com 30min/1h/2h depois. Valores negativos indicam que o humor piora após o pico inicial.
+
+                                                                                                <p className={'text-xs mb-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                    <span className="font-semibold">Evolução Pós-Consumo:</span> Compara humor <u>no momento do consumo (0h)</u> com 30min/1h/2h depois. Negativo = humor desce após consumir.
                                                                                                 </p>
-                                                                                                <p className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    <span className="font-semibold">Eficácia do Consumo:</span> Compara humor ANTES de consumir com 1-3h DEPOIS. Valores positivos indicam melhoria geral face ao estado inicial.
+
+                                                                                                <p className={'text-xs mb-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                    <span className="font-semibold">Eficácia do Consumo:</span> Compara humor <u>ANTES de consumir</u> com 1-3h DEPOIS. Positivo = humor melhora face ao estado inicial.
                                                                                                 </p>
-                                                                                                <p className={'text-xs mt-2 font-semibold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
-                                                                                                    ⚠️ É possível ter evolução negativa mas eficácia positiva: significa que apesar do humor baixar após o pico, ainda fica melhor que antes de consumir.
-                                                                                                </p>
+
+                                                                                                <div className={'mt-2 p-2 rounded text-xs ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                    <p className={'font-semibold mb-1 ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>📝 Exemplo prático:</p>
+                                                                                                    <p className={themeClasses.textTertiary(darkMode)}>
+                                                                                                        • <strong>Antes:</strong> humor 4/10 (mal)<br/>
+                                                                                                        • <strong>0h (consumo):</strong> humor 7/10 (pico)<br/>
+                                                                                                        • <strong>2h depois:</strong> humor 6.8/10<br/>
+                                                                                                        <br/>
+                                                                                                        <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>→ Evolução: -0.2</span> (7→6.8, desceu após pico)<br/>
+                                                                                                        <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>→ Eficácia: +2.8</span> (4→6.8, melhorou vs início)<br/>
+                                                                                                        <br/>
+                                                                                                        ⚠️ Ambas podem ser verdade ao mesmo tempo!
+                                                                                                    </p>
+                                                                                                </div>
                                                                                             </div>
 
                                                                                             {/* Evolução Pós-Consumo */}
@@ -5056,11 +5092,11 @@ export function AnalysesView({
                                                                                 {/* Antecedentes */}
                                                                                 {experimentalFeatures.antecedents.length > 0 && (
                                                                                     <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                                        <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
                                                                                             🔍 Padrões Antecedentes (24-48h)
                                                                                         </div>
                                                                                         <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            O que aconteceu ANTES de consumir
+                                                                                            Padrões detectados nos 1-2 dias <u>antes</u> de teres consumido. Ajuda a identificar gatilhos.
                                                                                         </p>
                                                                                         <div className="space-y-1">
                                                                                             {/* Agrupar por padrão */}
