@@ -3260,6 +3260,138 @@ export function AnalysesView({
                                                             });
                                                         }
 
+                                                        // ===== INTERVALOS "SEGUROS" =====
+                                                        const safeIntervals = [];
+
+                                                        if (analysisConsumptions.length >= 10) {
+                                                            // Calcular intervalo médio por dia
+                                                            const dailyIntervals = {};
+                                                            const sortedCons = [...analysisConsumptions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                                                            sortedCons.forEach((c, idx) => {
+                                                                if (idx === 0) return; // Pular primeiro
+
+                                                                const prev = sortedCons[idx - 1];
+                                                                if (c.date === prev.date) {
+                                                                    const interval = (new Date(c.timestamp) - new Date(prev.timestamp)) / (1000 * 60 * 60); // horas
+
+                                                                    if (!dailyIntervals[c.date]) {
+                                                                        dailyIntervals[c.date] = { intervals: [], total: 0 };
+                                                                    }
+                                                                    dailyIntervals[c.date].intervals.push(interval);
+                                                                }
+                                                            });
+
+                                                            // Contar total de consumos por dia
+                                                            analysisConsumptions.forEach(c => {
+                                                                if (!dailyIntervals[c.date]) {
+                                                                    dailyIntervals[c.date] = { intervals: [], total: 0 };
+                                                                }
+                                                                dailyIntervals[c.date].total++;
+                                                            });
+
+                                                            // Calcular média de intervalos por dia e correlacionar com total
+                                                            const intervalData = [];
+                                                            Object.entries(dailyIntervals).forEach(([date, data]) => {
+                                                                if (data.intervals.length > 0) {
+                                                                    const avgInterval = data.intervals.reduce((s, i) => s + i, 0) / data.intervals.length;
+                                                                    intervalData.push({ avgInterval, total: data.total });
+                                                                }
+                                                            });
+
+                                                            if (intervalData.length >= 5) {
+                                                                const corr = analyticsService.calculatePearsonCorrelation(intervalData, 'avgInterval', 'total');
+                                                                const avgInterval = intervalData.reduce((s, d) => s + d.avgInterval, 0) / intervalData.length;
+
+                                                                // Análise de dias com bons intervalos (>3h)
+                                                                const goodIntervalDays = intervalData.filter(d => d.avgInterval >= 3);
+                                                                const avgTotalGood = goodIntervalDays.length > 0
+                                                                    ? goodIntervalDays.reduce((s, d) => s + d.total, 0) / goodIntervalDays.length
+                                                                    : 0;
+
+                                                                const badIntervalDays = intervalData.filter(d => d.avgInterval < 3);
+                                                                const avgTotalBad = badIntervalDays.length > 0
+                                                                    ? badIntervalDays.reduce((s, d) => s + d.total, 0) / badIntervalDays.length
+                                                                    : 0;
+
+                                                                safeIntervals.push({
+                                                                    name: 'Intervalos "Seguros" (>3h)',
+                                                                    icon: '⏱️',
+                                                                    correlation: corr,
+                                                                    average: avgInterval.toFixed(1),
+                                                                    unit: 'h',
+                                                                    dataPoints: intervalData.length,
+                                                                    goodDays: goodIntervalDays.length,
+                                                                    badDays: badIntervalDays.length,
+                                                                    avgTotalGood: avgTotalGood.toFixed(1),
+                                                                    avgTotalBad: avgTotalBad.toFixed(1),
+                                                                    type: 'safeIntervals'
+                                                                });
+                                                            }
+                                                        }
+
+                                                        // ===== EFICÁCIA DE ESTRATÉGIAS =====
+                                                        const strategyEffectiveness = [];
+
+                                                        if (analysisWellbeing.length >= 10 && analysisConsumptions.length >= 10) {
+                                                            // Agrupar bem-estar por dia
+                                                            const dailyData = {};
+
+                                                            analysisWellbeing.forEach(w => {
+                                                                const date = w.date || safeToISODate(w.timestamp);
+                                                                if (!dailyData[date]) {
+                                                                    dailyData[date] = { sleep: null, exercise: null, food: null, social: null, consumptions: 0 };
+                                                                }
+
+                                                                // Autocuidado (4 áreas)
+                                                                if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
+                                                                if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
+                                                                if (w.food) dailyData[date].food = parseInt(w.food);
+                                                                if (w.social) dailyData[date].social = parseInt(w.social);
+                                                            });
+
+                                                            // Adicionar consumos
+                                                            analysisConsumptions.forEach(c => {
+                                                                if (dailyData[c.date]) {
+                                                                    dailyData[c.date].consumptions++;
+                                                                }
+                                                            });
+
+                                                            // Identificar dias com autocuidado completo (4/4 áreas) vs sem
+                                                            const fullSelfCareDays = [];
+                                                            const noSelfCareDays = [];
+
+                                                            Object.values(dailyData).forEach(day => {
+                                                                const selfCareCount = [day.sleep, day.exercise, day.food, day.social].filter(x => x !== null && x > 0).length;
+
+                                                                if (selfCareCount === 4) {
+                                                                    fullSelfCareDays.push(day.consumptions);
+                                                                } else if (selfCareCount === 0) {
+                                                                    noSelfCareDays.push(day.consumptions);
+                                                                }
+                                                            });
+
+                                                            if (fullSelfCareDays.length >= 2 && noSelfCareDays.length >= 2) {
+                                                                const avgFull = fullSelfCareDays.reduce((s, c) => s + c, 0) / fullSelfCareDays.length;
+                                                                const avgNone = noSelfCareDays.reduce((s, c) => s + c, 0) / noSelfCareDays.length;
+                                                                const reduction = avgNone > 0 ? ((avgNone - avgFull) / avgNone * 100) : 0;
+
+                                                                strategyEffectiveness.push({
+                                                                    name: 'Eficácia de Estratégias',
+                                                                    icon: '🛡️',
+                                                                    correlation: -(avgFull / avgNone), // Negativo = bom (menos consumo com autocuidado)
+                                                                    average: reduction.toFixed(0),
+                                                                    unit: '%',
+                                                                    dataPoints: fullSelfCareDays.length + noSelfCareDays.length,
+                                                                    avgFull: avgFull.toFixed(1),
+                                                                    avgNone: avgNone.toFixed(1),
+                                                                    fullDays: fullSelfCareDays.length,
+                                                                    noneDays: noSelfCareDays.length,
+                                                                    type: 'strategyEffectiveness'
+                                                                });
+                                                            }
+                                                        }
+
                                                         // CONSUMO POR PERÍODO DO DIA
                                                         const consumptionByPeriod = [];
 
@@ -4040,14 +4172,71 @@ export function AnalysesView({
                                                                                 return { text: 'Sem Correlação', color: 'gray', desc: `Consumo não afeta ${metricLower}${timeContext}` };
                                                                             }
 
-                                                                            // Lógica genérica
-                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: '' };
-                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: '' };
-                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: '' };
-                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: '' };
-                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: '' };
-                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: '' };
-                                                                            return { text: 'Sem Correlação', color: 'gray', desc: '' };
+                                                                            // Casos adicionais com explicações específicas
+
+                                                                            // Autocorrelação (X ontem → X hoje)
+                                                                            if (name.includes('ontem') && name.includes('hoje')) {
+                                                                                const metric = name.split(' ontem')[0];
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: `${metric} ontem tende a repetir-se hoje` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: `${metric} ontem influencia ligeiramente hoje` };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'gray', desc: `${metric} ontem inverte-se hoje` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'gray', desc: `${metric} ontem tende a inverter ligeiramente hoje` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `${metric} de ontem não afeta hoje` };
+                                                                            }
+
+                                                                            // Intervalo médio → Total/Dosagem
+                                                                            if (name.includes('Intervalo') && (name.includes('→ Total') || name.includes('→ Dosagem'))) {
+                                                                                const target = name.includes('Total') ? 'total de consumos' : 'dosagem';
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `Intervalos maiores → Menos ${target}` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `Intervalos maiores → Ligeiramente menos ${target}` };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `Intervalos maiores → Mais ${target}` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `Intervalos maiores → Ligeiramente mais ${target}` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `Intervalo não afeta ${target}` };
+                                                                            }
+
+                                                                            // Dosagem → Bem-estar/Humor/Energia
+                                                                            if (name.includes('Dosagem →') && (name.includes('Bem-estar') || name.includes('Humor') || name.includes('Energia'))) {
+                                                                                const metric = name.includes('Bem-estar') ? 'bem-estar' : name.includes('Humor') ? 'humor' : 'energia';
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais dosagem → Melhor ${metric}` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais dosagem → Ligeiramente melhor ${metric}` };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Mais dosagem → Pior ${metric}` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Mais dosagem → Ligeiramente pior ${metric}` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `Dosagem não afeta ${metric}` };
+                                                                            }
+
+                                                                            // Bem-estar → Dosagem/Consumo
+                                                                            if (name.includes('Bem-estar →') || (name.includes('Energia →') && !isInverse) || (name.includes('Humor →') && !isInverse)) {
+                                                                                const metric = name.includes('Bem-estar') ? 'Bem-estar' : name.includes('Energia') ? 'Energia' : 'Humor';
+                                                                                const target = name.includes('Dosagem') ? 'dosagem' : 'consumo';
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metric} baixo → Mais ${target}` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metric} baixo → Ligeiramente mais ${target}` };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metric} alto → Menos ${target}` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metric} alto → Ligeiramente menos ${target}` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `${metric} não afeta ${target}` };
+                                                                            }
+
+                                                                            // Primeiro Consumo → Total
+                                                                            if (name.includes('Primeiro Consumo')) {
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Primeiro consumo tarde → Menos total no dia' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Primeiro consumo tarde → Ligeiramente menos total' };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Primeiro consumo cedo → Mais total no dia' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Primeiro consumo cedo → Ligeiramente mais total' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Hora do 1º consumo não afeta total' };
+                                                                            }
+
+                                                                            // Lógica genérica (fallback com descrição baseada no nome)
+                                                                            const parts = name.split(' → ');
+                                                                            const genericDesc = parts.length === 2
+                                                                                ? `${parts[0]} e ${parts[1]} ${r > 0 ? 'variam na mesma direção' : 'variam em direções opostas'}`
+                                                                                : 'Relação detectada entre variáveis';
+
+                                                                            if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: genericDesc };
+                                                                            if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: genericDesc };
+                                                                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: genericDesc };
+                                                                            if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: genericDesc };
+                                                                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: genericDesc };
+                                                                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: genericDesc };
+                                                                            return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre variáveis' };
                                                                         };
 
                                                                         const label = getLabel(corr.correlation, corr.name);
@@ -4594,6 +4783,64 @@ export function AnalysesView({
                                                                                     </div>
                                                                                     <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
                                                                                         {disp.dataPoints} consumos analisados
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+
+                                                                            {/* Intervalos "Seguros" com card especial */}
+                                                                            {safeIntervals.map(safe => (
+                                                                                <div key={safe.name} className={'rounded-lg p-4 border ' + (
+                                                                                    safe.correlation < -0.3
+                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        : safe.correlation > 0.3
+                                                                                            ? (darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200')
+                                                                                            : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')
+                                                                                )}>
+                                                                                    <div className="flex items-start justify-between mb-2">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-2xl">{safe.icon}</span>
+                                                                                            <div className="font-semibold text-sm">{safe.name}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-baseline gap-1 mb-2">
+                                                                                        <span className="text-3xl font-black">{safe.average}</span>
+                                                                                        <span className="text-sm opacity-75">{safe.unit} média</span>
+                                                                                    </div>
+                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                        💡 Quando espaças <span className="font-semibold">&gt;3h</span> entre consumos: <span className="font-semibold">{safe.avgTotalGood}/dia</span> ({safe.goodDays} dias)<br/>
+                                                                                        Intervalos &lt;3h: <span className="font-semibold">{safe.avgTotalBad}/dia</span> ({safe.badDays} dias)
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                        • r = {safe.correlation.toFixed(2)} • {safe.dataPoints} dias
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+
+                                                                            {/* Eficácia de Estratégias com card especial */}
+                                                                            {strategyEffectiveness.map(strat => (
+                                                                                <div key={strat.name} className={'rounded-lg p-4 border ' + (
+                                                                                    parseFloat(strat.average) > 50
+                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        : parseFloat(strat.average) > 20
+                                                                                            ? (darkMode ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200')
+                                                                                            : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')
+                                                                                )}>
+                                                                                    <div className="flex items-start justify-between mb-2">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="text-2xl">{strat.icon}</span>
+                                                                                            <div className="font-semibold text-sm">{strat.name}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="flex items-baseline gap-1 mb-2">
+                                                                                        <span className="text-3xl font-black">{strat.average}</span>
+                                                                                        <span className="text-sm opacity-75">{strat.unit} redução</span>
+                                                                                    </div>
+                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                        💡 Dias com autocuidado completo (4/4 áreas): <span className="font-semibold">{strat.avgFull}/dia</span> ({strat.fullDays} dias)<br/>
+                                                                                        Dias sem autocuidado: <span className="font-semibold">{strat.avgNone}/dia</span> ({strat.noneDays} dias)
+                                                                                    </div>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                        • r = {strat.correlation.toFixed(2)} • {strat.dataPoints} dias
                                                                                     </div>
                                                                                 </div>
                                                                             ))}

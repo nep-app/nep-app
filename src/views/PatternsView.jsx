@@ -465,6 +465,111 @@ export function PatternsView({
                                                         </div>
                                                     )}
 
+                                                    {/* 📅 PADRÃO SEMANAL */}
+                                                    {Object.keys(byDate).length >= 7 && (() => {
+                                                        // Agrupar consumos por dia da semana
+                                                        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                                        const dayData = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }; // 0=Dom, 1=Seg, ..., 6=Sáb
+
+                                                        Object.entries(byDate).forEach(([date, count]) => {
+                                                            const dayOfWeek = new Date(date).getDay();
+                                                            dayData[dayOfWeek].push(count);
+                                                        });
+
+                                                        // Calcular média por dia da semana
+                                                        const dayAverages = {};
+                                                        Object.entries(dayData).forEach(([day, counts]) => {
+                                                            if (counts.length > 0) {
+                                                                dayAverages[day] = counts.reduce((sum, c) => sum + c, 0) / counts.length;
+                                                            }
+                                                        });
+
+                                                        // Se não há dados suficientes, não mostrar
+                                                        if (Object.keys(dayAverages).length < 3) return null;
+
+                                                        const maxAvg = Math.max(...Object.values(dayAverages));
+                                                        const minAvg = Math.min(...Object.values(dayAverages));
+
+                                                        // Encontrar melhor e pior dia
+                                                        const bestDay = Object.entries(dayAverages).reduce((best, [day, avg]) =>
+                                                            avg < best.avg ? { day: parseInt(day), avg } : best
+                                                        , { day: 0, avg: Infinity });
+
+                                                        const worstDay = Object.entries(dayAverages).reduce((worst, [day, avg]) =>
+                                                            avg > worst.avg ? { day: parseInt(day), avg } : worst
+                                                        , { day: 0, avg: -Infinity });
+
+                                                        return (
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border mt-4'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>
+                                                                    📅 Padrão Semanal
+                                                                </h3>
+
+                                                                {/* Gráfico de barras por dia da semana */}
+                                                                <div className="space-y-3">
+                                                                    {[1, 2, 3, 4, 5, 6, 0].map(day => { // Ordem: Seg-Dom
+                                                                        const avg = dayAverages[day];
+                                                                        if (!avg) return null;
+
+                                                                        const widthPercent = maxAvg > 0 ? (avg / maxAvg) * 100 : 0;
+                                                                        const isBest = day === bestDay.day;
+                                                                        const isWorst = day === worstDay.day;
+
+                                                                        return (
+                                                                            <div key={day} className="space-y-1">
+                                                                                <div className="flex items-center justify-between text-sm">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'font-medium w-8 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                            {dayNames[day]}
+                                                                                        </span>
+                                                                                        {isBest && <span className={'text-xs px-2 py-0.5 rounded-full ' + (darkMode ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-700')}>✓ Melhor</span>}
+                                                                                        {isWorst && <span className={'text-xs px-2 py-0.5 rounded-full ' + (darkMode ? 'bg-red-900/50 text-red-400' : 'bg-red-100 text-red-700')}>⚠ Desafiante</span>}
+                                                                                    </div>
+                                                                                    <span className={'font-semibold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                        {avg.toFixed(1)}/dia
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                    <div
+                                                                                        className={'h-full rounded-full transition-all duration-500 ' + (
+                                                                                            isBest
+                                                                                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                                                                                : isWorst
+                                                                                                    ? 'bg-gradient-to-r from-red-500 to-orange-500'
+                                                                                                    : avg > 8
+                                                                                                        ? 'bg-gradient-to-r from-orange-500 to-yellow-500'
+                                                                                                        : avg > 5
+                                                                                                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                                                                                                            : 'bg-gradient-to-r from-purple-500 to-blue-500'
+                                                                                        )}
+                                                                                        style={{ width: `${widthPercent}%` }}
+                                                                                    ></div>
+                                                                                </div>
+                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                    {dayData[day].length} {dayData[day].length === 1 ? 'dia' : 'dias'} registados
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+
+                                                                {/* Resumo */}
+                                                                <div className={'mt-4 pt-4 border-t text-sm ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                                                        <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                            {dayNames[bestDay.day]}s
+                                                                        </span>
+                                                                        {' '}são teu ponto forte ({bestDay.avg.toFixed(1)}/dia).
+                                                                        <span className={'font-semibold ml-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                            {dayNames[worstDay.day]}s
+                                                                        </span>
+                                                                        {' '}são mais desafiantes ({worstDay.avg.toFixed(1)}/dia).
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
                                                     {/* 📊 GRÁFICO DE DOSAGEM SEMANAL */}
                                                     {(() => {
                                                         if (dailyLogs.length < 7) return null;
@@ -595,6 +700,33 @@ export function PatternsView({
                                                                 <p className={'text-xs italic mt-2 text-center ' + (themeClasses.textTertiary(darkMode))}>
                                                                     Últimas {Math.min(12, sortedWeeks.length)} semanas
                                                                 </p>
+
+                                                                {/* Contexto de evolução */}
+                                                                {sortedWeeks.length >= 2 && (() => {
+                                                                    const firstWeek = sortedWeeks[0];
+                                                                    const lastWeek = sortedWeeks[sortedWeeks.length - 1];
+                                                                    const change = lastWeek.totalMg - firstWeek.totalMg;
+                                                                    const changePct = (change / firstWeek.totalMg * 100);
+
+                                                                    if (Math.abs(changePct) < 5) return null; // Mudança insignificante
+
+                                                                    return (
+                                                                        <div className={'mt-3 pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                                            <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                                                                {change > 0 ? (
+                                                                                    <>
+                                                                                        Dosagem média <span className={'font-semibold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>subiu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% aumento.
+                                                                                        {changePct > 30 && <span className={'ml-1 font-semibold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Possível tolerância?</span>}
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        Dosagem média <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>reduziu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% redução. Bom progresso!
+                                                                                    </>
+                                                                                )}
+                                                                            </p>
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         );
                                                     })()}
@@ -2261,6 +2393,108 @@ export function PatternsView({
                                                                                 <div className="bg-red-500 h-full transition-all duration-500" style={{width: ((ranges.alta / dosages.length) * 100) + '%'}}></div>
                                                                             </div>
                                                                         </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* 📆 CICLO MENSUAL */}
+                                                    {Object.keys(byDate).length >= 15 && (() => {
+                                                        // Agrupar consumos por dia do mês (1-31)
+                                                        const dayOfMonthData = {};
+                                                        for (let i = 1; i <= 31; i++) {
+                                                            dayOfMonthData[i] = [];
+                                                        }
+
+                                                        Object.entries(byDate).forEach(([date, count]) => {
+                                                            const dayOfMonth = new Date(date).getDate();
+                                                            dayOfMonthData[dayOfMonth].push(count);
+                                                        });
+
+                                                        // Calcular média por dia do mês
+                                                        const dayOfMonthAverages = {};
+                                                        Object.entries(dayOfMonthData).forEach(([day, counts]) => {
+                                                            if (counts.length > 0) {
+                                                                dayOfMonthAverages[day] = counts.reduce((sum, c) => sum + c, 0) / counts.length;
+                                                            }
+                                                        });
+
+                                                        // Encontrar padrões (dias com maior/menor consumo)
+                                                        const sortedDays = Object.entries(dayOfMonthAverages)
+                                                            .filter(([_, avg]) => avg > 0)
+                                                            .sort(([,a], [,b]) => b - a);
+
+                                                        if (sortedDays.length < 5) return null;
+
+                                                        // Identificar pico (dias 20-25 do mês, se relevante)
+                                                        const days2025 = sortedDays.filter(([day]) => parseInt(day) >= 20 && parseInt(day) <= 25);
+                                                        const avgDays2025 = days2025.length > 0
+                                                            ? days2025.reduce((sum, [_, avg]) => sum + avg, 0) / days2025.length
+                                                            : 0;
+                                                        const overallAvg = sortedDays.reduce((sum, [_, avg]) => sum + avg, 0) / sortedDays.length;
+                                                        const hasPeak2025 = avgDays2025 > overallAvg * 1.2;
+
+                                                        const maxDay = sortedDays[0];
+                                                        const minDay = sortedDays[sortedDays.length - 1];
+
+                                                        return (
+                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border mt-4'}>
+                                                                <h3 className={'font-semibold mb-4 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>
+                                                                    📆 Ciclo Mensual
+                                                                </h3>
+
+                                                                {/* Gráfico de linha/área por dia do mês */}
+                                                                <div className="space-y-2 mb-4">
+                                                                    {sortedDays.slice(0, 10).map(([day, avg]) => {
+                                                                        const dayNum = parseInt(day);
+                                                                        const maxAvg = parseFloat(sortedDays[0][1]);
+                                                                        const widthPercent = (avg / maxAvg) * 100;
+                                                                        const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
+
+                                                                        return (
+                                                                            <div key={day} className="space-y-1">
+                                                                                <div className="flex items-center justify-between text-sm">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className={'font-medium w-10 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                            Dia {day}
+                                                                                        </span>
+                                                                                        {isPeak && <span className={'text-xs px-2 py-0.5 rounded-full ' + (darkMode ? 'bg-orange-900/50 text-orange-400' : 'bg-orange-100 text-orange-700')}>📈 Pico</span>}
+                                                                                    </div>
+                                                                                    <span className={'font-semibold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                        {avg.toFixed(1)}/dia
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className={(darkMode ? 'bg-gray-700' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                    <div
+                                                                                        className={'h-full rounded-full transition-all duration-500 ' + (
+                                                                                            isPeak
+                                                                                                ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                                                                                                : avg > overallAvg * 1.2
+                                                                                                    ? 'bg-gradient-to-r from-red-500 to-pink-500'
+                                                                                                    : avg < overallAvg * 0.8
+                                                                                                        ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                                                                                        : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                                                                                        )}
+                                                                                        style={{ width: `${widthPercent}%` }}
+                                                                                    ></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+
+                                                                {/* Resumo */}
+                                                                <div className={'pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-700')}>
+                                                                    {hasPeak2025 ? (
+                                                                        <p>
+                                                                            Pico de consumo entre <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>dias 20-25</span> do mês ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média). Padrão hormonal?
+                                                                        </p>
+                                                                    ) : (
+                                                                        <p>
+                                                                            Dia <span className={'font-semibold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{maxDay[0]}</span> do mês tem maior consumo ({parseFloat(maxDay[1]).toFixed(1)}/dia).
+                                                                            Dia <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{minDay[0]}</span> tem menor ({parseFloat(minDay[1]).toFixed(1)}/dia).
+                                                                        </p>
                                                                     )}
                                                                 </div>
                                                             </div>

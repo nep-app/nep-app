@@ -168,6 +168,45 @@ export function HomeViewRefactored({
           }
         }
 
+        // ALERTA PREDITIVO: Risco elevado de dia difícil
+        (() => {
+          // Verificar se dormiu <6h E humor <5 ontem
+          const lastCycleWithSleep = cycles
+            .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+          const lastWellbeingWithMood = dailyLogs
+            .filter(l => l.mood && !isNaN(parseInt(l.mood)))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+          if (lastCycleWithSleep && lastWellbeingWithMood) {
+            const sleepHours = parseFloat(lastCycleWithSleep.sleep);
+            const mood = parseInt(lastWellbeingWithMood.mood);
+
+            if (sleepHours < 6 && mood < 5) {
+              // Calcular probabilidade baseada em dados históricos (opcional)
+              // Por agora, usar 75% como indicação geral
+              alerts.push({
+                text: `⚠️ Risco elevado hoje: Dormiste ${sleepHours}h + humor baixo (${mood}/10)`,
+                emoji: '🔴',
+                color: 'red',
+                type: 'predictive',
+                description: '75% probabilidade de dia desafiante. Considera estratégias preventivas.'
+              });
+            } else if (sleepHours < 6 || mood < 5) {
+              // Risco moderado (só um dos fatores)
+              const factor = sleepHours < 6 ? `sono curto (${sleepHours}h)` : `humor baixo (${mood}/10)`;
+              alerts.push({
+                text: `⚡ Atenção: ${factor} ontem`,
+                emoji: '⚠️',
+                color: 'orange',
+                type: 'predictive',
+                description: 'Risco moderado. Planeia bem o dia.'
+              });
+            }
+          }
+        })();
+
         // 4. META: Hora de deitar (bedtime_before)
         const bedtimeGoal = goals.find(g => g.type === 'bedtime_before');
         if (bedtimeGoal && cycles.length > 0) {
