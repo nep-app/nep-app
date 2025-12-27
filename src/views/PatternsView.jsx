@@ -465,137 +465,6 @@ export function PatternsView({
                                                         </div>
                                                     )}
 
-                                                    {/* Insights Summary */}
-                                                    {insights.length > 0 && (
-                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>
-                                                                <span className="text-xl">💡</span>
-                                                                Padrões Identificados
-                                                            </h3>
-                                                            <div className="space-y-3">
-                                                                {insights.map((insight, i) => (
-                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (darkMode ? 'bg-gray-700/50 border-gray-600' : insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
-                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
-                                                                            {insight.text}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Análise de Metas */}
-                                                    {goalsAnalysis && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                🎯 Metas
-                                                            </h3>
-
-                                                            {/* Main stats */}
-                                                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
-                                                                        Total de Cumprimentos
-                                                                    </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
-                                                                            {goalsAnalysis.totalAchievements}
-                                                                        </span>
-                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            vezes
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                        {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
-                                                                        Média por Dia
-                                                                    </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
-                                                                            {goalsAnalysis.avgAchievementsPerDay}
-                                                                        </span>
-                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
-                                                                            cumprimentos
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                        nos últimos {goalsAnalysis.periodDays} dias
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Per-goal breakdown */}
-                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
-                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
-                                                                    Detalhes por Meta
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    {goalsAnalysis.goalBreakdown.map(goal => {
-                                                                        const goalTypeLabels = {
-                                                                            'reduce_frequency': '🔢 Reduzir frequência',
-                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
-                                                                            'limit_last': '🌙 Limitar último consumo',
-                                                                            'increase_interval': '⏳ Aumentar intervalo',
-                                                                            'sleep_hours': '😴 Horas de sono',
-                                                                            'bedtime_before': '🛏️ Deitar antes de'
-                                                                        };
-                                                                        const explanations = {
-                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
-                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
-                                                                            'limit_last': `Dias com último antes da meia-noite`,
-                                                                            'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
-                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
-                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
-                                                                        };
-                                                                        return (
-                                                                            <div key={goal.id} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
-                                                                                <div className="flex items-center justify-between mb-2">
-                                                                                    <div className="flex-1">
-                                                                                        <div className={'text-sm font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                                            {goalTypeLabels[goal.type] || goal.type}
-                                                                                        </div>
-                                                                                        <div className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-right">
-                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
-                                                                                            {goal.achievementCount}
-                                                                                        </div>
-                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
-                                                                                            vezes
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                                {/* Progress Bar */}
-                                                                                <div>
-                                                                                    <div className="flex items-center justify-between mb-1">
-                                                                                        <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            {goal.achievementCount} / {goal.totalPossible}
-                                                                                        </span>
-                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : goal.successRate >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
-                                                                                            {goal.successRate.toFixed(0)}%
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
-                                                                                        <div
-                                                                                            className={'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')}
-                                                                                            style={{width: `${Math.min(100, goal.successRate)}%`}}
-                                                                                        ></div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
                                                     {/* 📊 GRÁFICO DE DOSAGEM SEMANAL */}
                                                     {(() => {
                                                         if (dailyLogs.length < 7) return null;
@@ -729,6 +598,137 @@ export function PatternsView({
                                                             </div>
                                                         );
                                                     })()}
+
+                                                    {/* Insights Summary */}
+                                                    {insights.length > 0 && (
+                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>
+                                                                <span className="text-xl">💡</span>
+                                                                Padrões Identificados
+                                                            </h3>
+                                                            <div className="space-y-3">
+                                                                {insights.map((insight, i) => (
+                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (darkMode ? 'bg-gray-700/50 border-gray-600' : insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
+                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
+                                                                            {insight.text}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Análise de Metas */}
+                                                    {goalsAnalysis && (
+                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                🎯 Metas
+                                                            </h3>
+
+                                                            {/* Main stats */}
+                                                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
+                                                                        Total de Cumprimentos
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
+                                                                            {goalsAnalysis.totalAchievements}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            vezes
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                        Média por Dia
+                                                                    </div>
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                            {goalsAnalysis.avgAchievementsPerDay}
+                                                                        </span>
+                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            cumprimentos
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        nos últimos {goalsAnalysis.periodDays} dias
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Per-goal breakdown */}
+                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
+                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    Detalhes por Meta
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {goalsAnalysis.goalBreakdown.map(goal => {
+                                                                        const goalTypeLabels = {
+                                                                            'reduce_frequency': '🔢 Reduzir frequência',
+                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
+                                                                            'limit_last': '🌙 Limitar último consumo',
+                                                                            'increase_interval': '⏳ Aumentar intervalo',
+                                                                            'sleep_hours': '😴 Horas de sono',
+                                                                            'bedtime_before': '🛏️ Deitar antes de'
+                                                                        };
+                                                                        const explanations = {
+                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
+                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
+                                                                            'limit_last': `Dias com último antes da meia-noite`,
+                                                                            'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
+                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
+                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
+                                                                        };
+                                                                        return (
+                                                                            <div key={goal.id} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                                <div className="flex items-center justify-between mb-2">
+                                                                                    <div className="flex-1">
+                                                                                        <div className={'text-sm font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                                            {goalTypeLabels[goal.type] || goal.type}
+                                                                                        </div>
+                                                                                        <div className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-right">
+                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
+                                                                                            {goal.achievementCount}
+                                                                                        </div>
+                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                            vezes
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {/* Progress Bar */}
+                                                                                <div>
+                                                                                    <div className="flex items-center justify-between mb-1">
+                                                                                        <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            {goal.achievementCount} / {goal.totalPossible}
+                                                                                        </span>
+                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : goal.successRate >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                                            {goal.successRate.toFixed(0)}%
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                        <div
+                                                                                            className={'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')}
+                                                                                            style={{width: `${Math.min(100, goal.successRate)}%`}}
+                                                                                        ></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         }
