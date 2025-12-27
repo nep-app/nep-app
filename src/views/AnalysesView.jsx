@@ -4224,6 +4224,17 @@ export function AnalysesView({
                                                                                 return { text: 'Sem Correlação', color: 'gray', desc: 'Hora do 1º consumo não afeta total' };
                                                                             }
 
+                                                                            // Consumo Manhã/Tarde/Noite → Humor (períodos do dia)
+                                                                            if (name.includes('Consumo Manhã') || name.includes('Consumo Tarde') || name.includes('Consumo Noite')) {
+                                                                                const period = name.includes('Manhã') ? 'manhã' : name.includes('Tarde') ? 'tarde' : 'noite';
+                                                                                const periodTime = name.includes('Manhã') ? '6h-12h' : name.includes('Tarde') ? '12h-18h' : '18h-24h';
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Mais consumos de ${period} (${periodTime}) → Humor mais baixo no dia` };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Mais consumos de ${period} → Ligeira tendência para humor baixo` };
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais consumos de ${period} → Humor melhor no dia` };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais consumos de ${period} → Ligeira tendência para humor alto` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `Consumos de ${period} não afetam humor` };
+                                                                            }
+
                                                                             // Lógica genérica (fallback com descrição baseada no nome)
                                                                             const parts = name.split(' → ');
                                                                             const genericDesc = parts.length === 2
