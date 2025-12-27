@@ -3087,7 +3087,7 @@ export function AnalysesView({
                                                         // DOSAGEM SEMANAL (gráfico de tendência)
                                                         const weeklyDosage = [];
 
-                                                        if (analysisConsumptions.length >= 7) {
+                                                        if (analysisDailyLogs.length >= 7) {
                                                             // Helper: obter ISO week number
                                                             const getISOWeek = (date) => {
                                                                 const d = new Date(date);
@@ -3098,18 +3098,18 @@ export function AnalysesView({
                                                                 return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
                                                             };
 
-                                                            // Agrupar dosagem por semana
+                                                            // Agrupar dosagem por semana (usando DailyLogs)
                                                             const weeklyData = {};
-                                                            analysisConsumptions.forEach(c => {
-                                                                const mg = parseFloat(c.mg);
+                                                            analysisDailyLogs.forEach(log => {
+                                                                const mg = parseFloat(log.mg);
                                                                 if (!mg || mg <= 0) return;
 
-                                                                const week = getISOWeek(c.timestamp);
+                                                                const week = getISOWeek(log.timestamp);
                                                                 if (!weeklyData[week]) {
-                                                                    weeklyData[week] = { week, totalMg: 0, count: 0 };
+                                                                    weeklyData[week] = { week, totalMg: 0, days: 0 };
                                                                 }
                                                                 weeklyData[week].totalMg += mg;
-                                                                weeklyData[week].count++;
+                                                                weeklyData[week].days++;
                                                             });
 
                                                             // Converter para array e ordenar por semana
@@ -3137,7 +3137,7 @@ export function AnalysesView({
                                                                 const chartData = sortedWeeks.slice(-12).map(w => ({
                                                                     week: w.week.replace(/^\d{4}-W/, 'S'),
                                                                     dosagem: w.totalMg,
-                                                                    count: w.count
+                                                                    days: w.days
                                                                 }));
 
                                                                 weeklyDosage.push({
@@ -4525,7 +4525,7 @@ export function AnalysesView({
                                                                                                             fontSize: '12px'
                                                                                                         }}
                                                                                                         formatter={(value, name, props) => [
-                                                                                                            `${value}mg (${props.payload.count} consumos)`,
+                                                                                                            `${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`,
                                                                                                             'Dosagem Total'
                                                                                                         ]}
                                                                                                     />

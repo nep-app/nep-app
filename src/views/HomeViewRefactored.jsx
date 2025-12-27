@@ -9,6 +9,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { formatDateTime } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function HomeViewRefactored({
   currentReflection,
@@ -332,6 +333,140 @@ export function HomeViewRefactored({
           <div className={'text-xs mt-3 italic ' + (darkMode ? 'text-cyan-400' : 'text-blue-600')}>Baseado nos teus gatilhos identificados</div>
         )}
       </div>
+
+      {/* 📊 GRÁFICO DE DOSAGEM SEMANAL */}
+      {(() => {
+        if (dailyLogs.length < 7) return null;
+
+        // Helper: obter ISO week number
+        const getISOWeek = (date) => {
+          const d = new Date(date);
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+          const yearStart = new Date(d.getFullYear(), 0, 1);
+          const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+          return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        };
+
+        // Agrupar dosagem por semana
+        const weeklyData = {};
+        dailyLogs.forEach(log => {
+          const mg = parseFloat(log.mg);
+          if (!mg || mg <= 0) return;
+
+          const week = getISOWeek(log.timestamp);
+          if (!weeklyData[week]) {
+            weeklyData[week] = { week, totalMg: 0, days: 0 };
+          }
+          weeklyData[week].totalMg += mg;
+          weeklyData[week].days++;
+        });
+
+        const sortedWeeks = Object.values(weeklyData).sort((a, b) => a.week.localeCompare(b.week));
+        if (sortedWeeks.length < 2) return null;
+
+        // Calcular tendência
+        const recentWeeks = sortedWeeks.slice(-4);
+        const oldWeeks = sortedWeeks.slice(0, Math.min(4, sortedWeeks.length - 4));
+        const avgRecent = recentWeeks.reduce((s, w) => s + w.totalMg, 0) / recentWeeks.length;
+        const avgOld = oldWeeks.length > 0 ? oldWeeks.reduce((s, w) => s + w.totalMg, 0) / oldWeeks.length : avgRecent;
+        const trendPct = oldWeeks.length > 0 ? ((avgRecent - avgOld) / avgOld * 100) : 0;
+
+        let trendLabel = 'Estável';
+        let trendIcon = '➡️';
+        if (trendPct > 15) {
+          trendLabel = 'A Aumentar';
+          trendIcon = '📈';
+        } else if (trendPct < -15) {
+          trendLabel = 'A Reduzir';
+          trendIcon = '📉';
+        }
+
+        const chartData = sortedWeeks.slice(-12).map(w => ({
+          week: w.week.replace(/^\d{4}-W/, 'S'),
+          dosagem: w.totalMg,
+          days: w.days
+        }));
+
+        const avgWeekly = (sortedWeeks.reduce((s, w) => s + w.totalMg, 0) / sortedWeeks.length).toFixed(0);
+
+        return (
+          <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4 border ' + (darkMode ? 'border-purple-800/30' : 'border-purple-200')}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className={'font-semibold ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>📊 Dosagem Semanal</h3>
+              <div className={'text-xs px-2 py-1 rounded-full ' + (darkMode ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700')}>
+                {sortedWeeks.length} {sortedWeeks.length === 1 ? 'semana' : 'semanas'}
+              </div>
+            </div>
+
+            {/* Métricas */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className={'text-center p-3 rounded-lg ' + (darkMode ? 'bg-gray-800/50' : 'bg-gray-50')}>
+                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Média Semanal</div>
+                <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                  {avgWeekly}mg
+                </div>
+              </div>
+              <div className={'text-center p-3 rounded-lg ' + (
+                trendLabel === 'A Reduzir'
+                  ? (darkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-100 border border-green-300')
+                  : trendLabel === 'A Aumentar'
+                    ? (darkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-100 border border-red-300')
+                    : (darkMode ? 'bg-gray-800/50' : 'bg-gray-50')
+              )}>
+                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Tendência (4 sem)</div>
+                <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (
+                  trendLabel === 'A Reduzir'
+                    ? (darkMode ? 'text-green-400' : 'text-green-600')
+                    : trendLabel === 'A Aumentar'
+                      ? (darkMode ? 'text-red-400' : 'text-red-600')
+                      : (darkMode ? 'text-gray-400' : 'text-gray-600')
+                )}>
+                  <span>{trendIcon}</span>
+                  <span className="text-sm">{trendPct.toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gráfico */}
+            <div style={{ width: '100%', height: 180 }}>
+              <ResponsiveContainer>
+                <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                    label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: darkMode ? '#1f2937' : '#fff',
+                      border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                      borderRadius: '6px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value, name, props) => [
+                      `${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`,
+                      'Dosagem Total'
+                    ]}
+                  />
+                  <Bar
+                    dataKey="dosagem"
+                    fill={darkMode ? '#a78bfa' : '#8b5cf6'}
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className={'text-xs italic mt-2 text-center ' + (themeClasses.textTertiary(darkMode))}>
+              Últimas {Math.min(12, sortedWeeks.length)} semanas
+            </p>
+          </div>
+        );
+      })()}
 
       {consumptions.length > 0 && (
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
