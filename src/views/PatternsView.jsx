@@ -1861,6 +1861,10 @@ export function PatternsView({
 
                                         // ESTRUTURAL
                                         if (patternView === 'estrutural') {
+                                            // Calculate byDate for components that need it
+                                            const byDate = {};
+                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+
                                             // Calcular intervalos entre consumos
                                             const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                             const intervals = [];
