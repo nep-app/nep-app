@@ -131,31 +131,38 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
 
   return (
     <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          📊 Heatmap - {view === 'consumptions' ? 'Consumos' : 'Bem-estar'}
-        </h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView('consumptions')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              view === 'consumptions'
-                ? 'bg-purple-600 text-white'
-                : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            💊 Consumos
-          </button>
-          <button
-            onClick={() => setView('wellbeing')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              view === 'wellbeing'
-                ? 'bg-purple-600 text-white'
-                : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            😊 Bem-estar
-          </button>
+      <div className="mb-4">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex-1">
+            <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+              📊 Heatmap - {view === 'consumptions' ? 'Consumos' : 'Bem-estar'}
+            </h3>
+            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Visão geral dos últimos {days} dias. Passa o rato sobre os quadrados para ver detalhes.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView('consumptions')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                view === 'consumptions'
+                  ? 'bg-purple-600 text-white'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              💊 Consumos
+            </button>
+            <button
+              onClick={() => setView('wellbeing')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                view === 'wellbeing'
+                  ? 'bg-purple-600 text-white'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              😊 Bem-estar
+            </button>
+          </div>
         </div>
       </div>
 
