@@ -4093,7 +4093,7 @@ export function AnalysesView({
                                                                                     return { text: 'Sem Correlação', color: 'gray', desc: 'Autocuidado não afeta consumo' };
                                                                                 }
 
-                                                                                // Humor/energia baixos → mais consumo (negativa é má) e → dosagem
+                                                                                // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
@@ -4101,16 +4101,16 @@ export function AnalysesView({
 
                                                                                     if (target.includes('Consumo')) {
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
-                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais consumo${suffix}` };
-                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais consumo${suffix}` };
-                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
                                                                                     } else if (target.includes('Dosagem')) {
-                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais dosagem` };
-                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais dosagem` };
-                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos dosagem` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente mais dosagem` };
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `${metricName} alto → Menos dosagem` };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `${metricName} alto → Mais dosagem` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `${metricName} alto → Ligeiramente mais dosagem` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta dosagem` };
                                                                                     }
                                                                                 }
