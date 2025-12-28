@@ -4212,8 +4212,8 @@ export function AnalysesView({
 
                                                                             // Casos adicionais com explicações específicas
 
-                                                                            // Autocorrelação (X ontem → X hoje)
-                                                                            if (name.includes('ontem') && name.includes('hoje')) {
+                                                                            // Autocorrelação (X ontem → X hoje) - mas não X ontem → Consumo/Dosagem hoje
+                                                                            if (name.includes('ontem') && name.includes('hoje') && !name.includes('→ Consumo') && !name.includes('→ Dosagem')) {
                                                                                 const metric = name.split(' ontem')[0];
                                                                                 if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: `${metric} ontem tende a repetir-se hoje` };
                                                                                 if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: `${metric} ontem influencia ligeiramente hoje` };
@@ -4859,6 +4859,206 @@ export function AnalysesView({
 
                                                     {/* IMPACTO TEMPORAL */}
                                                     {analysisSubView === 'impacto' && (() => {
+                                                        // Agrupar dados por dia para experimentalFeatures
+                                                        const dailyData = {};
+
+                                                        analysisWellbeing.forEach(w => {
+                                                            const date = w.date || safeToISODate(w.timestamp);
+                                                            if (!dailyData[date]) {
+                                                                dailyData[date] = { sleep: null, exercise: null, food: null, social: null, mood: null, energy: null, consumptions: 0 };
+                                                            }
+
+                                                            if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
+                                                            if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
+                                                            if (w.food) dailyData[date].food = parseInt(w.food);
+                                                            if (w.social) dailyData[date].social = parseInt(w.social);
+                                                            if (w.mood) dailyData[date].mood = parseInt(w.mood);
+                                                            if (w.energy) dailyData[date].energy = parseInt(w.energy);
+                                                        });
+
+                                                        // Adicionar consumos
+                                                        analysisConsumptions.forEach(c => {
+                                                            const date = c.date || safeToISODate(c.timestamp);
+                                                            if (!dailyData[date]) {
+                                                                dailyData[date] = { sleep: null, exercise: null, food: null, social: null, mood: null, energy: null, consumptions: 0 };
+                                                            }
+                                                            dailyData[date].consumptions++;
+                                                        });
+
+                                                        // Agregar dosagem por dia
+                                                        const dosageData = {};
+                                                        [...analysisCycles, ...analysisDailyLogs].forEach(item => {
+                                                            const itemDate = item.date || safeToISODate(item.timestamp);
+                                                            if (!itemDate || !item.mg) return;
+
+                                                            const mg = typeof item.mg === 'number' ? item.mg : parseFloat(item.mg);
+                                                            if (isNaN(mg) || mg <= 0) return;
+
+                                                            if (!dosageData[itemDate]) {
+                                                                dosageData[itemDate] = { totalMg: 0, sleep: dailyData[itemDate]?.sleep || null, mood: dailyData[itemDate]?.mood || null, energy: dailyData[itemDate]?.energy || null };
+                                                            }
+
+                                                            dosageData[itemDate].totalMg += mg;
+                                                        });
+
+                                                        // ⚗️ FEATURES EXPERIMENTAIS
+                                                        const experimentalFeatures = {
+                                                            compositeTriggers: [],
+                                                            antecedents: [],
+                                                            satisfaction: []
+                                                        };
+
+                                                        if (analysisConsumptions.length >= 10 && analysisWellbeing.length >= 10) {
+                                                            // 1. GATILHOS COMPOSTOS (combinações de fatores)
+                                                            const compositeData = [];
+
+                                                            Object.entries(dailyData).forEach(([date, data]) => {
+                                                                const cons = data.consumptions || 0;
+                                                                if (cons > 0 && data.mood !== null && data.sleep !== null) {
+                                                                    compositeData.push({
+                                                                        date,
+                                                                        cons,
+                                                                        lowMood: parseInt(data.mood) <= 4,
+                                                                        poorSleep: parseInt(data.sleep) <= 5,
+                                                                        lowEnergy: data.energy ? parseInt(data.energy) <= 4 : null,
+                                                                        mood: parseInt(data.mood),
+                                                                        sleep: parseInt(data.sleep),
+                                                                        energy: data.energy ? parseInt(data.energy) : null
+                                                                    });
+                                                                }
+                                                            });
+
+                                                            if (compositeData.length >= 10) {
+                                                                // Analisar: Humor Baixo + Sono Mau
+                                                                const lowMoodPoorSleep = compositeData.filter(d => d.lowMood && d.poorSleep);
+                                                                const normalDays = compositeData.filter(d => !d.lowMood || !d.poorSleep);
+
+                                                                if (lowMoodPoorSleep.length >= 3 && normalDays.length >= 3) {
+                                                                    const avgConsWhenBoth = lowMoodPoorSleep.reduce((s, d) => s + d.cons, 0) / lowMoodPoorSleep.length;
+                                                                    const avgConsNormal = normalDays.reduce((s, d) => s + d.cons, 0) / normalDays.length;
+                                                                    const increasePct = avgConsNormal > 0 ? ((avgConsWhenBoth - avgConsNormal) / avgConsNormal * 100) : 0;
+
+                                                                    if (Math.abs(increasePct) > 10) {
+                                                                        experimentalFeatures.compositeTriggers.push({
+                                                                            name: 'Humor Baixo + Sono Mau',
+                                                                            icon: '😔💤',
+                                                                            avgCons: avgConsWhenBoth.toFixed(1),
+                                                                            normalCons: avgConsNormal.toFixed(1),
+                                                                            increase: increasePct.toFixed(0),
+                                                                            occurrences: lowMoodPoorSleep.length
+                                                                        });
+                                                                    }
+                                                                }
+
+                                                                // Analisar: Humor Baixo + Energia Baixa
+                                                                const hasEnergy = compositeData.filter(d => d.lowEnergy !== null);
+                                                                if (hasEnergy.length >= 10) {
+                                                                    const lowMoodLowEnergy = hasEnergy.filter(d => d.lowMood && d.lowEnergy);
+                                                                    const normalDaysEnergy = hasEnergy.filter(d => !d.lowMood || !d.lowEnergy);
+
+                                                                    if (lowMoodLowEnergy.length >= 3 && normalDaysEnergy.length >= 3) {
+                                                                        const avgConsWhenBoth = lowMoodLowEnergy.reduce((s, d) => s + d.cons, 0) / lowMoodLowEnergy.length;
+                                                                        const avgConsNormal = normalDaysEnergy.reduce((s, d) => s + d.cons, 0) / normalDaysEnergy.length;
+                                                                        const increasePct = avgConsNormal > 0 ? ((avgConsWhenBoth - avgConsNormal) / avgConsNormal * 100) : 0;
+
+                                                                        if (Math.abs(increasePct) > 10) {
+                                                                            experimentalFeatures.compositeTriggers.push({
+                                                                                name: 'Humor Baixo + Energia Baixa',
+                                                                                icon: '😔⚡',
+                                                                                avgCons: avgConsWhenBoth.toFixed(1),
+                                                                                normalCons: avgConsNormal.toFixed(1),
+                                                                                increase: increasePct.toFixed(0),
+                                                                                occurrences: lowMoodLowEnergy.length
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // 2. ANTECEDENTES 24-48h (padrões antes de consumir)
+                                                            const sortedDates = Object.keys(dailyData).sort();
+                                                            sortedDates.forEach((date, idx) => {
+                                                                const today = dailyData[date];
+                                                                const todayCons = today.consumptions || 0;
+
+                                                                if (todayCons > 0 && idx >= 2) {
+                                                                    // Olhar para os 2 dias anteriores
+                                                                    const yesterday = dailyData[sortedDates[idx - 1]];
+                                                                    const dayBefore = dailyData[sortedDates[idx - 2]];
+
+                                                                    if (yesterday?.mood && dayBefore?.mood) {
+                                                                        // Detectar tendência de declínio de humor
+                                                                        const moodDecline = parseInt(dayBefore.mood) - parseInt(yesterday.mood) > 1;
+                                                                        const poorSleepStreak = yesterday.sleep && parseInt(yesterday.sleep) <= 5 && dayBefore.sleep && parseInt(dayBefore.sleep) <= 5;
+
+                                                                        if (moodDecline) {
+                                                                            experimentalFeatures.antecedents.push({
+                                                                                date,
+                                                                                pattern: 'Humor estava a descer antes de consumir',
+                                                                                icon: '📉',
+                                                                                cons: todayCons
+                                                                            });
+                                                                        }
+
+                                                                        if (poorSleepStreak) {
+                                                                            experimentalFeatures.antecedents.push({
+                                                                                date,
+                                                                                pattern: 'Sono mau em dias consecutivos',
+                                                                                icon: '💤',
+                                                                                cons: todayCons
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }
+                                                            });
+
+                                                            // 3. SATISFAÇÃO/EFICÁCIA (melhoria pós-consumo)
+                                                            const satisfactionData = [];
+
+                                                            analysisConsumptions.forEach(cons => {
+                                                                const consTime = new Date(cons.timestamp);
+
+                                                                // Encontrar bem-estar ANTES (-2h a 0h) e DEPOIS (+1h a +3h)
+                                                                const beforeRecords = analysisWellbeing.filter(w => {
+                                                                    const wTime = new Date(w.timestamp);
+                                                                    const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                    return hoursDiff >= -2 && hoursDiff <= 0 && w.mood;
+                                                                });
+
+                                                                const afterRecords = analysisWellbeing.filter(w => {
+                                                                    const wTime = new Date(w.timestamp);
+                                                                    const hoursDiff = (wTime - consTime) / (1000 * 60 * 60);
+                                                                    return hoursDiff >= 1 && hoursDiff <= 3 && w.mood;
+                                                                });
+
+                                                                if (beforeRecords.length > 0 && afterRecords.length > 0) {
+                                                                    const avgBefore = beforeRecords.reduce((s, r) => s + parseInt(r.mood), 0) / beforeRecords.length;
+                                                                    const avgAfter = afterRecords.reduce((s, r) => s + parseInt(r.mood), 0) / afterRecords.length;
+                                                                    const improvement = avgAfter - avgBefore;
+
+                                                                    satisfactionData.push({
+                                                                        before: avgBefore,
+                                                                        after: avgAfter,
+                                                                        improvement,
+                                                                        effective: improvement > 0.5
+                                                                    });
+                                                                }
+                                                            });
+
+                                                            if (satisfactionData.length >= 5) {
+                                                                const avgImprovement = satisfactionData.reduce((s, d) => s + d.improvement, 0) / satisfactionData.length;
+                                                                const effectiveCount = satisfactionData.filter(d => d.effective).length;
+                                                                const effectiveRate = (effectiveCount / satisfactionData.length * 100);
+
+                                                                experimentalFeatures.satisfaction.push({
+                                                                    avgImprovement: avgImprovement.toFixed(1),
+                                                                    effectiveRate: effectiveRate.toFixed(0),
+                                                                    totalEvents: satisfactionData.length,
+                                                                    effectiveCount
+                                                                });
+                                                            }
+                                                        }
+
                                                         return (
                                                             <div className="space-y-4">
                                                                 {/* 📊 IMPACTO MÉDIO AGREGADO (Multi-dia) */}
