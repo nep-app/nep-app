@@ -4101,16 +4101,16 @@ export function AnalysesView({
 
                                                                                     if (target.includes('Consumo')) {
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
-                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
-                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
-                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
+                                                                                        if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
+                                                                                        if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
                                                                                     } else if (target.includes('Dosagem')) {
-                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `${metricName} alto → Menos dosagem` };
-                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
-                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `${metricName} alto → Mais dosagem` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `${metricName} alto → Ligeiramente mais dosagem` };
+                                                                                        if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos dosagem` };
+                                                                                        if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
+                                                                                        if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais dosagem` };
+                                                                                        if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais dosagem` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta dosagem` };
                                                                                     }
                                                                                 }
