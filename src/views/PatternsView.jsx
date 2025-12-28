@@ -369,12 +369,17 @@ export function PatternsView({
                                                             if (!dailyData[date]) {
                                                                 dailyData[date] = { sleep: null, mood: null, energy: null, exercise: null, food: null, social: null, consumptions: 0 };
                                                             }
-                                                            if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
-                                                            if (w.mood) dailyData[date].mood = parseInt(w.mood);
-                                                            if (w.energy) dailyData[date].energy = parseInt(w.energy);
-                                                            if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
-                                                            if (w.food) dailyData[date].food = parseInt(w.food);
-                                                            if (w.social) dailyData[date].social = parseInt(w.social);
+                                                            // Usar parseFloat e validar se é número válido
+                                                            const parseSafe = (val) => {
+                                                                const num = parseFloat(val);
+                                                                return isNaN(num) ? null : Math.round(num);
+                                                            };
+                                                            if (w.sleep) dailyData[date].sleep = parseSafe(w.sleep);
+                                                            if (w.mood) dailyData[date].mood = parseSafe(w.mood);
+                                                            if (w.energy) dailyData[date].energy = parseSafe(w.energy);
+                                                            if (w.exercise) dailyData[date].exercise = parseSafe(w.exercise);
+                                                            if (w.food) dailyData[date].food = parseSafe(w.food);
+                                                            if (w.social) dailyData[date].social = parseSafe(w.social);
                                                         });
 
                                                         consumptions.forEach(c => {
@@ -394,6 +399,12 @@ export function PatternsView({
                                                         const yesterdayData = dailyData[yesterdayStr];
                                                         if (!yesterdayData) return null;
 
+                                                        // Debug: encontrar TODOS os registos de ontem (raw)
+                                                        const yesterdayRawLogs = wellbeingLogs.filter(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            return wDate === yesterdayStr;
+                                                        });
+
                                                         const sleep = yesterdayData.sleep;
                                                         const mood = yesterdayData.mood;
                                                         const energy = yesterdayData.energy;
@@ -402,7 +413,10 @@ export function PatternsView({
                                                         const social = yesterdayData.social;
 
                                                         // Debug: mostrar dados brutos de ontem
-                                                        const debugYesterday = `[DEBUG ontem ${yesterdayStr}: sono=${sleep}, mood=${mood}, energy=${energy}, exercise=${exercise}, food=${food}, social=${social}]`;
+                                                        const rawDetails = yesterdayRawLogs.map((w, i) =>
+                                                            `Reg${i+1}[sleep=${w.sleep}, mood=${w.mood}, energy=${w.energy}, exercise=${w.exercise}, food=${w.food}, social=${w.social}]`
+                                                        ).join(' | ');
+                                                        const debugYesterday = `[DEBUG ontem ${yesterdayStr}: ${yesterdayRawLogs.length} registos | ${rawDetails || 'Nenhum'} → Agregado: sono=${sleep}, mood=${mood}, energy=${energy}, exercise=${exercise}, food=${food}, social=${social}]`;
 
                                                         // Calcular score de autocuidado de ontem (0-4)
                                                         let selfCareScore = 0;
