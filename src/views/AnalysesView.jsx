@@ -4853,7 +4853,14 @@ export function AnalysesView({
                                                                         </div>}
                                                                     </div>
                                                                 )}
+                                                            </div>
+                                                        );
+                                                    })()}
 
+                                                    {/* IMPACTO TEMPORAL */}
+                                                    {analysisSubView === 'impacto' && (() => {
+                                                        return (
+                                                            <div className="space-y-4">
                                                                 {/* 📊 IMPACTO MÉDIO AGREGADO (Multi-dia) */}
                                                                 {(() => {
                                                                     // Agregar TODOS os consumos de TODOS os dias e calcular impacto médio
