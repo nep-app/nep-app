@@ -334,7 +334,7 @@ export function PatternsView({
                                                                         <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Escalada detectada:</strong> +{trend.slopePerDay} consumos/dia em média.
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            Projeção 10 dias: ~{trend.projection} consumos/dia
+                                                                            📊 A tua frequência está a aumentar {trend.slopePerDay} consumos por dia. Se continuar assim, daqui a 10 dias poderás estar em ~{trend.projection} consumos/dia.
                                                                         </span>
                                                                     </>
                                                                 )}
@@ -343,18 +343,104 @@ export function PatternsView({
                                                                         <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Redução em progresso:</strong> {trend.slopePerDay} consumos/dia em média.
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            Continua assim! Projeção 10 dias: ~{trend.projection} consumos/dia
+                                                                            📊 Estás a reduzir {Math.abs(parseFloat(trend.slopePerDay))} consumos por dia. Continua assim! Projeção 10 dias: ~{trend.projection} consumos/dia.
                                                                         </span>
                                                                     </>
                                                                 )}
                                                                 {trend.direction === 'stable' && (
                                                                     <>
                                                                         <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Padrão estável:</strong> ~{trend.currentAvg} consumos/dia (variação mínima)
+                                                                        <br />
+                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            📊 A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias.
+                                                                        </span>
                                                                     </>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     )}
+
+                                                    {/* Alertas Preditivos */}
+                                                    {(() => {
+                                                        // Obter dados de ontem
+                                                        const today = new Date();
+                                                        const yesterday = new Date(today);
+                                                        yesterday.setDate(yesterday.getDate() - 1);
+                                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                                                        const yesterdayWellbeing = wellbeingLogs.find(w => {
+                                                            const wDate = w.date || safeToISODate(w.timestamp);
+                                                            return wDate === yesterdayStr;
+                                                        });
+
+                                                        if (!yesterdayWellbeing) return null;
+
+                                                        const sleep = yesterdayWellbeing.sleep ? parseInt(yesterdayWellbeing.sleep) : null;
+                                                        const mood = yesterdayWellbeing.mood ? parseInt(yesterdayWellbeing.mood) : null;
+                                                        const energy = yesterdayWellbeing.energy ? parseInt(yesterdayWellbeing.energy) : null;
+
+                                                        // Calcular risco baseado em sono baixo (<5) OU humor baixo (<5) OU energia baixa (<5)
+                                                        const riskFactors = [];
+                                                        if (sleep !== null && sleep < 5) riskFactors.push({ factor: 'Sono', value: sleep, emoji: '😴' });
+                                                        if (mood !== null && mood < 5) riskFactors.push({ factor: 'Humor', value: mood, emoji: '😔' });
+                                                        if (energy !== null && energy < 5) riskFactors.push({ factor: 'Energia', value: energy, emoji: '🔋' });
+
+                                                        if (riskFactors.length === 0) {
+                                                            // Tudo bem ontem - alerta positivo
+                                                            const goodFactors = [];
+                                                            if (sleep !== null && sleep >= 7) goodFactors.push(`Sono: ${sleep}/10`);
+                                                            if (mood !== null && mood >= 7) goodFactors.push(`Humor: ${mood}/10`);
+                                                            if (energy !== null && energy >= 7) goodFactors.push(`Energia: ${energy}/10`);
+
+                                                            if (goodFactors.length > 0) {
+                                                                return (
+                                                                    <div className={(darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border mt-4'}>
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                                🔮 Previsão para Hoje
+                                                                            </div>
+                                                                            <span className="text-2xl">✅</span>
+                                                                        </div>
+                                                                        <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                            <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Risco baixo:</strong> Ontem tiveste bons níveis ({goodFactors.join(', ')}).
+                                                                            <br />
+                                                                            <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                                💡 Dia favorável para redução. Aproveita o momento!
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        }
+
+                                                        if (riskFactors.length > 0) {
+                                                            return (
+                                                                <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border mt-4'}>
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>
+                                                                            🔮 Previsão para Hoje
+                                                                        </div>
+                                                                        <span className="text-2xl">⚠️</span>
+                                                                    </div>
+                                                                    <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                        <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Atenção - Risco aumentado:</strong> Ontem tiveste:
+                                                                        <div className="mt-2 space-y-1">
+                                                                            {riskFactors.map(rf => (
+                                                                                <div key={rf.factor} className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                    {rf.emoji} <strong>{rf.factor} baixo</strong>: {rf.value}/10
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                        <span className={'text-xs mt-2 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            💡 Baseado nas tuas correlações, isto pode aumentar o risco de consumo hoje. Considera estratégias preventivas!
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return null;
+                                                    })()}
 
                                                     {/* Heatmap */}
                                                     <HeatmapChart
