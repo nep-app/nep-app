@@ -134,15 +134,15 @@ export function AnalysesView({
                                                 <div className="space-y-4">
                                                     {/* Sub-tab navigation */}
                                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                                        {['correlacoes', 'emocoes', 'gatilhos', 'coach'].map(subView => (
+                                                        {['correlacoes', 'estado', 'impacto', 'coach'].map(subView => (
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
                                                                 className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                                                             >
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
-                                                                {subView === 'emocoes' && '🌈 Emoções'}
-                                                                {subView === 'gatilhos' && '⚡ Gatilhos'}
+                                                                {subView === 'estado' && '🎭 Estado'}
+                                                                {subView === 'impacto' && '⏱️ Impacto'}
                                                                 {subView === 'coach' && '💬 Reflexão Geral'}
                                                             </button>
                                                         ))}
@@ -2131,7 +2131,7 @@ export function AnalysesView({
                                                     })()}
 
                                                     {/* EMOÇÕES */}
-                                                    {analysisSubView === 'emocoes' && (() => {
+                                                    {analysisSubView === 'estado' && (() => {
                                                         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
 
                                                         if (allEmotions.length === 0) {
@@ -2435,7 +2435,7 @@ export function AnalysesView({
                                                     })()}
 
                                                     {/* GATILHOS */}
-                                                    {analysisSubView === 'gatilhos' && (() => {
+                                                    {analysisSubView === 'estado' && (() => {
                                                         const allTriggers = analysisCycles.flatMap(c => c.triggers || []);
 
                                                         if (allTriggers.length === 0) {
