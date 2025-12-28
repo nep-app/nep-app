@@ -403,10 +403,11 @@ export function PatternsView({
 
                                                         // Calcular score de autocuidado de ontem (0-4)
                                                         let selfCareScore = 0;
-                                                        if (sleep && sleep >= 6) selfCareScore++;
-                                                        if (exercise && exercise >= 6) selfCareScore++;
-                                                        if (food && food >= 6) selfCareScore++;
-                                                        if (social && social >= 6) selfCareScore++;
+                                                        const selfCareDetails = [];
+                                                        if (sleep && sleep >= 6) { selfCareScore++; selfCareDetails.push(`Sono: ${sleep}/10`); }
+                                                        if (exercise && exercise >= 6) { selfCareScore++; selfCareDetails.push(`Exercício: ${exercise}/10`); }
+                                                        if (food && food >= 6) { selfCareScore++; selfCareDetails.push(`Alimentação: ${food}/10`); }
+                                                        if (social && social >= 6) { selfCareScore++; selfCareDetails.push(`Social: ${social}/10`); }
 
                                                         // Padrão do dia da semana
                                                         const todayDayOfWeek = today.getDay();
@@ -461,15 +462,18 @@ export function PatternsView({
                                                             riskScore -= 8;
                                                         }
 
-                                                        // 3. Falta de autocuidado ontem (+risco)
+                                                        // 3. Autocuidado ontem
                                                         if (selfCareScore === 0) {
                                                             riskScore += 15;
-                                                            riskFactors.push({ emoji: '⚠️', text: 'Sem autocuidado ontem (0/4 áreas)' });
+                                                            riskFactors.push({ emoji: '⚠️', text: 'Sem autocuidado registado ontem (0/4 áreas)' });
                                                         } else if (selfCareScore === 1) {
                                                             riskScore += 8;
-                                                            riskFactors.push({ emoji: '⚠️', text: 'Autocuidado mínimo ontem (1/4)' });
+                                                            riskFactors.push({ emoji: '⚠️', text: `Autocuidado mínimo: ${selfCareDetails.join(', ')}` });
+                                                        } else if (selfCareScore === 2) {
+                                                            // Neutro - não adiciona fator
                                                         } else if (selfCareScore >= 3) {
                                                             riskScore -= 12;
+                                                            riskFactors.push({ emoji: '✅', text: `Bom autocuidado ontem (${selfCareScore}/4): ${selfCareDetails.join(', ')}` });
                                                         }
 
                                                         // 4. Dia da semana com mais consumo (+risco)
