@@ -4022,6 +4022,42 @@ export function AnalysesView({
 
                                                         return (
                                                             <div className="space-y-4">
+                                                                {/* Introdução às Correlações */}
+                                                                <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
+                                                                    <h3 className={'font-semibold mb-3 flex items-center gap-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                        💡 Como interpretar correlações
+                                                                    </h3>
+                                                                    <div className={'text-sm space-y-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <p>
+                                                                            <strong>O que são correlações?</strong> Medem se duas coisas variam juntas. Por exemplo: "quando consumo mais, durmo menos?" ou "quando durmo bem, consumo menos no dia seguinte?"
+                                                                        </p>
+                                                                        <p>
+                                                                            <strong>Como ler:</strong> A seta → indica direção temporal. "Sono ontem → Consumo hoje" significa: como o sono de ontem <u>influencia</u> o consumo de hoje.
+                                                                        </p>
+                                                                        <div className={'grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white/70')}>
+                                                                            <div>
+                                                                                <p className={'font-semibold mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-700')}>✅ Correlações "boas":</p>
+                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    • Mais autocuidado → Menos consumo<br/>
+                                                                                    • Melhor humor → Menos consumo<br/>
+                                                                                    • Bom sono → Menos consumo no dia seguinte
+                                                                                </p>
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className={'font-semibold mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-700')}>⚠️ Correlações "atenção":</p>
+                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    • Humor baixo → Mais consumo<br/>
+                                                                                    • Consumo alto → Pior humor no dia seguinte<br/>
+                                                                                    • Menos autocuidado → Mais consumo
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className={'text-xs italic pt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                            ⚡ Importante: Correlação não é causalidade. Estas análises mostram padrões, mas não provam causa-efeito. Usa-as como pistas para autoconhecimento.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
                                                                 {/* Helper function para renderizar correlações */}
                                                                 {(() => {
                                                                     // Define a função aqui para ser usada em todas as seções abaixo
@@ -4678,15 +4714,26 @@ export function AnalysesView({
                                                                                 {expandedSections.wellbeingDosage ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
-                                                                        {expandedSections.wellbeingDosage && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                                                                            {/* Gatilhos/Emoções Negativas → Dosagem */}
-                                                                            {wellbeingToDosage.map(corr => window.renderCorrelationCard(corr, true))}
+                                                                        {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
+                                                                            {/* Explicação introdutória */}
+                                                                            <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-3 border'}>
+                                                                                <p className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>💡 Sobre dosagem vs frequência:</p>
+                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    <strong>Dosagem</strong> = quantidade total de mg por dia. <strong>Frequência</strong> = número de consumos por dia.
+                                                                                    Esta secção analisa se o teu estado emocional (gatilhos, emoções) influencia a <u>quantidade</u> que consomes, não apenas quantas vezes consomes.
+                                                                                </p>
+                                                                            </div>
 
-                                                                            {/* Dosagem → X (Humor/Energia/Sono/Autocuidado/Emoções Negativas) */}
-                                                                            {dosageToWellbeing.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                {/* Gatilhos/Emoções Negativas → Dosagem */}
+                                                                                {wellbeingToDosage.map(corr => window.renderCorrelationCard(corr, true))}
 
-                                                                            {/* Intervalo → Dosagem */}
-                                                                            {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                                {/* Dosagem → X (Humor/Energia/Sono/Autocuidado/Emoções Negativas) */}
+                                                                                {dosageToWellbeing.map(corr => window.renderCorrelationCard(corr, false))}
+
+                                                                                {/* Intervalo → Dosagem */}
+                                                                                {intervalToDosage.map(corr => window.renderCorrelationCard(corr, false))}
+                                                                            </div>
                                                                         </div>}
                                                                     </div>
                                                                 )}
