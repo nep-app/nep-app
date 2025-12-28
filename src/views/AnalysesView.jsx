@@ -3561,8 +3561,8 @@ export function AnalysesView({
                                                                         if (moodDecline) {
                                                                             experimentalFeatures.antecedents.push({
                                                                                 date,
-                                                                                pattern: 'Humor desceu nos 2 dias anteriores',
-                                                                                icon: '📉😔',
+                                                                                pattern: 'Humor estava a descer antes de consumir',
+                                                                                icon: '📉',
                                                                                 cons: todayCons
                                                                             });
                                                                         }
@@ -3570,8 +3570,8 @@ export function AnalysesView({
                                                                         if (poorSleepStreak) {
                                                                             experimentalFeatures.antecedents.push({
                                                                                 date,
-                                                                                pattern: 'Sono Mau Consecutivo (2+ dias)',
-                                                                                icon: '💤💤',
+                                                                                pattern: 'Sono mau em dias consecutivos',
+                                                                                icon: '💤',
                                                                                 cons: todayCons
                                                                             });
                                                                         }
@@ -4967,75 +4967,53 @@ export function AnalysesView({
                                                                                     {/* Latência Temporal + Eficácia (INTEGRADAS) */}
                                                                                     {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
                                                                                         <div className="space-y-3">
-                                                                                            {/* Texto explicativo inicial */}
-                                                                                            <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 border'}>
-                                                                                                <p className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>💡 Como interpretar estas duas métricas:</p>
+                                                                                            {/* Impacto Imediato do Consumo (Evolução + Eficácia juntos) */}
+                                                                                            {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
+                                                                                                <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-green-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-green-50 border-purple-200') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-4 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>📊 Impacto do Consumo no Humor</div>
 
-                                                                                                <p className={'text-xs mb-2 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    <span className="font-semibold">Evolução Pós-Consumo:</span> Compara humor <u>no momento do consumo (0h)</u> com 30min/1h/2h depois. Negativo = humor desce após consumir.
-                                                                                                </p>
-
-                                                                                                <p className={'text-xs mb-2 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                                    <span className="font-semibold">Eficácia do Consumo:</span> Compara humor <u>ANTES de consumir</u> com 1-3h DEPOIS. Positivo = humor melhora face ao estado inicial.
-                                                                                                </p>
-
-                                                                                                <div className={'mt-2 p-2 rounded text-xs ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                    <p className={'font-semibold mb-1 ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>📝 Exemplo prático:</p>
-                                                                                                    <p className={themeClasses.textTertiary(darkMode)}>
-                                                                                                        • <strong>Antes:</strong> humor 4/10 (mal)<br/>
-                                                                                                        • <strong>0h (consumo):</strong> humor 7/10 (pico)<br/>
-                                                                                                        • <strong>2h depois:</strong> humor 6.8/10<br/>
-                                                                                                        <br/>
-                                                                                                        <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>→ Evolução: -0.2</span> (7→6.8, desceu após pico)<br/>
-                                                                                                        <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>→ Eficácia: +2.8</span> (4→6.8, melhorou vs início)<br/>
-                                                                                                        <br/>
-                                                                                                        ⚠️ Ambas podem ser verdade ao mesmo tempo!
-                                                                                                    </p>
-                                                                                                </div>
-                                                                                            </div>
-
-                                                                                            {/* Evolução Pós-Consumo */}
-                                                                                            {latency.length > 0 && (
-                                                                                                <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                                    <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>⏱️ Evolução Pós-Consumo</div>
-                                                                                                    <p className={'text-xs mb-3 opacity-75'}>Mudança vs momento do consumo (0h)</p>
-                                                                                                    <div className="grid grid-cols-3 gap-3">
-                                                                                                        {latency.map(lat => (
-                                                                                                            <div key={lat.window} className={'text-center p-2 rounded ' + (lat.isPeak ? (darkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-100 border border-yellow-300') : '')}>
-                                                                                                                <div className={'text-xs opacity-75'}>{lat.window}</div>
-                                                                                                                <div className={'text-xl font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
-                                                                                                                    {lat.delta > 0 ? '+' : ''}{lat.delta}
+                                                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                                        {/* Evolução Temporal (0h → 30min/1h/2h) */}
+                                                                                                        {latency.length > 0 && (
+                                                                                                            <div>
+                                                                                                                <div className={'text-xs font-semibold mb-2 opacity-75'}>⏱️ Mudança após consumir (vs 0h)</div>
+                                                                                                                <div className="grid grid-cols-3 gap-2">
+                                                                                                                    {latency.map(lat => (
+                                                                                                                        <div key={lat.window} className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                            <div className={'text-xs opacity-60'}>{lat.window}</div>
+                                                                                                                            <div className={'text-lg font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                                {lat.delta > 0 ? '+' : ''}{lat.delta}
+                                                                                                                            </div>
+                                                                                                                            {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡</div>}
+                                                                                                                        </div>
+                                                                                                                    ))}
                                                                                                                 </div>
-                                                                                                                {lat.isPeak && <div className={'text-xs font-semibold mt-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡ MAIOR MUDANÇA</div>}
+                                                                                                            </div>
+                                                                                                        )}
+
+                                                                                                        {/* Eficácia (Antes → Depois) */}
+                                                                                                        {experimentalFeatures.satisfaction.length > 0 && experimentalFeatures.satisfaction.map((sat, idx) => (
+                                                                                                            <div key={idx}>
+                                                                                                                <div className={'text-xs font-semibold mb-2 opacity-75'}>✅ Eficácia (antes → 1-3h depois)</div>
+                                                                                                                <div className="grid grid-cols-2 gap-2">
+                                                                                                                    <div className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                        <div className={'text-xs opacity-60'}>Melhoria</div>
+                                                                                                                        <div className={'text-lg font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                            {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
+                                                                                                                        </div>
+                                                                                                                        <div className={'text-xs opacity-60'}>pts</div>
+                                                                                                                    </div>
+                                                                                                                    <div className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                        <div className={'text-xs opacity-60'}>Taxa</div>
+                                                                                                                        <div className={'text-lg font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                                            {sat.effectiveRate}%
+                                                                                                                        </div>
+                                                                                                                        <div className={'text-xs opacity-60'}>{sat.effectiveCount}/{sat.totalEvents}</div>
+                                                                                                                    </div>
+                                                                                                                </div>
                                                                                                             </div>
                                                                                                         ))}
                                                                                                     </div>
-                                                                                                </div>
-                                                                                            )}
-
-                                                                                            {/* Eficácia do Consumo */}
-                                                                                            {experimentalFeatures.satisfaction.length > 0 && (
-                                                                                                <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border'}>
-                                                                                                    <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-green-300' : 'text-green-800')}>✅ Eficácia do Consumo</div>
-                                                                                                    <p className={'text-xs mb-3 opacity-75'}>Melhoria antes vs 1-3h depois</p>
-                                                                                                    {experimentalFeatures.satisfaction.map((sat, idx) => (
-                                                                                                        <div key={idx} className="grid grid-cols-2 gap-3">
-                                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Melhoria Média</div>
-                                                                                                                <div className={'text-3xl font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
-                                                                                                                    {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
-                                                                                                                </div>
-                                                                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>pontos (0-10)</div>
-                                                                                                            </div>
-                                                                                                            <div className={'text-center p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
-                                                                                                                <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Taxa de Eficácia</div>
-                                                                                                                <div className={'text-3xl font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
-                                                                                                                    {sat.effectiveRate}%
-                                                                                                                </div>
-                                                                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{sat.effectiveCount}/{sat.totalEvents} eventos</div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    ))}
                                                                                                 </div>
                                                                                             )}
                                                                                         </div>
@@ -5133,12 +5111,9 @@ export function AnalysesView({
                                                                                 {/* Antecedentes */}
                                                                                 {experimentalFeatures.antecedents.length > 0 && (
                                                                                     <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
-                                                                                            🔍 Padrões Antecedentes (24-48h)
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                                            🔍 O que acontecia ANTES de consumir
                                                                                         </div>
-                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
-                                                                                            Padrões detectados nos 1-2 dias <u>antes</u> de teres consumido. Ajuda a identificar gatilhos.
-                                                                                        </p>
                                                                                         <div className="space-y-1">
                                                                                             {/* Agrupar por padrão */}
                                                                                             {(() => {
