@@ -4097,18 +4097,20 @@ export function AnalysesView({
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
+                                                                                    const isYesterday = metricName.toLowerCase().includes('ontem');
 
                                                                                     if (target.includes('Consumo')) {
-                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais consumo` };
-                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais consumo` };
-                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos consumo` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo` };
-                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo` };
+                                                                                        const suffix = isYesterday ? ' no dia seguinte' : '';
+                                                                                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais consumo${suffix}` };
+                                                                                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais consumo${suffix}` };
+                                                                                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
                                                                                     } else if (target.includes('Dosagem')) {
                                                                                         if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metricName} baixo → Mais dosagem` };
                                                                                         if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metricName} baixo → Ligeiramente mais dosagem` };
                                                                                         if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metricName} alto → Menos dosagem` };
-                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
+                                                                                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metricName} alto → Ligeiramente mais dosagem` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta dosagem` };
                                                                                     }
                                                                                 }
@@ -4283,20 +4285,12 @@ export function AnalysesView({
                                                                                     // Correlação negativa: quando um sobe, o outro desce
                                                                                     if (var1.toLowerCase().includes('consumo') && var2.toLowerCase().includes('autocuidado')) {
                                                                                         genericDesc = 'Mais consumo → Menos autocuidado';
-                                                                                    } else if (var1.toLowerCase().includes('ontem') && var2.toLowerCase().includes('hoje')) {
-                                                                                        const metric = var1.replace(' ontem', '').replace(' Ontem', '');
-                                                                                        genericDesc = `${metric} alto ontem → ${metric} baixo hoje (ou vice-versa)`;
                                                                                     } else {
                                                                                         genericDesc = `Mais ${var1} → Menos ${var2}`;
                                                                                     }
                                                                                 } else if (r > 0) {
                                                                                     // Correlação positiva: quando um sobe, o outro sobe
-                                                                                    if (var1.toLowerCase().includes('ontem') && var2.toLowerCase().includes('hoje')) {
-                                                                                        const metric = var1.replace(' ontem', '').replace(' Ontem', '');
-                                                                                        genericDesc = `${metric} ontem tende a repetir-se hoje`;
-                                                                                    } else {
-                                                                                        genericDesc = `Mais ${var1} → Mais ${var2}`;
-                                                                                    }
+                                                                                    genericDesc = `Mais ${var1} → Mais ${var2}`;
                                                                                 }
                                                                             }
 

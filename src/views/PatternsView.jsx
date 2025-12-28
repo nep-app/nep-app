@@ -1843,20 +1843,51 @@ export function PatternsView({
                                                         <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
                                                     ) : (() => {
                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
-                                                        return Object.entries(byWeekday).map(([day, count]) => {
-                                                            const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
-                                                            return (
-                                                                <div key={day} className="flex items-center gap-2">
-                                                                    <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>{weekdayNames[parseInt(day)]}</div>
-                                                                    <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
-                                                                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all" style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}>
-                                                                            <span>{count}x</span>
-                                                                            <span>{percent}%</span>
+                                                        const weekdayEntries = Object.entries(byWeekday).filter(([_, count]) => count > 0);
+                                                        const maxEntry = weekdayEntries.reduce((max, [day, count]) => count > max[1] ? [day, count] : max, ['0', 0]);
+                                                        const minEntry = weekdayEntries.reduce((min, [day, count]) => count < min[1] ? [day, count] : min, [maxEntry[0], maxEntry[1]]);
+
+                                                        return (
+                                                            <>
+                                                                {Object.entries(byWeekday).map(([day, count]) => {
+                                                                    const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
+                                                                    const isMax = day === maxEntry[0] && count > 0;
+                                                                    const isMin = day === minEntry[0] && weekdayEntries.length > 1 && count > 0;
+
+                                                                    return (
+                                                                        <div key={day} className="flex items-center gap-2">
+                                                                            <div className={'text-xs w-10 font-medium flex items-center gap-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                {weekdayNames[parseInt(day)]}
+                                                                                {isMax && <span title="Dia com mais consumo">🔴</span>}
+                                                                                {isMin && <span title="Dia com menos consumo">🟢</span>}
+                                                                            </div>
+                                                                            <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                                <div
+                                                                                    className={`h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all ${
+                                                                                        isMax ? 'bg-gradient-to-r from-red-500 to-orange-500' :
+                                                                                        isMin ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+                                                                                        'bg-gradient-to-r from-purple-500 to-pink-500'
+                                                                                    }`}
+                                                                                    style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%'}}
+                                                                                >
+                                                                                    <span>{count}x</span>
+                                                                                    <span>{percent}%</span>
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
+                                                                    );
+                                                                })}
+
+                                                                {/* Padrão Semanal */}
+                                                                {weekdayEntries.length > 1 && (
+                                                                    <div className={'mt-4 pt-3 border-t text-xs ' + (darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-600')}>
+                                                                        <span className={'font-semibold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: dia com mais consumo ({maxEntry[1]}x, {Math.round((maxEntry[1] / totalWeekday) * 100)}%)
+                                                                        {' • '}
+                                                                        <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: dia com menos consumo ({minEntry[1]}x, {Math.round((minEntry[1] / totalWeekday) * 100)}%)
                                                                     </div>
-                                                                </div>
-                                                            );
-                                                        });
+                                                                )}
+                                                            </>
+                                                        );
                                                     })()}
                                                 </div>
                                             </div>
@@ -1886,44 +1917,62 @@ export function PatternsView({
                                                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border mt-4'}>
                                                         <h3 className={'font-semibold mb-3 ' + (themeClasses.textPrimaryAlt(darkMode))}>📆 Ciclo Mensual</h3>
 
-                                                        {/* Top 5 dias com mais consumo */}
-                                                        <div className="space-y-2 mb-4">
-                                                            <div className={'text-xs font-semibold mb-2 ' + (themeClasses.textSecondary(darkMode))}>Dias do mês com mais consumo:</div>
-                                                            {sortedDays.slice(0, 5).map(([day, avg]) => {
-                                                                const dayNum = parseInt(day);
-                                                                const maxAvg = parseFloat(sortedDays[0][1]);
-                                                                const widthPercent = (avg / maxAvg) * 100;
-                                                                const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
-                                                                return (
-                                                                    <div key={day} className="flex items-center gap-2">
-                                                                        <div className={'text-xs w-10 font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
-                                                                        <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
-                                                                            <div
-                                                                                className={'h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all ' + (isPeak ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-purple-500 to-pink-500')}
-                                                                                style={{width: `${widthPercent}%`}}
-                                                                            >
-                                                                                <span>{avg.toFixed(1)}/dia</span>
-                                                                                {isPeak && <span>🔥</span>}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                            {/* Top 5 dias com MAIS consumo */}
+                                                            <div className="space-y-2">
+                                                                <div className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>🔴 Mais consumo:</div>
+                                                                {sortedDays.slice(0, 5).map(([day, avg]) => {
+                                                                    const dayNum = parseInt(day);
+                                                                    const maxAvg = parseFloat(sortedDays[0][1]);
+                                                                    const widthPercent = (avg / maxAvg) * 100;
+                                                                    const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
+                                                                    return (
+                                                                        <div key={day} className="flex items-center gap-2">
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
+                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                                <div
+                                                                                    className={'h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all ' + (isPeak ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-red-500 to-pink-500')}
+                                                                                    style={{width: `${widthPercent}%`}}
+                                                                                >
+                                                                                    <span>{avg.toFixed(1)}</span>
+                                                                                    {isPeak && <span>🔥</span>}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            {/* Top 5 dias com MENOS consumo */}
+                                                            <div className="space-y-2">
+                                                                <div className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🟢 Menos consumo:</div>
+                                                                {sortedDays.slice(-5).reverse().map(([day, avg]) => {
+                                                                    const minAvg = parseFloat(sortedDays[sortedDays.length - 1][1]);
+                                                                    const maxAvg = parseFloat(sortedDays[0][1]);
+                                                                    const widthPercent = (avg / maxAvg) * 100;
+                                                                    return (
+                                                                        <div key={day} className="flex items-center gap-2">
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
+                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                                <div
+                                                                                    className="h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all bg-gradient-to-r from-green-500 to-emerald-500"
+                                                                                    style={{width: `${widthPercent}%`}}
+                                                                                >
+                                                                                    <span>{avg.toFixed(1)}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
 
                                                         {/* Resumo interpretativo */}
-                                                        <div className={'pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
-                                                            {hasPeak2025 ? (
-                                                                <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                                                    🔍 <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão detectado:</span> Pico de consumo entre dias <strong>20-25</strong> do mês ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia de média). Possível relação com ciclo hormonal.
-                                                                </p>
-                                                            ) : (
-                                                                <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                                                    📊 Dia <span className={'font-semibold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{maxDay[0]}</span> tem mais consumo ({parseFloat(maxDay[1]).toFixed(1)}/dia).
-                                                                    Dia <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{minDay[0]}</span> tem menos ({parseFloat(minDay[1]).toFixed(1)}/dia).
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                                        {hasPeak2025 && (
+                                                            <div className={'pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-700')}>
+                                                                🔍 <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão detectado:</span> Pico entre dias <strong>20-25</strong> ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média)
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })()}
