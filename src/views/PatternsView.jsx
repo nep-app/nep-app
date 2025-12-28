@@ -367,9 +367,14 @@ export function PatternsView({
                                                     {/* Evolução da Frequência */}
                                                     {Object.keys(byDate).length > 0 && (
                                                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                                                📈 Evolução da Frequência
-                                                            </h3>
+                                                            <div className="mb-4">
+                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                    📈 Evolução da Frequência
+                                                                </h3>
+                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    Número de consumos por dia ao longo do tempo. Cores indicam intensidade.
+                                                                </p>
+                                                            </div>
                                                             {(() => {
                                                                 // Preparar dados ordenados por data
                                                                 const sortedDates = Object.keys(byDate).sort();
