@@ -401,6 +401,9 @@ export function PatternsView({
                                                         const food = yesterdayData.food;
                                                         const social = yesterdayData.social;
 
+                                                        // Debug: mostrar dados brutos de ontem
+                                                        const debugYesterday = `[DEBUG ontem ${yesterdayStr}: sono=${sleep}, mood=${mood}, energy=${energy}, exercise=${exercise}, food=${food}, social=${social}]`;
+
                                                         // Calcular score de autocuidado de ontem (0-4)
                                                         let selfCareScore = 0;
                                                         const selfCareDetails = [];
@@ -530,6 +533,9 @@ export function PatternsView({
                                                                         <div className={'text-xs px-2 py-0.5 rounded-full font-semibold ' + riskColor}>
                                                                             {riskScore}%
                                                                         </div>
+                                                                    </div>
+                                                                    <div className={'text-xs mb-2 opacity-50 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                        {debugYesterday}
                                                                     </div>
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
