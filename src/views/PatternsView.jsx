@@ -362,62 +362,28 @@ export function PatternsView({
 
                                                     {/* Alertas Preditivos */}
                                                     {(() => {
-                                                        // Calcular correlações temporais ontem → hoje
+                                                        // Agregar dados por dia
                                                         const dailyData = {};
                                                         wellbeingLogs.forEach(w => {
                                                             const date = w.date || safeToISODate(w.timestamp);
                                                             if (!dailyData[date]) {
-                                                                dailyData[date] = { sleep: null, mood: null, energy: null, consumptions: 0 };
+                                                                dailyData[date] = { sleep: null, mood: null, energy: null, exercise: null, food: null, social: null, consumptions: 0 };
                                                             }
                                                             if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
                                                             if (w.mood) dailyData[date].mood = parseInt(w.mood);
                                                             if (w.energy) dailyData[date].energy = parseInt(w.energy);
+                                                            if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
+                                                            if (w.food) dailyData[date].food = parseInt(w.food);
+                                                            if (w.social) dailyData[date].social = parseInt(w.social);
                                                         });
 
                                                         consumptions.forEach(c => {
                                                             const date = c.date || safeToISODate(c.timestamp);
                                                             if (!dailyData[date]) {
-                                                                dailyData[date] = { sleep: null, mood: null, energy: null, consumptions: 0 };
+                                                                dailyData[date] = { sleep: null, mood: null, energy: null, exercise: null, food: null, social: null, consumptions: 0 };
                                                             }
                                                             dailyData[date].consumptions++;
                                                         });
-
-                                                        // Correlações ontem → hoje
-                                                        const dates = Object.keys(dailyData).sort();
-                                                        const correlationData = { sleep: [], mood: [], energy: [] };
-
-                                                        for (let i = 1; i < dates.length; i++) {
-                                                            const yesterday = dailyData[dates[i - 1]];
-                                                            const today = dailyData[dates[i]];
-
-                                                            if (yesterday.sleep !== null && today.consumptions > 0) {
-                                                                correlationData.sleep.push({ yesterday: yesterday.sleep, today: today.consumptions });
-                                                            }
-                                                            if (yesterday.mood !== null && today.consumptions > 0) {
-                                                                correlationData.mood.push({ yesterday: yesterday.mood, today: today.consumptions });
-                                                            }
-                                                            if (yesterday.energy !== null && today.consumptions > 0) {
-                                                                correlationData.energy.push({ yesterday: yesterday.energy, today: today.consumptions });
-                                                            }
-                                                        }
-
-                                                        // Calcular correlações
-                                                        const calculateCorr = (data) => {
-                                                            if (data.length < 3) return null;
-                                                            const n = data.length;
-                                                            const sumX = data.reduce((s, d) => s + d.yesterday, 0);
-                                                            const sumY = data.reduce((s, d) => s + d.today, 0);
-                                                            const sumXY = data.reduce((s, d) => s + d.yesterday * d.today, 0);
-                                                            const sumX2 = data.reduce((s, d) => s + d.yesterday * d.yesterday, 0);
-                                                            const sumY2 = data.reduce((s, d) => s + d.today * d.today, 0);
-                                                            const num = n * sumXY - sumX * sumY;
-                                                            const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-                                                            return den === 0 ? 0 : num / den;
-                                                        };
-
-                                                        const sleepCorr = calculateCorr(correlationData.sleep);
-                                                        const moodCorr = calculateCorr(correlationData.mood);
-                                                        const energyCorr = calculateCorr(correlationData.energy);
 
                                                         // Obter dados de ontem
                                                         const today = new Date();
@@ -425,88 +391,164 @@ export function PatternsView({
                                                         yesterday.setDate(yesterday.getDate() - 1);
                                                         const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-                                                        const yesterdayWellbeing = wellbeingLogs.find(w => {
-                                                            const wDate = w.date || safeToISODate(w.timestamp);
-                                                            return wDate === yesterdayStr;
+                                                        const yesterdayData = dailyData[yesterdayStr];
+                                                        if (!yesterdayData) return null;
+
+                                                        const sleep = yesterdayData.sleep;
+                                                        const mood = yesterdayData.mood;
+                                                        const energy = yesterdayData.energy;
+                                                        const exercise = yesterdayData.exercise;
+                                                        const food = yesterdayData.food;
+                                                        const social = yesterdayData.social;
+
+                                                        // Calcular score de autocuidado de ontem (0-4)
+                                                        let selfCareScore = 0;
+                                                        if (sleep && sleep >= 6) selfCareScore++;
+                                                        if (exercise && exercise >= 6) selfCareScore++;
+                                                        if (food && food >= 6) selfCareScore++;
+                                                        if (social && social >= 6) selfCareScore++;
+
+                                                        // Padrão do dia da semana
+                                                        const todayDayOfWeek = today.getDay();
+                                                        const weekdayConsumptions = {};
+                                                        Object.entries(dailyData).forEach(([date, data]) => {
+                                                            const d = new Date(date);
+                                                            const dow = d.getDay();
+                                                            if (!weekdayConsumptions[dow]) weekdayConsumptions[dow] = [];
+                                                            weekdayConsumptions[dow].push(data.consumptions);
                                                         });
+                                                        const todayAvg = weekdayConsumptions[todayDayOfWeek]
+                                                            ? weekdayConsumptions[todayDayOfWeek].reduce((s, c) => s + c, 0) / weekdayConsumptions[todayDayOfWeek].length
+                                                            : null;
+                                                        const overallAvg = Object.values(dailyData).reduce((s, d) => s + d.consumptions, 0) / Object.keys(dailyData).length;
 
-                                                        if (!yesterdayWellbeing) return null;
+                                                        // Tendência últimos 7 dias
+                                                        const last7Days = Object.keys(dailyData).sort().slice(-7);
+                                                        const last7Consumptions = last7Days.map(d => dailyData[d].consumptions);
+                                                        const trendRecent = last7Consumptions.length >= 3
+                                                            ? (last7Consumptions.slice(-3).reduce((s, c) => s + c, 0) / 3) - (last7Consumptions.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
+                                                            : 0;
 
-                                                        const sleep = yesterdayWellbeing.sleep ? parseInt(yesterdayWellbeing.sleep) : null;
-                                                        const mood = yesterdayWellbeing.mood ? parseInt(yesterdayWellbeing.mood) : null;
-                                                        const energy = yesterdayWellbeing.energy ? parseInt(yesterdayWellbeing.energy) : null;
-
-                                                        // Calcular risco baseado em valores baixos E correlação negativa significativa
+                                                        // CALCULAR SCORE DE RISCO (0-100)
+                                                        let riskScore = 50; // baseline
                                                         const riskFactors = [];
-                                                        if (sleep !== null && sleep < 5 && sleepCorr !== null && sleepCorr < -0.2) {
-                                                            riskFactors.push({ factor: 'Sono', value: sleep, emoji: '😴', corr: sleepCorr });
-                                                        }
-                                                        if (mood !== null && mood < 5 && moodCorr !== null && moodCorr < -0.2) {
-                                                            riskFactors.push({ factor: 'Humor', value: mood, emoji: '😔', corr: moodCorr });
-                                                        }
-                                                        if (energy !== null && energy < 5 && energyCorr !== null && energyCorr < -0.2) {
-                                                            riskFactors.push({ factor: 'Energia', value: energy, emoji: '🔋', corr: energyCorr });
+
+                                                        // 1. Sono baixo ontem (+risco)
+                                                        if (sleep !== null) {
+                                                            if (sleep < 4) {
+                                                                riskScore += 20;
+                                                                riskFactors.push({ emoji: '😴', text: `Sono muito baixo ontem (${sleep}/10)` });
+                                                            } else if (sleep < 6) {
+                                                                riskScore += 10;
+                                                                riskFactors.push({ emoji: '😴', text: `Sono baixo ontem (${sleep}/10)` });
+                                                            } else if (sleep >= 8) {
+                                                                riskScore -= 10;
+                                                            }
                                                         }
 
-                                                        // Verificar fatores positivos (valores altos E correlação negativa)
-                                                        const goodFactors = [];
-                                                        if (sleep !== null && sleep >= 7 && sleepCorr !== null && sleepCorr < -0.2) {
-                                                            goodFactors.push({ name: 'Sono', value: sleep, corr: sleepCorr });
-                                                        }
-                                                        if (mood !== null && mood >= 7 && moodCorr !== null && moodCorr < -0.2) {
-                                                            goodFactors.push({ name: 'Humor', value: mood, corr: moodCorr });
-                                                        }
-                                                        if (energy !== null && energy >= 7 && energyCorr !== null && energyCorr < -0.2) {
-                                                            goodFactors.push({ name: 'Energia', value: energy, corr: energyCorr });
+                                                        // 2. Humor/Energia baixos ontem (+risco)
+                                                        if (mood !== null && mood < 5) {
+                                                            riskScore += 10;
+                                                            riskFactors.push({ emoji: '😔', text: `Humor baixo ontem (${mood}/10)` });
+                                                        } else if (mood !== null && mood >= 7) {
+                                                            riskScore -= 8;
                                                         }
 
-                                                        if (riskFactors.length > 0) {
-                                                            return (
-                                                                <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border mt-4'}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>
-                                                                            🔮 Previsão para Hoje
-                                                                        </div>
-                                                                        <span className="text-2xl">⚠️</span>
+                                                        if (energy !== null && energy < 5) {
+                                                            riskScore += 10;
+                                                            riskFactors.push({ emoji: '🔋', text: `Energia baixa ontem (${energy}/10)` });
+                                                        } else if (energy !== null && energy >= 7) {
+                                                            riskScore -= 8;
+                                                        }
+
+                                                        // 3. Falta de autocuidado ontem (+risco)
+                                                        if (selfCareScore === 0) {
+                                                            riskScore += 15;
+                                                            riskFactors.push({ emoji: '⚠️', text: 'Sem autocuidado ontem (0/4 áreas)' });
+                                                        } else if (selfCareScore === 1) {
+                                                            riskScore += 8;
+                                                            riskFactors.push({ emoji: '⚠️', text: 'Autocuidado mínimo ontem (1/4)' });
+                                                        } else if (selfCareScore >= 3) {
+                                                            riskScore -= 12;
+                                                        }
+
+                                                        // 4. Dia da semana com mais consumo (+risco)
+                                                        if (todayAvg !== null && todayAvg > overallAvg * 1.3) {
+                                                            riskScore += 12;
+                                                            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                                            riskFactors.push({ emoji: '📅', text: `${dayNames[todayDayOfWeek]} costuma ser dia de mais consumo` });
+                                                        }
+
+                                                        // 5. Tendência crescente (+risco)
+                                                        if (trendRecent > 0.5) {
+                                                            riskScore += 10;
+                                                            riskFactors.push({ emoji: '📈', text: 'Tendência crescente últimos 7 dias' });
+                                                        } else if (trendRecent < -0.5) {
+                                                            riskScore -= 10;
+                                                        }
+
+                                                        // Limitar score entre 0-100
+                                                        riskScore = Math.max(0, Math.min(100, riskScore));
+
+                                                        // Classificar risco
+                                                        let riskLevel, riskColor, riskBg, riskBorder, riskEmoji;
+                                                        if (riskScore >= 70) {
+                                                            riskLevel = 'Alto';
+                                                            riskColor = darkMode ? 'text-red-400' : 'text-red-600';
+                                                            riskBg = darkMode ? 'bg-red-900/30' : 'bg-red-50';
+                                                            riskBorder = darkMode ? 'border-red-700/50' : 'border-red-200';
+                                                            riskEmoji = '🚨';
+                                                        } else if (riskScore >= 55) {
+                                                            riskLevel = 'Moderado';
+                                                            riskColor = darkMode ? 'text-yellow-400' : 'text-yellow-600';
+                                                            riskBg = darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50';
+                                                            riskBorder = darkMode ? 'border-yellow-700/50' : 'border-yellow-200';
+                                                            riskEmoji = '⚠️';
+                                                        } else {
+                                                            riskLevel = 'Baixo';
+                                                            riskColor = darkMode ? 'text-green-400' : 'text-green-600';
+                                                            riskBg = darkMode ? 'bg-green-900/30' : 'bg-green-50';
+                                                            riskBorder = darkMode ? 'border-green-700/50' : 'border-green-200';
+                                                            riskEmoji = '✅';
+                                                        }
+
+                                                        return (
+                                                            <div className={`${riskBg} border ${riskBorder} rounded-lg p-4 mt-4`}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className={'text-xs font-semibold uppercase tracking-wide ' + riskColor}>
+                                                                        🔮 Previsão para Hoje
                                                                     </div>
-                                                                    <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                                        <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Atenção - Risco aumentado:</strong> Ontem tiveste:
+                                                                    <span className="text-2xl">{riskEmoji}</span>
+                                                                </div>
+                                                                <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <strong className={riskColor}>Risco {riskLevel}</strong>
+                                                                        <div className={'text-xs px-2 py-0.5 rounded-full font-semibold ' + riskColor}>
+                                                                            {riskScore}%
+                                                                        </div>
+                                                                    </div>
+                                                                    {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
-                                                                            {riskFactors.map(rf => (
-                                                                                <div key={rf.factor} className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
-                                                                                    {rf.emoji} <strong>{rf.factor} baixo</strong>: {rf.value}/10 <span className="opacity-75">(nos teus dados, isto correlaciona com +consumo: r={rf.corr.toFixed(2)})</span>
+                                                                            <div className={'text-xs font-semibold ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fatores analisados:</div>
+                                                                            {riskFactors.map((rf, idx) => (
+                                                                                <div key={idx} className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                    {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
-                                                                        <span className={'text-xs mt-2 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            💡 Baseado nas <strong>tuas correlações específicas</strong>, estes fatores aumentam o risco de consumo hoje. Considera estratégias preventivas!
-                                                                        </span>
+                                                                    )}
+                                                                    <div className={'text-xs mt-3 pt-2 border-t ' + (darkMode ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-600')}>
+                                                                        {riskScore >= 70 ? (
+                                                                            '💡 Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.'
+                                                                        ) : riskScore >= 55 ? (
+                                                                            '💡 Risco moderado. Mantém atenção aos teus padrões e reforça autocuidado se necessário.'
+                                                                        ) : (
+                                                                            '💡 Condições favoráveis para redução. Aproveita o dia para consolidar progresso!'
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                            );
-                                                        }
-
-                                                        if (goodFactors.length > 0) {
-                                                            return (
-                                                                <div className={(darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border mt-4'}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <div className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
-                                                                            🔮 Previsão para Hoje
-                                                                        </div>
-                                                                        <span className="text-2xl">✅</span>
-                                                                    </div>
-                                                                    <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
-                                                                        <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Risco baixo:</strong> Ontem tiveste bons níveis em {goodFactors.map(g => `${g.name}: ${g.value}/10`).join(', ')}.
-                                                                        <br />
-                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                                                            💡 Nos teus dados, isto correlaciona com menos consumo. Dia favorável - aproveita o momento!
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        return null;
+                                                            </div>
+                                                        );
                                                     })()}
 
                                                     {/* Heatmap */}
