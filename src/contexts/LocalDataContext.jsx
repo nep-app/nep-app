@@ -1,20 +1,65 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import {
-  db,
-  addItemWithSync,
-  updateItemWithSync,
-  deleteItemWithSync,
-  getAllItems,
-  getPendingSync,
-  markAsSynced
-} from '../db/dexieDB';
+import { db } from '../db/localDB';
 import {
   encryptItem,
   decryptItem,
   encryptItems,
   decryptItems
 } from '../utils/dexieEncryption';
+
+// Helper functions (using localDB instead of dexieDB)
+const addItemWithSync = async (collection, item) => {
+  const itemWithSync = {
+    ...item,
+    syncStatus: 'pending',
+    lastModified: new Date().toISOString(),
+    deleted: false
+  };
+  await db[collection].put(itemWithSync);
+  return itemWithSync;
+};
+
+const updateItemWithSync = async (collection, id, updates) => {
+  const existing = await db[collection].get(id);
+  if (!existing) throw new Error(`Item ${id} não encontrado em ${collection}`);
+
+  const updated = {
+    ...existing,
+    ...updates,
+    syncStatus: 'pending',
+    lastModified: new Date().toISOString()
+  };
+  await db[collection].put(updated);
+  return updated;
+};
+
+const deleteItemWithSync = async (collection, id) => {
+  const existing = await db[collection].get(id);
+  if (!existing) throw new Error(`Item ${id} não encontrado em ${collection}`);
+
+  const deleted = {
+    ...existing,
+    deleted: true,
+    syncStatus: 'pending',
+    lastModified: new Date().toISOString()
+  };
+  await db[collection].put(deleted);
+  return deleted;
+};
+
+const getAllItems = async (collection) => {
+  const all = await db[collection].toArray();
+  return all.filter(item => !item.deleted);
+};
+
+const getPendingSync = async (collection) => {
+  return await db[collection].where('syncStatus').equals('pending').toArray();
+};
+
+const markAsSynced = async (collection, id) => {
+  await db[collection].update(id, { syncStatus: 'synced' });
+};
 
 const LocalDataContext = createContext();
 

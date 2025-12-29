@@ -54,7 +54,7 @@ import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
             // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
-            const APP_VERSION = '4.3.0'; // v4.3.0: FIX CRÍTICO - syncService usar localDB correto
+            const APP_VERSION = '4.3.1'; // v4.3.1: FIX #2 - LocalDataContext também usar localDB
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
