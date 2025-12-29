@@ -82,11 +82,20 @@ export const DataProvider = ({ children }) => {
   // Inicializar SyncService quando tudo estiver pronto
   useEffect(() => {
     const initSync = async () => {
-      if (!user || !pin || !db) {
-        console.log('[DataContext] Aguardando user + PIN + db...');
+      // Se não tem PIN, não faz nada
+      if (!pin) {
+        console.log('[DataContext] Aguardando PIN...');
         return;
       }
 
+      // Se não tem Firebase user, funciona APENAS COM DADOS LOCAIS (sem sync)
+      if (!user) {
+        console.log('[DataContext] ⚠️ Sem Firebase user - funcionando OFFLINE (apenas dados locais)');
+        console.log('[DataContext] Para ativar sync, faz login no Firebase nas Settings');
+        return;
+      }
+
+      // Se tem user + pin, inicializa sync
       try {
         console.log('[DataContext] Inicializando SyncService...');
 
