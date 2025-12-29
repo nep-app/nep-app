@@ -967,57 +967,6 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
-                                                                            {/* NOVO: Micro-Tempo - Intervalos em dias difíceis */}
-                                                                            {(() => {
-                                                                                if (analysisConsumptions.length < 20) return null;
-
-                                                                                // Agrupar por dia
-                                                                                const consumptionsByDate = {};
-                                                                                analysisConsumptions.forEach(c => {
-                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
-                                                                                    consumptionsByDate[c.date].push(c);
-                                                                                });
-
-                                                                                // Calcular intervalos por tipo de dia
-                                                                                const intervalsHigh = []; // Dias difíceis (≥threshold)
-                                                                                const intervalsNormal = []; // Dias normais (<threshold)
-
-                                                                                Object.entries(consumptionsByDate).forEach(([date, consumptions]) => {
-                                                                                    if (consumptions.length < 2) return;
-
-                                                                                    // Ordenar por timestamp
-                                                                                    const sorted = [...consumptions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-                                                                                    // Calcular intervalos
-                                                                                    for (let i = 1; i < sorted.length; i++) {
-                                                                                        const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                                                        if (consumptions.length >= difficultThreshold) {
-                                                                                            intervalsHigh.push(diff);
-                                                                                        } else {
-                                                                                            intervalsNormal.push(diff);
-                                                                                        }
-                                                                                    }
-                                                                                });
-
-                                                                                if (intervalsHigh.length < 5 || intervalsNormal.length < 5) return null;
-
-                                                                                const avgHigh = intervalsHigh.reduce((a, b) => a + b, 0) / intervalsHigh.length;
-                                                                                const avgNormal = intervalsNormal.reduce((a, b) => a + b, 0) / intervalsNormal.length;
-
-                                                                                if (Math.abs(avgHigh - avgNormal) < 0.5) return null;
-
-                                                                                return (
-                                                                                    <p>
-                                                                                        ⏱️ <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Micro-Tempo:</strong> Em dias difíceis (≥{difficultThreshold} consumos), o intervalo médio cai para <strong>{avgHigh.toFixed(1)}h</strong> (vs {avgNormal.toFixed(1)}h em dias normais).
-                                                                                        {avgHigh < 2 ? (
-                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Indica padrão de redosing compulsivo quando frequência é alta. Tática: pré-dosagem/espaçamento forçado nesses dias.</span></>
-                                                                                        ) : (
-                                                                                            <> Padrão de aceleração em dias de pressão — sistema a responder a stress.</>
-                                                                                        )}
-                                                                                    </p>
-                                                                                );
-                                                                            })()}
-
                                                                             {/* NOVO: Trigger Mapping "Se isto então aquilo" */}
                                                                             {(() => {
                                                                                 if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
@@ -4153,7 +4102,6 @@ export function AnalysesView({
                                                                     // Define a função aqui para ser usada em todas as seções abaixo
                                                                     window.renderCorrelationCard = (corr, isInverse = false) => {
                                                                         const getLabel = (r, name) => {
-                                                                            console.log('[DEBUG getLabel] Called with:', { name, r, isInverse });
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
 
                                                                             const isSleep = name.toLowerCase().includes('sono');
@@ -4187,20 +4135,16 @@ export function AnalysesView({
                                                                                 // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
                                                                                 if (name.includes('Humor') && (name.includes('→ Consumo') || name.includes('→ Dosagem')) ||
                                                                                     name.includes('Energia') && (name.includes('→ Consumo') || name.includes('→ Dosagem'))) {
-                                                                                    console.log('[DEBUG] Inside Humor/Energia block (isInverse)');
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
                                                                                     const isYesterday = metricName.toLowerCase().includes('ontem');
 
                                                                                     if (target.includes('Consumo')) {
-                                                                                        console.log('[DEBUG] Target is Consumo, r=', r);
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
                                                                                         if (r < -0.4) {
-                                                                                            console.log('[DEBUG] Returning Protetora GREEN');
                                                                                             return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
                                                                                         }
                                                                                         if (r < -0.2) {
-                                                                                            console.log('[DEBUG] Returning Ligeiramente Protetora GREEN');
                                                                                             return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
                                                                                         }
                                                                                         if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
