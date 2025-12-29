@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
   async function createAccount(email, pin) {
     try {
       // Validações
-      if (!email || !email.includes('@')) {
+      if (email && !email.includes('@')) {
         throw new Error('Email inválido');
       }
       if (!pin || pin.length < 4) {
@@ -114,13 +114,13 @@ export const AuthProvider = ({ children }) => {
       const verification = await createPasswordVerificationData(pin, salt);
 
       // Guardar metadados
-      await setMetadata('userEmail', email);
+      await setMetadata('userEmail', email || 'sem-email');
       await setMetadata('salt', saltBase64);
       await setMetadata('pinVerification', JSON.stringify(verification));
       await setMetadata('createdAt', new Date().toISOString());
 
       // Atualizar estado
-      setUserEmail(email);
+      setUserEmail(email || 'sem-email');
       setEncryptionKey(pin);
       setIsInitialized(true);
       setIsAuthenticated(true);

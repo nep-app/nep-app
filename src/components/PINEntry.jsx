@@ -15,9 +15,21 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
   const [digits, setDigits] = useState(['', '', '', '']);
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
 
+  // Reset digits when error occurs
+  useEffect(() => {
+    if (error) {
+      setDigits(['', '', '', '']);
+      setTimeout(() => {
+        inputRefs[0].current?.focus();
+      }, 100);
+    }
+  }, [error]);
+
   useEffect(() => {
     // Focus no primeiro input quando componente monta
-    inputRefs[0].current?.focus();
+    if (inputRefs[0].current) {
+      inputRefs[0].current.focus();
+    }
   }, []);
 
   useEffect(() => {

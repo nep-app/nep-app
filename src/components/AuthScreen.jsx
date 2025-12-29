@@ -35,10 +35,10 @@ export const AuthScreen = () => {
   // LOGIN: Tentar fazer login com PIN
   const handleLogin = async (pin) => {
     setError('');
-    const success = await login(pin);
-    
-    if (!success) {
-      setError('PIN incorreto. Tenta novamente.');
+    const result = await login(pin);
+
+    if (!result.success) {
+      setError(result.error || 'PIN incorreto. Tenta novamente.');
       // Reset PIN inputs (será feito via key change no PINEntry)
     }
   };
@@ -70,12 +70,12 @@ export const AuthScreen = () => {
     }
 
     setError('');
-    
+
     // Criar conta
-    const success = await createAccount(email, pin);
-    
-    if (!success) {
-      setError('Erro ao criar conta. Tenta novamente.');
+    const result = await createAccount(email, pin);
+
+    if (!result.success) {
+      setError(result.error || 'Erro ao criar conta. Tenta novamente.');
       setStep('email');
       setEmail('');
       setFirstPIN('');
