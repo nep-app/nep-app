@@ -67,6 +67,20 @@ export const DataProvider = ({ children }) => {
   }, [auth]);
 
   // Firebase listeners for all collections
+  //
+  // NOTA FUTURA: Para escalabilidade com milhares de registos, considerar:
+  // 1. Paginação com query(collection, orderBy('timestamp', 'desc'), limit(100))
+  // 2. Lazy loading: carregar mais ao fazer scroll
+  // 3. Filtrar por data no servidor: where('timestamp', '>=', startDate)
+  // 4. Usar cursor-based pagination com startAfter() para "carregar mais"
+  //
+  // Exemplo:
+  // const q = query(
+  //   collection(db, `users/${user.uid}/consumptions`),
+  //   orderBy('timestamp', 'desc'),
+  //   limit(100)
+  // );
+  //
   useEffect(() => {
     if (!user) {
       setConsumptions([]);
@@ -83,12 +97,13 @@ export const DataProvider = ({ children }) => {
     const unsubscribers = [];
 
     // Consumptions listener (estrutura original: users/{userId}/consumptions)
+    // OTIMIZAÇÃO: Removida ordenação - será feita apenas nas views quando necessário
     unsubscribers.push(
       onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        });
         setConsumptions(data);
       })
     );
@@ -99,7 +114,7 @@ export const DataProvider = ({ children }) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.date.localeCompare(a.date));
+        });
         setDailyLogs(data);
       })
     );
@@ -110,7 +125,7 @@ export const DataProvider = ({ children }) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.date.localeCompare(a.date));
+        });
         setReflections(data);
       })
     );
@@ -121,7 +136,7 @@ export const DataProvider = ({ children }) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.date.localeCompare(a.date));
+        });
         setWellbeingLogs(data);
       })
     );
@@ -132,7 +147,7 @@ export const DataProvider = ({ children }) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        });
         setCycles(data);
       })
     );
@@ -165,7 +180,7 @@ export const DataProvider = ({ children }) => {
         const data = snapshot.docs.map(doc => {
           const item = doc.data();
           return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        }).sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+        });
         setThoughts(data);
       })
     );

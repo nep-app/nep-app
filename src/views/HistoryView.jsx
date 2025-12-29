@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
@@ -10,6 +10,26 @@ import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
+
+// Cache global para análises de sentimento
+const sentimentCache = new Map();
+
+// Função com cache para análise de sentimento
+const getCachedSentimentAnalysis = (text) => {
+    if (!text) return null;
+
+    if (!sentimentCache.has(text)) {
+        sentimentCache.set(text, analyzeNote(text));
+
+        // Limitar tamanho do cache para evitar memory leak (máx 500 itens)
+        if (sentimentCache.size > 500) {
+            const firstKey = sentimentCache.keys().next().value;
+            sentimentCache.delete(firstKey);
+        }
+    }
+
+    return sentimentCache.get(text);
+};
 
 export function HistoryView({
     historyPeriod,
@@ -42,6 +62,110 @@ export function HistoryView({
             setExpandedAnalysis(id);
         }
     };
+
+    // Memoizar cálculos de filtragem para evitar recálculos a cada render
+    const dateRange = useMemo(
+        () => getDateRangeForPeriod(historyPeriod, historyPeriodOffset),
+        [historyPeriod, historyPeriodOffset]
+    );
+
+    // Filtrar e ordenar dados apenas quando necessário
+    const tempFilteredReflections = useMemo(() =>
+        filterByDateRange(reflections, dateRange)
+            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)),
+        [reflections, dateRange]
+    );
+
+    const tempFilteredWellbeing = useMemo(() =>
+        filterByDateRange(wellbeingLogs, dateRange)
+            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)),
+        [wellbeingLogs, dateRange]
+    );
+
+    const tempFilteredDailyLogs = useMemo(() =>
+        filterByDateRange(dailyLogs, dateRange, 'date')
+            .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)),
+        [dailyLogs, dateRange]
+    );
+
+    const tempFilteredConsumptions = useMemo(() =>
+        filterByDateRange(consumptions, dateRange)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
+        [consumptions, dateRange]
+    );
+
+    const tempFilteredCycles = useMemo(() =>
+        filterByDateRange(cycles, dateRange)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
+        [cycles, dateRange]
+    );
+
+    const tempFilteredThoughts = useMemo(() =>
+        filterByDateRange(thoughts, dateRange)
+            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)),
+        [thoughts, dateRange]
+    );
+
+    // Aplicar filtro de tópico
+    const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
+        if (historyTopic === 'consumo') {
+            return {
+                filteredReflections: [],
+                filteredWellbeing: [],
+                filteredDailyLogs: [],
+                filteredCycles: [],
+                filteredThoughts: [],
+                filteredConsumptions: tempFilteredConsumptions
+            };
+        } else if (historyTopic === 'ciclos') {
+            return {
+                filteredConsumptions: [],
+                filteredWellbeing: [],
+                filteredReflections: [],
+                filteredThoughts: [],
+                filteredCycles: tempFilteredCycles,
+                filteredDailyLogs: tempFilteredDailyLogs
+            };
+        } else if (historyTopic === 'bem-estar') {
+            return {
+                filteredConsumptions: [],
+                filteredReflections: [],
+                filteredDailyLogs: [],
+                filteredCycles: [],
+                filteredThoughts: [],
+                filteredWellbeing: tempFilteredWellbeing
+            };
+        } else if (historyTopic === 'dbt') {
+            return {
+                filteredConsumptions: [],
+                filteredWellbeing: [],
+                filteredDailyLogs: [],
+                filteredCycles: [],
+                filteredThoughts: [],
+                filteredReflections: tempFilteredReflections
+            };
+        } else if (historyTopic === 'pensamentos') {
+            return {
+                filteredConsumptions: [],
+                filteredWellbeing: [],
+                filteredDailyLogs: [],
+                filteredCycles: [],
+                filteredReflections: [],
+                filteredThoughts: tempFilteredThoughts
+            };
+        }
+        // 'todos'
+        return {
+            filteredReflections: tempFilteredReflections,
+            filteredWellbeing: tempFilteredWellbeing,
+            filteredDailyLogs: tempFilteredDailyLogs,
+            filteredConsumptions: tempFilteredConsumptions,
+            filteredCycles: tempFilteredCycles,
+            filteredThoughts: tempFilteredThoughts
+        };
+    }, [historyTopic, tempFilteredReflections, tempFilteredWellbeing, tempFilteredDailyLogs, tempFilteredConsumptions, tempFilteredCycles, tempFilteredThoughts]);
+
+    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
     return (
                                 <div className="space-y-6">
@@ -90,75 +214,18 @@ export function HistoryView({
                                         ))}
                                     </div>
 
-                                    {(() => {
-                                        // Apply temporal filter
-                                        const dateRange = getDateRangeForPeriod(historyPeriod, historyPeriodOffset);
-
-                                        const tempFilteredReflections = filterByDateRange(reflections, dateRange)
-                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
-                                        const tempFilteredWellbeing = filterByDateRange(wellbeingLogs, dateRange)
-                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
-                                        const tempFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange, 'date')
-                                            .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp));
-                                        const tempFilteredConsumptions = filterByDateRange(consumptions, dateRange)
-                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                                        const tempFilteredCycles = filterByDateRange(cycles, dateRange)
-                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                                        const tempFilteredThoughts = filterByDateRange(thoughts, dateRange)
-                                            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
-
-                                        // Apply topic filter
-                                        let filteredReflections = tempFilteredReflections;
-                                        let filteredWellbeing = tempFilteredWellbeing;
-                                        let filteredDailyLogs = tempFilteredDailyLogs;
-                                        let filteredConsumptions = tempFilteredConsumptions;
-                                        let filteredCycles = tempFilteredCycles;
-                                        let filteredThoughts = tempFilteredThoughts;
-
-                                        if (historyTopic === 'consumo') {
-                                            filteredReflections = [];
-                                            filteredWellbeing = [];
-                                            filteredDailyLogs = [];
-                                            filteredCycles = [];
-                                            filteredThoughts = [];
-                                        } else if (historyTopic === 'ciclos') {
-                                            filteredConsumptions = [];
-                                            filteredWellbeing = [];
-                                            filteredReflections = [];
-                                            filteredThoughts = [];
-                                            // Manter filteredDailyLogs para mostrar dentro dos ciclos
-                                        } else if (historyTopic === 'bem-estar') {
-                                            filteredConsumptions = [];
-                                            filteredReflections = [];
-                                            filteredDailyLogs = [];
-                                            filteredCycles = [];
-                                            filteredThoughts = [];
-                                        } else if (historyTopic === 'dbt') {
-                                            filteredConsumptions = [];
-                                            filteredWellbeing = [];
-                                            filteredDailyLogs = [];
-                                            filteredCycles = [];
-                                            filteredThoughts = [];
-                                        } else if (historyTopic === 'pensamentos') {
-                                            filteredConsumptions = [];
-                                            filteredWellbeing = [];
-                                            filteredDailyLogs = [];
-                                            filteredCycles = [];
-                                            filteredReflections = [];
-                                        }
-
-                                        const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
-
-                                        if (!hasData) return (<div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">Sem registos neste período</div>);
-
-                                        return (
-                                            <div className="space-y-6">
-                                                {filteredReflections.length > 0 && (
-                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
-                                                        <div className="space-y-4">
-                                                            {filteredReflections.slice(0, reflectionsToShow).map(r => {
-                                                                const analysis = r.answer ? analyzeNote(r.answer) : null;
+                                    {!hasData ? (
+                                        <div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">
+                                            Sem registos neste período
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {filteredReflections.length > 0 && (
+                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                    <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.Brain className={'w-4 h-4 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')} /> Reflexões diárias ({filteredReflections.length})</h3>
+                                                    <div className="space-y-4">
+                                                        {filteredReflections.slice(0, reflectionsToShow).map(r => {
+                                                            const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                 const isExpanded = expandedAnalysis === `reflection-${r.id}`;
 
                                                                 return (
@@ -239,7 +306,7 @@ export function HistoryView({
                                                         <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}><Icons.BookOpen className={'w-4 h-4 ' + (darkMode ? 'text-pink-400' : 'text-pink-600')} /> Pensamentos ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredThoughts.slice(0, thoughtsToShow).map(t => {
-                                                                const analysis = t.content ? analyzeNote(t.content) : null;
+                                                                const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
                                                                 const isExpanded = expandedAnalysis === `thought-${t.id}`;
 
                                                                 return (
@@ -551,9 +618,8 @@ export function HistoryView({
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        );
-                                    })()}
+                                        </div>
+                                    )}
                                 </div>
     );
 }
