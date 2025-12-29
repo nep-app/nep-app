@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.3'; // v4.2.3: Debug overlay visível para contornar console vazia
+const APP_VERSION = '4.2.4'; // v4.2.4: Debug overlay com contagens de IndexedDB
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

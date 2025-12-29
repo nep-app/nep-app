@@ -9,7 +9,7 @@ import * as Icons from './Icons';
  * - Firebase user (email, UID)
  * - PIN status
  * - Sync status
- * - Data counts
+ * - Data counts (fetched from IndexedDB)
  */
 export const DebugOverlay = ({
   appVersion,
@@ -21,6 +21,50 @@ export const DebugOverlay = ({
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [localDataCounts, setLocalDataCounts] = useState(null);
+  const [loadingCounts, setLoadingCounts] = useState(false);
+
+  // Fetch data counts from IndexedDB when authenticated
+  useEffect(() => {
+    if (!pinAuthenticated) {
+      setLocalDataCounts(null);
+      return;
+    }
+
+    const fetchDataCounts = async () => {
+      setLoadingCounts(true);
+      try {
+        // Import localDB dynamically to avoid loading before auth
+        const { getAllItems } = await import('../db/localDB');
+
+        const counts = {
+          consumptions: (await getAllItems('consumptions')).length,
+          substances: (await getAllItems('substances')).length,
+          places: (await getAllItems('places')).length,
+          people: (await getAllItems('people')).length,
+          dailyLogs: (await getAllItems('dailyLogs')).length,
+          reflections: (await getAllItems('reflections')).length,
+          wellbeingLogs: (await getAllItems('wellbeingLogs')).length,
+          cycles: (await getAllItems('cycles')).length,
+          goals: (await getAllItems('goals')).length,
+          thoughts: (await getAllItems('thoughts')).length,
+        };
+
+        setLocalDataCounts(counts);
+      } catch (error) {
+        console.error('[DebugOverlay] Error fetching counts:', error);
+        setLocalDataCounts({ error: error.message });
+      } finally {
+        setLoadingCounts(false);
+      }
+    };
+
+    fetchDataCounts();
+
+    // Refresh counts every 3 seconds while overlay is open
+    const interval = setInterval(fetchDataCounts, 3000);
+    return () => clearInterval(interval);
+  }, [pinAuthenticated]);
 
   if (!isOpen) {
     // Botão flutuante para reabrir
@@ -131,28 +175,52 @@ export const DebugOverlay = ({
             </div>
           )}
 
-          {/* Data Counts */}
-          {dataCounts && (
+          {/* Data Counts - Fetched from IndexedDB */}
+          {pinAuthenticated && (
             <div className="bg-pink-900/30 border border-pink-500/30 rounded p-3">
-              <div className="font-bold text-pink-300 mb-2">📊 Local Data</div>
-              <div className="space-y-1">
-                <div className="text-white">
-                  <span className="text-gray-400">Consumptions:</span>{' '}
-                  {dataCounts.consumptions ?? 0}
-                </div>
-                <div className="text-white">
-                  <span className="text-gray-400">Substances:</span>{' '}
-                  {dataCounts.substances ?? 0}
-                </div>
-                <div className="text-white">
-                  <span className="text-gray-400">Places:</span>{' '}
-                  {dataCounts.places ?? 0}
-                </div>
-                <div className="text-white">
-                  <span className="text-gray-400">People:</span>{' '}
-                  {dataCounts.people ?? 0}
-                </div>
+              <div className="font-bold text-pink-300 mb-2 flex items-center justify-between">
+                <span>📊 IndexedDB Data</span>
+                {loadingCounts && <Icons.RefreshCw className="w-3 h-3 animate-spin" />}
               </div>
+              {localDataCounts?.error ? (
+                <div className="text-red-400 text-xs">{localDataCounts.error}</div>
+              ) : localDataCounts ? (
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  <div className="text-white">
+                    <span className="text-gray-400">Consumptions:</span> {localDataCounts.consumptions}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Substances:</span> {localDataCounts.substances}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Places:</span> {localDataCounts.places}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">People:</span> {localDataCounts.people}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Daily Logs:</span> {localDataCounts.dailyLogs}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Reflections:</span> {localDataCounts.reflections}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Wellbeing:</span> {localDataCounts.wellbeingLogs}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Cycles:</span> {localDataCounts.cycles}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Goals:</span> {localDataCounts.goals}
+                  </div>
+                  <div className="text-white">
+                    <span className="text-gray-400">Thoughts:</span> {localDataCounts.thoughts}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-xs">Loading...</div>
+              )}
+              <div className="text-xs text-gray-500 mt-2">Updates every 3s</div>
             </div>
           )}
 

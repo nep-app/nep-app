@@ -54,7 +54,7 @@ import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
             // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
-            const APP_VERSION = '4.2.3'; // Versão atual para debug
+            const APP_VERSION = '4.2.4'; // Versão atual para debug
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
