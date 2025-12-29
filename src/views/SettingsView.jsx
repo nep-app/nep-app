@@ -6,6 +6,7 @@ export const SettingsView = ({
     user,
     handleLogout,
     exportToCSV,
+    exportToJSON,
     notificationsEnabled,
     requestNotificationPermission,
     onOpenLegalDoc
@@ -45,15 +46,24 @@ export const SettingsView = ({
                 </h3>
                 <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
                     <p className="text-sm">
-                        Exporta todos os teus dados para um ficheiro CSV que podes guardar ou analisar noutra ferramenta.
+                        Exporta TODOS os teus dados (consumos, ciclos, bem-estar, pensamentos, reflexões, objetivos).
                     </p>
-                    <button
-                        onClick={exportToCSV}
-                        className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                        <Icons.Download className="w-4 h-4" />
-                        Exportar Dados (CSV)
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            onClick={exportToJSON}
+                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
+                        >
+                            <Icons.Download className="w-4 h-4" />
+                            💾 Backup Completo (JSON)
+                        </button>
+                        <button
+                            onClick={exportToCSV}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
+                        >
+                            <Icons.Download className="w-4 h-4" />
+                            📊 Exportar para Excel (CSV)
+                        </button>
+                    </div>
                 </div>
             </div>
 

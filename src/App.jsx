@@ -4,6 +4,7 @@ import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResourc
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
+import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV } from './services/exportService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useMetrics } from './contexts/MetricsContext';
@@ -446,7 +447,35 @@ function HarmReductionTracker() {
             // REMOVED: getGoalProgress - now in MetricsContext as metrics.getGoalProgress(goal)
             // REMOVED: getTimeSinceLastConsumption - now in MetricsContext as metrics.timeSinceLastConsumption
 
-            const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
+            // Export functions using new service
+            const exportToCSV = () => {
+                const allData = {
+                    consumptions,
+                    cycles,
+                    dailyLogs,
+                    wellbeingLogs,
+                    reflections,
+                    thoughts,
+                    goals
+                };
+                const csvString = exportToCSVNew(allData);
+                downloadCSV(csvString);
+                showToast('CSV exportado com sucesso! Inclui TODAS as coleções.', 'success');
+            };
+
+            const exportToJSON = () => {
+                const allData = {
+                    consumptions,
+                    cycles,
+                    dailyLogs,
+                    wellbeingLogs,
+                    reflections,
+                    thoughts,
+                    goals
+                };
+                const result = exportAndDownloadAll(allData);
+                showToast(`Backup completo criado! ${result.totalRecords} registos exportados.`, 'success');
+            };
 
             // Get goal progress with percentage
             const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
@@ -1079,6 +1108,7 @@ return {
                                         user={user}
                                         handleLogout={handleLogout}
                                         exportToCSV={exportToCSV}
+                                        exportToJSON={exportToJSON}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
                                         onOpenLegalDoc={(docType) => {
