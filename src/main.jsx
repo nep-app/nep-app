@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { AuthProvider } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
 import { MetricsProvider } from './contexts/MetricsContext'
 import { UIProvider } from './contexts/UIContext'
@@ -43,13 +44,15 @@ const checkForUpdates = () => {
 if (!checkForUpdates()) {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-      <DataProvider>
-        <MetricsProvider>
-          <UIProvider>
-            <App />
-          </UIProvider>
-        </MetricsProvider>
-      </DataProvider>
+      <AuthProvider>
+        <DataProvider>
+          <MetricsProvider>
+            <UIProvider>
+              <App />
+            </UIProvider>
+          </MetricsProvider>
+        </DataProvider>
+      </AuthProvider>
     </React.StrictMode>
   );
 }

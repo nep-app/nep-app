@@ -9,9 +9,11 @@ import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useMetrics } from './contexts/MetricsContext';
 import { useUI } from './contexts/UIContext';
+import { useAuth } from './contexts/AuthContext';
 import { useToast } from './hooks/useToast';
-import { useAuth } from './hooks/useAuth';
+import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
+import { AuthScreen } from './components/AuthScreen';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -46,14 +48,17 @@ import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
-            // ===== 2. STATE MANAGEMENT =====
-            // Use contexts for data and UI state
+            // ===== 1. ALL HOOKS (must be at top level) =====
+            // PIN Authentication
+            const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+            // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
-            // Use custom hooks
+            // Custom hooks
             const { toasts, showToast } = useToast();
-            const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
+            const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useFirebaseAuth(auth);
             const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast);
 
             // Use metrics context for centralized analytics and computations
@@ -133,6 +138,25 @@ function HarmReductionTracker() {
 
             // Firebase initialization and listeners now handled by DataContext
 
+            // ===== 2. AUTHENTICATION CHECK =====
+            // Show loading screen while checking PIN auth
+            if (authLoading) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+                        <div className="text-center">
+                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                            <p className="text-purple-300">Carregando...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Show auth screen if not authenticated with PIN
+            if (!isAuthenticated) {
+                return <AuthScreen />;
+            }
+
+            // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
             const markConsumption = async () => {
                 try {
