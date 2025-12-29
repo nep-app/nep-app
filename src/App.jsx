@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { auth as firebaseAuth } from './config/firebase';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
@@ -14,6 +15,7 @@ import { useToast } from './hooks/useToast';
 import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
+import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -48,11 +50,37 @@ import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
-            // ===== 1. AUTHENTICATION CHECK FIRST (before any data hooks) =====
-            const { isAuthenticated, loading: authLoading, isInitialized } = useAuth();
+            // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
+            const [firebaseUser, setFirebaseUser] = useState(null);
+            const [firebaseLoading, setFirebaseLoading] = useState(true);
+            const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
+            const [hasPinAccount, setHasPinAccount] = useState(null);
 
-            // ===== 2. EARLY RETURN if not authenticated (prevents data hooks from running) =====
-            if (authLoading) {
+            // 1. Listen to Firebase auth state
+            useEffect(() => {
+                console.log('[App] 🔐 Verificando Firebase auth state...');
+                const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+                    console.log('[App] Firebase user:', user ? user.email : 'nenhum');
+                    setFirebaseUser(user);
+                    setFirebaseLoading(false);
+                });
+                return unsubscribe;
+            }, []);
+
+            // 2. Check if PIN account exists (only when Firebase user exists)
+            useEffect(() => {
+                const checkPinAccount = async () => {
+                    if (firebaseUser && !firebaseLoading) {
+                        const exists = await hasAccount();
+                        console.log('[App] 🔑 PIN account exists:', exists);
+                        setHasPinAccount(exists);
+                    }
+                };
+                checkPinAccount();
+            }, [firebaseUser, firebaseLoading, hasAccount]);
+
+            // LOADING: Firebase auth state checking
+            if (firebaseLoading || pinLoading) {
                 return (
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
@@ -63,11 +91,35 @@ function HarmReductionTracker() {
                 );
             }
 
-            if (!isAuthenticated) {
+            // STEP 1: NO Firebase user → Show Firebase login
+            if (!firebaseUser) {
+                console.log('[App] ➡️ Mostrando Firebase login (sem user)');
+                return <FirebaseLoginScreen auth={firebaseAuth} />;
+            }
+
+            // STEP 2: Firebase user exists → Check PIN
+            console.log('[App] Firebase user OK. PIN authenticated:', pinAuthenticated, 'PIN account exists:', hasPinAccount);
+
+            // If checking PIN account, show loading
+            if (hasPinAccount === null) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+                        <div className="text-center">
+                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                            <p className="text-purple-300">Verificando PIN...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // If not PIN authenticated, show PIN screen
+            if (!pinAuthenticated) {
+                console.log('[App] ➡️ Mostrando PIN screen (Firebase OK, PIN não autenticado)');
                 return <AuthScreen />;
             }
 
-            // ===== 3. ONLY LOAD DATA HOOKS WHEN AUTHENTICATED =====
+            // STEP 3: Both Firebase AND PIN authenticated → Show app
+            console.log('[App] ✅ Firebase + PIN OK → Mostrando app');
             return <AuthenticatedApp />;
         }
 
@@ -82,7 +134,7 @@ function AuthenticatedApp() {
 
             // Custom hooks
             const { toasts, showToast } = useToast();
-            const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useFirebaseAuth(auth);
+            const { handleLogout } = useFirebaseAuth(auth); // Only need logout for settings
             const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast);
 
             // Use metrics context for centralized analytics and computations
@@ -937,85 +989,8 @@ return {
 
             if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">A carregar... 🔄</div></div>);
 
-            // Auth Screen
-            if (!user) return (
-                <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
-                        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                            NEP App
-                        </h1>
-                        <p className="text-gray-600 mb-6">Sincroniza entre dispositivos 💜</p>
-                        <form onSubmit={handleAuth} className="space-y-4">
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-                                required
-                            />
-                            <input
-                                type="password"
-                                placeholder="Password (mínimo 6 caracteres)"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-                                required
-                            />
-                            {authError && (
-                                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{authError}</div>
-                            )}
-                            {!isLogin && (
-                                <div className="bg-purple-50 p-3 rounded-lg text-xs text-purple-900">
-                                    <p className="mb-2">
-                                        Ao criar conta, concordas com os{' '}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setLegalDocType('terms');
-                                                setShowLegalModal(true);
-                                            }}
-                                            className="text-purple-600 font-semibold hover:underline"
-                                        >
-                                            Termos de Uso
-                                        </button>
-                                        .
-                                    </p>
-                                </div>
-                            )}
-                            <button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
-                            >
-                                {isLogin ? 'Entrar' : 'Criar Conta'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsLogin(!isLogin)}
-                                className="w-full text-purple-600 text-sm hover:underline"
-                            >
-                                {isLogin ? 'Criar conta nova' : 'Já tenho conta'}
-                            </button>
-                        </form>
-                        <p className="text-xs text-gray-500 mt-6">
-                            💡 Usa o mesmo email e password no PC e telemóvel para sincronizar
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2 text-center">
-                            Copyright © Teresa Castro
-                        </p>
-                    </div>
-
-                    {/* Legal Modal for auth screen */}
-                    <Suspense fallback={null}>
-                        <LegalModal
-                            isOpen={showLegalModal}
-                            onClose={() => setShowLegalModal(false)}
-                            darkMode={false}
-                            documentType={legalDocType}
-                        />
-                    </Suspense>
-                </div>
-            );
+            // NOTE: Firebase auth check removed - now handled in HarmReductionTracker
+            // AuthenticatedApp only renders when BOTH Firebase AND PIN are authenticated
 
             return (
                 <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>

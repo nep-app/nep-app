@@ -80,58 +80,8 @@ export const DataProvider = ({ children }) => {
     return unsubscribe;
   }, [auth]);
 
-  // Auto-login Firebase quando PIN estiver disponível
-  useEffect(() => {
-    const autoLoginFirebase = async () => {
-      if (!pin || user || firebaseLoading) return;
-
-      try {
-        console.log('[DataContext] Tentando auto-login Firebase...');
-
-        // Obter email armazenado do PIN account
-        const { getMetadata } = await import('../db/localDB');
-        const storedEmail = await getMetadata('userEmail');
-        const firebasePassword = await getMetadata('firebasePassword');
-
-        if (!storedEmail || storedEmail === 'sem-email') {
-          console.log('[DataContext] ⚠️ Sem email - usando Firebase Anonymous Auth');
-          const { signInAnonymously } = await import('firebase/auth');
-          await signInAnonymously(auth);
-          console.log('[DataContext] ✅ Firebase Anonymous login bem-sucedido!');
-          return;
-        }
-
-        if (!firebasePassword) {
-          console.log('[DataContext] ⚠️ Sem password Firebase armazenada - tentando PIN como password');
-          const { signInWithEmailAndPassword } = await import('firebase/auth');
-          try {
-            await signInWithEmailAndPassword(auth, storedEmail, pin);
-            console.log('[DataContext] ✅ Firebase login bem-sucedido com PIN!');
-            // Guardar password para próxima vez
-            const { setMetadata } = await import('../db/localDB');
-            await setMetadata('firebasePassword', pin);
-          } catch (pinError) {
-            console.error('[DataContext] ❌ PIN não funciona como Firebase password');
-            console.log('[DataContext] ⚠️ Funcionando OFFLINE - para ativar sync, adiciona Firebase password nas Settings');
-            // NÃO usar anonymous - isso criaria um novo user sem os dados antigos
-            return;
-          }
-          return;
-        }
-
-        // Tentar login com password armazenada
-        const { signInWithEmailAndPassword } = await import('firebase/auth');
-        await signInWithEmailAndPassword(auth, storedEmail, firebasePassword);
-        console.log('[DataContext] ✅ Firebase login bem-sucedido!');
-      } catch (error) {
-        console.error('[DataContext] ❌ Erro no auto-login Firebase:', error);
-        console.log('[DataContext] ⚠️ Funcionando OFFLINE (sem sync)');
-        // NÃO usar anonymous auth - isso criaria um novo user sem acesso aos dados antigos
-      }
-    };
-
-    autoLoginFirebase();
-  }, [pin, user, firebaseLoading, auth]);
+  // Firebase authentication is now handled in App.jsx before PIN
+  // User must login with email/password FIRST, then enter PIN
 
   // Inicializar SyncService quando tudo estiver pronto
   useEffect(() => {
