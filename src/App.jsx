@@ -50,7 +50,7 @@ import { StatCard } from './components/ui/StatCard';
 function HarmReductionTracker() {
             // ===== 1. ALL HOOKS (must be at top level) =====
             // PIN Authentication
-            const { isAuthenticated, isLoading: authLoading } = useAuth();
+            const { isAuthenticated, loading: authLoading, isInitialized } = useAuth();
 
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();

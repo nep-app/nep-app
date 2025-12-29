@@ -247,6 +247,13 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   }
 
+  /**
+   * Verifica se já existe conta (helper para AuthScreen)
+   */
+  async function hasAccount() {
+    return isInitialized;
+  }
+
   const value = {
     // Estado
     isAuthenticated,
@@ -261,6 +268,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     changePin,
     getUserSalt,
+    hasAccount,
     resetApp
   };
 
