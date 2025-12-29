@@ -35,19 +35,17 @@ export const DebugOverlay = ({
       setLoadingCounts(true);
       try {
         // Import localDB dynamically to avoid loading before auth
-        const { getAllItems } = await import('../db/localDB');
+        const { db } = await import('../db/localDB');
 
         const counts = {
-          consumptions: (await getAllItems('consumptions')).length,
-          substances: (await getAllItems('substances')).length,
-          places: (await getAllItems('places')).length,
-          people: (await getAllItems('people')).length,
-          dailyLogs: (await getAllItems('dailyLogs')).length,
-          reflections: (await getAllItems('reflections')).length,
-          wellbeingLogs: (await getAllItems('wellbeingLogs')).length,
-          cycles: (await getAllItems('cycles')).length,
-          goals: (await getAllItems('goals')).length,
-          thoughts: (await getAllItems('thoughts')).length,
+          consumptions: await db.consumptions.count(),
+          dailyLogs: await db.dailyLogs.count(),
+          reflections: await db.reflections.count(),
+          wellbeingLogs: await db.wellbeingLogs.count(),
+          cycles: await db.cycles.count(),
+          goals: await db.goals.count(),
+          copingStrategies: await db.copingStrategies.count(),
+          thoughts: await db.thoughts.count(),
         };
 
         setLocalDataCounts(counts);
@@ -185,36 +183,44 @@ export const DebugOverlay = ({
               {localDataCounts?.error ? (
                 <div className="text-red-400 text-xs">{localDataCounts.error}</div>
               ) : localDataCounts ? (
-                <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div className="text-white">
-                    <span className="text-gray-400">Consumptions:</span> {localDataCounts.consumptions}
+                <div className="space-y-1 text-xs">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div className="text-white">
+                      <span className="text-gray-400">Consumptions:</span> <span className="font-bold">{localDataCounts.consumptions}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Daily Logs:</span> <span className="font-bold">{localDataCounts.dailyLogs}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Reflections:</span> <span className="font-bold">{localDataCounts.reflections}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Wellbeing:</span> <span className="font-bold">{localDataCounts.wellbeingLogs}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Cycles:</span> <span className="font-bold">{localDataCounts.cycles}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Goals:</span> <span className="font-bold">{localDataCounts.goals}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Coping:</span> <span className="font-bold">{localDataCounts.copingStrategies}</span>
+                    </div>
+                    <div className="text-white">
+                      <span className="text-gray-400">Thoughts:</span> <span className="font-bold">{localDataCounts.thoughts}</span>
+                    </div>
                   </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Substances:</span> {localDataCounts.substances}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Places:</span> {localDataCounts.places}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">People:</span> {localDataCounts.people}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Daily Logs:</span> {localDataCounts.dailyLogs}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Reflections:</span> {localDataCounts.reflections}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Wellbeing:</span> {localDataCounts.wellbeingLogs}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Cycles:</span> {localDataCounts.cycles}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Goals:</span> {localDataCounts.goals}
-                  </div>
-                  <div className="text-white">
-                    <span className="text-gray-400">Thoughts:</span> {localDataCounts.thoughts}
+                  <div className="pt-1 mt-1 border-t border-pink-700/30 text-pink-200">
+                    <span className="text-gray-400">TOTAL:</span> <span className="font-bold">{
+                      (localDataCounts.consumptions || 0) +
+                      (localDataCounts.dailyLogs || 0) +
+                      (localDataCounts.reflections || 0) +
+                      (localDataCounts.wellbeingLogs || 0) +
+                      (localDataCounts.cycles || 0) +
+                      (localDataCounts.goals || 0) +
+                      (localDataCounts.copingStrategies || 0) +
+                      (localDataCounts.thoughts || 0)
+                    }</span>
                   </div>
                 </div>
               ) : (
