@@ -274,17 +274,42 @@ export const DebugOverlay = ({
           )}
 
           {/* Sync Logs */}
-          {syncLogs.length > 0 && (
-            <div className="bg-cyan-900/30 border border-cyan-500/30 rounded p-3">
-              <div className="font-bold text-cyan-300 mb-2 flex items-center justify-between">
-                <span>📝 Sync Logs</span>
+          <div className="bg-cyan-900/30 border border-cyan-500/30 rounded p-3">
+            <div className="font-bold text-cyan-300 mb-2 flex items-center justify-between">
+              <span>📝 Sync Logs</span>
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setSyncLogs([])}
-                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                  onClick={async () => {
+                    try {
+                      setSyncLogs(prev => [...prev, {
+                        level: 'log',
+                        message: '[MANUAL] Forçando reload da página para re-iniciar sync...',
+                        time: new Date().toLocaleTimeString('pt-PT')
+                      }]);
+                      setTimeout(() => window.location.reload(), 1000);
+                    } catch (error) {
+                      setSyncLogs(prev => [...prev, {
+                        level: 'error',
+                        message: `[MANUAL] Erro: ${error.message}`,
+                        time: new Date().toLocaleTimeString('pt-PT')
+                      }]);
+                    }
+                  }}
+                  className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded"
                 >
-                  Clear
+                  Reload Page
                 </button>
+                {syncLogs.length > 0 && (
+                  <button
+                    onClick={() => setSyncLogs([])}
+                    className="text-xs text-cyan-400 hover:text-cyan-300"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
+            </div>
+            {syncLogs.length > 0 ? (
               <div className="space-y-1 text-xs max-h-40 overflow-y-auto">
                 {syncLogs.map((log, idx) => (
                   <div
@@ -299,8 +324,14 @@ export const DebugOverlay = ({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-gray-400 text-xs">
+                ⚠️ Nenhum log capturado. Sync pode não estar a correr.
+                <br />
+                Clica "Reload Page" para forçar re-inicialização.
+              </div>
+            )}
+          </div>
 
           {/* Instructions */}
           <div className="bg-gray-800/50 border border-gray-600/30 rounded p-3 text-xs">
