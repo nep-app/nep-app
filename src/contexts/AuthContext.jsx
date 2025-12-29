@@ -61,34 +61,34 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
-  // Auto-lock após inatividade
-  useEffect(() => {
-    if (!isAuthenticated) return;
+  // TEMPORARIAMENTE DESABILITADO - Auto-lock após inatividade
+  // useEffect(() => {
+  //   if (!isAuthenticated) return;
 
-    const checkInactivity = setInterval(() => {
-      const now = Date.now();
-      if (now - lastActivity > AUTO_LOCK_TIMEOUT) {
-        logout();
-      }
-    }, 10000); // Check every 10s
+  //   const checkInactivity = setInterval(() => {
+  //     const now = Date.now();
+  //     if (now - lastActivity > AUTO_LOCK_TIMEOUT) {
+  //       logout();
+  //     }
+  //   }, 10000); // Check every 10s
 
-    return () => clearInterval(checkInactivity);
-  }, [isAuthenticated, lastActivity, logout]);
+  //   return () => clearInterval(checkInactivity);
+  // }, [isAuthenticated, lastActivity, logout]);
 
-  // Atualizar lastActivity em qualquer interação
-  useEffect(() => {
-    const updateActivity = () => setLastActivity(Date.now());
+  // TEMPORARIAMENTE DESABILITADO - Atualizar lastActivity em qualquer interação
+  // useEffect(() => {
+  //   const updateActivity = () => setLastActivity(Date.now());
 
-    window.addEventListener('mousedown', updateActivity);
-    window.addEventListener('keydown', updateActivity);
-    window.addEventListener('touchstart', updateActivity);
+  //   window.addEventListener('mousedown', updateActivity);
+  //   window.addEventListener('keydown', updateActivity);
+  //   window.addEventListener('touchstart', updateActivity);
 
-    return () => {
-      window.removeEventListener('mousedown', updateActivity);
-      window.removeEventListener('keydown', updateActivity);
-      window.removeEventListener('touchstart', updateActivity);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener('mousedown', updateActivity);
+  //     window.removeEventListener('keydown', updateActivity);
+  //     window.removeEventListener('touchstart', updateActivity);
+  //   };
+  // }, []);
 
   /**
    * Criar nova conta (primeiro uso)
