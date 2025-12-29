@@ -161,15 +161,6 @@ export const LocalDataProvider = ({ children }) => {
       setCycles(cyclesData);
       setGoals(goalsData);
       setThoughts(thoughtsData);
-
-        consumptions: consumptionsData.length,
-        dailyLogs: dailyLogsData.length,
-        reflections: reflectionsData.length,
-        wellbeingLogs: wellbeingLogsData.length,
-        cycles: cyclesData.length,
-        goals: goalsData.length,
-        thoughts: thoughtsData.length
-      });
     } catch (error) {
       console.error('[LocalData] Erro ao carregar dados:', error);
     } finally {

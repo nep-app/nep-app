@@ -50,12 +50,6 @@ export const AuthProvider = ({ children }) => {
       const salt = await getMetadata('salt');
       const pinVerification = await getMetadata('pinVerification');
 
-        email,
-        hasSalt: !!salt,
-        hasPinVerification: !!pinVerification,
-        isInitialized: !!email
-      });
-
       setUserEmail(email);
       setIsInitialized(!!email);
     } catch (error) {
@@ -153,10 +147,6 @@ export const AuthProvider = ({ children }) => {
       // Obter salt e dados de verificação
       const saltBase64 = await getMetadata('salt');
       const verificationJSON = await getMetadata('pinVerification');
-
-        hasSalt: !!saltBase64,
-        hasVerification: !!verificationJSON
-      });
 
       if (!saltBase64 || !verificationJSON) {
         throw new Error('Dados de autenticação não encontrados');
