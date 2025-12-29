@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.2'; // v4.2.2: Fix sync - detecta UID mudou e força PULL
+const APP_VERSION = '4.2.3'; // v4.2.3: Debug overlay visível para contornar console vazia
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

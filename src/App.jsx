@@ -18,6 +18,7 @@ import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
+import { DebugOverlay } from './components/DebugOverlay';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -53,6 +54,7 @@ import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
             // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
+            const APP_VERSION = '4.2.3'; // Versão atual para debug
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
@@ -88,9 +90,12 @@ function HarmReductionTracker() {
                 checkPinAccount();
             }, [firebaseUser, firebaseLoading, hasAccount]);
 
+            // Render content based on auth state
+            let content;
+
             // LOADING: Firebase auth state checking
             if (firebaseLoading || pinLoading) {
-                return (
+                content = (
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
                             <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
@@ -99,22 +104,15 @@ function HarmReductionTracker() {
                     </div>
                 );
             }
-
             // STEP 1: NO Firebase user → Show Firebase login
-            if (!firebaseUser) {
+            else if (!firebaseUser) {
                 console.log('[App] ➡️ Mostrando Firebase login (sem user)');
-                return <FirebaseLoginScreen auth={firebaseAuth} />;
+                content = <FirebaseLoginScreen auth={firebaseAuth} />;
             }
-
-            // DEBUG: Show which Firebase user is logged in
-            console.log('[App] 🔥 Firebase user encontrado:', firebaseUser.email, 'UID:', firebaseUser.uid);
-
-            // STEP 2: Firebase user exists → Check PIN
-            console.log('[App] Firebase user OK. PIN authenticated:', pinAuthenticated, 'PIN account exists:', hasPinAccount);
-
-            // If checking PIN account, show loading
-            if (hasPinAccount === null) {
-                return (
+            // STEP 2: Checking PIN account
+            else if (hasPinAccount === null) {
+                console.log('[App] 🔥 Firebase user encontrado:', firebaseUser.email, 'UID:', firebaseUser.uid);
+                content = (
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
                             <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
@@ -123,16 +121,32 @@ function HarmReductionTracker() {
                     </div>
                 );
             }
-
-            // If not PIN authenticated, show PIN screen
-            if (!pinAuthenticated) {
+            // STEP 3: Firebase user exists but not PIN authenticated → Show PIN screen
+            else if (!pinAuthenticated) {
                 console.log('[App] ➡️ Mostrando PIN screen (Firebase OK, PIN não autenticado)');
-                return <AuthScreen />;
+                console.log('[App] Firebase user OK. PIN authenticated:', pinAuthenticated, 'PIN account exists:', hasPinAccount);
+                content = <AuthScreen />;
+            }
+            // STEP 4: Both Firebase AND PIN authenticated → Show app
+            else {
+                console.log('[App] ✅ Firebase + PIN OK → Mostrando app');
+                content = <AuthenticatedApp />;
             }
 
-            // STEP 3: Both Firebase AND PIN authenticated → Show app
-            console.log('[App] ✅ Firebase + PIN OK → Mostrando app');
-            return <AuthenticatedApp />;
+            // Always show debug overlay on top
+            return (
+                <>
+                    {content}
+                    <DebugOverlay
+                        appVersion={APP_VERSION}
+                        firebaseUser={firebaseUser}
+                        pinAuthenticated={pinAuthenticated}
+                        hasPinAccount={hasPinAccount}
+                        syncStatus={null}
+                        dataCounts={null}
+                    />
+                </>
+            );
         }
 
 /**
