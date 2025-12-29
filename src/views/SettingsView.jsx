@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as Icons from '../components/Icons';
+import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
 export const SettingsView = ({
     darkMode,
@@ -11,6 +12,30 @@ export const SettingsView = ({
     requestNotificationPermission,
     onOpenLegalDoc
 }) => {
+    const [syncStatus, setSyncStatus] = useState(null);
+    const [syncing, setSyncing] = useState(false);
+
+    const handleForceSync = async () => {
+        setSyncing(true);
+        setSyncStatus({ type: 'loading', message: 'Forçando reconexão...' });
+
+        try {
+            const result = await forceFirebaseReconnect();
+
+            if (result.success) {
+                setSyncStatus({ type: 'success', message: '✅ Reconexão completa! Verifica Firebase em 30 segundos.' });
+
+                // Limpar mensagem após 10 segundos
+                setTimeout(() => setSyncStatus(null), 10000);
+            } else {
+                setSyncStatus({ type: 'error', message: `❌ Erro: ${result.message}` });
+            }
+        } catch (error) {
+            setSyncStatus({ type: 'error', message: `❌ Erro inesperado: ${error.message}` });
+        } finally {
+            setSyncing(false);
+        }
+    };
     return (
         <div className="space-y-6">
             <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
@@ -63,6 +88,48 @@ export const SettingsView = ({
                             <Icons.Download className="w-4 h-4" />
                             📊 Exportar para Excel (CSV)
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Firebase Sync */}
+            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
+                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3 flex items-center gap-2'}>
+                    <Icons.RefreshCw className="w-5 h-5" />
+                    Sincronização Firebase
+                </h3>
+                <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                    <p className="text-sm">
+                        Se registaste dados que não aparecem no Firebase, força uma reconexão manual.
+                    </p>
+
+                    {syncStatus && (
+                        <div className={
+                            'p-3 rounded-lg text-sm ' +
+                            (syncStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
+                             syncStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
+                             'bg-blue-900/30 text-blue-300 border border-blue-700/50')
+                        }>
+                            {syncStatus.message}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleForceSync}
+                        disabled={syncing}
+                        className={
+                            'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
+                            (syncing
+                                ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600')
+                        }
+                    >
+                        <Icons.RefreshCw className={'w-4 h-4' + (syncing ? ' animate-spin' : '')} />
+                        {syncing ? 'Reconectando...' : '🔄 Forçar Sincronização'}
+                    </button>
+
+                    <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
+                        💡 <strong>Dica:</strong> Após forçar sync, aguarda 30 segundos e verifica Firebase Console.
                     </div>
                 </div>
             </div>
