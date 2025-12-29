@@ -4095,14 +4095,21 @@ export function AnalysesView({
 
                                                                                 // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
+                                                                                    console.log('[DEBUG isInverse] Matching Humor/Energia →:', { name, r, isInverse });
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
                                                                                     const isYesterday = metricName.toLowerCase().includes('ontem');
 
                                                                                     if (target.includes('Consumo')) {
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
-                                                                                        if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
-                                                                                        if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        if (r < -0.4) {
+                                                                                            console.log('[DEBUG] Returning Protetora GREEN for r=', r);
+                                                                                            return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        }
+                                                                                        if (r < -0.2) {
+                                                                                            console.log('[DEBUG] Returning Ligeiramente Protetora GREEN for r=', r);
+                                                                                            return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        }
                                                                                         if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
                                                                                         if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
@@ -4277,6 +4284,15 @@ export function AnalysesView({
                                                                                 if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais consumos de ${period} → Humor melhor no dia` };
                                                                                 if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais consumos de ${period} → Ligeira tendência para humor alto` };
                                                                                 return { text: 'Sem Correlação', color: 'gray', desc: `Consumos de ${period} não afetam humor` };
+                                                                            }
+
+                                                                            // Autocorrelação de Consumo (Consumo Ontem → Hoje) - positivo é MAU
+                                                                            if (name.toLowerCase().includes('consumo') && name.toLowerCase().includes('ontem') && name.toLowerCase().includes('hoje')) {
+                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Alto consumo ontem → Alto consumo hoje (padrão de repetição)' };
+                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Consumo ontem tende a repetir-se hoje' };
+                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Alto consumo ontem → Baixo consumo hoje (quebra de padrão!)' };
+                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Consumo de ontem não se repete hoje' };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: 'Consumo de ontem não afeta hoje' };
                                                                             }
 
                                                                             // Lógica genérica (fallback com descrição baseada no nome)

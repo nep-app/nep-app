@@ -350,15 +350,21 @@ export function HistoryView({
                                                                         <div className="grid grid-cols-3 gap-2 text-sm mb-3">
                                                                             <div className="text-center">
                                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Exercício</div>
-                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.exercise ? `${w.exercise}/10` : '-'}</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                    {w.exercise ? (typeof w.exercise === 'boolean' ? 'Sim' : `${w.exercise}/10`) : '-'}
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-center">
                                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Alimentação</div>
-                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.food ? `${w.food}/10` : '-'}</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                    {w.food ? (typeof w.food === 'boolean' ? 'Sim' : `${w.food}/10`) : '-'}
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-center">
                                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Social</div>
-                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.social ? `${w.social}/10` : '-'}</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                    {w.social ? (typeof w.social === 'boolean' ? 'Sim' : `${w.social}/10`) : '-'}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     )}
