@@ -4095,7 +4095,8 @@ export function AnalysesView({
                                                                                 }
 
                                                                                 // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
-                                                                                if (name.includes('Humor →') || name.includes('Energia →')) {
+                                                                                if (name.includes('Humor') && (name.includes('→ Consumo') || name.includes('→ Dosagem')) ||
+                                                                                    name.includes('Energia') && (name.includes('→ Consumo') || name.includes('→ Dosagem'))) {
                                                                                     console.log('[DEBUG] Inside Humor/Energia block (isInverse)');
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
@@ -4238,8 +4239,8 @@ export function AnalysesView({
                                                                                     // Dosagem em MG - pode subir mesmo com menos consumos se cada um tiver mais mg
                                                                                     if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Intervalos maiores → Menos dosagem total (mg/dia)' };
                                                                                     if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Intervalos maiores → Ligeiramente menos mg/dia' };
-                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Intervalos maiores → Mais mg/dia (doses individuais maiores?)' };
-                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Espaçar mais pode significar doses maiores por consumo' };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Intervalos maiores → Mais mg/dia (doses individuais maiores?)' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Espaçar mais pode significar doses maiores por consumo' };
                                                                                     return { text: 'Sem Correlação', color: 'gray', desc: 'Intervalo não afeta dosagem total' };
                                                                                 } else {
                                                                                     // Total de consumos
@@ -4262,7 +4263,9 @@ export function AnalysesView({
                                                                             }
 
                                                                             // Bem-estar/Humor/Energia → Dosagem/Consumo (negativa é boa! mais humor → menos consumo)
-                                                                            if (name.includes('Bem-estar →') || (name.includes('Energia →') && !isInverse) || (name.includes('Humor →') && !isInverse)) {
+                                                                            if (name.includes('Bem-estar') && (name.includes('→ Dosagem') || name.includes('→ Consumo')) ||
+                                                                                (name.includes('Energia') && !isInverse && (name.includes('→ Dosagem') || name.includes('→ Consumo'))) ||
+                                                                                (name.includes('Humor') && !isInverse && (name.includes('→ Dosagem') || name.includes('→ Consumo')))) {
                                                                                 const metric = name.includes('Bem-estar') ? 'Bem-estar' : name.includes('Energia') ? 'Energia' : 'Humor';
                                                                                 const metricName = name.split(' →')[0].trim();
                                                                                 const target = name.includes('Dosagem') ? 'dosagem' : 'consumo';
