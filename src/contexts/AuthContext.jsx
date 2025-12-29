@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
     }, 10000); // Check every 10s
 
     return () => clearInterval(checkInactivity);
-  }, [isAuthenticated, lastActivity]);
+  }, [isAuthenticated, lastActivity, logout]);
 
   // Atualizar lastActivity em qualquer interação
   useEffect(() => {

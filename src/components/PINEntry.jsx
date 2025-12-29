@@ -13,7 +13,13 @@ import * as Icons from './Icons';
  */
 export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }) => {
   const [digits, setDigits] = useState(['', '', '', '']);
-  const inputRefs = [useRef(), useRef(), useRef(), useRef()];
+
+  // Create refs array once - don't call useRef in array literal!
+  const inputRef0 = useRef();
+  const inputRef1 = useRef();
+  const inputRef2 = useRef();
+  const inputRef3 = useRef();
+  const inputRefs = [inputRef0, inputRef1, inputRef2, inputRef3];
 
   // Use ref to store onComplete callback to avoid re-running effect when callback changes
   const onCompleteRef = useRef(onComplete);
