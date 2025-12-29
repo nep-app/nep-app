@@ -42,7 +42,7 @@ export const EmotionsModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Emoções do Dia</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
