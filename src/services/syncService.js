@@ -1,6 +1,16 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
-import { db as dexieDB, markAsSynced, getAllItems } from '../db/dexieDB';
+import { db as dexieDB } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
+
+// Helper functions (moved from dexieDB.js to use correct DB)
+const getAllItems = async (collectionName) => {
+  const all = await dexieDB[collectionName].toArray();
+  return all.filter(item => !item.deleted);
+};
+
+const markAsSynced = async (collectionName, id) => {
+  await dexieDB[collectionName].update(id, { syncStatus: 'synced' });
+};
 
 /**
  * SyncService - Sincronização bidirecional Dexie ↔ Firebase

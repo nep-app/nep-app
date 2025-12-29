@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.9'; // v4.2.9: Debug buttons to test log capture
+const APP_VERSION = '4.3.0'; // v4.3.0: FIX CRÍTICO - syncService usar localDB correto
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

@@ -254,14 +254,19 @@ export const DebugOverlay = ({
               <span>📝 Sync Logs</span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    console.log('[DataContext] 🧪 TESTE: Este é um log de teste para verificar captura');
-                    console.log('[Sync] 🧪 TESTE: Outro log de teste');
+                  onClick={async () => {
+                    try {
+                      const { setMetadata } = await import('../db/localDB');
+                      await setMetadata('lastFirebaseUID', null);
+                      alert('UID limpo! Reload para forçar PULL do Firebase');
+                    } catch (error) {
+                      alert('Erro: ' + error.message);
+                    }
                   }}
-                  className="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded"
-                  title="Emite logs de teste para verificar se captura funciona"
+                  className="text-xs bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded"
+                  title="Limpa UID e força PULL do Firebase no próximo reload"
                 >
-                  Test Logs
+                  Force PULL
                 </button>
                 <button
                   onClick={() => {
