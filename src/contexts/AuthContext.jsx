@@ -249,10 +249,25 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Verifica se já existe conta (helper para AuthScreen)
+   * Verificar não só email, mas também salt e pinVerification
    */
   const hasAccount = useCallback(async () => {
-    return isInitialized;
-  }, [isInitialized]);
+    try {
+      const email = await getMetadata('userEmail');
+      const salt = await getMetadata('salt');
+      const pinVerification = await getMetadata('pinVerification');
+
+      // Conta só existe se tiver TODOS os dados necessários
+      const accountExists = !!email && !!salt && !!pinVerification;
+
+      console.log('[hasAccount] Check:', { email, hasSalt: !!salt, hasPinVerification: !!pinVerification, result: accountExists });
+
+      return accountExists;
+    } catch (error) {
+      console.error('[hasAccount] Error:', error);
+      return false;
+    }
+  }, []);
 
   const value = {
     // Estado
