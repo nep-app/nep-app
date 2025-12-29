@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.0.1'; // v4.0.1: Fix cache + debug logs
+const APP_VERSION = '4.1.0'; // v4.1.0: Auto-login Firebase + fix sync
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);
