@@ -410,6 +410,61 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
+                                                                            {/* NOVO: Paragraph 3b - Primeiro Consumo → Escalada */}
+                                                                            {(() => {
+                                                                                if (analysisConsumptions.length < 10 || analysisCycles.length < 3) return null;
+
+                                                                                // Agrupar consumos por dia
+                                                                                const consumptionsByDate = {};
+                                                                                analysisConsumptions.forEach(c => {
+                                                                                    if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                                                                                    consumptionsByDate[c.date].push(c);
+                                                                                });
+
+                                                                                // Calcular hora do primeiro consumo e total por dia
+                                                                                const firstConsData = {};
+                                                                                Object.entries(consumptionsByDate).forEach(([date, cons]) => {
+                                                                                    const dayCycle = analysisCycles.find(cycle => safeToISODate(cycle.timestamp) === date);
+                                                                                    const cycleTime = dayCycle ? new Date(dayCycle.timestamp).getTime() : 0;
+                                                                                    const consumptionsAfterCycle = dayCycle ? cons.filter(c => new Date(c.timestamp).getTime() >= cycleTime) : cons;
+
+                                                                                    if (consumptionsAfterCycle.length === 0) return;
+
+                                                                                    const sortedCons = consumptionsAfterCycle.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                                    const firstCons = sortedCons[0];
+                                                                                    const hour = new Date(firstCons.timestamp).getHours();
+                                                                                    firstConsData[date] = { firstHour: hour, total: cons.length };
+                                                                                });
+
+                                                                                const dataPoints = Object.values(firstConsData);
+                                                                                if (dataPoints.length < 5) return null;
+
+                                                                                // Dividir em dois grupos: primeiro consumo cedo (<10h) vs tarde (≥10h)
+                                                                                const earlyStarts = dataPoints.filter(d => d.firstHour < 10);
+                                                                                const lateStarts = dataPoints.filter(d => d.firstHour >= 10);
+
+                                                                                if (earlyStarts.length < 3 || lateStarts.length < 3) return null;
+
+                                                                                const avgEarlyTotal = earlyStarts.reduce((sum, d) => sum + d.total, 0) / earlyStarts.length;
+                                                                                const avgLateTotal = lateStarts.reduce((sum, d) => sum + d.total, 0) / lateStarts.length;
+
+                                                                                const percentDiff = ((avgEarlyTotal - avgLateTotal) / avgLateTotal * 100).toFixed(0);
+
+                                                                                // Só mostrar se diferença significativa (>20%)
+                                                                                if (Math.abs(percentDiff) < 20) return null;
+
+                                                                                return (
+                                                                                    <p>
+                                                                                        🌅 <strong className={(darkMode ? 'text-amber-400' : 'text-amber-600')}>Primeiro Consumo → Escalada:</strong> Quando o primeiro consumo é <strong>antes das 10h</strong>, o total do dia é <strong className={(percentDiff > 0 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{Math.abs(percentDiff)}% {percentDiff > 0 ? 'maior' : 'menor'}</strong> (média {avgEarlyTotal.toFixed(1)} vs {avgLateTotal.toFixed(1)} quando começas mais tarde).
+                                                                                        {percentDiff > 0 ? (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⚠️ Começar cedo correlaciona-se com escalada. Atrasar o primeiro consumo pode ser estratégia de redução de danos.</span></>
+                                                                                        ) : (
+                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Começar mais cedo não piora o dia - pode até ajudar a espaçar melhor.</span></>
+                                                                                        )}
+                                                                                    </p>
+                                                                                );
+                                                                            })()}
+
                                                                             {/* NOVO: Paragraph 3c - Streaks/Momentum */}
                                                                             {(() => {
                                                                                 if (analysisConsumptions.length < 5) return null;
