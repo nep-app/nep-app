@@ -26,6 +26,7 @@ export const useData = () => {
  * - Mantém mesma interface que DataProvider antigo (compatibilidade)
  */
 export const DataProvider = ({ children }) => {
+  console.log('[DataContext] 🚀 Provider inicializando...');
   // Firebase init (ainda precisamos para sync)
   const { app, auth, db } = useMemo(() => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];

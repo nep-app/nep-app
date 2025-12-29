@@ -38,6 +38,7 @@ export const useLocalData = () => {
  * IMPORTANTE: Requer autenticação com PIN (usa encryptionKey do AuthContext)
  */
 export const LocalDataProvider = ({ children }) => {
+  console.log('[LocalDataContext] 🚀 Provider inicializando...');
   const { encryptionKey, getUserSalt } = useAuth();
 
   // Estado para cada coleção
