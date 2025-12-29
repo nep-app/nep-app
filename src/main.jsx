@@ -9,7 +9,11 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.0.0'; // v4.0: Local-First com Dexie + E2E encryption
+const APP_VERSION = '4.0.1'; // v4.0.1: Fix cache + debug logs
+
+console.log('======================');
+console.log('🚀 NEP APP v' + APP_VERSION);
+console.log('======================');
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
@@ -41,8 +45,16 @@ const checkForUpdates = () => {
   return false;
 };
 
+// Limpar cache SEMPRE (temporário para debug)
+if ('caches' in window) {
+  caches.keys().then(names => {
+    names.forEach(name => caches.delete(name));
+  });
+}
+
 // Verificar updates antes de renderizar
 if (!checkForUpdates()) {
+  console.log('✅ Renderizando app...');
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <AuthProvider>
