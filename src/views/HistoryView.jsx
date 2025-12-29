@@ -346,8 +346,14 @@ export function HistoryView({
                                                                             <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.energy || '-'}/10</div>
                                                                         </div>
                                                                     </div>
-                                                                    {(w.exercise || w.food || w.social) && (
-                                                                        <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                                                                    {(w.sleep || w.exercise || w.food || w.social) && (
+                                                                        <div className="grid grid-cols-4 gap-2 text-sm mb-3">
+                                                                            <div className="text-center">
+                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Descanso</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                    {w.sleep ? `${w.sleep}h` : '-'}
+                                                                                </div>
+                                                                            </div>
                                                                             <div className="text-center">
                                                                                 <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Exercício</div>
                                                                                 <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>

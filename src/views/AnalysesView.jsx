@@ -4063,6 +4063,7 @@ export function AnalysesView({
                                                                     // Define a função aqui para ser usada em todas as seções abaixo
                                                                     window.renderCorrelationCard = (corr, isInverse = false) => {
                                                                         const getLabel = (r, name) => {
+                                                                            console.log('[DEBUG getLabel] Called with:', { name, r, isInverse });
                                                                             if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
 
                                                                             const isSleep = name.toLowerCase().includes('sono');
@@ -4095,14 +4096,22 @@ export function AnalysesView({
 
                                                                                 // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
+                                                                                    console.log('[DEBUG] Inside Humor/Energia block (isInverse)');
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
                                                                                     const isYesterday = metricName.toLowerCase().includes('ontem');
 
                                                                                     if (target.includes('Consumo')) {
+                                                                                        console.log('[DEBUG] Target is Consumo, r=', r);
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
-                                                                                        if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
-                                                                                        if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        if (r < -0.4) {
+                                                                                            console.log('[DEBUG] Returning Protetora GREEN');
+                                                                                            return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        }
+                                                                                        if (r < -0.2) {
+                                                                                            console.log('[DEBUG] Returning Ligeiramente Protetora GREEN');
+                                                                                            return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                                                                        }
                                                                                         if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
                                                                                         if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
