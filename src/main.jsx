@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.8'; // v4.2.8: Console override antes dos providers
+const APP_VERSION = '4.2.9'; // v4.2.9: Debug buttons to test log capture
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

@@ -254,6 +254,25 @@ export const DebugOverlay = ({
               <span>📝 Sync Logs</span>
               <div className="flex gap-2">
                 <button
+                  onClick={() => {
+                    console.log('[DataContext] 🧪 TESTE: Este é um log de teste para verificar captura');
+                    console.log('[Sync] 🧪 TESTE: Outro log de teste');
+                  }}
+                  className="text-xs bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded"
+                  title="Emite logs de teste para verificar se captura funciona"
+                >
+                  Test Logs
+                </button>
+                <button
+                  onClick={() => {
+                    alert('window.__debugLogs:\n' + JSON.stringify(window.__debugLogs || [], null, 2));
+                  }}
+                  className="text-xs bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-1 rounded"
+                  title="Mostra conteúdo bruto de window.__debugLogs"
+                >
+                  Raw Logs
+                </button>
+                <button
                   onClick={async () => {
                     try {
                       setSyncLogs(prev => [...prev, {
