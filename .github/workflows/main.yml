@@ -1,7 +1,7 @@
 name: Forçar Deploy Vite
 on:
   push:
-    branches: ["claude/aaa-mais-um-nep-app-01RMS932qZgZuuSugyiYbCwg"]
+    branches: ["claude/**"]  # Aceita todos os branches claude/*
   workflow_dispatch:
 
 permissions:
