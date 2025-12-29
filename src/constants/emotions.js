@@ -15,16 +15,16 @@ export const EMOTION_CATEGORIES = {
     '😊 Feliz', '😌 Calmo/a', '💪 Motivado/a', '🙏 Grato/a',
     '🌟 Produtiva/o', '💯 Confiante', '🥰 Amado/a', '🎉 Entusiasmado/a',
     '🌱 Orgulhoso/a', '😊 Divertido/a', '✨ Resiliente', '🌈 Otimista',
-    '🤝 Apoiado/a', '🧘 Em paz'
+    '🤝 Apoiado/a', '🧘 Em paz', '⚡ Okay'
   ],
   negative: [
     '😢 Triste', '😰 Ansioso/a', '😤 Irritado/a', '😫 Frustrado/a',
     '😓 Stressado/a', '😔 Inseguro/a', '🥺 Solitário/a', '😕 Confuso/a',
     '😖 Culpado/a', '😞 Apático/a', '😣 Arrependido/a', '🔌 Desconectado/a',
-    '🔥 Com craving', '😩 Overwhelmed'
+    '🔥 Com craving', '😩 Overwhelmed', '😴 Cansado/a', '🤗 Vulnerável'
   ],
   neutral: [
-    '😴 Cansado/a', '😐 Ambivalente', '🤗 Vulnerável', '⚡ Okay'
+    '😐 Ambivalente'
   ]
 };
 
