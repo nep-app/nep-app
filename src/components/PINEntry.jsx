@@ -14,16 +14,22 @@ import * as Icons from './Icons';
 export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }) => {
   const [digits, setDigits] = useState(['', '', '', '']);
 
-  // Create refs array using useRef with array - React best practice
-  const inputRefs = useRef([]);
+  // Create 4 individual refs - no array to avoid Rules of Hooks issues
+  const input0Ref = useRef(null);
+  const input1Ref = useRef(null);
+  const input2Ref = useRef(null);
+  const input3Ref = useRef(null);
 
-  // Use ref to store onComplete callback to avoid re-running effect when callback changes
-  const onCompleteRef = useRef(onComplete);
-
-  // Keep ref updated
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
+  // Helper function to get ref by index
+  const getInputRef = (index) => {
+    switch (index) {
+      case 0: return input0Ref;
+      case 1: return input1Ref;
+      case 2: return input2Ref;
+      case 3: return input3Ref;
+      default: return input0Ref;
+    }
+  };
 
   // Track if we've already called onComplete for current PIN
   const calledForPinRef = useRef(null);
@@ -34,15 +40,15 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
       setDigits(['', '', '', '']);
       calledForPinRef.current = null;
       setTimeout(() => {
-        inputRefs.current[0]?.focus();
+        input0Ref.current?.focus();
       }, 100);
     }
   }, [error]);
 
   useEffect(() => {
     // Focus no primeiro input quando componente monta
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
+    if (input0Ref.current) {
+      input0Ref.current.focus();
     }
   }, []);
 
@@ -54,10 +60,10 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
       // Only call if we haven't called for this PIN yet
       if (calledForPinRef.current !== pin) {
         calledForPinRef.current = pin;
-        onCompleteRef.current(pin);
+        onComplete(pin);
       }
     }
-  }, [digits]);
+  }, [digits, onComplete]);
 
   const handleChange = (index, value) => {
     // Apenas aceitar números
@@ -69,14 +75,14 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
 
     // Auto-focus no próximo input
     if (value && index < 3) {
-      inputRefs.current[index + 1]?.focus();
+      getInputRef(index + 1).current?.focus();
     }
   };
 
   const handleKeyDown = (index, e) => {
     // Backspace: limpa atual e volta para anterior
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+      getInputRef(index - 1).current?.focus();
     }
   };
 
@@ -87,13 +93,13 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
 
     if (nums.length === 4) {
       setDigits(nums);
-      inputRefs.current[3]?.focus();
+      input3Ref.current?.focus();
     }
   };
 
   const clearPIN = () => {
     setDigits(['', '', '', '']);
-    inputRefs.current[0]?.focus();
+    input0Ref.current?.focus();
   };
 
   return (
@@ -113,7 +119,7 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
           {digits.map((digit, index) => (
             <input
               key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
+              ref={getInputRef(index)}
               type="text"
               inputMode="numeric"
               maxLength={1}
