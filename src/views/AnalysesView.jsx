@@ -4095,21 +4095,14 @@ export function AnalysesView({
 
                                                                                 // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
                                                                                 if (name.includes('Humor →') || name.includes('Energia →')) {
-                                                                                    console.log('[DEBUG isInverse] Matching Humor/Energia →:', { name, r, isInverse });
                                                                                     const target = name.split(' →')[1].trim();
                                                                                     const metricName = name.split(' →')[0].trim();
                                                                                     const isYesterday = metricName.toLowerCase().includes('ontem');
 
                                                                                     if (target.includes('Consumo')) {
                                                                                         const suffix = isYesterday ? ' no dia seguinte' : '';
-                                                                                        if (r < -0.4) {
-                                                                                            console.log('[DEBUG] Returning Protetora GREEN for r=', r);
-                                                                                            return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
-                                                                                        }
-                                                                                        if (r < -0.2) {
-                                                                                            console.log('[DEBUG] Returning Ligeiramente Protetora GREEN for r=', r);
-                                                                                            return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
-                                                                                        }
+                                                                                        if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                                                                        if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
                                                                                         if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
                                                                                         if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
                                                                                         return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
@@ -4231,12 +4224,22 @@ export function AnalysesView({
 
                                                                             // Intervalo médio → Total/Dosagem
                                                                             if (name.includes('Intervalo') && (name.includes('→ Total') || name.includes('→ Dosagem'))) {
-                                                                                const target = name.includes('Total') ? 'total de consumos' : 'dosagem';
-                                                                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: `Intervalos maiores → Menos ${target}` };
-                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: `Intervalos maiores → Ligeiramente menos ${target}` };
-                                                                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: `Intervalos maiores → Mais ${target}` };
-                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: `Intervalos maiores → Ligeiramente mais ${target}` };
-                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `Intervalo não afeta ${target}` };
+                                                                                const isDosage = name.includes('→ Dosagem');
+                                                                                if (isDosage) {
+                                                                                    // Dosagem em MG - pode subir mesmo com menos consumos se cada um tiver mais mg
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Intervalos maiores → Menos dosagem total (mg/dia)' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Intervalos maiores → Ligeiramente menos mg/dia' };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Intervalos maiores → Mais mg/dia (doses individuais maiores?)' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Espaçar mais pode significar doses maiores por consumo' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Intervalo não afeta dosagem total' };
+                                                                                } else {
+                                                                                    // Total de consumos
+                                                                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Intervalos maiores → Menos consumos/dia' };
+                                                                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Intervalos maiores → Ligeiramente menos consumos/dia' };
+                                                                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Intervalos maiores → Mais consumos/dia' };
+                                                                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Intervalos maiores → Ligeiramente mais consumos/dia' };
+                                                                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Intervalo não afeta total de consumos' };
+                                                                                }
                                                                             }
 
                                                                             // Dosagem → Bem-estar/Humor/Energia
@@ -4287,7 +4290,8 @@ export function AnalysesView({
                                                                             }
 
                                                                             // Autocorrelação de Consumo (Consumo Ontem → Hoje) - positivo é MAU
-                                                                            if (name.toLowerCase().includes('consumo') && name.toLowerCase().includes('ontem') && name.toLowerCase().includes('hoje')) {
+                                                                            // IMPORTANTE: só fazer match se COMEÇA com "Consumo", não se contém "Consumo" no final
+                                                                            if (name.toLowerCase().startsWith('consumo') && name.toLowerCase().includes('ontem') && name.toLowerCase().includes('hoje')) {
                                                                                 if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Alto consumo ontem → Alto consumo hoje (padrão de repetição)' };
                                                                                 if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Consumo ontem tende a repetir-se hoje' };
                                                                                 if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Alto consumo ontem → Baixo consumo hoje (quebra de padrão!)' };
