@@ -9,11 +9,51 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.7'; // v4.2.7: Sync logs sempre visíveis + botão reload
+const APP_VERSION = '4.2.8'; // v4.2.8: Console override antes dos providers
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);
 console.log('======================');
+
+// Global log capture for debugging - must run BEFORE providers
+window.__debugLogs = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+const captureLog = (level, ...args) => {
+  const message = args.map(arg =>
+    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  ).join(' ');
+
+  // Capture DataContext and Sync logs globally
+  if (message.includes('[DataContext]') || message.includes('[Sync]')) {
+    window.__debugLogs.push({
+      level,
+      message,
+      time: new Date().toLocaleTimeString('pt-PT')
+    });
+    // Keep only last 50 logs
+    if (window.__debugLogs.length > 50) {
+      window.__debugLogs = window.__debugLogs.slice(-50);
+    }
+  }
+};
+
+console.log = (...args) => {
+  originalLog(...args);
+  captureLog('log', ...args);
+};
+
+console.error = (...args) => {
+  originalError(...args);
+  captureLog('error', ...args);
+};
+
+console.warn = (...args) => {
+  originalWarn(...args);
+  captureLog('warn', ...args);
+};
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {

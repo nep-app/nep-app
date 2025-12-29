@@ -25,46 +25,21 @@ export const DebugOverlay = ({
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [syncLogs, setSyncLogs] = useState([]);
 
-  // Capture console logs for sync debugging
+  // Read from global window.__debugLogs (set up in main.jsx BEFORE providers)
   useEffect(() => {
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
+    // Initial load
+    if (window.__debugLogs && window.__debugLogs.length > 0) {
+      setSyncLogs([...window.__debugLogs]);
+    }
 
-    const captureLog = (level, ...args) => {
-      const message = args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-
-      // Only capture DataContext and Sync related logs
-      if (message.includes('[DataContext]') || message.includes('[Sync]')) {
-        setSyncLogs(prev => {
-          const newLogs = [...prev, { level, message, time: new Date().toLocaleTimeString('pt-PT') }];
-          return newLogs.slice(-20); // Keep last 20 logs
-        });
+    // Poll every 500ms for new logs
+    const interval = setInterval(() => {
+      if (window.__debugLogs && window.__debugLogs.length > 0) {
+        setSyncLogs([...window.__debugLogs]);
       }
-    };
+    }, 500);
 
-    console.log = (...args) => {
-      originalLog(...args);
-      captureLog('log', ...args);
-    };
-
-    console.error = (...args) => {
-      originalError(...args);
-      captureLog('error', ...args);
-    };
-
-    console.warn = (...args) => {
-      originalWarn(...args);
-      captureLog('warn', ...args);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch data counts from IndexedDB when authenticated
