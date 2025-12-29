@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PINEntry } from './PINEntry';
 import { useAuth } from '../contexts/AuthContext';
 import * as Icons from './Icons';
