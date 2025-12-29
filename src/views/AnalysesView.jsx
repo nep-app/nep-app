@@ -154,6 +154,12 @@ export function AnalysesView({
                                                                 return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
                                                             }
                 
+                                                            // ===== DYNAMIC THRESHOLDS BASED ON USER GOALS =====
+                                                            // Buscar meta de redução de frequência para thresholds personalizados
+                                                            const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
+                                                            // Threshold para "dia difícil": meta + 2 (ou 10 se não houver meta)
+                                                            const difficultThreshold = frequencyGoal ? frequencyGoal.target + 2 : 10;
+
                                                             // Calculate all metrics for narrative
                                                             const totalConsumptions = analysisConsumptions.length;
                                                             const byDate = {};
@@ -519,11 +525,11 @@ export function AnalysesView({
                                                                                 // Ordenar por data
                                                                                 const sortedDates = Object.keys(consumptionsByDate).sort();
 
-                                                                                // Detectar cascatas: dia difícil (≥10) seguido de mais dias difíceis
+                                                                                // Detectar cascatas: dia difícil (≥threshold) seguido de mais dias difíceis
                                                                                 let cascadeEvents = 0, longestCascade = 0, currentCascade = 0;
 
                                                                                 sortedDates.forEach((date, idx) => {
-                                                                                    if (consumptionsByDate[date] >= 10) {
+                                                                                    if (consumptionsByDate[date] >= difficultThreshold) {
                                                                                         currentCascade++;
                                                                                         if (currentCascade > longestCascade) longestCascade = currentCascade;
                                                                                         if (currentCascade === 2) cascadeEvents++; // Conta quando começa cascata (2º dia)
@@ -568,35 +574,46 @@ export function AnalysesView({
                                                                                 // Ordenar por data
                                                                                 const sortedDates = Object.keys(consumptionsByDate).sort();
 
-                                                                                // Detectar recuperações: dias após dia difícil (≥10)
+                                                                                // Detectar recuperações: dias após dia difícil (≥threshold)
                                                                                 const recoveryTimes = [];
+                                                                                let stillRecoveringDays = 0; // Contador de dias difíceis ainda sem recuperação
                                                                                 sortedDates.forEach((date, idx) => {
-                                                                                    if (consumptionsByDate[date] >= 10 && idx < sortedDates.length - 1) {
+                                                                                    if (consumptionsByDate[date] >= difficultThreshold && idx < sortedDates.length - 1) {
                                                                                         // Procurar quando volta à média
+                                                                                        let recovered = false;
                                                                                         for (let j = idx + 1; j < sortedDates.length; j++) {
                                                                                             if (consumptionsByDate[sortedDates[j]] <= avgDaily) {
                                                                                                 recoveryTimes.push(j - idx);
+                                                                                                recovered = true;
                                                                                                 break;
                                                                                             }
                                                                                             // Limite de 7 dias
                                                                                             if (j - idx >= 7) break;
                                                                                         }
+                                                                                        // Se não recuperou nos últimos 7 dias ou ainda está a decorrer
+                                                                                        if (!recovered) stillRecoveringDays++;
                                                                                     }
                                                                                 });
 
-                                                                                if (recoveryTimes.length === 0) return null;
+                                                                                if (recoveryTimes.length === 0 && stillRecoveringDays === 0) return null;
 
-                                                                                const avgRecovery = (recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length).toFixed(1);
+                                                                                const avgRecovery = recoveryTimes.length > 0 ? (recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length).toFixed(1) : null;
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔄 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Perfil de Recuperação:</strong> Em média, levas <strong>{avgRecovery} {parseFloat(avgRecovery) === 1 ? 'dia' : 'dias'}</strong> para voltar ao normal após um dia difícil.
-                                                                                        {parseFloat(avgRecovery) <= 1.5 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
-                                                                                        ) : parseFloat(avgRecovery) <= 3 ? (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
-                                                                                        ) : (
-                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
+                                                                                        🔄 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Perfil de Recuperação:</strong>
+                                                                                        {avgRecovery ? (
+                                                                                            <> Em média, levas <strong>{avgRecovery} {parseFloat(avgRecovery) === 1 ? 'dia' : 'dias'}</strong> para voltar ao normal após um dia difícil.
+                                                                                            {parseFloat(avgRecovery) <= 1.5 ? (
+                                                                                                <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
+                                                                                            ) : parseFloat(avgRecovery) <= 3 ? (
+                                                                                                <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
+                                                                                            ) : (
+                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
+                                                                                            )}</>
+                                                                                        ) : null}
+                                                                                        {stillRecoveringDays > 0 && (
+                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⏳ <strong>{stillRecoveringDays} {stillRecoveringDays === 1 ? 'dia difícil ainda em recuperação' : 'dias difíceis ainda em recuperação'}</strong> (não voltaram à média nos últimos dias).</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -624,9 +641,21 @@ export function AnalysesView({
                                                                                 const top1 = topDays[0];
                                                                                 const diffFromAvg = (top1.count - avgDaily).toFixed(0);
 
+                                                                                // Buscar emoções/wellbeing do dia top 1 outlier
+                                                                                const top1Wellbeing = analysisWellbeing.find(w => (w.date || safeToISODate(w.timestamp)) === top1.date);
+                                                                                const top1Emotions = top1Wellbeing?.emotions || [];
+                                                                                const top1Mood = top1Wellbeing?.mood ? parseInt(top1Wellbeing.mood) : null;
+
+                                                                                // Buscar reflexões/notes desse dia
+                                                                                const top1Reflection = analysisReflections.find(r => (r.date || safeToISODate(r.timestamp)) === top1.date);
+                                                                                const top1Note = top1Reflection?.answer || null;
+
                                                                                 return (
                                                                                     <p>
                                                                                         📍 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Outliers:</strong> {new Date(top1.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })} teve <strong>{top1.count} consumos</strong> — {diffFromAvg} acima da tua média de {avgDaily.toFixed(1)}. É {topDays.length === 1 ? 'o teu dia mais alto' : `um dos teus ${topDays.length} dias mais altos`}.
+                                                                                        {top1Emotions.length > 0 && (
+                                                                                            <> Emoções registadas: <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> (humor: {top1Mood}/10)</>}.</>
+                                                                                        )}
                                                                                         {topDays.length > 1 && (
                                                                                             <> Outros picos: {topDays.slice(1).map((d, i) => (
                                                                                                 <span key={d.date}>
@@ -635,7 +664,7 @@ export function AnalysesView({
                                                                                                 </span>
                                                                                             ))}.</>
                                                                                         )}
-                                                                                        <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Outliers não são falhas — são dados. Que gap de necessidades foi preenchido nesses dias?</span></>
+                                                                                        <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Outliers não são falhas — são dados. {top1Emotions.length > 0 ? `Repara no padrão emocional: ${top1Emotions[0]}.` : 'Que gap de necessidades foi preenchido nesses dias?'}</span></>
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -665,19 +694,25 @@ export function AnalysesView({
                                                                                     }
                                                                                 });
 
-                                                                                // Definir clusters manualmente
+                                                                                // Calcular percentis dos TEUS dados (não fixos!)
+                                                                                const consumoCounts = Object.values(dailyData).map(d => d.consumos).sort((a, b) => a - b);
+                                                                                const p25 = consumoCounts[Math.floor(consumoCounts.length * 0.25)]; // Bottom 25%
+                                                                                const p50 = consumoCounts[Math.floor(consumoCounts.length * 0.50)]; // Mediana
+                                                                                const p75 = consumoCounts[Math.floor(consumoCounts.length * 0.75)]; // Top 25%
+
+                                                                                // Definir clusters baseados nos TEUS padrões
                                                                                 const clusters = {
-                                                                                    altaPressao: [], // ≥10 consumos + <6h sono + humor ≥5
-                                                                                    paradoxo: [],    // ≤7 consumos + ≥7h sono + humor <5
-                                                                                    equilibrio: []   // consumo médio + humor ≥6
+                                                                                    altaPressao: [], // Top 25% consumo + <6h sono + humor ≥5
+                                                                                    paradoxo: [],    // Bottom 25% consumo + ≥7h sono + humor <5
+                                                                                    equilibrio: []   // Consumo na mediana + humor ≥6
                                                                                 };
 
                                                                                 Object.entries(dailyData).forEach(([date, d]) => {
-                                                                                    if (d.consumos >= 10 && d.sono !== null && d.sono < 6 && d.humor !== null && d.humor >= 5) {
+                                                                                    if (d.consumos >= p75 && d.sono !== null && d.sono < 6 && d.humor !== null && d.humor >= 5) {
                                                                                         clusters.altaPressao.push(date);
-                                                                                    } else if (d.consumos <= 7 && d.sono !== null && d.sono >= 7 && d.humor !== null && d.humor < 5) {
+                                                                                    } else if (d.consumos <= p25 && d.sono !== null && d.sono >= 7 && d.humor !== null && d.humor < 5) {
                                                                                         clusters.paradoxo.push(date);
-                                                                                    } else if (d.consumos >= 7 && d.consumos < 10 && d.humor !== null && d.humor >= 6) {
+                                                                                    } else if (d.consumos >= p50 * 0.8 && d.consumos <= p50 * 1.2 && d.humor !== null && d.humor >= 6) {
                                                                                         clusters.equilibrio.push(date);
                                                                                     }
                                                                                 });
@@ -888,8 +923,8 @@ export function AnalysesView({
                                                                                 });
 
                                                                                 // Calcular intervalos por tipo de dia
-                                                                                const intervalsHigh = []; // Dias ≥10 consumos
-                                                                                const intervalsNormal = []; // Dias <10 consumos
+                                                                                const intervalsHigh = []; // Dias difíceis (≥threshold)
+                                                                                const intervalsNormal = []; // Dias normais (<threshold)
 
                                                                                 Object.entries(consumptionsByDate).forEach(([date, consumptions]) => {
                                                                                     if (consumptions.length < 2) return;
@@ -900,7 +935,7 @@ export function AnalysesView({
                                                                                     // Calcular intervalos
                                                                                     for (let i = 1; i < sorted.length; i++) {
                                                                                         const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                                                        if (consumptions.length >= 10) {
+                                                                                        if (consumptions.length >= difficultThreshold) {
                                                                                             intervalsHigh.push(diff);
                                                                                         } else {
                                                                                             intervalsNormal.push(diff);
@@ -917,7 +952,7 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        ⏱️ <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Micro-Tempo:</strong> Em dias difíceis (≥10 consumos), o intervalo médio cai para <strong>{avgHigh.toFixed(1)}h</strong> (vs {avgNormal.toFixed(1)}h em dias normais).
+                                                                                        ⏱️ <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Micro-Tempo:</strong> Em dias difíceis (≥{difficultThreshold} consumos), o intervalo médio cai para <strong>{avgHigh.toFixed(1)}h</strong> (vs {avgNormal.toFixed(1)}h em dias normais).
                                                                                         {avgHigh < 2 ? (
                                                                                             <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Indica padrão de redosing compulsivo quando frequência é alta. Tática: pré-dosagem/espaçamento forçado nesses dias.</span></>
                                                                                         ) : (
@@ -958,7 +993,7 @@ export function AnalysesView({
                                                                                     }
                                                                                 }
 
-                                                                                // 2. Dias com alta frequência (≥10) vs triggers específicos
+                                                                                // 2. Dias com alta frequência (≥threshold) vs triggers específicos
                                                                                 const consumptionsByDate = {};
                                                                                 analysisConsumptions.forEach(c => {
                                                                                     if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
@@ -966,7 +1001,7 @@ export function AnalysesView({
                                                                                 });
 
                                                                                 const highFreqDates = Object.entries(consumptionsByDate)
-                                                                                    .filter(([_, count]) => count >= 10)
+                                                                                    .filter(([_, count]) => count >= difficultThreshold)
                                                                                     .map(([date, _]) => date);
 
                                                                                 if (highFreqDates.length >= 3 && analysisWellbeing.length >= 5) {
@@ -1002,7 +1037,7 @@ export function AnalysesView({
                                                                                         if (percent >= 50) {
                                                                                             return (
                                                                                                 <p>
-                                                                                                    🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥10 consumos), registaste emoção <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topEmotion[0]}</strong>.
+                                                                                                    🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥{difficultThreshold} consumos), registaste emoção <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topEmotion[0]}</strong>.
                                                                                                     <> Este é o teu trigger primário validado — não é especulação. Desenvolver estratégias para esta emoção específica tem ROI alto.</>
                                                                                                 </p>
                                                                                             );
@@ -1046,16 +1081,16 @@ export function AnalysesView({
 
                                                                                 if (Object.keys(typeCounts).length === 0 || moodValues.length < 5) return null;
 
-                                                                                // Calcular desvio-padrão de humor (oscilação vertical)
+                                                                                // Calcular oscilação de humor (intensidade)
                                                                                 const avgMood = moodValues.reduce((a, b) => a + b, 0) / moodValues.length;
                                                                                 const variance = moodValues.reduce((sum, val) => sum + Math.pow(val - avgMood, 2), 0) / moodValues.length;
                                                                                 const stdDev = Math.sqrt(variance).toFixed(1);
 
-                                                                                // Diversidade de tipos (variação horizontal)
+                                                                                // Diversidade emocional (quantos tipos diferentes)
                                                                                 const numTypes = Object.keys(typeCounts).length;
 
-                                                                                const verticalOscillation = parseFloat(stdDev) > 2.5 ? 'alta' : parseFloat(stdDev) > 1.5 ? 'moderada' : 'baixa';
-                                                                                const horizontalVariation = numTypes >= 4 ? 'alta' : numTypes >= 2 ? 'moderada' : 'baixa';
+                                                                                const oscillationLevel = parseFloat(stdDev) > 2.5 ? 'alta' : parseFloat(stdDev) > 1.5 ? 'moderada' : 'baixa';
+                                                                                const emotionalDiversity = numTypes >= 4 ? 'alta' : numTypes >= 2 ? 'moderada' : 'baixa';
 
                                                                                 // Tipo emocional dominante
                                                                                 const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
@@ -1063,7 +1098,7 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🧠 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Perfil Emocional:</strong> Registaste <strong>{numTypes} tipos de emoções</strong> diferentes. {dominantType && <>A mais frequente foi <strong>{dominantType[0]}</strong> (<strong>{dominantType[1]} vezes</strong>). </>}O teu humor varia de forma <strong className={(verticalOscillation === 'alta' ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-blue-400' : 'text-blue-600'))}>{verticalOscillation === 'alta' ? 'intensa' : 'moderada'}</strong> — {verticalOscillation === 'alta' ? 'há oscilações notáveis' : 'sem grandes extremos'}.
+                                                                                        🧠 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Perfil Emocional:</strong> <strong>Diversidade emocional {emotionalDiversity}</strong> — registaste <strong>{numTypes} tipos de emoções</strong> diferentes. {dominantType && <>A mais frequente foi <strong>{dominantType[0]}</strong> (<strong>{dominantType[1]} vezes</strong>). </>}<strong>Oscilação de humor {oscillationLevel}</strong> — {oscillationLevel === 'alta' ? 'há variações notáveis de intensidade' : oscillationLevel === 'moderada' ? 'oscilações moderadas' : 'sem grandes extremos'}.
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -1184,10 +1219,9 @@ export function AnalysesView({
 
                                                                                 const dailyCounts = Object.values(consumptionsByDate);
 
-                                                                                // Buscar meta para thresholds dinâmicos
-                                                                                const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
+                                                                                // Usar threshold global já definido (baseado em meta)
                                                                                 const goodThreshold = frequencyGoal ? Math.max(1, frequencyGoal.target - 1) : 7;
-                                                                                const difficultThreshold = frequencyGoal ? frequencyGoal.target + 1 : 10;
+                                                                                // difficultThreshold já definido globalmente no início (linha ~161)
 
                                                                                 const goodDays = dailyCounts.filter(c => c <= goodThreshold).length;
                                                                                 const difficultDays = dailyCounts.filter(c => c >= difficultThreshold).length;
@@ -1203,7 +1237,7 @@ export function AnalysesView({
                                                                                 // Áreas para optimizar
                                                                                 const optimizationAreas = [];
 
-                                                                                if (difficultDays > 0) optimizationAreas.push('frequência (reduzir dias ≥10)');
+                                                                                if (difficultDays > 0) optimizationAreas.push(`frequência (reduzir dias ≥${difficultThreshold})`);
 
                                                                                 if (analysisCycles.length > 0) {
                                                                                     const avgSleep = analysisCycles
@@ -1253,7 +1287,7 @@ export function AnalysesView({
                                                                                         ) : hasEffort ? (
                                                                                             <> Os dados mostram controlo razoável — média de {avgPerDay} consumos/dia. Sistema estável mas há espaço para optimização.</>
                                                                                         ) : hasLimits ? (
-                                                                                            <> Os dados revelam pressão significativa — média de {avgPerDay} consumos/dia com {difficultDays} dias ≥10. Sistema sob stress.</>
+                                                                                            <> Os dados revelam pressão significativa — média de {avgPerDay} consumos/dia com {difficultDays} dias ≥{difficultThreshold}. Sistema sob stress.</>
                                                                                         ) : (
                                                                                             <> Dados em construção — ainda a mapear o teu padrão baseline.</>
                                                                                         )}
