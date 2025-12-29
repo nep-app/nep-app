@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getMetadata, setMetadata } from '../db/localDB';
 import {
   encrypt,
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }) => {
    * @param {string} email - Email do utilizador
    * @param {string} pin - PIN de 4-6 dígitos
    */
-  async function createAccount(email, pin) {
+  const createAccount = useCallback(async (email, pin) => {
     try {
       // Validações
       if (email && !email.includes('@')) {
@@ -131,14 +131,14 @@ export const AuthProvider = ({ children }) => {
       console.error('Error creating account:', error);
       return { success: false, error: error.message };
     }
-  }
+  }, []);
 
   /**
    * Login com PIN
    *
    * @param {string} pin - PIN do utilizador
    */
-  async function login(pin) {
+  const login = useCallback(async (pin) => {
     try {
       // Obter salt e dados de verificação
       const saltBase64 = await getMetadata('salt');
@@ -173,15 +173,15 @@ export const AuthProvider = ({ children }) => {
       console.error('Login error:', error);
       return { success: false, error: error.message };
     }
-  }
+  }, []);
 
   /**
    * Logout (limpa chave de encriptação da memória)
    */
-  function logout() {
+  const logout = useCallback(() => {
     setEncryptionKey(null);
     setIsAuthenticated(false);
-  }
+  }, []);
 
   /**
    * Alterar PIN
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }) => {
    * @param {string} currentPin - PIN atual
    * @param {string} newPin - Novo PIN
    */
-  async function changePin(currentPin, newPin) {
+  const changePin = useCallback(async (currentPin, newPin) => {
     try {
       // Verificar PIN atual
       const loginResult = await login(currentPin);
@@ -222,37 +222,37 @@ export const AuthProvider = ({ children }) => {
       console.error('Error changing PIN:', error);
       return { success: false, error: error.message };
     }
-  }
+  }, [login]);
 
   /**
    * Obter salt do utilizador (necessário para encriptação/desencriptação)
    */
-  async function getUserSalt() {
+  const getUserSalt = useCallback(async () => {
     const saltBase64 = await getMetadata('salt');
     if (!saltBase64) {
       throw new Error('Salt não encontrado - utilizador não inicializado');
     }
     return base64ToSalt(saltBase64);
-  }
+  }, []);
 
   /**
    * Resetar app (apagar tudo - CUIDADO!)
    */
-  async function resetApp() {
+  const resetApp = useCallback(async () => {
     const { clearAllData } = await import('../db/localDB');
     await clearAllData();
     setUserEmail(null);
     setEncryptionKey(null);
     setIsInitialized(false);
     setIsAuthenticated(false);
-  }
+  }, []);
 
   /**
    * Verifica se já existe conta (helper para AuthScreen)
    */
-  async function hasAccount() {
+  const hasAccount = useCallback(async () => {
     return isInitialized;
-  }
+  }, [isInitialized]);
 
   const value = {
     // Estado

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PINEntry } from './PINEntry';
 import { useAuth } from '../contexts/AuthContext';
 import * as Icons from './Icons';
@@ -33,7 +33,7 @@ export const AuthScreen = () => {
   }, [hasAccount]);
 
   // LOGIN: Tentar fazer login com PIN
-  const handleLogin = async (pin) => {
+  const handleLogin = useCallback(async (pin) => {
     setError('');
     const result = await login(pin);
 
@@ -41,27 +41,27 @@ export const AuthScreen = () => {
       setError(result.error || 'PIN incorreto. Tenta novamente.');
       // Reset PIN inputs (será feito via key change no PINEntry)
     }
-  };
+  }, [login]);
 
   // CRIAR CONTA: Fluxo de 3 passos
   const handleEmailSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!email || !email.includes('@')) {
       setError('Email inválido');
       return;
     }
-    
+
     setError('');
     setStep('pin');
   };
 
-  const handleFirstPIN = (pin) => {
+  const handleFirstPIN = useCallback((pin) => {
     setFirstPIN(pin);
     setStep('confirm');
-  };
+  }, []);
 
-  const handleConfirmPIN = async (pin) => {
+  const handleConfirmPIN = useCallback(async (pin) => {
     if (pin !== firstPIN) {
       setError('PINs não coincidem. Tenta novamente.');
       setStep('pin');
@@ -81,7 +81,7 @@ export const AuthScreen = () => {
       setFirstPIN('');
     }
     // Se success, o AuthContext já vai mudar isAuthenticated para true
-  };
+  }, [firstPIN, email, createAccount]);
 
   if (loading) {
     return (
