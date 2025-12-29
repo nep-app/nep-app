@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.1'; // v4.2.1: Fix Firebase import path
+const APP_VERSION = '4.2.2'; // v4.2.2: Fix sync - detecta UID mudou e força PULL
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

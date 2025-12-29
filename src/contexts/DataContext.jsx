@@ -113,9 +113,30 @@ export const DataProvider = ({ children }) => {
         // Inicializar sync service
         await syncService.init(db, user, pin, salt);
 
+        // Verificar se é um user diferente (UID mudou)
+        const { getMetadata, setMetadata } = await import('../db/localDB');
+        const lastUID = await getMetadata('lastFirebaseUID');
+        const currentUID = user.uid;
+
+        let shouldForcePull = false;
+
+        if (lastUID && lastUID !== currentUID) {
+          console.log('[DataContext] 🔄 UID mudou!', lastUID, '→', currentUID);
+          console.log('[DataContext] 🗑️ Limpando Dexie e forçando PULL...');
+          shouldForcePull = true;
+
+          // Guardar novo UID
+          await setMetadata('lastFirebaseUID', currentUID);
+        } else if (!lastUID) {
+          console.log('[DataContext] 🆕 Primeiro login, guardando UID:', currentUID);
+          await setMetadata('lastFirebaseUID', currentUID);
+        } else {
+          console.log('[DataContext] ✅ Mesmo UID, sync normal');
+        }
+
         // PULL inicial: Importar dados do Firebase (se necessário)
         setIsSyncing(true);
-        await syncService.pullFromFirebase();
+        await syncService.pullFromFirebase(shouldForcePull);
 
         // Recarregar dados locais após PULL
         await loadAllCollections();

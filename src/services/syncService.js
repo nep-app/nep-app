@@ -55,23 +55,31 @@ class SyncService {
    * PULL: Importar dados do Firebase para Dexie (primeira vez)
    *
    * Verifica se já existe dados locais. Se não, importa tudo do Firebase.
+   * Se o UID mudou, LIMPA Dexie e FAZ PULL (novo user logado).
    */
-  async pullFromFirebase() {
+  async pullFromFirebase(forcePull = false) {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
       console.warn('[Sync] Service não inicializado');
       return;
     }
 
     console.log('[Sync] 🔄 Iniciando PULL do Firebase...');
+    console.log('[Sync] 👤 Firebase UID:', this.firebaseUser.uid);
+    console.log('[Sync] 🔑 Force PULL:', forcePull);
 
     try {
       for (const collectionName of COLLECTIONS) {
-        // Verificar se já existe dados locais
-        const localItems = await getAllItems(collectionName);
+        // Se forcePull, pula a verificação local
+        if (!forcePull) {
+          // Verificar se já existe dados locais
+          const localItems = await getAllItems(collectionName);
 
-        if (localItems.length > 0) {
-          console.log(`[Sync] ${collectionName}: ${localItems.length} items locais já existem, pulando PULL`);
-          continue;
+          if (localItems.length > 0) {
+            console.log(`[Sync] ${collectionName}: ${localItems.length} items locais já existem, pulando PULL`);
+            continue;
+          }
+        } else {
+          console.log(`[Sync] ${collectionName}: FORCE PULL ativado, ignorando dados locais`);
         }
 
         // Buscar do Firebase

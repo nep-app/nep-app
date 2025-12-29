@@ -106,6 +106,9 @@ function HarmReductionTracker() {
                 return <FirebaseLoginScreen auth={firebaseAuth} />;
             }
 
+            // DEBUG: Show which Firebase user is logged in
+            console.log('[App] 🔥 Firebase user encontrado:', firebaseUser.email, 'UID:', firebaseUser.uid);
+
             // STEP 2: Firebase user exists → Check PIN
             console.log('[App] Firebase user OK. PIN authenticated:', pinAuthenticated, 'PIN account exists:', hasPinAccount);
 
