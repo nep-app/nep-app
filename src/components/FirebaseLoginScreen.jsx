@@ -30,11 +30,9 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
       if (isLogin) {
         // Login com email/password existente
         await signInWithEmailAndPassword(auth, email, password);
-        console.log('[FirebaseLogin] ✅ Login bem-sucedido!');
       } else {
         // Criar nova conta Firebase
         await createUserWithEmailAndPassword(auth, email, password);
-        console.log('[FirebaseLogin] ✅ Conta criada com sucesso!');
       }
       // Firebase auth state change vai disparar e App.jsx vai mostrar próximo ecrã (PIN)
     } catch (err) {

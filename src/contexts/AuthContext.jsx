@@ -50,7 +50,6 @@ export const AuthProvider = ({ children }) => {
       const salt = await getMetadata('salt');
       const pinVerification = await getMetadata('pinVerification');
 
-      console.log('[checkInitialization]', {
         email,
         hasSalt: !!salt,
         hasPinVerification: !!pinVerification,
@@ -150,13 +149,11 @@ export const AuthProvider = ({ children }) => {
    */
   const login = useCallback(async (pin) => {
     try {
-      console.log('[login] Tentando login com PIN...');
 
       // Obter salt e dados de verificação
       const saltBase64 = await getMetadata('salt');
       const verificationJSON = await getMetadata('pinVerification');
 
-      console.log('[login] Dados encontrados:', {
         hasSalt: !!saltBase64,
         hasVerification: !!verificationJSON
       });
@@ -168,7 +165,6 @@ export const AuthProvider = ({ children }) => {
       const salt = base64ToSalt(saltBase64);
       const verification = JSON.parse(verificationJSON);
 
-      console.log('[login] Verificando PIN...');
 
       // Verificar PIN
       const isValid = await verifyPassword(
@@ -178,7 +174,6 @@ export const AuthProvider = ({ children }) => {
         salt
       );
 
-      console.log('[login] PIN válido?', isValid);
 
       if (!isValid) {
         throw new Error('PIN incorreto');
@@ -189,7 +184,6 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
 
-      console.log('[login] ✅ Login bem-sucedido!');
 
       return { success: true };
     } catch (error) {
@@ -283,7 +277,6 @@ export const AuthProvider = ({ children }) => {
       // Conta só existe se tiver TODOS os dados necessários
       const accountExists = !!email && !!salt && !!pinVerification;
 
-      console.log('[hasAccount] Check:', { email, hasSalt: !!salt, hasPinVerification: !!pinVerification, result: accountExists });
 
       return accountExists;
     } catch (error) {

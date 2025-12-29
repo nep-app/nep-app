@@ -83,7 +83,6 @@ export const useLocalData = () => {
  * IMPORTANTE: Requer autenticação com PIN (usa encryptionKey do AuthContext)
  */
 export const LocalDataProvider = ({ children }) => {
-  console.log('[LocalDataContext] 🚀 Provider inicializando...');
   const { encryptionKey, getUserSalt } = useAuth();
 
   // Estado para cada coleção
@@ -101,7 +100,6 @@ export const LocalDataProvider = ({ children }) => {
    */
   const loadCollection = useCallback(async (collectionName) => {
     if (!encryptionKey) {
-      console.warn('[LocalData] encryptionKey não disponível, aguardando...');
       return [];
     }
 
@@ -131,14 +129,12 @@ export const LocalDataProvider = ({ children }) => {
    */
   const loadAllCollections = useCallback(async () => {
     if (!encryptionKey) {
-      console.log('[LocalData] Aguardando encryptionKey...');
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('[LocalData] Carregando dados locais...');
 
       const [
         consumptionsData,
@@ -166,7 +162,6 @@ export const LocalDataProvider = ({ children }) => {
       setGoals(goalsData);
       setThoughts(thoughtsData);
 
-      console.log('[LocalData] ✅ Dados carregados:', {
         consumptions: consumptionsData.length,
         dailyLogs: dailyLogsData.length,
         reflections: reflectionsData.length,
@@ -224,7 +219,6 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => [decrypted, ...prev]);
     }
 
-    console.log(`[LocalData] ✅ Item adicionado a ${collectionName}:`, item.id);
 
     return decrypted;
   }, [encryptionKey, getUserSalt]);
@@ -264,7 +258,6 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => prev.map(item => item.id === id ? decrypted : item));
     }
 
-    console.log(`[LocalData] ✅ Item atualizado em ${collectionName}:`, id);
 
     return decrypted;
   }, [encryptionKey, getUserSalt]);
@@ -296,7 +289,6 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => prev.filter(item => item.id !== id));
     }
 
-    console.log(`[LocalData] ✅ Item deletado de ${collectionName}:`, id);
   }, [encryptionKey]);
 
   /**
@@ -311,7 +303,6 @@ export const LocalDataProvider = ({ children }) => {
    */
   const markItemAsSynced = useCallback(async (collectionName, id) => {
     await markAsSynced(collectionName, id);
-    console.log(`[LocalData] Item marcado como synced: ${collectionName}/${id}`);
   }, []);
 
   const value = {

@@ -182,4 +182,3 @@ export const importAllData = async (data) => {
   if (data.metadata) await db.metadata.bulkPut(data.metadata);
 };
 
-console.log('[Dexie] NEP Database initialized');

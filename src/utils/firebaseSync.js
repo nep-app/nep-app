@@ -39,16 +39,12 @@ export async function forceFirebaseReconnect() {
   try {
     const db = getFirestore();
     
-    console.log('🔄 Desativando rede Firebase...');
     await disableNetwork(db);
     
-    console.log('⏳ Aguardando 2 segundos...');
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    console.log('🔄 Reativando rede Firebase...');
     await enableNetwork(db);
     
-    console.log('✅ Reconexão completa!');
     
     return {
       success: true,
@@ -72,9 +68,6 @@ export function checkPendingWrites() {
   // Firebase Persistence mantém um queue interno
   // Não há API pública para isso, mas podemos adicionar logging
   
-  console.log('🔍 Verificando escritas pendentes...');
-  console.log('⚠️ Firebase não expõe API para ver queue de sync');
-  console.log('💡 Solução: Forçar reconexão para tentar sincronizar');
   
   return {
     message: 'Use forceFirebaseReconnect() para tentar sincronizar',
@@ -88,20 +81,16 @@ export function checkPendingWrites() {
 export function monitorFirebaseConnection(onOnline, onOffline) {
   // Monitorar estado da rede do navegador
   window.addEventListener('online', () => {
-    console.log('🟢 Navegador: ONLINE');
     if (onOnline) onOnline();
   });
   
   window.addEventListener('offline', () => {
-    console.log('🔴 Navegador: OFFLINE');
     if (onOffline) onOffline();
   });
   
   // Estado inicial
   if (navigator.onLine) {
-    console.log('🟢 Estado inicial: ONLINE');
   } else {
-    console.log('🔴 Estado inicial: OFFLINE');
   }
   
   return () => {

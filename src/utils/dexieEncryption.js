@@ -151,4 +151,3 @@ export const decryptFromFirebase = async (encryptedData, iv, pin, salt) => {
   return JSON.parse(itemStr);
 };
 
-console.log('[Encryption] Dexie encryption utilities loaded');

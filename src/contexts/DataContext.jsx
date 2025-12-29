@@ -26,7 +26,6 @@ export const useData = () => {
  * - Mantém mesma interface que DataProvider antigo (compatibilidade)
  */
 export const DataProvider = ({ children }) => {
-  console.log('[DataContext] 🚀 Provider inicializando...');
   // Firebase init (ainda precisamos para sync)
   const { app, auth, db } = useMemo(() => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -73,7 +72,6 @@ export const DataProvider = ({ children }) => {
   // Firebase auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log('[DataContext] Firebase auth state:', currentUser?.uid || 'logged out');
       setUser(currentUser);
       setFirebaseLoading(false);
     });
@@ -88,25 +86,21 @@ export const DataProvider = ({ children }) => {
     const initSync = async () => {
       // Se não tem PIN, não faz nada
       if (!pin) {
-        console.log('[DataContext] Aguardando PIN...');
         return;
       }
 
       // Aguardar Firebase auth state
       if (firebaseLoading) {
-        console.log('[DataContext] Aguardando Firebase auth...');
         return;
       }
 
       // Se não tem Firebase user, tentar novamente (auto-login deve ter falhado)
       if (!user) {
-        console.log('[DataContext] ⚠️ Sem Firebase user após auto-login - funcionando OFFLINE');
         return;
       }
 
       // Se tem user + pin, inicializa sync
       try {
-        console.log('[DataContext] Inicializando SyncService...');
 
         const salt = await getUserSalt();
 
@@ -121,17 +115,13 @@ export const DataProvider = ({ children }) => {
         let shouldForcePull = false;
 
         if (lastUID && lastUID !== currentUID) {
-          console.log('[DataContext] 🔄 UID mudou!', lastUID, '→', currentUID);
-          console.log('[DataContext] 🗑️ Limpando Dexie e forçando PULL...');
           shouldForcePull = true;
 
           // Guardar novo UID
           await setMetadata('lastFirebaseUID', currentUID);
         } else if (!lastUID) {
-          console.log('[DataContext] 🆕 Primeiro login, guardando UID:', currentUID);
           await setMetadata('lastFirebaseUID', currentUID);
         } else {
-          console.log('[DataContext] ✅ Mesmo UID, sync normal');
         }
 
         // PULL inicial: Importar dados do Firebase (se necessário)
@@ -150,7 +140,6 @@ export const DataProvider = ({ children }) => {
         // Ativar auto-sync (a cada 5min)
         syncService.startAutoSync(5);
 
-        console.log('[DataContext] ✅ SyncService inicializado!');
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
         setIsSyncing(false);
@@ -237,12 +226,10 @@ export const DataProvider = ({ children }) => {
 
   const addCopingStrategy = useCallback(async (item) => {
     // Legacy - não usado
-    console.warn('[DataContext] addCopingStrategy não implementado');
   }, []);
 
   const deleteCopingStrategy = useCallback(async (id) => {
     // Legacy - não usado
-    console.warn('[DataContext] deleteCopingStrategy não implementado');
   }, []);
 
   const addThought = useCallback(async (item) => {
@@ -256,7 +243,6 @@ export const DataProvider = ({ children }) => {
    */
   const manualSync = useCallback(async () => {
     if (isSyncing) {
-      console.log('[DataContext] Já está sincronizando...');
       return;
     }
 
@@ -265,7 +251,6 @@ export const DataProvider = ({ children }) => {
       await syncService.sync();
       await loadAllCollections();
       setLastSyncTime(new Date());
-      console.log('[DataContext] ✅ Sync manual completo');
     } catch (error) {
       console.error('[DataContext] ❌ Erro no sync manual:', error);
       throw error;

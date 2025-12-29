@@ -58,7 +58,6 @@ class SyncService {
     this.pin = pin;
     this.salt = salt;
 
-    console.log('[Sync] Service initialized for user:', firebaseUser.uid);
   }
 
   /**
@@ -69,13 +68,9 @@ class SyncService {
    */
   async pullFromFirebase(forcePull = false) {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
-      console.warn('[Sync] Service não inicializado');
       return;
     }
 
-    console.log('[Sync] 🔄 Iniciando PULL do Firebase...');
-    console.log('[Sync] 👤 Firebase UID:', this.firebaseUser.uid);
-    console.log('[Sync] 🔑 Force PULL:', forcePull);
 
     try {
       for (const collectionName of COLLECTIONS) {
@@ -85,11 +80,9 @@ class SyncService {
           const localItems = await getAllItems(collectionName);
 
           if (localItems.length > 0) {
-            console.log(`[Sync] ${collectionName}: ${localItems.length} items locais já existem, pulando PULL`);
             continue;
           }
         } else {
-          console.log(`[Sync] ${collectionName}: FORCE PULL ativado, ignorando dados locais`);
         }
 
         // Buscar do Firebase
@@ -97,7 +90,6 @@ class SyncService {
         const firebaseCollection = collection(this.firebaseDB, firebasePath);
         const snapshot = await getDocs(firebaseCollection);
 
-        console.log(`[Sync] ${collectionName}: ${snapshot.size} items encontrados no Firebase`);
 
         // Importar para Dexie
         for (const docSnap of snapshot.docs) {
@@ -123,10 +115,8 @@ class SyncService {
           await dexieDB[collectionName].put(item);
         }
 
-        console.log(`[Sync] ✅ ${collectionName}: ${snapshot.size} items importados`);
       }
 
-      console.log('[Sync] ✅ PULL completo!');
     } catch (error) {
       console.error('[Sync] ❌ Erro no PULL:', error);
       throw error;
@@ -138,19 +128,16 @@ class SyncService {
    */
   async pushToFirebase() {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
-      console.warn('[Sync] Service não inicializado');
       return;
     }
 
     if (this.isSyncing) {
-      console.log('[Sync] Já está sincronizando, aguardando...');
       return;
     }
 
     this.isSyncing = true;
 
     try {
-      console.log('[Sync] 🔄 Iniciando PUSH para Firebase...');
 
       let totalPushed = 0;
 
@@ -165,7 +152,6 @@ class SyncService {
           continue;
         }
 
-        console.log(`[Sync] ${collectionName}: ${pendingItems.length} items pendentes`);
 
         for (const item of pendingItems) {
           try {
@@ -175,7 +161,6 @@ class SyncService {
               // Deletar no Firebase
               const docRef = doc(this.firebaseDB, firebasePath, item.id);
               await deleteDoc(docRef);
-              console.log(`[Sync] 🗑️ Item deletado no Firebase: ${item.id}`);
             } else {
               // Encriptar TUDO antes de enviar
               const { data, iv } = await encryptForFirebase(item, this.pin, this.salt);
@@ -190,7 +175,6 @@ class SyncService {
               // Salvar no Firebase
               const docRef = doc(this.firebaseDB, firebasePath, item.id);
               await setDoc(docRef, firebaseData);
-              console.log(`[Sync] ✅ Item enviado para Firebase: ${item.id}`);
             }
 
             // Marcar como sincronizado
@@ -202,7 +186,6 @@ class SyncService {
         }
       }
 
-      console.log(`[Sync] ✅ PUSH completo! ${totalPushed} items sincronizados`);
     } catch (error) {
       console.error('[Sync] ❌ Erro no PUSH:', error);
     } finally {
@@ -214,10 +197,8 @@ class SyncService {
    * Sync completo: PULL + PUSH
    */
   async sync() {
-    console.log('[Sync] 🔄 Iniciando sync completo...');
     await this.pullFromFirebase();
     await this.pushToFirebase();
-    console.log('[Sync] ✅ Sync completo!');
   }
 
   /**
@@ -227,7 +208,6 @@ class SyncService {
    * Implementar depois com resolução de conflitos adequada.
    */
   startRealtimeSync() {
-    console.log('[Sync] Realtime sync não implementado ainda');
     // TODO: Implementar listeners do Firebase
   }
 
@@ -237,7 +217,6 @@ class SyncService {
   stopRealtimeSync() {
     Object.values(this.listeners).forEach(unsubscribe => unsubscribe());
     this.listeners = {};
-    console.log('[Sync] Realtime listeners parados');
   }
 
   /**
@@ -249,11 +228,9 @@ class SyncService {
     }
 
     this.autoSyncInterval = setInterval(() => {
-      console.log('[Sync] Auto-sync triggered');
       this.pushToFirebase(); // Apenas PUSH automático
     }, intervalMinutes * 60 * 1000);
 
-    console.log(`[Sync] Auto-sync ativado (a cada ${intervalMinutes}min)`);
   }
 
   /**
@@ -263,7 +240,6 @@ class SyncService {
     if (this.autoSyncInterval) {
       clearInterval(this.autoSyncInterval);
       this.autoSyncInterval = null;
-      console.log('[Sync] Auto-sync desativado');
     }
   }
 
@@ -277,7 +253,6 @@ class SyncService {
     this.firebaseUser = null;
     this.pin = null;
     this.salt = null;
-    console.log('[Sync] Service destroyed');
   }
 }
 

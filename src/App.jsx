@@ -68,9 +68,7 @@ function HarmReductionTracker() {
 
             // 1. Listen to Firebase auth state
             useEffect(() => {
-                console.log('[App] 🔐 Verificando Firebase auth state...');
                 const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
-                    console.log('[App] Firebase user:', user ? user.email : 'nenhum');
                     setFirebaseUser(user);
                     setFirebaseLoading(false);
                 });
@@ -82,7 +80,6 @@ function HarmReductionTracker() {
                 const checkPinAccount = async () => {
                     if (firebaseUser && !firebaseLoading) {
                         const exists = await hasAccount();
-                        console.log('[App] 🔑 PIN account exists:', exists);
                         setHasPinAccount(exists);
                     }
                 };
@@ -105,12 +102,10 @@ function HarmReductionTracker() {
             }
             // STEP 1: NO Firebase user → Show Firebase login
             else if (!firebaseUser) {
-                console.log('[App] ➡️ Mostrando Firebase login (sem user)');
                 content = <FirebaseLoginScreen auth={firebaseAuth} />;
             }
             // STEP 2: Checking PIN account
             else if (hasPinAccount === null) {
-                console.log('[App] 🔥 Firebase user encontrado:', firebaseUser.email, 'UID:', firebaseUser.uid);
                 content = (
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
@@ -122,13 +117,10 @@ function HarmReductionTracker() {
             }
             // STEP 3: Firebase user exists but not PIN authenticated → Show PIN screen
             else if (!pinAuthenticated) {
-                console.log('[App] ➡️ Mostrando PIN screen (Firebase OK, PIN não autenticado)');
-                console.log('[App] Firebase user OK. PIN authenticated:', pinAuthenticated, 'PIN account exists:', hasPinAccount);
                 content = <AuthScreen />;
             }
             // STEP 4: Both Firebase AND PIN authenticated → Show app
             else {
-                console.log('[App] ✅ Firebase + PIN OK → Mostrando app');
                 content = <AuthenticatedApp />;
             }
 

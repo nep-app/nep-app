@@ -11,16 +11,11 @@ import './index.css'
 // App version - atualizar quando houver mudanças importantes
 const APP_VERSION = '4.3.2'; // v4.3.2: Remover debug overlay e log capture
 
-console.log('======================');
-console.log('🚀 NEP APP v' + APP_VERSION);
-console.log('======================');
-
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
   const storedVersion = localStorage.getItem('app_version');
 
   if (storedVersion && storedVersion !== APP_VERSION) {
-    console.log(`Update detected: ${storedVersion} → ${APP_VERSION}`);
 
     // Limpar cache
     if ('caches' in window) {
@@ -54,7 +49,6 @@ if ('caches' in window) {
 
 // Verificar updates antes de renderizar
 if (!checkForUpdates()) {
-  console.log('✅ Renderizando app...');
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <AuthProvider>

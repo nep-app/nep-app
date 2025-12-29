@@ -36,20 +36,16 @@ export const AuthScreen = () => {
   const isSubmittingRef = useRef(false);
 
   const handleLogin = useCallback(async (pin) => {
-    console.log('[AuthScreen] handleLogin called with PIN, isSubmitting:', isSubmittingRef.current);
 
     // Prevent concurrent submissions
     if (isSubmittingRef.current) {
-      console.log('[AuthScreen] Already submitting, ignoring');
       return;
     }
 
     isSubmittingRef.current = true;
     setError('');
 
-    console.log('[AuthScreen] Calling login()...');
     const result = await login(pin);
-    console.log('[AuthScreen] Login result:', result);
 
     if (!result.success) {
       setError(result.error || 'PIN incorreto. Tenta novamente.');
