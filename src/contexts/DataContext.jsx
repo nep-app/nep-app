@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, setDoc, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
-import { safeToISODate } from '../utils/helpers';
+import { useLocalData } from './LocalDataContext';
+import { useAuth } from './AuthContext';
+import { syncService } from '../services/syncService';
 
 const DataContext = createContext();
 
@@ -15,255 +17,233 @@ export const useData = () => {
   return context;
 };
 
-// Global flag to ensure persistence is only enabled once
-let persistenceEnabled = false;
-
+/**
+ * DataProvider V2 - Usa LocalData (Dexie) + Firebase Sync
+ *
+ * Estratégia:
+ * - Dados vêm do LocalDataContext (rápido, encriptado, offline)
+ * - SyncService sincroniza com Firebase em background
+ * - Mantém mesma interface que DataProvider antigo (compatibilidade)
+ */
 export const DataProvider = ({ children }) => {
-  // Initialize Firebase (only once)
+  // Firebase init (ainda precisamos para sync)
   const { app, auth, db } = useMemo(() => {
     const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    const dbInstance = getFirestore(firebaseApp);
-
-    // Enable offline persistence (only once, globally)
-    if (!persistenceEnabled) {
-      persistenceEnabled = true;
-      enableIndexedDbPersistence(dbInstance).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          // Multiple tabs open, persistence can only be enabled in one tab at a time
-        } else if (err.code === 'unimplemented') {
-          // Browser doesn't support persistence
-        }
-      });
-    }
-
     return {
       app: firebaseApp,
       auth: getAuth(firebaseApp),
-      db: dbInstance
+      db: getFirestore(firebaseApp)
     };
   }, []);
 
-  // User state
+  // Firebase user state
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [firebaseLoading, setFirebaseLoading] = useState(true);
 
-  // Data states
-  const [consumptions, setConsumptions] = useState([]);
-  const [dailyLogs, setDailyLogs] = useState([]);
-  const [reflections, setReflections] = useState([]);
-  const [wellbeingLogs, setWellbeingLogs] = useState([]);
-  const [cycles, setCycles] = useState([]);
-  const [goals, setGoals] = useState([]);
+  // Auth context (para PIN)
+  const { encryptionKey: pin, getUserSalt } = useAuth();
+
+  // LocalData context (dados locais encriptados)
+  const {
+    loading: localLoading,
+    consumptions,
+    dailyLogs,
+    reflections,
+    wellbeingLogs,
+    cycles,
+    goals,
+    thoughts,
+    addItem,
+    updateItem,
+    deleteItem,
+    loadAllCollections
+  } = useLocalData();
+
+  // Coping strategies (legacy - vazio por agora)
   const [copingStrategies, setCopingStrategies] = useState([]);
-  const [thoughts, setThoughts] = useState([]);
 
-  // Auth listener
+  // Loading combinado (Firebase auth + LocalData)
+  const loading = firebaseLoading || localLoading;
+
+  // Sync status
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+
+  // Firebase auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log('[DataContext] Firebase auth state:', currentUser?.uid || 'logged out');
       setUser(currentUser);
-      setLoading(false);
+      setFirebaseLoading(false);
     });
     return unsubscribe;
   }, [auth]);
 
-  // Firebase listeners for all collections
-  //
-  // NOTA FUTURA: Para escalabilidade com milhares de registos, considerar:
-  // 1. Paginação com query(collection, orderBy('timestamp', 'desc'), limit(100))
-  // 2. Lazy loading: carregar mais ao fazer scroll
-  // 3. Filtrar por data no servidor: where('timestamp', '>=', startDate)
-  // 4. Usar cursor-based pagination com startAfter() para "carregar mais"
-  //
-  // Exemplo:
-  // const q = query(
-  //   collection(db, `users/${user.uid}/consumptions`),
-  //   orderBy('timestamp', 'desc'),
-  //   limit(100)
-  // );
-  //
+  // Inicializar SyncService quando tudo estiver pronto
   useEffect(() => {
-    if (!user) {
-      setConsumptions([]);
-      setDailyLogs([]);
-      setReflections([]);
-      setWellbeingLogs([]);
-      setCycles([]);
-      setGoals([]);
-      setCopingStrategies([]);
-      setThoughts([]);
+    const initSync = async () => {
+      if (!user || !pin || !db) {
+        console.log('[DataContext] Aguardando user + PIN + db...');
+        return;
+      }
+
+      try {
+        console.log('[DataContext] Inicializando SyncService...');
+
+        const salt = await getUserSalt();
+
+        // Inicializar sync service
+        await syncService.init(db, user, pin, salt);
+
+        // PULL inicial: Importar dados do Firebase (se necessário)
+        setIsSyncing(true);
+        await syncService.pullFromFirebase();
+
+        // Recarregar dados locais após PULL
+        await loadAllCollections();
+
+        // PUSH: Enviar mudanças pendentes
+        await syncService.pushToFirebase();
+
+        setLastSyncTime(new Date());
+        setIsSyncing(false);
+
+        // Ativar auto-sync (a cada 5min)
+        syncService.startAutoSync(5);
+
+        console.log('[DataContext] ✅ SyncService inicializado!');
+      } catch (error) {
+        console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
+        setIsSyncing(false);
+      }
+    };
+
+    initSync();
+
+    // Cleanup
+    return () => {
+      if (syncService) {
+        syncService.stopAutoSync();
+      }
+    };
+  }, [user, pin, db, getUserSalt, loadAllCollections]);
+
+  /**
+   * CRUD Operations - Wrapper para LocalData com auto-sync
+   */
+
+  const addConsumption = useCallback(async (item) => {
+    const result = await addItem('consumptions', item);
+    // Trigger sync em background
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const deleteConsumption = useCallback(async (id) => {
+    await deleteItem('consumptions', id);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+  }, [deleteItem]);
+
+  const addDailyLog = useCallback(async (item) => {
+    const result = await addItem('dailyLogs', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const addReflection = useCallback(async (item) => {
+    const result = await addItem('reflections', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const addWellbeingLog = useCallback(async (item) => {
+    const result = await addItem('wellbeingLogs', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const addCycle = useCallback(async (item) => {
+    const result = await addItem('cycles', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const updateCycle = useCallback(async (id, updates) => {
+    const result = await updateItem('cycles', id, updates);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [updateItem]);
+
+  const deleteCycle = useCallback(async (id) => {
+    await deleteItem('cycles', id);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+  }, [deleteItem]);
+
+  const addGoal = useCallback(async (item) => {
+    const result = await addItem('goals', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  const updateGoal = useCallback(async (id, updates) => {
+    const result = await updateItem('goals', id, updates);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [updateItem]);
+
+  const deleteGoal = useCallback(async (id) => {
+    await deleteItem('goals', id);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+  }, [deleteItem]);
+
+  const addCopingStrategy = useCallback(async (item) => {
+    // Legacy - não usado
+    console.warn('[DataContext] addCopingStrategy não implementado');
+  }, []);
+
+  const deleteCopingStrategy = useCallback(async (id) => {
+    // Legacy - não usado
+    console.warn('[DataContext] deleteCopingStrategy não implementado');
+  }, []);
+
+  const addThought = useCallback(async (item) => {
+    const result = await addItem('thoughts', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
+  /**
+   * Função manual de sync (para botão nas settings)
+   */
+  const manualSync = useCallback(async () => {
+    if (isSyncing) {
+      console.log('[DataContext] Já está sincronizando...');
       return;
     }
 
-    const unsubscribers = [];
-
-    // Consumptions listener (estrutura original: users/{userId}/consumptions)
-    // OTIMIZAÇÃO: Removida ordenação - será feita apenas nas views quando necessário
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/consumptions`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setConsumptions(data);
-      })
-    );
-
-    // Daily logs listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/dailyLogs`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setDailyLogs(data);
-      })
-    );
-
-    // Reflections listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/reflections`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setReflections(data);
-      })
-    );
-
-    // Wellbeing logs listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/wellbeingLogs`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setWellbeingLogs(data);
-      })
-    );
-
-    // Cycles listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/cycles`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setCycles(data);
-      })
-    );
-
-    // Goals listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/goals`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setGoals(data);
-      })
-    );
-
-    // Coping strategies listener (se existir)
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/copingStrategies`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setCopingStrategies(data);
-      })
-    );
-
-    // Thoughts listener
-    unsubscribers.push(
-      onSnapshot(collection(db, `users/${user.uid}/thoughts`), (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-          const item = doc.data();
-          return { ...item, date: item.date || safeToISODate(item.timestamp) };
-        });
-        setThoughts(data);
-      })
-    );
-
-    return () => unsubscribers.forEach(unsub => unsub());
-  }, [user, db]);
-
-  // CRUD operations (estrutura original: users/{userId}/collection)
-  const addConsumption = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/consumptions`, data.id), data);
-  };
-
-  const deleteConsumption = async (id) => {
-    if (!user) return;
-    return await deleteDoc(doc(db, `users/${user.uid}/consumptions`, id));
-  };
-
-  const addDailyLog = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/dailyLogs`, data.id), data);
-  };
-
-  const addReflection = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/reflections`, data.id), data);
-  };
-
-  const addWellbeingLog = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/wellbeingLogs`, data.id), data);
-  };
-
-  const addCycle = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/cycles`, data.id), data);
-  };
-
-  const updateCycle = async (id, data) => {
-    if (!user) return;
-    return await updateDoc(doc(db, `users/${user.uid}/cycles`, id), data);
-  };
-
-  const deleteCycle = async (id) => {
-    if (!user) return;
-    return await deleteDoc(doc(db, `users/${user.uid}/cycles`, id));
-  };
-
-  const addGoal = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/goals`, data.id), data);
-  };
-
-  const updateGoal = async (id, data) => {
-    if (!user) return;
-    return await updateDoc(doc(db, `users/${user.uid}/goals`, id), data);
-  };
-
-  const deleteGoal = async (id) => {
-    if (!user) return;
-    return await deleteDoc(doc(db, `users/${user.uid}/goals`, id));
-  };
-
-  const addCopingStrategy = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/copingStrategies`, data.id), data);
-  };
-
-  const deleteCopingStrategy = async (id) => {
-    if (!user) return;
-    return await deleteDoc(doc(db, `users/${user.uid}/copingStrategies`, id));
-  };
-
-  const addThought = async (data) => {
-    if (!user) return;
-    return await setDoc(doc(db, `users/${user.uid}/thoughts`, data.id), data);
-  };
+    setIsSyncing(true);
+    try {
+      await syncService.sync();
+      await loadAllCollections();
+      setLastSyncTime(new Date());
+      console.log('[DataContext] ✅ Sync manual completo');
+    } catch (error) {
+      console.error('[DataContext] ❌ Erro no sync manual:', error);
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isSyncing, loadAllCollections]);
 
   const value = {
+    // Firebase (para compatibilidade)
+    app,
     auth,
     db,
     user,
     loading,
+
+    // Dados (do LocalData)
     consumptions,
     dailyLogs,
     reflections,
@@ -272,6 +252,8 @@ export const DataProvider = ({ children }) => {
     goals,
     copingStrategies,
     thoughts,
+
+    // CRUD operations
     addConsumption,
     deleteConsumption,
     addDailyLog,
@@ -286,6 +268,11 @@ export const DataProvider = ({ children }) => {
     addCopingStrategy,
     deleteCopingStrategy,
     addThought,
+
+    // Sync info
+    isSyncing,
+    lastSyncTime,
+    manualSync
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

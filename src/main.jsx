@@ -2,13 +2,14 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
+import { LocalDataProvider } from './contexts/LocalDataContext'
 import { DataProvider } from './contexts/DataContext'
 import { MetricsProvider } from './contexts/MetricsContext'
 import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '3.0.0'; // Incrementar quando houver updates
+const APP_VERSION = '4.0.0'; // v4.0: Local-First com Dexie + E2E encryption
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
@@ -45,13 +46,15 @@ if (!checkForUpdates()) {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <AuthProvider>
-        <DataProvider>
-          <MetricsProvider>
-            <UIProvider>
-              <App />
-            </UIProvider>
-          </MetricsProvider>
-        </DataProvider>
+        <LocalDataProvider>
+          <DataProvider>
+            <MetricsProvider>
+              <UIProvider>
+                <App />
+              </UIProvider>
+            </MetricsProvider>
+          </DataProvider>
+        </LocalDataProvider>
       </AuthProvider>
     </React.StrictMode>
   );

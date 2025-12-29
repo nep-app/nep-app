@@ -12,56 +12,52 @@ import { encrypt, decrypt } from './encryption';
  */
 
 /**
- * Campos que devem ser encriptados (dados sensíveis)
+ * Campos que NÃO devem ser encriptados (necessários para índices/queries)
+ * Todos os outros campos serão encriptados!
  */
-const SENSITIVE_FIELDS = {
-  consumptions: ['notes'],
-  dailyLogs: ['notes'],
-  reflections: ['answer', 'question'],
-  wellbeingLogs: ['notes', 'emotions'],
-  cycles: ['notes', 'triggers'],
-  goals: [],
-  thoughts: ['content']
-};
+const INDEX_FIELDS = ['id', 'date', 'timestamp', 'syncStatus', 'lastModified', 'deleted', 'createdAt', 'type'];
 
 /**
  * Encriptar um item antes de guardar no Dexie
+ *
+ * ESTRATÉGIA: Encriptar TUDO exceto campos de índice
  *
  * @param {string} collection - Nome da coleção (ex: 'consumptions')
  * @param {object} item - Item a encriptar
  * @param {string} pin - PIN do utilizador (usado para gerar chave)
  * @param {Uint8Array} salt - Salt único do utilizador
- * @returns {Promise<object>} Item com campos sensíveis encriptados
+ * @returns {Promise<object>} Item com todos os campos sensíveis encriptados
  */
 export const encryptItem = async (collection, item, pin, salt) => {
-  const fieldsToEncrypt = SENSITIVE_FIELDS[collection] || [];
+  const encrypted = {};
 
-  if (fieldsToEncrypt.length === 0) {
-    // Nada para encriptar nesta coleção
-    return item;
-  }
+  // Separar campos de índice vs campos a encriptar
+  const dataToEncrypt = {};
 
-  const encrypted = { ...item };
-
-  // Encriptar cada campo sensível
-  for (const field of fieldsToEncrypt) {
-    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
-      const value = item[field];
-
-      // Serializar para JSON se for objeto/array
-      const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
-
-      // Encriptar
-      const { data, iv } = await encrypt(valueStr, pin, salt);
-
-      // Guardar como objeto com data + iv
-      encrypted[field] = {
-        encrypted: true,
-        data,
-        iv
-      };
+  for (const [key, value] of Object.entries(item)) {
+    if (INDEX_FIELDS.includes(key)) {
+      // Manter campos de índice não-encriptados
+      encrypted[key] = value;
+    } else {
+      // Guardar para encriptar
+      dataToEncrypt[key] = value;
     }
   }
+
+  // Se não há dados para encriptar, retornar apenas os índices
+  if (Object.keys(dataToEncrypt).length === 0) {
+    return encrypted;
+  }
+
+  // Encriptar TUDO de uma vez (serializado como JSON)
+  const dataStr = JSON.stringify(dataToEncrypt);
+  const { data, iv } = await encrypt(dataStr, pin, salt);
+
+  // Adicionar dados encriptados ao item
+  encrypted._encrypted = {
+    data,
+    iv
+  };
 
   return encrypted;
 };
@@ -73,41 +69,35 @@ export const encryptItem = async (collection, item, pin, salt) => {
  * @param {object} item - Item a desencriptar
  * @param {string} pin - PIN do utilizador
  * @param {Uint8Array} salt - Salt único do utilizador
- * @returns {Promise<object>} Item com campos sensíveis desencriptados
+ * @returns {Promise<object>} Item com todos os campos desencriptados
  */
 export const decryptItem = async (collection, item, pin, salt) => {
-  const fieldsToDecrypt = SENSITIVE_FIELDS[collection] || [];
-
-  if (fieldsToDecrypt.length === 0) {
+  // Se não tem dados encriptados, retornar como está
+  if (!item._encrypted || !item._encrypted.data || !item._encrypted.iv) {
     return item;
   }
 
-  const decrypted = { ...item };
+  try {
+    // Desencriptar dados
+    const decryptedStr = await decrypt(item._encrypted.data, item._encrypted.iv, pin, salt);
+    const decryptedData = JSON.parse(decryptedStr);
 
-  // Desencriptar cada campo sensível
-  for (const field of fieldsToDecrypt) {
-    const value = item[field];
+    // Combinar campos de índice + dados desencriptados
+    const result = { ...item };
+    delete result._encrypted; // Remover campo de encriptação
 
-    // Verificar se está encriptado
-    if (value && typeof value === 'object' && value.encrypted === true) {
-      try {
-        const decryptedStr = await decrypt(value.data, value.iv, pin, salt);
+    // Adicionar dados desencriptados
+    Object.assign(result, decryptedData);
 
-        // Se começar com { ou [, é JSON - fazer parse
-        if (decryptedStr.startsWith('{') || decryptedStr.startsWith('[')) {
-          decrypted[field] = JSON.parse(decryptedStr);
-        } else {
-          decrypted[field] = decryptedStr;
-        }
-      } catch (error) {
-        console.error(`[Encryption] Erro ao desencriptar ${collection}.${field}:`, error);
-        // Manter valor encriptado se falhar
-        decrypted[field] = '[Erro ao desencriptar]';
-      }
-    }
+    return result;
+  } catch (error) {
+    console.error(`[Encryption] Erro ao desencriptar item de ${collection}:`, error);
+    // Retornar apenas campos de índice se falhar
+    const result = { ...item };
+    delete result._encrypted;
+    result._decryptionError = true;
+    return result;
   }
-
-  return decrypted;
 };
 
 /**
@@ -127,10 +117,10 @@ export const decryptItems = async (collection, items, pin, salt) => {
 };
 
 /**
- * Verificar se um campo está encriptado
+ * Verificar se um item está encriptado
  */
-export const isFieldEncrypted = (value) => {
-  return value && typeof value === 'object' && value.encrypted === true;
+export const isItemEncrypted = (item) => {
+  return item && item._encrypted && item._encrypted.data && item._encrypted.iv;
 };
 
 /**
