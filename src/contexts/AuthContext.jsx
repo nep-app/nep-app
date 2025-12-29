@@ -41,10 +41,25 @@ export const AuthProvider = ({ children }) => {
   const [lastActivity, setLastActivity] = useState(Date.now());
   const AUTO_LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutos
 
+  /**
+   * Verifica se a app já foi inicializada (conta criada)
+   */
+  const checkInitialization = useCallback(async () => {
+    try {
+      const email = await getMetadata('userEmail');
+      setUserEmail(email);
+      setIsInitialized(!!email);
+    } catch (error) {
+      console.error('Error checking initialization:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Verificar se já existe conta criada
   useEffect(() => {
     checkInitialization();
-  }, []);
+  }, [checkInitialization]);
 
   // Auto-lock após inatividade
   useEffect(() => {
@@ -74,21 +89,6 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener('touchstart', updateActivity);
     };
   }, []);
-
-  /**
-   * Verifica se a app já foi inicializada (conta criada)
-   */
-  async function checkInitialization() {
-    try {
-      const email = await getMetadata('userEmail');
-      setUserEmail(email);
-      setIsInitialized(!!email);
-    } catch (error) {
-      console.error('Error checking initialization:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   /**
    * Criar nova conta (primeiro uso)
