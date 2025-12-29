@@ -18,7 +18,6 @@ import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
-import { DebugOverlay } from './components/DebugOverlay';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -54,7 +53,7 @@ import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
             // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
-            const APP_VERSION = '4.3.1'; // v4.3.1: FIX #2 - LocalDataContext também usar localDB
+            const APP_VERSION = '4.3.2'; // v4.3.2: Remover debug overlay e log capture
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
@@ -133,20 +132,7 @@ function HarmReductionTracker() {
                 content = <AuthenticatedApp />;
             }
 
-            // Always show debug overlay on top
-            return (
-                <>
-                    {content}
-                    <DebugOverlay
-                        appVersion={APP_VERSION}
-                        firebaseUser={firebaseUser}
-                        pinAuthenticated={pinAuthenticated}
-                        hasPinAccount={hasPinAccount}
-                        syncStatus={null}
-                        dataCounts={null}
-                    />
-                </>
-            );
+            return content;
         }
 
 /**
