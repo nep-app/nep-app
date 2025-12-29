@@ -15,10 +15,22 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
   const [digits, setDigits] = useState(['', '', '', '']);
   const inputRefs = [useRef(), useRef(), useRef(), useRef()];
 
+  // Use ref to store onComplete callback to avoid re-running effect when callback changes
+  const onCompleteRef = useRef(onComplete);
+
+  // Keep ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  // Track if we've already called onComplete for current PIN
+  const calledForPinRef = useRef(null);
+
   // Reset digits when error occurs
   useEffect(() => {
     if (error) {
       setDigits(['', '', '', '']);
+      calledForPinRef.current = null;
       setTimeout(() => {
         inputRefs[0].current?.focus();
       }, 100);
@@ -36,9 +48,14 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
     // Quando todos os dígitos estão preenchidos, chama onComplete
     if (digits.every(d => d !== '')) {
       const pin = digits.join('');
-      onComplete(pin);
+
+      // Only call if we haven't called for this PIN yet
+      if (calledForPinRef.current !== pin) {
+        calledForPinRef.current = pin;
+        onCompleteRef.current(pin);
+      }
     }
-  }, [digits, onComplete]);
+  }, [digits]);
 
   const handleChange = (index, value) => {
     // Apenas aceitar números
