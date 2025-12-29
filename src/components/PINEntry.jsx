@@ -34,6 +34,7 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
   // Track if we've already called onComplete for current PIN
   const calledForPinRef = useRef(null);
   const onCompleteRef = useRef(onComplete);
+  const isProcessingRef = useRef(false);
 
   // Keep onComplete ref updated
   useEffect(() => {
@@ -43,8 +44,10 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
   // Reset digits when error occurs
   useEffect(() => {
     if (error) {
+      console.log('[PINEntry] Error received, resetting digits:', error);
       setDigits(['', '', '', '']);
       calledForPinRef.current = null;
+      isProcessingRef.current = false;
       setTimeout(() => {
         input0Ref.current?.focus();
       }, 100);
@@ -53,20 +56,48 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
 
   useEffect(() => {
     // Focus no primeiro input quando componente monta
+    console.log('[PINEntry] Component mounted, focusing first input');
     if (input0Ref.current) {
       input0Ref.current.focus();
     }
   }, []);
 
   useEffect(() => {
+    console.log('[PINEntry] digits changed:', digits, 'isProcessing:', isProcessingRef.current);
+
+    // Prevent running if already processing
+    if (isProcessingRef.current) {
+      console.log('[PINEntry] Already processing, skipping');
+      return;
+    }
+
     // Quando todos os dígitos estão preenchidos, chama onComplete
     if (digits.every(d => d !== '')) {
       const pin = digits.join('');
 
       // Only call if we haven't called for this PIN yet
       if (calledForPinRef.current !== pin) {
+        console.log('[PINEntry] Calling onComplete with PIN');
         calledForPinRef.current = pin;
-        onCompleteRef.current(pin);
+        isProcessingRef.current = true;
+
+        try {
+          const result = onCompleteRef.current(pin);
+          // If it's a promise, wait for it
+          if (result && typeof result.then === 'function') {
+            result.finally(() => {
+              console.log('[PINEntry] onComplete promise resolved');
+              isProcessingRef.current = false;
+            });
+          } else {
+            isProcessingRef.current = false;
+          }
+        } catch (error) {
+          console.error('[PINEntry] Error calling onComplete:', error);
+          isProcessingRef.current = false;
+        }
+      } else {
+        console.log('[PINEntry] PIN already called:', pin);
       }
     }
   }, [digits]); // NO onComplete here!

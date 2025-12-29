@@ -48,10 +48,34 @@ import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
-            // ===== 1. ALL HOOKS (must be at top level) =====
-            // PIN Authentication
+            // ===== 1. AUTHENTICATION CHECK FIRST (before any data hooks) =====
             const { isAuthenticated, loading: authLoading, isInitialized } = useAuth();
 
+            // ===== 2. EARLY RETURN if not authenticated (prevents data hooks from running) =====
+            if (authLoading) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+                        <div className="text-center">
+                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                            <p className="text-purple-300">Carregando...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!isAuthenticated) {
+                return <AuthScreen />;
+            }
+
+            // ===== 3. ONLY LOAD DATA HOOKS WHEN AUTHENTICATED =====
+            return <AuthenticatedApp />;
+        }
+
+/**
+ * AuthenticatedApp - Only renders when user is authenticated with PIN
+ * This prevents Firebase/data hooks from running before authentication
+ */
+function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
@@ -135,26 +159,6 @@ function HarmReductionTracker() {
             useEffect(() => {
                 document.body.classList.add('dark');
             }, []);
-
-            // Firebase initialization and listeners now handled by DataContext
-
-            // ===== 2. AUTHENTICATION CHECK =====
-            // Show loading screen while checking PIN auth
-            if (authLoading) {
-                return (
-                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
-                        <div className="text-center">
-                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-                            <p className="text-purple-300">Carregando...</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            // Show auth screen if not authenticated with PIN
-            if (!isAuthenticated) {
-                return <AuthScreen />;
-            }
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 

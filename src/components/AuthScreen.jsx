@@ -33,14 +33,29 @@ export const AuthScreen = () => {
   }, [hasAccount]);
 
   // LOGIN: Tentar fazer login com PIN
+  const isSubmittingRef = useRef(false);
+
   const handleLogin = useCallback(async (pin) => {
+    console.log('[AuthScreen] handleLogin called with PIN, isSubmitting:', isSubmittingRef.current);
+
+    // Prevent concurrent submissions
+    if (isSubmittingRef.current) {
+      console.log('[AuthScreen] Already submitting, ignoring');
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setError('');
+
+    console.log('[AuthScreen] Calling login()...');
     const result = await login(pin);
+    console.log('[AuthScreen] Login result:', result);
 
     if (!result.success) {
       setError(result.error || 'PIN incorreto. Tenta novamente.');
-      // Reset PIN inputs (será feito via key change no PINEntry)
     }
+
+    isSubmittingRef.current = false;
   }, [login]);
 
   // CRIAR CONTA: Fluxo de 3 passos
