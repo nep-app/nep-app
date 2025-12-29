@@ -33,6 +33,12 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
 
   // Track if we've already called onComplete for current PIN
   const calledForPinRef = useRef(null);
+  const onCompleteRef = useRef(onComplete);
+
+  // Keep onComplete ref updated
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // Reset digits when error occurs
   useEffect(() => {
@@ -60,10 +66,10 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
       // Only call if we haven't called for this PIN yet
       if (calledForPinRef.current !== pin) {
         calledForPinRef.current = pin;
-        onComplete(pin);
+        onCompleteRef.current(pin);
       }
     }
-  }, [digits, onComplete]);
+  }, [digits]); // NO onComplete here!
 
   const handleChange = (index, value) => {
     // Apenas aceitar números
