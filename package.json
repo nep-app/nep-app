@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dexie": "^4.2.1",
     "firebase": "^10.7.1",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
