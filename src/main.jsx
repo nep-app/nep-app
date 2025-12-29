@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.5'; // v4.2.5: Fix debug overlay - usar Dexie API corretamente
+const APP_VERSION = '4.2.6'; // v4.2.6: Debug overlay captura logs de sync em tempo real
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

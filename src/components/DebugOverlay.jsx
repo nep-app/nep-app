@@ -23,6 +23,49 @@ export const DebugOverlay = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [localDataCounts, setLocalDataCounts] = useState(null);
   const [loadingCounts, setLoadingCounts] = useState(false);
+  const [syncLogs, setSyncLogs] = useState([]);
+
+  // Capture console logs for sync debugging
+  useEffect(() => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    const captureLog = (level, ...args) => {
+      const message = args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+
+      // Only capture DataContext and Sync related logs
+      if (message.includes('[DataContext]') || message.includes('[Sync]')) {
+        setSyncLogs(prev => {
+          const newLogs = [...prev, { level, message, time: new Date().toLocaleTimeString('pt-PT') }];
+          return newLogs.slice(-20); // Keep last 20 logs
+        });
+      }
+    };
+
+    console.log = (...args) => {
+      originalLog(...args);
+      captureLog('log', ...args);
+    };
+
+    console.error = (...args) => {
+      originalError(...args);
+      captureLog('error', ...args);
+    };
+
+    console.warn = (...args) => {
+      originalWarn(...args);
+      captureLog('warn', ...args);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, []);
 
   // Fetch data counts from IndexedDB when authenticated
   useEffect(() => {
@@ -227,6 +270,35 @@ export const DebugOverlay = ({
                 <div className="text-gray-400 text-xs">Loading...</div>
               )}
               <div className="text-xs text-gray-500 mt-2">Updates every 3s</div>
+            </div>
+          )}
+
+          {/* Sync Logs */}
+          {syncLogs.length > 0 && (
+            <div className="bg-cyan-900/30 border border-cyan-500/30 rounded p-3">
+              <div className="font-bold text-cyan-300 mb-2 flex items-center justify-between">
+                <span>📝 Sync Logs</span>
+                <button
+                  onClick={() => setSyncLogs([])}
+                  className="text-xs text-cyan-400 hover:text-cyan-300"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-1 text-xs max-h-40 overflow-y-auto">
+                {syncLogs.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className={
+                      log.level === 'error' ? 'text-red-400' :
+                      log.level === 'warn' ? 'text-yellow-400' :
+                      'text-gray-300'
+                    }
+                  >
+                    <span className="text-gray-500">[{log.time}]</span> {log.message}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
