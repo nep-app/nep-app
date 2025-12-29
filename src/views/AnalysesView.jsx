@@ -900,13 +900,14 @@ export function AnalysesView({
                                                                                     <p>
                                                                                         💧 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Contexto Autocuidado:</strong>
                                                                                         {topImpact.percentDiff < 0 ? (
-                                                                                            <> Nos dias com <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Factor protetor claro — não é coincidência.</>
+                                                                                            <> Nos dias com <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Forte associação com dias de menor consumo.</>
                                                                                         ) : (
                                                                                             <> Nos dias com <strong>{areaNames[topImpact.area]}</strong>, consumiste <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topImpact.percentDiff}% mais</strong>. Correlação inesperada — explorar.</>
                                                                                         )}
                                                                                         {impacts.length > 1 && impacts[1].percentDiff < 0 && (
-                                                                                            <> Também: {areaNames[impacts[1].area]} reduz {Math.abs(impacts[1].percentDiff)}%.</>
+                                                                                            <> Também: {areaNames[impacts[1].area]} associado com redução de {Math.abs(impacts[1].percentDiff)}%.</>
                                                                                         )}
+                                                                                        <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>⚠️ Nota: Dias bons podem naturalmente incluir mais autocuidado E menos consumo. A correlação não prova que um causa o outro.</span></>
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -987,7 +988,7 @@ export function AnalysesView({
                                                                                         return (
                                                                                             <p>
                                                                                                 🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> <strong>{percentLowSleep}%</strong> dos consumos tardios (00h-06h) aconteceram em dias com <strong>&lt;6h sono</strong>.
-                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Privação de sono não é só correlação — é trigger directo de consumo nocturno. Atacar o sono = reduzir consumo tardio.</span></>
+                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão forte: privação de sono está consistentemente associada a consumo nocturno. Melhorar o sono pode ser uma alavanca útil.</span></>
                                                                                             </p>
                                                                                         );
                                                                                     }
