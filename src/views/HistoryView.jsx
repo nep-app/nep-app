@@ -332,7 +332,7 @@ export function HistoryView({
                                                                         </div>
                                                                         <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                                                                    <div className="grid grid-cols-3 gap-2 text-sm mb-2">
                                                                         <div className="text-center">
                                                                             <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Sono</div>
                                                                             <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.sleep}h</div>
@@ -346,6 +346,22 @@ export function HistoryView({
                                                                             <div className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{w.energy || '-'}/10</div>
                                                                         </div>
                                                                     </div>
+                                                                    {(w.exercise || w.food || w.social) && (
+                                                                        <div className="grid grid-cols-3 gap-2 text-sm mb-3">
+                                                                            <div className="text-center">
+                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Exercício</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.exercise ? `${w.exercise}/10` : '-'}</div>
+                                                                            </div>
+                                                                            <div className="text-center">
+                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Alimentação</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.food ? `${w.food}/10` : '-'}</div>
+                                                                            </div>
+                                                                            <div className="text-center">
+                                                                                <div className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Social</div>
+                                                                                <div className={'text-sm font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>{w.social ? `${w.social}/10` : '-'}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
                                                                             <div className={'text-xs mb-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>Emoções:</div>

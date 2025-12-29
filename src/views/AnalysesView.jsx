@@ -4242,15 +4242,21 @@ export function AnalysesView({
                                                                                 return { text: 'Sem Correlação', color: 'gray', desc: `Dosagem não afeta ${metric}` };
                                                                             }
 
-                                                                            // Bem-estar → Dosagem/Consumo
+                                                                            // Bem-estar/Humor/Energia → Dosagem/Consumo (negativa é boa! mais humor → menos consumo)
                                                                             if (name.includes('Bem-estar →') || (name.includes('Energia →') && !isInverse) || (name.includes('Humor →') && !isInverse)) {
                                                                                 const metric = name.includes('Bem-estar') ? 'Bem-estar' : name.includes('Energia') ? 'Energia' : 'Humor';
+                                                                                const metricName = name.split(' →')[0].trim();
                                                                                 const target = name.includes('Dosagem') ? 'dosagem' : 'consumo';
-                                                                                if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `${metric} baixo → Mais ${target}` };
-                                                                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `${metric} baixo → Ligeiramente mais ${target}` };
-                                                                                if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `${metric} alto → Menos ${target}` };
-                                                                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `${metric} alto → Ligeiramente menos ${target}` };
-                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `${metric} não afeta ${target}` };
+                                                                                const isYesterday = metricName.toLowerCase().includes('ontem');
+                                                                                const suffix = isYesterday ? ' no dia seguinte' : '';
+
+                                                                                // Correlação negativa = bom (mais humor/energia → menos consumo)
+                                                                                if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metric} alto → Menos ${target}${suffix}` };
+                                                                                if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metric} alto → Ligeiramente menos ${target}${suffix}` };
+                                                                                // Correlação positiva = mau (mais humor/energia → mais consumo)
+                                                                                if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metric} alto → Mais ${target}${suffix}` };
+                                                                                if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metric} alto → Ligeiramente mais ${target}${suffix}` };
+                                                                                return { text: 'Sem Correlação', color: 'gray', desc: `${metric} não afeta ${target}${suffix}` };
                                                                             }
 
                                                                             // Primeiro Consumo → Total
