@@ -37,6 +37,7 @@ const SettingsView = lazy(() => import('./views/SettingsView').then(module => ({
 // Lazy load modals (only load when user opens them)
 const DailyLogModal = lazy(() => import('./components/modals/DailyLogModal').then(module => ({ default: module.DailyLogModal })));
 const WellbeingModal = lazy(() => import('./components/modals/WellbeingModal').then(module => ({ default: module.WellbeingModal })));
+const EmotionsModal = lazy(() => import('./components/modals/EmotionsModal').then(module => ({ default: module.EmotionsModal })));
 const ReflectionModal = lazy(() => import('./components/modals/ReflectionModal').then(module => ({ default: module.ReflectionModal })));
 const CycleModal = lazy(() => import('./components/modals/CycleModal').then(module => ({ default: module.CycleModal })));
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
@@ -134,7 +135,7 @@ function HarmReductionTracker() {
 function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
             // Custom hooks
             const { toasts, showToast } = useToast();
@@ -172,7 +173,8 @@ function AuthenticatedApp() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
+            const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
@@ -386,10 +388,22 @@ function AuthenticatedApp() {
                         return;
                     }
 
+                    // Parse datetime or use current timestamp
+                    let timestamp = new Date().toISOString();
+                    let date = getTodayKey();
+                    if (wellbeingForm.datetime) {
+                        const selectedDate = new Date(wellbeingForm.datetime);
+                        timestamp = selectedDate.toISOString();
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        date = `${year}-${month}-${day}`;
+                    }
+
                     const item = {
                         id: genId(),
-                        date: getTodayKey(),
-                        timestamp: new Date().toISOString(),
+                        date: date,
+                        timestamp: timestamp,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         water: wellbeingForm.water,
@@ -400,7 +414,7 @@ function AuthenticatedApp() {
                         notes: sanitizeText(wellbeingForm.notes)
                     };
                     await addWellbeingLog(item);
-                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
@@ -416,6 +430,56 @@ function AuthenticatedApp() {
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
                     showToast('✗ Erro ao guardar bem-estar', 'error');
+                }
+            };
+
+            const submitEmotions = async () => {
+                try {
+                    // Validate notes
+                    const notesValidation = validateText(emotionsForm.notes, MAX_NOTE_LENGTH);
+                    if (!notesValidation.valid) {
+                        showToast('✗ ' + notesValidation.error, 'error');
+                        return;
+                    }
+
+                    // Check if at least one emotion is selected
+                    if (emotionsForm.emotions.length === 0) {
+                        showToast('✗ Seleciona pelo menos uma emoção', 'error');
+                        return;
+                    }
+
+                    // Parse datetime or use current timestamp
+                    let timestamp = new Date().toISOString();
+                    let date = getTodayKey();
+                    if (emotionsForm.datetime) {
+                        const selectedDate = new Date(emotionsForm.datetime);
+                        timestamp = selectedDate.toISOString();
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        date = `${year}-${month}-${day}`;
+                    }
+
+                    const item = {
+                        id: genId(),
+                        date: date,
+                        timestamp: timestamp,
+                        mood: null,
+                        energy: null,
+                        water: false,
+                        rest: false,
+                        social: false,
+                        food: false,
+                        emotions: emotionsForm.emotions,
+                        notes: sanitizeText(emotionsForm.notes)
+                    };
+                    await addWellbeingLog(item);
+                    setEmotionsForm({ datetime: '', emotions: [], notes: '' });
+                    setShowEmotionsModal(false);
+                    showToast('✓ Emoções guardadas', 'success');
+                } catch (error) {
+                    logger.error('❌ ERRO ao guardar emoções:', error);
+                    showToast('✗ Erro ao guardar emoções', 'error');
                 }
             };
 
@@ -1149,6 +1213,17 @@ return {
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
                                 wellbeingLogs={wellbeingLogs}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <EmotionsModal
+                                isOpen={showEmotionsModal}
+                                onClose={() => setShowEmotionsModal(false)}
+                                darkMode={darkMode}
+                                emotionsForm={emotionsForm}
+                                setEmotionsForm={setEmotionsForm}
+                                onSubmit={submitEmotions}
                             />
                         </Suspense>
 

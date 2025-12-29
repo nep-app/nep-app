@@ -23,6 +23,7 @@ export const UIProvider = ({ children }) => {
   const [showDailyLogModal, setShowDailyLogModal] = useState(false);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [showWellbeingModal, setShowWellbeingModal] = useState(false);
+  const [showEmotionsModal, setShowEmotionsModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
@@ -60,6 +61,7 @@ export const UIProvider = ({ children }) => {
     setShowDailyLogModal(false);
     setShowReflectionModal(false);
     setShowWellbeingModal(false);
+    setShowEmotionsModal(false);
     setShowCycleModal(false);
     setShowGoalModal(false);
     setShowEditConsumptionModal(false);
@@ -89,6 +91,8 @@ export const UIProvider = ({ children }) => {
     setShowReflectionModal,
     showWellbeingModal,
     setShowWellbeingModal,
+    showEmotionsModal,
+    setShowEmotionsModal,
     showCycleModal,
     setShowCycleModal,
     showGoalModal,

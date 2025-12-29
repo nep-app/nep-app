@@ -1,6 +1,5 @@
 import React from 'react';
 import * as Icons from '../Icons';
-import { EMOTIONS_LIST } from '../../constants/emotions';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { getTodayKey } from '../../utils/helpers';
 
@@ -27,16 +26,36 @@ export const WellbeingModal = ({
     food: todayLogs.some(log => log.food === true)
   };
 
+  // Get current datetime for default value (formato: YYYY-MM-DDTHH:mm)
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
-          <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Check-in Bem-Estar</h3>
+          <h3 className={'text-xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>Bem-Estar</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <Icons.X />
           </button>
         </div>
         <div className="space-y-4">
+          <div>
+            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Data e Hora do Registo</label>
+            <input
+              type="datetime-local"
+              value={wellbeingForm.datetime || getCurrentDateTime()}
+              onChange={(e) => setWellbeingForm({...wellbeingForm, datetime: e.target.value})}
+              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400'}
+            />
+          </div>
           <div>
             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-2'}>Humor: {wellbeingForm.mood}/10</label>
             <input
@@ -102,28 +121,6 @@ export const WellbeingModal = ({
                 />
                 <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ''}>{alreadyChecked.food ? '✓ ' : ''}🍽️ Comi refeições nutritivas</span>
               </label>
-            </div>
-          </div>
-          <div>
-            <label className={'block text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>Emoções do dia (opcional)</label>
-            <div className="grid grid-cols-2 gap-2">
-              {EMOTIONS_LIST.map(emotion => (
-                <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={wellbeingForm.emotions.includes(emotion)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setWellbeingForm({...wellbeingForm, emotions: [...wellbeingForm.emotions, emotion]});
-                      } else {
-                        setWellbeingForm({...wellbeingForm, emotions: wellbeingForm.emotions.filter(em => em !== emotion)});
-                      }
-                    }}
-                    className="rounded text-purple-600 focus:ring-purple-500"
-                  />
-                  <span className={'text-sm ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>{emotion}</span>
-                </label>
-              ))}
             </div>
           </div>
           <div>

@@ -24,7 +24,7 @@ export function HomeViewRefactored({
 }) {
   const { consumptions, goals, cycles, dailyLogs } = useData();
   const metrics = useMetrics();
-  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
+  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   return (
     <div className="space-y-6">
@@ -304,36 +304,59 @@ export function HomeViewRefactored({
         );
       })()}
 
-      <div className="grid grid-cols-2 gap-4">
-        <GradientButton
-          onClick={() => setShowGoalModal(true)}
-          icon={Icons.Target}
-          variant="orange"
-        >
-          Metas
-        </GradientButton>
+      {/* Linha 1: Bem-estar, Emoções, Reflexão Diária */}
+      <div className="grid grid-cols-3 gap-3">
         <GradientButton
           onClick={() => setShowWellbeingModal(true)}
           icon={Icons.Heart}
           variant="blue"
+          size="medium"
+          className="flex flex-col items-center h-auto py-4"
         >
-          Check-in Bem-Estar
+          <div className="text-sm font-semibold">Bem-estar</div>
+          <div className="text-xs opacity-80 mt-1">Humor • Energia • Autocuidado</div>
+        </GradientButton>
+        <GradientButton
+          onClick={() => setShowEmotionsModal(true)}
+          icon={Icons.Heart}
+          variant="purple"
+          size="medium"
+          className="flex flex-col items-center h-auto py-4"
+        >
+          <div className="text-sm font-semibold">Emoções</div>
+          <div className="text-xs opacity-80 mt-1">Emoções do dia</div>
+        </GradientButton>
+        <GradientButton
+          onClick={() => setShowReflectionModal(true)}
+          icon={Icons.Brain}
+          variant="green"
+          size="medium"
+          className="flex flex-col items-center h-auto py-4"
+        >
+          <div className="text-sm font-semibold">Reflexão Diária</div>
+          <div className="text-xs opacity-80 mt-1">Como correu o dia?</div>
         </GradientButton>
       </div>
 
+      {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
       <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => setShowReflectionModal(true)} className="bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-xl p-4 font-medium hover:from-emerald-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <Icons.Brain className="w-5 h-5 mb-2" />
-          <div className="text-sm">Reflexão diária</div>
+        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-4 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-xl mb-1">🌙</div>
+          <div className="text-sm">Novo Ciclo</div>
         </button>
         <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-4 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-xl mb-1">📊</div>
           <div className="text-sm">Registar mg</div>
         </button>
-        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-4 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-xl mb-1">🌙</div>
-          <div className="text-sm">Novo Ciclo</div>
-        </button>
+        <GradientButton
+          onClick={() => setShowGoalModal(true)}
+          icon={Icons.Target}
+          variant="orange"
+          size="medium"
+          className="h-full"
+        >
+          Metas
+        </GradientButton>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
