@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.2.0'; // v4.2.0: Firebase login BEFORE PIN (correct flow)
+const APP_VERSION = '4.2.1'; // v4.2.1: Fix Firebase import path
 
 console.log('======================');
 console.log('🚀 NEP APP v' + APP_VERSION);

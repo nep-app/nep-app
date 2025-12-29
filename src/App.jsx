@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { auth as firebaseAuth } from './config/firebase';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig } from './utils/firebase';
 import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
@@ -51,6 +53,13 @@ import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
             // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
+
+            // Initialize Firebase
+            const firebaseAuth = useMemo(() => {
+                const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+                return getAuth(app);
+            }, []);
+
             const [firebaseUser, setFirebaseUser] = useState(null);
             const [firebaseLoading, setFirebaseLoading] = useState(true);
             const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
@@ -65,7 +74,7 @@ function HarmReductionTracker() {
                     setFirebaseLoading(false);
                 });
                 return unsubscribe;
-            }, []);
+            }, [firebaseAuth]);
 
             // 2. Check if PIN account exists (only when Firebase user exists)
             useEffect(() => {
