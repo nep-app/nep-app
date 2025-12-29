@@ -47,6 +47,16 @@ export const AuthProvider = ({ children }) => {
   const checkInitialization = useCallback(async () => {
     try {
       const email = await getMetadata('userEmail');
+      const salt = await getMetadata('salt');
+      const pinVerification = await getMetadata('pinVerification');
+
+      console.log('[checkInitialization]', {
+        email,
+        hasSalt: !!salt,
+        hasPinVerification: !!pinVerification,
+        isInitialized: !!email
+      });
+
       setUserEmail(email);
       setIsInitialized(!!email);
     } catch (error) {
@@ -140,9 +150,16 @@ export const AuthProvider = ({ children }) => {
    */
   const login = useCallback(async (pin) => {
     try {
+      console.log('[login] Tentando login com PIN...');
+
       // Obter salt e dados de verificação
       const saltBase64 = await getMetadata('salt');
       const verificationJSON = await getMetadata('pinVerification');
+
+      console.log('[login] Dados encontrados:', {
+        hasSalt: !!saltBase64,
+        hasVerification: !!verificationJSON
+      });
 
       if (!saltBase64 || !verificationJSON) {
         throw new Error('Dados de autenticação não encontrados');
@@ -151,6 +168,8 @@ export const AuthProvider = ({ children }) => {
       const salt = base64ToSalt(saltBase64);
       const verification = JSON.parse(verificationJSON);
 
+      console.log('[login] Verificando PIN...');
+
       // Verificar PIN
       const isValid = await verifyPassword(
         pin,
@@ -158,6 +177,8 @@ export const AuthProvider = ({ children }) => {
         verification.iv,
         salt
       );
+
+      console.log('[login] PIN válido?', isValid);
 
       if (!isValid) {
         throw new Error('PIN incorreto');
@@ -168,9 +189,11 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
 
+      console.log('[login] ✅ Login bem-sucedido!');
+
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[login] ❌ Erro:', error);
       return { success: false, error: error.message };
     }
   }, []);
