@@ -247,36 +247,21 @@ export const DataProvider = ({ children }) => {
    * Faz merge bidirecional de todos os dados
    */
   const manualSync = useCallback(async () => {
-    console.log('[DataContext] 🔵 manualSync CHAMADO');
-    console.log('[DataContext] 🔵 isSyncing:', isSyncing);
-
     if (isSyncing) {
-      console.warn('[DataContext] ⚠️ Sincronização já em curso - rejeitado');
       throw new Error('Sincronização já em curso');
     }
 
     setIsSyncing(true);
-    console.log('[DataContext] 🔵 setIsSyncing(true) - iniciando sync');
 
     try {
-      console.log('[DataContext] 🔵 Chamando syncService.fullSync()...');
       const result = await syncService.fullSync();
-      console.log('[DataContext] ✅ fullSync retornou:', result);
-
-      console.log('[DataContext] 🔵 Recarregando coleções...');
       await loadAllCollections();
-
-      console.log('[DataContext] 🔵 Atualizando lastSyncTime...');
       setLastSyncTime(new Date());
-
-      console.log('[DataContext] ✅ manualSync COMPLETO');
       return result;
     } catch (error) {
-      console.error('[DataContext] ❌ Erro no sync manual:', error);
-      console.error('[DataContext] ❌ Stack:', error.stack);
+      console.error('[DataContext] Erro no sync manual:', error);
       throw error;
     } finally {
-      console.log('[DataContext] 🔵 setIsSyncing(false)');
       setIsSyncing(false);
     }
   }, [isSyncing, loadAllCollections]);

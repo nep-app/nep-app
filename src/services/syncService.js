@@ -206,31 +206,21 @@ class SyncService {
    * Usa timestamps para resolver conflitos (last-write-wins)
    */
   async fullSync() {
-    console.log('[SyncService] 🔵 fullSync INICIADO');
-    console.log('[SyncService] 🔵 firebaseDB:', !!this.firebaseDB);
-    console.log('[SyncService] 🔵 firebaseUser:', !!this.firebaseUser);
-    console.log('[SyncService] 🔵 pin:', !!this.pin);
-    console.log('[SyncService] 🔵 salt:', !!this.salt);
-
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
-      console.error('[SyncService] ❌ Sync não inicializado!');
       throw new Error('Sync não inicializado');
     }
 
     if (this.isSyncing) {
-      console.warn('[SyncService] ⚠️ Sincronização já em curso');
       throw new Error('Sincronização já em curso');
     }
 
     this.isSyncing = true;
-    console.log('[SyncService] 🔵 isSyncing = true');
 
     try {
       let totalMerged = 0;
       let totalPushed = 0;
       let totalPulled = 0;
       let totalSkipped = 0;
-      console.log('[SyncService] 🔵 Iniciando loop pelas coleções...');
 
       for (const collectionName of COLLECTIONS) {
         // 1. Buscar TODOS os dados do Firebase
@@ -327,9 +317,6 @@ class SyncService {
         }
       }
 
-      console.log('[SyncService] ✅ fullSync COMPLETO!');
-      console.log('[SyncService] 📊 Resultados:', { totalPushed, totalPulled, totalMerged, totalSkipped });
-
       return {
         success: true,
         pushed: totalPushed,
@@ -339,8 +326,7 @@ class SyncService {
       };
 
     } catch (error) {
-      console.error('[SyncService] ❌ Erro na sincronização completa:', error);
-      console.error('[SyncService] ❌ Stack:', error.stack);
+      console.error('[Sync] Erro na sincronização completa:', error);
       throw error;
     } finally {
       this.isSyncing = false;
@@ -384,27 +370,32 @@ class SyncService {
               // Item novo ou modificado no Firebase
               const localItem = await dexieDB[collectionName].get(itemId);
 
-              // Verificar se é uma mudança de outro dispositivo (não local)
-              const isFromOtherDevice = !localItem ||
-                                       localItem.syncStatus === 'synced' ||
-                                       (firebaseData.lastModified > (localItem.lastModified || ''));
+              // Só atualizar se: (1) não existe localmente OU (2) Firebase é mais recente
+              const firebaseTime = new Date(firebaseData.lastModified || '1970-01-01').getTime();
+              const localTime = localItem ? new Date(localItem.lastModified || '1970-01-01').getTime() : 0;
+              const shouldUpdate = !localItem || firebaseTime > localTime;
 
-              if (isFromOtherDevice) {
-                // Desencriptar dados do Firebase
-                let item;
-                if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
-                  item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
-                } else {
-                  item = { ...firebaseData };
+              if (shouldUpdate) {
+                try {
+                  // Desencriptar dados do Firebase
+                  let item;
+                  if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+                    item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+                  } else {
+                    item = { ...firebaseData };
+                  }
+
+                  // Adicionar metadados
+                  item.syncStatus = 'synced';
+                  item.lastModified = firebaseData.lastModified || new Date().toISOString();
+                  item.deleted = false;
+
+                  // Atualizar localmente
+                  await dexieDB[collectionName].put(item);
+                  console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
+                } catch (decryptError) {
+                  console.error(`[Sync] ⚠️ Erro ao desencriptar item ${itemId}:`, decryptError.message);
                 }
-
-                // Adicionar metadados
-                item.syncStatus = 'synced';
-                item.lastModified = firebaseData.lastModified || new Date().toISOString();
-                item.deleted = false;
-
-                // Atualizar localmente
-                await dexieDB[collectionName].put(item);
               }
             }
           }

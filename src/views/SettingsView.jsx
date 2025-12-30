@@ -18,42 +18,27 @@ export const SettingsView = ({
     const [syncStatus, setSyncStatus] = useState(null);
 
     const handleFullSync = async () => {
-        alert('handleFullSync CHAMADO!');
-        console.log('[SettingsView] 🔵 handleFullSync INICIADO');
+        if (!manualSync) {
+            setSyncStatus({ type: 'error', message: '❌ Erro: Sincronização não disponível' });
+            return;
+        }
+
+        setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
 
         try {
-            alert('Dentro do try block');
-            if (!manualSync) {
-                console.error('[SettingsView] ❌ manualSync é undefined!');
-                setSyncStatus({ type: 'error', message: '❌ Erro: Sincronização não disponível' });
-                return;
-            }
-
-            alert('Vai definir loading status...');
-
-            console.log('[SettingsView] 🔵 Definindo status como loading...');
-            setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
-
-            console.log('[SettingsView] 🔵 Chamando manualSync()...');
             const result = await manualSync();
-            alert('manualSync RETORNOU! result: ' + JSON.stringify(result));
-            console.log('[SettingsView] ✅ manualSync completou:', result);
 
             if (result && result.success) {
                 const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
-                console.log('[SettingsView] 🔵 Definindo mensagem de sucesso');
                 setSyncStatus({ type: 'success', message });
 
                 // Limpar mensagem após 15 segundos
                 setTimeout(() => setSyncStatus(null), 15000);
             } else {
-                console.warn('[SettingsView] ⚠️ Resultado inesperado:', result);
                 setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
             }
         } catch (error) {
-            alert('ERRO CAPTURADO! ' + (error?.message || error));
-            console.error('[SettingsView] ❌ ERRO no handleFullSync:', error);
-            console.error('[SettingsView] ❌ Stack trace:', error.stack);
+            console.error('[SettingsView] Erro no sync:', error);
             const errorMsg = error?.message || error?.toString() || 'Erro desconhecido';
             setSyncStatus({ type: 'error', message: `❌ Erro: ${errorMsg}` });
 
@@ -146,12 +131,7 @@ export const SettingsView = ({
                     )}
 
                     <button
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            alert('Botão clicado! isSyncing: ' + isSyncing + ', manualSync exists: ' + !!manualSync);
-                            handleFullSync();
-                        }}
+                        onClick={handleFullSync}
                         disabled={isSyncing}
                         className={
                             'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
