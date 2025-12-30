@@ -359,8 +359,8 @@ export const AuthProvider = ({ children }) => {
 
         try {
           // Buscar item de controlo do Firebase e tentar desencriptar com o PIN
-          const { ref, getDoc } = await import('firebase/firestore');
-          const controlDoc = await getDoc(ref(firebaseInstances.firestore, `users/${firebaseUser.uid}/_system/validation`));
+          const { doc, getDoc } = await import('firebase/firestore');
+          const controlDoc = await getDoc(doc(firebaseInstances.firestore, `users/${firebaseUser.uid}/_system/validation`));
 
           if (controlDoc.exists()) {
             const controlData = controlDoc.data();
