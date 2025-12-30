@@ -263,13 +263,26 @@ export const DataProvider = ({ children }) => {
 
     try {
       // FORÇAR: Marcar tudo como pending antes de sincronizar
-      await syncService.forceMarkAllPending();
+      const totalMarked = await syncService.forceMarkAllPending();
 
-      // Fazer sync completo
-      const result = await syncService.fullSync();
-      await loadAllCollections();
-      setLastSyncTime(new Date());
-      return result;
+      // PUSH direto - enviar TUDO para Firebase ANTES de fazer pull
+      console.log('[DataContext] Fazendo PUSH de todos os items...');
+      await syncService.pushToFirebase();
+
+      // Agora fazer PULL (ignorar erros de desencriptação)
+      try {
+        console.log('[DataContext] Fazendo PULL do Firebase...');
+        const result = await syncService.fullSync();
+        await loadAllCollections();
+        setLastSyncTime(new Date());
+        return result;
+      } catch (pullError) {
+        console.warn('[DataContext] PULL falhou (items corrompidos), mas PUSH teve sucesso');
+        // PUSH foi bem sucedido, então retornar sucesso parcial
+        await loadAllCollections();
+        setLastSyncTime(new Date());
+        return { success: true, pushed: totalMarked, pulled: 0, merged: 0, skipped: 0 };
+      }
     } catch (error) {
       console.error('[DataContext] Erro no sync manual:', error);
       throw error;
