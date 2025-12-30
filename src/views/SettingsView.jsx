@@ -32,13 +32,7 @@ export const SettingsView = ({
             if (result && result.success) {
                 const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
                 setSyncStatus({ type: 'success', message });
-                console.log('SYNC SUCESSO! Mensagem definida');
-
-                // Recarregar página após 2 segundos para mostrar dados atualizados
-                setTimeout(() => {
-                    console.log('Recarregando página...');
-                    window.location.reload();
-                }, 2000);
+                console.log('SYNC SUCESSO!', result);
             } else {
                 console.log('SYNC FALHOU - resultado inválido');
                 setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
