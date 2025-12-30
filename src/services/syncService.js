@@ -244,8 +244,14 @@ class SyncService {
   /**
    * Sincronização completa bidirecional com merge de dados
    * Usa timestamps para resolver conflitos (last-write-wins)
+   *
+   * @param {Object} options - Opções de sync
+   * @param {boolean} options.skipZombies - Se true, ignora items que falham desencriptação (padrão: false)
+   * @param {number} options.maxAge - Idade máxima em dias para sincronizar (padrão: null = todos)
    */
-  async fullSync() {
+  async fullSync(options = {}) {
+    const { skipZombies = false, maxAge = null } = options;
+
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
       throw new Error('Sync não inicializado');
     }
@@ -270,14 +276,28 @@ class SyncService {
 
       console.log('[Sync] ✅ Chave validada! Prosseguindo com sync...');
 
+      if (skipZombies) {
+        console.log('[Sync] 🧟 MODO SKIP ZOMBIES ATIVADO');
+        console.log('[Sync]    Items que falham desencriptação serão IGNORADOS');
+        console.log('[Sync]    Sync vai continuar mesmo com erros\n');
+      }
+
+      if (maxAge) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+        console.log(`[Sync] 📅 Sincronizando apenas items desde: ${cutoffDate.toISOString()}\n`);
+      }
+
       // Inicializar circuit breaker e error logger
-      const circuitBreaker = new SyncCircuitBreaker(5); // Para após 5 erros consecutivos
+      // Se skipZombies = true, aumentar limite do circuit breaker para valor alto (basicamente desativa)
+      const circuitBreaker = new SyncCircuitBreaker(skipZombies ? 9999 : 5);
       const errorLogger = new SyncErrorLogger();
 
       let totalMerged = 0;
       let totalPushed = 0;
       let totalPulled = 0;
       let totalSkipped = 0;
+      let totalZombies = 0; // Items zombies ignorados
 
       // Guardar primeiro item que falhou para análise posterior
       let firstFailedItem = null;
@@ -314,6 +334,19 @@ class SyncService {
           try {
             const firebaseData = docSnap.data();
 
+            // 🧟 FILTRO DE IDADE: Skip items muito antigos se maxAge especificado
+            if (maxAge && firebaseData.lastModified) {
+              const itemDate = new Date(firebaseData.lastModified);
+              const cutoffDate = new Date();
+              cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+
+              if (itemDate < cutoffDate) {
+                // Item muito antigo - skip silenciosamente
+                totalZombies++;
+                continue;
+              }
+            }
+
             // Desencriptar
             let item;
             if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
@@ -332,6 +365,13 @@ class SyncService {
             // ❌ Erro - registar no logger (SEM stack trace)
             errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
             totalSkipped++;
+
+            // 🧟 MODO SKIP ZOMBIES: Continuar em vez de parar
+            if (skipZombies) {
+              totalZombies++;
+              // Não registar no circuit breaker - apenas continuar
+              continue;
+            }
 
             // Guardar primeiro item que falhou para análise de salt
             if (!firstFailedItem && firebaseData.encrypted) {
@@ -527,12 +567,26 @@ class SyncService {
         );
       }
 
+      // Log final com estatísticas
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✅ SYNC COMPLETO');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`📤 Pushed:  ${totalPushed}`);
+      console.log(`📥 Pulled:  ${totalPulled}`);
+      console.log(`🔄 Merged:  ${totalMerged}`);
+      console.log(`⏭️  Skipped: ${totalSkipped}`);
+      if (totalZombies > 0) {
+        console.log(`🧟 Zombies: ${totalZombies} (ignorados)`);
+      }
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
       return {
         success: true,
         pushed: totalPushed,
         pulled: totalPulled,
         merged: totalMerged,
         skipped: totalSkipped,
+        zombies: totalZombies,
         errors: errorLogger.getSummary()
       };
 
@@ -559,6 +613,121 @@ class SyncService {
       this.pin,
       this.salt
     );
+  }
+
+  /**
+   * Limpar items zombies (que não conseguem ser desencriptados)
+   * ATENÇÃO: Isto vai DELETAR permanentemente items do Firebase!
+   *
+   * @param {number} maxAge - Deletar items com mais de X dias (padrão: 90)
+   * @param {boolean} dryRun - Se true, apenas lista items sem deletar (padrão: true)
+   */
+  async cleanZombies(maxAge = 90, dryRun = true) {
+    if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
+      throw new Error('Sync não inicializado');
+    }
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🧟 LIMPEZA DE ITEMS ZOMBIES');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    if (dryRun) {
+      console.log('🔍 MODO DRY-RUN: Apenas listar, SEM deletar\n');
+    } else {
+      console.log('⚠️  MODO ATIVO: Vai DELETAR items do Firebase!\n');
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+    console.log(`📅 Data de corte: ${cutoffDate.toISOString()}`);
+    console.log(`   (items mais antigos que ${maxAge} dias)\n`);
+
+    let totalZombies = 0;
+    let totalDeleted = 0;
+    const zombiesByCollection = {};
+
+    for (const collectionName of COLLECTIONS) {
+      const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
+      const firebaseCollection = collection(this.firebaseDB, firebasePath);
+      const snapshot = await getDocs(firebaseCollection);
+
+      let collectionZombies = 0;
+
+      for (const docSnap of snapshot.docs) {
+        const firebaseData = docSnap.data();
+
+        // Verificar idade
+        if (firebaseData.lastModified) {
+          const itemDate = new Date(firebaseData.lastModified);
+
+          if (itemDate < cutoffDate) {
+            // Item antigo - tentar desencriptar
+            let isZombie = false;
+
+            if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+              try {
+                await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+                // Conseguiu desencriptar - NÃO é zombie
+              } catch (error) {
+                // Falhou desencriptação - É ZOMBIE!
+                isZombie = true;
+              }
+            }
+
+            if (isZombie) {
+              totalZombies++;
+              collectionZombies++;
+
+              console.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
+              console.log(`   Data: ${firebaseData.lastModified}`);
+              console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
+
+              if (!dryRun) {
+                // DELETAR do Firebase
+                const docRef = doc(this.firebaseDB, firebasePath, docSnap.id);
+                await deleteDoc(docRef);
+                totalDeleted++;
+                console.log(`   ❌ DELETADO\n`);
+              } else {
+                console.log(`   (seria deletado em modo ativo)\n`);
+              }
+            }
+          }
+        }
+      }
+
+      if (collectionZombies > 0) {
+        zombiesByCollection[collectionName] = collectionZombies;
+      }
+    }
+
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📊 RESUMO');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`Total de zombies encontrados: ${totalZombies}`);
+
+    if (Object.keys(zombiesByCollection).length > 0) {
+      console.log('\nPor coleção:');
+      for (const [col, count] of Object.entries(zombiesByCollection)) {
+        console.log(`  ${col}: ${count}`);
+      }
+    }
+
+    if (dryRun) {
+      console.log(`\n💡 Para DELETAR permanentemente, execute:`);
+      console.log(`   syncService.cleanZombies(${maxAge}, false)`);
+    } else {
+      console.log(`\n❌ Items deletados: ${totalDeleted}`);
+      console.log(`✅ Limpeza concluída!`);
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    return {
+      totalZombies,
+      totalDeleted,
+      zombiesByCollection,
+      dryRun
+    };
   }
 
   /**
