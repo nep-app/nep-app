@@ -124,15 +124,15 @@ export const DataProvider = ({ children }) => {
         } else {
         }
 
-        // PULL inicial: Importar dados do Firebase (se necessário)
+        // SYNC inicial: Sincronizar com Firebase (com skip zombies)
         setIsSyncing(true);
-        await syncService.pullFromFirebase(shouldForcePull);
+        await syncService.fullSync({
+          skipZombies: true,  // 🧟 Ignorar items antigos não desencriptáveis
+          maxAge: null        // Sincronizar todos (sem filtro de idade)
+        });
 
-        // Recarregar dados locais após PULL
+        // Recarregar dados locais após SYNC
         await loadAllCollections();
-
-        // PUSH: Enviar mudanças pendentes
-        await syncService.pushToFirebase();
 
         setLastSyncTime(new Date());
         setIsSyncing(false);

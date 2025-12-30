@@ -377,13 +377,21 @@ export const AuthProvider = ({ children }) => {
 
                 // ✅ PIN está CORRETO com o salt do item de controlo!
                 console.log('[AuthContext] ✅ PIN VALIDADO com salt do item de controlo!');
-                console.log('[AuthContext] 🔧 Atualizando salt e recriando pinVerification...');
+                console.log('[AuthContext] 🔧 Atualizando salt local e Firebase...');
 
                 // Atualizar salt para o correto
                 salt = correctSalt;
                 const { saltToBase64 } = await import('../utils/encryption');
                 saltBase64 = saltToBase64(salt);
                 await setMetadata('salt', saltBase64);
+
+                // 🔥 CRÍTICO: Atualizar salt no Firebase também!
+                try {
+                  await uploadSaltToFirebase(firebaseInstances.firestore, firebaseUser.uid, salt);
+                  console.log('[AuthContext] ✅ Salt correto sincronizado para Firebase');
+                } catch (uploadError) {
+                  console.warn('[AuthContext] ⚠️ Não foi possível atualizar salt no Firebase:', uploadError);
+                }
 
                 isValid = true;
                 needsPinVerificationRecovery = true;
