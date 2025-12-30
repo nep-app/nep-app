@@ -36,6 +36,7 @@ export const SettingsView = ({
 
             console.log('[SettingsView] 🔵 Chamando manualSync()...');
             const result = await manualSync();
+            alert('manualSync RETORNOU! result: ' + JSON.stringify(result));
             console.log('[SettingsView] ✅ manualSync completou:', result);
 
             if (result && result.success) {
@@ -50,6 +51,7 @@ export const SettingsView = ({
                 setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
             }
         } catch (error) {
+            alert('ERRO CAPTURADO! ' + (error?.message || error));
             console.error('[SettingsView] ❌ ERRO no handleFullSync:', error);
             console.error('[SettingsView] ❌ Stack trace:', error.stack);
             const errorMsg = error?.message || error?.toString() || 'Erro desconhecido';
