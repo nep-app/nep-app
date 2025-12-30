@@ -9,7 +9,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.3.2'; // v4.3.2: Remover debug overlay e log capture
+const APP_VERSION = '4.4.0'; // v4.4.0: Correção crítica de sync (isPushing flag separado)
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
