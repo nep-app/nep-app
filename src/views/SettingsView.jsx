@@ -18,20 +18,38 @@ export const SettingsView = ({
     const [syncStatus, setSyncStatus] = useState(null);
 
     const handleFullSync = async () => {
-        setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
+        console.log('[SettingsView] 🔵 handleFullSync INICIADO');
 
         try {
-            const result = await manualSync();
+            if (!manualSync) {
+                console.error('[SettingsView] ❌ manualSync é undefined!');
+                setSyncStatus({ type: 'error', message: '❌ Erro: Sincronização não disponível' });
+                return;
+            }
 
-            if (result.success) {
+            console.log('[SettingsView] 🔵 Definindo status como loading...');
+            setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
+
+            console.log('[SettingsView] 🔵 Chamando manualSync()...');
+            const result = await manualSync();
+            console.log('[SettingsView] ✅ manualSync completou:', result);
+
+            if (result && result.success) {
                 const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
+                console.log('[SettingsView] 🔵 Definindo mensagem de sucesso');
                 setSyncStatus({ type: 'success', message });
 
                 // Limpar mensagem após 15 segundos
                 setTimeout(() => setSyncStatus(null), 15000);
+            } else {
+                console.warn('[SettingsView] ⚠️ Resultado inesperado:', result);
+                setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
             }
         } catch (error) {
-            setSyncStatus({ type: 'error', message: `❌ Erro: ${error.message}` });
+            console.error('[SettingsView] ❌ ERRO no handleFullSync:', error);
+            console.error('[SettingsView] ❌ Stack trace:', error.stack);
+            const errorMsg = error?.message || error?.toString() || 'Erro desconhecido';
+            setSyncStatus({ type: 'error', message: `❌ Erro: ${errorMsg}` });
 
             // Limpar mensagem de erro após 10 segundos
             setTimeout(() => setSyncStatus(null), 10000);

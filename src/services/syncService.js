@@ -206,21 +206,31 @@ class SyncService {
    * Usa timestamps para resolver conflitos (last-write-wins)
    */
   async fullSync() {
+    console.log('[SyncService] 🔵 fullSync INICIADO');
+    console.log('[SyncService] 🔵 firebaseDB:', !!this.firebaseDB);
+    console.log('[SyncService] 🔵 firebaseUser:', !!this.firebaseUser);
+    console.log('[SyncService] 🔵 pin:', !!this.pin);
+    console.log('[SyncService] 🔵 salt:', !!this.salt);
+
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
+      console.error('[SyncService] ❌ Sync não inicializado!');
       throw new Error('Sync não inicializado');
     }
 
     if (this.isSyncing) {
+      console.warn('[SyncService] ⚠️ Sincronização já em curso');
       throw new Error('Sincronização já em curso');
     }
 
     this.isSyncing = true;
+    console.log('[SyncService] 🔵 isSyncing = true');
 
     try {
       let totalMerged = 0;
       let totalPushed = 0;
       let totalPulled = 0;
       let totalSkipped = 0;
+      console.log('[SyncService] 🔵 Iniciando loop pelas coleções...');
 
       for (const collectionName of COLLECTIONS) {
         // 1. Buscar TODOS os dados do Firebase
@@ -317,6 +327,9 @@ class SyncService {
         }
       }
 
+      console.log('[SyncService] ✅ fullSync COMPLETO!');
+      console.log('[SyncService] 📊 Resultados:', { totalPushed, totalPulled, totalMerged, totalSkipped });
+
       return {
         success: true,
         pushed: totalPushed,
@@ -326,7 +339,8 @@ class SyncService {
       };
 
     } catch (error) {
-      console.error('[Sync] ❌ Erro na sincronização completa:', error);
+      console.error('[SyncService] ❌ Erro na sincronização completa:', error);
+      console.error('[SyncService] ❌ Stack:', error.stack);
       throw error;
     } finally {
       this.isSyncing = false;
