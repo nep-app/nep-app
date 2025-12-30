@@ -12,10 +12,9 @@ import * as Icons from './Icons';
  * 3. Se sim: mostra login (PIN)
  */
 export const AuthScreen = ({ onFirebaseLogout }) => {
-  const { login, createAccount, hasAccount } = useAuth();
+  const { login, createAccount, hasAccount, checkRemoteAccount } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [forceLoginMode, setForceLoginMode] = useState(false); // Forçar login com PIN existente
 
   // Criar conta
   const [step, setStep] = useState('email'); // 'email' | 'pin' | 'confirm'
@@ -23,15 +22,38 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   const [firstPIN, setFirstPIN] = useState('');
   const [error, setError] = useState('');
 
-  // Verificar se conta já existe
+  // RECONHECIMENTO DE PERFIL INTELIGENTE
+  // Verifica conta local E remota (Firebase) automaticamente
   useEffect(() => {
     const checkAccount = async () => {
-      const exists = await hasAccount();
-      setAccountExists(exists);
+      console.log('[AuthScreen] 🔍 Verificando contas (local e Firebase)...');
+
+      // 1. Verificar conta local
+      const localExists = await hasAccount();
+
+      if (localExists) {
+        console.log('[AuthScreen] ✅ Conta local encontrada');
+        setAccountExists(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Conta local não existe → verificar Firebase
+      console.log('[AuthScreen] 🔍 Conta local não encontrada, verificando Firebase...');
+      const remoteExists = await checkRemoteAccount();
+
+      if (remoteExists) {
+        console.log('[AuthScreen] ✅ Conta encontrada no Firebase! Auto-switch para login PIN');
+        setAccountExists(true); // Forçar modo login
+      } else {
+        console.log('[AuthScreen] ❌ Nenhuma conta encontrada (local ou Firebase)');
+        setAccountExists(false);
+      }
+
       setLoading(false);
     };
     checkAccount();
-  }, [hasAccount]);
+  }, [hasAccount, checkRemoteAccount]);
 
   // LOGIN: Tentar fazer login com PIN
   const isSubmittingRef = useRef(false);
@@ -106,35 +128,16 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
     );
   }
 
-  // LOGIN: Conta já existe OU usuário clicou em "Já tenho PIN"
-  if (accountExists || forceLoginMode) {
+  // LOGIN: Conta já existe (local OU Firebase)
+  if (accountExists) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
-        <div className="w-full max-w-md">
-          <PINEntry
-            key="login"
-            title="Bem-vinda de volta"
-            subtitle="Insere o teu PIN de 4 dígitos"
-            onComplete={handleLogin}
-            error={error}
-          />
-
-          {/* Botão voltar (apenas se forçou login sem ter conta local) */}
-          {forceLoginMode && !accountExists && (
-            <button
-              type="button"
-              onClick={() => {
-                setForceLoginMode(false);
-                setError('');
-              }}
-              className="w-full mt-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-purple-300 hover:bg-gray-700 hover:border-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-            >
-              <Icons.ChevronLeft className="w-4 h-4" />
-              Voltar para criar conta
-            </button>
-          )}
-        </div>
-      </div>
+      <PINEntry
+        key="login"
+        title="Bem-vinda de volta"
+        subtitle="Insere o teu PIN de 4 dígitos"
+        onComplete={handleLogin}
+        error={error}
+      />
     );
   }
 
@@ -190,38 +193,6 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               Saltar (continuar sem email)
             </button>
           </form>
-
-          {/* Botão "Já tenho PIN" - vai para login com PIN existente */}
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setError('');
-                setForceLoginMode(true);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
-            >
-              <Icons.Lock className="w-4 h-4" />
-              Já tenho PIN
-            </button>
-          </div>
-
-          {/* Botão "Trocar conta Firebase" - faz logout do Firebase e volta para login */}
-          {onFirebaseLogout && (
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={onFirebaseLogout}
-                className="w-full py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-purple-300 hover:bg-gray-700 hover:border-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-              >
-                <Icons.LogOut className="w-4 h-4" />
-                Trocar de conta
-              </button>
-              <p className="text-xs text-purple-400 mt-2 text-center">
-                Usa outra conta Firebase
-              </p>
-            </div>
-          )}
 
           {/* Info */}
           <div className="mt-8">

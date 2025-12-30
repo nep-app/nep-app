@@ -10,6 +10,7 @@ import {
   createPasswordVerificationData
 } from '../utils/encryption';
 import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
+import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -155,6 +156,18 @@ export const AuthProvider = ({ children }) => {
       await setMetadata('pinVerification', JSON.stringify(verification));
       await setMetadata('createdAt', new Date().toISOString());
 
+      // SYNC com Firebase: guardar pinVerification na nuvem
+      if (firebaseUser) {
+        try {
+          console.log('[AuthContext] 📤 Guardando pinVerification no Firebase...');
+          await uploadPinVerificationToFirebase(firebaseInstances.firestore, firebaseUser.uid, verification);
+          console.log('[AuthContext] ✅ pinVerification guardado no Firebase');
+        } catch (error) {
+          console.error('[AuthContext] ⚠️ Erro ao guardar pinVerification no Firebase (não crítico):', error);
+          // Não falhar a criação da conta se sync falhar
+        }
+      }
+
       // Atualizar estado
       setUserEmail(email || 'sem-email');
       setEncryptionKey(pin);
@@ -204,13 +217,26 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Obter dados de verificação do PIN
-      const verificationJSON = await getMetadata('pinVerification');
+      let verificationJSON = await getMetadata('pinVerification');
+      let verification;
 
-      if (!verificationJSON) {
+      if (!verificationJSON && firebaseUser) {
+        // Não tem local → buscar do Firebase
+        console.log('[AuthContext] 📥 PIN verification não encontrado localmente, buscando do Firebase...');
+        verification = await downloadPinVerificationFromFirebase(firebaseInstances.firestore, firebaseUser.uid);
+
+        if (!verification) {
+          throw new Error('Conta PIN não encontrada. Cria uma conta primeiro.');
+        }
+
+        // Guardar localmente para próximas vezes
+        await setMetadata('pinVerification', JSON.stringify(verification));
+        console.log('[AuthContext] ✅ PIN verification sincronizado do Firebase');
+      } else if (verificationJSON) {
+        verification = JSON.parse(verificationJSON);
+      } else {
         throw new Error('Dados de verificação do PIN não encontrados');
       }
-
-      const verification = JSON.parse(verificationJSON);
 
       // Verificar PIN
       const isValid = await verifyPassword(
@@ -330,6 +356,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Verifica se existe conta PIN no Firebase
+   * (auto-detecção para reconhecimento de perfil)
+   */
+  const checkRemoteAccount = useCallback(async () => {
+    try {
+      const firebaseUser = firebaseInstances.auth.currentUser;
+      if (!firebaseUser) {
+        return false;
+      }
+
+      return await checkPinAccountExistsInFirebase(firebaseInstances.firestore, firebaseUser.uid);
+    } catch (error) {
+      console.error('[checkRemoteAccount] Error:', error);
+      return false;
+    }
+  }, [firebaseInstances]);
+
   const value = {
     // Estado
     isAuthenticated,
@@ -345,6 +389,7 @@ export const AuthProvider = ({ children }) => {
     changePin,
     getUserSalt,
     hasAccount,
+    checkRemoteAccount, // Verificar conta no Firebase (auto-detecção)
     resetApp
   };
 
