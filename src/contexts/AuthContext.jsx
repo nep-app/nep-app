@@ -338,24 +338,26 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Dados de verificação do PIN não encontrados');
       }
 
-      // Verificar PIN
+      // Verificar PIN - TENTAR DIRETO COM DECRYPT PARA CAPTURAR ERRO
       let isValid = false;
       let needsPinVerificationRecovery = false;
+      let verifyError = null;
 
+      // 🔧 TENTAR DESENCRIPTAR DIRETAMENTE (em vez de verifyPassword que engole o erro)
       try {
-        isValid = await verifyPassword(
-          pin,
-          verification.data,
-          verification.iv,
-          salt
-        );
-      } catch (verifyError) {
-        // 🚨 RECUPERAÇÃO AUTOMÁTICA: Se pinVerification está corrompido (OperationError)
-        // tentar validar PIN usando dados reais do Firebase
-        console.warn('[AuthContext] ⚠️ Erro ao verificar PIN (possível salt mismatch):', verifyError.name);
-        console.log('[AuthContext] 🔧 Tentando recuperação automática...');
+        const { decrypt } = await import('../utils/encryption');
+        await decrypt(verification.data, verification.iv, pin, salt);
+        isValid = true;
+      } catch (error) {
+        verifyError = error;
+        console.warn('[AuthContext] ⚠️ Erro ao verificar PIN:', error.name);
+      }
 
-        if (firebaseUser && (verifyError.name === 'OperationError' || verifyError.name === 'InvalidAccessError')) {
+      // 🚨 RECUPERAÇÃO AUTOMÁTICA: Se OperationError, tentar validar com item de controlo
+      if (!isValid && verifyError && firebaseUser) {
+        if (verifyError.name === 'OperationError' || verifyError.name === 'InvalidAccessError') {
+          console.log('[AuthContext] 🔧 Tentando recuperação automática...');
+
           try {
             // Buscar item de controlo do Firebase e tentar desencriptar com o PIN
             const { ref, getDoc } = await import('firebase/firestore');
