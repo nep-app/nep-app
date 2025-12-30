@@ -203,12 +203,73 @@ class SyncService {
 
   /**
    * Iniciar listeners em tempo real (para mudanças de outros dispositivos)
-   *
-   * NOTA: Por enquanto desativado para evitar conflitos.
-   * Implementar depois com resolução de conflitos adequada.
    */
   startRealtimeSync() {
-    // TODO: Implementar listeners do Firebase
+    if (!this.firebaseDB || !this.firebaseUser) {
+      return;
+    }
+
+    // Parar listeners existentes
+    this.stopRealtimeSync();
+
+    // Criar listener para cada coleção
+    for (const collectionName of COLLECTIONS) {
+      const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
+      const firebaseCollection = collection(this.firebaseDB, firebasePath);
+
+      // Listener em tempo real
+      const unsubscribe = onSnapshot(firebaseCollection, async (snapshot) => {
+        try {
+          for (const change of snapshot.docChanges()) {
+            const firebaseData = change.doc.data();
+            const itemId = change.doc.id;
+
+            if (change.type === 'removed') {
+              // Item deletado no Firebase → deletar localmente
+              const localItem = await dexieDB[collectionName].get(itemId);
+              if (localItem && !localItem.deleted) {
+                await dexieDB[collectionName].update(itemId, {
+                  deleted: true,
+                  syncStatus: 'synced',
+                  lastModified: new Date().toISOString()
+                });
+              }
+            } else if (change.type === 'added' || change.type === 'modified') {
+              // Item novo ou modificado no Firebase
+              const localItem = await dexieDB[collectionName].get(itemId);
+
+              // Verificar se é uma mudança de outro dispositivo (não local)
+              const isFromOtherDevice = !localItem ||
+                                       localItem.syncStatus === 'synced' ||
+                                       (firebaseData.lastModified > (localItem.lastModified || ''));
+
+              if (isFromOtherDevice) {
+                // Desencriptar dados do Firebase
+                let item;
+                if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+                  item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+                } else {
+                  item = { ...firebaseData };
+                }
+
+                // Adicionar metadados
+                item.syncStatus = 'synced';
+                item.lastModified = firebaseData.lastModified || new Date().toISOString();
+                item.deleted = false;
+
+                // Atualizar localmente
+                await dexieDB[collectionName].put(item);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[Sync] ❌ Erro no listener de ${collectionName}:`, error);
+        }
+      });
+
+      this.listeners[collectionName] = unsubscribe;
+    }
+
   }
 
   /**

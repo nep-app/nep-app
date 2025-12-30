@@ -140,6 +140,9 @@ export const DataProvider = ({ children }) => {
         // Ativar auto-sync (a cada 5min)
         syncService.startAutoSync(5);
 
+        // Ativar sincronização em tempo real
+        syncService.startRealtimeSync();
+
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
         setIsSyncing(false);
@@ -152,6 +155,7 @@ export const DataProvider = ({ children }) => {
     return () => {
       if (syncService) {
         syncService.stopAutoSync();
+        syncService.stopRealtimeSync();
       }
     };
   }, [user, pin, db, getUserSalt, loadAllCollections, firebaseLoading]);
