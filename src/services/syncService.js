@@ -1,7 +1,7 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db as dexieDB } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
-import { validateKey, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
+import { validateKey, validateSalt, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
 
 // Helper functions (moved from dexieDB.js to use correct DB)
 const getAllItems = async (collectionName) => {
@@ -255,25 +255,16 @@ class SyncService {
     this.isSyncing = true;
 
     try {
-      // ✅ PASSO 1: VALIDAR CHAVE COM ITEM DE CONTROLO
+      // ✅ PASSO 1: VALIDAR CHAVE COM ITEM DE CONTROLO (CRÍTICO)
       console.log('[Sync] 🔐 Validando PIN e Salt antes de desencriptar dados...');
-      const validation = await validateKey(
+
+      // validateKey agora LANÇA ERRO se validação falhar
+      await validateKey(
         this.firebaseDB,
         this.firebaseUser.uid,
         this.pin,
         this.salt
       );
-
-      if (!validation.valid) {
-        throw new Error(
-          `❌ VALIDAÇÃO DE CHAVE FALHOU!\n\n` +
-          `${validation.error}\n\n` +
-          `AÇÃO REQUERIDA:\n` +
-          `1. Verifica se o PIN está correto\n` +
-          `2. Faz logout e login novamente\n` +
-          `3. Se problema persistir, pode haver conflito de Salt`
-        );
-      }
 
       console.log('[Sync] ✅ Chave validada! Prosseguindo com sync...');
 
@@ -287,6 +278,17 @@ class SyncService {
       let totalSkipped = 0;
 
       for (const collectionName of COLLECTIONS) {
+        // ⛔ CIRCUIT BREAKER CHECK: Verificar ANTES de processar collection
+        if (circuitBreaker.shouldStop()) {
+          console.error(
+            `[Sync] ⛔ SYNC COMPLETAMENTE INTERROMPIDO!\n` +
+            `Circuit breaker aberto. Parando TODAS as operações.\n` +
+            `Coleção atual: ${collectionName}\n` +
+            `Verifique PIN e Salt.`
+          );
+          break; // Sair IMEDIATAMENTE do loop de collections
+        }
+
         // 1. Buscar TODOS os dados do Firebase
         const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
         const firebaseCollection = collection(this.firebaseDB, firebasePath);
@@ -294,15 +296,14 @@ class SyncService {
 
         const firebaseItems = new Map();
         for (const docSnap of snapshot.docs) {
-          // ⛔ CIRCUIT BREAKER: Parar se muitos erros consecutivos
+          // ⛔ CIRCUIT BREAKER CHECK: Verificar a cada item
           if (circuitBreaker.shouldStop()) {
             console.error(
-              `[Sync] ⛔ SYNC INTERROMPIDO!\n` +
-              `Circuit breaker aberto em ${collectionName}.\n` +
-              `Motivo: ${circuitBreaker.consecutiveErrors} erros consecutivos de desencriptação.\n` +
-              `ISTO INDICA QUE O PIN OU SALT ESTÃO INCORRETOS!`
+              `[Sync] ⛔ Circuit breaker aberto durante processamento!\n` +
+              `Coleção: ${collectionName}\n` +
+              `PARANDO IMEDIATAMENTE.`
             );
-            break; // Parar este collection
+            break; // Sair do loop de items
           }
 
           try {
@@ -327,23 +328,29 @@ class SyncService {
             errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
             totalSkipped++;
 
-            // Registar no circuit breaker
+            // Registar no circuit breaker - SE ABRIR, PARA IMEDIATAMENTE
             const shouldStop = circuitBreaker.recordError();
             if (shouldStop) {
-              // Circuit breaker vai parar no próximo loop
+              // Circuit breaker abriu - break IMEDIATAMENTE
+              console.error(
+                `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
+                `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
+                `Item: ${collectionName}/${docSnap.id}\n` +
+                `PARANDO SYNC AGORA!`
+              );
+              break; // Sair do loop de items IMEDIATAMENTE
             }
-            // Continuar com próximo item (se circuit breaker permitir)
           }
         }
 
-        // Se circuit breaker abriu, parar todas as collections
+        // ⛔ CRITICAL: Se circuit breaker abriu, PARAR TUDO (não processar merge)
         if (circuitBreaker.shouldStop()) {
           console.error(
-            `[Sync] ⛔ SYNC COMPLETAMENTE INTERROMPIDO!\n` +
-            `Circuit breaker detectou erro sistemático.\n` +
-            `Verifique PIN e Salt.`
+            `[Sync] ⛔ SYNC ABORTADO - Circuit breaker aberto.\n` +
+            `NÃO vou processar merge de dados locais.\n` +
+            `Motivo: Erros sistemáticos de desencriptação.`
           );
-          break; // Sair do loop de collections
+          break; // Sair do loop de collections IMEDIATAMENTE
         }
 
         // 2. Buscar TODOS os dados locais

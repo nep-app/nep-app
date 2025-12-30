@@ -1,8 +1,8 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { encryptForFirebase, decryptFromFirebase } from './dexieEncryption';
 
 /**
- * Sync Validation - Validação de integridade antes de sync massivo
+ * Sync Validation - Validação de integridade CRÍTICA antes de sync massivo
  *
  * Previne desencriptação massiva com chave/salt errados
  */
@@ -11,7 +11,7 @@ import { encryptForFirebase, decryptFromFirebase } from './dexieEncryption';
  * Item de controlo - usado para validar que PIN/Salt estão corretos
  */
 const CONTROL_ITEM = {
-  id: '__control__',
+  id: 'validation',
   type: 'control',
   version: '1.0',
   message: 'Se consegues ler isto, o teu PIN e Salt estão corretos!',
@@ -21,6 +21,8 @@ const CONTROL_ITEM = {
 /**
  * Criar/atualizar item de controlo no Firebase
  * Deve ser chamado quando user faz login com sucesso
+ *
+ * @throws {Error} Se falhar a criação (CRÍTICO)
  */
 export async function createControlItem(firebaseDB, userId, pin, salt) {
   try {
@@ -32,17 +34,78 @@ export async function createControlItem(firebaseDB, userId, pin, salt) {
       encrypted: true,
       data,
       iv,
+      salt: Array.from(salt), // Guardar salt para validação futura
       lastModified: new Date().toISOString()
     };
 
-    const docRef = doc(firebaseDB, `users/${userId}/__control__`, '__control__');
+    // Usar _system como coleção (nomes com __ são reservados)
+    const docRef = doc(firebaseDB, `users/${userId}/_system`, 'validation');
     await setDoc(docRef, firebaseData);
 
-    console.log('[SyncValidation] ✅ Item de controlo criado');
+    console.log('[SyncValidation] ✅ Item de controlo criado com sucesso');
     return true;
   } catch (error) {
-    console.error('[SyncValidation] ❌ Erro ao criar item de controlo:', error.message);
-    return false;
+    console.error('[SyncValidation] ❌ ERRO CRÍTICO ao criar item de controlo:', error);
+    throw new Error(`Falha ao criar item de controlo: ${error.message}`);
+  }
+}
+
+/**
+ * Validar Salt antes de tentar desencriptar
+ * Compara salt local com salt guardado no Firebase
+ *
+ * @returns {Object} { valid: boolean, error: string, remoteExists: boolean }
+ */
+export async function validateSalt(firebaseDB, userId, localSalt) {
+  try {
+    console.log('[SyncValidation] 🔍 Validando Salt...');
+
+    const docRef = doc(firebaseDB, `users/${userId}/_system`, 'validation');
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.warn('[SyncValidation] ⚠️ Item de controlo não existe (conta nova ou antiga)');
+      return { valid: true, error: null, remoteExists: false };
+    }
+
+    const firebaseData = docSnap.data();
+
+    if (!firebaseData.salt) {
+      console.warn('[SyncValidation] ⚠️ Salt não guardado no item de controlo (versão antiga)');
+      return { valid: true, error: null, remoteExists: true, saltMissing: true };
+    }
+
+    const remoteSalt = new Uint8Array(firebaseData.salt);
+
+    // Comparar salt local com remoto
+    if (localSalt.length !== remoteSalt.length) {
+      return {
+        valid: false,
+        error: 'Salt local tem tamanho diferente do Salt remoto!',
+        remoteExists: true
+      };
+    }
+
+    for (let i = 0; i < localSalt.length; i++) {
+      if (localSalt[i] !== remoteSalt[i]) {
+        return {
+          valid: false,
+          error: 'Salt local NÃO coincide com Salt remoto! Isto vai causar falhas de desencriptação.',
+          remoteExists: true
+        };
+      }
+    }
+
+    console.log('[SyncValidation] ✅ Salt validado - local coincide com remoto');
+    return { valid: true, error: null, remoteExists: true };
+
+  } catch (error) {
+    console.error('[SyncValidation] ❌ Erro ao validar Salt:', error);
+    return {
+      valid: false,
+      error: 'Erro ao validar Salt: ' + error.message,
+      remoteExists: false
+    };
   }
 }
 
@@ -50,18 +113,37 @@ export async function createControlItem(firebaseDB, userId, pin, salt) {
  * Validar chave (PIN + Salt) antes de sync massivo
  * Tenta desencriptar o item de controlo
  *
- * @returns {Object} { valid: boolean, error: string }
+ * @throws {Error} Se validação falhar (CRÍTICO)
  */
 export async function validateKey(firebaseDB, userId, pin, salt) {
   try {
     console.log('[SyncValidation] 🔍 Validando PIN e Salt com item de controlo...');
 
-    const docRef = doc(firebaseDB, `users/${userId}/__control__`, '__control__');
+    // PASSO 1: Validar Salt PRIMEIRO
+    const saltValidation = await validateSalt(firebaseDB, userId, salt);
+
+    if (!saltValidation.valid) {
+      throw new Error(
+        `❌ VALIDAÇÃO DE SALT FALHOU!\n\n` +
+        `${saltValidation.error}\n\n` +
+        `CAUSA: Salt local diferente do Salt que encriptou os dados.\n` +
+        `SOLUÇÃO: Faz logout completo e login novamente.`
+      );
+    }
+
+    if (!saltValidation.remoteExists) {
+      console.log('[SyncValidation] ℹ️ Item de controlo não existe - a criar agora...');
+      await createControlItem(firebaseDB, userId, pin, salt);
+      return { valid: true, error: null, created: true };
+    }
+
+    // PASSO 2: Validar PIN tentando desencriptar
+    const docRef = doc(firebaseDB, `users/${userId}/_system`, 'validation');
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
-      console.log('[SyncValidation] ⚠️ Item de controlo não encontrado (conta antiga?)');
-      // Criar agora
+      // Não devia acontecer (já verificámos acima) mas handle anyway
+      console.log('[SyncValidation] ℹ️ Item de controlo desapareceu - a criar...');
       await createControlItem(firebaseDB, userId, pin, salt);
       return { valid: true, error: null, created: true };
     }
@@ -78,30 +160,28 @@ export async function validateKey(firebaseDB, userId, pin, salt) {
       );
 
       // Verificar se é o item de controlo correto
-      if (decrypted.type === 'control' && decrypted.id === '__control__') {
+      if (decrypted.type === 'control' && decrypted.id === 'validation') {
         console.log('[SyncValidation] ✅ PIN e Salt validados com sucesso!');
         console.log('[SyncValidation] 💬', decrypted.message);
         return { valid: true, error: null };
       } else {
-        console.error('[SyncValidation] ❌ Item desencriptado mas conteúdo inválido');
-        return {
-          valid: false,
-          error: 'Item de controlo corrompido'
-        };
+        throw new Error('Item de controlo corrompido - conteúdo inválido');
       }
     } catch (decryptError) {
-      console.error('[SyncValidation] ❌ Falha ao desencriptar item de controlo');
-      return {
-        valid: false,
-        error: 'PIN ou Salt incorretos - impossível desencriptar dados'
-      };
+      throw new Error(
+        `❌ VALIDAÇÃO DE PIN FALHOU!\n\n` +
+        `Impossível desencriptar item de controlo.\n\n` +
+        `CAUSA: PIN incorreto ou dados corrompidos.\n` +
+        `SOLUÇÃO: Verifica o PIN e tenta novamente.`
+      );
     }
   } catch (error) {
-    console.error('[SyncValidation] ❌ Erro na validação:', error.message);
-    return {
-      valid: false,
-      error: 'Erro ao validar chave: ' + error.message
-    };
+    // Re-throw errors já formatados, ou formatar novos
+    if (error.message.includes('❌')) {
+      throw error;
+    } else {
+      throw new Error(`Erro na validação de chave: ${error.message}`);
+    }
   }
 }
 
@@ -134,9 +214,14 @@ export class SyncCircuitBreaker {
     if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
       this.isOpen = true;
       console.error(
-        `[CircuitBreaker] ⛔ CIRCUIT BREAKER ABERTO!\n` +
+        `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `⛔ CIRCUIT BREAKER ABERTO! ⛔\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
         `${this.consecutiveErrors} erros consecutivos detectados.\n` +
-        `Sync interrompido para prevenir danos.`
+        `SYNC INTERROMPIDO para prevenir browser freeze.\n` +
+        `\n` +
+        `CAUSA PROVÁVEL: PIN ou Salt incorretos.\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
       );
       return true;
     }
@@ -179,12 +264,15 @@ export class SyncErrorLogger {
   constructor() {
     this.errors = [];
     this.errorsByType = new Map();
+    this.maxLogsShown = 3; // Mostrar apenas primeiros 3 erros
   }
 
   /**
    * Registar erro (SEM stack trace)
    */
   logError(collectionName, itemId, errorType) {
+    const errorCount = this.errors.length;
+
     this.errors.push({
       collection: collectionName,
       itemId: itemId,
@@ -195,6 +283,14 @@ export class SyncErrorLogger {
     // Contar por tipo
     const count = this.errorsByType.get(errorType) || 0;
     this.errorsByType.set(errorType, count + 1);
+
+    // Mostrar apenas os primeiros N erros (evitar spam)
+    if (errorCount < this.maxLogsShown) {
+      console.error(`[Sync] ❌ Erro #${errorCount + 1}: ${collectionName}/${itemId} - ${errorType}`);
+    } else if (errorCount === this.maxLogsShown) {
+      console.warn(`[Sync] ⚠️ Mais erros detectados... (suprimindo logs, resumo no final)`);
+    }
+    // Depois dos primeiros N, não mostrar mais nada
   }
 
   /**
@@ -244,12 +340,13 @@ export class SyncErrorLogger {
     }
 
     console.warn(
-      `[SyncErrors] ⚠️ RESUMO DE ERROS:\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `⚠️ RESUMO DE ERROS DE SYNC\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `Total de erros: ${summary.totalErrors}\n` +
       `\nPor tipo:\n${JSON.stringify(summary.errorsByType, null, 2)}\n` +
       `\nPor coleção:\n${JSON.stringify(summary.failedCollections, null, 2)}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
     );
   }
 }
