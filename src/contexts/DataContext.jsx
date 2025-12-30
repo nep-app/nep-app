@@ -166,8 +166,12 @@ export const DataProvider = ({ children }) => {
 
   const addConsumption = useCallback(async (item) => {
     const result = await addItem('consumptions', item);
+    console.log('[DataContext] ✅ Item adicionado:', item.id);
     // Trigger sync em background
-    setTimeout(() => syncService.pushToFirebase(), 1000);
+    setTimeout(() => {
+      console.log('[DataContext] 🔄 Iniciando push para Firebase...');
+      syncService.pushToFirebase();
+    }, 1000);
     return result;
   }, [addItem]);
 
@@ -190,7 +194,11 @@ export const DataProvider = ({ children }) => {
 
   const addWellbeingLog = useCallback(async (item) => {
     const result = await addItem('wellbeingLogs', item);
-    setTimeout(() => syncService.pushToFirebase(), 1000);
+    console.log('[DataContext] ✅ Wellbeing adicionado:', item.id);
+    setTimeout(() => {
+      console.log('[DataContext] 🔄 Iniciando push para Firebase...');
+      syncService.pushToFirebase();
+    }, 1000);
     return result;
   }, [addItem]);
 

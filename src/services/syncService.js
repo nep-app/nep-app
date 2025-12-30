@@ -128,14 +128,17 @@ class SyncService {
    */
   async pushToFirebase() {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
+      console.log('[Sync] ⚠️ pushToFirebase: não inicializado');
       return;
     }
 
     if (this.isSyncing) {
+      console.log('[Sync] ⚠️ pushToFirebase: já em curso');
       return;
     }
 
     this.isSyncing = true;
+    console.log('[Sync] 🔄 pushToFirebase INICIADO');
 
     try {
 
@@ -152,6 +155,7 @@ class SyncService {
           continue;
         }
 
+        console.log(`[Sync] 📤 ${collectionName}: ${pendingItems.length} items pendentes`);
 
         for (const item of pendingItems) {
           try {
@@ -175,6 +179,7 @@ class SyncService {
               // Salvar no Firebase
               const docRef = doc(this.firebaseDB, firebasePath, item.id);
               await setDoc(docRef, firebaseData);
+              console.log(`[Sync] ✅ Enviado: ${collectionName}/${item.id}`);
             }
 
             // Marcar como sincronizado
@@ -185,6 +190,8 @@ class SyncService {
           }
         }
       }
+
+      console.log(`[Sync] ✅ pushToFirebase COMPLETO - ${totalPushed} items enviados`);
 
     } catch (error) {
       console.error('[Sync] ❌ Erro no PUSH:', error);
