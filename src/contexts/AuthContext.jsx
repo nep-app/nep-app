@@ -358,23 +358,41 @@ export const AuthProvider = ({ children }) => {
         console.log('[AuthContext] 🔧 Tentando recuperação automática...');
 
         try {
-          // Buscar item de controlo do Firebase e tentar desencriptar com o PIN
+          // Buscar item de controlo do Firebase
           const { doc, getDoc } = await import('firebase/firestore');
           const controlDoc = await getDoc(doc(firebaseInstances.firestore, `users/${firebaseUser.uid}/_system/validation`));
 
           if (controlDoc.exists()) {
             const controlData = controlDoc.data();
-            console.log('[AuthContext] 🔍 Testando PIN com item de controlo do Firebase...');
 
-            const { decryptFromFirebase } = await import('../utils/dexieEncryption');
-            await decryptFromFirebase(controlData.data, controlData.iv, pin, salt);
+            // 🔑 SALT RECOVERY: Item de controlo guarda o salt ORIGINAL (não encriptado!)
+            if (controlData.salt) {
+              const correctSalt = new Uint8Array(controlData.salt);
+              console.log('[AuthContext] 🔍 Salt original encontrado no item de controlo!');
+              console.log('[AuthContext] 🧪 Testando PIN com salt do item de controlo...');
 
-            // ✅ PIN está CORRETO! O problema era só o pinVerification corrompido
-            console.log('[AuthContext] ✅ PIN VALIDADO com sucesso usando item de controlo!');
-            console.log('[AuthContext] 🔧 Recriando pinVerification com salt correto...');
+              try {
+                const { decryptFromFirebase } = await import('../utils/dexieEncryption');
+                await decryptFromFirebase(controlData.data, controlData.iv, pin, correctSalt);
 
-            isValid = true;
-            needsPinVerificationRecovery = true;
+                // ✅ PIN está CORRETO com o salt do item de controlo!
+                console.log('[AuthContext] ✅ PIN VALIDADO com salt do item de controlo!');
+                console.log('[AuthContext] 🔧 Atualizando salt e recriando pinVerification...');
+
+                // Atualizar salt para o correto
+                salt = correctSalt;
+                const { saltToBase64 } = await import('../utils/encryption');
+                saltBase64 = saltToBase64(salt);
+                await setMetadata('salt', saltBase64);
+
+                isValid = true;
+                needsPinVerificationRecovery = true;
+              } catch (decryptError) {
+                console.error('[AuthContext] ❌ PIN incorreto mesmo com salt do item de controlo');
+              }
+            } else {
+              console.warn('[AuthContext] ⚠️ Item de controlo não tem salt guardado');
+            }
           } else {
             console.warn('[AuthContext] ⚠️ Item de controlo não encontrado no Firebase');
           }
