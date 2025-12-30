@@ -11,6 +11,7 @@ import {
 } from '../utils/encryption';
 import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
 import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
+import { createControlItem } from '../utils/syncValidation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -166,6 +167,15 @@ export const AuthProvider = ({ children }) => {
           console.error('[AuthContext] ⚠️ Erro ao guardar pinVerification no Firebase (não crítico):', error);
           // Não falhar a criação da conta se sync falhar
         }
+
+        // Criar item de controlo para validação futura
+        try {
+          console.log('[AuthContext] 🔧 Criando item de controlo para validação...');
+          await createControlItem(firebaseInstances.firestore, firebaseUser.uid, pin, salt);
+          console.log('[AuthContext] ✅ Item de controlo criado');
+        } catch (error) {
+          console.error('[AuthContext] ⚠️ Erro ao criar item de controlo (não crítico):', error);
+        }
       }
 
       // Atualizar estado
@@ -265,6 +275,15 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error('[AuthContext] ⚠️ Erro ao sincronizar pinVerification (não crítico):', error);
           // Não falhar o login se sync falhar
+        }
+
+        // Criar/atualizar item de controlo para validação futura
+        try {
+          console.log('[AuthContext] 🔧 Criando/atualizando item de controlo...');
+          await createControlItem(firebaseInstances.firestore, firebaseUser.uid, pin, salt);
+          console.log('[AuthContext] ✅ Item de controlo criado/atualizado');
+        } catch (error) {
+          console.error('[AuthContext] ⚠️ Erro ao criar item de controlo (não crítico):', error);
         }
       }
 

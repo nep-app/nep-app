@@ -1,6 +1,7 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db as dexieDB } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
+import { validateKey, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
 
 // Helper functions (moved from dexieDB.js to use correct DB)
 const getAllItems = async (collectionName) => {
@@ -254,6 +255,32 @@ class SyncService {
     this.isSyncing = true;
 
     try {
+      // ✅ PASSO 1: VALIDAR CHAVE COM ITEM DE CONTROLO
+      console.log('[Sync] 🔐 Validando PIN e Salt antes de desencriptar dados...');
+      const validation = await validateKey(
+        this.firebaseDB,
+        this.firebaseUser.uid,
+        this.pin,
+        this.salt
+      );
+
+      if (!validation.valid) {
+        throw new Error(
+          `❌ VALIDAÇÃO DE CHAVE FALHOU!\n\n` +
+          `${validation.error}\n\n` +
+          `AÇÃO REQUERIDA:\n` +
+          `1. Verifica se o PIN está correto\n` +
+          `2. Faz logout e login novamente\n` +
+          `3. Se problema persistir, pode haver conflito de Salt`
+        );
+      }
+
+      console.log('[Sync] ✅ Chave validada! Prosseguindo com sync...');
+
+      // Inicializar circuit breaker e error logger
+      const circuitBreaker = new SyncCircuitBreaker(5); // Para após 5 erros consecutivos
+      const errorLogger = new SyncErrorLogger();
+
       let totalMerged = 0;
       let totalPushed = 0;
       let totalPulled = 0;
@@ -267,6 +294,17 @@ class SyncService {
 
         const firebaseItems = new Map();
         for (const docSnap of snapshot.docs) {
+          // ⛔ CIRCUIT BREAKER: Parar se muitos erros consecutivos
+          if (circuitBreaker.shouldStop()) {
+            console.error(
+              `[Sync] ⛔ SYNC INTERROMPIDO!\n` +
+              `Circuit breaker aberto em ${collectionName}.\n` +
+              `Motivo: ${circuitBreaker.consecutiveErrors} erros consecutivos de desencriptação.\n` +
+              `ISTO INDICA QUE O PIN OU SALT ESTÃO INCORRETOS!`
+            );
+            break; // Parar este collection
+          }
+
           try {
             const firebaseData = docSnap.data();
 
@@ -280,11 +318,32 @@ class SyncService {
 
             item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
             firebaseItems.set(docSnap.id, item);
+
+            // ✅ Sucesso - reset circuit breaker
+            circuitBreaker.recordSuccess();
+
           } catch (error) {
-            console.error(`[Sync] ⚠️ Erro ao desencriptar item ${docSnap.id} de ${collectionName}:`, error.message);
+            // ❌ Erro - registar no logger (SEM stack trace)
+            errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
             totalSkipped++;
-            // Continuar com próximo item
+
+            // Registar no circuit breaker
+            const shouldStop = circuitBreaker.recordError();
+            if (shouldStop) {
+              // Circuit breaker vai parar no próximo loop
+            }
+            // Continuar com próximo item (se circuit breaker permitir)
           }
+        }
+
+        // Se circuit breaker abriu, parar todas as collections
+        if (circuitBreaker.shouldStop()) {
+          console.error(
+            `[Sync] ⛔ SYNC COMPLETAMENTE INTERROMPIDO!\n` +
+            `Circuit breaker detectou erro sistemático.\n` +
+            `Verifique PIN e Salt.`
+          );
+          break; // Sair do loop de collections
         }
 
         // 2. Buscar TODOS os dados locais
@@ -354,20 +413,54 @@ class SyncService {
         }
       }
 
+      // Imprimir resumo de erros (apenas uma vez, limpo)
+      if (errorLogger.getSummary().totalErrors > 0) {
+        errorLogger.printSummary();
+      }
+
+      // Verificar se circuit breaker foi ativado
+      const breakerSummary = circuitBreaker.getSummary();
+      if (breakerSummary.isOpen) {
+        throw new Error(
+          `Sync interrompido por Circuit Breaker!\n` +
+          `${breakerSummary.consecutiveErrors} erros consecutivos detectados.\n` +
+          `Total de erros: ${breakerSummary.totalErrors}\n` +
+          `Verifica PIN e Salt!`
+        );
+      }
+
       return {
         success: true,
         pushed: totalPushed,
         pulled: totalPulled,
         merged: totalMerged,
-        skipped: totalSkipped
+        skipped: totalSkipped,
+        errors: errorLogger.getSummary()
       };
 
     } catch (error) {
-      console.error('[Sync] Erro na sincronização completa:', error);
+      console.error('[Sync] ❌ Erro na sincronização completa:', error.message);
       throw error;
     } finally {
       this.isSyncing = false;
     }
+  }
+
+  /**
+   * Criar item de controlo (deve ser chamado após login bem-sucedido)
+   */
+  async createControlItem() {
+    if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
+      console.warn('[Sync] ⚠️ Não é possível criar item de controlo (não inicializado)');
+      return false;
+    }
+
+    return await createControlItem(
+      this.firebaseDB,
+      this.firebaseUser.uid,
+      this.pin,
+      this.salt
+    );
   }
 
   /**
