@@ -12,7 +12,7 @@ import * as Icons from './Icons';
  * 3. Se sim: mostra login (PIN)
  */
 export const AuthScreen = ({ onFirebaseLogout }) => {
-  const { login, createAccount, hasAccount, checkRemoteAccount } = useAuth();
+  const { login, createAccount, hasAccount, checkRemoteAccount, resetApp } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -21,6 +21,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   const [email, setEmail] = useState('');
   const [firstPIN, setFirstPIN] = useState('');
   const [error, setError] = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // RECONHECIMENTO DE PERFIL INTELIGENTE
   // Verifica conta local E remota (Firebase) automaticamente
@@ -77,6 +78,22 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
     isSubmittingRef.current = false;
   }, [login]);
 
+  // EMERGENCY RESET: Resetar dados locais e re-sincronizar do Firebase
+  const handleEmergencyReset = async () => {
+    try {
+      console.log('[AuthScreen] 🚨 EMERGENCY RESET - Apagando dados locais...');
+
+      // Apagar tudo
+      await resetApp();
+
+      // Recarregar página para forçar re-inicialização
+      window.location.reload();
+    } catch (error) {
+      console.error('[AuthScreen] ❌ Erro no emergency reset:', error);
+      setError('Erro ao resetar. Tenta recarregar a página manualmente.');
+    }
+  };
+
   // CRIAR CONTA: Fluxo de 3 passos
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -130,14 +147,87 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
 
   // LOGIN: Conta já existe (local OU Firebase)
   if (accountExists) {
+    // Modal de confirmação de reset
+    if (showResetConfirm) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+          <div className="w-full max-w-md bg-gray-800 rounded-lg p-6 border-2 border-red-500/50">
+            <div className="text-center mb-6">
+              <Icons.AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">⚠️ Resetar Dados Locais?</h2>
+              <p className="text-gray-300 text-sm mb-4">
+                Esta ação vai:
+              </p>
+              <ul className="text-left text-gray-300 text-sm space-y-2 mb-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-red-400">•</span>
+                  <span>Apagar TODOS os dados locais deste dispositivo</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-400">•</span>
+                  <span>Manter dados do Firebase intactos (nada é perdido)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400">•</span>
+                  <span>Re-sincronizar tudo do Firebase no próximo login</span>
+                </li>
+              </ul>
+              <p className="text-yellow-300 text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2">
+                💡 Usa isto se o PIN está correto mas não consegues entrar
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleEmergencyReset}
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-all font-medium"
+              >
+                Sim, Resetar Dados Locais
+              </button>
+              <button
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  setError('');
+                }}
+                className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg transition-all font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Tela de login normal
     return (
-      <PINEntry
-        key="login"
-        title="Bem-vinda de volta"
-        subtitle="Insere o teu PIN de 4 dígitos"
-        onComplete={handleLogin}
-        error={error}
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+        <div className="w-full max-w-md">
+          <PINEntry
+            key="login"
+            title="Bem-vinda de volta"
+            subtitle="Insere o teu PIN de 4 dígitos"
+            onComplete={handleLogin}
+            error={error}
+          />
+
+          {/* Mostrar botão de reset APENAS se houver erro de PIN */}
+          {error && error.includes('PIN incorreto') && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="w-full bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/50 text-yellow-300 py-3 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2"
+              >
+                <Icons.RefreshCw className="w-4 h-4" />
+                PIN correto mas não funciona? Resetar dados locais
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                (Dados do Firebase não são afetados)
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 
