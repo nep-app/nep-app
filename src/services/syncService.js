@@ -152,11 +152,14 @@ class SyncService {
           .equals('pending')
           .toArray();
 
+        // LOG: Mostrar TODAS as coleções, mesmo se 0 pending
+        console.log(`[Sync] 📊 ${collectionName}: ${pendingItems.length} pendentes`);
+
         if (pendingItems.length === 0) {
           continue;
         }
 
-        console.log(`[Sync] 📤 ${collectionName}: ${pendingItems.length} items pendentes`);
+        console.log(`[Sync] 📤 ${collectionName}: Enviando ${pendingItems.length} items...`);
 
         for (const item of pendingItems) {
           try {

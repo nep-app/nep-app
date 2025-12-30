@@ -17,6 +17,7 @@ const addItemWithSync = async (collection, item) => {
     deleted: false
   };
   await db[collection].put(itemWithSync);
+  console.log(`[LocalData] ✅ Item adicionado: ${collection}/${item.id} - syncStatus: pending`);
   return itemWithSync;
 };
 
@@ -31,6 +32,7 @@ const updateItemWithSync = async (collection, id, updates) => {
     lastModified: new Date().toISOString()
   };
   await db[collection].put(updated);
+  console.log(`[LocalData] ✏️ Item atualizado: ${collection}/${id} - syncStatus: pending`);
   return updated;
 };
 
