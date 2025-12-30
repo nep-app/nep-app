@@ -260,7 +260,7 @@ class SyncService {
     let effectiveMaxAge = maxAge;
     if (incremental && maxAge === null) {
       try {
-        const { getMetadata } = await import('../db/metadata');
+        const { getMetadata } = await import('../db/localDB');
         const lastSyncStr = await getMetadata('lastSyncTimestamp');
         if (lastSyncStr) {
           const lastSync = new Date(lastSyncStr);
@@ -610,7 +610,7 @@ class SyncService {
       // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
       if (incremental) {
         try {
-          const { setMetadata } = await import('../db/metadata');
+          const { setMetadata } = await import('../db/localDB');
           await setMetadata('lastSyncTimestamp', new Date().toISOString());
         } catch (error) {
           console.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
