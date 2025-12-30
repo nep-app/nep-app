@@ -140,7 +140,12 @@ export const SettingsView = ({
                     )}
 
                     <button
-                        onClick={handleFullSync}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('Botão clicado! isSyncing: ' + isSyncing + ', manualSync exists: ' + !!manualSync);
+                            handleFullSync();
+                        }}
                         disabled={isSyncing}
                         className={
                             'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
