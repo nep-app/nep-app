@@ -362,16 +362,16 @@ class SyncService {
             circuitBreaker.recordSuccess();
 
           } catch (error) {
+            // 🧟 MODO SKIP ZOMBIES: Ignorar SILENCIOSAMENTE
+            if (skipZombies) {
+              totalZombies++;
+              // Não fazer log, não registar erro, apenas continuar
+              continue;
+            }
+
             // ❌ Erro - registar no logger (SEM stack trace)
             errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
             totalSkipped++;
-
-            // 🧟 MODO SKIP ZOMBIES: Continuar em vez de parar
-            if (skipZombies) {
-              totalZombies++;
-              // Não registar no circuit breaker - apenas continuar
-              continue;
-            }
 
             // Guardar primeiro item que falhou para análise de salt
             if (!firstFailedItem && firebaseData.encrypted) {
@@ -853,5 +853,11 @@ class SyncService {
 
 // Singleton instance
 export const syncService = new SyncService();
+
+// Expor globalmente para debug na consola do browser
+if (typeof window !== 'undefined') {
+  window.syncService = syncService;
+  console.log('[SyncService] Disponível globalmente como window.syncService');
+}
 
 export default syncService;

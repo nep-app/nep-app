@@ -272,7 +272,10 @@ export const DataProvider = ({ children }) => {
       // Agora fazer PULL (ignorar erros de desencriptação)
       try {
         console.log('[DataContext] Fazendo PULL do Firebase...');
-        const result = await syncService.fullSync();
+        const result = await syncService.fullSync({
+          skipZombies: true,  // Ignorar items antigos não desencriptáveis
+          maxAge: null        // Sincronizar todos (sem filtro de idade)
+        });
         await loadAllCollections();
         setLastSyncTime(new Date());
         return result;
