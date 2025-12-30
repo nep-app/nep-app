@@ -125,6 +125,32 @@ class SyncService {
   }
 
   /**
+   * FORÇAR: Marcar TODOS os items locais como pending
+   * Usa quando sync está quebrado e precisa forçar tudo
+   */
+  async forceMarkAllPending() {
+    console.log('[Sync] 🔧 Forçando TODOS os items para pending...');
+
+    let totalMarked = 0;
+    for (const collectionName of COLLECTIONS) {
+      const allItems = await dexieDB[collectionName].toArray();
+
+      for (const item of allItems) {
+        if (!item.deleted) {
+          await dexieDB[collectionName].update(item.id, {
+            syncStatus: 'pending',
+            lastModified: new Date().toISOString()
+          });
+          totalMarked++;
+        }
+      }
+    }
+
+    console.log(`[Sync] ✅ ${totalMarked} items marcados como pending`);
+    return totalMarked;
+  }
+
+  /**
    * PUSH: Enviar dados pendentes do Dexie para Firebase (encriptados)
    */
   async pushToFirebase() {

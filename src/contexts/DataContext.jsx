@@ -262,6 +262,10 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
+      // FORÇAR: Marcar tudo como pending antes de sincronizar
+      await syncService.forceMarkAllPending();
+
+      // Fazer sync completo
       const result = await syncService.fullSync();
       await loadAllCollections();
       setLastSyncTime(new Date());
