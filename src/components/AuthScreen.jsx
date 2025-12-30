@@ -15,7 +15,8 @@ export const AuthScreen = () => {
   const { login, createAccount, hasAccount } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+  const [forceLoginMode, setForceLoginMode] = useState(false); // Forçar modo login
+
   // Criar conta
   const [step, setStep] = useState('email'); // 'email' | 'pin' | 'confirm'
   const [email, setEmail] = useState('');
@@ -105,8 +106,8 @@ export const AuthScreen = () => {
     );
   }
 
-  // LOGIN: Conta já existe
-  if (accountExists) {
+  // LOGIN: Conta já existe OU usuário clicou em "Já tenho conta"
+  if (accountExists || forceLoginMode) {
     return (
       <PINEntry
         key="login"
@@ -114,6 +115,8 @@ export const AuthScreen = () => {
         subtitle="Insere o teu PIN de 4 dígitos"
         onComplete={handleLogin}
         error={error}
+        showBackButton={forceLoginMode && !accountExists}
+        onBack={() => setForceLoginMode(false)}
       />
     );
   }
@@ -170,6 +173,20 @@ export const AuthScreen = () => {
               Saltar (continuar sem email)
             </button>
           </form>
+
+          {/* Botão "Já tenho conta" */}
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setForceLoginMode(true);
+              }}
+              className="w-full py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-purple-300 hover:bg-gray-700 hover:border-purple-600 transition-all font-medium"
+            >
+              Já tenho conta
+            </button>
+          </div>
 
           {/* Info */}
           <div className="mt-8">

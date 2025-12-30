@@ -3,15 +3,17 @@ import * as Icons from './Icons';
 
 /**
  * Componente de entrada de PIN de 4 dígitos
- * 
+ *
  * Props:
  * - onComplete: (pin) => void - chamado quando PIN completo é inserido
  * - title: string - título do ecrã
  * - subtitle: string - subtítulo/instruções
  * - error: string - mensagem de erro
  * - darkMode: boolean
+ * - showBackButton: boolean - mostrar botão voltar
+ * - onBack: () => void - callback para voltar
  */
-export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }) => {
+export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true, showBackButton = false, onBack }) => {
   const [digits, setDigits] = useState(['', '', '', '']);
 
   // Create 4 individual refs - no array to avoid Rules of Hooks issues
@@ -186,6 +188,17 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
           >
             <Icons.X className="w-4 h-4" />
             Limpar
+          </button>
+        )}
+
+        {/* Back Button */}
+        {showBackButton && onBack && (
+          <button
+            onClick={onBack}
+            className="w-full mt-4 py-3 bg-gray-800 border-2 border-gray-700 hover:bg-gray-700 hover:border-purple-600 text-purple-300 rounded-lg transition-all flex items-center justify-center gap-2"
+          >
+            <Icons.ChevronLeft className="w-4 h-4" />
+            Voltar para criar conta
           </button>
         )}
       </div>
