@@ -11,11 +11,10 @@ import * as Icons from './Icons';
  * 2. Se não: mostra criação de conta (email + PIN + confirmar PIN)
  * 3. Se sim: mostra login (PIN)
  */
-export const AuthScreen = () => {
+export const AuthScreen = ({ onFirebaseLogout }) => {
   const { login, createAccount, hasAccount } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [forceLoginMode, setForceLoginMode] = useState(false); // Forçar modo login
 
   // Criar conta
   const [step, setStep] = useState('email'); // 'email' | 'pin' | 'confirm'
@@ -106,8 +105,8 @@ export const AuthScreen = () => {
     );
   }
 
-  // LOGIN: Conta já existe OU usuário clicou em "Já tenho conta"
-  if (accountExists || forceLoginMode) {
+  // LOGIN: Conta já existe
+  if (accountExists) {
     return (
       <PINEntry
         key="login"
@@ -115,8 +114,6 @@ export const AuthScreen = () => {
         subtitle="Insere o teu PIN de 4 dígitos"
         onComplete={handleLogin}
         error={error}
-        showBackButton={forceLoginMode && !accountExists}
-        onBack={() => setForceLoginMode(false)}
       />
     );
   }
@@ -174,19 +171,22 @@ export const AuthScreen = () => {
             </button>
           </form>
 
-          {/* Botão "Já tenho conta" */}
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setError('');
-                setForceLoginMode(true);
-              }}
-              className="w-full py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-purple-300 hover:bg-gray-700 hover:border-purple-600 transition-all font-medium"
-            >
-              Já tenho conta
-            </button>
-          </div>
+          {/* Botão "Já tenho conta" - faz logout do Firebase e volta para login */}
+          {onFirebaseLogout && (
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={onFirebaseLogout}
+                className="w-full py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-purple-300 hover:bg-gray-700 hover:border-purple-600 transition-all font-medium flex items-center justify-center gap-2"
+              >
+                <Icons.LogOut className="w-4 h-4" />
+                Já tenho conta - Fazer login
+              </button>
+              <p className="text-xs text-purple-400 mt-2 text-center">
+                Isto vai trocar de conta Firebase
+              </p>
+            </div>
+          )}
 
           {/* Info */}
           <div className="mt-8">

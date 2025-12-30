@@ -118,7 +118,7 @@ function HarmReductionTracker() {
             }
             // STEP 3: Firebase user exists but not PIN authenticated → Show PIN screen
             else if (!pinAuthenticated) {
-                content = <AuthScreen />;
+                content = <AuthScreen onFirebaseLogout={() => firebaseAuth.signOut()} />;
             }
             // STEP 4: Both Firebase AND PIN authenticated → Show app
             else {
