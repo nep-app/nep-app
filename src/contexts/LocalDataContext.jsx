@@ -215,7 +215,17 @@ export const LocalDataProvider = ({ children }) => {
 
     const setter = setterMap[collectionName];
     if (setter) {
-      setter(prev => [decrypted, ...prev]);
+      // Prevenir duplicados: se ID já existe, substituir em vez de adicionar
+      setter(prev => {
+        const existingIndex = prev.findIndex(item => item.id === decrypted.id);
+        if (existingIndex >= 0) {
+          // ID já existe - substituir (isto cobre casos de uso incorreto de addItem)
+          console.warn(`[LocalData] ⚠️ addItem chamado com ID existente: ${collectionName}/${decrypted.id} - substituindo`);
+          return prev.map((item, i) => i === existingIndex ? decrypted : item);
+        }
+        // ID novo - adicionar ao início
+        return [decrypted, ...prev];
+      });
     }
 
 

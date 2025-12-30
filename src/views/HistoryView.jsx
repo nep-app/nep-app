@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { doc, deleteDoc } from 'firebase/firestore';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';

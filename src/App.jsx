@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
@@ -334,8 +333,8 @@ function AuthenticatedApp() {
 
                             // Se o times estiver errado, corrigir
                             if (log.times !== correctTimes) {
-                                const logRef = doc(db, `users/${user.uid}/dailyLogs`, log.id);
-                                await updateDoc(logRef, { times: correctTimes });
+                                // Usar updateItem para atualizar Dexie + Firebase + React state
+                                await updateItem('dailyLogs', log.id, { times: correctTimes });
                                 fixed++;
                                 logger.info(`Fixed dailyLog ${log.id}: ${log.times} -> ${correctTimes}`);
                             }
