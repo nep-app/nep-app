@@ -194,24 +194,27 @@ class SyncService {
           try {
             const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
 
+            // 🪦 TOMBSTONE: Sempre usar setDoc, nunca deleteDoc
+            // Items deletados são marcados como deleted:true no Firebase
+            // Isso previne ressurreição quando outros dispositivos fazem sync
+
+            const { data, iv } = await encryptForFirebase(item, this.pin, this.salt);
+
+            const firebaseData = {
+              encrypted: true,
+              data,
+              iv,
+              lastModified: item.lastModified || new Date().toISOString(),
+              deleted: item.deleted || false  // 🪦 Tombstone flag
+            };
+
+            // Salvar no Firebase (mesmo se deleted)
+            const docRef = doc(this.firebaseDB, firebasePath, item.id);
+            await setDoc(docRef, firebaseData);
+
             if (item.deleted) {
-              // Deletar no Firebase
-              const docRef = doc(this.firebaseDB, firebasePath, item.id);
-              await deleteDoc(docRef);
+              console.log(`[Sync] 🪦 Tombstone enviado: ${collectionName}/${item.id}`);
             } else {
-              // Encriptar TUDO antes de enviar
-              const { data, iv } = await encryptForFirebase(item, this.pin, this.salt);
-
-              const firebaseData = {
-                encrypted: true,
-                data,
-                iv,
-                lastModified: item.lastModified || new Date().toISOString()
-              };
-
-              // Salvar no Firebase
-              const docRef = doc(this.firebaseDB, firebasePath, item.id);
-              await setDoc(docRef, firebaseData);
               console.log(`[Sync] ✅ Enviado: ${collectionName}/${item.id}`);
             }
 
@@ -246,11 +249,34 @@ class SyncService {
    * Usa timestamps para resolver conflitos (last-write-wins)
    *
    * @param {Object} options - Opções de sync
-   * @param {boolean} options.skipZombies - Se true, ignora items que falham desencriptação (padrão: false)
-   * @param {number} options.maxAge - Idade máxima em dias para sincronizar (padrão: null = todos)
+   * @param {boolean} options.skipZombies - Se true, ignora items que falham desencriptação (padrão: true)
+   * @param {boolean} options.incremental - Se true, sincroniza apenas desde último sync (padrão: true)
+   * @param {number} options.maxAge - Idade máxima em dias para sincronizar (padrão: calculado automaticamente se incremental)
    */
   async fullSync(options = {}) {
-    const { skipZombies = false, maxAge = null } = options;
+    const { skipZombies = true, incremental = true, maxAge = null } = options;
+
+    // 🚀 SYNC INCREMENTAL: Calcular maxAge baseado no último sync
+    let effectiveMaxAge = maxAge;
+    if (incremental && maxAge === null) {
+      try {
+        const { getMetadata } = await import('../db/metadata');
+        const lastSyncStr = await getMetadata('lastSyncTimestamp');
+        if (lastSyncStr) {
+          const lastSync = new Date(lastSyncStr);
+          const now = new Date();
+          const daysSinceLastSync = Math.ceil((now - lastSync) / (1000 * 60 * 60 * 24));
+          effectiveMaxAge = Math.max(daysSinceLastSync + 1, 7); // Mínimo 7 dias por segurança
+          console.log(`[Sync] 🚀 INCREMENTAL: Sincronizando últimos ${effectiveMaxAge} dias (desde ${lastSync.toLocaleString()})`);
+        } else {
+          console.log('[Sync] 🚀 Primeiro sync - sincronizando tudo');
+          effectiveMaxAge = null; // Primeiro sync = tudo
+        }
+      } catch (error) {
+        console.warn('[Sync] ⚠️ Erro ao calcular incremental, fazendo full sync:', error);
+        effectiveMaxAge = null;
+      }
+    }
 
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
       throw new Error('Sync não inicializado');
@@ -282,9 +308,9 @@ class SyncService {
         console.log('[Sync]    Sync vai continuar mesmo com erros\n');
       }
 
-      if (maxAge) {
+      if (effectiveMaxAge) {
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+        cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
         console.log(`[Sync] 📅 Sincronizando apenas items desde: ${cutoffDate.toISOString()}\n`);
       }
 
@@ -439,24 +465,25 @@ class SyncService {
             if (firebaseTime > localTime) {
               // Firebase mais recente → atualizar local
               firebaseItem.syncStatus = 'synced';
-              firebaseItem.deleted = false;
+              // 🪦 TOMBSTONE: Respeitar deleted flag do Firebase
+              // (já vem correto do decrypt, não sobrescrever)
               await dexieDB[collectionName].put(firebaseItem);
               totalPulled++;
             } else if (localTime > firebaseTime) {
               // Local mais recente → atualizar Firebase
-              if (!localItem.deleted) {
-                const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
-                const firebaseData = {
-                  encrypted: true,
-                  data,
-                  iv,
-                  lastModified: localItem.lastModified
-                };
-                const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
-                await setDoc(docRef, firebaseData);
-                await markAsSynced(collectionName, localItem.id);
-                totalPushed++;
-              }
+              // 🪦 TOMBSTONE: Enviar SEMPRE, mesmo se deleted (para propagar tombstones)
+              const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+              const firebaseData = {
+                encrypted: true,
+                data,
+                iv,
+                lastModified: localItem.lastModified,
+                deleted: localItem.deleted || false  // 🪦 Tombstone flag
+              };
+              const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
+              await setDoc(docRef, firebaseData);
+              await markAsSynced(collectionName, localItem.id);
+              totalPushed++;
             } else {
               // Timestamps iguais → já sincronizado
               totalMerged++;
@@ -579,6 +606,16 @@ class SyncService {
         console.log(`🧟 Zombies: ${totalZombies} (ignorados)`);
       }
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+      // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
+      if (incremental) {
+        try {
+          const { setMetadata } = await import('../db/metadata');
+          await setMetadata('lastSyncTimestamp', new Date().toISOString());
+        } catch (error) {
+          console.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
+        }
+      }
 
       return {
         success: true,
@@ -753,18 +790,11 @@ class SyncService {
             const firebaseData = change.doc.data();
             const itemId = change.doc.id;
 
-            if (change.type === 'removed') {
-              // Item deletado no Firebase → deletar localmente
-              const localItem = await dexieDB[collectionName].get(itemId);
-              if (localItem && !localItem.deleted) {
-                await dexieDB[collectionName].update(itemId, {
-                  deleted: true,
-                  syncStatus: 'synced',
-                  lastModified: new Date().toISOString()
-                });
-              }
-            } else if (change.type === 'added' || change.type === 'modified') {
-              // Item novo ou modificado no Firebase
+            // 🪦 TOMBSTONE: Com tombstones, 'removed' nunca acontece
+            // Items deletados vêm como 'added'/'modified' com deleted:true
+
+            if (change.type === 'added' || change.type === 'modified' || change.type === 'removed') {
+              // Item novo, modificado, ou removido (legacy) no Firebase
               const localItem = await dexieDB[collectionName].get(itemId);
 
               // Só atualizar se: (1) não existe localmente OU (2) Firebase é mais recente
@@ -785,11 +815,18 @@ class SyncService {
                   // Adicionar metadados
                   item.syncStatus = 'synced';
                   item.lastModified = firebaseData.lastModified || new Date().toISOString();
-                  item.deleted = false;
+
+                  // 🪦 TOMBSTONE: Respeitar flag deleted do Firebase
+                  item.deleted = firebaseData.deleted || false;
 
                   // Atualizar localmente
                   await dexieDB[collectionName].put(item);
-                  console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
+
+                  if (item.deleted) {
+                    console.log(`[Sync] 🪦 Tombstone recebido: ${collectionName}/${itemId}`);
+                  } else {
+                    console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
+                  }
                 } catch (decryptError) {
                   // Ignorar SILENCIOSAMENTE zombies (items antigos não desencriptáveis)
                   // Não fazer log para evitar spam na consola
