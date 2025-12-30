@@ -9,6 +9,11 @@ import {
   verifyPassword,
   createPasswordVerificationData
 } from '../utils/encryption';
+import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { firebaseConfig } from '../utils/firebase';
 
 const AuthContext = createContext();
 
@@ -27,6 +32,7 @@ export const useAuth = () => {
  * - Criar conta com email + PIN
  * - Login com PIN
  * - Encriptação E2E de todos os dados
+ * - Salt sincronizado com Firebase (cross-device support)
  * - Auto-lock após inatividade
  * - Verificação biométrica (futuro)
  */
@@ -36,6 +42,15 @@ export const AuthProvider = ({ children }) => {
   const [userEmail, setUserEmail] = useState(null);
   const [encryptionKey, setEncryptionKey] = useState(null); // PIN do utilizador (em memória apenas)
   const [loading, setLoading] = useState(true);
+
+  // Inicializar Firebase (singleton - safe to call multiple times)
+  const [firebaseInstances] = useState(() => {
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    return {
+      auth: getAuth(app),
+      firestore: getFirestore(app)
+    };
+  });
 
   // Auto-lock state
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -109,14 +124,32 @@ export const AuthProvider = ({ children }) => {
         throw new Error('PIN deve ter pelo menos 4 dígitos');
       }
 
-      // Gerar salt único para este utilizador
-      const salt = generateSalt();
+      console.log('[AuthContext] 🔧 Criando conta...');
+
+      // Obter Firebase user atual
+      const firebaseUser = firebaseInstances.auth.currentUser;
+      if (!firebaseUser) {
+        console.warn('[AuthContext] ⚠️ Nenhum Firebase user - usando salt local');
+      }
+
+      let salt;
+
+      if (firebaseUser) {
+        // SYNC com Firebase: buscar salt existente ou criar novo
+        console.log('[AuthContext] 🔄 Sincronizando salt com Firebase...');
+        salt = await syncSalt(firebaseInstances.firestore, firebaseUser.uid);
+      } else {
+        // Fallback: gerar salt local (caso não tenha Firebase user)
+        console.log('[AuthContext] ⚠️ Gerando salt local (sem Firebase)');
+        salt = generateSalt();
+      }
+
       const saltBase64 = saltToBase64(salt);
 
       // Criar dados de verificação do PIN
       const verification = await createPasswordVerificationData(pin, salt);
 
-      // Guardar metadados
+      // Guardar metadados LOCALMENTE
       await setMetadata('userEmail', email || 'sem-email');
       await setMetadata('salt', saltBase64);
       await setMetadata('pinVerification', JSON.stringify(verification));
@@ -129,12 +162,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
 
+      console.log('[AuthContext] ✅ Conta criada com sucesso');
       return { success: true };
     } catch (error) {
-      console.error('Error creating account:', error);
+      console.error('[AuthContext] ❌ Erro ao criar conta:', error);
       return { success: false, error: error.message };
     }
-  }, []);
+  }, [firebaseInstances]);
 
   /**
    * Login com PIN
@@ -143,18 +177,40 @@ export const AuthProvider = ({ children }) => {
    */
   const login = useCallback(async (pin) => {
     try {
+      console.log('[AuthContext] 🔓 Fazendo login...');
 
-      // Obter salt e dados de verificação
-      const saltBase64 = await getMetadata('salt');
-      const verificationJSON = await getMetadata('pinVerification');
+      // Obter Firebase user atual
+      const firebaseUser = firebaseInstances.auth.currentUser;
 
-      if (!saltBase64 || !verificationJSON) {
-        throw new Error('Dados de autenticação não encontrados');
+      // Tentar obter salt local primeiro
+      let saltBase64 = await getMetadata('salt');
+      let salt;
+
+      if (saltBase64) {
+        // Salt local existe
+        salt = base64ToSalt(saltBase64);
+        console.log('[AuthContext] 📦 Usando salt local');
+      } else if (firebaseUser) {
+        // Salt local NÃO existe, mas tem Firebase user → buscar do Firebase
+        console.log('[AuthContext] 🔄 Buscando salt do Firebase...');
+        salt = await syncSalt(firebaseInstances.firestore, firebaseUser.uid);
+        saltBase64 = saltToBase64(salt);
+
+        // Guardar localmente para próximas vezes
+        await setMetadata('salt', saltBase64);
+        console.log('[AuthContext] ✅ Salt sincronizado e guardado localmente');
+      } else {
+        throw new Error('Salt não encontrado e nenhum Firebase user disponível');
       }
 
-      const salt = base64ToSalt(saltBase64);
-      const verification = JSON.parse(verificationJSON);
+      // Obter dados de verificação do PIN
+      const verificationJSON = await getMetadata('pinVerification');
 
+      if (!verificationJSON) {
+        throw new Error('Dados de verificação do PIN não encontrados');
+      }
+
+      const verification = JSON.parse(verificationJSON);
 
       // Verificar PIN
       const isValid = await verifyPassword(
@@ -163,7 +219,6 @@ export const AuthProvider = ({ children }) => {
         verification.iv,
         salt
       );
-
 
       if (!isValid) {
         throw new Error('PIN incorreto');
@@ -174,13 +229,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
 
-
+      console.log('[AuthContext] ✅ Login bem-sucedido');
       return { success: true };
     } catch (error) {
-      console.error('[login] ❌ Erro:', error);
+      console.error('[AuthContext] ❌ Erro no login:', error);
       return { success: false, error: error.message };
     }
-  }, []);
+  }, [firebaseInstances]);
 
   /**
    * Logout (limpa chave de encriptação da memória)
