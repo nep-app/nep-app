@@ -18,14 +18,18 @@ export const SettingsView = ({
     const [syncStatus, setSyncStatus] = useState(null);
 
     const handleFullSync = async () => {
+        alert('handleFullSync CHAMADO!');
         console.log('[SettingsView] 🔵 handleFullSync INICIADO');
 
         try {
+            alert('Dentro do try block');
             if (!manualSync) {
                 console.error('[SettingsView] ❌ manualSync é undefined!');
                 setSyncStatus({ type: 'error', message: '❌ Erro: Sincronização não disponível' });
                 return;
             }
+
+            alert('Vai definir loading status...');
 
             console.log('[SettingsView] 🔵 Definindo status como loading...');
             setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
