@@ -81,6 +81,21 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
+  // Listener de auth state - limpa Dexie quando Firebase faz signOut
+  useEffect(() => {
+    const { auth } = firebaseInstances;
+
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      // Se Firebase user é null (logout) E ainda estamos authenticated localmente
+      if (!firebaseUser && isAuthenticated) {
+        console.log('[Auth] 🔒 Firebase signOut detectado - limpando Dexie...');
+        await logout();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [firebaseInstances, isAuthenticated, logout]);
+
   // TEMPORARIAMENTE DESABILITADO - Auto-lock após inatividade
   // useEffect(() => {
   //   if (!isAuthenticated) return;
@@ -472,11 +487,18 @@ export const AuthProvider = ({ children }) => {
   }, [firebaseInstances]);
 
   /**
-   * Logout (limpa chave de encriptação da memória)
+   * Logout (limpa chave de encriptação da memória + Dexie)
    */
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Limpar Dexie (CRÍTICO para segurança - previne vazamento de dados entre users)
+    const { clearAllData } = await import('../db/localDB');
+    await clearAllData();
+    console.log('[Auth] 🗑️ Dexie limpo no logout');
+
+    // Limpar estado
     setEncryptionKey(null);
     setIsAuthenticated(false);
+    setUserEmail(null);
   }, []);
 
   /**
