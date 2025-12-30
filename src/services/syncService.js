@@ -220,6 +220,7 @@ class SyncService {
       let totalMerged = 0;
       let totalPushed = 0;
       let totalPulled = 0;
+      let totalSkipped = 0;
 
       for (const collectionName of COLLECTIONS) {
         // 1. Buscar TODOS os dados do Firebase
@@ -229,18 +230,24 @@ class SyncService {
 
         const firebaseItems = new Map();
         for (const docSnap of snapshot.docs) {
-          const firebaseData = docSnap.data();
+          try {
+            const firebaseData = docSnap.data();
 
-          // Desencriptar
-          let item;
-          if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
-            item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
-          } else {
-            item = { ...firebaseData };
+            // Desencriptar
+            let item;
+            if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+              item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+            } else {
+              item = { ...firebaseData };
+            }
+
+            item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
+            firebaseItems.set(docSnap.id, item);
+          } catch (error) {
+            console.error(`[Sync] ⚠️ Erro ao desencriptar item ${docSnap.id} de ${collectionName}:`, error.message);
+            totalSkipped++;
+            // Continuar com próximo item
           }
-
-          item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
-          firebaseItems.set(docSnap.id, item);
         }
 
         // 2. Buscar TODOS os dados locais
@@ -314,7 +321,8 @@ class SyncService {
         success: true,
         pushed: totalPushed,
         pulled: totalPulled,
-        merged: totalMerged
+        merged: totalMerged,
+        skipped: totalSkipped
       };
 
     } catch (error) {

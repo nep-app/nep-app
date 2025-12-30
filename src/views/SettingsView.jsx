@@ -24,7 +24,7 @@ export const SettingsView = ({
             const result = await manualSync();
 
             if (result.success) {
-                const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}`;
+                const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
                 setSyncStatus({ type: 'success', message });
 
                 // Limpar mensagem após 15 segundos
