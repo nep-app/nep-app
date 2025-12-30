@@ -27,14 +27,20 @@ export const SettingsView = ({
 
         try {
             const result = await manualSync();
+            console.log('SYNC RESULTADO:', result);
 
             if (result && result.success) {
                 const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
                 setSyncStatus({ type: 'success', message });
+                console.log('SYNC SUCESSO! Mensagem definida');
 
-                // Limpar mensagem após 15 segundos
-                setTimeout(() => setSyncStatus(null), 15000);
+                // Recarregar página após 2 segundos para mostrar dados atualizados
+                setTimeout(() => {
+                    console.log('Recarregando página...');
+                    window.location.reload();
+                }, 2000);
             } else {
+                console.log('SYNC FALHOU - resultado inválido');
                 setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
             }
         } catch (error) {
