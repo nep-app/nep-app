@@ -327,6 +327,7 @@ export const DataProvider = ({ children }) => {
     addCopingStrategy,
     deleteCopingStrategy,
     addThought,
+    deleteItem, // Generic delete for all collections
 
     // Sync info
     isSyncing,

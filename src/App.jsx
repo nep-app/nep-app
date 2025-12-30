@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
@@ -134,7 +134,7 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, manualSync, isSyncing, lastSyncTime } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
             // Custom hooks
@@ -235,8 +235,6 @@ function AuthenticatedApp() {
             };
 
             const deleteItem = async (collectionName, id) => {
-                if (!user || !db) return;
-
                 // Confirm before deleting
                 const itemNames = {
                     'consumptions': 'este consumo',
@@ -253,10 +251,16 @@ function AuthenticatedApp() {
                     return;
                 }
 
-                
                 try {
-                    await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id));
+                    // Use deleteItem from LocalDataContext (with tombstones!)
+                    await deleteItemFromContext(collectionName, id);
                     showToast('✓ Item apagado', 'success');
+
+                    // Trigger sync in background
+                    setTimeout(() => {
+                        console.log('[App] 🔄 Iniciando push para Firebase após delete...');
+                        syncService.pushToFirebase();
+                    }, 1000);
                 } catch (error) {
                     showToast('✗ Erro ao apagar item', 'error');
                     logger.error('Erro ao apagar:', error);
