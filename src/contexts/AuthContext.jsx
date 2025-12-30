@@ -246,6 +246,11 @@ export const AuthProvider = ({ children }) => {
           await setMetadata('salt', saltBase64);
 
           console.log('[AuthContext] ✅ Salt local SUBSTITUÍDO pelo salt do Firebase');
+
+          // 🔥 CRÍTICO: Se salt mudou, precisamos RE-BAIXAR pinVerification do Firebase!
+          // (porque o pinVerification local foi criado com o salt antigo)
+          console.warn('[AuthContext] 🔄 Salt mudou - apagando pinVerification local (será re-baixado do Firebase)...');
+          await setMetadata('pinVerification', null);
         } else {
           console.log('[AuthContext] ✅ Salt local coincide com Firebase');
           salt = saltLocal;
