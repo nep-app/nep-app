@@ -208,11 +208,58 @@ export const AuthProvider = ({ children }) => {
       // RECUPERAÇÃO DE SALT COM FALLBACKS MÚLTIPLOS
       let saltBase64 = await getMetadata('salt');
       let salt;
+      let saltFromFirebase = null;
 
-      if (saltBase64) {
-        // ✅ FALLBACK 1: Salt local existe (melhor caso)
+      // 🔥 SEMPRE buscar salt do Firebase PRIMEIRO (fonte da verdade)
+      if (firebaseUser) {
+        console.log('[AuthContext] 🔄 Buscando salt do Firebase (fonte da verdade)...');
+
+        try {
+          saltFromFirebase = await syncSalt(firebaseInstances.firestore, firebaseUser.uid);
+          console.log('[AuthContext] ✅ Salt do Firebase obtido');
+        } catch (error) {
+          console.warn('[AuthContext] ⚠️ Não foi possível buscar salt do Firebase:', error);
+        }
+      }
+
+      // Se temos salt do Firebase E salt local, comparar
+      if (saltFromFirebase && saltBase64) {
+        const saltLocal = base64ToSalt(saltBase64);
+
+        // Comparar byte a byte
+        let isDifferent = saltLocal.length !== saltFromFirebase.length;
+        if (!isDifferent) {
+          for (let i = 0; i < saltLocal.length; i++) {
+            if (saltLocal[i] !== saltFromFirebase[i]) {
+              isDifferent = true;
+              break;
+            }
+          }
+        }
+
+        if (isDifferent) {
+          console.warn('[AuthContext] ⚠️ SALT LOCAL DIFERENTE DO FIREBASE!');
+          console.warn('[AuthContext] 🔄 Substituindo salt local pelo salt do Firebase (correto)...');
+
+          salt = saltFromFirebase;
+          saltBase64 = saltToBase64(salt);
+          await setMetadata('salt', saltBase64);
+
+          console.log('[AuthContext] ✅ Salt local SUBSTITUÍDO pelo salt do Firebase');
+        } else {
+          console.log('[AuthContext] ✅ Salt local coincide com Firebase');
+          salt = saltLocal;
+        }
+      } else if (saltFromFirebase) {
+        // Só temos Firebase salt
+        console.log('[AuthContext] 📥 Usando salt do Firebase (local não existe)');
+        salt = saltFromFirebase;
+        saltBase64 = saltToBase64(salt);
+        await setMetadata('salt', saltBase64);
+      } else if (saltBase64) {
+        // ✅ FALLBACK: Salt local existe mas Firebase não respondeu
         salt = base64ToSalt(saltBase64);
-        console.log('[AuthContext] 📦 Usando salt local');
+        console.log('[AuthContext] 📦 Usando salt local (Firebase indisponível)');
       } else if (firebaseUser) {
         // ⚠️ Salt local NÃO existe → tentar recuperar do Firebase
         console.log('[AuthContext] ⚠️ Salt local não encontrado - tentando recuperar do Firebase...');
