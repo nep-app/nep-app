@@ -47,12 +47,18 @@ const deleteItemWithSync = async (collection, id) => {
     lastModified: new Date().toISOString()
   };
   await db[collection].put(deleted);
+  console.log(`[LocalData] 🗑️ Item marcado como deleted: ${collection}/${id}`, { deleted: deleted.deleted, syncStatus: deleted.syncStatus });
   return deleted;
 };
 
 const getAllItems = async (collection) => {
   const all = await db[collection].toArray();
-  return all.filter(item => !item.deleted);
+  const filtered = all.filter(item => !item.deleted);
+  const deletedCount = all.length - filtered.length;
+  if (deletedCount > 0) {
+    console.log(`[LocalData] 🗑️ ${collection}: ${deletedCount} deleted items filtrados (${filtered.length} ativos de ${all.length} total)`);
+  }
+  return filtered;
 };
 
 const getPendingSync = async (collection) => {
@@ -279,7 +285,13 @@ export const LocalDataProvider = ({ children }) => {
 
     const setter = setterMap[collectionName];
     if (setter) {
-      setter(prev => prev.filter(item => item.id !== id));
+      setter(prev => {
+        const filtered = prev.filter(item => item.id !== id);
+        console.log(`[LocalData] 🗑️ Removido do estado React: ${collectionName}/${id} (antes: ${prev.length}, depois: ${filtered.length})`);
+        return filtered;
+      });
+    } else {
+      console.warn(`[LocalData] ⚠️ Setter não encontrado para ${collectionName}`);
     }
 
   }, [encryptionKey]);
