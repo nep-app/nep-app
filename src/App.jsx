@@ -134,7 +134,7 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
             // Custom hooks
@@ -273,10 +273,17 @@ function AuthenticatedApp() {
                 if (!editingConsumption) return;
 
                 try {
-                    await addConsumption(editingConsumption);
+                    // Use updateItem para atualizar o consumo existente (não criar duplicado!)
+                    await updateItem('consumptions', editingConsumption.id, editingConsumption);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast('✓ Consumo editado', 'success');
+
+                    // Trigger sync in background
+                    setTimeout(() => {
+                        console.log('[App] 🔄 Iniciando push para Firebase após edit...');
+                        syncService.pushToFirebase();
+                    }, 1000);
                 } catch (error) {
                     showToast('✗ Erro ao editar consumo', 'error');
                     logger.error('Erro ao editar:', error);
