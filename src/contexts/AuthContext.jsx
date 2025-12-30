@@ -339,15 +339,75 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Verificar PIN
-      const isValid = await verifyPassword(
-        pin,
-        verification.data,
-        verification.iv,
-        salt
-      );
+      let isValid = false;
+      let needsPinVerificationRecovery = false;
+
+      try {
+        isValid = await verifyPassword(
+          pin,
+          verification.data,
+          verification.iv,
+          salt
+        );
+      } catch (verifyError) {
+        // 🚨 RECUPERAÇÃO AUTOMÁTICA: Se pinVerification está corrompido (OperationError)
+        // tentar validar PIN usando dados reais do Firebase
+        console.warn('[AuthContext] ⚠️ Erro ao verificar PIN (possível salt mismatch):', verifyError.name);
+        console.log('[AuthContext] 🔧 Tentando recuperação automática...');
+
+        if (firebaseUser && (verifyError.name === 'OperationError' || verifyError.name === 'InvalidAccessError')) {
+          try {
+            // Buscar item de controlo do Firebase e tentar desencriptar com o PIN
+            const { ref, getDoc } = await import('firebase/firestore');
+            const controlDoc = await getDoc(ref(firebaseInstances.firestore, `users/${firebaseUser.uid}/_system/validation`));
+
+            if (controlDoc.exists()) {
+              const controlData = controlDoc.data();
+              console.log('[AuthContext] 🔍 Testando PIN com item de controlo do Firebase...');
+
+              const { decryptFromFirebase } = await import('../utils/dexieEncryption');
+              await decryptFromFirebase(controlData.data, controlData.iv, pin, salt);
+
+              // ✅ PIN está CORRETO! O problema era só o pinVerification corrompido
+              console.log('[AuthContext] ✅ PIN VALIDADO com sucesso usando item de controlo!');
+              console.log('[AuthContext] 🔧 Recriando pinVerification com salt correto...');
+
+              isValid = true;
+              needsPinVerificationRecovery = true;
+            } else {
+              console.warn('[AuthContext] ⚠️ Item de controlo não encontrado no Firebase');
+            }
+          } catch (recoveryError) {
+            console.error('[AuthContext] ❌ Recuperação automática falhou:', recoveryError.name);
+            // PIN realmente está incorreto
+          }
+        }
+      }
 
       if (!isValid) {
         throw new Error('PIN incorreto');
+      }
+
+      // 🔧 Se pinVerification estava corrompido mas PIN é válido, recriá-lo
+      if (needsPinVerificationRecovery) {
+        try {
+          console.log('[AuthContext] 🔧 Recriando pinVerification com salt correto...');
+          const { createPasswordVerificationData } = await import('../utils/encryption');
+          const newVerification = await createPasswordVerificationData(pin, salt);
+
+          // Guardar localmente
+          await setMetadata('pinVerification', JSON.stringify(newVerification));
+
+          // Guardar no Firebase
+          if (firebaseUser) {
+            await uploadPinVerificationToFirebase(firebaseInstances.firestore, firebaseUser.uid, newVerification);
+          }
+
+          console.log('[AuthContext] ✅ pinVerification recuperado com sucesso!');
+        } catch (recreateError) {
+          console.error('[AuthContext] ⚠️ Erro ao recriar pinVerification (não crítico):', recreateError);
+          // Não falhar o login por causa disto
+        }
       }
 
       // Login bem-sucedido

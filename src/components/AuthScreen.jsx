@@ -82,15 +82,23 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   const handleEmergencyReset = async () => {
     try {
       console.log('[AuthScreen] 🚨 EMERGENCY RESET - Apagando dados locais...');
+      setLoading(true);
+      setError('');
 
       // Apagar tudo
       await resetApp();
+
+      console.log('[AuthScreen] ✅ Dados locais apagados, recarregando...');
+
+      // Aguardar um pouco para garantir que tudo foi limpo
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Recarregar página para forçar re-inicialização
       window.location.reload();
     } catch (error) {
       console.error('[AuthScreen] ❌ Erro no emergency reset:', error);
-      setError('Erro ao resetar. Tenta recarregar a página manualmente.');
+      setError('Erro ao resetar. Tenta recarregar a página manualmente (Ctrl+Shift+R).');
+      setLoading(false);
     }
   };
 
