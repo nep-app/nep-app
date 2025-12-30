@@ -10,30 +10,31 @@ export const SettingsView = ({
     exportToJSON,
     notificationsEnabled,
     requestNotificationPermission,
-    onOpenLegalDoc
+    onOpenLegalDoc,
+    manualSync,
+    isSyncing,
+    lastSyncTime
 }) => {
     const [syncStatus, setSyncStatus] = useState(null);
-    const [syncing, setSyncing] = useState(false);
 
-    const handleForceSync = async () => {
-        setSyncing(true);
-        setSyncStatus({ type: 'loading', message: 'Forçando reconexão...' });
+    const handleFullSync = async () => {
+        setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
 
         try {
-            const result = await forceFirebaseReconnect();
+            const result = await manualSync();
 
             if (result.success) {
-                setSyncStatus({ type: 'success', message: '✅ Reconexão completa! Verifica Firebase em 30 segundos.' });
+                const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}`;
+                setSyncStatus({ type: 'success', message });
 
-                // Limpar mensagem após 10 segundos
-                setTimeout(() => setSyncStatus(null), 10000);
-            } else {
-                setSyncStatus({ type: 'error', message: `❌ Erro: ${result.message}` });
+                // Limpar mensagem após 15 segundos
+                setTimeout(() => setSyncStatus(null), 15000);
             }
         } catch (error) {
-            setSyncStatus({ type: 'error', message: `❌ Erro inesperado: ${error.message}` });
-        } finally {
-            setSyncing(false);
+            setSyncStatus({ type: 'error', message: `❌ Erro: ${error.message}` });
+
+            // Limpar mensagem de erro após 10 segundos
+            setTimeout(() => setSyncStatus(null), 10000);
         }
     };
     return (
@@ -100,12 +101,18 @@ export const SettingsView = ({
                 </h3>
                 <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
                     <p className="text-sm">
-                        Se registaste dados que não aparecem no Firebase, força uma reconexão manual.
+                        Sincroniza todos os dados entre este dispositivo e outros. Resolve diferenças usando a versão mais recente.
                     </p>
+
+                    {lastSyncTime && (
+                        <div className="text-xs text-gray-400">
+                            Última sincronização: {new Date(lastSyncTime).toLocaleString('pt-PT')}
+                        </div>
+                    )}
 
                     {syncStatus && (
                         <div className={
-                            'p-3 rounded-lg text-sm ' +
+                            'p-3 rounded-lg text-sm whitespace-pre-line ' +
                             (syncStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
                              syncStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
                              'bg-blue-900/30 text-blue-300 border border-blue-700/50')
@@ -115,21 +122,21 @@ export const SettingsView = ({
                     )}
 
                     <button
-                        onClick={handleForceSync}
-                        disabled={syncing}
+                        onClick={handleFullSync}
+                        disabled={isSyncing}
                         className={
                             'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                            (syncing
+                            (isSyncing
                                 ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
                                 : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600')
                         }
                     >
-                        <Icons.RefreshCw className={'w-4 h-4' + (syncing ? ' animate-spin' : '')} />
-                        {syncing ? 'Reconectando...' : '🔄 Forçar Sincronização'}
+                        <Icons.RefreshCw className={'w-4 h-4' + (isSyncing ? ' animate-spin' : '')} />
+                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Agora'}
                     </button>
 
-                    <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
-                        💡 <strong>Dica:</strong> Após forçar sync, aguarda 30 segundos e verifica Firebase Console.
+                    <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
+                        💡 <strong>Dica:</strong> Usa isto se tens dados diferentes entre dispositivos. A versão mais recente sempre ganha.
                     </div>
                 </div>
             </div>

@@ -243,18 +243,20 @@ export const DataProvider = ({ children }) => {
   }, [addItem]);
 
   /**
-   * Função manual de sync (para botão nas settings)
+   * Função manual de sync completo (para botão nas settings)
+   * Faz merge bidirecional de todos os dados
    */
   const manualSync = useCallback(async () => {
     if (isSyncing) {
-      return;
+      throw new Error('Sincronização já em curso');
     }
 
     setIsSyncing(true);
     try {
-      await syncService.sync();
+      const result = await syncService.fullSync();
       await loadAllCollections();
       setLastSyncTime(new Date());
+      return result;
     } catch (error) {
       console.error('[DataContext] ❌ Erro no sync manual:', error);
       throw error;

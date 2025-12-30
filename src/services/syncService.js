@@ -202,6 +202,130 @@ class SyncService {
   }
 
   /**
+   * Sincronização completa bidirecional com merge de dados
+   * Usa timestamps para resolver conflitos (last-write-wins)
+   */
+  async fullSync() {
+    if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
+      throw new Error('Sync não inicializado');
+    }
+
+    if (this.isSyncing) {
+      throw new Error('Sincronização já em curso');
+    }
+
+    this.isSyncing = true;
+
+    try {
+      let totalMerged = 0;
+      let totalPushed = 0;
+      let totalPulled = 0;
+
+      for (const collectionName of COLLECTIONS) {
+        // 1. Buscar TODOS os dados do Firebase
+        const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
+        const firebaseCollection = collection(this.firebaseDB, firebasePath);
+        const snapshot = await getDocs(firebaseCollection);
+
+        const firebaseItems = new Map();
+        for (const docSnap of snapshot.docs) {
+          const firebaseData = docSnap.data();
+
+          // Desencriptar
+          let item;
+          if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+            item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+          } else {
+            item = { ...firebaseData };
+          }
+
+          item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
+          firebaseItems.set(docSnap.id, item);
+        }
+
+        // 2. Buscar TODOS os dados locais
+        const localItems = await dexieDB[collectionName].toArray();
+
+        // 3. Merge: comparar timestamps e manter versão mais recente
+        for (const localItem of localItems) {
+          const firebaseItem = firebaseItems.get(localItem.id);
+
+          if (!firebaseItem) {
+            // Item só existe localmente → PUSH para Firebase
+            if (!localItem.deleted) {
+              const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+              const firebaseData = {
+                encrypted: true,
+                data,
+                iv,
+                lastModified: localItem.lastModified || new Date().toISOString()
+              };
+              const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
+              await setDoc(docRef, firebaseData);
+              await markAsSynced(collectionName, localItem.id);
+              totalPushed++;
+            }
+          } else {
+            // Item existe em ambos → comparar timestamps
+            const localTime = new Date(localItem.lastModified || '1970-01-01');
+            const firebaseTime = new Date(firebaseItem.lastModified || '1970-01-01');
+
+            if (firebaseTime > localTime) {
+              // Firebase mais recente → atualizar local
+              firebaseItem.syncStatus = 'synced';
+              firebaseItem.deleted = false;
+              await dexieDB[collectionName].put(firebaseItem);
+              totalPulled++;
+            } else if (localTime > firebaseTime) {
+              // Local mais recente → atualizar Firebase
+              if (!localItem.deleted) {
+                const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+                const firebaseData = {
+                  encrypted: true,
+                  data,
+                  iv,
+                  lastModified: localItem.lastModified
+                };
+                const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
+                await setDoc(docRef, firebaseData);
+                await markAsSynced(collectionName, localItem.id);
+                totalPushed++;
+              }
+            } else {
+              // Timestamps iguais → já sincronizado
+              totalMerged++;
+            }
+
+            // Remover do Map para saber quais items só existem no Firebase
+            firebaseItems.delete(localItem.id);
+          }
+        }
+
+        // 4. Items que só existem no Firebase → PULL para local
+        for (const [itemId, firebaseItem] of firebaseItems) {
+          firebaseItem.syncStatus = 'synced';
+          firebaseItem.deleted = false;
+          await dexieDB[collectionName].put(firebaseItem);
+          totalPulled++;
+        }
+      }
+
+      return {
+        success: true,
+        pushed: totalPushed,
+        pulled: totalPulled,
+        merged: totalMerged
+      };
+
+    } catch (error) {
+      console.error('[Sync] ❌ Erro na sincronização completa:', error);
+      throw error;
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  /**
    * Iniciar listeners em tempo real (para mudanças de outros dispositivos)
    */
   startRealtimeSync() {

@@ -134,7 +134,7 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, manualSync, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
 
             // Custom hooks
@@ -1182,6 +1182,9 @@ return {
                                         exportToJSON={exportToJSON}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
+                                        manualSync={manualSync}
+                                        isSyncing={isSyncing}
+                                        lastSyncTime={lastSyncTime}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
