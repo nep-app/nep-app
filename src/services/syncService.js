@@ -360,11 +360,11 @@ class SyncService {
           try {
             const firebaseData = docSnap.data();
 
-            // 🧟 FILTRO DE IDADE: Skip items muito antigos se maxAge especificado
-            if (maxAge && firebaseData.lastModified) {
+            // 🧟 FILTRO DE IDADE: Skip items muito antigos se effectiveMaxAge especificado
+            if (effectiveMaxAge && firebaseData.lastModified) {
               const itemDate = new Date(firebaseData.lastModified);
               const cutoffDate = new Date();
-              cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+              cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
 
               if (itemDate < cutoffDate) {
                 // Item muito antigo - skip silenciosamente
@@ -435,8 +435,25 @@ class SyncService {
           break; // Sair do loop de collections IMEDIATAMENTE
         }
 
-        // 2. Buscar TODOS os dados locais
-        const localItems = await dexieDB[collectionName].toArray();
+        // 2. Buscar dados locais (com filtro de idade se incremental)
+        let localItems = await dexieDB[collectionName].toArray();
+
+        // 🚀 FILTRO DE IDADE LOCAL: Aplicar mesmo filtro que usamos no Firebase
+        if (effectiveMaxAge) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
+
+          const beforeFilter = localItems.length;
+          localItems = localItems.filter(item => {
+            if (!item.lastModified) return true; // Sem timestamp = incluir por segurança
+            return new Date(item.lastModified) >= cutoffDate;
+          });
+
+          const filtered = beforeFilter - localItems.length;
+          if (filtered > 0) {
+            console.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais antigos (${localItems.length} recentes)`);
+          }
+        }
 
         // 3. Merge: comparar timestamps e manter versão mais recente
         for (const localItem of localItems) {
