@@ -51,6 +51,41 @@ export async function createControlItem(firebaseDB, userId, pin, salt) {
 }
 
 /**
+ * Recuperar Salt do item de controlo
+ * Útil quando salt se perdeu do localStorage
+ *
+ * @returns {Uint8Array|null} Salt recuperado ou null se não existir
+ */
+export async function recoverSaltFromControlItem(firebaseDB, userId) {
+  try {
+    console.log('[SyncValidation] 🔍 Tentando recuperar Salt do item de controlo...');
+
+    const docRef = doc(firebaseDB, `users/${userId}/_system`, 'validation');
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.log('[SyncValidation] ⚠️ Item de controlo não existe - impossível recuperar Salt');
+      return null;
+    }
+
+    const firebaseData = docSnap.data();
+
+    if (!firebaseData.salt) {
+      console.log('[SyncValidation] ⚠️ Salt não guardado no item de controlo');
+      return null;
+    }
+
+    const salt = new Uint8Array(firebaseData.salt);
+    console.log('[SyncValidation] ✅ Salt recuperado do item de controlo!');
+    return salt;
+
+  } catch (error) {
+    console.error('[SyncValidation] ❌ Erro ao recuperar Salt:', error);
+    return null;
+  }
+}
+
+/**
  * Validar Salt antes de tentar desencriptar
  * Compara salt local com salt guardado no Firebase
  *

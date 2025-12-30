@@ -11,7 +11,7 @@ import {
 } from '../utils/encryption';
 import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
 import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
-import { createControlItem } from '../utils/syncValidation';
+import { createControlItem, recoverSaltFromControlItem } from '../utils/syncValidation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -205,23 +205,61 @@ export const AuthProvider = ({ children }) => {
       // Obter Firebase user atual
       const firebaseUser = firebaseInstances.auth.currentUser;
 
-      // Tentar obter salt local primeiro
+      // RECUPERAÇÃO DE SALT COM FALLBACKS MÚLTIPLOS
       let saltBase64 = await getMetadata('salt');
       let salt;
 
       if (saltBase64) {
-        // Salt local existe
+        // ✅ FALLBACK 1: Salt local existe (melhor caso)
         salt = base64ToSalt(saltBase64);
         console.log('[AuthContext] 📦 Usando salt local');
       } else if (firebaseUser) {
-        // Salt local NÃO existe, mas tem Firebase user → buscar do Firebase
-        console.log('[AuthContext] 🔄 Buscando salt do Firebase...');
-        salt = await syncSalt(firebaseInstances.firestore, firebaseUser.uid);
+        // ⚠️ Salt local NÃO existe → tentar recuperar do Firebase
+        console.log('[AuthContext] ⚠️ Salt local não encontrado - tentando recuperar do Firebase...');
+
+        // ✅ FALLBACK 2: Buscar do Firebase settings/encryption
+        try {
+          salt = await syncSalt(firebaseInstances.firestore, firebaseUser.uid);
+          console.log('[AuthContext] ✅ Salt recuperado do Firebase (settings/encryption)');
+        } catch (error) {
+          console.error('[AuthContext] ❌ Falha ao buscar salt de settings/encryption:', error);
+
+          // ✅ FALLBACK 3: Buscar do item de controlo
+          console.log('[AuthContext] 🔄 Tentando recuperar salt do item de controlo...');
+          const recoveredSalt = await recoverSaltFromControlItem(
+            firebaseInstances.firestore,
+            firebaseUser.uid
+          );
+
+          if (recoveredSalt) {
+            salt = recoveredSalt;
+            console.log('[AuthContext] ✅ Salt recuperado do item de controlo!');
+
+            // Guardar nos outros locais para sincronização
+            try {
+              await uploadSaltToFirebase(firebaseInstances.firestore, firebaseUser.uid, salt);
+              console.log('[AuthContext] ✅ Salt re-sincronizado para settings/encryption');
+            } catch (uploadError) {
+              console.warn('[AuthContext] ⚠️ Não foi possível re-sincronizar salt:', uploadError);
+            }
+          } else {
+            throw new Error(
+              'SALT IRRECUPERÁVEL!\n\n' +
+              'Salt não encontrado em:\n' +
+              '- LocalStorage\n' +
+              '- Firebase settings/encryption\n' +
+              '- Firebase _system/validation\n\n' +
+              'Sem o salt original, é impossível desencriptar os dados.\n' +
+              'Pode ser necessário criar uma nova conta.'
+            );
+          }
+        }
+
         saltBase64 = saltToBase64(salt);
 
         // Guardar localmente para próximas vezes
         await setMetadata('salt', saltBase64);
-        console.log('[AuthContext] ✅ Salt sincronizado e guardado localmente');
+        console.log('[AuthContext] ✅ Salt guardado localmente');
       } else {
         throw new Error('Salt não encontrado e nenhum Firebase user disponível');
       }
