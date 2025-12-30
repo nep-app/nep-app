@@ -791,7 +791,8 @@ class SyncService {
                   await dexieDB[collectionName].put(item);
                   console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
                 } catch (decryptError) {
-                  console.error(`[Sync] ⚠️ Erro ao desencriptar item ${itemId}:`, decryptError.message);
+                  // Ignorar SILENCIOSAMENTE zombies (items antigos não desencriptáveis)
+                  // Não fazer log para evitar spam na consola
                 }
               }
             }
