@@ -45,7 +45,8 @@ class SyncService {
     this.pin = null;
     this.salt = null;
     this.listeners = {}; // Realtime listeners
-    this.isSyncing = false;
+    this.isSyncing = false;  // Para fullSync apenas
+    this.isPushing = false;  // Para pushToFirebase apenas
     this.syncQueue = [];
   }
 
@@ -132,12 +133,12 @@ class SyncService {
       return;
     }
 
-    if (this.isSyncing) {
+    if (this.isPushing) {
       console.log('[Sync] ⚠️ pushToFirebase: já em curso');
       return;
     }
 
-    this.isSyncing = true;
+    this.isPushing = true;
     console.log('[Sync] 🔄 pushToFirebase INICIADO');
 
     try {
@@ -196,7 +197,7 @@ class SyncService {
     } catch (error) {
       console.error('[Sync] ❌ Erro no PUSH:', error);
     } finally {
-      this.isSyncing = false;
+      this.isPushing = false;
     }
   }
 
