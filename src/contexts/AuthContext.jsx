@@ -255,6 +255,19 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
 
+      // MIGRAÇÃO/SYNC: Garantir que pinVerification está no Firebase
+      // (importante para contas antigas criadas antes do sync existir)
+      if (firebaseUser && verificationJSON) {
+        try {
+          console.log('[AuthContext] 🔄 Verificando sync de pinVerification com Firebase...');
+          await uploadPinVerificationToFirebase(firebaseInstances.firestore, firebaseUser.uid, verification);
+          console.log('[AuthContext] ✅ pinVerification sincronizado com Firebase');
+        } catch (error) {
+          console.error('[AuthContext] ⚠️ Erro ao sincronizar pinVerification (não crítico):', error);
+          // Não falhar o login se sync falhar
+        }
+      }
+
       console.log('[AuthContext] ✅ Login bem-sucedido');
       return { success: true };
     } catch (error) {
