@@ -2,6 +2,8 @@ import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot }
 import { db as dexieDB } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
 import { validateKey, validateSalt, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
+import { detectCorrectSalt, analyzeSaltConflict } from '../utils/saltDetective';
+import { diagnoseSaltSituation } from '../utils/saltRecoveryCheck';
 
 // Helper functions (moved from dexieDB.js to use correct DB)
 const getAllItems = async (collectionName) => {
@@ -277,6 +279,9 @@ class SyncService {
       let totalPulled = 0;
       let totalSkipped = 0;
 
+      // Guardar primeiro item que falhou para análise posterior
+      let firstFailedItem = null;
+
       for (const collectionName of COLLECTIONS) {
         // ⛔ CIRCUIT BREAKER CHECK: Verificar ANTES de processar collection
         if (circuitBreaker.shouldStop()) {
@@ -327,6 +332,17 @@ class SyncService {
             // ❌ Erro - registar no logger (SEM stack trace)
             errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
             totalSkipped++;
+
+            // Guardar primeiro item que falhou para análise de salt
+            if (!firstFailedItem && firebaseData.encrypted) {
+              firstFailedItem = {
+                collection: collectionName,
+                id: docSnap.id,
+                data: firebaseData.data,
+                iv: firebaseData.iv,
+                error: error.name
+              };
+            }
 
             // Registar no circuit breaker - SE ABRIR, PARA IMEDIATAMENTE
             const shouldStop = circuitBreaker.recordError();
@@ -428,6 +444,81 @@ class SyncService {
       // Verificar se circuit breaker foi ativado
       const breakerSummary = circuitBreaker.getSummary();
       if (breakerSummary.isOpen) {
+        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🔍 EXECUTANDO DIAGNÓSTICO DE SALT...');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+        // PASSO 1: DIAGNÓSTICO - Verificar se recuperação é possível
+        const diagnosis = await diagnoseSaltSituation(
+          this.firebaseDB,
+          this.firebaseUser.uid
+        );
+
+        console.log(`\n${diagnosis.message}\n`);
+
+        // Se dados IRRECUPERÁVEIS → avisar e parar
+        if (!diagnosis.canRecover) {
+          throw new Error(
+            `❌ DADOS HISTÓRICOS IRRECUPERÁVEIS!\n\n` +
+            `Salt original não encontrado no Firebase.\n` +
+            `Sem o salt, é IMPOSSÍVEL desencriptar os dados (AES-GCM).\n\n` +
+            `OPÇÕES:\n` +
+            `1. Recuperar salt do localStorage do dispositivo original\n` +
+            `2. Limpar dados históricos e recomeçar\n` +
+            `3. Aceitar perda permanente dos dados\n\n` +
+            `Total de items afetados: ~${totalSkipped}`
+          );
+        }
+
+        // Se PODE ser recuperável → tentar Salt Detective
+        if (diagnosis.canRecover === true || diagnosis.canRecover === 'maybe') {
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('🕵️ EXECUTANDO SALT DETECTIVE...');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+          // Analisar conflito
+          const conflictAnalysis = await analyzeSaltConflict(
+            this.firebaseDB,
+            this.firebaseUser.uid,
+            this.pin,
+            COLLECTIONS
+          );
+
+          if (conflictAnalysis.hasConflict || diagnosis.canRecover === 'maybe') {
+            // Tentar detectar salt correto com item que falhou
+            if (firstFailedItem) {
+              console.log(`🧪 Testando salts com item: ${firstFailedItem.collection}/${firstFailedItem.id}\n`);
+
+              const detection = await detectCorrectSalt(
+                this.firebaseDB,
+                this.firebaseUser.uid,
+                this.pin,
+                firstFailedItem
+              );
+
+              if (detection.found) {
+                console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('✅ SALT CORRETO ENCONTRADO!');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log(`Fonte: ${detection.label}`);
+                console.log(`Local: ${detection.source}\n`);
+
+                throw new Error(
+                  `✅ SALT CORRETO IDENTIFICADO!\n\n` +
+                  `Fonte: ${detection.label} (${detection.source})\n\n` +
+                  `O salt atual é DIFERENTE do que encriptou os dados históricos.\n` +
+                  `Sistema detectou o salt correto automaticamente.\n\n` +
+                  `PRÓXIMO PASSO:\n` +
+                  `Substituir salt em uso pelo salt correto e tentar sync novamente.`
+                );
+              } else {
+                console.log('\n❌ Nenhum salt conseguiu desencriptar.');
+                console.log('Possíveis causas: PIN incorreto, dados corrompidos, ou salt perdido.\n');
+              }
+            }
+          }
+        }
+
         throw new Error(
           `Sync interrompido por Circuit Breaker!\n` +
           `${breakerSummary.consecutiveErrors} erros consecutivos detectados.\n` +
