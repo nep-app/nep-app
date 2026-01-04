@@ -81,21 +81,6 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
-  // Listener de auth state - limpa Dexie quando Firebase faz signOut
-  useEffect(() => {
-    const { auth } = firebaseInstances;
-
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      // Se Firebase user é null (logout) E ainda estamos authenticated localmente
-      if (!firebaseUser && isAuthenticated) {
-        console.log('[Auth] 🔒 Firebase signOut detectado - limpando Dexie...');
-        await logout();
-      }
-    });
-
-    return () => unsubscribe();
-  }, [firebaseInstances, isAuthenticated, logout]);
-
   // TEMPORARIAMENTE DESABILITADO - Auto-lock após inatividade
   // useEffect(() => {
   //   if (!isAuthenticated) return;
@@ -500,6 +485,22 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     setUserEmail(null);
   }, []);
+
+  // Listener de auth state - limpa Dexie quando Firebase faz signOut
+  // (DEVE estar APÓS a definição de logout para evitar erro de inicialização)
+  useEffect(() => {
+    const { auth } = firebaseInstances;
+
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      // Se Firebase user é null (logout) E ainda estamos authenticated localmente
+      if (!firebaseUser && isAuthenticated) {
+        console.log('[Auth] 🔒 Firebase signOut detectado - limpando Dexie...');
+        await logout();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [firebaseInstances, isAuthenticated, logout]);
 
   /**
    * Alterar PIN
