@@ -175,7 +175,7 @@ function AuthenticatedApp() {
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
@@ -532,10 +532,15 @@ function AuthenticatedApp() {
 
             const submitCycle = async () => {
                 try {
+                    // Se createdAt foi fornecido, usar esse; senão usar agora
+                    const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
+                    const timestampISO = customDateTime.toISOString();
+                    const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
+
                     const item = {
                         id: genId(),
-                        timestamp: new Date().toISOString(),
-                        date: getTodayKey(),
+                        timestamp: timestampISO,
+                        date: dateKey,
                         bedtime: cycleForm.bedtime,
                         triggers: cycleForm.triggers,
                         notes: cycleForm.notes,
@@ -544,7 +549,7 @@ function AuthenticatedApp() {
                         ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                     };
                     await addCycle(item);
-                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
+                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
                     setShowCycleModal(false);
                     showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {

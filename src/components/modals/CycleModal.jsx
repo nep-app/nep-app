@@ -35,6 +35,20 @@ export const CycleModal = ({
           </p>
           <div>
             <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
+              Data e hora de criação do ciclo <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(opcional - deixa vazio para usar agora)</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={cycleForm.createdAt}
+              onChange={(e) => setCycleForm({...cycleForm, createdAt: e.target.value})}
+              className={(darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300') + ' w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400'}
+            />
+            <p className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>
+              💡 Usa isto se te esqueceste de criar o ciclo no passado
+            </p>
+          </div>
+          <div>
+            <label className={'block text-sm font-medium ' + (darkMode ? 'text-gray-300' : 'text-gray-700') + ' mb-1'}>
               Hora a que te deitaste <span className={'text-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-500')}>(ciclo anterior)</span>
             </label>
             <input

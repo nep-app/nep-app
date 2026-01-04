@@ -12,7 +12,7 @@ import * as Icons from './Icons';
  * 3. Se sim: mostra login (PIN)
  */
 export const AuthScreen = ({ onFirebaseLogout }) => {
-  const { login, createAccount, hasAccount, checkRemoteAccount, resetApp } = useAuth();
+  const { login, createAccount, hasAccount, checkRemoteAccount, resetApp, logout } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -234,6 +234,25 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               </p>
             </div>
           )}
+
+          {/* Botão para trocar de conta */}
+          <div className="mt-6">
+            <button
+              onClick={async () => {
+                await logout();
+                if (onFirebaseLogout) {
+                  onFirebaseLogout();
+                }
+              }}
+              className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <Icons.LogOut className="w-4 h-4" />
+              Trocar de conta
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-2">
+              Fazer logout e entrar noutra conta
+            </p>
+          </div>
         </div>
       </div>
     );
