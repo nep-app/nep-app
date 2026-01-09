@@ -24,7 +24,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
-    const { darkMode, currentCycle } = useUI();
+    const { currentCycle } = useUI();
     const metrics = useMetrics();
 
     // Estados para acordeões de correlações (mobile)
@@ -47,12 +47,12 @@ export function AnalysesView({
 
     return (
                                 <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Análises</h2>
+                                    <h2 className={'text-2xl font-bold ' + ('text-white')}>Análises</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
+                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 border'}>
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className={'text-sm font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>Período de análise</div>
+                                            <div className={'text-sm font-semibold ' + ('text-white')}>Período de análise</div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset >= 100 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 100 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
                                                     <Icons.ChevronLeft className="w-4 h-4" />
@@ -64,7 +64,7 @@ export function AnalysesView({
                                         </div>
                                         <div className="flex gap-2 overflow-x-auto pb-2">
                                             {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                                <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : ('bg-gray-700 text-gray-300 hover:bg-gray-600'))}>
                                                     {period === 'hoje' && 'Hoje'}
                                                     {period === 'semana' && 'Semana'}
                                                     {period === 'mes' && 'Mês'}
@@ -73,7 +73,7 @@ export function AnalysesView({
                                             ))}
                                         </div>
                                         {patternsPeriod !== 'tudo' && (
-                                            <div className={'text-xs mt-2 text-center ' + (themeClasses.textTertiary(darkMode))}>
+                                            <div className={'text-xs mt-2 text-center ' + ('text-gray-400')}>
                                                 {(() => {
                                                     const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
                                                     return new Date(dateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }) + ' - ' + new Date(dateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -138,7 +138,7 @@ export function AnalysesView({
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
-                                                                className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
+                                                                className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? ('bg-indigo-600 text-white') : ('bg-gray-700 text-gray-300 hover:bg-gray-600'))}
                                                             >
                                                                 {subView === 'correlacoes' && '🔗 Correlações'}
                                                                 {subView === 'estado' && '🎭 Estado'}
@@ -151,7 +151,7 @@ export function AnalysesView({
                                                     {/* TEMPORAL */}
                                                     {analysisSubView === 'coach' && (() => {
                                                             if (analysisConsumptions.length === 0 && analysisWellbeing.length === 0) {
-                                                                return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                                                                return (<div className={('bg-gray-800 border-gray-700 text-gray-400') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
                                                             }
                 
                                                             // ===== DYNAMIC THRESHOLDS BASED ON USER GOALS =====
@@ -228,25 +228,25 @@ export function AnalysesView({
                                                             return (
                                                                 <div className="space-y-4">
                                                                     {/* Header */}
-                                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                                    <div className={('bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50') + ' rounded-xl p-6 border'}>
                                                                         <div className="flex items-center gap-3 mb-2">
                                                                             <span className="text-4xl">💬</span>
-                                                                            <h3 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                            <h3 className={'text-2xl font-bold ' + ('text-white')}>
                                                                                 Reflexão Geral
                                                                             </h3>
                                                                         </div>
-                                                                        <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <p className={'text-xs ' + ('text-gray-400')}>
                                                                             Resumo personalizado do período selecionado
                                                                         </p>
                                                                     </div>
                 
                                                                     {/* Narrative Summary */}
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                        <div className={'space-y-4 leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                        <div className={'space-y-4 leading-relaxed ' + ('text-gray-200')}>
                                                                             {/* Paragraph 1: Overview */}
                                                                             <p>
                                                                                 {totalConsumptions > 0 ? (
-                                                                                    <>📊 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Visão Geral:</strong> {totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'} em {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'} (média {avgPerDay}/dia). Vamos explorar os padrões:</>
+                                                                                    <>📊 <strong className={('text-purple-400')}>Visão Geral:</strong> {totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'} em {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'} (média {avgPerDay}/dia). Vamos explorar os padrões:</>
                                                                                 ) : (
                                                                                     <>🎉 Nenhum consumo registado neste período - excelente!</>
                                                                                 )}
@@ -311,14 +311,14 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🏆 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias Bons vs Difíceis:</strong>
+                                                                                        🏆 <strong className={('text-green-400')}>Dias Bons vs Difíceis:</strong>
                                                                                         {goodDays.length > 0 && <> Tiveste <strong>{goodDays.length} {goodDays.length === 1 ? 'dia bom' : 'dias bons'}</strong> (≤{goodThreshold} consumos){goodSleep && <> com média de <strong>{goodSleep}h sono</strong></>}{goodMood && <> e humor de <strong>{goodMood}/10</strong></>}.</>}
-                                                                                        {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥{difficultThreshold} consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
+                                                                                        {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={('text-orange-400')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥{difficultThreshold} consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
                                                                                         {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
-                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Padrão claro: dormir mais ({(parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias bons!</span></>
+                                                                                            <> <span className={('text-cyan-400')}>💡 Padrão claro: dormir mais ({(parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias bons!</span></>
                                                                                         )}
                                                                                         {goodMood && difficultMood && parseFloat(goodMood) > parseFloat(difficultMood) + 1.5 && (
-                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💡 Humor também é fator: dias bons têm +{(parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
+                                                                                            <> <span className={('text-purple-400')}>💡 Humor também é fator: dias bons têm +{(parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -353,12 +353,12 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🌈 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Estado Emocional:</strong> Balanço <strong className={(darkMode ? (isPositive ? 'text-green-400' : 'text-orange-400') : (isPositive ? 'text-green-600' : 'text-orange-600'))}>{balanceLabel}</strong> ({positivePercent}% emoções positivas).
+                                                                                        🌈 <strong className={('text-cyan-400')}>Estado Emocional:</strong> Balanço <strong className={(isPositive ? 'text-green-400' : 'text-orange-400')}>{balanceLabel}</strong> ({positivePercent}% emoções positivas).
                                                                                         {topEmotions.length > 0 && <> As tuas emoções mais frequentes foram <strong>{topEmotions.join(', ')}</strong>.</>}
                                                                                         {positivePercent >= 60 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✨ Ótimo! Mantém estas práticas que te fazem sentir bem.</span></>
+                                                                                            <> <span className={('text-green-400')}>✨ Ótimo! Mantém estas práticas que te fazem sentir bem.</span></>
                                                                                         ) : positivePercent < 40 ? (
-                                                                                            <> <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>💜 Lembra-te: períodos difíceis passam. Procura apoio se precisares.</span></>
+                                                                                            <> <span className={('text-purple-400')}>💜 Lembra-te: períodos difíceis passam. Procura apoio se precisares.</span></>
                                                                                         ) : null}
                                                                                     </p>
                                                                                 );
@@ -400,11 +400,11 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📅 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Padrão Semanal:</strong> <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{dayNames[worstDay[0]]}s</strong> são os teus dias mais difíceis (média de <strong>{worstDay[1].toFixed(1)} consumos</strong>), enquanto <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{dayNames[bestDay[0]]}s</strong> são melhores (média {bestDay[1].toFixed(1)}).
+                                                                                        📅 <strong className={('text-indigo-400')}>Padrão Semanal:</strong> <strong className={('text-orange-400')}>{dayNames[worstDay[0]]}s</strong> são os teus dias mais difíceis (média de <strong>{worstDay[1].toFixed(1)} consumos</strong>), enquanto <strong className={('text-green-400')}>{dayNames[bestDay[0]]}s</strong> são melhores (média {bestDay[1].toFixed(1)}).
                                                                                         {parseInt(worstDay[0]) >= 1 && parseInt(worstDay[0]) <= 5 ? (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Dia de semana difícil pode estar ligado a stress de trabalho/rotina. Planeia estratégias preventivas às {dayNames[worstDay[0]]}s.</span></>
+                                                                                            <> <span className={('text-yellow-400')}>💡 Dia de semana difícil pode estar ligado a stress de trabalho/rotina. Planeia estratégias preventivas às {dayNames[worstDay[0]]}s.</span></>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Fins de semana tendem a ser mais desafiantes - talvez por mudança de rotina ou tédio. Estrutura atividades para esse dia.</span></>
+                                                                                            <> <span className={('text-cyan-400')}>💡 Fins de semana tendem a ser mais desafiantes - talvez por mudança de rotina ou tédio. Estrutura atividades para esse dia.</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -455,11 +455,11 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🌅 <strong className={(darkMode ? 'text-amber-400' : 'text-amber-600')}>Primeiro Consumo → Escalada:</strong> Quando o primeiro consumo é <strong>antes das 10h</strong>, o total do dia é <strong className={(percentDiff > 0 ? (darkMode ? 'text-orange-400' : 'text-orange-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>{Math.abs(percentDiff)}% {percentDiff > 0 ? 'maior' : 'menor'}</strong> (média {avgEarlyTotal.toFixed(1)} vs {avgLateTotal.toFixed(1)} quando começas mais tarde).
+                                                                                        🌅 <strong className={('text-amber-400')}>Primeiro Consumo → Escalada:</strong> Quando o primeiro consumo é <strong>antes das 10h</strong>, o total do dia é <strong className={(percentDiff > 0 ? ('text-orange-400') : ('text-green-400'))}>{Math.abs(percentDiff)}% {percentDiff > 0 ? 'maior' : 'menor'}</strong> (média {avgEarlyTotal.toFixed(1)} vs {avgLateTotal.toFixed(1)} quando começas mais tarde).
                                                                                         {percentDiff > 0 ? (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⚠️ Começar cedo correlaciona-se com escalada. Atrasar o primeiro consumo pode ser estratégia de redução de danos.</span></>
+                                                                                            <> <span className={('text-yellow-400')}>⚠️ Começar cedo correlaciona-se com escalada. Atrasar o primeiro consumo pode ser estratégia de redução de danos.</span></>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Começar mais cedo não piora o dia - pode até ajudar a espaçar melhor.</span></>
+                                                                                            <> <span className={('text-cyan-400')}>💡 Começar mais cedo não piora o dia - pode até ajudar a espaçar melhor.</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -501,11 +501,11 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔥 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Momentum:</strong> O teu recorde é <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'} consecutivos</strong> com consumo controlado (≤{median} consumos/dia).
+                                                                                        🔥 <strong className={('text-orange-400')}>Momentum:</strong> O teu recorde é <strong className={('text-green-400')}>{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'} consecutivos</strong> com consumo controlado (≤{median} consumos/dia).
                                                                                         {isCurrentStreakActive && maxStreak === currentStreak ? (
-                                                                                            <> <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🎉 E estás nessa streak AGORA! Continua - cada dia conta!</span></>
+                                                                                            <> <span className={'font-medium ' + ('text-green-400')}>🎉 E estás nessa streak AGORA! Continua - cada dia conta!</span></>
                                                                                         ) : maxStreakEnd ? (
-                                                                                            <> O último foi até {new Date(maxStreakEnd).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}. <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Conseguiste uma vez, consegues de novo!</span></>
+                                                                                            <> O último foi até {new Date(maxStreakEnd).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}. <span className={('text-cyan-400')}>Conseguiste uma vez, consegues de novo!</span></>
                                                                                         ) : null}
                                                                                     </p>
                                                                                 );
@@ -556,11 +556,11 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        ⏰ <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Janela de Vulnerabilidade:</strong> <strong>{concentrationPercent}%</strong> dos teus consumos acontecem entre <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{formatWindow(maxWindowStart)}</strong> ({windowType}).
+                                                                                        ⏰ <strong className={('text-red-400')}>Janela de Vulnerabilidade:</strong> <strong>{concentrationPercent}%</strong> dos teus consumos acontecem entre <strong className={('text-orange-400')}>{formatWindow(maxWindowStart)}</strong> ({windowType}).
                                                                                         {concentrationPercent >= 70 ? (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⚠️ Concentração muito alta! Esta é a tua janela crítica - planeia atividades alternativas ou estratégias de distração nesse horário.</span></>
+                                                                                            <> <span className={('text-yellow-400')}>⚠️ Concentração muito alta! Esta é a tua janela crítica - planeia atividades alternativas ou estratégias de distração nesse horário.</span></>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>💡 Identificar este padrão é o primeiro passo. Que rotinas/gatilhos existem nesse período?</span></>
+                                                                                            <> <span className={('text-cyan-400')}>💡 Identificar este padrão é o primeiro passo. Que rotinas/gatilhos existem nesse período?</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -597,16 +597,16 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🌊 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Efeito Cascata:</strong>
+                                                                                        🌊 <strong className={('text-purple-400')}>Efeito Cascata:</strong>
                                                                                         {longestCascade >= 2 ? (
-                                                                                            <> Detectei <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{cascadeEvents} {cascadeEvents === 1 ? 'episódio' : 'episódios'} de cascata</strong> (dias difíceis consecutivos). O mais longo foi de <strong>{longestCascade} dias</strong>.
+                                                                                            <> Detectei <strong className={('text-orange-400')}>{cascadeEvents} {cascadeEvents === 1 ? 'episódio' : 'episódios'} de cascata</strong> (dias difíceis consecutivos). O mais longo foi de <strong>{longestCascade} dias</strong>.
                                                                                             {longestCascade >= 3 ? (
-                                                                                                <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Cascatas longas são preocupantes - um dia mau leva a outro. Quando detetas o primeiro dia difícil, é crucial intervir logo no dia seguinte para quebrar o ciclo.</span></>
+                                                                                                <> <span className={('text-red-400')}>⚠️ Cascatas longas são preocupantes - um dia mau leva a outro. Quando detetas o primeiro dia difícil, é crucial intervir logo no dia seguinte para quebrar o ciclo.</span></>
                                                                                             ) : (
-                                                                                                <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Padrão: depois de um dia difícil, há risco de continuar. Quebra o ciclo no 2º dia!</span></>
+                                                                                                <> <span className={('text-yellow-400')}>💡 Padrão: depois de um dia difícil, há risco de continuar. Quebra o ciclo no 2º dia!</span></>
                                                                                             )}</>
                                                                                         ) : (
-                                                                                            <> Não deteto efeito cascata significativo - geralmente consegues recuperar após dias difíceis. <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Boa resiliência!</span></>
+                                                                                            <> Não deteto efeito cascata significativo - geralmente consegues recuperar após dias difíceis. <span className={('text-green-400')}>✓ Boa resiliência!</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -656,19 +656,19 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔄 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Perfil de Recuperação:</strong>
+                                                                                        🔄 <strong className={('text-teal-400')}>Perfil de Recuperação:</strong>
                                                                                         {avgRecovery ? (
                                                                                             <> Em média, levas <strong>{avgRecovery} {parseFloat(avgRecovery) === 1 ? 'dia' : 'dias'}</strong> para voltar ao normal após um dia difícil.
                                                                                             {parseFloat(avgRecovery) <= 1.5 ? (
-                                                                                                <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
+                                                                                                <> <span className={('text-green-400')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
                                                                                             ) : parseFloat(avgRecovery) <= 3 ? (
-                                                                                                <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
+                                                                                                <> <span className={('text-yellow-400')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
                                                                                             ) : (
-                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
+                                                                                                <> <span className={('text-orange-400')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
                                                                                             )}</>
                                                                                         ) : null}
                                                                                         {stillRecoveringDays > 0 && (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>⏳ <strong>{stillRecoveringDays} {stillRecoveringDays === 1 ? 'dia difícil ainda em recuperação' : 'dias difíceis ainda em recuperação'}</strong> (não voltaram à média nos últimos dias).</span></>
+                                                                                            <> <span className={('text-yellow-400')}>⏳ <strong>{stillRecoveringDays} {stillRecoveringDays === 1 ? 'dia difícil ainda em recuperação' : 'dias difíceis ainda em recuperação'}</strong> (não voltaram à média nos últimos dias).</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -707,9 +707,9 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📍 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Outliers:</strong> {new Date(top1.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })} teve <strong>{top1.count} consumos</strong> — {diffFromAvg} acima da tua média de {avgDaily.toFixed(1)}. É {topDays.length === 1 ? 'o teu dia mais alto' : `um dos teus ${topDays.length} dias mais altos`}.
+                                                                                        📍 <strong className={('text-orange-400')}>Outliers:</strong> {new Date(top1.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })} teve <strong>{top1.count} consumos</strong> — {diffFromAvg} acima da tua média de {avgDaily.toFixed(1)}. É {topDays.length === 1 ? 'o teu dia mais alto' : `um dos teus ${topDays.length} dias mais altos`}.
                                                                                         {top1Emotions.length > 0 && (
-                                                                                            <> Emoções registadas: <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> (humor: {top1Mood}/10)</>}.</>
+                                                                                            <> Emoções registadas: <strong className={('text-purple-400')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> (humor: {top1Mood}/10)</>}.</>
                                                                                         )}
                                                                                         {topDays.length > 1 && (
                                                                                             <> Outros picos: {topDays.slice(1).map((d, i) => (
@@ -719,7 +719,7 @@ export function AnalysesView({
                                                                                                 </span>
                                                                                             ))}.</>
                                                                                         )}
-                                                                                        <> <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Outliers não são falhas — são dados. {top1Emotions.length > 0 ? `Repara no padrão emocional: ${top1Emotions[0]}.` : 'Que gap de necessidades foi preenchido nesses dias?'}</span></>
+                                                                                        <> <span className={('text-cyan-400')}>Outliers não são falhas — são dados. {top1Emotions.length > 0 ? `Repara no padrão emocional: ${top1Emotions[0]}.` : 'Que gap de necessidades foi preenchido nesses dias?'}</span></>
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -777,15 +777,15 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔬 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Padrões de Comportamento:</strong>
+                                                                                        🔬 <strong className={('text-indigo-400')}>Padrões de Comportamento:</strong>
                                                                                         {clusters.altaPressao.length > 0 && (
-                                                                                            <> <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Dias "Alta Pressão"</strong> ({clusters.altaPressao.length}): Muito consumo + pouco sono + humor estável. Estás a "pedalar no limiar" — funcionas, mas à custa de estimulação.</>
+                                                                                            <> <strong className={('text-red-400')}>Dias "Alta Pressão"</strong> ({clusters.altaPressao.length}): Muito consumo + pouco sono + humor estável. Estás a "pedalar no limiar" — funcionas, mas à custa de estimulação.</>
                                                                                         )}
                                                                                         {clusters.paradoxo.length > 0 && (
-                                                                                            <> <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Dias "Paradoxo"</strong> ({clusters.paradoxo.length}): Pouco consumo + muito sono + humor baixo. Sono não compensa humor baixo — possível depressão mascarada ou outro fator.</>
+                                                                                            <> <strong className={('text-yellow-400')}>Dias "Paradoxo"</strong> ({clusters.paradoxo.length}): Pouco consumo + muito sono + humor baixo. Sono não compensa humor baixo — possível depressão mascarada ou outro fator.</>
                                                                                         )}
                                                                                         {clusters.equilibrio.length > 0 && (
-                                                                                            <> <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Dias "Equilíbrio"</strong> ({clusters.equilibrio.length}): Consumo moderado + humor bom. Este é o teu sweet spot atual.</>
+                                                                                            <> <strong className={('text-green-400')}>Dias "Equilíbrio"</strong> ({clusters.equilibrio.length}): Consumo moderado + humor bom. Este é o teu sweet spot atual.</>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -832,12 +832,12 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📈 <strong className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Micro-tendência:</strong> Últimos 7 dias: média de <strong>{avgLast7.toFixed(1)} consumos/dia</strong> vs {avgPrev21.toFixed(1)} nas 3 semanas anteriores
+                                                                                        📈 <strong className={('text-blue-400')}>Micro-tendência:</strong> Últimos 7 dias: média de <strong>{avgLast7.toFixed(1)} consumos/dia</strong> vs {avgPrev21.toFixed(1)} nas 3 semanas anteriores
                                                                                         ({percentChange > 0 ? '+' : ''}{percentChange}%).
                                                                                         {percentChange > 15 ? (
-                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Aumento significativo. Sistema a desviar — identificar causa antes que normalize.</span></>
+                                                                                            <> <span className={('text-orange-400')}>Aumento significativo. Sistema a desviar — identificar causa antes que normalize.</span></>
                                                                                         ) : percentChange < -15 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Redução clara. O que mudou? Replicar essas condições.</span></>
+                                                                                            <> <span className={('text-green-400')}>Redução clara. O que mudou? Replicar essas condições.</span></>
                                                                                         ) : percentChange > 0 ? (
                                                                                             <> Ligeira subida — monitorizar.</>
                                                                                         ) : (
@@ -894,12 +894,12 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🎭 <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>Gatilhos Emocionais Validados:</strong>
+                                                                                        🎭 <strong className={('text-pink-400')}>Gatilhos Emocionais Validados:</strong>
                                                                                         {topRisk && topRisk.diff > 0 && (
-                                                                                            <> Emoção <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>{topRisk.emotion}</strong> correlaciona com +{topRisk.diff.toFixed(1)} consumos acima da média ({topRisk.days} dias). É gatilho validado, não especulação.</>
+                                                                                            <> Emoção <strong className={('text-red-400')}>{topRisk.emotion}</strong> correlaciona com +{topRisk.diff.toFixed(1)} consumos acima da média ({topRisk.days} dias). É gatilho validado, não especulação.</>
                                                                                         )}
                                                                                         {topProtector && topProtector.diff < 0 && (
-                                                                                            <> Emoção <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{topProtector.emotion}</strong> correlaciona com {Math.abs(topProtector.diff).toFixed(1)} consumos ABAIXO da média. Factor protetor — cultivar.</>
+                                                                                            <> Emoção <strong className={('text-green-400')}>{topProtector.emotion}</strong> correlaciona com {Math.abs(topProtector.diff).toFixed(1)} consumos ABAIXO da média. Factor protetor — cultivar.</>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -953,16 +953,16 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        💧 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Contexto Autocuidado:</strong>
+                                                                                        💧 <strong className={('text-teal-400')}>Contexto Autocuidado:</strong>
                                                                                         {topImpact.percentDiff < 0 ? (
-                                                                                            <> Nos dias com <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Forte associação com dias de menor consumo.</>
+                                                                                            <> Nos dias com <strong className={('text-green-400')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Forte associação com dias de menor consumo.</>
                                                                                         ) : (
-                                                                                            <> Nos dias com <strong>{areaNames[topImpact.area]}</strong>, consumiste <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topImpact.percentDiff}% mais</strong>. Correlação inesperada — explorar.</>
+                                                                                            <> Nos dias com <strong>{areaNames[topImpact.area]}</strong>, consumiste <strong className={('text-orange-400')}>{topImpact.percentDiff}% mais</strong>. Correlação inesperada — explorar.</>
                                                                                         )}
                                                                                         {impacts.length > 1 && impacts[1].percentDiff < 0 && (
                                                                                             <> Também: {areaNames[impacts[1].area]} associado com redução de {Math.abs(impacts[1].percentDiff)}%.</>
                                                                                         )}
-                                                                                        <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>⚠️ Nota: Dias bons podem naturalmente incluir mais autocuidado E menos consumo. A correlação não prova que um causa o outro.</span></>
+                                                                                        <> <span className={('text-gray-400')}>⚠️ Nota: Dias bons podem naturalmente incluir mais autocuidado E menos consumo. A correlação não prova que um causa o outro.</span></>
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -991,8 +991,8 @@ export function AnalysesView({
                                                                                     if (percentLowSleep >= 60) {
                                                                                         return (
                                                                                             <p>
-                                                                                                🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> <strong>{percentLowSleep}%</strong> dos consumos tardios (00h-06h) aconteceram em dias com <strong>&lt;6h sono</strong>.
-                                                                                                <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão forte: privação de sono está consistentemente associada a consumo nocturno. Melhorar o sono pode ser uma alavanca útil.</span></>
+                                                                                                🔗 <strong className={('text-red-400')}>Trigger Mapping:</strong> <strong>{percentLowSleep}%</strong> dos consumos tardios (00h-06h) aconteceram em dias com <strong>&lt;6h sono</strong>.
+                                                                                                <> <span className={('text-orange-400')}>Padrão forte: privação de sono está consistentemente associada a consumo nocturno. Melhorar o sono pode ser uma alavanca útil.</span></>
                                                                                             </p>
                                                                                         );
                                                                                     }
@@ -1042,7 +1042,7 @@ export function AnalysesView({
                                                                                         if (percent >= 50) {
                                                                                             return (
                                                                                                 <p>
-                                                                                                    🔗 <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥{difficultThreshold} consumos), registaste emoção <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>{topEmotion[0]}</strong>.
+                                                                                                    🔗 <strong className={('text-red-400')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥{difficultThreshold} consumos), registaste emoção <strong className={('text-orange-400')}>{topEmotion[0]}</strong>.
                                                                                                     <> Este é o teu trigger primário validado — não é especulação. Desenvolver estratégias para esta emoção específica tem ROI alto.</>
                                                                                                 </p>
                                                                                             );
@@ -1103,7 +1103,7 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🧠 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Perfil Emocional:</strong> <strong>Diversidade emocional {emotionalDiversity}</strong> — registaste <strong>{numTypes} tipos de emoções</strong> diferentes. {dominantType && <>A mais frequente foi <strong>{dominantType[0]}</strong> (<strong>{dominantType[1]} vezes</strong>). </>}<strong>Oscilação de humor {oscillationLevel}</strong> — {oscillationLevel === 'alta' ? 'há variações notáveis de intensidade' : oscillationLevel === 'moderada' ? 'oscilações moderadas' : 'sem grandes extremos'}.
+                                                                                        🧠 <strong className={('text-purple-400')}>Perfil Emocional:</strong> <strong>Diversidade emocional {emotionalDiversity}</strong> — registaste <strong>{numTypes} tipos de emoções</strong> diferentes. {dominantType && <>A mais frequente foi <strong>{dominantType[0]}</strong> (<strong>{dominantType[1]} vezes</strong>). </>}<strong>Oscilação de humor {oscillationLevel}</strong> — {oscillationLevel === 'alta' ? 'há variações notáveis de intensidade' : oscillationLevel === 'moderada' ? 'oscilações moderadas' : 'sem grandes extremos'}.
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -1112,7 +1112,7 @@ export function AnalysesView({
                                                                             <p>
                                                                                 {allNotes.length > 0 ? (
                                                                                     <>
-                                                                                        📝 <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>Análise das tuas Reflexões</strong> ({sentimentAnalysis.noteCount} notas):
+                                                                                        📝 <strong className={('text-purple-400')}>Análise das tuas Reflexões</strong> ({sentimentAnalysis.noteCount} notas):
                                                                                         {(() => {
                                                                                             // Calcular sentimento com base na DISTRIBUIÇÃO em vez da média
                                                                                             const dist = sentimentAnalysis.distribution;
@@ -1159,24 +1159,24 @@ export function AnalysesView({
                                                                                             return (
                                                                                                 <>
                                                                                                     <br/>
-                                                                                                    🔍 <strong className={(darkMode ? 'text-indigo-300' : 'text-indigo-700')}>Padrões emocionais:</strong>
+                                                                                                    🔍 <strong className={('text-indigo-300')}>Padrões emocionais:</strong>
                                                                                                     {realOverall === 'positive' ? (
-                                                                                                        <> Tom geral <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>positivo</strong> ({positivePercent}% positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. </>
+                                                                                                        <> Tom geral <strong className={('text-green-400')}>positivo</strong> ({positivePercent}% positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. </>
                                                                                                     ) : realOverall === 'negative' ? (
-                                                                                                        <> Tom geral <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>negativo</strong> ({negativePercent}% negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. </>
+                                                                                                        <> Tom geral <strong className={('text-orange-400')}>negativo</strong> ({negativePercent}% negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. </>
                                                                                                     ) : (
                                                                                                         <> Tom equilibrado entre positivo ({positivePercent}%) e negativo ({negativePercent}%), com {neutralPercent}% neutro - estás a navegar os altos e baixos. </>
                                                                                                     )}
-                                                                                                    {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}>📈 Tendência: a melhorar!</span>}
-                                                                                                    {sentimentAnalysis.trend === 'worsening' && <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>📉 Tendência: a piorar nos últimos dias.</span>}
+                                                                                                    {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + ('text-green-400')}>📈 Tendência: a melhorar!</span>}
+                                                                                                    {sentimentAnalysis.trend === 'worsening' && <span className={('text-yellow-400')}>📉 Tendência: a piorar nos últimos dias.</span>}
                                                                                                     {highNegDays > 0 && highNegHighCons / highNegDays > 0.6 && (
-                                                                                                        <> <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>⚠️ Padrão: dias com reflexões muito negativas coincidem com mais consumo</strong> ({highNegHighCons} de {highNegDays} dias). Humor baixo pode ser gatilho.</>
+                                                                                                        <> <strong className={('text-orange-300')}>⚠️ Padrão: dias com reflexões muito negativas coincidem com mais consumo</strong> ({highNegHighCons} de {highNegDays} dias). Humor baixo pode ser gatilho.</>
                                                                                                     )}
                                                                                                 </>
                                                                                             );
                                                                                         })()}
                                                                                         <br/>
-                                                                                        💭 <strong className={(darkMode ? 'text-purple-300' : 'text-purple-700')}>Temas principais:</strong>
+                                                                                        💭 <strong className={('text-purple-300')}>Temas principais:</strong>
                                                                                         {(() => {
                                                                                             // Mostrar 3 temas mais mencionados com sentimento médio
                                                                                             const topThemes = Object.entries(sentimentThemes)
@@ -1189,7 +1189,7 @@ export function AnalysesView({
                                                                                                     <>
                                                                                                         {topThemes.map(([theme, data], idx) => {
                                                                                                             const avgSent = data.avgSentiment || 0;
-                                                                                                            const sentColor = avgSent > 0.3 ? (darkMode ? 'text-green-400' : 'text-green-600') : avgSent < -0.3 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600');
+                                                                                                            const sentColor = avgSent > 0.3 ? ('text-green-400') : avgSent < -0.3 ? ('text-red-400') : ('text-gray-400');
                                                                                                             return (
                                                                                                                 <span key={theme}>
                                                                                                                     {idx > 0 && ', '}
@@ -1198,8 +1198,8 @@ export function AnalysesView({
                                                                                                             );
                                                                                                         })}
                                                                                                         .
-                                                                                                        {sentimentThemes.stress && sentimentThemes.stress.avgSentiment < -0.3 && <> <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>Nota:</strong> As tuas reflexões sobre stress/ansiedade tendem a ser negativas - este é um tema que merece atenção.</>}
-                                                                                                        {sentimentThemes.sleep && sentimentThemes.sleep.avgSentiment < -0.3 && <> <strong className={(darkMode ? 'text-cyan-300' : 'text-cyan-700')}>Nota:</strong> O sono é fonte frequente de preocupação nas tuas notas - melhorar a qualidade do sono pode ter grande impacto.</>}
+                                                                                                        {sentimentThemes.stress && sentimentThemes.stress.avgSentiment < -0.3 && <> <strong className={('text-yellow-300')}>Nota:</strong> As tuas reflexões sobre stress/ansiedade tendem a ser negativas - este é um tema que merece atenção.</>}
+                                                                                                        {sentimentThemes.sleep && sentimentThemes.sleep.avgSentiment < -0.3 && <> <strong className={('text-cyan-300')}>Nota:</strong> O sono é fonte frequente de preocupação nas tuas notas - melhorar a qualidade do sono pode ter grande impacto.</>}
                                                                                                     </>
                                                                                                 );
                                                                                             }
@@ -1285,8 +1285,8 @@ export function AnalysesView({
                                                                                 }
 
                                                                                 return (
-                                                                                    <p className={(darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200') + ' p-4 rounded-lg border'}>
-                                                                                        💭 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-700')}>Síntese:</strong>
+                                                                                    <p className={('bg-gray-800/50 border-gray-700') + ' p-4 rounded-lg border'}>
+                                                                                        💭 <strong className={('text-cyan-400')}>Síntese:</strong>
                                                                                         {hasEffort && hasLimits ? (
                                                                                             <> Os teus dados mostram <strong>esforço consistente</strong>{goodDays > 0 && ` (${goodDays} dias bons)`}, mas também <strong>limites claros</strong>{difficultDays > 0 && ` (${difficultDays} dias difíceis)`}.</>
                                                                                         ) : hasEffort ? (
@@ -1297,7 +1297,7 @@ export function AnalysesView({
                                                                                             <> Dados em construção — ainda a mapear o teu padrão baseline.</>
                                                                                         )}
                                                                                         {optimizationAreas.length > 0 && (
-                                                                                            <> <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>A questão agora: o que queres optimizar no próximo ciclo?</strong> {optimizationAreas.length === 1 ? (
+                                                                                            <> <strong className={('text-orange-300')}>A questão agora: o que queres optimizar no próximo ciclo?</strong> {optimizationAreas.length === 1 ? (
                                                                                                 <> Foca em <strong>{optimizationAreas[0]}</strong>.</>
                                                                                             ) : optimizationAreas.length === 2 ? (
                                                                                                 <> Duas opções: <strong>{optimizationAreas[0]}</strong> ou <strong>{optimizationAreas[1]}</strong>. Escolhe um eixo.</>
@@ -1366,18 +1366,18 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{avgBedtimeStr}</strong>.
+                                                                                        Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={('text-indigo-400')}>{avgBedtimeStr}</strong>.
                                                                                         {avgBedtimeHours >= 0 && avgBedtimeHours < 6 ? (
-                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
+                                                                                            <> <span className={('text-orange-400')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
                                                                                         ) : avgBedtimeHours >= 22 && avgBedtimeHours < 24 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
+                                                                                            <> <span className={('text-green-400')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
                                                                                         ) : avgBedtimeHours >= 6 && avgBedtimeHours < 12 ? (
                                                                                             <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
                                                                                         ) : (
                                                                                             <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
                                                                                         )}
                                                                                         {daysWithoutSleep > 0 && (
-                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Dias sem dormir: {daysWithoutSleep} {daysWithoutSleep === 1 ? 'dia' : 'dias'} ({pctDaysWithoutSleep}%).</span> Registar dados de sono ajuda a entender melhor o impacto no teu bem-estar.</>
+                                                                                            <> <span className={('text-red-400')}>⚠️ Dias sem dormir: {daysWithoutSleep} {daysWithoutSleep === 1 ? 'dia' : 'dias'} ({pctDaysWithoutSleep}%).</span> Registar dados de sono ajuda a entender melhor o impacto no teu bem-estar.</>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -1497,9 +1497,9 @@ export function AnalysesView({
                                                                                 }
 
                                                                                 // Determinar cor do score
-                                                                                const scoreColor = finalScore >= 8 ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                                                                                                  finalScore >= 6 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
-                                                                                                  (darkMode ? 'text-red-400' : 'text-red-600');
+                                                                                const scoreColor = finalScore >= 8 ? ('text-green-400') :
+                                                                                                  finalScore >= 6 ? ('text-yellow-400') :
+                                                                                                  ('text-red-400');
 
                                                                                 return (
                                                                                     <p>
@@ -1507,20 +1507,20 @@ export function AnalysesView({
                                                                                         <span className={'text-xl font-bold ' + scoreColor}>
                                                                                             {finalScore.toFixed(1)}/10
                                                                                         </span>
-                                                                                        {trend === 'improving' && <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>↗️ A melhorar</span></>}
-                                                                                        {trend === 'worsening' && <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>↘️ A piorar</span></>}
-                                                                                        {trend === 'stable' && <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>→ Estável</span></>}
+                                                                                        {trend === 'improving' && <> <span className={('text-green-400')}>↗️ A melhorar</span></>}
+                                                                                        {trend === 'worsening' && <> <span className={('text-red-400')}>↘️ A piorar</span></>}
+                                                                                        {trend === 'stable' && <> <span className={('text-gray-400')}>→ Estável</span></>}
                                                                                         {' '}
-                                                                                        <span className={(darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                        <span className={('text-gray-300')}>
                                                                                             (Horas: {hoursScore.toFixed(1)}/5, Regularidade: {regularityScore.toFixed(1)}/5)
                                                                                         </span>
                                                                                         .
                                                                                         {finalScore >= 8 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a dormir {avgSleep.toFixed(1)}h em média — mantém esta rotina.</span></>
+                                                                                            <> <span className={('text-green-400')}>Excelente! Estás a dormir {avgSleep.toFixed(1)}h em média — mantém esta rotina.</span></>
                                                                                         ) : finalScore >= 6 ? (
-                                                                                            <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Razoável. Dormes {avgSleep.toFixed(1)}h em média{regularityScore < 3 ? ' mas a tua rotina é irregular — tenta deitar-te à mesma hora' : ''}.</span></>
+                                                                                            <> <span className={('text-yellow-400')}>Razoável. Dormes {avgSleep.toFixed(1)}h em média{regularityScore < 3 ? ' mas a tua rotina é irregular — tenta deitar-te à mesma hora' : ''}.</span></>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>⚠️ Alerta: {avgSleep.toFixed(1)}h é insuficiente{regularityScore < 3 ? ' e irregular' : ''}. Prioriza dormir 7-8h e criar uma rotina consistente.</span></>
+                                                                                            <> <span className={('text-red-400')}>⚠️ Alerta: {avgSleep.toFixed(1)}h é insuficiente{regularityScore < 3 ? ' e irregular' : ''}. Prioriza dormir 7-8h e criar uma rotina consistente.</span></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -1575,17 +1575,17 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        📊 <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Análise de Quantidade:</strong> Em média, consomes <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgMgPerDay.toFixed(0)}mg por dia</strong> (dados de {uniqueDaysWithMg} {uniqueDaysWithMg === 1 ? 'dia' : 'dias'}).
+                                                                                        📊 <strong className={('text-cyan-400')}>Análise de Quantidade:</strong> Em média, consomes <strong className={('text-purple-400')}>{avgMgPerDay.toFixed(0)}mg por dia</strong> (dados de {uniqueDaysWithMg} {uniqueDaysWithMg === 1 ? 'dia' : 'dias'}).
                                                                                         {avgMgPerDay > 300 ? (
-                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
+                                                                                            <> <span className={('text-orange-400')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
                                                                                         ) : avgMgPerDay > 200 ? (
                                                                                             <> Esta é uma quantidade moderada-alta. Há espaço para redução se esse for um objetivo teu.</>
                                                                                         ) : avgMgPerDay > 100 ? (
-                                                                                            <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Esta é uma quantidade moderada.</span> Se estás a trabalhar na redução, estás no caminho certo.</>
+                                                                                            <> <span className={('text-blue-400')}>Esta é uma quantidade moderada.</span> Se estás a trabalhar na redução, estás no caminho certo.</>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Esta é uma quantidade relativamente baixa!</span> Bom trabalho na gestão de quantidade.</>
+                                                                                            <> <span className={('text-green-400')}>Esta é uma quantidade relativamente baixa!</span> Bom trabalho na gestão de quantidade.</>
                                                                                         )}
-                                                                                        {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{pctNoLate}%</strong> dos dias não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>}
+                                                                                        {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? ('text-green-400') : ('text-orange-400'))}>{pctNoLate}%</strong> dos dias não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>}
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -1632,15 +1632,15 @@ export function AnalysesView({
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        💧 <strong className={(darkMode ? 'text-teal-400' : 'text-teal-600')}>Autocuidado:</strong> A tua taxa geral está em <strong className={(overall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{overall.toFixed(0)}%</strong>.
+                                                                                        💧 <strong className={('text-teal-400')}>Autocuidado:</strong> A tua taxa geral está em <strong className={(overall >= 70 ? ('text-green-400') : ('text-orange-400'))}>{overall.toFixed(0)}%</strong>.
                                                                                         {lowAreas.length >= 3 ? (
-                                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Foca primeiro em {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%): {suggestions[lowAreas[0][0]]}.</span> Depois expande para {areaNames[lowAreas[1][0]]}.</>
+                                                                                            <> Reparei que estás abaixo dos 70% em várias áreas. <span className={('text-yellow-400')}>Foca primeiro em {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%): {suggestions[lowAreas[0][0]]}.</span> Depois expande para {areaNames[lowAreas[1][0]]}.</>
                                                                                         ) : lowAreas.length === 2 ? (
-                                                                                            <> Duas áreas precisam de atenção: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). <span className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Para {areaNames[lowAreas[0][0]]}: {suggestions[lowAreas[0][0]]}.</span></>
+                                                                                            <> Duas áreas precisam de atenção: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). <span className={('text-cyan-400')}>Para {areaNames[lowAreas[0][0]]}: {suggestions[lowAreas[0][0]]}.</span></>
                                                                                         ) : lowAreas.length === 1 ? (
-                                                                                            <> Só uma área abaixo de 70%: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%). <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Dica prática: {suggestions[lowAreas[0][0]]}.</span> Pequenos passos contam!</>
+                                                                                            <> Só uma área abaixo de 70%: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%). <span className={('text-blue-400')}>Dica prática: {suggestions[lowAreas[0][0]]}.</span> Pequenos passos contam!</>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Excelente! Estás a manter bons hábitos em todas as áreas (todas ≥70%).</span> Continua assim - o autocuidado é a base da recuperação.</>
+                                                                                            <> <span className={('text-green-400')}>Excelente! Estás a manter bons hábitos em todas as áreas (todas ≥70%).</span> Continua assim - o autocuidado é a base da recuperação.</>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -1754,9 +1754,9 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🎯 <strong className={(darkMode ? 'text-pink-400' : 'text-pink-600')}>Progresso de Metas:</strong> Cumpriste condições das tuas metas <strong>{totalAchievements} vezes</strong> neste período!
+                                                                                        🎯 <strong className={('text-pink-400')}>Progresso de Metas:</strong> Cumpriste condições das tuas metas <strong>{totalAchievements} vezes</strong> neste período!
                                                                                         {goalsWithAchievements.length === uniqueGoals.length ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Todas as {uniqueGoals.length} metas ativas tiveram cumprimentos - isso é incrível!</span></>
+                                                                                            <> <span className={('text-green-400')}>Todas as {uniqueGoals.length} metas ativas tiveram cumprimentos - isso é incrível!</span></>
                                                                                         ) : goalsWithAchievements.length > 0 ? (
                                                                                             <> Progredir em {goalsWithAchievements.length} de {uniqueGoals.length} metas.</>
                                                                                         ) : (
@@ -1764,7 +1764,7 @@ export function AnalysesView({
                                                                                         )}
                                                                                         {bestGoal && bestGoal.percentage > 0 && (
                                                                                             <>
-                                                                                                {' '}A tua melhor meta é <strong className={(darkMode ? 'text-purple-400' : 'text-purple-600')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} dias possíveis (<strong className={(bestGoal.percentage >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : bestGoal.percentage >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>{bestGoal.percentage}%</strong>)
+                                                                                                {' '}A tua melhor meta é <strong className={('text-purple-400')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} dias possíveis (<strong className={(bestGoal.percentage >= 70 ? ('text-green-400') : bestGoal.percentage >= 40 ? ('text-yellow-400') : ('text-orange-400'))}>{bestGoal.percentage}%</strong>)
                                                                                                 {bestGoal.percentage >= 70 ? ' - excelente!' : bestGoal.percentage >= 40 ? '. Continua a trabalhar nesta meta!' : '. Há espaço para melhorar - revê as tuas estratégias.'}
                                                                                             </>
                                                                                         )}
@@ -1802,15 +1802,15 @@ export function AnalysesView({
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        💤➡️😊 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Sono e Humor:</strong> Analisei como o teu sono afeta o humor no dia seguinte.
+                                                                                        💤➡️😊 <strong className={('text-indigo-400')}>Sono e Humor:</strong> Analisei como o teu sono afeta o humor no dia seguinte.
                                                                                         {correlation > 0.4 ? (
-                                                                                            <> <span className={(darkMode ? 'text-green-400' : 'text-green-600')}>Correlação forte (+{correlation.toFixed(2)}):</span> Dormir bem <strong>melhora claramente</strong> o teu humor no dia seguinte! Nos dados, mais sono = humor melhor. <strong className={(darkMode ? 'text-green-300' : 'text-green-700')}>💡 Ação: Prioriza 7-8h de sono - é o teu melhor investimento emocional.</strong></>
+                                                                                            <> <span className={('text-green-400')}>Correlação forte (+{correlation.toFixed(2)}):</span> Dormir bem <strong>melhora claramente</strong> o teu humor no dia seguinte! Nos dados, mais sono = humor melhor. <strong className={('text-green-300')}>💡 Ação: Prioriza 7-8h de sono - é o teu melhor investimento emocional.</strong></>
                                                                                         ) : correlation > 0.2 ? (
-                                                                                            <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Correlação moderada (+{correlation.toFixed(2)}):</span> Há uma ligação positiva entre sono e humor, mas outros fatores também influenciam. <strong className={(darkMode ? 'text-blue-300' : 'text-blue-700')}>💡 Ação: Melhora a qualidade do sono (ambiente escuro, horário regular).</strong></>
+                                                                                            <> <span className={('text-blue-400')}>Correlação moderada (+{correlation.toFixed(2)}):</span> Há uma ligação positiva entre sono e humor, mas outros fatores também influenciam. <strong className={('text-blue-300')}>💡 Ação: Melhora a qualidade do sono (ambiente escuro, horário regular).</strong></>
                                                                                         ) : correlation < -0.3 ? (
-                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Correlação negativa ({correlation.toFixed(2)}):</span> Curiosamente, mais sono associa-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta negativamente. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Ação: Foca na QUALIDADE do sono, não apenas quantidade. Considera consultar profissional de saúde.</strong></>
+                                                                                            <> <span className={('text-red-400')}>Correlação negativa ({correlation.toFixed(2)}):</span> Curiosamente, mais sono associa-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta negativamente. <strong className={('text-orange-300')}>💡 Ação: Foca na QUALIDADE do sono, não apenas quantidade. Considera consultar profissional de saúde.</strong></>
                                                                                         ) : (
-                                                                                            <> <span className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Correlação fraca ({correlation.toFixed(2)}):</span> Não há uma relação linear clara nos teus dados. Isso não significa que o sono não importa - pode haver um padrão não-linear, ou outros fatores (consumo, stress, socialização) têm mais peso. <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>💡 Ação: Observa padrões específicos - talvez haja um "sweet spot" de horas de sono para ti.</strong></>
+                                                                                            <> <span className={('text-gray-400')}>Correlação fraca ({correlation.toFixed(2)}):</span> Não há uma relação linear clara nos teus dados. Isso não significa que o sono não importa - pode haver um padrão não-linear, ou outros fatores (consumo, stress, socialização) têm mais peso. <strong className={('text-yellow-300')}>💡 Ação: Observa padrões específicos - talvez haja um "sweet spot" de horas de sono para ti.</strong></>
                                                                                         )}
                                                                                     </p>
                                                                                 );
@@ -1865,26 +1865,26 @@ export function AnalysesView({
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        🔍 <strong className={(darkMode ? 'text-indigo-400' : 'text-indigo-600')}>Impacto do Consumo:</strong> Analisei como o consumo de hoje afeta o teu bem-estar amanhã.
+                                                                                        🔍 <strong className={('text-indigo-400')}>Impacto do Consumo:</strong> Analisei como o consumo de hoje afeta o teu bem-estar amanhã.
                                                                                         {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
                                                                                             <>
                                                                                                 {moodCorr < -0.5 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Correlação forte ({moodCorr.toFixed(2)}):</span> Dias com mais consumo <strong>precedem claramente</strong> dias com humor mais baixo. <strong className={(darkMode ? 'text-red-300' : 'text-red-700')}>💡 O ciclo é evidente nos teus dados - consumir hoje = sentir-te pior amanhã.</strong></>
+                                                                                                    <> <span className={('text-red-400')}>Correlação forte ({moodCorr.toFixed(2)}):</span> Dias com mais consumo <strong>precedem claramente</strong> dias com humor mais baixo. <strong className={('text-red-300')}>💡 O ciclo é evidente nos teus dados - consumir hoje = sentir-te pior amanhã.</strong></>
                                                                                                 ) : moodCorr < -0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Correlação moderada ({moodCorr.toFixed(2)}):</span> Há um padrão onde dias de mais consumo tendem a preceder humor mais baixo. O impacto emocional existe, embora outros fatores também influenciem. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Reduzir consumo pode melhorar o teu estado emocional.</strong></>
+                                                                                                    <> <span className={('text-orange-400')}>Correlação moderada ({moodCorr.toFixed(2)}):</span> Há um padrão onde dias de mais consumo tendem a preceder humor mais baixo. O impacto emocional existe, embora outros fatores também influenciem. <strong className={('text-orange-300')}>💡 Reduzir consumo pode melhorar o teu estado emocional.</strong></>
                                                                                                 ) : moodCorr > 0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Correlação positiva ({moodCorr.toFixed(2)}):</span> Curiosamente, mais consumo associa-se com melhor humor no dia seguinte - isto pode indicar alívio temporário, autocontrolo diferente em dias bons, ou outros fatores. <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>💡 Observa se este padrão se mantém a longo prazo.</strong></>
+                                                                                                    <> <span className={('text-yellow-400')}>Correlação positiva ({moodCorr.toFixed(2)}):</span> Curiosamente, mais consumo associa-se com melhor humor no dia seguinte - isto pode indicar alívio temporário, autocontrolo diferente em dias bons, ou outros fatores. <strong className={('text-yellow-300')}>💡 Observa se este padrão se mantém a longo prazo.</strong></>
                                                                                                 ) : null}
                                                                                             </>
                                                                                         )}
                                                                                         {energyCorr !== null && Math.abs(energyCorr) >= 0.3 && (
                                                                                             <>
                                                                                                 {energyCorr < -0.5 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Na energia: correlação forte ({energyCorr.toFixed(2)})</span> - mais consumo resulta em fadiga clara no dia seguinte. <strong className={(darkMode ? 'text-red-300' : 'text-red-700')}>O teu corpo está a pedir descanso da substância.</strong></>
+                                                                                                    <> <span className={('text-red-400')}>Na energia: correlação forte ({energyCorr.toFixed(2)})</span> - mais consumo resulta em fadiga clara no dia seguinte. <strong className={('text-red-300')}>O teu corpo está a pedir descanso da substância.</strong></>
                                                                                                 ) : energyCorr < -0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Na energia: correlação moderada ({energyCorr.toFixed(2)})</span> - consumo afeta os teus níveis de energia no dia seguinte. O corpo está em recuperação. <strong className={(darkMode ? 'text-orange-300' : 'text-orange-700')}>💡 Mais descanso e hidratação nos dias seguintes pode ajudar.</strong></>
+                                                                                                    <> <span className={('text-orange-400')}>Na energia: correlação moderada ({energyCorr.toFixed(2)})</span> - consumo afeta os teus níveis de energia no dia seguinte. O corpo está em recuperação. <strong className={('text-orange-300')}>💡 Mais descanso e hidratação nos dias seguintes pode ajudar.</strong></>
                                                                                                 ) : energyCorr > 0.3 ? (
-                                                                                                    <> <span className={(darkMode ? 'text-blue-400' : 'text-blue-600')}>Na energia: correlação positiva ({energyCorr.toFixed(2)})</span> - mais consumo associa-se com mais energia no dia seguinte. Observa se isto é sustentável ou se há um efeito rebote posterior.</>
+                                                                                                    <> <span className={('text-blue-400')}>Na energia: correlação positiva ({energyCorr.toFixed(2)})</span> - mais consumo associa-se com mais energia no dia seguinte. Observa se isto é sustentável ou se há um efeito rebote posterior.</>
                                                                                                 ) : null}
                                                                                             </>
                                                                                         )}
@@ -1950,9 +1950,9 @@ export function AnalysesView({
                 
                                                                                 return (
                                                                                     <p>
-                                                                                        🎯 <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Perfil de Risco:</strong> Identifiquei um padrão importante:
+                                                                                        🎯 <strong className={('text-yellow-400')}>Perfil de Risco:</strong> Identifiquei um padrão importante:
                                                                                         {moodDiff > 0 ? (
-                                                                                            <> <span className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Dias com mais consumo tendem a ser precedidos por humor mais baixo no dia anterior</span> (diferença de {moodDiff.toFixed(1)} pontos). <strong>Isto sugere que humor baixo é um gatilho para ti.</strong> Quando te sentires em baixo, esse é o momento de usar estratégias de prevenção - contacta alguém, faz exercício, ou usa técnicas de mindfulness.</>
+                                                                                            <> <span className={('text-orange-400')}>Dias com mais consumo tendem a ser precedidos por humor mais baixo no dia anterior</span> (diferença de {moodDiff.toFixed(1)} pontos). <strong>Isto sugere que humor baixo é um gatilho para ti.</strong> Quando te sentires em baixo, esse é o momento de usar estratégias de prevenção - contacta alguém, faz exercício, ou usa técnicas de mindfulness.</>
                                                                                         ) : (
                                                                                             <> Dias com mais consumo são precedidos por humor mais alto (diferença de {Math.abs(moodDiff).toFixed(1)} pontos) - isto pode indicar que celebração ou euforia são gatilhos. Estar consciente disto ajuda-te a moderar.</>
                                                                                         )}
@@ -2036,13 +2036,13 @@ export function AnalysesView({
                                                                                     <p>
                                                                                         {percentChange > 0 ? (
                                                                                             <>
-                                                                                                📈 <strong className={(darkMode ? 'text-orange-400' : 'text-orange-600')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
-                                                                                                <span className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
+                                                                                                📈 <strong className={('text-orange-400')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                                <span className={('text-yellow-400')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
                                                                                             </>
                                                                                         ) : (
                                                                                             <>
-                                                                                                📉 <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
-                                                                                                <span className={'font-medium ' + (darkMode ? 'text-green-400' : 'text-green-600')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
+                                                                                                📉 <strong className={('text-green-400')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                                <span className={'font-medium ' + ('text-green-400')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
                                                                                             </>
                                                                                         )}
                                                                                     </p>
@@ -2100,9 +2100,9 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        ⚡ <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Energia e Consumo:</strong> Das últimas {countWithData} vezes que consumiste, <strong className={(darkMode ? 'text-yellow-300' : 'text-yellow-700')}>{countWithLowEnergy} tinham check-in com energia baixa (&lt;4)</strong>.
+                                                                                        ⚡ <strong className={('text-yellow-400')}>Energia e Consumo:</strong> Das últimas {countWithData} vezes que consumiste, <strong className={('text-yellow-300')}>{countWithLowEnergy} tinham check-in com energia baixa (&lt;4)</strong>.
                                                                                         {percentage >= 70 ? (
-                                                                                            <> <span className={(darkMode ? 'text-red-400' : 'text-red-600')}>Isto sugere uma forte correlação entre cansaço e consumo.</span> Considera estratégias de gestão de energia (pausas, descanso, nutrição) como parte do teu plano de redução de danos.</>
+                                                                                            <> <span className={('text-red-400')}>Isto sugere uma forte correlação entre cansaço e consumo.</span> Considera estratégias de gestão de energia (pausas, descanso, nutrição) como parte do teu plano de redução de danos.</>
                                                                                         ) : (
                                                                                             <> Isto sugere que o cansaço pode ser um gatilho. Identifica formas de recarregar energia antes de recorrer ao consumo.</>
                                                                                         )}
@@ -2133,7 +2133,7 @@ export function AnalysesView({
 
                                                                                 return (
                                                                                     <p>
-                                                                                        🏆 <strong className={(darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Conquistas e Progresso:</strong> Conseguiste <strong>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</strong> até agora{milestones && <>, incluindo: {milestones}</>}. Cada marco é uma prova do teu compromisso com a mudança. Continua assim!
+                                                                                        🏆 <strong className={('text-yellow-400')}>Conquistas e Progresso:</strong> Conseguiste <strong>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</strong> até agora{milestones && <>, incluindo: {milestones}</>}. Cada marco é uma prova do teu compromisso com a mudança. Continua assim!
                                                                                     </p>
                                                                                 );
                                                                             })()}
@@ -2141,21 +2141,21 @@ export function AnalysesView({
                                                                             {/* Paragraph 12: Autoconhecimento */}
                                                                             {(analysisWellbeing.length > 3 || analysisCycles.length > 2) && (
                                                                                 <p>
-                                                                                    ✨ <strong className={(darkMode ? 'text-cyan-400' : 'text-cyan-600')}>Autoconhecimento:</strong> Estás a registar de forma consistente
+                                                                                    ✨ <strong className={('text-cyan-400')}>Autoconhecimento:</strong> Estás a registar de forma consistente
                                                                                     {analysisWellbeing.length > 0 && <> (bem-estar)</>}
                                                                                     {analysisCycles.length > 0 && <>{analysisWellbeing.length > 0 && ','} ciclos de sono</>}.
-                                                                                    <span className={'font-medium ' + (darkMode ? 'text-cyan-400' : 'text-cyan-600')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
+                                                                                    <span className={'font-medium ' + ('text-cyan-400')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
                                                                                 </p>
                                                                             )}
                 
                                                                             {/* Paragraph 13: Tu Tens o Controlo */}
-                                                                            <p className={'font-medium ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                            <p className={'font-medium ' + ('text-purple-300')}>
                                                                                 💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
-                                                                                <span className={(darkMode ? 'text-purple-400' : 'text-purple-600')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
+                                                                                <span className={('text-purple-400')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
                                                                             </p>
                 
                                                                             {/* Paragraph 14: Closing & Next Steps */}
-                                                                            <p className={'font-medium pt-2 border-t ' + (darkMode ? 'border-gray-700 text-purple-400' : 'border-gray-200 text-purple-600')}>
+                                                                            <p className={'font-medium pt-2 border-t ' + ('border-gray-700 text-purple-400')}>
                                                                                 🤝 <strong>Compromisso:</strong> O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.
                                                                                 <span> Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.</span>
                                                                                 <br/><br/>
@@ -2175,12 +2175,12 @@ export function AnalysesView({
 
                                                         if (allEmotions.length === 0) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-4xl mb-3">🌈</div>
-                                                                    <p className={'text-lg font-medium mb-2 ' + (themeClasses.textPrimary(darkMode))}>
+                                                                    <p className={'text-lg font-medium mb-2 ' + ('text-white')}>
                                                                         Sem dados emocionais
                                                                     </p>
-                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <p className={'text-sm ' + ('text-gray-400')}>
                                                                         Regista as tuas emoções no Bem-estar para veres análises detalhadas aqui.
                                                                     </p>
                                                                 </div>
@@ -2245,46 +2245,46 @@ export function AnalysesView({
                                                         return (
                                                             <div className="space-y-4">
                                                                 {/* Overview */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         🌈 Panorama Emocional
                                                                     </h3>
                                                                     <div className="grid grid-cols-3 gap-4 mb-4">
-                                                                        <div className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                        <div className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-green-400')}>
                                                                                 {positivePercent.toFixed(0)}%
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-green-300/70' : 'text-green-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-green-300/70')}>
                                                                                 Positivas
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-green-400/60' : 'text-green-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-green-400/60')}>
                                                                                 {positiveEmotions.length} emoções
                                                                             </div>
                                                                         </div>
-                                                                        <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                        <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-purple-400')}>
                                                                                 {negativePercent.toFixed(0)}%
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-purple-300/70')}>
                                                                                 Negativas
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-purple-400/60' : 'text-purple-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-purple-400/60')}>
                                                                                 {negativeEmotions.length} emoções
                                                                             </div>
                                                                         </div>
-                                                                        <div className={(darkMode ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-50 border-gray-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <div className={('bg-gray-800/50 border-gray-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-gray-400')}>
                                                                                 {allEmotions.length}
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400/70' : 'text-gray-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-gray-400/70')}>
                                                                                 Total
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-gray-400/60' : 'text-gray-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-gray-400/60')}>
                                                                                 registadas
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className={'flex items-center h-4 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-800' : 'bg-gray-200')}>
+                                                                    <div className={'flex items-center h-4 rounded-full overflow-hidden ' + ('bg-gray-800')}>
                                                                         <div
                                                                             className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
                                                                             style={{width: positivePercent + '%'}}
@@ -2297,26 +2297,26 @@ export function AnalysesView({
                                                                 </div>
 
                                                                 {/* Top Emoções + Padrões por Dia (compacto) */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         📊 Emoções Mais Frequentes & Padrões Semanais
                                                                     </h3>
                                                                     <div className="grid md:grid-cols-2 gap-4">
                                                                         {/* Top 10 Emoções */}
                                                                         <div>
-                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>⭐ Top 10 Emoções</div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>⭐ Top 10 Emoções</div>
                                                                             <div className="space-y-2">
                                                                                 {topEmotions.slice(0, 10).map((item, idx) => (
                                                                                     <div key={idx} className="flex items-center justify-between">
                                                                                         <div className="flex items-center gap-2 flex-1">
-                                                                                            <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>
+                                                                                            <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
                                                                                             <span className={'text-sm truncate ' + (
-                                                                                                item.category === 'positive' ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                                                                                                item.category === 'negative' ? (darkMode ? 'text-purple-400' : 'text-purple-600') :
-                                                                                                (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                                                item.category === 'positive' ? ('text-green-400') :
+                                                                                                item.category === 'negative' ? ('text-purple-400') :
+                                                                                                ('text-gray-400')
                                                                                             )}>{item.emotion}</span>
                                                                                         </div>
-                                                                                        <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                        <span className={'text-xs ' + ('text-gray-500')}>
                                                                                             {item.count}× ({item.percent.toFixed(0)}%)
                                                                                         </span>
                                                                                     </div>
@@ -2327,15 +2327,15 @@ export function AnalysesView({
                                                                         {/* Padrões por Dia da Semana */}
                                                                         {weekdayStats.length > 0 && (
                                                                             <div>
-                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📅 Por Dia da Semana</div>
+                                                                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>📅 Por Dia da Semana</div>
                                                                                 <div className="space-y-2">
                                                                                     {weekdayStats
                                                                                         .sort((a, b) => b.positivePercent - a.positivePercent)
                                                                                         .map((stat) => (
                                                                                         <div key={stat.day} className="flex items-center justify-between">
-                                                                                            <span className={'text-sm w-16 ' + (themeClasses.textPrimary(darkMode))}>{weekdayNames[stat.day]}</span>
+                                                                                            <span className={'text-sm w-16 ' + ('text-white')}>{weekdayNames[stat.day]}</span>
                                                                                             <div className="flex-1 mx-2">
-                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                                                                                                     <div
                                                                                                         className={'h-full transition-all duration-500 ' + (
                                                                                                             stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
@@ -2347,9 +2347,9 @@ export function AnalysesView({
                                                                                                 </div>
                                                                                             </div>
                                                                                             <span className={'text-xs w-12 text-right ' + (
-                                                                                                stat.positivePercent >= 60 ? (darkMode ? 'text-green-400' : 'text-green-600') :
-                                                                                                stat.positivePercent >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') :
-                                                                                                (darkMode ? 'text-purple-400' : 'text-purple-600')
+                                                                                                stat.positivePercent >= 60 ? ('text-green-400') :
+                                                                                                stat.positivePercent >= 40 ? ('text-yellow-400') :
+                                                                                                ('text-purple-400')
                                                                                             )}>
                                                                                                 {stat.positivePercent.toFixed(0)}%
                                                                                             </span>
@@ -2357,8 +2357,8 @@ export function AnalysesView({
                                                                                     ))}
                                                                                 </div>
                                                                                 {weekdayStats.length >= 2 && (
-                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mt-3 border'}>
-                                                                                        <p className={'text-xs ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                    <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
+                                                                                        <p className={'text-xs ' + ('text-blue-300')}>
                                                                                             💡 Melhor dia: <strong>{weekdayNames[bestDay.day]}s</strong> ({bestDay.positivePercent.toFixed(0)}%). Mais desafiante: <strong>{weekdayNames[worstDay.day]}s</strong> ({worstDay.positivePercent.toFixed(0)}%).
                                                                                         </p>
                                                                                     </div>
@@ -2369,8 +2369,8 @@ export function AnalysesView({
                                                                 </div>
 
                                                                 {/* Correlação Emoções vs Consumo */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         🔍 Emoções vs Consumo
                                                                     </h3>
                                                                     {(() => {
@@ -2418,7 +2418,7 @@ export function AnalysesView({
 
                                                                         if (highRiskEmotions.length === 0 && lowRiskEmotions.length === 0) {
                                                                             return (
-                                                                                <div className={'text-center py-4 text-sm ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500') + ' rounded-lg'}>
+                                                                                <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
                                                                                     Sem dados suficientes para correlação (necessário ≥2 ocorrências por emoção)
                                                                                 </div>
                                                                             );
@@ -2429,16 +2429,16 @@ export function AnalysesView({
                                                                                 {/* Emoções de ALTO risco (mais consumo) */}
                                                                                 {highRiskEmotions.length > 0 && (
                                                                                     <div>
-                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
                                                                                             🔴 Alto Risco (mais consumo)
                                                                                         </div>
                                                                                         {highRiskEmotions.map(e => (
-                                                                                            <div key={e.emotion} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                            <div key={e.emotion} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                                                                 <div className="flex items-center justify-between mb-1">
-                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{e.emotion}</span>
-                                                                                                    <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                                                                    <span className={'font-medium text-sm ' + ('text-red-300')}>{e.emotion}</span>
+                                                                                                    <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                                                                 </div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                <div className={'text-xs ' + ('text-red-400/70')}>
                                                                                                     ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
                                                                                                 </div>
                                                                                             </div>
@@ -2449,16 +2449,16 @@ export function AnalysesView({
                                                                                 {/* Emoções de BAIXO risco (menos consumo) */}
                                                                                 {lowRiskEmotions.length > 0 && (
                                                                                     <div>
-                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
                                                                                             🟢 Baixo Risco (menos consumo)
                                                                                         </div>
                                                                                         {lowRiskEmotions.map(e => (
-                                                                                            <div key={e.emotion} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                            <div key={e.emotion} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                                                                 <div className="flex items-center justify-between mb-1">
-                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{e.emotion}</span>
-                                                                                                    <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                                                                    <span className={'font-medium text-sm ' + ('text-green-300')}>{e.emotion}</span>
+                                                                                                    <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                                                                 </div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                <div className={'text-xs ' + ('text-green-400/70')}>
                                                                                                     ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
                                                                                                 </div>
                                                                                             </div>
@@ -2479,12 +2479,12 @@ export function AnalysesView({
 
                                                         if (allTriggers.length === 0) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-4xl mb-3">⚡</div>
-                                                                    <p className={'text-lg font-medium mb-2 ' + (themeClasses.textPrimary(darkMode))}>
+                                                                    <p className={'text-lg font-medium mb-2 ' + ('text-white')}>
                                                                         Sem gatilhos registados
                                                                     </p>
-                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <p className={'text-sm ' + ('text-gray-400')}>
                                                                         Identifica e regista os teus gatilhos ao criar novos ciclos para veres análises detalhadas aqui.
                                                                     </p>
                                                                 </div>
@@ -2525,41 +2525,41 @@ export function AnalysesView({
                                                         return (
                                                             <div className="space-y-4">
                                                                 {/* Overview */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         ⚡ Panorama de Gatilhos
                                                                     </h3>
                                                                     <div className="grid grid-cols-3 gap-4">
-                                                                        <div className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                        <div className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-red-400')}>
                                                                                 {allTriggers.length}
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-red-300/70' : 'text-red-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-red-300/70')}>
                                                                                 Total de gatilhos
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-red-400/60' : 'text-red-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-red-400/60')}>
                                                                                 identificados
                                                                             </div>
                                                                         </div>
-                                                                        <div className={(darkMode ? 'bg-orange-900/20 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>
+                                                                        <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-orange-400')}>
                                                                                 {topTriggers.length}
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-orange-300/70' : 'text-orange-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-orange-300/70')}>
                                                                                 Tipos diferentes
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-orange-400/60' : 'text-orange-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-orange-400/60')}>
                                                                                 de gatilhos
                                                                             </div>
                                                                         </div>
-                                                                        <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border text-center'}>
-                                                                            <div className={'text-3xl font-black mb-1 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>
+                                                                        <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border text-center'}>
+                                                                            <div className={'text-3xl font-black mb-1 ' + ('text-yellow-400')}>
                                                                                 {(allTriggers.length / analysisCycles.length).toFixed(1)}
                                                                             </div>
-                                                                            <div className={'text-xs font-medium ' + (darkMode ? 'text-yellow-300/70' : 'text-yellow-600/70')}>
+                                                                            <div className={'text-xs font-medium ' + ('text-yellow-300/70')}>
                                                                                 Média
                                                                             </div>
-                                                                            <div className={'text-xs mt-1 ' + (darkMode ? 'text-yellow-400/60' : 'text-yellow-600/60')}>
+                                                                            <div className={'text-xs mt-1 ' + ('text-yellow-400/60')}>
                                                                                 por ciclo
                                                                             </div>
                                                                         </div>
@@ -2567,22 +2567,22 @@ export function AnalysesView({
                                                                 </div>
 
                                                                 {/* Top Gatilhos + Padrões por Dia (compacto) */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         📊 Gatilhos Mais Frequentes & Padrões Semanais
                                                                     </h3>
                                                                     <div className="grid md:grid-cols-2 gap-4">
                                                                         {/* Top 10 Gatilhos */}
                                                                         <div>
-                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>🎯 Top 10 Gatilhos</div>
+                                                                            <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>🎯 Top 10 Gatilhos</div>
                                                                             <div className="space-y-2">
                                                                                 {topTriggers.slice(0, 10).map((item, idx) => (
                                                                                     <div key={idx} className="flex items-center justify-between">
                                                                                         <div className="flex items-center gap-2 flex-1">
-                                                                                            <span className={'text-xs font-bold w-5 text-center ' + (darkMode ? 'text-gray-600' : 'text-gray-400')}>#{idx + 1}</span>
-                                                                                            <span className={'text-sm truncate ' + (darkMode ? 'text-red-400' : 'text-red-600')}>{item.trigger}</span>
+                                                                                            <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
+                                                                                            <span className={'text-sm truncate ' + ('text-red-400')}>{item.trigger}</span>
                                                                                         </div>
-                                                                                        <span className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                        <span className={'text-xs ' + ('text-gray-500')}>
                                                                                             {item.count}× ({item.percent.toFixed(0)}%)
                                                                                         </span>
                                                                                     </div>
@@ -2593,7 +2593,7 @@ export function AnalysesView({
                                                                         {/* Padrões por Dia da Semana */}
                                                                         {Object.values(triggersByWeekday).some(count => count > 0) && (
                                                                             <div>
-                                                                                <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>📅 Por Dia da Semana</div>
+                                                                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>📅 Por Dia da Semana</div>
                                                                                 <div className="space-y-2">
                                                                                     {Object.entries(triggersByWeekday)
                                                                                         .map(([day, count]) => ({
@@ -2605,24 +2605,24 @@ export function AnalysesView({
                                                                                         .sort((a, b) => b.count - a.count)
                                                                                         .map((stat) => (
                                                                                         <div key={stat.day} className="flex items-center justify-between">
-                                                                                            <span className={'text-sm w-16 ' + (themeClasses.textPrimary(darkMode))}>{weekdayNames[stat.day]}</span>
+                                                                                            <span className={'text-sm w-16 ' + ('text-white')}>{weekdayNames[stat.day]}</span>
                                                                                             <div className="flex-1 mx-2">
-                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + (darkMode ? 'bg-gray-900' : 'bg-gray-200')}>
+                                                                                                <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                                                                                                     <div
                                                                                                         className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
                                                                                                         style={{width: stat.percent + '%'}}
                                                                                                     />
                                                                                                 </div>
                                                                                             </div>
-                                                                                            <span className={'text-xs w-12 text-right ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                            <span className={'text-xs w-12 text-right ' + ('text-red-400')}>
                                                                                                 {stat.count}
                                                                                             </span>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
                                                                                 {mostTriggersDay.count > 0 && (
-                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-3 mt-3 border'}>
-                                                                                        <p className={'text-xs ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>
+                                                                                    <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
+                                                                                        <p className={'text-xs ' + ('text-blue-300')}>
                                                                                             💡 Dia com mais gatilhos: <strong>{weekdayNames[mostTriggersDay.day]}s</strong> ({mostTriggersDay.count}).
                                                                                         </p>
                                                                                     </div>
@@ -2633,8 +2633,8 @@ export function AnalysesView({
                                                                 </div>
 
                                                                 {/* Correlação Gatilhos vs Consumo */}
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                         🔍 Gatilhos vs Consumo
                                                                     </h3>
                                                                     {(() => {
@@ -2682,7 +2682,7 @@ export function AnalysesView({
 
                                                                         if (highRiskTriggers.length === 0 && lowRiskTriggers.length === 0) {
                                                                             return (
-                                                                                <div className={'text-center py-4 text-sm ' + (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-50 text-gray-500') + ' rounded-lg'}>
+                                                                                <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
                                                                                     Sem dados suficientes para correlação (necessário ≥2 ocorrências por gatilho)
                                                                                 </div>
                                                                             );
@@ -2693,16 +2693,16 @@ export function AnalysesView({
                                                                                 {/* Gatilhos de ALTO risco (mais consumo) */}
                                                                                 {highRiskTriggers.length > 0 && (
                                                                                     <div>
-                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-red-400' : 'text-red-600')}>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
                                                                                             🔴 Alto Risco (mais consumo)
                                                                                         </div>
                                                                                         {highRiskTriggers.map(t => (
-                                                                                            <div key={t.trigger} className={(darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                            <div key={t.trigger} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                                                                 <div className="flex items-center justify-between mb-1">
-                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-red-300' : 'text-red-700')}>{t.trigger}</span>
-                                                                                                    <span className={(darkMode ? 'bg-red-700/50 text-red-200' : 'bg-red-200 text-red-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                                                                    <span className={'font-medium text-sm ' + ('text-red-300')}>{t.trigger}</span>
+                                                                                                    <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
                                                                                                 </div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-red-400/70' : 'text-red-600/70')}>
+                                                                                                <div className={'text-xs ' + ('text-red-400/70')}>
                                                                                                     ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
                                                                                                 </div>
                                                                                             </div>
@@ -2713,16 +2713,16 @@ export function AnalysesView({
                                                                                 {/* Gatilhos de BAIXO risco (menos consumo) */}
                                                                                 {lowRiskTriggers.length > 0 && (
                                                                                     <div>
-                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                        <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
                                                                                             🟢 Baixo Risco (menos consumo)
                                                                                         </div>
                                                                                         {lowRiskTriggers.map(t => (
-                                                                                            <div key={t.trigger} className={(darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-3 border mb-2'}>
+                                                                                            <div key={t.trigger} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                                                                 <div className="flex items-center justify-between mb-1">
-                                                                                                    <span className={'font-medium text-sm ' + (darkMode ? 'text-green-300' : 'text-green-700')}>{t.trigger}</span>
-                                                                                                    <span className={(darkMode ? 'bg-green-700/50 text-green-200' : 'bg-green-200 text-green-800') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                                                                    <span className={'font-medium text-sm ' + ('text-green-300')}>{t.trigger}</span>
+                                                                                                    <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
                                                                                                 </div>
-                                                                                                <div className={'text-xs ' + (darkMode ? 'text-green-400/70' : 'text-green-600/70')}>
+                                                                                                <div className={'text-xs ' + ('text-green-400/70')}>
                                                                                                     ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
                                                                                                 </div>
                                                                                             </div>
@@ -2735,14 +2735,14 @@ export function AnalysesView({
                                                                 </div>
 
                                                                 {/* Consciencialização */}
-                                                                <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'text-lg font-semibold mb-3 ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>
+                                                                <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-3 ' + ('text-purple-400')}>
                                                                         🧠 Consciencialização
                                                                     </h3>
-                                                                    <p className={'text-sm mb-3 ' + (darkMode ? 'text-purple-300' : 'text-purple-700')}>
+                                                                    <p className={'text-sm mb-3 ' + ('text-purple-300')}>
                                                                         Identificaste gatilhos em <strong>{cyclesWithTriggers}</strong> de {analysisCycles.length} ciclos ({((cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%).
                                                                     </p>
-                                                                    <p className={'text-sm ' + (darkMode ? 'text-purple-300/80' : 'text-purple-600')}>
+                                                                    <p className={'text-sm ' + ('text-purple-300/80')}>
                                                                         Reconhecer os teus gatilhos é um passo fundamental para desenvolver estratégias de prevenção eficazes.
                                                                         Cada gatilho identificado é uma oportunidade de aprendizagem e crescimento.
                                                                     </p>
@@ -2756,10 +2756,10 @@ export function AnalysesView({
                                                     {analysisSubView === 'correlacoes' && (() => {
                                                         if (analysisConsumptions.length < 1) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                                                                    <p className={'text-sm ' + ('text-gray-400')}>
                                                                         Sem consumos registados para análise.
                                                                     </p>
                                                                 </div>
@@ -2798,10 +2798,10 @@ export function AnalysesView({
 
                                                         if (daysWithData.length < 1) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                                                                    <p className={'text-sm ' + ('text-gray-400')}>
                                                                         Sem dados suficientes para análise de correlações neste momento.
                                                                     </p>
                                                                 </div>
@@ -4049,10 +4049,10 @@ export function AnalysesView({
 
                                                         if (correlations.length === 0) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-8 border text-center'}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                                                                     <div className="text-6xl mb-4">🔗</div>
-                                                                    <h3 className={'text-xl font-bold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlações</h3>
-                                                                    <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                                                                    <p className={'text-sm ' + ('text-gray-400')}>
                                                                         Regista bem-estar (sono, humor, energia) para ver correlações com consumo.
                                                                     </p>
                                                                 </div>
@@ -4062,36 +4062,36 @@ export function AnalysesView({
                                                         return (
                                                             <div className="space-y-4">
                                                                 {/* Introdução às Correlações */}
-                                                                <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                    <h3 className={'font-semibold mb-3 flex items-center gap-2 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
+                                                                    <h3 className={'font-semibold mb-3 flex items-center gap-2 ' + ('text-blue-300')}>
                                                                         💡 Como interpretar correlações
                                                                     </h3>
-                                                                    <div className={'text-sm space-y-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <div className={'text-sm space-y-2 ' + ('text-gray-400')}>
                                                                         <p>
                                                                             <strong>O que são correlações?</strong> Medem se duas coisas variam juntas. Por exemplo: "quando consumo mais, durmo menos?" ou "quando durmo bem, consumo menos no dia seguinte?"
                                                                         </p>
                                                                         <p>
                                                                             <strong>Como ler:</strong> A seta → indica direção temporal. "Sono ontem → Consumo hoje" significa: como o sono de ontem <u>influencia</u> o consumo de hoje.
                                                                         </p>
-                                                                        <div className={'grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 p-3 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white/70')}>
+                                                                        <div className={'grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 p-3 rounded ' + ('bg-gray-800/50')}>
                                                                             <div>
-                                                                                <p className={'font-semibold mb-1 ' + (darkMode ? 'text-green-400' : 'text-green-700')}>✅ Correlações "boas":</p>
-                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <p className={'font-semibold mb-1 ' + ('text-green-400')}>✅ Correlações "boas":</p>
+                                                                                <p className={'text-xs ' + ('text-gray-400')}>
                                                                                     • Mais autocuidado → Menos consumo<br/>
                                                                                     • Melhor humor → Menos consumo<br/>
                                                                                     • Bom sono → Menos consumo no dia seguinte
                                                                                 </p>
                                                                             </div>
                                                                             <div>
-                                                                                <p className={'font-semibold mb-1 ' + (darkMode ? 'text-red-400' : 'text-red-700')}>⚠️ Correlações "atenção":</p>
-                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <p className={'font-semibold mb-1 ' + ('text-red-400')}>⚠️ Correlações "atenção":</p>
+                                                                                <p className={'text-xs ' + ('text-gray-400')}>
                                                                                     • Humor baixo → Mais consumo<br/>
                                                                                     • Consumo alto → Pior humor no dia seguinte<br/>
                                                                                     • Menos autocuidado → Mais consumo
                                                                                 </p>
                                                                             </div>
                                                                         </div>
-                                                                        <p className={'text-xs italic pt-2 ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <p className={'text-xs italic pt-2 ' + ('text-gray-400')}>
                                                                             ⚡ Importante: Correlação não é causalidade. Estas análises mostram padrões, mas não provam causa-efeito. Usa-as como pistas para autoconhecimento.
                                                                         </p>
                                                                     </div>
@@ -4379,11 +4379,11 @@ export function AnalysesView({
                                                                         const label = getLabel(corr.correlation, corr.name);
 
                                                                         const colorClasses = {
-                                                                            red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
-                                                                            orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                            yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                                                            green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
-                                                                            gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                            red: 'bg-red-900/30 text-red-400 border-red-800',
+                                                                            orange: 'bg-orange-900/30 text-orange-400 border-orange-800',
+                                                                            yellow: 'bg-yellow-900/30 text-yellow-400 border-yellow-800',
+                                                                            green: 'bg-green-900/30 text-green-400 border-green-800',
+                                                                            gray: 'bg-gray-700/50 text-gray-400 border-gray-600'
                                                                         };
 
                                                                         return (
@@ -4392,21 +4392,21 @@ export function AnalysesView({
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className="text-2xl">{corr.icon}</span>
                                                                                         <div>
-                                                                                            <div className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>{corr.name}</div>
-                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>Média: {corr.average}{corr.unit}</div>
+                                                                                            <div className={'font-semibold ' + ('text-white')}>{corr.name}</div>
+                                                                                            <div className={'text-xs ' + ('text-gray-400')}>Média: {corr.average}{corr.unit}</div>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (
-                                                                                        label.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') :
-                                                                                        label.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') :
-                                                                                        label.color === 'yellow' ? (darkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-700') :
-                                                                                        label.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') :
-                                                                                        (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600')
+                                                                                        label.color === 'red' ? ('bg-red-900/30 text-red-400') :
+                                                                                        label.color === 'orange' ? ('bg-orange-900/30 text-orange-400') :
+                                                                                        label.color === 'yellow' ? ('bg-yellow-900/30 text-yellow-400') :
+                                                                                        label.color === 'green' ? ('bg-green-900/30 text-green-400') :
+                                                                                        ('bg-gray-600 text-gray-300')
                                                                                     )}>
                                                                                         {label.text}
                                                                                     </div>
                                                                                 </div>
-                                                                                <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <div className={'text-xs ' + ('text-gray-400')}>
                                                                                     {label.desc && <span>💡 {label.desc}</span>}
                                                                                     {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
                                                                                     <span className="ml-2">• {corr.dataPoints} dias</span>
@@ -4420,15 +4420,15 @@ export function AnalysesView({
 
                                                                 {/* 💊 CONSUMO → BEM-ESTAR (mesmo dia) */}
                                                                 {(correlations.length > 0 || consumptionToEmotions.length > 0 || consumptionToSelfCare.length > 0 || consumptionAutocorrelation.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingConsumption')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Consumo → Bem-estar (mesmo dia)</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>💊 Consumo → Bem-estar (mesmo dia)</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Como o consumo afeta o bem-estar no mesmo dia
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.wellbeingConsumption ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
@@ -4450,15 +4450,15 @@ export function AnalysesView({
 
                                                                 {/* 🔄 BEM-ESTAR ⇄ CONSUMO (temporal - entre dias) */}
                                                                 {(sleepToConsumptionNext.length > 0 || moodToConsumptionNext.length > 0 || energyToConsumptionNext.length > 0 || consumptionToNextDayWellbeing.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalImpact')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Impacto Temporal (entre dias)</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>🔄 Impacto Temporal (entre dias)</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Como o consumo e bem-estar de um dia afetam o dia seguinte
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.temporalImpact ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
@@ -4577,11 +4577,11 @@ export function AnalysesView({
                                                                             const renderSleepMoodCard = (corr) => {
                                                                                 const label = getCorrelationLabel(corr.correlation);
                                                                                 const colorClasses = {
-                                                                                    red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
-                                                                                    orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                                    yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                                                                    green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
-                                                                                    gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                                    red: 'bg-red-900/30 text-red-400 border-red-800',
+                                                                                    orange: 'bg-orange-900/30 text-orange-400 border-orange-800',
+                                                                                    yellow: 'bg-yellow-900/30 text-yellow-400 border-yellow-800',
+                                                                                    green: 'bg-green-900/30 text-green-400 border-green-800',
+                                                                                    gray: 'bg-gray-700/50 text-gray-400 border-gray-600'
                                                                                 };
                                                                                 return (
                                                                                     <div className={'rounded-lg p-4 border ' + colorClasses[label.color]}>
@@ -4613,15 +4613,15 @@ export function AnalysesView({
                                                                             };
 
                                                                             return (
-                                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('sleepMood')}>
                                                                                         <div>
-                                                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>😴💭 Sono → Humor</h3>
-                                                                                            <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                            <h3 className={'font-semibold ' + ('text-white')}>😴💭 Sono → Humor</h3>
+                                                                                            <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                                 Como o sono da última noite influencia o humor do dia
                                                                                             </p>
                                                                                         </div>
-                                                                                        <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                        <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                             {expandedSections.sleepMood ? '▼' : '▶'}
                                                                                         </button>
                                                                                     </div>
@@ -4688,11 +4688,11 @@ export function AnalysesView({
                                                                     const label = getCorrelationLabel(correlation);
 
                                                                     const colorClasses = {
-                                                                        red: darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200',
-                                                                        orange: darkMode ? 'bg-orange-900/30 text-orange-400 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200',
-                                                                        yellow: darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                                                        green: darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200',
-                                                                        gray: darkMode ? 'bg-gray-700/50 text-gray-400 border-gray-600' : 'bg-gray-50 text-gray-600 border-gray-200'
+                                                                        red: 'bg-red-900/30 text-red-400 border-red-800',
+                                                                        orange: 'bg-orange-900/30 text-orange-400 border-orange-800',
+                                                                        yellow: 'bg-yellow-900/30 text-yellow-400 border-yellow-800',
+                                                                        green: 'bg-green-900/30 text-green-400 border-green-800',
+                                                                        gray: 'bg-gray-700/50 text-gray-400 border-gray-600'
                                                                     };
 
                                                                     // Preparar card para renderizar Bedtime → Consumo
@@ -4713,15 +4713,15 @@ export function AnalysesView({
                                                                     } : null;
 
                                                                     return (
-                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                             <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeConsumption')}>
                                                                                 <div>
-                                                                                    <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Hora de Deitar ⇄ Consumo</h3>
-                                                                                    <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    <h3 className={'font-semibold ' + ('text-white')}>🔄 Hora de Deitar ⇄ Consumo</h3>
+                                                                                    <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                         Relação bidirecional entre hora de deitar e consumo
                                                                                     </p>
                                                                                 </div>
-                                                                                <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                     {expandedSections.bedtimeConsumption ? '▼' : '▶'}
                                                                                 </button>
                                                                             </div>
@@ -4731,7 +4731,7 @@ export function AnalysesView({
                                                                                     {consumptionToBedtime.length > 0 ? window.renderCorrelationCard(consumptionToBedtime[0], false) : <div></div>}
                                                                                 </div>
                                                                             ) : (
-                                                                                <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                                <div className={'text-center py-6 text-sm ' + ('text-gray-400')}>
                                                                                     Sem dados de hora de deitar registados
                                                                                 </div>
                                                                             ))}
@@ -4741,15 +4741,15 @@ export function AnalysesView({
 
                                                                 {/* 🌙 BEDTIME → HUMOR/ENERGIA (dia seguinte) */}
                                                                 {bedtimeToNextDayWellbeing.length > 0 && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeWellbeing')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Como a hora de deitar afeta o humor e energia do dia seguinte
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.bedtimeWellbeing ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
@@ -4768,23 +4768,23 @@ export function AnalysesView({
 
                                                                 {/* 💊 DOSAGEM ⇄ CONTEXTO */}
                                                                 {(dosageToWellbeing.length > 0 || wellbeingToDosage.length > 0 || intervalToDosage.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Dosagem ⇄ Contexto</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>💊 Dosagem ⇄ Contexto</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Como o contexto afeta a dosagem e vice-versa
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.wellbeingDosage ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
                                                                         {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
                                                                             {/* Explicação introdutória */}
-                                                                            <div className={(darkMode ? 'bg-purple-900/20 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-3 border'}>
-                                                                                <p className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>💡 Sobre dosagem vs frequência:</p>
-                                                                                <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-3 border'}>
+                                                                                <p className={'text-xs font-semibold mb-2 ' + ('text-purple-300')}>💡 Sobre dosagem vs frequência:</p>
+                                                                                <p className={'text-xs ' + ('text-gray-400')}>
                                                                                     <strong>Dosagem</strong> = quantidade total de mg por dia. <strong>Frequência</strong> = número de consumos por dia.
                                                                                     Esta secção analisa se o teu estado emocional (gatilhos, emoções) influencia a <u>quantidade</u> que consomes, não apenas quantas vezes consomes.
                                                                                 </p>
@@ -4806,15 +4806,15 @@ export function AnalysesView({
 
                                                                 {/* ⏰ PADRÕES TEMPORAIS */}
                                                                 {(firstConsToTotal.length > 0 || temporalDispersion.length > 0 || consumptionByPeriod.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalPatterns')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Padrões Temporais</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>⏰ Padrões Temporais</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Regularidade e timing dos consumos
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.temporalPatterns ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
@@ -4825,10 +4825,10 @@ export function AnalysesView({
                                                                             {temporalDispersion.map(disp => (
                                                                                 <div key={disp.name} className={'rounded-lg p-4 border ' + (
                                                                                     disp.pattern === 'Muito Regular' || disp.pattern === 'Regular'
-                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        ? ('bg-green-900/30 text-green-400 border-green-800')
                                                                                         : disp.pattern === 'Caótico'
-                                                                                            ? (darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200')
-                                                                                            : (darkMode ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200')
+                                                                                            ? ('bg-red-900/30 text-red-400 border-red-800')
+                                                                                            : ('bg-yellow-900/30 text-yellow-400 border-yellow-800')
                                                                                 )}>
                                                                                     <div className="flex items-start justify-between mb-2">
                                                                                         <div className="flex items-center gap-2">
@@ -4849,7 +4849,7 @@ export function AnalysesView({
                                                                                         {disp.pattern === 'Moderado' && 'Consumos variam moderadamente ao longo do dia.'}
                                                                                         {disp.pattern === 'Caótico' && 'Consumos ocorrem em horários muito variados - padrão imprevisível.'}
                                                                                     </div>
-                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
                                                                                         {disp.dataPoints} consumos analisados
                                                                                     </div>
                                                                                 </div>
@@ -4859,10 +4859,10 @@ export function AnalysesView({
                                                                             {safeIntervals.map(safe => (
                                                                                 <div key={safe.name} className={'rounded-lg p-4 border ' + (
                                                                                     safe.correlation < -0.3
-                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        ? ('bg-green-900/30 text-green-400 border-green-800')
                                                                                         : safe.correlation > 0.3
-                                                                                            ? (darkMode ? 'bg-red-900/30 text-red-400 border-red-800' : 'bg-red-50 text-red-700 border-red-200')
-                                                                                            : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')
+                                                                                            ? ('bg-red-900/30 text-red-400 border-red-800')
+                                                                                            : ('bg-gray-800 border-gray-700')
                                                                                 )}>
                                                                                     <div className="flex items-start justify-between mb-2">
                                                                                         <div className="flex items-center gap-2">
@@ -4874,11 +4874,11 @@ export function AnalysesView({
                                                                                         <span className="text-3xl font-black">{safe.average}</span>
                                                                                         <span className="text-sm opacity-75">{safe.unit} média</span>
                                                                                     </div>
-                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>
                                                                                         💡 Quando espaças <span className="font-semibold">&gt;3h</span> entre consumos: <span className="font-semibold">{safe.avgTotalGood}/dia</span> ({safe.goodDays} dias)<br/>
                                                                                         Intervalos &lt;3h: <span className="font-semibold">{safe.avgTotalBad}/dia</span> ({safe.badDays} dias)
                                                                                     </div>
-                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
                                                                                         • r = {safe.correlation.toFixed(2)} • {safe.dataPoints} dias
                                                                                     </div>
                                                                                 </div>
@@ -4888,10 +4888,10 @@ export function AnalysesView({
                                                                             {strategyEffectiveness.map(strat => (
                                                                                 <div key={strat.name} className={'rounded-lg p-4 border ' + (
                                                                                     parseFloat(strat.average) > 50
-                                                                                        ? (darkMode ? 'bg-green-900/30 text-green-400 border-green-800' : 'bg-green-50 text-green-700 border-green-200')
+                                                                                        ? ('bg-green-900/30 text-green-400 border-green-800')
                                                                                         : parseFloat(strat.average) > 20
-                                                                                            ? (darkMode ? 'bg-blue-900/30 text-blue-400 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200')
-                                                                                            : (darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200')
+                                                                                            ? ('bg-blue-900/30 text-blue-400 border-blue-800')
+                                                                                            : ('bg-gray-800 border-gray-700')
                                                                                 )}>
                                                                                     <div className="flex items-start justify-between mb-2">
                                                                                         <div className="flex items-center gap-2">
@@ -4903,11 +4903,11 @@ export function AnalysesView({
                                                                                         <span className="text-3xl font-black">{strat.average}</span>
                                                                                         <span className="text-sm opacity-75">{strat.unit} redução</span>
                                                                                     </div>
-                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                                                                                    <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>
                                                                                         💡 Dias com autocuidado completo (4/4 áreas): <span className="font-semibold">{strat.avgFull}/dia</span> ({strat.fullDays} dias)<br/>
                                                                                         Dias sem autocuidado: <span className="font-semibold">{strat.avgNone}/dia</span> ({strat.noneDays} dias)
                                                                                     </div>
-                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + (darkMode ? 'border-gray-600' : 'border-gray-300')}>
+                                                                                    <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
                                                                                         • r = {strat.correlation.toFixed(2)} • {strat.dataPoints} dias
                                                                                     </div>
                                                                                 </div>
@@ -5229,15 +5229,15 @@ export function AnalysesView({
                                                                     }
 
                                                                     return (
-                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border'}>
+                                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                                                                             <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('intraDayAnalysis')}>
                                                                                 <div>
-                                                                                    <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>📊 Impacto Médio do Consumo (Agregado)</h3>
-                                                                                    <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                    <h3 className={'font-semibold ' + ('text-white')}>📊 Impacto Médio do Consumo (Agregado)</h3>
+                                                                                    <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                         Evolução média do humor/energia antes e depois de TODOS os consumos
                                                                                     </p>
                                                                                 </div>
-                                                                                <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                                <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                     {expandedSections.intraDayAnalysis ? '▼' : '▶'}
                                                                                 </button>
                                                                             </div>
@@ -5248,8 +5248,8 @@ export function AnalysesView({
                                                                                         <div className="space-y-3">
                                                                                             {/* Impacto Imediato do Consumo (Evolução + Eficácia juntos) */}
                                                                                             {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
-                                                                                                <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-green-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-green-50 border-purple-200') + ' rounded-lg p-4 border'}>
-                                                                                                    <div className={'text-sm font-semibold mb-4 ' + (darkMode ? 'text-purple-300' : 'text-purple-800')}>📊 Impacto do Consumo no Humor</div>
+                                                                                                <div className={('bg-gradient-to-br from-purple-900/20 to-green-900/20 border-purple-700/50') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-4 ' + ('text-purple-300')}>📊 Impacto do Consumo no Humor</div>
 
                                                                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                                                         {/* Evolução Temporal (0h → 30min/1h/2h) */}
@@ -5258,12 +5258,12 @@ export function AnalysesView({
                                                                                                                 <div className={'text-xs font-semibold mb-2 opacity-75'}>⏱️ Mudança após consumir (vs 0h)</div>
                                                                                                                 <div className="grid grid-cols-3 gap-2">
                                                                                                                     {latency.map(lat => (
-                                                                                                                        <div key={lat.window} className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                        <div key={lat.window} className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
                                                                                                                             <div className={'text-xs opacity-60'}>{lat.window}</div>
-                                                                                                                            <div className={'text-lg font-bold ' + (parseFloat(lat.delta) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(lat.delta) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                            <div className={'text-lg font-bold ' + (parseFloat(lat.delta) > 0 ? ('text-green-400') : parseFloat(lat.delta) < 0 ? ('text-red-400') : ('text-gray-400'))}>
                                                                                                                                 {lat.delta > 0 ? '+' : ''}{lat.delta}
                                                                                                                             </div>
-                                                                                                                            {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + (darkMode ? 'text-yellow-400' : 'text-yellow-700')}>⚡</div>}
+                                                                                                                            {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + ('text-yellow-400')}>⚡</div>}
                                                                                                                         </div>
                                                                                                                     ))}
                                                                                                                 </div>
@@ -5275,16 +5275,16 @@ export function AnalysesView({
                                                                                                             <div key={idx}>
                                                                                                                 <div className={'text-xs font-semibold mb-2 opacity-75'}>✅ Eficácia (antes → 1-3h depois)</div>
                                                                                                                 <div className="grid grid-cols-2 gap-2">
-                                                                                                                    <div className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                    <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
                                                                                                                         <div className={'text-xs opacity-60'}>Melhoria</div>
-                                                                                                                        <div className={'text-lg font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : parseFloat(sat.avgImprovement) < 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                                                                        <div className={'text-lg font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? ('text-green-400') : parseFloat(sat.avgImprovement) < 0 ? ('text-red-400') : ('text-gray-400'))}>
                                                                                                                             {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
                                                                                                                         </div>
                                                                                                                         <div className={'text-xs opacity-60'}>pts</div>
                                                                                                                     </div>
-                                                                                                                    <div className={'text-center p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                                    <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
                                                                                                                         <div className={'text-xs opacity-60'}>Taxa</div>
-                                                                                                                        <div className={'text-lg font-bold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                                                        <div className={'text-lg font-bold ' + ('text-green-400')}>
                                                                                                                             {sat.effectiveRate}%
                                                                                                                         </div>
                                                                                                                         <div className={'text-xs opacity-60'}>{sat.effectiveCount}/{sat.totalEvents}</div>
@@ -5299,18 +5299,18 @@ export function AnalysesView({
                                                                                     )}
 
                                                                                     {/* Gráfico Agregado */}
-                                                                                    <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-50') + ' rounded-lg p-4'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (themeClasses.textSecondary(darkMode))}>📈 Evolução Temporal</div>
+                                                                                    <div className={('bg-gray-800/50') + ' rounded-lg p-4'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + ('text-gray-300')}>📈 Evolução Temporal</div>
                                                                                         <div style={{ width: '100%', height: 200 }}>
                                                                                             <ResponsiveContainer>
                                                                                                 <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
-                                                                                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                                                                                                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                                                                                                    <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                                                                                                    <CartesianGrid strokeDasharray="3 3" stroke={'#374151'} />
+                                                                                                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                                                                                                    <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#9ca3af' }} />
                                                                                                     <Tooltip
                                                                                                         contentStyle={{
-                                                                                                            backgroundColor: darkMode ? '#1f2937' : '#fff',
-                                                                                                            border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                                                                                                            backgroundColor: '#1f2937',
+                                                                                                            border: `1px solid ${'#374151'}`,
                                                                                                             borderRadius: '6px',
                                                                                                             fontSize: '12px'
                                                                                                         }}
@@ -5322,7 +5322,7 @@ export function AnalysesView({
                                                                                                 </LineChart>
                                                                                             </ResponsiveContainer>
                                                                                         </div>
-                                                                                        <p className={'text-xs italic mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        <p className={'text-xs italic mt-2 ' + ('text-gray-400')}>
                                                                                             Eixo X: Tempo relativo ao consumo | Eixo Y: Humor/Energia (0-10)
                                                                                         </p>
                                                                                     </div>
@@ -5334,15 +5334,15 @@ export function AnalysesView({
 
                                                                 {/* ⚗️ FEATURES EXPERIMENTAIS */}
                                                                 {(experimentalFeatures.compositeTriggers.length > 0 || experimentalFeatures.antecedents.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
-                                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 md:p-6 border border-dashed'}>
+                                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border border-dashed'}>
                                                                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('experimental')}>
                                                                             <div>
-                                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>⚗️ Features Experimentais</h3>
-                                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <h3 className={'font-semibold ' + ('text-white')}>⚗️ Features Experimentais</h3>
+                                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                                     Análises avançadas: gatilhos compostos, antecedentes e eficácia
                                                                                 </p>
                                                                             </div>
-                                                                            <button className={'p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100')}>
+                                                                            <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
                                                                                 {expandedSections.experimental ? '▼' : '▶'}
                                                                             </button>
                                                                         </div>
@@ -5350,33 +5350,33 @@ export function AnalysesView({
                                                                             <div className="space-y-4 mt-4">
                                                                                 {/* Gatilhos Compostos */}
                                                                                 {experimentalFeatures.compositeTriggers.length > 0 && (
-                                                                                    <div className={(darkMode ? 'bg-orange-900/20 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-orange-300' : 'text-orange-800')}>
+                                                                                    <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + ('text-orange-300')}>
                                                                                             🧩 Gatilhos Compostos
                                                                                         </div>
-                                                                                        <p className={'text-xs mb-3 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        <p className={'text-xs mb-3 ' + ('text-gray-400')}>
                                                                                             Combinações de fatores que precedem consumo elevado
                                                                                         </p>
                                                                                         <div className="space-y-2">
                                                                                             {experimentalFeatures.compositeTriggers.map((trigger, idx) => (
-                                                                                                <div key={idx} className={'p-3 rounded border ' + (darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200')}>
+                                                                                                <div key={idx} className={'p-3 rounded border ' + ('bg-gray-800/50 border-gray-700')}>
                                                                                                     <div className="flex items-start justify-between">
                                                                                                         <div className="flex-1">
                                                                                                             <div className="flex items-center gap-2 mb-1">
                                                                                                                 <span className="text-lg">{trigger.icon}</span>
-                                                                                                                <span className={'font-semibold text-sm ' + (themeClasses.textSecondary(darkMode))}>
+                                                                                                                <span className={'font-semibold text-sm ' + ('text-gray-300')}>
                                                                                                                     {trigger.name}
                                                                                                                 </span>
                                                                                                             </div>
-                                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                            <div className={'text-xs ' + ('text-gray-400')}>
                                                                                                                 {trigger.occurrences} {trigger.occurrences === 1 ? 'ocorrência' : 'ocorrências'} registadas
                                                                                                             </div>
                                                                                                         </div>
                                                                                                         <div className="text-right">
-                                                                                                            <div className={'text-2xl font-bold ' + (parseFloat(trigger.increase) > 0 ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-green-400' : 'text-green-600'))}>
+                                                                                                            <div className={'text-2xl font-bold ' + (parseFloat(trigger.increase) > 0 ? ('text-red-400') : ('text-green-400'))}>
                                                                                                                 {trigger.increase > 0 ? '+' : ''}{trigger.increase}%
                                                                                                             </div>
-                                                                                                            <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                            <div className={'text-xs ' + ('text-gray-400')}>
                                                                                                                 {trigger.avgCons} vs {trigger.normalCons} cons
                                                                                                             </div>
                                                                                                         </div>
@@ -5389,8 +5389,8 @@ export function AnalysesView({
 
                                                                                 {/* Antecedentes */}
                                                                                 {experimentalFeatures.antecedents.length > 0 && (
-                                                                                    <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                        <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>
+                                                                                    <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
+                                                                                        <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>
                                                                                             🔍 O que acontecia ANTES de consumir
                                                                                         </div>
                                                                                         <div className="space-y-1">
@@ -5402,14 +5402,14 @@ export function AnalysesView({
                                                                                                     grouped[a.pattern].count++;
                                                                                                 });
                                                                                                 return Object.values(grouped).map((pattern, idx) => (
-                                                                                                    <div key={idx} className={'flex items-center justify-between p-2 rounded ' + (darkMode ? 'bg-gray-800/50' : 'bg-white')}>
+                                                                                                    <div key={idx} className={'flex items-center justify-between p-2 rounded ' + ('bg-gray-800/50')}>
                                                                                                         <div className="flex items-center gap-2">
                                                                                                             <span className="text-base">{pattern.icon}</span>
-                                                                                                            <span className={'text-sm ' + (themeClasses.textSecondary(darkMode))}>
+                                                                                                            <span className={'text-sm ' + ('text-gray-300')}>
                                                                                                                 {pattern.pattern}
                                                                                                             </span>
                                                                                                         </div>
-                                                                                                        <div className={'text-xs font-semibold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                                                        <div className={'text-xs font-semibold ' + ('text-blue-400')}>
                                                                                                             {pattern.count}x
                                                                                                         </div>
                                                                                                     </div>
@@ -5419,7 +5419,7 @@ export function AnalysesView({
                                                                                     </div>
                                                                                 )}
 
-                                                                                <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                     ⚠️ Estas análises são experimentais e requerem dados detalhados de bem-estar
                                                                                 </p>
                                                                             </div>
@@ -5578,17 +5578,17 @@ export function AnalysesView({
                                                                         const totalCons = consumptionTiming.start + consumptionTiming.middle + consumptionTiming.end;
 
                                                                         return (
-                                                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                                <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intra-dia Detalhada</h3>
-                                                                                <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                                <h3 className={'font-semibold mb-2 ' + ('text-white')}>🔄 Análise Intra-dia Detalhada</h3>
+                                                                                <p className={'text-xs mb-4 ' + ('text-gray-400')}>
                                                                                     Como evoluem humor, energia e consumo durante o mesmo dia (00:00-23:59)
                                                                                 </p>
                                                                                 <div className="space-y-4">
                                                                                     {/* Evolução de Humor e Energia */}
                                                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                                         {/* Evolução de Humor */}
-                                                                                        <div className={(darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                                            <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-blue-300' : 'text-blue-800')}>📊 Evolução de Humor no Dia</div>
+                                                                                        <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
+                                                                                            <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>📊 Evolução de Humor no Dia</div>
 
                                                                                             {avgMoodStart && avgMoodEnd && (() => {
                                                                                                 const diff = parseFloat(avgMoodEnd) - parseFloat(avgMoodStart);
@@ -5599,15 +5599,15 @@ export function AnalysesView({
                                                                                                     <>
                                                                                                         <div className="flex items-center justify-between mb-3">
                                                                                                             <div className="flex items-center gap-2">
-                                                                                                                <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodStart}</span>
+                                                                                                                <span className={'text-lg font-bold ' + ('text-blue-400')}>{avgMoodStart}</span>
                                                                                                                 <span className="text-xl">{arrow}</span>
-                                                                                                                <span className={'text-lg font-bold ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>{avgMoodEnd}</span>
+                                                                                                                <span className={'text-lg font-bold ' + ('text-blue-400')}>{avgMoodEnd}</span>
                                                                                                             </div>
-                                                                                                            <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : diff < -0.5 ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'))}>
+                                                                                                            <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? ('bg-green-900/30 text-green-400') : diff < -0.5 ? ('bg-red-900/30 text-red-400') : ('bg-gray-700 text-gray-400'))}>
                                                                                                                 {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                                                                             </span>
                                                                                                         </div>
-                                                                                                        <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                        <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                                             💬 {trendText}
                                                                                                         </p>
                                                                                                     </>
@@ -5622,19 +5622,19 @@ export function AnalysesView({
                                                                                             const trendText = diff > 0.5 ? 'A tua energia aumenta durante o dia!' : diff < -0.5 ? 'A tua energia diminui durante o dia.' : 'A tua energia mantém-se estável no dia.';
 
                                                                                             return (
-                                                                                                <div className={(darkMode ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 border'}>
-                                                                                                    <div className={'text-sm font-semibold mb-3 ' + (darkMode ? 'text-yellow-300' : 'text-yellow-800')}>⚡ Evolução de Energia no Dia</div>
+                                                                                                <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border'}>
+                                                                                                    <div className={'text-sm font-semibold mb-3 ' + ('text-yellow-300')}>⚡ Evolução de Energia no Dia</div>
                                                                                                     <div className="flex items-center justify-between mb-3">
                                                                                                         <div className="flex items-center gap-2">
-                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyStart}</span>
+                                                                                                            <span className={'text-lg font-bold ' + ('text-yellow-400')}>{avgEnergyStart}</span>
                                                                                                             <span className="text-xl">{arrow}</span>
-                                                                                                            <span className={'text-lg font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{avgEnergyEnd}</span>
+                                                                                                            <span className={'text-lg font-bold ' + ('text-yellow-400')}>{avgEnergyEnd}</span>
                                                                                                         </div>
-                                                                                                        <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : diff < -0.5 ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : (darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'))}>
+                                                                                                        <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? ('bg-green-900/30 text-green-400') : diff < -0.5 ? ('bg-red-900/30 text-red-400') : ('bg-gray-700 text-gray-400'))}>
                                                                                                             {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                                                                         </span>
                                                                                                     </div>
-                                                                                                    <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                                    <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                                         💬 {trendText}
                                                                                                     </p>
                                                                                                 </div>
@@ -5644,7 +5644,7 @@ export function AnalysesView({
 
                                                                                     {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
                                                                                     <Suspense fallback={
-                                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border text-center'}>
+                                                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border text-center'}>
                                                                                             <div className="animate-pulse">
                                                                                                 <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mx-auto mb-4"></div>
                                                                                                 <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
@@ -5655,7 +5655,7 @@ export function AnalysesView({
                                                                                         <WellbeingChart
                                                                                             wellbeingLogs={analysisWellbeing}
                                                                                             consumptions={analysisConsumptions}
-                                                                                            darkMode={darkMode}
+                                                                                            
                                                                                             selectedCycle={currentCycle}
                                                                                         />
                                                                                     </Suspense>
@@ -5665,12 +5665,12 @@ export function AnalysesView({
                                                                     }
 
                                                                     return (
-                                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                            <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>🔄 Análise Intra-dia Detalhada</h3>
-                                                                            <p className={'text-xs mb-4 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                            <h3 className={'font-semibold mb-2 ' + ('text-white')}>🔄 Análise Intra-dia Detalhada</h3>
+                                                                            <p className={'text-xs mb-4 ' + ('text-gray-400')}>
                                                                                 Como evoluem humor, energia e consumo durante o mesmo dia
                                                                             </p>
-                                                                            <div className={'text-center py-6 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <div className={'text-center py-6 text-sm ' + ('text-gray-400')}>
                                                                                 Sem dados de ciclos com consumo e bem-estar registados
                                                                             </div>
                                                                         </div>

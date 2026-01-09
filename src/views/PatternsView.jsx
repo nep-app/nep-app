@@ -21,19 +21,18 @@ export function PatternsView({
     setPatternView
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
-    const { darkMode } = useUI();
     const metrics = useMetrics();
 
     return (
                                 <div className="space-y-6">
-                                    <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Padrões</h2>
+                                    <h2 className="text-2xl font-bold text-white">Padrões</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
+                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                    <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                                    <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                         {period === 'hoje' && '📅 Hoje'}
                                                         {period === 'semana' && '📊 Semana'}
                                                         {period === 'mes' && '📈 Mês'}
@@ -43,11 +42,11 @@ export function PatternsView({
                                             </div>
                                             {patternsPeriod !== 'tudo' && (
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className={'text-purple-600 p-2 rounded-lg transition-colors ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50')}>
+                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className="text-purple-600 p-2 rounded-lg transition-colors hover:bg-gray-700">
                                                         <Icons.ChevronLeft className="w-5 h-5" />
                                                     </button>
-                                                    <span className={'text-sm font-medium min-w-[120px] text-center ' + (themeClasses.textSecondary(darkMode))}>{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
-                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? (darkMode ? 'text-gray-600' : 'text-gray-300') + ' cursor-not-allowed' : 'text-purple-600 ' + (darkMode ? 'hover:bg-gray-700' : 'hover:bg-purple-50'))}>
+                                                    <span className="text-sm font-medium min-w-[120px] text-center text-gray-300">{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
+                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-purple-600 hover:bg-gray-700')}>
                                                         <Icons.ChevronRight className="w-5 h-5" />
                                                     </button>
                                                 </div>
@@ -58,7 +57,7 @@ export function PatternsView({
 
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {['dashboard', 'progress', 'temporal', 'estrutural'].map(view => (
-                                            <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                            <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {view === 'dashboard' && '📊 Dashboard'}
                                                 {view === 'progress' && '📈 Progresso'}
                                                 {view === 'temporal' && '⏰ Temporal'}
@@ -78,7 +77,7 @@ export function PatternsView({
 
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
-                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={(darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={'bg-gray-800 border-gray-700 text-gray-400' + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
 
                                             // Calculate metrics
                                             const totalConsumptions = filteredConsumptions.length;
@@ -281,25 +280,25 @@ export function PatternsView({
                                             return (
                                                 <div className="space-y-4">
                                                     {/* Mini-resumo contextual */}
-                                                    <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 border'}>
-                                                        <p className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                    <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 border'}>
+                                                        <p className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                             {`Tiveste ${totalConsumptions} ${totalConsumptions === 1 ? 'consumo' : 'consumos'} (média ${avgPerDay}/dia).${avgInterval > 0 ? ` Intervalo médio: ${avgInterval}h.` : ''}`}
                                                         </p>
                                                     </div>
 
                                                     {/* Métricas essenciais */}
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div className={(darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Total</div>
-                                                            <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-2xl font-bold'}>{totalConsumptions}x</div>
+                                                        <div className={'bg-purple-900/30 border border-purple-700/50' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Total</div>
+                                                            <div className={'text-purple-400' + ' text-2xl font-bold'}>{totalConsumptions}x</div>
                                                         </div>
-                                                        <div className={(darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200') + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Média/dia</div>
-                                                            <div className={(darkMode ? 'text-blue-400' : 'text-blue-600') + ' text-2xl font-bold'}>{avgPerDay}</div>
+                                                        <div className={'bg-blue-900/30 border border-blue-700/50' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Média/dia</div>
+                                                            <div className={'text-blue-400' + ' text-2xl font-bold'}>{avgPerDay}</div>
                                                         </div>
-                                                        <div className={(darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200') + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Intervalo médio</div>
-                                                            <div className={(darkMode ? 'text-green-400' : 'text-green-600') + ' text-2xl font-bold'}>{avgInterval}h</div>
+                                                        <div className={'bg-green-900/30 border border-green-700/50' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Intervalo médio</div>
+                                                            <div className={'text-green-400' + ' text-2xl font-bold'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
 
@@ -307,19 +306,19 @@ export function PatternsView({
                                                     {trend && (
                                                         <div className={
                                                             (trend.direction === 'increasing'
-                                                                ? (darkMode ? 'bg-red-900/30 border-red-700/50' : 'bg-red-50 border-red-200')
+                                                                ? 'bg-red-900/30 border-red-700/50'
                                                                 : trend.direction === 'decreasing'
-                                                                    ? (darkMode ? 'bg-green-900/30 border-green-700/50' : 'bg-green-50 border-green-200')
-                                                                    : (darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gray-100 border-gray-300')
+                                                                    ? ('bg-green-900/30 border-green-700/50')
+                                                                    : 'bg-gray-700/30 border-gray-600'
                                                             ) + ' rounded-lg p-4 border'
                                                         }>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className={'text-xs font-semibold uppercase tracking-wide ' + (
                                                                     trend.direction === 'increasing'
-                                                                        ? (darkMode ? 'text-red-400' : 'text-red-700')
+                                                                        ? 'text-red-400'
                                                                         : trend.direction === 'decreasing'
-                                                                            ? (darkMode ? 'text-green-400' : 'text-green-700')
-                                                                            : (darkMode ? 'text-gray-400' : 'text-gray-600')
+                                                                            ? 'text-green-400'
+                                                                            : 'text-gray-400'
                                                                 )}>
                                                                     📈 Tendência (30 dias)
                                                                 </div>
@@ -328,30 +327,30 @@ export function PatternsView({
                                                                     trend.direction === 'decreasing' ? '✅' : '➖'
                                                                 )}></span>
                                                             </div>
-                                                            <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                            <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                 {trend.direction === 'increasing' && (
                                                                     <>
-                                                                        <strong className={(darkMode ? 'text-red-400' : 'text-red-600')}>Escalada detectada:</strong> +{trend.slopePerDay} consumos/dia em média.
+                                                                        <strong className={'text-red-400'}>Escalada detectada:</strong> +{trend.slopePerDay} consumos/dia em média.
                                                                         <br />
-                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
                                                                             📊 A tua frequência está a aumentar {trend.slopePerDay} consumos por dia. Se continuar assim, daqui a 10 dias poderás estar em ~{trend.projection} consumos/dia.
                                                                         </span>
                                                                     </>
                                                                 )}
                                                                 {trend.direction === 'decreasing' && (
                                                                     <>
-                                                                        <strong className={(darkMode ? 'text-green-400' : 'text-green-600')}>Redução em progresso:</strong> {trend.slopePerDay} consumos/dia em média.
+                                                                        <strong className={'text-green-400'}>Redução em progresso:</strong> {trend.slopePerDay} consumos/dia em média.
                                                                         <br />
-                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
                                                                             📊 Estás a reduzir {Math.abs(parseFloat(trend.slopePerDay))} consumos por dia. Continua assim! Projeção 10 dias: ~{trend.projection} consumos/dia.
                                                                         </span>
                                                                     </>
                                                                 )}
                                                                 {trend.direction === 'stable' && (
                                                                     <>
-                                                                        <strong className={(darkMode ? 'text-gray-400' : 'text-gray-600')}>Padrão estável:</strong> ~{trend.currentAvg} consumos/dia (variação mínima)
+                                                                        <strong className={'text-gray-400'}>Padrão estável:</strong> ~{trend.currentAvg} consumos/dia (variação mínima)
                                                                         <br />
-                                                                        <span className={'text-xs mt-1 block ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
                                                                             📊 A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias.
                                                                         </span>
                                                                     </>
@@ -515,21 +514,21 @@ export function PatternsView({
                                                         let riskLevel, riskColor, riskBg, riskBorder, riskEmoji;
                                                         if (riskScore >= 70) {
                                                             riskLevel = 'Alto';
-                                                            riskColor = darkMode ? 'text-red-400' : 'text-red-600';
-                                                            riskBg = darkMode ? 'bg-red-900/30' : 'bg-red-50';
-                                                            riskBorder = darkMode ? 'border-red-700/50' : 'border-red-200';
+                                                            riskColor = 'text-red-400';
+                                                            riskBg = 'bg-red-900/30';
+                                                            riskBorder = 'border-red-700/50';
                                                             riskEmoji = '🚨';
                                                         } else if (riskScore >= 55) {
                                                             riskLevel = 'Moderado';
-                                                            riskColor = darkMode ? 'text-yellow-400' : 'text-yellow-600';
-                                                            riskBg = darkMode ? 'bg-yellow-900/30' : 'bg-yellow-50';
-                                                            riskBorder = darkMode ? 'border-yellow-700/50' : 'border-yellow-200';
+                                                            riskColor = 'text-yellow-400';
+                                                            riskBg = 'bg-yellow-900/30';
+                                                            riskBorder = 'border-yellow-700/50';
                                                             riskEmoji = '⚠️';
                                                         } else {
                                                             riskLevel = 'Baixo';
-                                                            riskColor = darkMode ? 'text-green-400' : 'text-green-600';
-                                                            riskBg = darkMode ? 'bg-green-900/30' : 'bg-green-50';
-                                                            riskBorder = darkMode ? 'border-green-700/50' : 'border-green-200';
+                                                            riskColor = 'text-green-400';
+                                                            riskBg = 'bg-green-900/30';
+                                                            riskBorder = 'border-green-700/50';
                                                             riskEmoji = '✅';
                                                         }
 
@@ -541,27 +540,27 @@ export function PatternsView({
                                                                     </div>
                                                                     <span className="text-2xl">{riskEmoji}</span>
                                                                 </div>
-                                                                <div className={'text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : 'text-gray-700')}>
+                                                                <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                     <div className="flex items-center gap-2 mb-2">
                                                                         <strong className={riskColor}>Risco {riskLevel}</strong>
                                                                         <div className={'text-xs px-2 py-0.5 rounded-full font-semibold ' + riskColor}>
                                                                             {riskScore}%
                                                                         </div>
                                                                     </div>
-                                                                    <div className={'text-xs mb-2 opacity-50 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                    <div className={'text-xs mb-2 opacity-50 ' + 'text-gray-500'}>
                                                                         {debugYesterday}
                                                                     </div>
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
-                                                                            <div className={'text-xs font-semibold ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>Fatores analisados:</div>
+                                                                            <div className={'text-xs font-semibold ' + 'text-gray-400'}>Fatores analisados:</div>
                                                                             {riskFactors.map((rf, idx) => (
-                                                                                <div key={idx} className={'text-xs ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                                <div key={idx} className={'text-xs ' + 'text-gray-300'}>
                                                                                     {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
                                                                     )}
-                                                                    <div className={'text-xs mt-3 pt-2 border-t ' + (darkMode ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-600')}>
+                                                                    <div className={'text-xs mt-3 pt-2 border-t ' + 'border-gray-600 text-gray-400'}>
                                                                         {riskScore >= 70 ? (
                                                                             '💡 Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.'
                                                                         ) : riskScore >= 55 ? (
@@ -579,18 +578,17 @@ export function PatternsView({
                                                     <HeatmapChart
                                                         consumptions={consumptions}
                                                         wellbeingLogs={wellbeingLogs}
-                                                        darkMode={darkMode}
-                                                        days={90}
+                                                                        days={90}
                                                     />
 
                                                     {/* Evolução da Frequência */}
                                                     {Object.keys(byDate).length > 0 && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <div className="mb-4">
-                                                                <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                <h3 className={'font-semibold ' + ('text-white')}>
                                                                     📈 Evolução da Frequência
                                                                 </h3>
-                                                                <p className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                     Número de consumos por dia ao longo do tempo. Cores indicam intensidade.
                                                                 </p>
                                                             </div>
@@ -621,7 +619,7 @@ export function PatternsView({
                                                                                 return (
                                                                                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative" style={{ minWidth: '2px' }}>
                                                                                         {/* Tooltip */}
-                                                                                        <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + (darkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-800 text-white')}>
+                                                                                        <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + 'bg-gray-700 text-gray-200'}>
                                                                                             {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}: {count}x
                                                                                         </div>
 
@@ -654,14 +652,14 @@ export function PatternsView({
                                                                                 if (recentDates.length <= 30) return idx % 4 === 0 || idx === recentDates.length - 1;
                                                                                 return idx % 7 === 0 || idx === recentDates.length - 1;
                                                                             }).map(date => (
-                                                                                <div key={date} className={'text-xs flex-1 text-center ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <div key={date} className={'text-xs flex-1 text-center ' + ('text-gray-400')}>
                                                                                     {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
 
                                                                         {/* Legenda */}
-                                                                        <div className={'text-xs mt-2 pt-3 border-t flex items-center justify-center gap-4 flex-wrap ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
+                                                                        <div className={'text-xs mt-2 pt-3 border-t flex items-center justify-center gap-4 flex-wrap ' + 'text-gray-400 border-gray-700'}>
                                                                             <div className="flex items-center gap-1">
                                                                                 <div className="w-3 h-3 rounded bg-gradient-to-t from-green-500 to-green-400"></div>
                                                                                 <span>1-3</span>
@@ -691,15 +689,15 @@ export function PatternsView({
 
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
-                                                        <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200') + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode)) + ' mb-4 flex items-center gap-2'}>
+                                                        <div className={'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'font-semibold ' + ('text-white') + ' mb-4 flex items-center gap-2'}>
                                                                 <span className="text-xl">💡</span>
                                                                 Padrões Identificados
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {insights.map((insight, i) => (
-                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + (darkMode ? 'bg-gray-700/50 border-gray-600' : insight.type === 'positive' ? 'bg-green-50 border border-green-200' : insight.type === 'neutral' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200')}>
-                                                                        <div className={'flex-1 text-sm leading-relaxed ' + (darkMode ? 'text-gray-200' : insight.type === 'positive' ? 'text-green-800' : insight.type === 'neutral' ? 'text-orange-800' : 'text-blue-800')}>
+                                                                    <div key={i} className={'flex items-start gap-3 p-3 rounded-lg ' + 'bg-gray-700/50 border-gray-600'}>
+                                                                        <div className={'flex-1 text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                             {insight.text}
                                                                         </div>
                                                                     </div>
@@ -710,51 +708,51 @@ export function PatternsView({
 
                                                     {/* Análise de Metas */}
                                                     {goalsAnalysis && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 🎯 Metas
                                                             </h3>
 
                                                             {/* Main stats */}
                                                             <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' : 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-pink-400' : 'text-pink-700')}>
+                                                                <div className={'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-pink-400'}>
                                                                         Total de Cumprimentos
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-pink-400' : 'text-pink-600')}>
+                                                                        <span className={'text-3xl font-black ' + 'text-pink-400'}>
                                                                             {goalsAnalysis.totalAchievements}
                                                                         </span>
-                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <span className={'text-sm ' + ('text-gray-400')}>
                                                                             vezes
                                                                         </span>
                                                                     </div>
-                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <div className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                         {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
                                                                     </div>
                                                                 </div>
 
-                                                                <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200') + ' rounded-lg p-4 border'}>
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                <div className={'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' + ' rounded-lg p-4 border'}>
+                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-blue-400'}>
                                                                         Média por Dia
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + (darkMode ? 'text-blue-400' : 'text-blue-600')}>
+                                                                        <span className={'text-3xl font-black ' + 'text-blue-400'}>
                                                                             {goalsAnalysis.avgAchievementsPerDay}
                                                                         </span>
-                                                                        <span className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <span className={'text-sm ' + ('text-gray-400')}>
                                                                             cumprimentos
                                                                         </span>
                                                                     </div>
-                                                                    <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                    <div className={'text-xs mt-1 ' + ('text-gray-400')}>
                                                                         nos últimos {goalsAnalysis.periodDays} dias
                                                                     </div>
                                                                 </div>
                                                             </div>
 
                                                             {/* Per-goal breakdown */}
-                                                            <div className={(darkMode ? 'bg-gray-700/30' : 'bg-gray-50') + ' rounded-lg p-4'}>
-                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
+                                                            <div className={'bg-gray-700/30' + ' rounded-lg p-4'}>
+                                                                <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + ('text-gray-400')}>
                                                                     Detalhes por Meta
                                                                 </div>
                                                                 <div className="space-y-2">
@@ -776,21 +774,21 @@ export function PatternsView({
                                                                             'bedtime_before': `Noites a dormir antes de ${goal.target}`
                                                                         };
                                                                         return (
-                                                                            <div key={goal.id} className={(darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-white border-gray-200') + ' rounded-lg p-3 border'}>
+                                                                            <div key={goal.id} className={'bg-gray-700/50 border-gray-600' + ' rounded-lg p-3 border'}>
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
-                                                                                        <div className={'text-sm font-medium mb-1 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                                                        <div className={'text-sm font-medium mb-1 ' + ('text-white')}>
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
-                                                                                        <div className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        <div className={'text-xs italic ' + ('text-gray-400')}>
                                                                                             Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
-                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-gray-500' : 'text-gray-400'))}>
+                                                                                        <div className={'text-2xl font-black ' + (goal.achievementCount > 0 ? 'text-green-400' : 'text-gray-500')}>
                                                                                             {goal.achievementCount}
                                                                                         </div>
-                                                                                        <div className={'text-xs ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                                        <div className={'text-xs ' + 'text-gray-500'}>
                                                                                             vezes
                                                                                         </div>
                                                                                     </div>
@@ -798,14 +796,14 @@ export function PatternsView({
                                                                                 {/* Progress Bar */}
                                                                                 <div>
                                                                                     <div className="flex items-center justify-between mb-1">
-                                                                                        <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                        <span className={'text-xs font-medium ' + ('text-gray-400')}>
                                                                                             {goal.achievementCount} / {goal.totalPossible}
                                                                                         </span>
-                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : goal.successRate >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? 'text-green-400' : goal.successRate >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                                             {goal.successRate.toFixed(0)}%
                                                                                         </span>
                                                                                     </div>
-                                                                                    <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-2 overflow-hidden'}>
+                                                                                    <div className={'bg-gray-600' + ' rounded-full h-2 overflow-hidden'}>
                                                                                         <div
                                                                                             className={'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')}
                                                                                             style={{width: `${Math.min(100, goal.successRate)}%`}}
@@ -1377,26 +1375,26 @@ export function PatternsView({
                                             return (
                                                 <div className="space-y-4">
                                                     {/* Period comparison header */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200') + ' rounded-xl p-6 border'}>
+                                                    <div className={'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
-                                                            <h3 className={'text-xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                            <h3 className={'text-xl font-bold ' + ('text-white')}>
                                                                 📈 Análise de Progresso Temporal
                                                             </h3>
-                                                            <div className={'text-4xl font-black ' + (progressScore >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : progressScore >= 40 ? (darkMode ? 'text-yellow-400' : 'text-yellow-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                            <div className={'text-4xl font-black ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                 {progressScore}%
                                                             </div>
                                                         </div>
-                                                        <p className={'text-sm mb-3 ' + (themeClasses.textSecondary(darkMode))}>
+                                                        <p className={'text-sm mb-3 ' + ('text-gray-300')}>
                                                             {patternsPeriod === 'hoje' ? 'Comparação entre hoje (até agora) vs ontem (dia completo)' :
                                                              patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
                                                              patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
                                                              `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
                                                         </p>
                                                         <div className="flex items-center gap-2">
-                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + (themeClasses.bgTertiaryAlt(darkMode))}>
+                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + ('bg-gray-700')}>
                                                                 <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
                                                             </div>
-                                                            <span className={'text-xs font-medium ' + (themeClasses.textTertiary(darkMode))}>
+                                                            <span className={'text-xs font-medium ' + ('text-gray-400')}>
                                                                 {improvements} de {total} métricas em melhoria
                                                             </span>
                                                         </div>
@@ -1404,64 +1402,64 @@ export function PatternsView({
 
                                                     {/* Consumption metrics */}
                                                     {(progressData.frequency || progressData.dosage) && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 💊 Consumo
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.frequency && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.frequency.label}
                                                                             </span>
                                                                             {progressData.frequency.recent !== progressData.frequency.previous && (
                                                                                 <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
                                                                                     progressData.frequency.change.direction !== 'stable'
-                                                                                        ? (progressData.frequency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))
-                                                                                        : (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600')
+                                                                                        ? (progressData.frequency.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')
+                                                                                        : 'bg-gray-700/30 text-gray-400'
                                                                                 )}>
                                                                                     {progressData.frequency.recent > progressData.frequency.previous ? '↑' : '↓'} {progressData.frequency.change.percent.toFixed(1)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.frequency.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 consumos/dia
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.frequency.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.dosage && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.dosage.label}
                                                                             </span>
                                                                             {progressData.dosage.recent !== progressData.dosage.previous && (
                                                                                 <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
                                                                                     progressData.dosage.change.direction !== 'stable'
-                                                                                        ? (progressData.dosage.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))
-                                                                                        : (darkMode ? 'bg-gray-700/30 text-gray-400' : 'bg-gray-100 text-gray-600')
+                                                                                        ? (progressData.dosage.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')
+                                                                                        : 'bg-gray-700/30 text-gray-400'
                                                                                 )}>
                                                                                     {progressData.dosage.recent > progressData.dosage.previous ? '↑' : '↓'} {progressData.dosage.change.percent.toFixed(1)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.dosage.recent.toFixed(0)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 mg/dia
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.dosage.previous.toFixed(0)} mg
                                                                             </span>
                                                                         </div>
@@ -1473,81 +1471,81 @@ export function PatternsView({
 
                                                     {/* Wellbeing metrics */}
                                                     {(progressData.sleep || progressData.mood || progressData.energy) && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 💚 Bem-Estar
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.sleep && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.sleep.label}
                                                                             </span>
                                                                             {progressData.sleep.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.sleep.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.sleep.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.sleep.change.direction === 'up' ? '↑' : '↓'} {progressData.sleep.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.sleep.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 horas
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.sleep.previous.toFixed(1)}h
                                                                             </span>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.mood && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.mood.label}
                                                                             </span>
                                                                             {progressData.mood.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.mood.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.mood.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.mood.change.direction === 'up' ? '↑' : '↓'} {progressData.mood.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.mood.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 /10
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.mood.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.energy && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.energy.label}
                                                                             </span>
                                                                             {progressData.energy.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.energy.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.energy.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.energy.change.direction === 'up' ? '↑' : '↓'} {progressData.energy.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.energy.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 /10
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.energy.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
@@ -1559,33 +1557,33 @@ export function PatternsView({
 
                                                     {/* Lifestyle metrics */}
                                                     {(progressData.bedtimeConsistency || progressData.selfCare) && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 🌙 Rotinas e Autocuidado
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.bedtimeConsistency && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.bedtimeConsistency.label}
                                                                             </span>
                                                                             {progressData.bedtimeConsistency.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.bedtimeConsistency.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.bedtimeConsistency.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.bedtimeConsistency.change.isImprovement ? '↓' : '↑'} {progressData.bedtimeConsistency.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2 mb-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.bedtimeConsistency.recent < 30 ? 'Muito consistente' : progressData.bedtimeConsistency.recent < 60 ? 'Consistente' : 'Variável'}
                                                                             </span>
-                                                                            <span className={'text-xs ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-xs ml-auto ' + 'text-gray-500'}>
                                                                                 variação: ±{(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h
                                                                             </span>
                                                                         </div>
-                                                                        <div className={(darkMode ? 'bg-gray-800/50' : 'bg-gray-100') + ' rounded px-3 py-2'}>
-                                                                            <p className={'text-xs italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                        <div className={'bg-gray-800/50' + ' rounded px-3 py-2'}>
+                                                                            <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
                                                                                     ? '🎯 Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.'
                                                                                     : progressData.bedtimeConsistency.recent < 60
@@ -1596,22 +1594,22 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.avgBedtime && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.avgBedtime.label}
                                                                             </span>
                                                                             {progressData.avgBedtime.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.avgBedtime.change.direction === 'up' ? 'Mais tarde' : 'Mais cedo'}
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.avgBedtime.recentTime}
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 era: {progressData.avgBedtime.previousTime}
                                                                             </span>
                                                                         </div>
@@ -1626,7 +1624,7 @@ export function PatternsView({
                                                                                 feedback = 'Dormir de manhã pode indicar inversão do ciclo.';
                                                                             }
                                                                             return feedback ? (
-                                                                                <div className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                                <div className={'text-xs mt-2 ' + ('text-gray-400')}>
                                                                                     {feedback}
                                                                                 </div>
                                                                             ) : null;
@@ -1634,25 +1632,25 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.selfCare && (
-                                                                    <div className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-4 border'}>
+                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
                                                                         <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.selfCare.label}
                                                                             </span>
                                                                             {progressData.selfCare.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.selfCare.change.isImprovement ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700'))}>
+                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.selfCare.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
                                                                                     {progressData.selfCare.change.direction === 'up' ? '↑' : '↓'} {progressData.selfCare.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2">
-                                                                            <span className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
                                                                                 {progressData.selfCare.recent.toFixed(1)}
                                                                             </span>
-                                                                            <span className={'text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                            <span className={'text-sm ' + ('text-gray-400')}>
                                                                                 atividades/ciclo
                                                                             </span>
-                                                                            <span className={'text-sm ml-auto ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>
+                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
                                                                                 antes: {progressData.selfCare.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
@@ -1664,20 +1662,20 @@ export function PatternsView({
 
                                                     {/* Emotional metrics */}
                                                     {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions) && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 🧠 Estado Emocional
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.negativeEmotions && (
-                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border-purple-700/50' : 'bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200') + ' rounded-lg p-3 border'}>
+                                                                    <div className={'bg-gradient-to-br from-purple-900/20 to-indigo-900/20 border-purple-700/50' + ' rounded-lg p-3 border'}>
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😔</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-purple-400' : 'text-purple-700')}>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-purple-400'}>
                                                                                 Emoções Negativas
                                                                             </span>
                                                                             {progressData.negativeEmotions.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
+                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
                                                                                     {progressData.negativeEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.negativeEmotions.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
@@ -1685,32 +1683,32 @@ export function PatternsView({
                                                                         <div className="flex items-center justify-between">
                                                                             <div>
                                                                                 <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                                                                    <span className={'text-3xl font-black ' + 'text-purple-400'}>
                                                                                         {progressData.negativeEmotions.recent.toFixed(0)}%
                                                                                     </span>
-                                                                                    <span className={'text-xs font-medium ' + (darkMode ? 'text-purple-300/70' : 'text-purple-600/70')}>
+                                                                                    <span className={'text-xs font-medium ' + 'text-purple-300/70'}>
                                                                                         do total
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-purple-400/60' : 'text-purple-600/60')}>
+                                                                                <div className={'text-xs mt-1 ' + 'text-purple-400/60'}>
                                                                                     {progressData.negativeEmotions.recentCount} de {progressData.negativeEmotions.recentTotal} emoções
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                            <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
                                                                                 era {progressData.negativeEmotions.previous.toFixed(0)}%
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.positiveEmotions && (
-                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700/50' : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200') + ' rounded-lg p-3 border'}>
+                                                                    <div className={'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700/50' + ' rounded-lg p-3 border'}>
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😊</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-green-400' : 'text-green-700')}>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-green-400'}>
                                                                                 Emoções Positivas
                                                                             </span>
                                                                             {progressData.positiveEmotions.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? (darkMode ? 'bg-green-900/50 text-green-300 border border-green-700' : 'bg-green-100 text-green-700 border border-green-300') : (darkMode ? 'bg-red-900/50 text-red-300 border border-red-700' : 'bg-red-100 text-red-700 border border-red-300'))}>
+                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
                                                                                     {progressData.positiveEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.positiveEmotions.change.percent.toFixed(0)}%
                                                                                 </span>
                                                                             )}
@@ -1718,28 +1716,28 @@ export function PatternsView({
                                                                         <div className="flex items-center justify-between">
                                                                             <div>
                                                                                 <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black ' + (darkMode ? 'text-green-400' : 'text-green-600')}>
+                                                                                    <span className={'text-3xl font-black ' + 'text-green-400'}>
                                                                                         {progressData.positiveEmotions.recent.toFixed(0)}%
                                                                                     </span>
-                                                                                    <span className={'text-xs font-medium ' + (darkMode ? 'text-green-300/70' : 'text-green-600/70')}>
+                                                                                    <span className={'text-xs font-medium ' + 'text-green-300/70'}>
                                                                                         do total
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className={'text-xs mt-1 ' + (darkMode ? 'text-green-400/60' : 'text-green-600/60')}>
+                                                                                <div className={'text-xs mt-1 ' + 'text-green-400/60'}>
                                                                                     {progressData.positiveEmotions.recentCount} de {progressData.positiveEmotions.recentTotal} emoções
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={'text-xs px-2 py-1 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                            <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
                                                                                 era {progressData.positiveEmotions.previous.toFixed(0)}%
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.topEmotions && (
-                                                                    <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200') + ' rounded-lg p-3 border'}>
+                                                                    <div className={'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50' + ' rounded-lg p-3 border'}>
                                                                         <div className="flex items-center gap-2 mb-3">
                                                                             <span className="text-lg">🌟</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + (darkMode ? 'text-blue-400' : 'text-blue-700')}>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-blue-400'}>
                                                                                 Top 3 Emoções
                                                                             </span>
                                                                         </div>
@@ -1747,10 +1745,10 @@ export function PatternsView({
                                                                             {progressData.topEmotions.map((item, idx) => (
                                                                                 <div key={idx} className="flex items-center justify-between">
                                                                                     <div className="flex items-center gap-2">
-                                                                                        <span className={'text-xs font-bold ' + (darkMode ? 'text-blue-400/50' : 'text-blue-600/50')}>#{idx + 1}</span>
-                                                                                        <span className={'text-sm ' + (darkMode ? 'text-blue-300' : 'text-blue-700')}>{item.emotion}</span>
+                                                                                        <span className={'text-xs font-bold ' + 'text-blue-400/50'}>#{idx + 1}</span>
+                                                                                        <span className={'text-sm ' + 'text-blue-300'}>{item.emotion}</span>
                                                                                     </div>
-                                                                                    <span className={'text-xs px-2 py-0.5 rounded ' + (darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-white/70 text-gray-600')}>
+                                                                                    <span className={'text-xs px-2 py-0.5 rounded ' + 'bg-gray-800/50 text-gray-400'}>
                                                                                         {item.count}×
                                                                                     </span>
                                                                                 </div>
@@ -1764,49 +1762,49 @@ export function PatternsView({
 
                                                     {/* Autocuidado Detalhado */}
                                                     {progressData.selfCareDetailed && (
-                                                        <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                        <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 💚 Análise de Autocuidado
                                                             </h3>
 
                                                             {/* Overall score */}
-                                                            <div className={(darkMode ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200') + ' rounded-lg p-4 border mb-4'}>
+                                                            <div className={'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + (themeClasses.textSecondary(darkMode))}>
+                                                                    <span className={'text-sm font-semibold ' + ('text-gray-300')}>
                                                                         Taxa geral de autocuidado
                                                                     </span>
-                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
                                                                     </span>
                                                                 </div>
-                                                                <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-3 overflow-hidden'}>
+                                                                <div className={('bg-gray-700') + ' rounded-full h-3 overflow-hidden'}>
                                                                     <div
                                                                         className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'bg-green-500' : 'bg-orange-500')}
                                                                         style={{width: `${progressData.selfCareDetailed.recentOverall}%`}}
                                                                     ></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 italic ' + (themeClasses.textTertiary(darkMode))}>
+                                                                <div className={'text-xs mt-2 italic ' + ('text-gray-400')}>
                                                                     {progressData.selfCareDetailed.suggestion}
                                                                 </div>
                                                             </div>
 
                                                             {/* Complete cycles */}
-                                                            <div className={(darkMode ? 'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200') + ' rounded-lg p-4 border mb-4'}>
+                                                            <div className={'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + (themeClasses.textSecondary(darkMode))}>
+                                                                    <span className={'text-sm font-semibold ' + ('text-gray-300')}>
                                                                         🎯 Ciclos completos (4 indicadores)
                                                                     </span>
-                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? (darkMode ? 'text-blue-400' : 'text-blue-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
                                                                     </span>
                                                                 </div>
-                                                                <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-3 overflow-hidden'}>
+                                                                <div className={('bg-gray-700') + ' rounded-full h-3 overflow-hidden'}>
                                                                     <div
                                                                         className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'bg-blue-500' : 'bg-orange-500')}
                                                                         style={{width: `${progressData.selfCareDetailed.completeCycles.recent}%`}}
                                                                     ></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 ' + (themeClasses.textTertiary(darkMode))}>
+                                                                <div className={'text-xs mt-2 ' + ('text-gray-400')}>
                                                                     {progressData.selfCareDetailed.completeCycles.recentCount} de {progressData.selfCareDetailed.completeCycles.recentTotal} ciclos com todos os indicadores
                                                                 </div>
                                                             </div>
@@ -1822,19 +1820,19 @@ export function PatternsView({
                                                                     };
                                                                     const area = areaNames[areaKey];
                                                                     return (
-                                                                        <div key={areaKey} className={(themeClasses.containerLight(darkMode)) + ' rounded-lg p-3 border'}>
+                                                                        <div key={areaKey} className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-3 border'}>
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <span className="text-lg">{area.emoji}</span>
-                                                                                <span className={'text-xs font-medium ' + (themeClasses.textSecondary(darkMode))}>
+                                                                                <span className={'text-xs font-medium ' + ('text-gray-300')}>
                                                                                     {area.name}
                                                                                 </span>
                                                                             </div>
                                                                             <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-2xl font-bold ' + (percent >= 70 ? (darkMode ? 'text-green-400' : 'text-green-600') : (darkMode ? 'text-orange-400' : 'text-orange-600'))}>
+                                                                                <span className={'text-2xl font-bold ' + (percent >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                                     {percent.toFixed(0)}%
                                                                                 </span>
                                                                             </div>
-                                                                            <div className={(darkMode ? 'bg-gray-600' : 'bg-gray-200') + ' rounded-full h-1.5 overflow-hidden mt-2'}>
+                                                                            <div className={'bg-gray-600' + ' rounded-full h-1.5 overflow-hidden mt-2'}>
                                                                                 <div
                                                                                     className={'h-full ' + (percent >= 70 ? 'bg-green-500' : 'bg-orange-500')}
                                                                                     style={{width: `${percent}%`}}
@@ -1848,11 +1846,11 @@ export function PatternsView({
                                                     )}
 
                                                     {/* Summary insights */}
-                                                    <div className={(darkMode ? 'bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50' : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'text-lg font-semibold mb-3 ' + (themeClasses.textPrimaryAlt(darkMode))}>
+                                                    <div className={('bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50') + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
                                                             💡 Resumo do Progresso
                                                         </h3>
-                                                        <div className={'text-sm leading-relaxed space-y-2 ' + (themeClasses.textSecondary(darkMode))}>
+                                                        <div className={'text-sm leading-relaxed space-y-2 ' + ('text-gray-300')}>
                                                             {progressScore >= 70 && (
                                                                 <p>🎉 <strong>Excelente progresso!</strong> A maioria das métricas mostra melhoria clara. Continua neste caminho!</p>
                                                             )}
@@ -1862,7 +1860,7 @@ export function PatternsView({
                                                             {progressScore < 40 && (
                                                                 <p>💪 <strong>Momento desafiante.</strong> Os dados mostram dificuldades em várias áreas. Lembra-te: recaídas fazem parte da recuperação. Foca-te em pequenas vitórias.</p>
                                                             )}
-                                                            <div className={'mt-3 pt-3 border-t ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                            <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
                                                                 <p className="text-xs font-medium mb-1">Áreas com maior melhoria:</p>
                                                                 <ul className="text-xs space-y-1">
                                                                     {Object.entries(progressData)
@@ -1878,7 +1876,7 @@ export function PatternsView({
                                                                 </ul>
                                                             </div>
                                                             {Object.entries(progressData).filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew).length > 0 && (
-                                                                <div className={'mt-3 pt-3 border-t ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
+                                                                <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
                                                                     <p className="text-xs font-medium mb-1">Áreas que precisam de atenção:</p>
                                                                     <ul className="text-xs space-y-1">
                                                                         {Object.entries(progressData)
@@ -1931,10 +1929,10 @@ export function PatternsView({
                                             return (
                                         <div className="space-y-4">
                                             {/* Por horário */}
-                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>🕐 Consumo por Horário</h3>
+                                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🕐 Consumo por Horário</h3>
                                                 {Object.keys(byHour).length === 0 ? (
-                                                    <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
+                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
                                                 ) : (() => {
                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
 
@@ -1966,13 +1964,13 @@ export function PatternsView({
                                                                 // Cores por período
                                                                 let colorClass = '';
                                                                 if (block.label === 'Madrugada') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : (themeClasses.bgTertiary(darkMode));
+                                                                    colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : ('bg-gray-700');
                                                                 } else if (block.label === 'Manhã') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : (themeClasses.bgTertiary(darkMode));
+                                                                    colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : ('bg-gray-700');
                                                                 } else if (block.label === 'Tarde') {
-                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : (themeClasses.bgTertiary(darkMode));
+                                                                    colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : ('bg-gray-700');
                                                                 } else {
-                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : (themeClasses.bgTertiary(darkMode));
+                                                                    colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : ('bg-gray-700');
                                                                 }
 
                                                                 return (
@@ -1980,11 +1978,11 @@ export function PatternsView({
                                                                         <div className={'text-xl w-8 text-center'}>
                                                                             {block.icon}
                                                                         </div>
-                                                                        <div className={'text-sm font-medium w-16 ' + (themeClasses.textSecondary(darkMode))}>
+                                                                        <div className={'text-sm font-medium w-16 ' + ('text-gray-300')}>
                                                                             {block.range}h
                                                                         </div>
                                                                         <div className="flex-1">
-                                                                            <div className={(themeClasses.bgTertiaryAlt(darkMode)) + ' rounded-full h-8 overflow-hidden relative'}>
+                                                                            <div className={('bg-gray-700') + ' rounded-full h-8 overflow-hidden relative'}>
                                                                                 <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold transition-all duration-300'} style={{width: Math.max(intensity * 100, blockCount > 0 ? 8 : 0) + '%'}}>
                                                                                     {blockCount > 0 && (
                                                                                         <span className="whitespace-nowrap">
@@ -1999,7 +1997,7 @@ export function PatternsView({
                                                             })}
 
                                                             {/* Legenda */}
-                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + (darkMode ? 'text-gray-400 border-gray-700' : 'text-gray-500 border-gray-200')}>
+                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + 'text-gray-400 border-gray-700'}>
                                                                 <span>💡 Intensidade de cor = frequência de consumos</span>
                                                             </div>
                                                         </div>
@@ -2008,11 +2006,11 @@ export function PatternsView({
                                             </div>
 
                                             {/* Por período do dia */}
-                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>🌅 Por Período do Dia</h3>
+                                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🌅 Por Período do Dia</h3>
                                                 {(() => {
                                                     const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>;
+                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>;
 
                                                     const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
                                                     const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
@@ -2021,33 +2019,33 @@ export function PatternsView({
 
                                                     return (
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                            <div className={(darkMode ? 'bg-yellow-900/30 border-yellow-700/50' : 'bg-yellow-50 border-yellow-200') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('bg-yellow-900/30 border-yellow-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌅</div>
-                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Manhã</div>
-                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>6h-12h</div>
-                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>{manhaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.manha}x</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Manhã</div>
+                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>6h-12h</div>
+                                                                <div className={'text-xl font-bold ' + 'text-yellow-400'}>{manhaPercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.manha}x</div>
                                                             </div>
-                                                            <div className={(darkMode ? 'bg-orange-900/30 border-orange-700/50' : 'bg-orange-50 border-orange-200') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('bg-orange-900/30 border-orange-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">☀️</div>
-                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Tarde</div>
-                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>12h-18h</div>
-                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>{tardePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.tarde}x</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Tarde</div>
+                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>12h-18h</div>
+                                                                <div className={'text-xl font-bold ' + 'text-orange-400'}>{tardePercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.tarde}x</div>
                                                             </div>
-                                                            <div className={(darkMode ? 'bg-indigo-900/30 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌙</div>
-                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Noite</div>
-                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>18h-24h</div>
-                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-indigo-400' : 'text-indigo-600')}>{noitePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.noite}x</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Noite</div>
+                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>18h-24h</div>
+                                                                <div className={'text-xl font-bold ' + ('text-indigo-400')}>{noitePercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.noite}x</div>
                                                             </div>
-                                                            <div className={(darkMode ? 'bg-purple-900/30 border-purple-700/50' : 'bg-purple-50 border-purple-200') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('bg-purple-900/30 border-purple-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">⭐</div>
-                                                                <div className={'text-xs mb-1 ' + (themeClasses.textSecondary(darkMode))}>Madrugada</div>
-                                                                <div className={'text-xs mb-2 ' + (darkMode ? 'text-gray-500' : 'text-gray-400')}>0h-6h</div>
-                                                                <div className={'text-xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{madrugadaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + (themeClasses.textTertiary(darkMode))}>{byPartOfDay.madrugada}x</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Madrugada</div>
+                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>0h-6h</div>
+                                                                <div className={'text-xl font-bold ' + 'text-purple-400'}>{madrugadaPercent}%</div>
+                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.madrugada}x</div>
                                                             </div>
                                                         </div>
                                                     );
@@ -2055,11 +2053,11 @@ export function PatternsView({
                                             </div>
 
                                             {/* Por dia da semana */}
-                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>📅 Por Dia da Semana</h3>
+                                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>📅 Por Dia da Semana</h3>
                                                 <div className="space-y-3">
                                                     {Object.values(byWeekday).every(v => v === 0) ? (
-                                                        <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>Sem dados</div>
+                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
                                                     ) : (() => {
                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
                                                         const weekdayEntries = Object.entries(byWeekday).filter(([_, count]) => count > 0);
@@ -2075,12 +2073,12 @@ export function PatternsView({
 
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-10 font-medium flex items-center gap-1 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                            <div className={'text-xs w-10 font-medium flex items-center gap-1 ' + 'text-gray-300'}>
                                                                                 {weekdayNames[parseInt(day)]}
                                                                                 {isMax && <span title="Dia com mais consumo">🔴</span>}
                                                                                 {isMin && <span title="Dia com menos consumo">🟢</span>}
                                                                             </div>
-                                                                            <div className={'flex-1 rounded-full h-7 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                            <div className={'flex-1 rounded-full h-7 overflow-hidden ' + ('bg-gray-700')}>
                                                                                 <div
                                                                                     className={`h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all ${
                                                                                         isMax ? 'bg-gradient-to-r from-red-500 to-orange-500' :
@@ -2099,10 +2097,10 @@ export function PatternsView({
 
                                                                 {/* Padrão Semanal */}
                                                                 {weekdayEntries.length > 1 && (
-                                                                    <div className={'mt-4 pt-3 border-t text-xs ' + (darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-600')}>
-                                                                        <span className={'font-semibold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: dia com mais consumo ({maxEntry[1]}x, {Math.round((maxEntry[1] / totalWeekday) * 100)}%)
+                                                                    <div className={'mt-4 pt-3 border-t text-xs ' + ('border-gray-700 text-gray-400')}>
+                                                                        <span className={'font-semibold ' + 'text-red-400'}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: dia com mais consumo ({maxEntry[1]}x, {Math.round((maxEntry[1] / totalWeekday) * 100)}%)
                                                                         {' • '}
-                                                                        <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: dia com menos consumo ({minEntry[1]}x, {Math.round((minEntry[1] / totalWeekday) * 100)}%)
+                                                                        <span className={'font-semibold ' + 'text-green-400'}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: dia com menos consumo ({minEntry[1]}x, {Math.round((minEntry[1] / totalWeekday) * 100)}%)
                                                                     </div>
                                                                 )}
                                                             </>
@@ -2133,13 +2131,13 @@ export function PatternsView({
                                                 const minDay = sortedDays[sortedDays.length - 1];
 
                                                 return (
-                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border mt-4'}>
-                                                        <h3 className={'font-semibold mb-3 ' + (themeClasses.textPrimaryAlt(darkMode))}>📆 Ciclo Mensual</h3>
+                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 border mt-4'}>
+                                                        <h3 className={'font-semibold mb-3 ' + ('text-white')}>📆 Ciclo Mensual</h3>
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                             {/* Top 5 dias com MAIS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-red-400' : 'text-red-600')}>🔴 Mais consumo:</div>
+                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-red-400'}>🔴 Mais consumo:</div>
                                                                 {sortedDays.slice(0, 5).map(([day, avg]) => {
                                                                     const dayNum = parseInt(day);
                                                                     const maxAvg = parseFloat(sortedDays[0][1]);
@@ -2147,8 +2145,8 @@ export function PatternsView({
                                                                     const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
-                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>Dia {day}</div>
+                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
                                                                                 <div
                                                                                     className={'h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all ' + (isPeak ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-red-500 to-pink-500')}
                                                                                     style={{width: `${widthPercent}%`}}
@@ -2164,15 +2162,15 @@ export function PatternsView({
 
                                                             {/* Top 5 dias com MENOS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + (darkMode ? 'text-green-400' : 'text-green-600')}>🟢 Menos consumo:</div>
+                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-green-400'}>🟢 Menos consumo:</div>
                                                                 {sortedDays.slice(-5).reverse().map(([day, avg]) => {
                                                                     const minAvg = parseFloat(sortedDays[sortedDays.length - 1][1]);
                                                                     const maxAvg = parseFloat(sortedDays[0][1]);
                                                                     const widthPercent = (avg / maxAvg) * 100;
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>Dia {day}</div>
-                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + (themeClasses.bgTertiary(darkMode))}>
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>Dia {day}</div>
+                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
                                                                                 <div
                                                                                     className="h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all bg-gradient-to-r from-green-500 to-emerald-500"
                                                                                     style={{width: `${widthPercent}%`}}
@@ -2188,8 +2186,8 @@ export function PatternsView({
 
                                                         {/* Resumo interpretativo */}
                                                         {hasPeak2025 && (
-                                                            <div className={'pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-200 text-gray-700')}>
-                                                                🔍 <span className={'font-semibold ' + (darkMode ? 'text-orange-400' : 'text-orange-600')}>Padrão detectado:</span> Pico entre dias <strong>20-25</strong> ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média)
+                                                            <div className={'pt-3 border-t text-sm ' + ('border-gray-700 text-gray-300')}>
+                                                                🔍 <span className={'font-semibold ' + 'text-orange-400'}>Padrão detectado:</span> Pico entre dias <strong>20-25</strong> ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média)
                                                             </div>
                                                         )}
                                                     </div>
@@ -2248,19 +2246,19 @@ export function PatternsView({
                                                         const chartData = sortedWeeks.slice(-12).map(w => ({ week: w.week.replace(/^\d{4}-W/, 'S'), dosagem: w.totalMg, days: w.days }));
                                                         const avgWeekly = (sortedWeeks.reduce((s, w) => s + w.totalMg, 0) / sortedWeeks.length).toFixed(0);
                                                         return (
-                                                            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-4 border'}>
+                                                            <div className={('bg-gray-800 border-gray-700') + ' rounded-xl p-4 border'}>
                                                                 <div className="flex items-center justify-between mb-3">
-                                                                    <h3 className={'font-semibold ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>📊 Dosagem Semanal</h3>
-                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + (darkMode ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? 'semana' : 'semanas'}</div>
+                                                                    <h3 className={'font-semibold ' + ('text-purple-300')}>📊 Dosagem Semanal</h3>
+                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + ('bg-purple-900/50 text-purple-300')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? 'semana' : 'semanas'}</div>
                                                                 </div>
                                                                 <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                    <div className={'text-center p-3 rounded-lg ' + (darkMode ? 'bg-gray-700/50' : 'bg-gray-50')}>
-                                                                        <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Média Semanal</div>
-                                                                        <div className={'text-2xl font-bold ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>{avgWeekly}mg</div>
+                                                                    <div className={'text-center p-3 rounded-lg ' + ('bg-gray-700/50')}>
+                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>Média Semanal</div>
+                                                                        <div className={'text-2xl font-bold ' + 'text-purple-400'}>{avgWeekly}mg</div>
                                                                     </div>
-                                                                    <div className={'text-center p-3 rounded-lg ' + (trendLabel === 'A Reduzir' ? (darkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-100 border border-green-300') : trendLabel === 'A Aumentar' ? (darkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-100 border border-red-300') : (darkMode ? 'bg-gray-700/50' : 'bg-gray-50'))}>
-                                                                        <div className={'text-xs opacity-75 mb-1 ' + (themeClasses.textTertiary(darkMode))}>Tendência (4 sem)</div>
-                                                                        <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (trendLabel === 'A Reduzir' ? (darkMode ? 'text-green-400' : 'text-green-600') : trendLabel === 'A Aumentar' ? (darkMode ? 'text-red-400' : 'text-red-600') : (darkMode ? 'text-gray-400' : 'text-gray-600'))}>
+                                                                    <div className={'text-center p-3 rounded-lg ' + (trendLabel === 'A Reduzir' ? ('bg-green-900/30 border border-green-700') : trendLabel === 'A Aumentar' ? ('bg-red-900/30 border border-red-700') : ('bg-gray-700/50'))}>
+                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>Tendência (4 sem)</div>
+                                                                        <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (trendLabel === 'A Reduzir' ? 'text-green-400' : trendLabel === 'A Aumentar' ? 'text-red-400' : 'text-gray-400')}>
                                                                             <span>{trendIcon}</span><span className="text-sm">{trendPct.toFixed(0)}%</span>
                                                                         </div>
                                                                     </div>
@@ -2268,15 +2266,15 @@ export function PatternsView({
                                                                 <div style={{ width: '100%', height: 200 }}>
                                                                     <ResponsiveContainer>
                                                                         <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
-                                                                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                                                                            <XAxis dataKey="week" tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                                                                            <YAxis tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
-                                                                            <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#fff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, borderRadius: '6px', fontSize: '12px' }} formatter={(value, name, props) => [`${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`, 'Dosagem Total']} />
-                                                                            <Bar dataKey="dosagem" fill={darkMode ? '#a78bfa' : '#8b5cf6'} radius={[4, 4, 0, 0]} />
+                                                                            <CartesianGrid strokeDasharray="3 3" stroke={'#374151'} />
+                                                                            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                                                                            <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#9ca3af' }} />
+                                                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: `1px solid ${'#374151'}`, borderRadius: '6px', fontSize: '12px' }} formatter={(value, name, props) => [`${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`, 'Dosagem Total']} />
+                                                                            <Bar dataKey="dosagem" fill={'#a78bfa'} radius={[4, 4, 0, 0]} />
                                                                         </BarChart>
                                                                     </ResponsiveContainer>
                                                                 </div>
-                                                                <p className={'text-xs italic mt-2 text-center ' + (themeClasses.textTertiary(darkMode))}>Últimas {Math.min(12, sortedWeeks.length)} semanas</p>
+                                                                <p className={'text-xs italic mt-2 text-center ' + ('text-gray-400')}>Últimas {Math.min(12, sortedWeeks.length)} semanas</p>
                                                                 {sortedWeeks.length >= 2 && (() => {
                                                                     const firstWeek = sortedWeeks[0];
                                                                     const lastWeek = sortedWeeks[sortedWeeks.length - 1];
@@ -2284,9 +2282,9 @@ export function PatternsView({
                                                                     const changePct = (change / firstWeek.totalMg * 100);
                                                                     if (Math.abs(changePct) < 5) return null;
                                                                     return (
-                                                                        <div className={'mt-3 pt-3 border-t text-sm ' + (darkMode ? 'border-gray-700' : 'border-gray-200')}>
-                                                                            <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
-                                                                                {change > 0 ? (<>Dosagem média <span className={'font-semibold ' + (darkMode ? 'text-red-400' : 'text-red-600')}>subiu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% aumento.{changePct > 30 && <span className={'ml-1 font-semibold ' + (darkMode ? 'text-yellow-400' : 'text-yellow-600')}>Possível tolerância?</span>}</>) : (<>Dosagem média <span className={'font-semibold ' + (darkMode ? 'text-green-400' : 'text-green-600')}>reduziu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% redução. Bom progresso!</>)}
+                                                                        <div className={'mt-3 pt-3 border-t text-sm ' + ('border-gray-700')}>
+                                                                            <p className={'text-gray-300'}>
+                                                                                {change > 0 ? (<>Dosagem média <span className={'font-semibold ' + 'text-red-400'}>subiu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% aumento.{changePct > 30 && <span className={'ml-1 font-semibold ' + 'text-yellow-400'}>Possível tolerância?</span>}</>) : (<>Dosagem média <span className={'font-semibold ' + 'text-green-400'}>reduziu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% redução. Bom progresso!</>)}
                                                                             </p>
                                                                         </div>
                                                                     );
@@ -2296,10 +2294,10 @@ export function PatternsView({
                                                     })()}
 
                                                     {/* Análise de Intervalos */}
-                                                    <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏱️ Intervalos Entre Consumos</h3>
+                                                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                        <h3 className={'font-semibold mb-4 ' + ('text-white')}>⏱️ Intervalos Entre Consumos</h3>
                                                         {intervals.length === 0 ? (
-                                                            <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                            <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
                                                                 Sem intervalos (necessário ≥2 consumos)
                                                             </div>
                                                         ) : (() => {
@@ -2313,56 +2311,56 @@ export function PatternsView({
                                                             return (
                                                                 <>
                                                                     <div className="grid grid-cols-3 gap-3 mb-4">
-                                                                        <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
-                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{intervals.length}</div>
-                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total</div>
+                                                                        <div className={`${'bg-purple-900/30 border border-purple-700/50'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${'text-purple-400'}`}>{intervals.length}</div>
+                                                                            <div className={`text-xs ${'text-gray-300'}`}>Total</div>
                                                                         </div>
-                                                                        <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
-                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgInterval.toFixed(1)}h</div>
-                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                                        <div className={`${'bg-blue-900/30 border border-blue-700/50'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${'text-blue-400'}`}>{avgInterval.toFixed(1)}h</div>
+                                                                            <div className={`text-xs ${'text-gray-300'}`}>Média</div>
                                                                         </div>
-                                                                        <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
-                                                                            <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{maxInterval.toFixed(1)}h</div>
-                                                                            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                                        <div className={`${'bg-green-900/30 border border-green-700/50'} rounded-lg p-3 text-center border`}>
+                                                                            <div className={`text-2xl font-bold ${'text-green-400'}`}>{maxInterval.toFixed(1)}h</div>
+                                                                            <div className={`text-xs ${'text-gray-300'}`}>Máximo</div>
                                                                         </div>
                                                                     </div>
 
                                                                     <div className="space-y-3">
                                                                         {/* Bons intervalos (≥2h) */}
-                                                                        <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-4`}>
+                                                                        <div className={`${'bg-green-900/20 border border-green-700/50'} rounded-lg p-4`}>
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${'text-green-400'}`}>
                                                                                     <span>✅</span>
                                                                                     <span>Intervalos Bons (≥2h)</span>
                                                                                 </div>
-                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                <div className={`text-sm font-bold ${'text-green-400'}`}>
                                                                                     {goodIntervals.length} ({goodPercent}%)
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                            <div className={`${'bg-gray-700'} rounded-full h-3 overflow-hidden`}>
                                                                                 <div className="bg-green-500 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
                                                                             </div>
                                                                         </div>
 
                                                                         {/* Intervalos curtos (<2h) */}
-                                                                        <div className={`${darkMode ? 'bg-orange-900/20 border border-orange-700/50' : 'bg-orange-50 border border-orange-200'} rounded-lg p-4`}>
+                                                                        <div className={`${'bg-orange-900/20 border border-orange-700/50'} rounded-lg p-4`}>
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${'text-orange-400'}`}>
                                                                                     <span>⚠️</span>
                                                                                     <span>Intervalos Curtos (&lt;2h)</span>
                                                                                 </div>
-                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                                                                                <div className={`text-sm font-bold ${'text-orange-400'}`}>
                                                                                     {shortIntervals.length} ({shortPercent}%)
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-3 overflow-hidden`}>
+                                                                            <div className={`${'bg-gray-700'} rounded-full h-3 overflow-hidden`}>
                                                                                 <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
-                                                                        <p className={`text-xs leading-relaxed ${themeClasses.textSecondary(darkMode)}`}>
+                                                                    <div className={`${'bg-indigo-900/20 border-indigo-700/50'} rounded-lg p-3 mt-4 border`}>
+                                                                        <p className={`text-xs leading-relaxed ${'text-gray-300'}`}>
                                                                             {goodPercent >= 50
                                                                                 ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
                                                                                 : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
@@ -2381,9 +2379,9 @@ export function PatternsView({
 
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (
-                                                                <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
-                                                                    <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
+                                                                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                    <h3 className={'font-semibold mb-4 ' + ('text-white')}>💊 Análise de Dosagens</h3>
+                                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
                                                                         Sem dosagens diárias registadas neste período
                                                                     </div>
                                                                 </div>
@@ -2406,8 +2404,8 @@ export function PatternsView({
                                                         let trendIcon = '➡️';
                                                         let trendText = 'Estáveis';
                                                         let trendPercent = 0;
-                                                        let trendColor = darkMode ? 'text-blue-400' : 'text-blue-600';
-                                                        let trendBg = darkMode ? 'bg-blue-900/20 border-blue-700/50' : 'bg-blue-50 border-blue-200';
+                                                        let trendColor = 'text-blue-400';
+                                                        let trendBg = 'bg-blue-900/20 border-blue-700/50';
 
                                                         if (firstHalf.length > 0 && secondHalf.length > 0) {
                                                             const avgFirst = firstHalf.reduce((sum, log) => sum + log.mg, 0) / firstHalf.length;
@@ -2418,13 +2416,13 @@ export function PatternsView({
                                                             if (change > 5) {
                                                                 trendIcon = '📈';
                                                                 trendText = `Aumentaram ${trendPercent.toFixed(0)}%`;
-                                                                trendColor = darkMode ? 'text-red-400' : 'text-red-600';
-                                                                trendBg = darkMode ? 'bg-red-900/20 border-red-700/50' : 'bg-red-50 border-red-200';
+                                                                trendColor = 'text-red-400';
+                                                                trendBg = 'bg-red-900/20 border-red-700/50';
                                                             } else if (change < -5) {
                                                                 trendIcon = '📉';
                                                                 trendText = `Diminuíram ${trendPercent.toFixed(0)}%`;
-                                                                trendColor = darkMode ? 'text-green-400' : 'text-green-600';
-                                                                trendBg = darkMode ? 'bg-green-900/20 border-green-700/50' : 'bg-green-50 border-green-200';
+                                                                trendColor = 'text-green-400';
+                                                                trendBg = 'bg-green-900/20 border-green-700/50';
                                                             }
                                                         }
 
@@ -2460,26 +2458,26 @@ export function PatternsView({
                                                         };
 
                                                         return (
-                                                            <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>💊 Análise de Dosagens</h3>
+                                                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>💊 Análise de Dosagens</h3>
 
                                                                 {/* Estatísticas Gerais */}
                                                                 <div className="grid grid-cols-4 gap-3 mb-4">
-                                                                    <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{dailyDosageRecords.length}</div>
-                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Registos</div>
+                                                                    <div className={`${'bg-purple-900/30 border border-purple-700/50'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${'text-purple-400'}`}>{dailyDosageRecords.length}</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>Registos</div>
                                                                     </div>
-                                                                    <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgDosage.toFixed(1)}mg</div>
-                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                                    <div className={`${'bg-blue-900/30 border border-blue-700/50'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${'text-blue-400'}`}>{avgDosage.toFixed(1)}mg</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>Média</div>
                                                                     </div>
-                                                                    <div className={`${darkMode ? 'bg-orange-900/30 border border-orange-700/50' : 'bg-orange-50 border-orange-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>{maxDosage}mg</div>
-                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                                    <div className={`${'bg-orange-900/30 border border-orange-700/50'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${'text-orange-400'}`}>{maxDosage}mg</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>Máximo</div>
                                                                     </div>
-                                                                    <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
-                                                                        <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{minDosage}mg</div>
-                                                                        <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Mínimo</div>
+                                                                    <div className={`${'bg-green-900/30 border border-green-700/50'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`text-2xl font-bold ${'text-green-400'}`}>{minDosage}mg</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>Mínimo</div>
                                                                     </div>
                                                                 </div>
 
@@ -2487,71 +2485,71 @@ export function PatternsView({
                                                                 <div className={`${trendBg} rounded-lg p-4 border mb-4`}>
                                                                     <div className="flex items-center justify-between">
                                                                         <div>
-                                                                            <div className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Tendência no período</div>
+                                                                            <div className={`text-sm font-medium mb-1 ${'text-gray-300'}`}>Tendência no período</div>
                                                                             <div className={`text-2xl font-bold ${trendColor}`}>
                                                                                 {trendIcon} {trendText}
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                                    <p className={`text-xs mt-2 ${'text-gray-400'}`}>
                                                                         Comparação entre primeira e segunda metade do período
                                                                     </p>
                                                                 </div>
 
                                                                 {/* Distribuição */}
                                                                 <div className="space-y-3">
-                                                                    <div className={'text-sm font-medium mb-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-600')}>
+                                                                    <div className={'text-sm font-medium mb-2 ' + 'text-gray-300'}>
                                                                         Distribuição de Dosagens
                                                                         {rangeMethod === 'meta' && (
-                                                                            <span className={`text-xs ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                            <span className={`text-xs ml-2 ${'text-gray-400'}`}>
                                                                                 (baseado na tua meta de {reduceQuantityGoal.target}mg)
                                                                             </span>
                                                                         )}
                                                                     </div>
 
                                                                     {ranges.baixa > 0 && (
-                                                                        <div className={`${darkMode ? 'bg-green-900/20 border border-green-700/50' : 'bg-green-50 border border-green-200'} rounded-lg p-3`}>
+                                                                        <div className={`${'bg-green-900/20 border border-green-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                <div className={`text-sm font-medium ${'text-green-400'}`}>
                                                                                     🟢 Baixa (&lt;{Math.round(lowThreshold)}mg)
                                                                                 </div>
-                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                                                                                <div className={`text-sm font-bold ${'text-green-400'}`}>
                                                                                     {ranges.baixa} ({((ranges.baixa / dosages.length) * 100).toFixed(0)}%)
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                            <div className={`${'bg-gray-700'} rounded-full h-2 overflow-hidden`}>
                                                                                 <div className="bg-green-500 h-full transition-all duration-500" style={{width: ((ranges.baixa / dosages.length) * 100) + '%'}}></div>
                                                                             </div>
                                                                         </div>
                                                                     )}
 
                                                                     {ranges.media > 0 && (
-                                                                        <div className={`${darkMode ? 'bg-yellow-900/20 border border-yellow-700/50' : 'bg-yellow-50 border border-yellow-200'} rounded-lg p-3`}>
+                                                                        <div className={`${'bg-yellow-900/20 border border-yellow-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                                                                                <div className={`text-sm font-medium ${'text-yellow-400'}`}>
                                                                                     🟡 Média ({Math.round(lowThreshold)}-{Math.round(highThreshold)}mg)
                                                                                 </div>
-                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                                                                                <div className={`text-sm font-bold ${'text-yellow-400'}`}>
                                                                                     {ranges.media} ({((ranges.media / dosages.length) * 100).toFixed(0)}%)
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                            <div className={`${'bg-gray-700'} rounded-full h-2 overflow-hidden`}>
                                                                                 <div className="bg-yellow-500 h-full transition-all duration-500" style={{width: ((ranges.media / dosages.length) * 100) + '%'}}></div>
                                                                             </div>
                                                                         </div>
                                                                     )}
 
                                                                     {ranges.alta > 0 && (
-                                                                        <div className={`${darkMode ? 'bg-red-900/20 border border-red-700/50' : 'bg-red-50 border border-red-200'} rounded-lg p-3`}>
+                                                                        <div className={`${'bg-red-900/20 border border-red-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
+                                                                                <div className={`text-sm font-medium ${'text-red-400'}`}>
                                                                                     🔴 Alta (≥{Math.round(highThreshold)}mg)
                                                                                 </div>
-                                                                                <div className={`text-sm font-bold ${darkMode ? 'text-red-400' : 'text-red-700'}`}>
+                                                                                <div className={`text-sm font-bold ${'text-red-400'}`}>
                                                                                     {ranges.alta} ({((ranges.alta / dosages.length) * 100).toFixed(0)}%)
                                                                                 </div>
                                                                             </div>
-                                                                            <div className={`${darkMode ? 'bg-gray-700' : 'bg-white'} rounded-full h-2 overflow-hidden`}>
+                                                                            <div className={`${'bg-gray-700'} rounded-full h-2 overflow-hidden`}>
                                                                                 <div className="bg-red-500 h-full transition-all duration-500" style={{width: ((ranges.alta / dosages.length) * 100) + '%'}}></div>
                                                                             </div>
                                                                         </div>

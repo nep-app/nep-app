@@ -2,13 +2,12 @@ import React from 'react';
 import { educationalResources } from '../data/constants';
 
 export const ResourcesView = ({
-    darkMode,
     notificationsEnabled,
     requestNotificationPermission
 }) => {
     return (
         <div className="space-y-6">
-            <h2 className={'text-2xl font-bold ' + (darkMode ? 'text-white' : 'text-gray-800')}>
+            <h2 className="text-2xl font-bold text-white">
                 Recursos
             </h2>
 
@@ -22,22 +21,22 @@ export const ResourcesView = ({
             </div>
 
             {/* Support Lines */}
-            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3">
                     📞 Linhas de Apoio
                 </h3>
-                <div className={'space-y-2 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                <div className="space-y-2 text-gray-300">
                     <p><strong>SOS Droga:</strong> 1414 (24h)</p>
                     <p><strong>SNS 24:</strong> 808 24 24 24</p>
                 </div>
             </div>
 
             {/* Notifications */}
-            <div className={(darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200') + ' rounded-xl p-6 border'}>
-                <h3 className={'font-semibold ' + (darkMode ? 'text-white' : 'text-gray-800') + ' mb-3'}>
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3">
                     🔔 Notificações & Lembretes
                 </h3>
-                <div className={'space-y-3 ' + (darkMode ? 'text-gray-300' : 'text-gray-700')}>
+                <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
                         Recebe lembretes para registar bem-estar diariamente (às 18h).
                     </p>
