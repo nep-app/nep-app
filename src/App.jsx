@@ -1076,24 +1076,24 @@ return {
             // AuthenticatedApp only renders when BOTH Firebase AND PIN are authenticated
 
             return (
-                <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
+                <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24'>
                     <div className="max-w-2xl mx-auto">
-                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-5 mb-6'}>
+                        <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>
                             <div className="flex justify-between items-center gap-8">
                                 {/* Título - Esquerda */}
                                 <div className="flex-1">
                                     <div className="space-y-0">
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-purple-600 leading-none">N</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>otas de</span>
+                                            <span className='text-2xl font-light text-gray-300'>otas de</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-pink-600 leading-none">E</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>xperiências e</span>
+                                            <span className='text-2xl font-light text-gray-300'>xperiências e</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-blue-600 leading-none">P</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>adrões</span>
+                                            <span className='text-2xl font-light text-gray-300'>adrões</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1101,10 +1101,10 @@ return {
                                 {/* Subtítulo e Slogan - Direita */}
                                 <div className="flex flex-col items-end gap-3">
                                     <div className="text-right space-y-1">
-                                        <p className={'text-sm font-medium tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
+                                        <p className='text-sm font-medium tracking-wide text-gray-400'>
                                             <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
                                         </p>
-                                        <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
+                                        <p className='text-xs italic text-gray-500'>
                                             <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
                                         </p>
                                     </div>
@@ -1123,10 +1123,10 @@ return {
 
                                     {/* Mensagem de Hoje - ABAIXO do streak */}
                                     <div className="text-right space-y-1">
-                                        <p className={'text-xs font-semibold ' + (darkMode ? 'text-purple-300' : 'text-purple-600')}>
+                                        <p className='text-xs font-semibold text-purple-300'>
                                             💜 Mensagem de Hoje
                                         </p>
-                                        <p className={'text-xs italic max-w-xs ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                        <p className='text-xs italic max-w-xs text-white'>
                                             {currentReflection}
                                         </p>
                                     </div>
@@ -1134,7 +1134,7 @@ return {
                             </div>
                         </div>
 
-                        <div className={(darkMode ? 'bg-gray-800/50' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
+                        <div className='bg-gray-800/50 rounded-3xl shadow-xl p-6 mb-6'>
                             {currentView === 'home' && (
                                 <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
                                     <HomeViewRefactored
@@ -1320,26 +1320,26 @@ return {
                             />
                         </Suspense>
 
-                        <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
+                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
-                                    <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Heart className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Início</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BarChart3 className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Padrões</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Activity className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Análises</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BookOpen className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Histórico</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Settings className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">Config</div>
                                     </button>
