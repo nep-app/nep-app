@@ -356,62 +356,62 @@ export function HomeViewRefactored({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>
-          <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-xs font-medium mb-1'}>Hoje</div>
+        <div className='bg-gradient-to-br from-purple-900/20 to-purple-800/10 rounded-xl p-3'>
+          <div className='text-purple-400 text-xs font-medium mb-1'>Hoje</div>
           <div className="flex items-baseline gap-1">
-            <span className={'text-2xl font-black ' + (darkMode ? 'text-purple-300' : 'text-purple-600')}>{currentCycleCount}</span>
-            <span className={(darkMode ? 'text-purple-400' : 'text-purple-500') + ' text-sm font-medium'}>x</span>
+            <span className='text-2xl font-black text-purple-300'>{currentCycleCount}</span>
+            <span className='text-purple-400 text-sm font-medium'>x</span>
           </div>
         </div>
-        <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/20 to-pink-800/10' : 'bg-gradient-to-br from-pink-50 to-pink-100/50') + ' rounded-xl p-3'}>
-          <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-xs font-medium mb-1'}>Média 7 dias</div>
+        <div className='bg-gradient-to-br from-pink-900/20 to-pink-800/10 rounded-xl p-3'>
+          <div className='text-pink-400 text-xs font-medium mb-1'>Média 7 dias</div>
           <div className="flex items-baseline gap-1">
-            <span className={'text-2xl font-black ' + (darkMode ? 'text-pink-300' : 'text-pink-600')}>{last7.avgTimes}</span>
-            <span className={(darkMode ? 'text-pink-400' : 'text-pink-500') + ' text-sm font-medium'}>x</span>
+            <span className='text-2xl font-black text-pink-300'>{last7.avgTimes}</span>
+            <span className='text-pink-400 text-sm font-medium'>x</span>
           </div>
-          <div className={(darkMode ? 'text-pink-500' : 'text-pink-400') + ' text-xs font-medium mt-0.5'}>{last7.avgMg}mg/dia</div>
+          <div className='text-pink-500 text-xs font-medium mt-0.5'>{last7.avgMg}mg/dia</div>
         </div>
       </div>
 
-      <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20' : 'bg-gradient-to-r from-blue-50 to-cyan-50') + ' rounded-xl p-4'}>
+      <div className='bg-gradient-to-br from-blue-900/20 to-cyan-900/20 rounded-xl p-4'>
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">💡</span>
-          <h3 className={'font-semibold ' + (darkMode ? 'text-blue-300' : 'text-gray-800')}>Estratégias para Hoje</h3>
+          <h3 className='font-semibold text-blue-300'>Estratégias para Hoje</h3>
         </div>
         <div className="space-y-2">
           {copingStrategies.map((strategy, i) => (
-            <div key={i} className={'flex items-start gap-2 text-sm p-2.5 rounded-lg ' + (darkMode ? 'text-gray-200 bg-blue-950/30' : 'text-gray-700 bg-white/80')}>
-              <span className={(darkMode ? 'text-cyan-400' : 'text-blue-500') + ' font-bold'}>•</span>
+            <div key={i} className='flex items-start gap-2 text-sm p-2.5 rounded-lg text-gray-200 bg-blue-950/30'>
+              <span className='text-cyan-400 font-bold'>•</span>
               <span>{strategy}</span>
             </div>
           ))}
         </div>
         {cycles.length > 0 && cycles.some(c => c.triggers && c.triggers.length > 0) && (
-          <div className={'text-xs mt-3 italic ' + (darkMode ? 'text-cyan-400' : 'text-blue-600')}>Baseado nos teus gatilhos identificados</div>
+          <div className='text-xs mt-3 italic text-cyan-400'>Baseado nos teus gatilhos identificados</div>
         )}
       </div>
 
       {consumptions.length > 0 && (
-        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
-          <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>Consumos Recentes</h3>
+        <div className='bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-xl p-4'>
+          <h3 className='font-semibold mb-3 text-purple-300'>Consumos Recentes</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {consumptions.slice(0, consumptionsToShow).map(c => (
-              <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
+              <div key={c.id} className='flex items-center justify-between py-2.5 px-3 rounded-lg bg-purple-950/30'>
                 <div className="flex-1">
-                  <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
+                  <div className='text-sm font-medium text-gray-200'>
                     {formatDateTime(c.timestamp)}
                   </div>
-                  {c.notes && <div className={'text-xs mt-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>{c.notes}</div>}
+                  {c.notes && <div className='text-xs mt-1 text-gray-400'>{c.notes}</div>}
                 </div>
                 <div className="flex gap-2 ml-2">
-                  <button onClick={() => openEditConsumption(c)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit className="w-4 h-4" /></button>
-                  <button onClick={() => deleteItem('consumptions', c.id)} className={(darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600')}><Icons.Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => openEditConsumption(c)} className='text-blue-400 hover:text-blue-300'><Icons.Edit className="w-4 h-4" /></button>
+                  <button onClick={() => deleteItem('consumptions', c.id)} className='text-red-400 hover:text-red-300'><Icons.Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
           </div>
           {consumptions.length > consumptionsToShow && (
-            <button onClick={() => setConsumptionsToShow(prev => prev + 20)} className={(darkMode ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700') + ' text-sm font-medium mt-3 w-full py-2'}>
+            <button onClick={() => setConsumptionsToShow(prev => prev + 20)} className='text-purple-400 hover:text-purple-300 text-sm font-medium mt-3 w-full py-2'>
               Ver mais ({consumptions.length - consumptionsToShow} restantes)
             </button>
           )}
