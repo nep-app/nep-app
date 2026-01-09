@@ -194,31 +194,6 @@ function AuthenticatedApp() {
                 return reflectiveQuestions[cycleIndex % reflectiveQuestions.length];
             }, [cycles.length]);
 
-            // Mensagens diárias motivacionais
-            const dailyMessages = [
-                "Cada pequeno passo conta. Estás no caminho certo. 💪",
-                "A tua jornada é única. Respeita o teu ritmo. 🌱",
-                "Reconhecer padrões é o primeiro passo para a mudança. 🔍",
-                "Sê gentil contigo mesma. A mudança leva tempo. 💜",
-                "Hoje é uma nova oportunidade para escolhas conscientes. ✨",
-                "Celebra as pequenas vitórias. Elas constroem grandes mudanças. 🎉",
-                "Os teus registos são sementes de autoconsciência. 🌻",
-                "Mesmo nos dias difíceis, estás a progredir. 🌈",
-                "A honestidade contigo mesma é coragem. 💎",
-                "Cada ciclo é uma oportunidade de aprender mais sobre ti. 🔄",
-                "Nota. Explora. Planeia. Estás a fazer isso! 🌟",
-                "O importante não é ser perfeita, é ser presente. 🎯",
-                "Os teus padrões não te definem. És capaz de mudança. 🦋",
-                "Lembra-te: progressão, não perfeição. 📈",
-                "Hoje podes escolher fazer algo diferente. 🚀"
-            ];
-
-            const dailyMessage = useMemo(() => {
-                const today = new Date();
-                const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
-                return dailyMessages[dayOfYear % dailyMessages.length];
-            }, []);
-
             // Global error handler
             useEffect(() => {
                 const handleError = (event) => {
@@ -1132,12 +1107,6 @@ return {
                                         <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
                                             <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
                                         </p>
-                                        <p className={'text-sm font-semibold mt-2 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
-                                            💜 Mensagem de Hoje
-                                        </p>
-                                        <p className={'text-xs italic max-w-xs ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
-                                            {dailyMessage}
-                                        </p>
                                     </div>
 
                                     {streaks.current > 0 ? (
@@ -1151,6 +1120,16 @@ return {
                                             <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
                                         </div>
                                     )}
+
+                                    {/* Mensagem de Hoje - ABAIXO do streak */}
+                                    <div className="text-right space-y-1">
+                                        <p className={'text-xs font-semibold ' + (darkMode ? 'text-purple-300' : 'text-purple-600')}>
+                                            💜 Mensagem de Hoje
+                                        </p>
+                                        <p className={'text-xs italic max-w-xs ' + (darkMode ? 'text-white' : 'text-gray-900')}>
+                                            {currentReflection}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
