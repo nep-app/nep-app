@@ -1078,20 +1078,20 @@ return {
             return (
                 <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
                     <div className="max-w-2xl mx-auto">
-                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-8 mb-6'}>
+                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-5 mb-6'}>
                             <div className="flex justify-between items-center gap-8">
                                 {/* Título - Esquerda */}
                                 <div className="flex-1">
-                                    <div className="space-y-1">
-                                        <div className="flex items-baseline gap-2">
+                                    <div className="space-y-0">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-purple-600 leading-none">N</span>
                                             <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>otas de</span>
                                         </div>
-                                        <div className="flex items-baseline gap-2">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-pink-600 leading-none">E</span>
                                             <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>xperiências e</span>
                                         </div>
-                                        <div className="flex items-baseline gap-2">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-blue-600 leading-none">P</span>
                                             <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>adrões</span>
                                         </div>
