@@ -5,37 +5,36 @@ export const StatCard = ({
   value,
   subtext,
   icon: Icon,
-  color = 'purple',
-  darkMode
+  color = 'purple'
 }) => {
   const colorMap = {
     purple: {
-      bg: darkMode ? 'bg-purple-900/20' : 'bg-purple-50',
-      border: darkMode ? 'border-purple-700/50' : 'border-purple-200',
+      bg: 'bg-purple-900/20',
+      border: 'border-purple-700/50',
       icon: 'from-purple-500 to-pink-500',
-      text: darkMode ? 'text-purple-300' : 'text-purple-700',
-      value: darkMode ? 'text-purple-200' : 'text-purple-900'
+      text: 'text-purple-300',
+      value: 'text-purple-200'
     },
     blue: {
-      bg: darkMode ? 'bg-blue-900/20' : 'bg-blue-50',
-      border: darkMode ? 'border-blue-700/50' : 'border-blue-200',
+      bg: 'bg-blue-900/20',
+      border: 'border-blue-700/50',
       icon: 'from-blue-500 to-cyan-500',
-      text: darkMode ? 'text-blue-300' : 'text-blue-700',
-      value: darkMode ? 'text-blue-200' : 'text-blue-900'
+      text: 'text-blue-300',
+      value: 'text-blue-200'
     },
     green: {
-      bg: darkMode ? 'bg-green-900/20' : 'bg-green-50',
-      border: darkMode ? 'border-green-700/50' : 'border-green-200',
+      bg: 'bg-green-900/20',
+      border: 'border-green-700/50',
       icon: 'from-green-500 to-emerald-500',
-      text: darkMode ? 'text-green-300' : 'text-green-700',
-      value: darkMode ? 'text-green-200' : 'text-green-900'
+      text: 'text-green-300',
+      value: 'text-green-200'
     },
     orange: {
-      bg: darkMode ? 'bg-orange-900/20' : 'bg-orange-50',
-      border: darkMode ? 'border-orange-700/50' : 'border-orange-200',
+      bg: 'bg-orange-900/20',
+      border: 'border-orange-700/50',
       icon: 'from-orange-500 to-yellow-500',
-      text: darkMode ? 'text-orange-300' : 'text-orange-700',
-      value: darkMode ? 'text-orange-200' : 'text-orange-900'
+      text: 'text-orange-300',
+      value: 'text-orange-200'
     }
   };
 
@@ -53,7 +52,7 @@ export const StatCard = ({
           <div className={`text-xs font-medium ${colors.text} mb-0.5`}>{label}</div>
           <div className={`text-lg font-bold ${colors.value}`}>{value}</div>
           {subtext && (
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-0.5`}>
+            <div className="text-xs text-gray-400 mt-0.5">
               {subtext}
             </div>
           )}

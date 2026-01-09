@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
+const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
   const [view, setView] = useState('consumptions'); // 'consumptions' or 'wellbeing'
   const [hoveredDay, setHoveredDay] = useState(null);
 
@@ -70,20 +70,20 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
 
   // Get intensity color based on value
   const getConsumptionColor = (count) => {
-    if (!count || count === 0) return darkMode ? '#1f2937' : '#f3f4f6';
-    if (count >= 1 && count <= 3) return darkMode ? '#7c3aed40' : '#ddd6fe';
-    if (count >= 4 && count <= 6) return darkMode ? '#7c3aed70' : '#c4b5fd';
-    if (count >= 7 && count <= 9) return darkMode ? '#7c3aeda0' : '#a78bfa';
-    if (count >= 10) return darkMode ? '#7c3aed' : '#8b5cf6';
-    return darkMode ? '#1f2937' : '#f3f4f6';
+    if (!count || count === 0) return '#1f2937';
+    if (count >= 1 && count <= 3) return '#7c3aed40';
+    if (count >= 4 && count <= 6) return '#7c3aed70';
+    if (count >= 7 && count <= 9) return '#7c3aeda0';
+    if (count >= 10) return '#7c3aed';
+    return '#1f2937';
   };
 
   const getWellbeingColor = (score) => {
-    if (!score) return darkMode ? '#1f2937' : '#f3f4f6';
-    if (score <= 3) return darkMode ? '#dc2626' : '#fca5a5';
-    if (score <= 5) return darkMode ? '#f59e0b' : '#fcd34d';
-    if (score <= 7) return darkMode ? '#10b981' : '#6ee7b7';
-    return darkMode ? '#059669' : '#34d399';
+    if (!score) return '#1f2937';
+    if (score <= 3) return '#dc2626';
+    if (score <= 5) return '#f59e0b';
+    if (score <= 7) return '#10b981';
+    return '#059669';
   };
 
   // Group dates by week
@@ -130,14 +130,14 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
   const cellGap = 3;
 
   return (
-    <div className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <div className="rounded-lg p-4 border bg-gray-800 border-gray-700">
       <div className="mb-4">
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
-            <h3 className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+            <h3 className="text-lg font-bold text-gray-200">
               📊 Heatmap - {view === 'consumptions' ? 'Consumos' : 'Bem-estar'}
             </h3>
-            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className="text-xs mt-1 text-gray-400">
               Visão geral dos últimos {days} dias. Passa o rato sobre os quadrados para ver detalhes.
             </p>
           </div>
@@ -147,7 +147,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 view === 'consumptions'
                   ? 'bg-purple-600 text-white'
-                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               💊 Consumos
@@ -157,7 +157,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                 view === 'wellbeing'
                   ? 'bg-purple-600 text-white'
-                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
               😊 Bem-estar
@@ -175,7 +175,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
             {[0, 1, 2, 3, 4, 5, 6].map(day => (
               <div
                 key={day}
-                className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                className="text-xs font-medium text-gray-400"
                 style={{
                   width: cellSize,
                   marginRight: cellGap,
@@ -192,7 +192,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
             <div key={weekIdx} className="flex items-center mb-1">
               {/* Week number label */}
               <div
-                className={`text-xs font-medium ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                className="text-xs font-medium text-gray-500"
                 style={{ width: 30, textAlign: 'right', paddingRight: 5 }}
               >
                 {weekIdx === 0 || weekIdx === weeks.length - 1 ? `S${weekIdx + 1}` : ''}
@@ -236,7 +236,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
                       marginRight: cellGap,
                       backgroundColor: color,
                       borderRadius: 2,
-                      border: isHovered ? `2px solid ${darkMode ? '#fff' : '#000'}` : 'none',
+                      border: isHovered ? '2px solid #fff' : 'none',
                       zIndex: isHovered ? 10 : 1,
                     }}
                   />
@@ -249,8 +249,8 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
 
       {/* Tooltip */}
       {hoveredDay && (
-        <div className={`mt-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border`}>
-          <div className={`text-sm font-bold mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+        <div className="mt-4 p-3 rounded-lg bg-gray-700 border-gray-600 border">
+          <div className="text-sm font-bold mb-2 text-gray-200">
             📅 {formatDate(hoveredDay)}
           </div>
 
@@ -258,12 +258,12 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
             <div>
               {consumptionData[hoveredDay] ? (
                 <div className="space-y-1">
-                  <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <div className="text-sm text-gray-300">
                     💊 <span className="font-bold text-purple-600">{consumptionData[hoveredDay].count}</span> consumo{consumptionData[hoveredDay].count !== 1 ? 's' : ''}
                   </div>
                 </div>
               ) : (
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className="text-sm text-gray-400">
                   Sem consumos registados
                 </div>
               )}
@@ -273,21 +273,21 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
               {wellbeingData[hoveredDay] ? (
                 <div className="space-y-1">
                   {wellbeingData[hoveredDay].avgMood !== null && (
-                    <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="text-sm text-gray-300">
                       😊 Humor: <span className="font-bold text-blue-600">{wellbeingData[hoveredDay].avgMood.toFixed(1)}</span>
                     </div>
                   )}
                   {wellbeingData[hoveredDay].avgEnergy !== null && (
-                    <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="text-sm text-gray-300">
                       ⚡ Energia: <span className="font-bold text-yellow-600">{wellbeingData[hoveredDay].avgEnergy.toFixed(1)}</span>
                     </div>
                   )}
-                  <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className="text-xs text-gray-400">
                     {wellbeingData[hoveredDay].logs.length} registo{wellbeingData[hoveredDay].logs.length !== 1 ? 's' : ''}
                   </div>
                 </div>
               ) : (
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <div className="text-sm text-gray-400">
                   Sem dados de bem-estar
                 </div>
               )}
@@ -297,9 +297,9 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
       )}
 
       {/* Legend */}
-      <div className="mt-4 pt-3 border-t" style={{ borderColor: darkMode ? '#374151' : '#e5e7eb' }}>
+      <div className="mt-4 pt-3 border-t" style={{ borderColor: '#374151' }}>
         <div className="flex items-center justify-between">
-          <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div className="text-xs text-gray-400">
             {view === 'consumptions' ? 'Menos consumos' : 'Bem-estar baixo'}
           </div>
           <div className="flex gap-1">
@@ -317,7 +317,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, darkMode, days = 90 }) => {
               />
             ))}
           </div>
-          <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div className="text-xs text-gray-400">
             {view === 'consumptions' ? 'Mais consumos' : 'Bem-estar alto'}
           </div>
         </div>

@@ -1200,7 +1200,6 @@ return {
                             {currentView === 'settings' && (
                                 <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
                                     <SettingsView
-                                        darkMode={darkMode}
                                         user={user}
                                         handleLogout={handleLogout}
                                         exportToCSV={exportToCSV}
@@ -1225,7 +1224,6 @@ return {
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
                                 onClose={() => setShowDailyLogModal(false)}
-                                darkMode={darkMode}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
@@ -1236,7 +1234,6 @@ return {
                             <WellbeingModal
                                 isOpen={showWellbeingModal}
                                 onClose={() => setShowWellbeingModal(false)}
-                                darkMode={darkMode}
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
@@ -1248,7 +1245,6 @@ return {
                             <EmotionsModal
                                 isOpen={showEmotionsModal}
                                 onClose={() => setShowEmotionsModal(false)}
-                                darkMode={darkMode}
                                 emotionsForm={emotionsForm}
                                 setEmotionsForm={setEmotionsForm}
                                 onSubmit={submitEmotions}
@@ -1259,7 +1255,6 @@ return {
                             <ReflectionModal
                                 isOpen={showReflectionModal}
                                 onClose={() => setShowReflectionModal(false)}
-                                darkMode={darkMode}
                                 currentDbtQuestion={currentDbtQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
@@ -1271,7 +1266,6 @@ return {
                             <CycleModal
                                 isOpen={showCycleModal}
                                 onClose={() => setShowCycleModal(false)}
-                                darkMode={darkMode}
                                 cycleForm={cycleForm}
                                 setCycleForm={setCycleForm}
                                 onSubmit={submitCycle}
@@ -1282,7 +1276,6 @@ return {
                             <GoalModal
                                 isOpen={showGoalModal}
                                 onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
-                                darkMode={darkMode}
                                 editingGoal={editingGoal}
                                 goalForm={goalForm}
                                 setGoalForm={setGoalForm}
@@ -1294,7 +1287,6 @@ return {
                             <EditConsumptionModal
                                 isOpen={showEditConsumptionModal}
                                 onClose={() => setShowEditConsumptionModal(false)}
-                                darkMode={darkMode}
                                 editingConsumption={editingConsumption}
                                 setEditingConsumption={setEditingConsumption}
                                 onSubmit={saveEditedConsumption}
@@ -1306,7 +1298,6 @@ return {
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
                                 onClose={() => setShowThoughtsModal(false)}
-                                darkMode={darkMode}
                                 onSubmit={submitThoughts}
                             />
                         </Suspense>
@@ -1315,7 +1306,6 @@ return {
                             <LegalModal
                                 isOpen={showLegalModal}
                                 onClose={() => setShowLegalModal(false)}
-                                darkMode={darkMode}
                                 documentType={legalDocType}
                             />
                         </Suspense>
