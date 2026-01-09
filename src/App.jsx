@@ -1107,6 +1107,9 @@ return {
                                         <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
                                             <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
                                         </p>
+                                        <p className={'text-sm font-semibold mt-2 ' + (darkMode ? 'text-purple-400' : 'text-purple-600')}>
+                                            💜 Mensagem de Hoje
+                                        </p>
                                     </div>
 
                                     {streaks.current > 0 ? (
