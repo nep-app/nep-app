@@ -472,13 +472,14 @@ export const AuthProvider = ({ children }) => {
   }, [firebaseInstances]);
 
   /**
-   * Logout (limpa chave de encriptação da memória + Dexie)
+   * Logout (limpa chave de encriptação da memória + dados do utilizador)
    */
   const logout = useCallback(async () => {
-    // Limpar Dexie (CRÍTICO para segurança - previne vazamento de dados entre users)
-    const { clearAllData } = await import('../db/localDB');
-    await clearAllData();
-    console.log('[Auth] 🗑️ Dexie limpo no logout');
+    // Limpar apenas dados do utilizador, MAS manter metadados de autenticação
+    // (userEmail, salt, pinVerification) para que a app saiba que a conta existe
+    const { clearUserDataOnly } = await import('../db/localDB');
+    await clearUserDataOnly();
+    console.log('[Auth] 🗑️ Dados do utilizador limpos no logout (metadados mantidos)');
 
     // Limpar estado
     setEncryptionKey(null);

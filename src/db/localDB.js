@@ -95,6 +95,35 @@ export async function clearAllData() {
 }
 
 /**
+ * Limpa APENAS os dados do utilizador (não apaga metadados de autenticação)
+ * Usado no logout para manter a informação de que a conta existe
+ */
+export async function clearUserDataOnly() {
+  await db.transaction('rw', [
+    db.consumptions,
+    db.dailyLogs,
+    db.reflections,
+    db.wellbeingLogs,
+    db.cycles,
+    db.goals,
+    db.copingStrategies,
+    db.thoughts,
+    db.syncQueue
+  ], async () => {
+    await db.consumptions.clear();
+    await db.dailyLogs.clear();
+    await db.reflections.clear();
+    await db.wellbeingLogs.clear();
+    await db.cycles.clear();
+    await db.goals.clear();
+    await db.copingStrategies.clear();
+    await db.thoughts.clear();
+    await db.syncQueue.clear();
+    // NÃO limpa db.metadata - mantém userEmail, salt, pinVerification
+  });
+}
+
+/**
  * Obter estatísticas da base de dados
  */
 export async function getDatabaseStats() {
