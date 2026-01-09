@@ -12,8 +12,8 @@ export const useUI = () => {
 };
 
 export const UIProvider = ({ children }) => {
-  // Theme - sempre dark mode
-  const [darkMode, setDarkMode] = useState(true);
+  // Theme - SEMPRE dark mode (não há light mode nesta app)
+  const darkMode = true;
 
   // Main navigation
   const [selectedTab, setSelectedTab] = useState('dashboard');
@@ -74,9 +74,8 @@ export const UIProvider = ({ children }) => {
   };
 
   const value = {
-    // Theme
+    // Theme (sempre dark mode)
     darkMode,
-    setDarkMode,
 
     // Navigation
     selectedTab,
