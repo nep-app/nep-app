@@ -1,6 +1,5 @@
 import React from 'react';
 import * as Icons from '../components/Icons';
-import { MotivationalCard } from '../components/ui/MotivationalCard';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
@@ -28,9 +27,6 @@ export function HomeViewRefactored({
 
   return (
     <div className="space-y-6">
-      {/* Mensagem Motivacional */}
-      <MotivationalCard message={currentReflection} darkMode={darkMode} />
-
       {(() => {
         const timeSince = metrics.timeSinceLastConsumption;
         if (timeSince) {
