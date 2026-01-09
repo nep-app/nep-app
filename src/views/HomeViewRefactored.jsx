@@ -7,7 +7,6 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { formatDateTime } from '../utils/helpers';
-import { themeClasses } from '../utils/classNames';
 
 export function HomeViewRefactored({
   currentReflection,
@@ -23,7 +22,7 @@ export function HomeViewRefactored({
 }) {
   const { consumptions, goals, cycles, dailyLogs } = useData();
   const metrics = useMetrics();
-  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
+  const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   return (
     <div className="space-y-6">
@@ -39,7 +38,6 @@ export function HomeViewRefactored({
                 subValue={timeSince.subValue}
                 subUnit={timeSince.subUnit}
                 isPositive={isLong}
-                darkMode={darkMode}
               />
             </div>
           );
@@ -294,7 +292,7 @@ export function HomeViewRefactored({
         return alerts.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
             {alerts.map((alert, i) => (
-              <AlertCard key={i} alert={alert} darkMode={darkMode} />
+              <AlertCard key={i} alert={alert} />
             ))}
           </div>
         );
