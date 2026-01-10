@@ -106,13 +106,13 @@ export function HistoryView({
 
     // Aplicar filtro de tópico
     const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
-        if (historyTopic === 'consumo') {
+        if (historyTopic === 'consumos') {
             return {
                 filteredReflections: [],
                 filteredWellbeing: [],
-                filteredDailyLogs: [],
                 filteredCycles: [],
                 filteredThoughts: [],
+                filteredDailyLogs: tempFilteredDailyLogs,
                 filteredConsumptions: tempFilteredConsumptions
             };
         } else if (historyTopic === 'ciclos') {
@@ -121,10 +121,10 @@ export function HistoryView({
                 filteredWellbeing: [],
                 filteredReflections: [],
                 filteredThoughts: [],
-                filteredCycles: tempFilteredCycles,
-                filteredDailyLogs: tempFilteredDailyLogs
+                filteredDailyLogs: [],
+                filteredCycles: tempFilteredCycles
             };
-        } else if (historyTopic === 'bem-estar') {
+        } else if (historyTopic === 'estado') {
             return {
                 filteredConsumptions: [],
                 filteredReflections: [],
@@ -133,22 +133,13 @@ export function HistoryView({
                 filteredThoughts: [],
                 filteredWellbeing: tempFilteredWellbeing
             };
-        } else if (historyTopic === 'dbt') {
+        } else if (historyTopic === 'diario') {
             return {
                 filteredConsumptions: [],
                 filteredWellbeing: [],
                 filteredDailyLogs: [],
                 filteredCycles: [],
-                filteredThoughts: [],
-                filteredReflections: tempFilteredReflections
-            };
-        } else if (historyTopic === 'pensamentos') {
-            return {
-                filteredConsumptions: [],
-                filteredWellbeing: [],
-                filteredDailyLogs: [],
-                filteredCycles: [],
-                filteredReflections: [],
+                filteredReflections: tempFilteredReflections,
                 filteredThoughts: tempFilteredThoughts
             };
         }
@@ -199,12 +190,11 @@ export function HistoryView({
                                     {/* Topic Filters */}
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {[
-                                            { id: 'todos', label: '📋 Todos' },
-                                            { id: 'consumo', label: '💊 Consumos' },
+                                            { id: 'todos', label: '📋 Tudo' },
+                                            { id: 'consumos', label: '💊 Consumos' },
                                             { id: 'ciclos', label: '🌙 Ciclos' },
-                                            { id: 'bem-estar', label: '💚 Bem-estar' },
-                                            { id: 'dbt', label: '🎯 Reflexões' },
-                                            { id: 'pensamentos', label: '📝 Pensamentos' }
+                                            { id: 'estado', label: '💚 Estado' },
+                                            { id: 'diario', label: '📝 Diário' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {topic.label}
@@ -381,7 +371,7 @@ export function HistoryView({
 
                                                 {filteredWellbeing.length > 0 && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Heart className="w-4 h-4 text-blue-400" /> Bem-Estar ({filteredWellbeing.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Heart className="w-4 h-4 text-blue-400" /> Estado ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredWellbeing.slice(0, wellbeingToShow).map(w => (
                                                                 <div key={w.id} className="bg-blue-900/30 border-blue-700/50 p-3 rounded-lg border">
@@ -397,44 +387,46 @@ export function HistoryView({
                                                                         </div>
                                                                         <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className="grid grid-cols-3 gap-2 text-sm mb-2">
-                                                                        <div className="text-center">
-                                                                            <div className="text-xs text-gray-300">Sono</div>
-                                                                            <div className="text-lg font-bold text-blue-400">{w.sleep}h</div>
+                                                                    {(w.mood || w.energy) && (
+                                                                        <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                                                            {w.mood && (
+                                                                                <div className="text-center">
+                                                                                    <div className="text-xs text-gray-300">Humor</div>
+                                                                                    <div className="text-lg font-bold text-blue-400">{w.mood}/10</div>
+                                                                                </div>
+                                                                            )}
+                                                                            {w.energy && (
+                                                                                <div className="text-center">
+                                                                                    <div className="text-xs text-gray-300">Energia</div>
+                                                                                    <div className="text-lg font-bold text-blue-400">{w.energy}/10</div>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
-                                                                        <div className="text-center">
-                                                                            <div className="text-xs text-gray-300">Humor</div>
-                                                                            <div className="text-lg font-bold text-blue-400">{w.mood}/10</div>
-                                                                        </div>
-                                                                        <div className="text-center">
-                                                                            <div className="text-xs text-gray-300">Energia</div>
-                                                                            <div className="text-lg font-bold text-blue-400">{w.energy || '-'}/10</div>
-                                                                        </div>
-                                                                    </div>
-                                                                    {(w.sleep || w.exercise || w.food || w.social) && (
+                                                                    )}
+                                                                    {(w.water || w.rest || w.food || w.social) && (
                                                                         <div className="grid grid-cols-4 gap-2 text-sm mb-3">
                                                                             <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Descanso</div>
+                                                                                <div className="text-xs text-gray-300">Água</div>
                                                                                 <div className="text-sm font-medium text-green-400">
-                                                                                    {w.sleep ? `${w.sleep}h` : '-'}
+                                                                                    {w.water ? 'Sim' : '-'}
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Exercício</div>
+                                                                                <div className="text-xs text-gray-300">Descanso</div>
                                                                                 <div className="text-sm font-medium text-green-400">
-                                                                                    {w.exercise ? (typeof w.exercise === 'boolean' ? 'Sim' : `${w.exercise}/10`) : '-'}
+                                                                                    {w.rest ? 'Sim' : '-'}
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-center">
                                                                                 <div className="text-xs text-gray-300">Alimentação</div>
                                                                                 <div className="text-sm font-medium text-green-400">
-                                                                                    {w.food ? (typeof w.food === 'boolean' ? 'Sim' : `${w.food}/10`) : '-'}
+                                                                                    {w.food ? 'Sim' : '-'}
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-center">
                                                                                 <div className="text-xs text-gray-300">Social</div>
                                                                                 <div className="text-sm font-medium text-green-400">
-                                                                                    {w.social ? (typeof w.social === 'boolean' ? 'Sim' : `${w.social}/10`) : '-'}
+                                                                                    {w.social ? 'Sim' : '-'}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -578,37 +570,6 @@ export function HistoryView({
                                                                             <span>✓ Último consumo antes da meia-noite</span>
                                                                         </div>
                                                                     )}
-
-                                                                    {/* Registos Diários deste ciclo */}
-                                                                    {(() => {
-                                                                        // Buscar dailyLogs que pertencem a este ciclo (por data)
-                                                                        const cycleDailyLogs = filteredDailyLogs.filter(log => {
-                                                                            // Comparar por data
-                                                                            if (log.date && cycle.date && log.date === cycle.date) return true;
-                                                                            // Fallback: derivar data do timestamp
-                                                                            if (log.timestamp && cycle.timestamp) {
-                                                                                const logDate = new Date(log.timestamp).toISOString().split('T')[0];
-                                                                                const cycleDate = new Date(cycle.timestamp).toISOString().split('T')[0];
-                                                                                return logDate === cycleDate;
-                                                                            }
-                                                                            return false;
-                                                                        });
-
-                                                                        return cycleDailyLogs.length > 0 && (
-                                                                            <div className="text-xs mt-2 p-2 rounded bg-gray-800/50">
-                                                                                <div className="font-medium mb-1 text-gray-400">📝 Registos Diários:</div>
-                                                                                {cycleDailyLogs.map(log => (
-                                                                                    <div key={log.id} className="flex justify-between items-center py-1 text-gray-300">
-                                                                                        <div>
-                                                                                            {log.mg && <span className="font-medium">{log.mg}mg</span>}
-                                                                                            {log.notes && <span className="italic ml-2">- {log.notes}</span>}
-                                                                                        </div>
-                                                                                        <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-3 h-3" /></button>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        );
-                                                                    })()}
 
                                                                     {cycle.notes && <div className="text-sm mt-2 italic text-gray-300">💭 {cycle.notes}</div>}
                                                                 </div>
