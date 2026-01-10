@@ -7,6 +7,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
+import { GapsReport } from '../components/ui/GapsReport';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -46,7 +47,8 @@ export function HistoryView({
     thoughtsToShow,
     setThoughtsToShow,
     openEditConsumption,
-    deleteItem
+    deleteItem,
+    handleFillGap
 }) {
     const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const metrics = useMetrics();
@@ -159,6 +161,9 @@ export function HistoryView({
     return (
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-white">Histórico</h2>
+
+                                    {/* Gaps Report - Preencher dados em falta */}
+                                    {handleFillGap && <GapsReport onFillGap={handleFillGap} />}
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">

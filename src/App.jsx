@@ -268,6 +268,55 @@ function AuthenticatedApp() {
 
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
+            // Função para preencher gaps - pré-preenche formulários com a data selecionada e abre o modal correspondente
+            const handleFillGap = (type, dateKey) => {
+                // dateKey formato: YYYY-MM-DD
+                switch (type) {
+                    case 'consumption':
+                        // Para consumos, não há formulário inicial - abre o modal de edição vazio ou apenas mostra mensagem
+                        // Consumos são criados via botão + na home, então aqui podemos apenas navegar para lá
+                        showToast('ℹ️ Para registar consumos, usa o botão + na página inicial', 'info');
+                        break;
+
+                    case 'dailyLog':
+                        setDailyForm({ mg: 30, notes: '', date: dateKey });
+                        setShowDailyLogModal(true);
+                        break;
+
+                    case 'cycle':
+                        // Para ciclos, o createdAt deve ser um datetime. Usamos o início do dia selecionado.
+                        const cycleDate = new Date(dateKey + 'T08:00'); // 8h da manhã por defeito
+                        const cycleDatetimeStr = cycleDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: cycleDatetimeStr });
+                        setShowCycleModal(true);
+                        break;
+
+                    case 'wellbeing':
+                        // Para wellbeing (estado), o datetime deve ser completo
+                        const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        setShowWellbeingModal(true);
+                        break;
+
+                    case 'reflection':
+                        // Para reflexão DBT, abre o modal (a data será preenchida automaticamente com a data atual no modal)
+                        // Nota: O ReflectionModal usa datetime atual por padrão, então ajustamos o reflectionForm se ele existir
+                        showToast('ℹ️ Reflexão DBT - escolhe a data dentro do modal', 'info');
+                        setShowReflectionModal(true);
+                        break;
+
+                    case 'thought':
+                        // Para pensamentos, similar às reflexões
+                        showToast('ℹ️ Pensamento - escolhe a data dentro do modal', 'info');
+                        setShowThoughtsModal(true);
+                        break;
+
+                    default:
+                        break;
+                }
+            };
+
             const saveEditedConsumption = async () => {
                 if (!editingConsumption) return;
 
@@ -1194,6 +1243,7 @@ return {
                                         setThoughtsToShow={setThoughtsToShow}
                                         openEditConsumption={openEditConsumption}
                                         deleteItem={deleteItem}
+                                        handleFillGap={handleFillGap}
                                     />
                                 </Suspense>
                             )}
