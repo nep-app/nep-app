@@ -459,69 +459,72 @@ export function HistoryView({
                                                     </div>
                                                 )}
 
-                                                {filteredConsumptions.length > 0 && (
+                                                {(filteredConsumptions.length > 0 || filteredDailyLogs.length > 0) && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length + filteredDailyLogs.length})</h3>
                                                         <div className="space-y-3">
-                                                            {filteredConsumptions.map(c => (
-                                                                <div key={c.id} className="bg-gray-700 border-gray-600 p-3 rounded-lg border">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div>
-                                                                            <div className="font-medium text-white">
-                                                                                {formatDateTime(c.timestamp)}
-                                                                            </div>
-                                                                            {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
-                                                                        </div>
-                                                                        <div className="flex gap-2 ml-2">
-                                                                            <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
-                                                                            <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {filteredDailyLogs.length > 0 && (
-                                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📊 Registos de mg ({filteredDailyLogs.length})</h3>
-                                                        <div className="space-y-3">
-                                                            {filteredDailyLogs.map(log => (
-                                                                <div key={log.id} className="bg-pink-900/30 border-pink-700/50 p-3 rounded-lg border">
-                                                                    <div className="flex justify-between items-center">
-                                                                        <div className="flex-1">
-                                                                            <div className="font-medium mb-1 text-white">
-                                                                                {(() => {
-                                                                                    const d = safeDate(log.timestamp || log.date);
-                                                                                    if (!d) return 'Data inválida';
-                                                                                    const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                    const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                    return dateStr + timeStr;
-                                                                                })()}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-3">
-                                                                                {log.mg && (
-                                                                                    <div className="text-sm text-pink-300">
-                                                                                        <span className="font-bold text-lg">{log.mg}</span> mg
+                                                            {[...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
+                                                              ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date }))]
+                                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                                                .map(item => {
+                                                                    if (item.type === 'consumption') {
+                                                                        const c = item.data;
+                                                                        return (
+                                                                            <div key={`c-${c.id}`} className="bg-gray-700 border-gray-600 p-3 rounded-lg border">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <div>
+                                                                                        <div className="font-medium text-white">
+                                                                                            {formatDateTime(c.timestamp)}
+                                                                                        </div>
+                                                                                        {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
                                                                                     </div>
-                                                                                )}
-                                                                                {log.times != null && (
-                                                                                    <div className="text-xs text-gray-400">
-                                                                                        ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                    <div className="flex gap-2 ml-2">
+                                                                                        <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
+                                                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
                                                                                     </div>
-                                                                                )}
-                                                                            </div>
-                                                                            {log.notes && (
-                                                                                <div className="text-sm mt-1 italic text-gray-300">
-                                                                                    💭 {log.notes}
                                                                                 </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                                            </div>
+                                                                        );
+                                                                    } else {
+                                                                        const log = item.data;
+                                                                        return (
+                                                                            <div key={`l-${log.id}`} className="bg-pink-900/30 border-pink-700/50 p-3 rounded-lg border">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <div className="flex-1">
+                                                                                        <div className="font-medium mb-1 text-white">
+                                                                                            {(() => {
+                                                                                                const d = safeDate(log.timestamp || log.date);
+                                                                                                if (!d) return 'Data inválida';
+                                                                                                const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                                const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                                return dateStr + timeStr;
+                                                                                            })()}
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            {log.mg && (
+                                                                                                <div className="text-sm text-pink-300">
+                                                                                                    <span className="font-bold text-lg">{log.mg}</span> mg diários
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {log.times != null && (
+                                                                                                <div className="text-xs text-gray-400">
+                                                                                                    ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {log.notes && (
+                                                                                            <div className="text-sm mt-1 italic text-gray-300">
+                                                                                                💭 {log.notes}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                })
+                                                            }
                                                         </div>
                                                     </div>
                                                 )}
