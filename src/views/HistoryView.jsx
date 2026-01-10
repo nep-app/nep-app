@@ -208,7 +208,131 @@ export function HistoryView({
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
-                                            {filteredReflections.length > 0 && (
+                                            {/* Timeline única para tab "diario" */}
+                                            {historyTopic === 'diario' && (
+                                                <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📝 Diário ({filteredReflections.length + filteredThoughts.length})</h3>
+                                                    <div className="space-y-4">
+                                                        {[...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
+                                                          ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
+                                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                                            .map(item => {
+                                                                if (item.type === 'reflection') {
+                                                                    const r = item.data;
+                                                                    const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
+                                                                    const isExpanded = expandedAnalysis === `reflection-${r.id}`;
+                                                                    return (
+                                                                        <div key={`r-${r.id}`} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                <div className="text-xs text-gray-400">
+                                                                                    {(() => {
+                                                                                        const d = safeDate(r.timestamp || r.date);
+                                                                                        if (!d) return 'Data inválida';
+                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        return dateStr + timeStr;
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
+                                                                            <div className="text-sm text-gray-300">{r.answer}</div>
+                                                                            {analysis && (
+                                                                                <>
+                                                                                    <button onClick={() => toggleAnalysis(`reflection-${r.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-purple-800/50 text-purple-300 hover:bg-purple-800">
+                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                    </button>
+                                                                                    {isExpanded && (
+                                                                                        <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
+                                                                                            <div className="mb-2">
+                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
+                                                                                                    {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            {analysis.details && analysis.details.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
+                                                                                                            <div key={i} className="text-gray-300">
+                                                                                                                • "<span className="font-medium">{d.word}</span>"
+                                                                                                                <span className={d.score > 0 ? 'text-green-400' : 'text-red-400'}>
+                                                                                                                    {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                } else {
+                                                                    const t = item.data;
+                                                                    const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
+                                                                    const isExpanded = expandedAnalysis === `thought-${t.id}`;
+                                                                    return (
+                                                                        <div key={`t-${t.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                <div className="text-xs text-gray-400">
+                                                                                    {(() => {
+                                                                                        const d = safeDate(t.timestamp || t.date);
+                                                                                        if (!d) return 'Data inválida';
+                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                        const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        return dateStr + timeStr;
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            <div className="text-sm text-gray-300">{t.content}</div>
+                                                                            {analysis && (
+                                                                                <>
+                                                                                    <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
+                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                    </button>
+                                                                                    {isExpanded && (
+                                                                                        <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
+                                                                                            <div className="mb-2">
+                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
+                                                                                                    {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            {analysis.details && analysis.details.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
+                                                                                                            <div key={i} className="text-gray-300">
+                                                                                                                • "<span className="font-medium">{d.word}</span>"
+                                                                                                                <span className={d.score > 0 ? 'text-green-400' : 'text-red-400'}>
+                                                                                                                    {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                            })
+                                                        }
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Blocos individuais para tabs específicas e tab "todos" */}
+                                            {historyTopic !== 'diario' && filteredReflections.length > 0 && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Brain className="w-4 h-4 text-purple-400" /> Reflexões diárias ({filteredReflections.length})</h3>
                                                     <div className="space-y-4">
@@ -289,7 +413,7 @@ export function HistoryView({
                                                     </div>
                                                 )}
 
-                                                {filteredThoughts.length > 0 && (
+                                                {historyTopic !== 'diario' && filteredThoughts.length > 0 && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.BookOpen className="w-4 h-4 text-pink-400" /> Pensamentos ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
