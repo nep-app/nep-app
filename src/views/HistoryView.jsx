@@ -208,6 +208,306 @@ export function HistoryView({
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
+                                            {/* Timeline única para tab "todos" */}
+                                            {historyTopic === 'todos' && (
+                                                <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📋 Tudo ({filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length})</h3>
+                                                    <div className="space-y-3">
+                                                        {[...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
+                                                          ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date })),
+                                                          ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
+                                                          ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
+                                                          ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
+                                                          ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
+                                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                                            .map(item => {
+                                                                if (item.type === 'consumption') {
+                                                                    const c = item.data;
+                                                                    return (
+                                                                        <div key={`c-${c.id}`} className="bg-gray-700 border-gray-600 p-3 rounded-lg border">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <div>
+                                                                                    <div className="font-medium text-white">
+                                                                                        💊 {formatDateTime(c.timestamp)}
+                                                                                    </div>
+                                                                                    {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
+                                                                                </div>
+                                                                                <div className="flex gap-2 ml-2">
+                                                                                    <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
+                                                                                    <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                } else if (item.type === 'dailyLog') {
+                                                                    const log = item.data;
+                                                                    return (
+                                                                        <div key={`l-${log.id}`} className="bg-pink-900/30 border-pink-700/50 p-3 rounded-lg border">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <div className="flex-1">
+                                                                                    <div className="font-medium mb-1 text-white">
+                                                                                        💊 {(() => {
+                                                                                            const d = safeDate(log.timestamp || log.date);
+                                                                                            if (!d) return 'Data inválida';
+                                                                                            const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                            const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                            return dateStr + timeStr;
+                                                                                        })()}
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        {log.mg && (
+                                                                                            <div className="text-sm text-pink-300">
+                                                                                                <span className="font-bold text-lg">{log.mg}</span> mg diários
+                                                                                            </div>
+                                                                                        )}
+                                                                                        {log.times != null && (
+                                                                                            <div className="text-xs text-gray-400">
+                                                                                                ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {log.notes && (
+                                                                                        <div className="text-sm mt-1 italic text-gray-300">
+                                                                                            💭 {log.notes}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                } else if (item.type === 'cycle') {
+                                                                    const cycle = item.data;
+                                                                    return (
+                                                                        <div key={`cycle-${cycle.id}`} className="bg-indigo-900/30 border-indigo-700/50 p-3 rounded-lg border">
+                                                                            <div className="flex justify-between items-center mb-2">
+                                                                                <div className="text-sm font-medium text-white">
+                                                                                    🌙 {(() => {
+                                                                                        const d = safeDate(cycle.timestamp);
+                                                                                        return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            {cycle.bedtime && (
+                                                                                <div className="text-sm mb-1 text-gray-300">
+                                                                                    <span className="text-gray-400">Hora de deitar: </span>
+                                                                                    <span className="font-medium">{cycle.bedtime}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {cycle.sleep && (
+                                                                                <div className="text-sm mb-1 text-gray-300">
+                                                                                    <span className="text-gray-400">Horas de sono: </span>
+                                                                                    <span className="font-medium">{cycle.sleep}h</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {cycle.triggers && cycle.triggers.length > 0 && (
+                                                                                <div className="text-sm mb-1 text-gray-300">
+                                                                                    <span className="text-gray-400">Gatilhos: </span>
+                                                                                    <span className="font-medium">{cycle.triggers.join(', ')}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {cycle.lastBefore00 && (
+                                                                                <div className="text-sm mb-1 text-green-300">
+                                                                                    <span>✓ Último consumo antes da meia-noite</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {cycle.notes && <div className="text-sm mt-2 italic text-gray-300">💭 {cycle.notes}</div>}
+                                                                        </div>
+                                                                    );
+                                                                } else if (item.type === 'wellbeing') {
+                                                                    const w = item.data;
+                                                                    return (
+                                                                        <div key={`w-${w.id}`} className="bg-blue-900/30 border-blue-700/50 p-3 rounded-lg border">
+                                                                            <div className="flex justify-between items-center mb-2">
+                                                                                <div className="text-sm font-medium text-white">
+                                                                                    💚 {(() => {
+                                                                                        const d = safeDate(w.timestamp || w.date);
+                                                                                        if (!d) return 'Data inválida';
+                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                        const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        return dateStr + timeStr;
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            {(w.mood || w.energy) && (
+                                                                                <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                                                                                    {w.mood && (
+                                                                                        <div className="text-center">
+                                                                                            <div className="text-xs text-gray-300">Humor</div>
+                                                                                            <div className="text-lg font-bold text-blue-400">{w.mood}/10</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {w.energy && (
+                                                                                        <div className="text-center">
+                                                                                            <div className="text-xs text-gray-300">Energia</div>
+                                                                                            <div className="text-lg font-bold text-blue-400">{w.energy}/10</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                            {(w.water || w.rest || w.food || w.social) && (
+                                                                                <div className="grid grid-cols-4 gap-2 text-sm mb-3">
+                                                                                    <div className="text-center">
+                                                                                        <div className="text-xs text-gray-300">Água</div>
+                                                                                        <div className="text-sm font-medium text-green-400">
+                                                                                            {w.water ? 'Sim' : '-'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-center">
+                                                                                        <div className="text-xs text-gray-300">Descanso</div>
+                                                                                        <div className="text-sm font-medium text-green-400">
+                                                                                            {w.rest ? 'Sim' : '-'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-center">
+                                                                                        <div className="text-xs text-gray-300">Alimentação</div>
+                                                                                        <div className="text-sm font-medium text-green-400">
+                                                                                            {w.food ? 'Sim' : '-'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="text-center">
+                                                                                        <div className="text-xs text-gray-300">Social</div>
+                                                                                        <div className="text-sm font-medium text-green-400">
+                                                                                            {w.social ? 'Sim' : '-'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {w.emotions && w.emotions.length > 0 && (
+                                                                                <div className="mb-2">
+                                                                                    <div className="text-xs mb-1 text-gray-400">Emoções:</div>
+                                                                                    <div className="flex flex-wrap gap-1">
+                                                                                        {w.emotions.map((emotion, i) => (
+                                                                                            <span key={i} className="bg-blue-800/50 text-blue-300 text-xs px-2 py-1 rounded">
+                                                                                                {emotion}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {w.notes && (
+                                                                                <div className="text-sm mt-2 italic text-gray-300">
+                                                                                    💭 {w.notes}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                } else if (item.type === 'reflection') {
+                                                                    const r = item.data;
+                                                                    const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
+                                                                    const isExpanded = expandedAnalysis === `reflection-${r.id}`;
+                                                                    return (
+                                                                        <div key={`r-${r.id}`} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                <div className="text-xs text-gray-400">
+                                                                                    📝 {(() => {
+                                                                                        const d = safeDate(r.timestamp || r.date);
+                                                                                        if (!d) return 'Data inválida';
+                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        return dateStr + timeStr;
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
+                                                                            <div className="text-sm text-gray-300">{r.answer}</div>
+                                                                            {analysis && (
+                                                                                <>
+                                                                                    <button onClick={() => toggleAnalysis(`reflection-${r.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-purple-800/50 text-purple-300 hover:bg-purple-800">
+                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                    </button>
+                                                                                    {isExpanded && (
+                                                                                        <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
+                                                                                            <div className="mb-2">
+                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
+                                                                                                    {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            {analysis.details && analysis.details.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
+                                                                                                            <div key={i} className="text-gray-300">
+                                                                                                                • "<span className="font-medium">{d.word}</span>"
+                                                                                                                <span className={d.score > 0 ? 'text-green-400' : 'text-red-400'}>
+                                                                                                                    {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                } else {
+                                                                    const t = item.data;
+                                                                    const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
+                                                                    const isExpanded = expandedAnalysis === `thought-${t.id}`;
+                                                                    return (
+                                                                        <div key={`t-${t.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            <div className="flex justify-between items-start mb-1">
+                                                                                <div className="text-xs text-gray-400">
+                                                                                    📝 {(() => {
+                                                                                        const d = safeDate(t.timestamp || t.date);
+                                                                                        if (!d) return 'Data inválida';
+                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                        const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        return dateStr + timeStr;
+                                                                                    })()}
+                                                                                </div>
+                                                                                <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            </div>
+                                                                            <div className="text-sm text-gray-300">{t.content}</div>
+                                                                            {analysis && (
+                                                                                <>
+                                                                                    <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
+                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                    </button>
+                                                                                    {isExpanded && (
+                                                                                        <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
+                                                                                            <div className="mb-2">
+                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
+                                                                                                    {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                            {analysis.details && analysis.details.length > 0 && (
+                                                                                                <div>
+                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
+                                                                                                            <div key={i} className="text-gray-300">
+                                                                                                                • "<span className="font-medium">{d.word}</span>"
+                                                                                                                <span className={d.score > 0 ? 'text-green-400' : 'text-red-400'}>
+                                                                                                                    {' '}({d.score > 0 ? '+' : ''}{d.score.toFixed(2)})
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        ))}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                            })
+                                                        }
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Timeline única para tab "diario" */}
                                             {historyTopic === 'diario' && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
