@@ -235,8 +235,17 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
             </div>
           )}
 
-          {/* Botão para trocar de conta */}
-          <div className="mt-6">
+          {/* Botões de navegação */}
+          <div className="mt-6 space-y-3">
+            {/* Opção de criar nova conta */}
+            <button
+              onClick={() => setAccountExists(false)}
+              className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium"
+            >
+              Não tenho conta? Criar nova
+            </button>
+
+            {/* Botão para trocar de conta */}
             <button
               onClick={async () => {
                 await logout();
@@ -247,11 +256,8 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2"
             >
               <Icons.LogOut className="w-4 h-4" />
-              Trocar de conta
+              Trocar de conta (logout)
             </button>
-            <p className="text-center text-xs text-gray-400 mt-2">
-              Fazer logout e entrar noutra conta
-            </p>
           </div>
         </div>
       </div>
@@ -311,6 +317,17 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
             </button>
           </form>
 
+          {/* Opção de mudar para Login */}
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setAccountExists(true)}
+              className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium"
+            >
+              Já tenho conta? Fazer login
+            </button>
+          </div>
+
           {/* Info */}
           <div className="mt-8">
             <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
@@ -333,26 +350,54 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   // Step 2: Criar PIN
   if (step === 'pin') {
     return (
-      <PINEntry
-        key="create"
-        title="Criar PIN"
-        subtitle="Passo 2 de 3: Escolhe um PIN de 4 dígitos"
-        onComplete={handleFirstPIN}
-        error={error}
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="w-full max-w-md">
+          <PINEntry
+            key="create"
+            title="Criar PIN"
+            subtitle="Passo 2 de 3: Escolhe um PIN de 4 dígitos"
+            onComplete={handleFirstPIN}
+            error={error}
+          />
+
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setAccountExists(true)}
+              className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors"
+            >
+              Já tenho conta? Fazer login
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Step 3: Confirmar PIN
   if (step === 'confirm') {
     return (
-      <PINEntry
-        key="confirm"
-        title="Confirmar PIN"
-        subtitle="Passo 3 de 3: Insere o PIN novamente"
-        onComplete={handleConfirmPIN}
-        error={error}
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="w-full max-w-md">
+          <PINEntry
+            key="confirm"
+            title="Confirmar PIN"
+            subtitle="Passo 3 de 3: Insere o PIN novamente"
+            onComplete={handleConfirmPIN}
+            error={error}
+          />
+
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => setAccountExists(true)}
+              className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors"
+            >
+              Já tenho conta? Fazer login
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
