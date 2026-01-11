@@ -5,6 +5,8 @@ import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 export const ThoughtsModal = ({
   isOpen,
   onClose,
+  thoughtDatetime,
+  setThoughtDatetime,
   onSubmit
 }) => {
   const [thoughts, setThoughts] = useState('');
@@ -30,6 +32,16 @@ export const ThoughtsModal = ({
           </button>
         </div>
         <div className="space-y-4">
+          <div>
+            <label className='block text-sm font-medium text-gray-300 mb-1'>Data e hora (opcional)</label>
+            <input
+              type="datetime-local"
+              value={thoughtDatetime}
+              onChange={(e) => setThoughtDatetime(e.target.value)}
+              className='bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'
+            />
+            <p className="text-xs text-gray-400 mt-1">Deixa em branco para usar agora</p>
+          </div>
           <div>
             <label className='block text-sm font-medium text-gray-300 mb-2'>
               Escreve o que te vier à cabeça. Este é o teu espaço.

@@ -8,6 +8,8 @@ export const ReflectionModal = ({
   currentDbtQuestion,
   reflectionAnswer,
   setReflectionAnswer,
+  reflectionDatetime,
+  setReflectionDatetime,
   onSubmit
 }) => {
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -26,6 +28,16 @@ export const ReflectionModal = ({
         <div className="space-y-4">
           <div className="bg-purple-900/40 rounded-lg p-4 border border-purple-700/50">
             <p className="text-purple-200 font-medium">{currentDbtQuestion}</p>
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-300 mb-1'>Data e hora (opcional)</label>
+            <input
+              type="datetime-local"
+              value={reflectionDatetime}
+              onChange={(e) => setReflectionDatetime(e.target.value)}
+              className='bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400'
+            />
+            <p className="text-xs text-gray-400 mt-1">Deixa em branco para usar agora</p>
           </div>
           <div>
             <label className='block text-sm font-medium text-gray-300 mb-1'>A tua reflexão</label>

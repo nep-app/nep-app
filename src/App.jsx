@@ -175,8 +175,10 @@ function AuthenticatedApp() {
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
+            const [reflectionDatetime, setReflectionDatetime] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
+            const [thoughtDatetime, setThoughtDatetime] = useState('');
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
@@ -299,16 +301,27 @@ function AuthenticatedApp() {
                         setShowWellbeingModal(true);
                         break;
 
+                    case 'emotions':
+                        // Para emoções, pré-preencher datetime com a data selecionada
+                        const emDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const emDatetimeStr = emDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setEmotionsForm({ datetime: emDatetimeStr, emotions: [], notes: '' });
+                        setShowEmotionsModal(true);
+                        break;
+
                     case 'reflection':
-                        // Para reflexão DBT, abre o modal (a data será preenchida automaticamente com a data atual no modal)
-                        // Nota: O ReflectionModal usa datetime atual por padrão, então ajustamos o reflectionForm se ele existir
-                        showToast('ℹ️ Reflexão DBT - escolhe a data dentro do modal', 'info');
+                        // Para reflexão DBT, pré-preencher datetime com a data selecionada
+                        const reflDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const reflDatetimeStr = reflDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setReflectionDatetime(reflDatetimeStr);
                         setShowReflectionModal(true);
                         break;
 
                     case 'thought':
-                        // Para pensamentos, similar às reflexões
-                        showToast('ℹ️ Pensamento - escolhe a data dentro do modal', 'info');
+                        // Para pensamentos, pré-preencher datetime com a data selecionada
+                        const thDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const thDatetimeStr = thDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setThoughtDatetime(thDatetimeStr);
                         setShowThoughtsModal(true);
                         break;
 
@@ -544,9 +557,21 @@ function AuthenticatedApp() {
 
             const submitReflection = async () => {
                 try {
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
+                    // Se reflectionDatetime estiver preenchido, usar essa data; senão usar hoje
+                    let timestamp, dateKey;
+                    if (reflectionDatetime) {
+                        const selectedDate = new Date(reflectionDatetime);
+                        timestamp = selectedDate.toISOString();
+                        dateKey = selectedDate.toISOString().split('T')[0];
+                    } else {
+                        timestamp = new Date().toISOString();
+                        dateKey = getTodayKey();
+                    }
+
+                    const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
                     await addReflection(item);
                     setReflectionAnswer('');
+                    setReflectionDatetime('');
                     setShowReflectionModal(false);
                     showToast('✓ Reflexão guardada', 'success');
                 } catch (error) {
@@ -564,13 +589,25 @@ function AuthenticatedApp() {
                         return;
                     }
 
+                    // Se thoughtDatetime estiver preenchido, usar essa data; senão usar hoje
+                    let timestamp, dateKey;
+                    if (thoughtDatetime) {
+                        const selectedDate = new Date(thoughtDatetime);
+                        timestamp = selectedDate.toISOString();
+                        dateKey = selectedDate.toISOString().split('T')[0];
+                    } else {
+                        timestamp = new Date().toISOString();
+                        dateKey = getTodayKey();
+                    }
+
                     const item = {
                         id: genId(),
-                        date: getTodayKey(),
-                        timestamp: new Date().toISOString(),
+                        date: dateKey,
+                        timestamp,
                         content: sanitizeText(thoughtsText)
                     };
                     await addThought(item);
+                    setThoughtDatetime('');
                     setShowThoughtsModal(false);
                     showToast('✓ Pensamento guardado no diário', 'success');
                 } catch (error) {
@@ -1308,6 +1345,8 @@ return {
                                 currentDbtQuestion={currentDbtQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
+                                reflectionDatetime={reflectionDatetime}
+                                setReflectionDatetime={setReflectionDatetime}
                                 onSubmit={submitReflection}
                             />
                         </Suspense>
@@ -1348,6 +1387,8 @@ return {
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
                                 onClose={() => setShowThoughtsModal(false)}
+                                thoughtDatetime={thoughtDatetime}
+                                setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
                             />
                         </Suspense>

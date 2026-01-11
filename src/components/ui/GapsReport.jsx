@@ -68,9 +68,19 @@ export const GapsReport = ({ onFillGap }) => {
         return cycleDate === dateKey;
       });
 
-      const hasWellbeing = wellbeingLogs.some(w => {
+      // Verificar bem-estar básico (humor, energia, autocuidado)
+      const hasWellbeingCore = wellbeingLogs.some(w => {
         const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
-        return wDate === dateKey;
+        if (wDate !== dateKey) return false;
+        // Tem que ter pelo menos humor, energia, ou algum campo de autocuidado
+        return w.mood || w.energy || w.water || w.rest || w.social || w.food;
+      });
+
+      // Verificar emoções separadamente
+      const hasEmotions = wellbeingLogs.some(w => {
+        const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+        if (wDate !== dateKey) return false;
+        return w.emotions && w.emotions.length > 0;
       });
 
       const hasReflection = reflections.some(r => {
@@ -88,7 +98,8 @@ export const GapsReport = ({ onFillGap }) => {
       if (!hasConsumptions) gaps.push({ type: 'consumption', label: 'consumos' });
       if (!hasDailyLog) gaps.push({ type: 'dailyLog', label: 'mg' });
       if (!hasCycle) gaps.push({ type: 'cycle', label: 'ciclo' });
-      if (!hasWellbeing) gaps.push({ type: 'wellbeing', label: 'estado' });
+      if (!hasWellbeingCore) gaps.push({ type: 'wellbeing', label: 'estado' });
+      if (!hasEmotions) gaps.push({ type: 'emotions', label: 'emoções' });
       if (!hasReflection) gaps.push({ type: 'reflection', label: 'reflexão' });
       if (!hasThought) gaps.push({ type: 'thought', label: 'pensamento' });
 
@@ -193,6 +204,11 @@ export const GapsReport = ({ onFillGap }) => {
                         icon: '💚',
                         label: 'Estado',
                         style: 'bg-blue-900/50 text-blue-300 hover:bg-blue-900'
+                      },
+                      emotions: {
+                        icon: '😊',
+                        label: 'Emoções',
+                        style: 'bg-purple-800/50 text-purple-300 hover:bg-purple-800'
                       },
                       reflection: {
                         icon: '📝',
