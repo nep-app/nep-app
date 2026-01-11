@@ -144,14 +144,28 @@ export function HomeViewRefactored({
             const sleepHours = parseFloat(lastCycleWithSleep.sleep);
             const targetSleep = parseFloat(sleepGoal.target);
 
-            if (sleepHours >= targetSleep) {
+            // Definir range saudável: entre target e target+2h
+            // Ex: se meta é 8h, saudável é 8-10h
+            const maxHealthySleep = targetSleep + 2;
+
+            if (sleepHours >= targetSleep && sleepHours <= maxHealthySleep) {
+              // Dentro do range saudável - Parabéns!
               alerts.push({
                 text: `Parabéns! ${sleepHours}h de sono`,
                 emoji: '🌙',
                 color: 'green',
                 type: 'positive'
               });
+            } else if (sleepHours > maxHealthySleep) {
+              // Sono excessivo - não é saudável
+              alerts.push({
+                text: `Sono excessivo: ${sleepHours}h`,
+                emoji: '😴',
+                color: 'orange',
+                type: 'warning'
+              });
             } else {
+              // Abaixo da meta
               alerts.push({
                 text: `Atenção ao sono: ${sleepHours}h`,
                 emoji: '😴',
