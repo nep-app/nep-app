@@ -113,30 +113,16 @@ export const DataProvider = ({ children }) => {
         const lastUID = await getMetadata('lastFirebaseUID');
         const currentUID = user.uid;
 
-        let shouldForcePull = false;
-
         if (lastUID && lastUID !== currentUID) {
-          shouldForcePull = true;
-
-          // Guardar novo UID
+          // User mudou - guardar novo UID
           await setMetadata('lastFirebaseUID', currentUID);
         } else if (!lastUID) {
           await setMetadata('lastFirebaseUID', currentUID);
-        } else {
         }
 
-        // SYNC inicial: Sincronizar com Firebase (com skip zombies)
-        setIsSyncing(true);
-        await syncService.fullSync({
-          skipZombies: true,  // 🧟 Ignorar items antigos não desencriptáveis
-          maxAge: null        // Sincronizar todos (sem filtro de idade)
-        });
-
-        // Recarregar dados locais após SYNC
-        await loadAllCollections();
-
-        setLastSyncTime(new Date());
-        setIsSyncing(false);
+        // ❌ SYNC INICIAL DESATIVADO
+        // Sync 100% MANUAL - utilizador controla quando sincronizar
+        // (Antes fazia fullSync() aqui no boot, agora não)
 
         // ❌ AUTO-SYNC DESATIVADO (sincronizar só quando utilizador pedir)
         // syncService.startAutoSync(5);
