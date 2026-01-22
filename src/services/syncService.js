@@ -751,24 +751,23 @@ class SyncService {
           }
 
           if (isZombie) {
-              totalZombies++;
-              collectionZombies++;
+            totalZombies++;
+            collectionZombies++;
 
-              console.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
-              console.log(`   Data: ${firebaseData.lastModified || 'desconhecida'}`);
-              if (itemDate) {
-                console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
-              }
+            console.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
+            console.log(`   Data: ${firebaseData.lastModified || 'desconhecida'}`);
+            if (itemDate) {
+              console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
+            }
 
-              if (!dryRun) {
-                // DELETAR do Firebase
-                const docRef = doc(this.firebaseDB, firebasePath, docSnap.id);
-                await deleteDoc(docRef);
-                totalDeleted++;
-                console.log(`   ❌ DELETADO\n`);
-              } else {
-                console.log(`   (seria deletado em modo ativo)\n`);
-              }
+            if (!dryRun) {
+              // DELETAR do Firebase
+              const docRef = doc(this.firebaseDB, firebasePath, docSnap.id);
+              await deleteDoc(docRef);
+              totalDeleted++;
+              console.log(`   ❌ DELETADO\n`);
+            } else {
+              console.log(`   (seria deletado em modo ativo)\n`);
             }
           }
         }
