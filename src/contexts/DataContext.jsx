@@ -148,73 +148,86 @@ export const DataProvider = ({ children }) => {
   }, [user, pin, db, getUserSalt, loadAllCollections, firebaseLoading]);
 
   /**
-   * CRUD Operations - Wrapper para LocalData (SEM auto-sync)
-   * Sincronização é 100% MANUAL (utilizador controla quando sincronizar)
+   * CRUD Operations - AUTO-PUSH para Firebase
+   * - Dados vão para Dexie (local) IMEDIATAMENTE
+   * - PUSH para Firebase acontece 1s depois (automático)
+   * - PULL/refresh do Firebase é 100% MANUAL (evita "refresh automático")
    */
 
   const addConsumption = useCallback(async (item) => {
     const result = await addItem('consumptions', item);
     console.log('[DataContext] ✅ Item adicionado:', item.id);
-    // ❌ AUTO-PUSH DESATIVADO - sincronizar manualmente
+    // ✅ AUTO-PUSH: Enviar para Firebase após 1s
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const deleteConsumption = useCallback(async (id) => {
     await deleteItem('consumptions', id);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
   }, [deleteItem]);
 
   const addDailyLog = useCallback(async (item) => {
     const result = await addItem('dailyLogs', item);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const addReflection = useCallback(async (item) => {
     const result = await addItem('reflections', item);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const addWellbeingLog = useCallback(async (item) => {
     const result = await addItem('wellbeingLogs', item);
     console.log('[DataContext] ✅ Wellbeing adicionado:', item.id);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const addCycle = useCallback(async (item) => {
     const result = await addItem('cycles', item);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const updateCycle = useCallback(async (id, updates) => {
     const result = await updateItem('cycles', id, updates);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [updateItem]);
 
   const deleteCycle = useCallback(async (id) => {
     await deleteItem('cycles', id);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
   }, [deleteItem]);
 
   const addGoal = useCallback(async (item) => {
     const result = await addItem('goals', item);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
   const updateGoal = useCallback(async (id, updates) => {
     const result = await updateItem('goals', id, updates);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [updateItem]);
 
   const deleteGoal = useCallback(async (id) => {
     await deleteItem('goals', id);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
   }, [deleteItem]);
 
   const addCopingStrategy = useCallback(async (item) => {
@@ -227,7 +240,8 @@ export const DataProvider = ({ children }) => {
 
   const addThought = useCallback(async (item) => {
     const result = await addItem('thoughts', item);
-    // ❌ AUTO-PUSH DESATIVADO
+    // ✅ AUTO-PUSH
+    setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
 
