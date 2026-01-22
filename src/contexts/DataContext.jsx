@@ -137,11 +137,11 @@ export const DataProvider = ({ children }) => {
         setLastSyncTime(new Date());
         setIsSyncing(false);
 
-        // Ativar auto-sync (a cada 5min)
-        syncService.startAutoSync(5);
+        // ❌ AUTO-SYNC DESATIVADO (sincronizar só quando utilizador pedir)
+        // syncService.startAutoSync(5);
 
-        // Ativar sincronização em tempo real
-        syncService.startRealtimeSync();
+        // ❌ REALTIME SYNC DESATIVADO (mais rápido + menos bateria)
+        // syncService.startRealtimeSync();
 
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
@@ -251,6 +251,26 @@ export const DataProvider = ({ children }) => {
   }, [addItem]);
 
   /**
+   * Contar quantos items estão pendentes de sincronização
+   */
+  const countPendingItems = useCallback(async () => {
+    try {
+      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'thoughts'];
+      let totalPending = 0;
+
+      for (const collectionName of collections) {
+        const pending = await getPendingSyncItems(collectionName);
+        totalPending += pending.length;
+      }
+
+      return totalPending;
+    } catch (error) {
+      console.error('[DataContext] Erro ao contar pending items:', error);
+      return 0;
+    }
+  }, [getPendingSyncItems]);
+
+  /**
    * Função manual de sync completo (para botão nas settings)
    * Faz merge bidirecional de todos os dados
    */
@@ -333,7 +353,8 @@ export const DataProvider = ({ children }) => {
     // Sync info
     isSyncing,
     lastSyncTime,
-    manualSync
+    manualSync,
+    countPendingItems
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

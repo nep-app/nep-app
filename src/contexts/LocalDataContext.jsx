@@ -155,9 +155,77 @@ export const LocalDataProvider = ({ children }) => {
   }, [encryptionKey, getUserSalt]);
 
   /**
+   * Carregar coleção com PRIMEIRO item (para métricas corretas)
+   *
+   * Carrega últimos N dias + o PRIMEIRO item ever (mais antigo)
+   * Isto garante que métricas tipo "Usas a app há X dias" ficam corretas
+   *
+   * @param {string} collectionName - Nome da coleção
+   * @param {number} maxAgeDays - Últimos N dias a carregar
+   * @returns {Array} Items recentes + primeiro item
+   */
+  const loadCollectionWithFirst = useCallback(async (collectionName, maxAgeDays = 7) => {
+    if (!encryptionKey) {
+      return [];
+    }
+
+    try {
+      const salt = await getUserSalt();
+      const allItems = await getAllItems(collectionName);
+
+      if (allItems.length === 0) {
+        return [];
+      }
+
+      // Filtrar items recentes
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
+      const cutoffTime = cutoffDate.getTime();
+
+      const recentItems = allItems.filter(item => {
+        if (!item.lastModified) return true;
+        const itemTime = new Date(item.lastModified).getTime();
+        return itemTime >= cutoffTime;
+      });
+
+      // Encontrar PRIMEIRO item ever (mais antigo por lastModified)
+      const oldestItem = allItems.reduce((oldest, item) => {
+        if (!item.lastModified) return oldest;
+        if (!oldest || new Date(item.lastModified).getTime() < new Date(oldest.lastModified).getTime()) {
+          return item;
+        }
+        return oldest;
+      }, null);
+
+      // Combinar: items recentes + primeiro item (se não estiver já incluído)
+      const itemsToLoad = [...recentItems];
+      if (oldestItem && !recentItems.find(i => i.id === oldestItem.id)) {
+        itemsToLoad.push(oldestItem);
+      }
+
+      console.log(`[LocalData] 📦 ${collectionName}: ${recentItems.length} recentes (últimos ${maxAgeDays}d) + primeiro item de ${allItems.length} total`);
+
+      // Desencriptar
+      const decrypted = await decryptItems(collectionName, itemsToLoad, encryptionKey, salt);
+
+      // Ordenar por timestamp desc (mais recente primeiro)
+      const sorted = decrypted.sort((a, b) => {
+        const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+        const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      return sorted;
+    } catch (error) {
+      console.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
+      return [];
+    }
+  }, [encryptionKey, getUserSalt]);
+
+  /**
    * Carregar todas as coleções (com LAZY LOADING)
    *
-   * FASE 1 (RÁPIDA): Carrega últimos 7 dias (~200-300 items)
+   * FASE 1 (RÁPIDA): Carrega últimos 7 dias + PRIMEIRO item (métricas corretas)
    * FASE 2 (BACKGROUND): Carrega resto dos dados (~800+ items) após 500ms
    *
    * Isto garante que a app abre RÁPIDO (Fase 1) e depois carrega tudo (Fase 2)
@@ -170,8 +238,8 @@ export const LocalDataProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // ⚡ FASE 1: Carregar APENAS últimos 7 dias (BOOT RÁPIDO!)
-      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 7 dias (boot rápido)...');
+      // ⚡ FASE 1: Carregar últimos 7 dias + PRIMEIRO item (BOOT RÁPIDO + métricas corretas!)
+      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 7 dias + primeiro item (boot rápido)...');
 
       const [
         consumptionsData,
@@ -182,13 +250,13 @@ export const LocalDataProvider = ({ children }) => {
         goalsData,
         thoughtsData
       ] = await Promise.all([
-        loadCollection('consumptions', 7),
-        loadCollection('dailyLogs', 7),
-        loadCollection('reflections', 7),
-        loadCollection('wellbeingLogs', 7),
-        loadCollection('cycles', 7),
-        loadCollection('goals', 7),
-        loadCollection('thoughts', 7)
+        loadCollectionWithFirst('consumptions', 7),
+        loadCollectionWithFirst('dailyLogs', 7),
+        loadCollectionWithFirst('reflections', 7),
+        loadCollectionWithFirst('wellbeingLogs', 7),
+        loadCollectionWithFirst('cycles', 7),
+        loadCollectionWithFirst('goals', 7),
+        loadCollectionWithFirst('thoughts', 7)
       ]);
 
       setConsumptions(consumptionsData);

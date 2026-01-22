@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
@@ -20,12 +20,73 @@ export function HomeViewRefactored({
   consumptionsToShow,
   setConsumptionsToShow
 }) {
-  const { consumptions, goals, cycles, dailyLogs } = useData();
+  const { consumptions, goals, cycles, dailyLogs, countPendingItems, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
   const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
+  // Estado para pending items
+  const [pendingCount, setPendingCount] = useState(0);
+  const [checkingPending, setCheckingPending] = useState(false);
+
+  // Verificar pending items ao montar e quando dados mudam
+  useEffect(() => {
+    const checkPending = async () => {
+      setCheckingPending(true);
+      const count = await countPendingItems();
+      setPendingCount(count);
+      setCheckingPending(false);
+    };
+    checkPending();
+  }, [consumptions, dailyLogs, countPendingItems]);
+
+  // Handler para sincronizar
+  const handleSync = async () => {
+    try {
+      await manualSync();
+      setPendingCount(0);
+    } catch (error) {
+      console.error('[HomeView] Erro ao sincronizar:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Banner de sincronização */}
+      {pendingCount > 0 && (
+        <div className="bg-yellow-900/30 border-2 border-yellow-600 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <div className="text-white font-semibold">
+                  {pendingCount} {pendingCount === 1 ? 'item' : 'items'} por sincronizar
+                </div>
+                <div className="text-yellow-300 text-sm">
+                  Clica para sincronizar com a cloud
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSyncing ? (
+                <>
+                  <Icons.RefreshCw className="w-4 h-4 animate-spin" />
+                  A sincronizar...
+                </>
+              ) : (
+                <>
+                  <Icons.RefreshCw className="w-4 h-4" />
+                  Sincronizar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {(() => {
         const timeSince = metrics.timeSinceLastConsumption;
         if (timeSince) {
