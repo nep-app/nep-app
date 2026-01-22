@@ -238,8 +238,8 @@ export const LocalDataProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // ⚡ FASE 1: Carregar últimos 7 dias + PRIMEIRO item (BOOT RÁPIDO + métricas corretas!)
-      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 7 dias + primeiro item (boot rápido)...');
+      // ⚡ FASE 1: Carregar últimos 30 dias + PRIMEIRO item (BOOT RÁPIDO + alerts/métricas corretas!)
+      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 30 dias + primeiro item (boot rápido + alerts)...');
 
       const [
         consumptionsData,
@@ -250,13 +250,13 @@ export const LocalDataProvider = ({ children }) => {
         goalsData,
         thoughtsData
       ] = await Promise.all([
-        loadCollectionWithFirst('consumptions', 7),
-        loadCollectionWithFirst('dailyLogs', 7),
-        loadCollectionWithFirst('reflections', 7),
-        loadCollectionWithFirst('wellbeingLogs', 7),
-        loadCollectionWithFirst('cycles', 7),
-        loadCollectionWithFirst('goals', 7),
-        loadCollectionWithFirst('thoughts', 7)
+        loadCollectionWithFirst('consumptions', 30),
+        loadCollectionWithFirst('dailyLogs', 30),
+        loadCollectionWithFirst('reflections', 30),
+        loadCollectionWithFirst('wellbeingLogs', 30),
+        loadCollectionWithFirst('cycles', 30),
+        loadCollectionWithFirst('goals', 30),
+        loadCollectionWithFirst('thoughts', 30)
       ]);
 
       setConsumptions(consumptionsData);

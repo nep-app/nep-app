@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
-const APP_VERSION = '1.0.6';
+const APP_VERSION = '1.0.7';
 
 export const SettingsView = ({
     user,
@@ -170,54 +170,6 @@ export const SettingsView = ({
                             <Icons.Download className="w-4 h-4" />
                             📊 Exportar para Excel (CSV)
                         </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Firebase Sync */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.RefreshCw className="w-5 h-5" />
-                    Sincronização Firebase
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        Sincroniza todos os dados entre este dispositivo e outros. Resolve diferenças usando a versão mais recente.
-                    </p>
-
-                    {lastSyncTime && (
-                        <div className="text-xs text-gray-400">
-                            Última sincronização: {new Date(lastSyncTime).toLocaleString('pt-PT')}
-                        </div>
-                    )}
-
-                    {syncStatus && (
-                        <div className={
-                            'p-3 rounded-lg text-sm whitespace-pre-line ' +
-                            (syncStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
-                             syncStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
-                             'bg-blue-900/30 text-blue-300 border border-blue-700/50')
-                        }>
-                            {syncStatus.message}
-                        </div>
-                    )}
-
-                    <button
-                        onClick={handleFullSync}
-                        disabled={isSyncing}
-                        className={
-                            'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                            (isSyncing
-                                ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600')
-                        }
-                    >
-                        <Icons.RefreshCw className={'w-4 h-4' + (isSyncing ? ' animate-spin' : '')} />
-                        {isSyncing ? 'Sincronizando...' : '🔄 Sincronizar Agora'}
-                    </button>
-
-                    <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                        💡 <strong>Dica:</strong> Usa isto se tens dados diferentes entre dispositivos. A versão mais recente sempre ganha.
                     </div>
                 </div>
             </div>

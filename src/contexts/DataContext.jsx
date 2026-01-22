@@ -263,30 +263,20 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
-      // FORÇAR: Marcar tudo como pending antes de sincronizar
-      const totalMarked = await syncService.forceMarkAllPending();
-
-      // PUSH direto - enviar TUDO para Firebase ANTES de fazer pull
-      console.log('[DataContext] Fazendo PUSH de todos os items...');
+      // PUSH: Enviar apenas items pendentes (novos/alterados)
+      console.log('[DataContext] 🔼 PUSH: Enviando items pendentes...');
       await syncService.pushToFirebase();
 
-      // Agora fazer PULL (ignorar erros de desencriptação)
-      try {
-        console.log('[DataContext] Fazendo PULL do Firebase...');
-        const result = await syncService.fullSync({
-          skipZombies: true,  // Ignorar items antigos não desencriptáveis
-          maxAge: null        // Sincronizar todos (sem filtro de idade)
-        });
-        await loadAllCollections();
-        setLastSyncTime(new Date());
-        return result;
-      } catch (pullError) {
-        console.warn('[DataContext] PULL falhou (items corrompidos), mas PUSH teve sucesso');
-        // PUSH foi bem sucedido, então retornar sucesso parcial
-        await loadAllCollections();
-        setLastSyncTime(new Date());
-        return { success: true, pushed: totalMarked, pulled: 0, merged: 0, skipped: 0 };
-      }
+      // PULL: Receber alterações recentes do Firebase
+      console.log('[DataContext] 🔽 PULL: Recebendo do Firebase...');
+      const result = await syncService.fullSync({
+        skipZombies: true,  // Ignorar items antigos não desencriptáveis
+        maxAge: 7           // Sincronizar últimos 7 dias (rápido)
+      });
+
+      await loadAllCollections();
+      setLastSyncTime(new Date());
+      return result;
     } catch (error) {
       console.error('[DataContext] Erro no sync manual:', error);
       throw error;
