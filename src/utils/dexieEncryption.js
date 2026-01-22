@@ -101,19 +101,51 @@ export const decryptItem = async (collection, item, pin, salt) => {
 };
 
 /**
- * Encriptar array de items
+ * Encriptar array de items (em batches para performance)
+ * Processa em lotes de 100 para não bloquear browser
  */
 export const encryptItems = async (collection, items, pin, salt) => {
-  const promises = items.map(item => encryptItem(collection, item, pin, salt));
-  return await Promise.all(promises);
+  const BATCH_SIZE = 100;
+  const results = [];
+
+  // Processar em batches de 100
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const batchPromises = batch.map(item => encryptItem(collection, item, pin, salt));
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+
+    // Dar "respiração" ao browser entre batches (evitar freeze)
+    if (i + BATCH_SIZE < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+
+  return results;
 };
 
 /**
- * Desencriptar array de items
+ * Desencriptar array de items (em batches para performance)
+ * Processa em lotes de 100 para não bloquear browser
  */
 export const decryptItems = async (collection, items, pin, salt) => {
-  const promises = items.map(item => decryptItem(collection, item, pin, salt));
-  return await Promise.all(promises);
+  const BATCH_SIZE = 100;
+  const results = [];
+
+  // Processar em batches de 100
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const batchPromises = batch.map(item => decryptItem(collection, item, pin, salt));
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+
+    // Dar "respiração" ao browser entre batches (evitar freeze)
+    if (i + BATCH_SIZE < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+
+  return results;
 };
 
 /**

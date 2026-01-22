@@ -271,11 +271,20 @@ export const LocalDataProvider = ({ children }) => {
       setLoading(false);
       console.log('[LocalData] ✅ FASE 1 completa - App pronta!');
 
-      // 🔄 FASE 2: Carregar resto dos dados em BACKGROUND (após 500ms)
+      // 🔄 FASE 2: Verificar se precisa carregar mais dados
       setTimeout(async () => {
         try {
+          // Verificar se FASE 1 já carregou TUDO (evitar duplicação!)
+          const allItemsCount = await getAllItems('consumptions');
+          const phase1LoadedCount = consumptionsData.length;
+
+          if (phase1LoadedCount >= allItemsCount.length) {
+            console.log('[LocalData] ⚡ FASE 1 já carregou TUDO - skip FASE 2 (optimização)');
+            return; // Não fazer FASE 2
+          }
+
           setBackgroundLoading(true);
-          console.log('[LocalData] 🔄 FASE 2: Carregando TODOS os dados em background...');
+          console.log('[LocalData] 🔄 FASE 2: Carregando dados antigos em background...');
 
           // Carregar TUDO (sem filtro de idade - 999999 dias = todos)
           const [
