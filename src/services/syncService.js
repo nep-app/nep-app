@@ -673,7 +673,7 @@ class SyncService {
    * Limpar items zombies (que não conseguem ser desencriptados)
    * ATENÇÃO: Isto vai DELETAR permanentemente items do Firebase!
    *
-   * @param {number} maxAge - Deletar items com mais de X dias (padrão: 90)
+   * @param {number} maxAge - Deletar items com mais de X dias (padrão: 90). Use 0 para TODOS os items (sem filtro de idade)
    * @param {boolean} dryRun - Se true, apenas lista items sem deletar (padrão: true)
    */
   async cleanZombies(maxAge = 90, dryRun = true) {
@@ -691,10 +691,17 @@ class SyncService {
       console.log('⚠️  MODO ATIVO: Vai DELETAR items do Firebase!\n');
     }
 
+    if (maxAge === 0 || maxAge === null) {
+      console.log(`📅 TODOS OS ITEMS (sem filtro de idade)\n`);
+    } else {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - maxAge);
+      console.log(`📅 Data de corte: ${cutoffDate.toISOString()}`);
+      console.log(`   (items mais antigos que ${maxAge} dias)\n`);
+    }
+
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - maxAge);
-    console.log(`📅 Data de corte: ${cutoffDate.toISOString()}`);
-    console.log(`   (items mais antigos que ${maxAge} dias)\n`);
 
     let totalZombies = 0;
     let totalDeleted = 0;
@@ -710,31 +717,48 @@ class SyncService {
       for (const docSnap of snapshot.docs) {
         const firebaseData = docSnap.data();
 
-        // Verificar idade
+        // Verificar idade (se maxAge foi especificado)
+        let shouldCheck = false;
+        let itemDate = null;
+
         if (firebaseData.lastModified) {
-          const itemDate = new Date(firebaseData.lastModified);
+          itemDate = new Date(firebaseData.lastModified);
 
-          if (itemDate < cutoffDate) {
-            // Item antigo - tentar desencriptar
-            let isZombie = false;
+          // Se maxAge é 0 ou null, verificar TODOS os items (sem filtro de idade)
+          if (maxAge === 0 || maxAge === null) {
+            shouldCheck = true;
+          } else if (itemDate < cutoffDate) {
+            // Apenas items antigos (> maxAge dias)
+            shouldCheck = true;
+          }
+        } else {
+          // Item sem lastModified - sempre verificar
+          shouldCheck = true;
+        }
 
-            if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
-              try {
-                await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
-                // Conseguiu desencriptar - NÃO é zombie
-              } catch (error) {
-                // Falhou desencriptação - É ZOMBIE!
-                isZombie = true;
-              }
+        if (shouldCheck) {
+          // Tentar desencriptar
+          let isZombie = false;
+
+          if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+            try {
+              await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+              // Conseguiu desencriptar - NÃO é zombie
+            } catch (error) {
+              // Falhou desencriptação - É ZOMBIE!
+              isZombie = true;
             }
+          }
 
-            if (isZombie) {
+          if (isZombie) {
               totalZombies++;
               collectionZombies++;
 
               console.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
-              console.log(`   Data: ${firebaseData.lastModified}`);
-              console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
+              console.log(`   Data: ${firebaseData.lastModified || 'desconhecida'}`);
+              if (itemDate) {
+                console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
+              }
 
               if (!dryRun) {
                 // DELETAR do Firebase

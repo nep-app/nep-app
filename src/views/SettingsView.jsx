@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
+const APP_VERSION = '1.0.1';
+
 export const SettingsView = ({
     user,
     handleLogout,
@@ -57,15 +59,15 @@ export const SettingsView = ({
                 throw new Error('SyncService não disponível');
             }
 
-            // Dry-run: apenas listar zombies com mais de 30 dias
-            const result = await window.syncService.cleanZombies(30, true);
+            // Dry-run: procurar TODOS os zombies (maxAge=0 = sem filtro de idade)
+            const result = await window.syncService.cleanZombies(0, true);
             console.log('ZOMBIE SCAN:', result);
 
             if (result.totalZombies > 0) {
                 setZombieStats(result);
                 setCleanZombiesStatus({
                     type: 'warning',
-                    message: `🧟 Encontrados ${result.totalZombies} items corrompidos (com mais de 30 dias)\n\nEstes items ocupam espaço e tornam a app mais lenta.`
+                    message: `🧟 Encontrados ${result.totalZombies} items corrompidos no Firebase!\n\nEstes items tornam a app MUITO mais lenta a abrir (tentam desencriptar a cada boot).\n\n⚠️ Recomendamos LIMPAR AGORA!`
                 });
             } else {
                 setCleanZombiesStatus({
@@ -84,7 +86,7 @@ export const SettingsView = ({
     };
 
     const handleCleanZombies = async () => {
-        if (!window.confirm('⚠️ Atenção!\n\nIsto vai DELETAR PERMANENTEMENTE items corrompidos (com mais de 30 dias) do Firebase.\n\nEsta ação NÃO pode ser desfeita!\n\nContinuar?')) {
+        if (!window.confirm('⚠️ Atenção!\n\nIsto vai DELETAR PERMANENTEMENTE TODOS os items corrompidos do Firebase.\n\nEsta ação NÃO pode ser desfeita!\n\n💡 Após limpar, a app vai abrir MUITO mais rápido.\n\nContinuar?')) {
             return;
         }
 
@@ -95,14 +97,14 @@ export const SettingsView = ({
                 throw new Error('SyncService não disponível');
             }
 
-            // Limpar zombies com mais de 30 dias
-            const result = await window.syncService.cleanZombies(30, false);
+            // Limpar TODOS os zombies (maxAge=0 = sem filtro de idade)
+            const result = await window.syncService.cleanZombies(0, false);
             console.log('ZOMBIE CLEAN:', result);
 
             setZombieStats(null);
             setCleanZombiesStatus({
                 type: 'success',
-                message: `✅ Limpeza concluída!\n\n❌ Deletados: ${result.totalDeleted} items corrompidos\n\n💡 Recomendamos fazer refresh da página.`
+                message: `✅ Limpeza concluída!\n\n❌ Deletados: ${result.totalDeleted} items corrompidos do Firebase\n\n🚀 A app vai abrir MUITO mais rápido agora!\n\n💡 Faz refresh da página (Ctrl+Shift+R) para aplicar.`
             });
 
             // Limpar mensagem após 15 segundos
@@ -287,7 +289,7 @@ export const SettingsView = ({
                     </div>
 
                     <div className="text-xs bg-red-900/20 border border-red-700/50 rounded p-2 text-red-300">
-                        ⚠️ <strong>Atenção:</strong> A limpeza é PERMANENTE e não pode ser desfeita. Apenas items com mais de 30 dias são deletados.
+                        ⚠️ <strong>Atenção:</strong> A limpeza é PERMANENTE e não pode ser desfeita. Apenas items CORROMPIDOS (que falham desencriptação) são deletados.
                     </div>
                 </div>
             </div>
@@ -376,7 +378,7 @@ export const SettingsView = ({
                         Não Estás Perdida.
                     </p>
                     <div className="mt-4 pt-4 border-t text-xs border-gray-700 text-gray-400">
-                        <p>Versão 1.0.0</p>
+                        <p>Versão {APP_VERSION}</p>
                         <p className="mt-1">Copyright © Teresa Castro</p>
                         <p className="mt-1">Os teus dados são privados e seguros.</p>
                     </div>
