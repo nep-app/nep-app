@@ -129,9 +129,11 @@ export const LocalDataProvider = ({ children }) => {
       const cutoffTime = cutoffDate.getTime();
 
       const recentItems = allItems.filter(item => {
-        // Usar lastModified para filtrar (mais confiável que timestamp encriptado)
-        if (!item.lastModified) return true; // Items sem lastModified - carregar sempre
-        const itemTime = new Date(item.lastModified).getTime();
+        // Usar timestamp (data de criação) em vez de lastModified (data de sync)
+        // Isto garante que filtramos por IDADE REAL do item, não quando foi sincronizado
+        const itemDate = item.timestamp || item.createdAt || item.date || item.lastModified;
+        if (!itemDate) return true; // Items sem data - carregar sempre (segurança)
+        const itemTime = new Date(itemDate).getTime();
         return itemTime >= cutoffTime;
       });
 
@@ -183,15 +185,23 @@ export const LocalDataProvider = ({ children }) => {
       const cutoffTime = cutoffDate.getTime();
 
       const recentItems = allItems.filter(item => {
-        if (!item.lastModified) return true;
-        const itemTime = new Date(item.lastModified).getTime();
+        // Usar timestamp (data de criação) em vez de lastModified (data de sync)
+        const itemDate = item.timestamp || item.createdAt || item.date || item.lastModified;
+        if (!itemDate) return true;
+        const itemTime = new Date(itemDate).getTime();
         return itemTime >= cutoffTime;
       });
 
-      // Encontrar PRIMEIRO item ever (mais antigo por lastModified)
+      // Encontrar PRIMEIRO item ever (mais antigo por timestamp/createdAt)
       const oldestItem = allItems.reduce((oldest, item) => {
-        if (!item.lastModified) return oldest;
-        if (!oldest || new Date(item.lastModified).getTime() < new Date(oldest.lastModified).getTime()) {
+        const itemDate = item.timestamp || item.createdAt || item.date || item.lastModified;
+        if (!itemDate) return oldest;
+        if (!oldest) return item;
+
+        const oldestDate = oldest.timestamp || oldest.createdAt || oldest.date || oldest.lastModified;
+        if (!oldestDate) return item;
+
+        if (new Date(itemDate).getTime() < new Date(oldestDate).getTime()) {
           return item;
         }
         return oldest;
