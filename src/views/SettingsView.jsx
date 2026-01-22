@@ -15,6 +15,8 @@ export const SettingsView = ({
     lastSyncTime
 }) => {
     const [syncStatus, setSyncStatus] = useState(null);
+    const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
+    const [zombieStats, setZombieStats] = useState(null);
 
     const handleFullSync = async () => {
         if (!manualSync) {
@@ -43,6 +45,75 @@ export const SettingsView = ({
 
             // Limpar mensagem de erro após 10 segundos
             setTimeout(() => setSyncStatus(null), 10000);
+        }
+    };
+
+    const handleScanZombies = async () => {
+        setCleanZombiesStatus({ type: 'loading', message: '🔍 A procurar items corrompidos...' });
+        setZombieStats(null);
+
+        try {
+            if (!window.syncService) {
+                throw new Error('SyncService não disponível');
+            }
+
+            // Dry-run: apenas listar zombies com mais de 30 dias
+            const result = await window.syncService.cleanZombies(30, true);
+            console.log('ZOMBIE SCAN:', result);
+
+            if (result.totalZombies > 0) {
+                setZombieStats(result);
+                setCleanZombiesStatus({
+                    type: 'warning',
+                    message: `🧟 Encontrados ${result.totalZombies} items corrompidos (com mais de 30 dias)\n\nEstes items ocupam espaço e tornam a app mais lenta.`
+                });
+            } else {
+                setCleanZombiesStatus({
+                    type: 'success',
+                    message: '✅ Nenhum item corrompido encontrado! A tua base de dados está limpa.'
+                });
+            }
+        } catch (error) {
+            console.error('[SettingsView] Erro ao procurar zombies:', error);
+            setCleanZombiesStatus({
+                type: 'error',
+                message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
+            });
+            setTimeout(() => setCleanZombiesStatus(null), 10000);
+        }
+    };
+
+    const handleCleanZombies = async () => {
+        if (!window.confirm('⚠️ Atenção!\n\nIsto vai DELETAR PERMANENTEMENTE items corrompidos (com mais de 30 dias) do Firebase.\n\nEsta ação NÃO pode ser desfeita!\n\nContinuar?')) {
+            return;
+        }
+
+        setCleanZombiesStatus({ type: 'loading', message: '🧹 A limpar items corrompidos...' });
+
+        try {
+            if (!window.syncService) {
+                throw new Error('SyncService não disponível');
+            }
+
+            // Limpar zombies com mais de 30 dias
+            const result = await window.syncService.cleanZombies(30, false);
+            console.log('ZOMBIE CLEAN:', result);
+
+            setZombieStats(null);
+            setCleanZombiesStatus({
+                type: 'success',
+                message: `✅ Limpeza concluída!\n\n❌ Deletados: ${result.totalDeleted} items corrompidos\n\n💡 Recomendamos fazer refresh da página.`
+            });
+
+            // Limpar mensagem após 15 segundos
+            setTimeout(() => setCleanZombiesStatus(null), 15000);
+        } catch (error) {
+            console.error('[SettingsView] Erro ao limpar zombies:', error);
+            setCleanZombiesStatus({
+                type: 'error',
+                message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
+            });
+            setTimeout(() => setCleanZombiesStatus(null), 10000);
         }
     };
     return (
@@ -145,6 +216,78 @@ export const SettingsView = ({
 
                     <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
                         💡 <strong>Dica:</strong> Usa isto se tens dados diferentes entre dispositivos. A versão mais recente sempre ganha.
+                    </div>
+                </div>
+            </div>
+
+            {/* Database Maintenance */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Icons.Trash2 className="w-5 h-5" />
+                    Manutenção da Base de Dados
+                </h3>
+                <div className="space-y-3 text-gray-300">
+                    <p className="text-sm">
+                        Limpar items corrompidos ("zombies") que não conseguem ser desencriptados. Estes items ocupam espaço e tornam a app mais lenta.
+                    </p>
+
+                    {cleanZombiesStatus && (
+                        <div className={
+                            'p-3 rounded-lg text-sm whitespace-pre-line ' +
+                            (cleanZombiesStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
+                             cleanZombiesStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
+                             cleanZombiesStatus.type === 'warning' ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50' :
+                             'bg-blue-900/30 text-blue-300 border border-blue-700/50')
+                        }>
+                            {cleanZombiesStatus.message}
+                        </div>
+                    )}
+
+                    {zombieStats && zombieStats.totalZombies > 0 && (
+                        <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3">
+                            <div className="font-medium text-yellow-300 mb-2">📊 Detalhes:</div>
+                            {Object.entries(zombieStats.zombiesByCollection).map(([col, count]) => (
+                                <div key={col} className="text-yellow-300/80">
+                                    • {col}: {count} {count === 1 ? 'item' : 'items'}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="space-y-2">
+                        <button
+                            onClick={handleScanZombies}
+                            disabled={cleanZombiesStatus?.type === 'loading'}
+                            className={
+                                'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
+                                (cleanZombiesStatus?.type === 'loading'
+                                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600')
+                            }
+                        >
+                            <Icons.Search className="w-4 h-4" />
+                            {cleanZombiesStatus?.type === 'loading' ? 'A procurar...' : '🔍 Procurar Items Corrompidos'}
+                        </button>
+
+                        {zombieStats && zombieStats.totalZombies > 0 && (
+                            <button
+                                onClick={handleCleanZombies}
+                                disabled={cleanZombiesStatus?.type === 'loading'}
+                                className={
+                                    'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
+                                    (cleanZombiesStatus?.type === 'loading'
+                                        ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700')
+                                }
+                            >
+                                <Icons.Trash2 className="w-4 h-4" />
+                                🧹 Limpar Items Corrompidos
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="text-xs bg-red-900/20 border border-red-700/50 rounded p-2 text-red-300">
+                        ⚠️ <strong>Atenção:</strong> A limpeza é PERMANENTE e não pode ser desfeita. Apenas items com mais de 30 dias são deletados.
                     </div>
                 </div>
             </div>
