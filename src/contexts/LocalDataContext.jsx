@@ -275,9 +275,9 @@ export const LocalDataProvider = ({ children }) => {
       setTimeout(async () => {
         try {
           setBackgroundLoading(true);
-          console.log('[LocalData] 🔄 FASE 2: Carregando dados antigos em background...');
+          console.log('[LocalData] 🔄 FASE 2: Carregando TODOS os dados em background...');
 
-          // Carregar últimos 90 dias (inclui dados de Fase 1, mas tudo bem - vai substituir)
+          // Carregar TUDO (sem filtro de idade - 999999 dias = todos)
           const [
             consumptionsFullData,
             dailyLogsFullData,
@@ -287,13 +287,13 @@ export const LocalDataProvider = ({ children }) => {
             goalsFullData,
             thoughtsFullData
           ] = await Promise.all([
-            loadCollection('consumptions', 90),
-            loadCollection('dailyLogs', 90),
-            loadCollection('reflections', 90),
-            loadCollection('wellbeingLogs', 90),
-            loadCollection('cycles', 90),
-            loadCollection('goals', 90),
-            loadCollection('thoughts', 90)
+            loadCollection('consumptions', 999999),
+            loadCollection('dailyLogs', 999999),
+            loadCollection('reflections', 999999),
+            loadCollection('wellbeingLogs', 999999),
+            loadCollection('cycles', 999999),
+            loadCollection('goals', 999999),
+            loadCollection('thoughts', 999999)
           ]);
 
           setConsumptions(consumptionsFullData);
