@@ -106,13 +106,13 @@ export const LocalDataProvider = ({ children }) => {
   /**
    * Carregar dados de uma coleção (com desencriptação)
    *
-   * OTIMIZAÇÃO: Por defeito carrega apenas últimos 90 dias para evitar
+   * OTIMIZAÇÃO: Por defeito carrega apenas últimos 30 dias para evitar
    * desencriptar 1000+ items no boot (+ rápido 5-10x)
    *
    * @param {string} collectionName - Nome da coleção
-   * @param {number} maxAgeDays - Idade máxima dos items a carregar (default: 90 dias)
+   * @param {number} maxAgeDays - Idade máxima dos items a carregar (default: 30 dias)
    */
-  const loadCollection = useCallback(async (collectionName, maxAgeDays = 90) => {
+  const loadCollection = useCallback(async (collectionName, maxAgeDays = 30) => {
     if (!encryptionKey) {
       return [];
     }
