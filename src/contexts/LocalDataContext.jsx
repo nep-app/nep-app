@@ -102,6 +102,7 @@ export const LocalDataProvider = ({ children }) => {
   const [goals, setGoals] = useState([]);
   const [thoughts, setThoughts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
 
   /**
    * Carregar dados de uma coleção (com desencriptação)
@@ -154,7 +155,12 @@ export const LocalDataProvider = ({ children }) => {
   }, [encryptionKey, getUserSalt]);
 
   /**
-   * Carregar todas as coleções
+   * Carregar todas as coleções (com LAZY LOADING)
+   *
+   * FASE 1 (RÁPIDA): Carrega últimos 7 dias (~200-300 items)
+   * FASE 2 (BACKGROUND): Carrega resto dos dados (~800+ items) após 500ms
+   *
+   * Isto garante que a app abre RÁPIDO (Fase 1) e depois carrega tudo (Fase 2)
    */
   const loadAllCollections = useCallback(async () => {
     if (!encryptionKey) {
@@ -164,6 +170,8 @@ export const LocalDataProvider = ({ children }) => {
     setLoading(true);
 
     try {
+      // ⚡ FASE 1: Carregar APENAS últimos 7 dias (BOOT RÁPIDO!)
+      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 7 dias (boot rápido)...');
 
       const [
         consumptionsData,
@@ -174,13 +182,13 @@ export const LocalDataProvider = ({ children }) => {
         goalsData,
         thoughtsData
       ] = await Promise.all([
-        loadCollection('consumptions'),
-        loadCollection('dailyLogs'),
-        loadCollection('reflections'),
-        loadCollection('wellbeingLogs'),
-        loadCollection('cycles'),
-        loadCollection('goals'),
-        loadCollection('thoughts')
+        loadCollection('consumptions', 7),
+        loadCollection('dailyLogs', 7),
+        loadCollection('reflections', 7),
+        loadCollection('wellbeingLogs', 7),
+        loadCollection('cycles', 7),
+        loadCollection('goals', 7),
+        loadCollection('thoughts', 7)
       ]);
 
       setConsumptions(consumptionsData);
@@ -190,9 +198,54 @@ export const LocalDataProvider = ({ children }) => {
       setCycles(cyclesData);
       setGoals(goalsData);
       setThoughts(thoughtsData);
+
+      // App está PRONTA! Loading = false
+      setLoading(false);
+      console.log('[LocalData] ✅ FASE 1 completa - App pronta!');
+
+      // 🔄 FASE 2: Carregar resto dos dados em BACKGROUND (após 500ms)
+      setTimeout(async () => {
+        try {
+          setBackgroundLoading(true);
+          console.log('[LocalData] 🔄 FASE 2: Carregando dados antigos em background...');
+
+          // Carregar últimos 90 dias (inclui dados de Fase 1, mas tudo bem - vai substituir)
+          const [
+            consumptionsFullData,
+            dailyLogsFullData,
+            reflectionsFullData,
+            wellbeingLogsFullData,
+            cyclesFullData,
+            goalsFullData,
+            thoughtsFullData
+          ] = await Promise.all([
+            loadCollection('consumptions', 90),
+            loadCollection('dailyLogs', 90),
+            loadCollection('reflections', 90),
+            loadCollection('wellbeingLogs', 90),
+            loadCollection('cycles', 90),
+            loadCollection('goals', 90),
+            loadCollection('thoughts', 90)
+          ]);
+
+          setConsumptions(consumptionsFullData);
+          setDailyLogs(dailyLogsFullData);
+          setReflections(reflectionsFullData);
+          setWellbeingLogs(wellbeingLogsFullData);
+          setCycles(cyclesFullData);
+          setGoals(goalsFullData);
+          setThoughts(thoughtsFullData);
+
+          console.log('[LocalData] ✅ FASE 2 completa - Todos os dados carregados!');
+        } catch (error) {
+          console.error('[LocalData] Erro na FASE 2 (background):', error);
+        } finally {
+          setBackgroundLoading(false);
+        }
+      }, 500); // Esperar 500ms antes de carregar resto
+
     } catch (error) {
-      console.error('[LocalData] Erro ao carregar dados:', error);
-    } finally {
+      console.error('[LocalData] Erro ao carregar dados (FASE 1):', error);
       setLoading(false);
     }
   }, [encryptionKey, loadCollection]);
@@ -344,6 +397,7 @@ export const LocalDataProvider = ({ children }) => {
   const value = {
     // Estado
     loading,
+    backgroundLoading,
     consumptions,
     dailyLogs,
     reflections,
