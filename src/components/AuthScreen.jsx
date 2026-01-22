@@ -283,7 +283,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-purple-300 mb-2">
-                Email (opcional, só para recuperação)
+                Email
               </label>
               <input
                 type="email"
@@ -291,6 +291,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="exemplo@email.com"
                 className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
               />
             </div>
 
@@ -306,14 +307,6 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
             >
               Continuar
               <Icons.ChevronRight className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep('pin')}
-              className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors"
-            >
-              Saltar (continuar sem email)
             </button>
           </form>
 
@@ -335,8 +328,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
                 <Icons.Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="text-xs text-purple-300">
                   <p className="opacity-90">
-                    O email é opcional e apenas usado se precisares recuperar acesso.
-                    Podes saltar este passo.
+                    O email é usado para recuperar acesso à tua conta.
                   </p>
                 </div>
               </div>
