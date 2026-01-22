@@ -56,7 +56,8 @@ export const DataProvider = ({ children }) => {
     addItem,
     updateItem,
     deleteItem,
-    loadAllCollections
+    loadAllCollections,
+    getPendingSyncItems
   } = useLocalData();
 
   // Coping strategies (legacy - vazio por agora)
