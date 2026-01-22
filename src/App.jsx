@@ -165,6 +165,7 @@ function AuthenticatedApp() {
             const [wellbeingToShow, setWellbeingToShow] = useState(14);
             const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
             const [thoughtsToShow, setThoughtsToShow] = useState(10);
+            const [allItemsToShow, setAllItemsToShow] = useState(20); // Para tab "Tudo"
 
             // Legal Modal State
             const [showLegalModal, setShowLegalModal] = useState(false);
@@ -1278,6 +1279,8 @@ return {
                                         setCyclesHistoryToShow={setCyclesHistoryToShow}
                                         thoughtsToShow={thoughtsToShow}
                                         setThoughtsToShow={setThoughtsToShow}
+                                        allItemsToShow={allItemsToShow}
+                                        setAllItemsToShow={setAllItemsToShow}
                                         openEditConsumption={openEditConsumption}
                                         deleteItem={deleteItem}
                                         handleFillGap={handleFillGap}

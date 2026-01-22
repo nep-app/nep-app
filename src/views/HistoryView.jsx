@@ -46,6 +46,8 @@ export function HistoryView({
     setCyclesHistoryToShow,
     thoughtsToShow,
     setThoughtsToShow,
+    allItemsToShow,
+    setAllItemsToShow,
     openEditConsumption,
     deleteItem,
     handleFillGap
@@ -218,14 +220,18 @@ export function HistoryView({
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📋 Tudo ({filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length})</h3>
                                                     <div className="space-y-3">
-                                                        {[...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
-                                                          ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date })),
-                                                          ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
-                                                          ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
-                                                          ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
-                                                          ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
-                                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                                                            .map(item => {
+                                                        {(() => {
+                                                            const allItems = [...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
+                                                              ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date })),
+                                                              ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
+                                                              ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
+                                                              ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
+                                                              ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
+                                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                                                            return allItems
+                                                                .slice(0, allItemsToShow)
+                                                                .map(item => {
                                                                 if (item.type === 'consumption') {
                                                                     const c = item.data;
                                                                     return (
@@ -507,9 +513,21 @@ export function HistoryView({
                                                                         </div>
                                                                     );
                                                                 }
-                                                            })
-                                                        }
+                                                            });
+                                                        })()}
                                                     </div>
+                                                    {(() => {
+                                                        const totalItems = filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length;
+                                                        const remaining = totalItems - allItemsToShow;
+                                                        return remaining > 0 && (
+                                                            <button
+                                                                onClick={() => setAllItemsToShow(prev => prev + 20)}
+                                                                className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2"
+                                                            >
+                                                                Ver mais ({remaining} restantes)
+                                                            </button>
+                                                        );
+                                                    })()}
                                                 </div>
                                             )}
 

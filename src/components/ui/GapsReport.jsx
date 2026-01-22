@@ -7,8 +7,9 @@ const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
 
 /**
  * Componente para mostrar gaps (dias com dados em falta) e permitir preenchimento rápido
+ * Memoizado para evitar re-renders desnecessárias
  */
-export const GapsReport = ({ onFillGap }) => {
+export const GapsReport = React.memo(({ onFillGap }) => {
   const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts } = useData();
 
   // Estado para gaps confirmados (que o user marcou como "OK/correto")
@@ -38,8 +39,63 @@ export const GapsReport = ({ onFillGap }) => {
     return confirmedGaps[gapKey] === true;
   };
 
-  // Calcular últimos 7 dias
+  // Calcular últimos 7 dias (OTIMIZADO para performance com grandes datasets)
   const last7Days = useMemo(() => {
+    // PASSO 1: Criar índices de datas (uma única passagem pelos dados)
+    // Isto reduz complexidade de O(n*7) para O(n+7) = MUITO mais rápido!
+
+    const consumptionDates = new Set();
+    consumptions.forEach(c => {
+      try {
+        consumptionDates.add(new Date(c.timestamp).toISOString().split('T')[0]);
+      } catch {}
+    });
+
+    const dailyLogDates = new Set();
+    dailyLogs.forEach(log => {
+      const logDate = log.date || (log.timestamp ? new Date(log.timestamp).toISOString().split('T')[0] : null);
+      if (logDate) dailyLogDates.add(logDate);
+    });
+
+    const cycleDates = new Set();
+    cycles.forEach(cycle => {
+      if (cycle.timestamp) {
+        try {
+          cycleDates.add(new Date(cycle.timestamp).toISOString().split('T')[0]);
+        } catch {}
+      }
+    });
+
+    const wellbeingCoreDates = new Set();
+    const emotionsDates = new Set();
+    wellbeingLogs.forEach(w => {
+      const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+      if (!wDate) return;
+
+      // Verificar bem-estar básico (humor, energia, autocuidado)
+      if (w.mood || w.energy || w.water || w.rest || w.social || w.food) {
+        wellbeingCoreDates.add(wDate);
+      }
+
+      // Verificar emoções separadamente
+      if (w.emotions && w.emotions.length > 0) {
+        emotionsDates.add(wDate);
+      }
+    });
+
+    const reflectionDates = new Set();
+    reflections.forEach(r => {
+      const rDate = r.date || (r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : null);
+      if (rDate) reflectionDates.add(rDate);
+    });
+
+    const thoughtDates = new Set();
+    thoughts.forEach(t => {
+      const tDate = t.date || (t.timestamp ? new Date(t.timestamp).toISOString().split('T')[0] : null);
+      if (tDate) thoughtDates.add(tDate);
+    });
+
+    // PASSO 2: Agora iterar pelos 7 dias usando lookups O(1) nos Sets
     const days = [];
     const today = new Date();
 
@@ -52,46 +108,14 @@ export const GapsReport = ({ onFillGap }) => {
       const dayNumber = date.getDate();
       const monthName = date.toLocaleDateString('pt-PT', { month: 'short' });
 
-      // Verificar o que existe para este dia
-      const hasConsumptions = consumptions.some(c => {
-        const cDate = new Date(c.timestamp).toISOString().split('T')[0];
-        return cDate === dateKey;
-      });
-
-      const hasDailyLog = dailyLogs.some(log => {
-        const logDate = log.date || (log.timestamp ? new Date(log.timestamp).toISOString().split('T')[0] : null);
-        return logDate === dateKey;
-      });
-
-      const hasCycle = cycles.some(cycle => {
-        const cycleDate = cycle.timestamp ? new Date(cycle.timestamp).toISOString().split('T')[0] : null;
-        return cycleDate === dateKey;
-      });
-
-      // Verificar bem-estar básico (humor, energia, autocuidado)
-      const hasWellbeingCore = wellbeingLogs.some(w => {
-        const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
-        if (wDate !== dateKey) return false;
-        // Tem que ter pelo menos humor, energia, ou algum campo de autocuidado
-        return w.mood || w.energy || w.water || w.rest || w.social || w.food;
-      });
-
-      // Verificar emoções separadamente
-      const hasEmotions = wellbeingLogs.some(w => {
-        const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
-        if (wDate !== dateKey) return false;
-        return w.emotions && w.emotions.length > 0;
-      });
-
-      const hasReflection = reflections.some(r => {
-        const rDate = r.date || (r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : null);
-        return rDate === dateKey;
-      });
-
-      const hasThought = thoughts.some(t => {
-        const tDate = t.date || (t.timestamp ? new Date(t.timestamp).toISOString().split('T')[0] : null);
-        return tDate === dateKey;
-      });
+      // Verificar o que existe para este dia (lookup O(1) - instantâneo!)
+      const hasConsumptions = consumptionDates.has(dateKey);
+      const hasDailyLog = dailyLogDates.has(dateKey);
+      const hasCycle = cycleDates.has(dateKey);
+      const hasWellbeingCore = wellbeingCoreDates.has(dateKey);
+      const hasEmotions = emotionsDates.has(dateKey);
+      const hasReflection = reflectionDates.has(dateKey);
+      const hasThought = thoughtDates.has(dateKey);
 
       // Construir lista de gaps RAW (sem filtrar confirmados ainda)
       const gaps = [];
@@ -256,4 +280,4 @@ export const GapsReport = ({ onFillGap }) => {
       )}
     </div>
   );
-};
+});
