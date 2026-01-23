@@ -1,7 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { getUserStats } from '../utils/userStats';
 
 export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
+  // Carregar stats pré-calculadas (para mostrar streak LOGO no boot)
+  const [cachedStats, setCachedStats] = useState(null);
+
+  useEffect(() => {
+    // Carregar stats ao montar
+    getUserStats().then(stats => {
+      console.log('[useAnalysis] 📊 Stats carregadas do cache:', stats);
+      setCachedStats(stats);
+    });
+  }, []);
   // Helper: Get last 7 days dates
   const getLast7Days = useMemo(() => {
     const days = [];
@@ -176,8 +187,15 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     };
   }, [wellbeingLogs, consumptions]);
 
-  // Streak calculation
+  // Streak calculation (usa cachedStats se consumptions vazio - boot rápido!)
   const streaks = useMemo(() => {
+    // Se consumptions vazio mas temos cachedStats, usar cached (FASE 1)
+    if (consumptions.length === 0 && cachedStats?.streak !== undefined) {
+      console.log('[useAnalysis] ⚡ Usando streak do cache:', cachedStats.streak);
+      return { current: cachedStats.streak, max: cachedStats.streak };
+    }
+
+    // Caso normal: calcular streak dos dados desencriptados (FASE 2)
     if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
 
     const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
@@ -198,7 +216,7 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     }
 
     return { current: streak, max: maxStreak };
-  }, [consumptions, wellbeingLogs]);
+  }, [consumptions, wellbeingLogs, cachedStats]);
 
   // Goal progress calculation
   const getGoalProgress = (goal) => {

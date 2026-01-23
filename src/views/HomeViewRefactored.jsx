@@ -20,12 +20,32 @@ export function HomeViewRefactored({
   consumptionsToShow,
   setConsumptionsToShow
 }) {
-  const { consumptions, goals, cycles, dailyLogs } = useData();
+  const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
   const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
+  const handleSync = async () => {
+    try {
+      await manualSync();
+    } catch (error) {
+      console.error('[HomeView] Erro ao sincronizar:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Botão sync no canto superior */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700"
+          title="Sincronizar com a cloud"
+        >
+          <Icons.RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'A sincronizar...' : 'Sincronizar'}
+        </button>
+      </div>
 
       {(() => {
         const timeSince = metrics.timeSinceLastConsumption;

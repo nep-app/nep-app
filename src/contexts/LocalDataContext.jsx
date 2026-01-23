@@ -7,6 +7,7 @@ import {
   encryptItems,
   decryptItems
 } from '../utils/dexieEncryption';
+import { updateUserStats } from '../utils/userStats';
 
 // Helper functions (using localDB instead of dexieDB)
 const addItemWithSync = async (collection, item) => {
@@ -323,6 +324,10 @@ export const LocalDataProvider = ({ children }) => {
           setGoals(goalsFullData);
           setThoughts(thoughtsFullData);
 
+          // Atualizar stats pré-calculadas (para boot rápido futuro)
+          console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+          await updateUserStats(consumptionsFullData);
+
           console.log('[LocalData] ✅ FASE 2 completa - Todos os dados carregados!');
         } catch (error) {
           console.error('[LocalData] Erro na FASE 2 (background):', error);
@@ -379,13 +384,18 @@ export const LocalDataProvider = ({ children }) => {
       // Prevenir duplicados: se ID já existe, substituir em vez de adicionar
       setter(prev => {
         const existingIndex = prev.findIndex(item => item.id === decrypted.id);
-        if (existingIndex >= 0) {
-          // ID já existe - substituir (isto cobre casos de uso incorreto de addItem)
-          console.warn(`[LocalData] ⚠️ addItem chamado com ID existente: ${collectionName}/${decrypted.id} - substituindo`);
-          return prev.map((item, i) => i === existingIndex ? decrypted : item);
+        const newData = existingIndex >= 0
+          ? prev.map((item, i) => i === existingIndex ? decrypted : item)
+          : [decrypted, ...prev];
+
+        // Recalcular stats para consumptions (boot rápido futuro)
+        if (collectionName === 'consumptions') {
+          updateUserStats(newData).catch(err =>
+            console.error('[LocalData] Erro ao atualizar stats:', err)
+          );
         }
-        // ID novo - adicionar ao início
-        return [decrypted, ...prev];
+
+        return newData;
       });
     }
 
@@ -459,6 +469,14 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => {
         const filtered = prev.filter(item => item.id !== id);
         console.log(`[LocalData] 🗑️ Removido do estado React: ${collectionName}/${id} (antes: ${prev.length}, depois: ${filtered.length})`);
+
+        // Recalcular stats para consumptions (boot rápido futuro)
+        if (collectionName === 'consumptions') {
+          updateUserStats(filtered).catch(err =>
+            console.error('[LocalData] Erro ao atualizar stats:', err)
+          );
+        }
+
         return filtered;
       });
     } else {

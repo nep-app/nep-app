@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
-const APP_VERSION = '1.0.10';
+const APP_VERSION = '1.0.11';
 
 export const SettingsView = ({
     user,
@@ -142,6 +142,49 @@ export const SettingsView = ({
                         <Icons.LogOut className="w-4 h-4" />
                         Terminar Sessão
                     </button>
+                </div>
+            </div>
+
+            {/* Sincronização */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Icons.RefreshCw className="w-5 h-5" />
+                    Sincronização entre Dispositivos
+                </h3>
+                <div className="space-y-3 text-gray-300">
+                    <p className="text-sm">
+                        Sincroniza dados entre PC, telemóvel e outros dispositivos via cloud (Firebase).
+                    </p>
+
+                    {lastSyncTime && (
+                        <div className="text-xs text-gray-400 bg-gray-900/50 rounded p-2">
+                            Última sincronização: {new Date(lastSyncTime).toLocaleString('pt-PT')}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={async () => {
+                            try {
+                                await manualSync();
+                            } catch (error) {
+                                console.error('[Settings] Erro no sync:', error);
+                            }
+                        }}
+                        disabled={isSyncing}
+                        className={
+                            'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
+                            (isSyncing
+                                ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600')
+                        }
+                    >
+                        <Icons.RefreshCw className={'w-4 h-4' + (isSyncing ? ' animate-spin' : '')} />
+                        {isSyncing ? 'A sincronizar...' : 'Sincronizar Agora'}
+                    </button>
+
+                    <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
+                        💡 <strong>Nota:</strong> Dados novos são enviados automaticamente para a cloud. Use este botão para <strong>receber</strong> dados de outros dispositivos.
+                    </div>
                 </div>
             </div>
 
