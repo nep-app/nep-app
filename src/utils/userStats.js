@@ -83,7 +83,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         last7DaysCount: 0,
         lastInterval: null,
         lastMg: null,
+        timeSinceLastConsumption: null,
         goals: [],
+        alerts: [],
         lastUpdated: new Date().toISOString()
       }});
       return;
@@ -144,6 +146,32 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const time = new Date(c.timestamp || c.createdAt).getTime();
       return time >= sevenDaysAgo.getTime();
     }).length;
+
+    // Tempo desde último consumo (para badge "Sem consumir há")
+    let timeSinceLastConsumption = null;
+    if (lastConsumptionTime) {
+      const last = new Date(lastConsumptionTime);
+      const now = new Date();
+      const diffMs = now - last;
+      const hours = diffMs / (1000 * 60 * 60);
+
+      if (hours < 1) {
+        const minutes = Math.floor((diffMs / (1000 * 60)));
+        timeSinceLastConsumption = { value: minutes, unit: 'min', hours: hours };
+      } else if (hours < 24) {
+        timeSinceLastConsumption = { value: parseFloat(hours.toFixed(1)), unit: 'h', hours: hours };
+      } else {
+        const days = Math.floor(hours / 24);
+        const remainingHours = Math.floor(hours % 24);
+        timeSinceLastConsumption = {
+          value: days,
+          unit: days === 1 ? 'dia' : 'dias',
+          subValue: remainingHours,
+          subUnit: 'h',
+          hours: hours
+        };
+      }
+    }
 
     // Guardar goals (apenas type e target - dados mínimos)
     const goalsSimple = (goals || []).map(g => ({
@@ -372,6 +400,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       last7DaysCount,
       lastInterval,
       lastMg,
+      timeSinceLastConsumption, // ← Para badge "Sem consumir há"
       goals: goalsSimple,
       alerts, // ← PRÉ-CALCULADOS!
       lastUpdated: new Date().toISOString()
@@ -401,6 +430,7 @@ export const getUserStats = async () => {
         last7DaysCount: 0,
         lastInterval: null,
         lastMg: null,
+        timeSinceLastConsumption: null,
         goals: [],
         alerts: [],
         lastUpdated: null
@@ -416,6 +446,7 @@ export const getUserStats = async () => {
       last7DaysCount: 0,
       lastInterval: null,
       lastMg: null,
+      timeSinceLastConsumption: null,
       goals: [],
       alerts: [],
       lastUpdated: null

@@ -25,14 +25,19 @@ export function HomeViewRefactored({
   const metrics = useMetrics();
   const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
-  // Carregar avisos pré-calculados do cache (aparecem LOGO!)
+  // Carregar dados pré-calculados do cache (aparecem LOGO!)
   const [cachedAlerts, setCachedAlerts] = useState([]);
+  const [cachedTimeSince, setCachedTimeSince] = useState(null);
 
   useEffect(() => {
     getUserStats().then(stats => {
       if (stats.alerts && stats.alerts.length > 0) {
         console.log('[HomeView] ⚡ Avisos do cache carregados:', stats.alerts);
         setCachedAlerts(stats.alerts);
+      }
+      if (stats.timeSinceLastConsumption) {
+        console.log('[HomeView] ⚡ TimeSince do cache carregado:', stats.timeSinceLastConsumption);
+        setCachedTimeSince(stats.timeSinceLastConsumption);
       }
     });
   }, []);
@@ -61,7 +66,8 @@ export function HomeViewRefactored({
       </div>
 
       {(() => {
-        const timeSince = metrics.timeSinceLastConsumption;
+        // Usar cached timeSince até FASE 3 completar
+        const timeSince = !allDataLoaded && cachedTimeSince ? cachedTimeSince : metrics.timeSinceLastConsumption;
         if (timeSince) {
           const isLong = timeSince.hours >= 2;
           return (
