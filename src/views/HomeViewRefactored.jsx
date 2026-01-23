@@ -21,7 +21,7 @@ export function HomeViewRefactored({
   consumptionsToShow,
   setConsumptionsToShow
 }) {
-  const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
+  const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing, allDataLoaded } = useData();
   const metrics = useMetrics();
   const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
@@ -101,11 +101,9 @@ export function HomeViewRefactored({
       </div>
 
       {(() => {
-        // Usar avisos do cache SE dados ainda não carregaram (boot rápido!)
-        // Caso contrário, calcular em tempo real
-        const hasData = consumptions.length > 0 || goals.length > 0 || cycles.length > 0;
-
-        if (!hasData && cachedAlerts.length > 0) {
+        // Usar avisos do cache ATÉ a FASE 3 completar (todos os dados carregados)
+        // Só calcular em tempo real quando temos TODOS os dados (especialmente goals completos)
+        if (!allDataLoaded && cachedAlerts.length > 0) {
           // Mostrar avisos do cache (INSTANTÂNEO!)
           return (
             <div className="flex flex-wrap gap-2 mt-4 justify-center">

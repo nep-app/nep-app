@@ -104,6 +104,7 @@ export const LocalDataProvider = ({ children }) => {
   const [thoughts, setThoughts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
+  const [allDataLoaded, setAllDataLoaded] = useState(false); // True quando FASE 3 completa
 
   /**
    * Carregar dados de uma coleção (com desencriptação)
@@ -248,6 +249,7 @@ export const LocalDataProvider = ({ children }) => {
     }
 
     setLoading(true);
+    setAllDataLoaded(false); // Reset quando começar novo load
 
     try {
       // ⚡ FASE 1: App pronta IMEDIATAMENTE (sem desencriptar nada!)
@@ -339,6 +341,7 @@ export const LocalDataProvider = ({ children }) => {
               console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
               await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData);
 
+              setAllDataLoaded(true); // Sinalizar que FASE 3 está completa
               console.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
             } catch (error) {
               console.error('[LocalData] Erro na FASE 3:', error);
@@ -520,6 +523,7 @@ export const LocalDataProvider = ({ children }) => {
     // Estado
     loading,
     backgroundLoading,
+    allDataLoaded,
     consumptions,
     dailyLogs,
     reflections,
