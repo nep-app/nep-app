@@ -196,6 +196,174 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
+    // Aviso 3: Horas de sono (se existe meta sleep_hours)
+    const sleepGoal = (goals || []).find(g => g.type === 'sleep_hours');
+    if (sleepGoal && cycles && cycles.length > 0) {
+      const lastCycleWithSleep = cycles
+        .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      if (lastCycleWithSleep) {
+        const sleepHours = parseFloat(lastCycleWithSleep.sleep);
+        const targetSleep = parseFloat(sleepGoal.target);
+        const maxHealthySleep = targetSleep + 2;
+
+        if (sleepHours >= targetSleep && sleepHours <= maxHealthySleep) {
+          alerts.push({
+            text: `Parabéns! ${sleepHours}h de sono`,
+            emoji: '🌙',
+            color: 'green',
+            type: 'positive'
+          });
+        } else if (sleepHours > maxHealthySleep) {
+          alerts.push({
+            text: `Sono excessivo: ${sleepHours}h`,
+            emoji: '😴',
+            color: 'orange',
+            type: 'warning'
+          });
+        } else {
+          alerts.push({
+            text: `Atenção ao sono: ${sleepHours}h`,
+            emoji: '😴',
+            color: 'orange',
+            type: 'negative'
+          });
+        }
+      }
+    }
+
+    // Aviso 4: Risco preditivo (sono <6h E humor <5)
+    if (cycles && cycles.length > 0 && dailyLogs && dailyLogs.length > 0) {
+      const lastCycleWithSleep = cycles
+        .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      const lastWellbeingWithMood = dailyLogs
+        .filter(l => l.mood && !isNaN(parseInt(l.mood)))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      if (lastCycleWithSleep && lastWellbeingWithMood) {
+        const sleepHours = parseFloat(lastCycleWithSleep.sleep);
+        const mood = parseInt(lastWellbeingWithMood.mood);
+
+        if (sleepHours < 6 && mood < 5) {
+          alerts.push({
+            text: `⚠️ Risco elevado hoje: Dormiste ${sleepHours}h + humor baixo (${mood}/10)`,
+            emoji: '🔴',
+            color: 'red',
+            type: 'predictive',
+            description: '75% probabilidade de dia desafiante. Considera estratégias preventivas.'
+          });
+        } else if (sleepHours < 6 || mood < 5) {
+          const factor = sleepHours < 6 ? `sono curto (${sleepHours}h)` : `humor baixo (${mood}/10)`;
+          alerts.push({
+            text: `⚡ Atenção: ${factor} ontem`,
+            emoji: '⚠️',
+            color: 'orange',
+            type: 'predictive',
+            description: 'Risco moderado. Planeia bem o dia.'
+          });
+        }
+      }
+    }
+
+    // Aviso 5: Hora de deitar (se existe meta bedtime_before)
+    const bedtimeGoal = (goals || []).find(g => g.type === 'bedtime_before');
+    if (bedtimeGoal && cycles && cycles.length > 0) {
+      const lastCycle = cycles
+        .filter(c => c.bedtime)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      if (lastCycle) {
+        const targetStr = typeof bedtimeGoal.target === 'string' ? bedtimeGoal.target : String(bedtimeGoal.target).padStart(2, '0') + ':00';
+        const bedtimeParts = lastCycle.bedtime.split(':');
+        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+        const bedtimeOriginalMinutes = bedtimeMinutes;
+
+        const targetParts = targetStr.split(':');
+        let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+
+        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
+        if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
+
+        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
+
+        if (bedtimeMinutes <= targetMinutes && isHealthyBedtime) {
+          alerts.push({
+            text: `Boa! Deitaste às ${lastCycle.bedtime}`,
+            emoji: '💤',
+            color: 'green',
+            type: 'positive'
+          });
+        } else {
+          alerts.push({
+            text: `Atenção! Deitaste às ${lastCycle.bedtime}`,
+            emoji: '🌃',
+            color: 'orange',
+            type: 'negative'
+          });
+        }
+      }
+    }
+
+    // Aviso 6: Último consumo antes da 00h (se existe meta limit_last)
+    const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
+    if (limitLastGoal && cycles && cycles.length > 0) {
+      const lastCycle = cycles
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+      if (lastCycle && lastCycle.lastBefore00 !== undefined) {
+        if (lastCycle.lastBefore00 === true) {
+          alerts.push({
+            text: `Boa! Último consumo antes da 00h`,
+            emoji: '🌙',
+            color: 'green',
+            type: 'positive'
+          });
+        } else {
+          alerts.push({
+            text: `Cuidado! Último após 00h`,
+            emoji: '⏰',
+            color: 'orange',
+            type: 'negative'
+          });
+        }
+      }
+    }
+
+    // Aviso 7: Frequência diária (se existe meta reduce_frequency)
+    const frequencyGoal = (goals || []).find(g => g.type === 'reduce_frequency');
+    if (frequencyGoal && consumptions && consumptions.length > 0) {
+      // Calcular consumos de hoje
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayConsumptions = consumptions.filter(c => {
+        const cDate = new Date(c.timestamp || c.createdAt);
+        cDate.setHours(0, 0, 0, 0);
+        return cDate.getTime() === today.getTime();
+      });
+
+      const todayCount = todayConsumptions.length;
+      const targetFrequency = parseInt(frequencyGoal.target);
+
+      if (todayCount < targetFrequency) {
+        alerts.push({
+          text: `Boa! Só ${todayCount} ${todayCount === 1 ? 'consumo' : 'consumos'} hoje`,
+          emoji: '🎯',
+          color: 'green',
+          type: 'positive'
+        });
+      } else if (todayCount >= targetFrequency) {
+        alerts.push({
+          text: `Atenção! Já ${todayCount} consumos hoje`,
+          emoji: '⚠️',
+          color: 'orange',
+          type: 'negative'
+        });
+      }
+    }
+
     // Guardar em metadata
     const stats = {
       streak,
