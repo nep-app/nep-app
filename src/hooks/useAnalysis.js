@@ -187,17 +187,22 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     };
   }, [wellbeingLogs, consumptions]);
 
-  // Streak calculation (usa cachedStats se consumptions vazio - boot rápido!)
+  // Streak calculation (usa cachedStats durante FASE 1 - boot rápido!)
   const streaks = useMemo(() => {
-    // Se consumptions vazio mas temos cachedStats, usar cached (FASE 1)
-    if (consumptions.length === 0 && cachedStats?.streak !== undefined) {
-      console.log('[useAnalysis] ⚡ Usando streak do cache:', cachedStats.streak);
+    // PRIORIDADE 1: Se temos cachedStats, usar SEMPRE (são calculados com TODOS os dados)
+    // Isto garante streak correto mesmo durante FASE 1 (7 dias incompletos)
+    if (cachedStats?.streak !== undefined && cachedStats.streak > 0) {
+      console.log('[useAnalysis] ⚡ Usando streak do cache (completo):', cachedStats.streak);
       return { current: cachedStats.streak, max: cachedStats.streak };
     }
 
-    // Caso normal: calcular streak dos dados desencriptados (FASE 2)
-    if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
+    // PRIORIDADE 2: Calcular dos dados desencriptados (FASE 2 ou se cache vazio)
+    if (consumptions.length === 0 && wellbeingLogs.length === 0) {
+      console.log('[useAnalysis] ℹ️ Sem dados para calcular streak');
+      return { current: 0, max: 0 };
+    }
 
+    console.log('[useAnalysis] 🔢 Calculando streak dos dados desencriptados...');
     const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
     let streak = 1;
     let maxStreak = 1;

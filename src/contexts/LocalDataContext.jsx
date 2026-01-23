@@ -278,6 +278,13 @@ export const LocalDataProvider = ({ children }) => {
       setGoals(goalsData);
       setThoughts(thoughtsData);
 
+      // Criar stats iniciais com dados da FASE 1 (para próximo boot ser rápido)
+      // FASE 2 vai recalcular com dados completos depois
+      if (consumptionsData.length > 0) {
+        console.log('[LocalData] 📊 Criando stats iniciais (FASE 1)...');
+        await updateUserStats(consumptionsData);
+      }
+
       // App está PRONTA! Loading = false
       setLoading(false);
       console.log('[LocalData] ✅ FASE 1 completa - App pronta!');
