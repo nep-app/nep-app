@@ -10,8 +10,13 @@ import {
   createPasswordVerificationData
 } from '../utils/encryption';
 import { decryptFromFirebase, decryptItems, encryptItems } from '../utils/dexieEncryption';
-import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
-import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
+import {
+  syncSalt,
+  uploadSaltToFirebase,
+  uploadPinVerificationToFirebase,
+  downloadPinVerificationFromFirebase,
+  checkPinAccountExistsInFirebase
+} from '../utils/saltManager';
 import { createControlItem, recoverSaltFromControlItem } from '../utils/syncValidation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';

@@ -2,8 +2,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot }
 import { db as dexieDB, getMetadata, setMetadata } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
 import { validateKey, validateSalt, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
-import { detectCorrectSalt, analyzeSaltConflict } from '../utils/saltDetective';
-import { diagnoseSaltSituation } from '../utils/saltRecoveryCheck';
+import { detectCorrectSalt, analyzeSaltConflict, diagnoseSaltSituation } from '../utils/saltManager';
 
 // Helper functions (moved from dexieDB.js to use correct DB)
 const getAllItems = async (collectionName) => {
