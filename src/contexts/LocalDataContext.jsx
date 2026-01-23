@@ -234,12 +234,13 @@ export const LocalDataProvider = ({ children }) => {
   }, [encryptionKey, getUserSalt]);
 
   /**
-   * Carregar todas as coleções (com LAZY LOADING)
+   * Carregar todas as coleções (com LAZY LOADING em 3 fases)
    *
-   * FASE 1 (RÁPIDA): Carrega últimos 7 dias + PRIMEIRO item (métricas corretas)
-   * FASE 2 (BACKGROUND): Carrega resto dos dados (~800+ items) após 500ms
+   * FASE 1 (INSTANTÂNEO <500ms): App pronta logo (stats do cache)
+   * FASE 2 (BACKGROUND ~1-2s): Carrega últimos 7 dias (lista aparece)
+   * FASE 3 (BACKGROUND ~10s): Carrega resto dos dados + actualiza stats
    *
-   * Isto garante que a app abre RÁPIDO (Fase 1) e depois carrega tudo (Fase 2)
+   * Isto garante que a app abre INSTANTÂNEA e depois carrega dados progressivamente
    */
   const loadAllCollections = useCallback(async () => {
     if (!encryptionKey) {
@@ -249,96 +250,105 @@ export const LocalDataProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // ⚡ FASE 1: Carregar últimos 7 dias + PRIMEIRO item (BOOT ULTRA-RÁPIDO!)
-      console.log('[LocalData] ⚡ FASE 1: Carregando últimos 7 dias + primeiro item (boot ultra-rápido)...');
+      // ⚡ FASE 1: App pronta IMEDIATAMENTE (sem desencriptar nada!)
+      // Stats aparecem do cache (via useAnalysis), resto carrega em background
+      console.log('[LocalData] ⚡ FASE 1: App pronta instantânea (stats do cache)...');
 
-      const [
-        consumptionsData,
-        dailyLogsData,
-        reflectionsData,
-        wellbeingLogsData,
-        cyclesData,
-        goalsData,
-        thoughtsData
-      ] = await Promise.all([
-        loadCollectionWithFirst('consumptions', 7),
-        loadCollectionWithFirst('dailyLogs', 7),
-        loadCollectionWithFirst('reflections', 7),
-        loadCollectionWithFirst('wellbeingLogs', 7),
-        loadCollectionWithFirst('cycles', 7),
-        loadCollectionWithFirst('goals', 7),
-        loadCollectionWithFirst('thoughts', 7)
-      ]);
+      setLoading(false); // App PRONTA já!
+      console.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
 
-      setConsumptions(consumptionsData);
-      setDailyLogs(dailyLogsData);
-      setReflections(reflectionsData);
-      setWellbeingLogs(wellbeingLogsData);
-      setCycles(cyclesData);
-      setGoals(goalsData);
-      setThoughts(thoughtsData);
-
-      // Criar stats iniciais com dados da FASE 1 (para próximo boot ser rápido)
-      // FASE 2 vai recalcular com dados completos depois
-      if (consumptionsData.length > 0) {
-        console.log('[LocalData] 📊 Criando stats iniciais (FASE 1)...');
-        await updateUserStats(consumptionsData);
-      }
-
-      // App está PRONTA! Loading = false
-      setLoading(false);
-      console.log('[LocalData] ✅ FASE 1 completa - App pronta!');
-
-      // 🔄 FASE 2: Verificar se precisa carregar mais dados
+      // 🔄 FASE 2: Carregar últimos 7 dias em background (lista aparece)
       setTimeout(async () => {
         try {
-          // Verificar se FASE 1 já carregou TUDO (evitar duplicação!)
-          const allItemsCount = await getAllItems('consumptions');
-          const phase1LoadedCount = consumptionsData.length;
-
-          if (phase1LoadedCount >= allItemsCount.length) {
-            console.log('[LocalData] ⚡ FASE 1 já carregou TUDO - skip FASE 2 (optimização)');
-            return; // Não fazer FASE 2
-          }
-
           setBackgroundLoading(true);
-          console.log('[LocalData] 🔄 FASE 2: Carregando dados antigos em background...');
+          console.log('[LocalData] 🔄 FASE 2: Carregando últimos 7 dias (lista aparece)...');
 
-          // Carregar TUDO (sem filtro de idade - 999999 dias = todos)
           const [
-            consumptionsFullData,
-            dailyLogsFullData,
-            reflectionsFullData,
-            wellbeingLogsFullData,
-            cyclesFullData,
-            goalsFullData,
-            thoughtsFullData
+            consumptionsData,
+            dailyLogsData,
+            reflectionsData,
+            wellbeingLogsData,
+            cyclesData,
+            goalsData,
+            thoughtsData
           ] = await Promise.all([
-            loadCollection('consumptions', 999999),
-            loadCollection('dailyLogs', 999999),
-            loadCollection('reflections', 999999),
-            loadCollection('wellbeingLogs', 999999),
-            loadCollection('cycles', 999999),
-            loadCollection('goals', 999999),
-            loadCollection('thoughts', 999999)
+            loadCollectionWithFirst('consumptions', 7),
+            loadCollectionWithFirst('dailyLogs', 7),
+            loadCollectionWithFirst('reflections', 7),
+            loadCollectionWithFirst('wellbeingLogs', 7),
+            loadCollectionWithFirst('cycles', 7),
+            loadCollectionWithFirst('goals', 7),
+            loadCollectionWithFirst('thoughts', 7)
           ]);
 
-          setConsumptions(consumptionsFullData);
-          setDailyLogs(dailyLogsFullData);
-          setReflections(reflectionsFullData);
-          setWellbeingLogs(wellbeingLogsFullData);
-          setCycles(cyclesFullData);
-          setGoals(goalsFullData);
-          setThoughts(thoughtsFullData);
+          setConsumptions(consumptionsData);
+          setDailyLogs(dailyLogsData);
+          setReflections(reflectionsData);
+          setWellbeingLogs(wellbeingLogsData);
+          setCycles(cyclesData);
+          setGoals(goalsData);
+          setThoughts(thoughtsData);
 
-          // Atualizar stats pré-calculadas (para boot rápido futuro)
-          console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-          await updateUserStats(consumptionsFullData);
+          console.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
 
-          console.log('[LocalData] ✅ FASE 2 completa - Todos os dados carregados!');
+          // 🔄 FASE 3: Carregar TUDO em background (dados antigos + actualizar stats)
+          setTimeout(async () => {
+            try {
+              // Verificar se FASE 2 já carregou TUDO
+              const allItemsCount = await getAllItems('consumptions');
+              if (consumptionsData.length >= allItemsCount.length) {
+                console.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
+                // Ainda assim actualizar stats com dados completos
+                if (consumptionsData.length > 0) {
+                  console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+                  await updateUserStats(consumptionsData);
+                }
+                setBackgroundLoading(false);
+                return;
+              }
+
+              console.log('[LocalData] 🔄 FASE 3: Carregando dados antigos...');
+
+              const [
+                consumptionsFullData,
+                dailyLogsFullData,
+                reflectionsFullData,
+                wellbeingLogsFullData,
+                cyclesFullData,
+                goalsFullData,
+                thoughtsFullData
+              ] = await Promise.all([
+                loadCollection('consumptions', 999999),
+                loadCollection('dailyLogs', 999999),
+                loadCollection('reflections', 999999),
+                loadCollection('wellbeingLogs', 999999),
+                loadCollection('cycles', 999999),
+                loadCollection('goals', 999999),
+                loadCollection('thoughts', 999999)
+              ]);
+
+              setConsumptions(consumptionsFullData);
+              setDailyLogs(dailyLogsFullData);
+              setReflections(reflectionsFullData);
+              setWellbeingLogs(wellbeingLogsFullData);
+              setCycles(cyclesFullData);
+              setGoals(goalsFullData);
+              setThoughts(thoughtsFullData);
+
+              // Atualizar stats pré-calculadas (para próximo boot)
+              console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+              await updateUserStats(consumptionsFullData);
+
+              console.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
+            } catch (error) {
+              console.error('[LocalData] Erro na FASE 3:', error);
+            } finally {
+              setBackgroundLoading(false);
+            }
+          }, 100); // FASE 3 começa 100ms depois da FASE 2
+
         } catch (error) {
-          console.error('[LocalData] Erro na FASE 2 (background):', error);
-        } finally {
+          console.error('[LocalData] Erro na FASE 2:', error);
           setBackgroundLoading(false);
         }
       }, 500); // Esperar 500ms antes de carregar resto
