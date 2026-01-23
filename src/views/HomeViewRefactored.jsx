@@ -108,16 +108,9 @@ export function HomeViewRefactored({
         if (!hasData && cachedAlerts.length > 0) {
           // Mostrar avisos do cache (INSTANTÂNEO!)
           return (
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 mt-4 justify-center">
               {cachedAlerts.map((alert, i) => (
-                <AlertCard
-                  key={i}
-                  text={alert.text}
-                  emoji={alert.emoji}
-                  color={alert.color}
-                  type={alert.type}
-                  description={alert.description}
-                />
+                <AlertCard key={i} alert={alert} />
               ))}
             </div>
           );
