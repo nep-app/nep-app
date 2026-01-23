@@ -9,7 +9,7 @@ import {
   verifyPassword,
   createPasswordVerificationData
 } from '../utils/encryption';
-import { decryptFromFirebase } from '../utils/dexieEncryption';
+import { decryptFromFirebase, decryptItems, encryptItems } from '../utils/dexieEncryption';
 import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
 import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
 import { createControlItem, recoverSaltFromControlItem } from '../utils/syncValidation';
@@ -509,11 +509,40 @@ export const AuthProvider = ({ children }) => {
       const verification = await createPasswordVerificationData(newPin, salt);
       await setMetadata('pinVerification', JSON.stringify(verification));
 
-      // IMPORTANTE: Aqui precisaríamos re-encriptar TODOS os dados com novo PIN
-      // Por agora, só atualizamos a verificação
-      // TODO: Implementar re-encriptação de dados em background
+      // RE-ENCRIPTAR TODOS OS DADOS COM NOVO PIN (SECURITY FIX!)
+      console.log('[AuthContext] 🔐 Re-encriptando dados com novo PIN...');
 
-      // Atualizar chave em memória
+      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'thoughts'];
+
+      for (const collectionName of collections) {
+        try {
+          // 1. Ler dados encriptados
+          const encryptedItems = await db[collectionName].toArray();
+
+          if (encryptedItems.length === 0) {
+            console.log(`[AuthContext] ⏭️ ${collectionName}: sem dados, skip`);
+            continue;
+          }
+
+          // 2. Desencriptar com PIN ATUAL (ainda está em encryptionKey)
+          const decryptedItems = await decryptItems(collectionName, encryptedItems, currentPin, salt);
+
+          // 3. Encriptar com PIN NOVO
+          const reencryptedItems = await encryptItems(collectionName, decryptedItems, newPin, salt);
+
+          // 4. Guardar de volta (bulk update)
+          await db[collectionName].bulkPut(reencryptedItems);
+
+          console.log(`[AuthContext] ✅ ${collectionName}: ${reencryptedItems.length} items re-encriptados`);
+        } catch (error) {
+          console.error(`[AuthContext] ❌ Erro ao re-encriptar ${collectionName}:`, error);
+          throw new Error(`Falha ao re-encriptar ${collectionName}: ${error.message}`);
+        }
+      }
+
+      console.log('[AuthContext] ✅ Todos os dados re-encriptados com sucesso!');
+
+      // Atualizar chave em memória (agora com novo PIN)
       setEncryptionKey(newPin);
 
       return { success: true };
