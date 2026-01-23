@@ -22,7 +22,7 @@ class NEPDatabase extends Dexie {
   constructor() {
     super('NEPDatabase');
 
-    // Schema version 1
+    // Schema version 1 (original)
     this.version(1).stores({
       consumptions: 'id, date, timestamp, syncStatus, lastModified, deleted',
       dailyLogs: 'id, date, timestamp, syncStatus, lastModified, deleted',
@@ -31,12 +31,22 @@ class NEPDatabase extends Dexie {
       cycles: 'id, date, timestamp, syncStatus, lastModified, deleted',
       goals: 'id, type, createdAt, syncStatus, lastModified, deleted',
       thoughts: 'id, date, timestamp, syncStatus, lastModified, deleted',
-
-      // Metadados e configurações
-      metadata: 'key, value',
-
-      // Fila de sync (para retry em caso de falha)
       syncQueue: '++id, collection, itemId, operation, timestamp, retries'
+    });
+
+    // Schema version 2 (added metadata table for cached stats)
+    this.version(2).stores({
+      consumptions: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      dailyLogs: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      reflections: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      wellbeingLogs: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      cycles: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      goals: 'id, type, createdAt, syncStatus, lastModified, deleted',
+      thoughts: 'id, date, timestamp, syncStatus, lastModified, deleted',
+      syncQueue: '++id, collection, itemId, operation, timestamp, retries',
+
+      // Metadados (key-value store para cached stats)
+      metadata: 'key'
     });
 
     // Typed tables
