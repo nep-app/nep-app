@@ -301,7 +301,7 @@ export const LocalDataProvider = ({ children }) => {
                 // Ainda assim actualizar stats com dados completos
                 if (consumptionsData.length > 0) {
                   console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-                  await updateUserStats(consumptionsData);
+                  await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData);
                 }
                 setBackgroundLoading(false);
                 return;
@@ -337,7 +337,7 @@ export const LocalDataProvider = ({ children }) => {
 
               // Atualizar stats pré-calculadas (para próximo boot)
               console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-              await updateUserStats(consumptionsFullData);
+              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData);
 
               console.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
             } catch (error) {

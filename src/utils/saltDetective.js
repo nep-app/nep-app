@@ -1,7 +1,9 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { decryptFromFirebase } from './dexieEncryption';
-import { downloadSaltFromFirebase } from './saltSync';
-import { recoverSaltFromControlItem } from './syncValidation';
+import { downloadSaltFromFirebase, uploadSaltToFirebase } from './saltSync';
+import { recoverSaltFromControlItem, createControlItem } from './syncValidation';
+import { setMetadata } from '../db/localDB';
+import { saltToBase64 } from './encryption';
 
 /**
  * Salt Detective - Encontra qual salt consegue desencriptar dados históricos
@@ -213,10 +215,7 @@ export async function replaceSaltEverywhere(firebaseDB, userId, correctSalt) {
   console.log('🔧 SUBSTITUINDO SALT EM TODOS OS LOCAIS');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  const { uploadSaltToFirebase } = await import('./saltSync');
-  const { createControlItem } = await import('./syncValidation');
-  const { setMetadata } = await import('../db/localDB');
-  const { saltToBase64 } = await import('./encryption');
+  // Imports já estão no topo do ficheiro (static)
 
   try {
     // 1. Atualizar localStorage

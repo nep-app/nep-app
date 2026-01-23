@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getMetadata, setMetadata } from '../db/localDB';
+import { getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
 import {
   encrypt,
   decrypt,
@@ -9,12 +9,13 @@ import {
   verifyPassword,
   createPasswordVerificationData
 } from '../utils/encryption';
+import { decryptFromFirebase } from '../utils/dexieEncryption';
 import { syncSalt, uploadSaltToFirebase } from '../utils/saltSync';
 import { uploadPinVerificationToFirebase, downloadPinVerificationFromFirebase, checkPinAccountExistsInFirebase } from '../utils/pinVerificationSync';
 import { createControlItem, recoverSaltFromControlItem } from '../utils/syncValidation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const AuthContext = createContext();
@@ -345,7 +346,6 @@ export const AuthProvider = ({ children }) => {
 
       // 🔧 TENTAR DESENCRIPTAR DIRETAMENTE (em vez de verifyPassword que engole o erro)
       try {
-        const { decrypt } = await import('../utils/encryption');
         await decrypt(verification.data, verification.iv, pin, salt);
         isValid = true;
       } catch (error) {
@@ -359,7 +359,6 @@ export const AuthProvider = ({ children }) => {
 
         try {
           // Buscar item de controlo do Firebase
-          const { doc, getDoc } = await import('firebase/firestore');
           const controlDoc = await getDoc(doc(firebaseInstances.firestore, `users/${firebaseUser.uid}/_system/validation`));
 
           if (controlDoc.exists()) {
@@ -372,7 +371,6 @@ export const AuthProvider = ({ children }) => {
               console.log('[AuthContext] 🧪 Testando PIN com salt do item de controlo...');
 
               try {
-                const { decryptFromFirebase } = await import('../utils/dexieEncryption');
                 await decryptFromFirebase(controlData.data, controlData.iv, pin, correctSalt);
 
                 // ✅ PIN está CORRETO com o salt do item de controlo!
@@ -381,7 +379,6 @@ export const AuthProvider = ({ children }) => {
 
                 // Atualizar salt para o correto
                 salt = correctSalt;
-                const { saltToBase64 } = await import('../utils/encryption');
                 saltBase64 = saltToBase64(salt);
                 await setMetadata('salt', saltBase64);
 
@@ -418,7 +415,6 @@ export const AuthProvider = ({ children }) => {
       if (needsPinVerificationRecovery) {
         try {
           console.log('[AuthContext] 🔧 Recriando pinVerification com salt correto...');
-          const { createPasswordVerificationData } = await import('../utils/encryption');
           const newVerification = await createPasswordVerificationData(pin, salt);
 
           // Guardar localmente
@@ -477,7 +473,6 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     // Limpar apenas dados do utilizador, MAS manter metadados de autenticação
     // (userEmail, salt, pinVerification) para que a app saiba que a conta existe
-    const { clearUserDataOnly } = await import('../db/localDB');
     await clearUserDataOnly();
     console.log('[Auth] 🗑️ Dados do utilizador limpos no logout (metadados mantidos)');
 
@@ -543,7 +538,6 @@ export const AuthProvider = ({ children }) => {
    * Resetar app (apagar tudo - CUIDADO!)
    */
   const resetApp = useCallback(async () => {
-    const { clearAllData } = await import('../db/localDB');
     await clearAllData();
     setUserEmail(null);
     setEncryptionKey(null);

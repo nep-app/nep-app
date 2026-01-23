@@ -1,5 +1,5 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
-import { db as dexieDB } from '../db/localDB';
+import { db as dexieDB, getMetadata, setMetadata } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
 import { validateKey, validateSalt, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
 import { detectCorrectSalt, analyzeSaltConflict } from '../utils/saltDetective';
@@ -260,7 +260,6 @@ class SyncService {
     let effectiveMaxAge = maxAge;
     if (incremental && maxAge === null) {
       try {
-        const { getMetadata } = await import('../db/localDB');
         const lastSyncStr = await getMetadata('lastSyncTimestamp');
         if (lastSyncStr) {
           const lastSync = new Date(lastSyncStr);
@@ -627,7 +626,6 @@ class SyncService {
       // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
       if (incremental) {
         try {
-          const { setMetadata } = await import('../db/localDB');
           await setMetadata('lastSyncTimestamp', new Date().toISOString());
         } catch (error) {
           console.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);

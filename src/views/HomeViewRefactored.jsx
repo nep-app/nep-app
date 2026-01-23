@@ -7,6 +7,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { formatDateTime } from '../utils/helpers';
+import { getUserStats } from '../utils/userStats';
 
 export function HomeViewRefactored({
   currentReflection,
@@ -23,6 +24,18 @@ export function HomeViewRefactored({
   const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
   const { setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
+
+  // Carregar avisos pré-calculados do cache (aparecem LOGO!)
+  const [cachedAlerts, setCachedAlerts] = useState([]);
+
+  useEffect(() => {
+    getUserStats().then(stats => {
+      if (stats.alerts && stats.alerts.length > 0) {
+        console.log('[HomeView] ⚡ Avisos do cache carregados:', stats.alerts);
+        setCachedAlerts(stats.alerts);
+      }
+    });
+  }, []);
 
   const handleSync = async () => {
     try {
@@ -88,7 +101,29 @@ export function HomeViewRefactored({
       </div>
 
       {(() => {
-        // Recriar os alerts aqui (após o botão)
+        // Usar avisos do cache SE dados ainda não carregaram (boot rápido!)
+        // Caso contrário, calcular em tempo real
+        const hasData = consumptions.length > 0 || goals.length > 0 || cycles.length > 0;
+
+        if (!hasData && cachedAlerts.length > 0) {
+          // Mostrar avisos do cache (INSTANTÂNEO!)
+          return (
+            <div className="space-y-2">
+              {cachedAlerts.map((alert, i) => (
+                <AlertCard
+                  key={i}
+                  text={alert.text}
+                  emoji={alert.emoji}
+                  color={alert.color}
+                  type={alert.type}
+                  description={alert.description}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        // Calcular avisos em tempo real (quando dados disponíveis)
         const alerts = [];
 
         // 1. META: Intervalo entre consumos (increase_interval)

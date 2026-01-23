@@ -6,6 +6,7 @@ import { firebaseConfig } from '../utils/firebase';
 import { useLocalData } from './LocalDataContext';
 import { useAuth } from './AuthContext';
 import { syncService } from '../services/syncService';
+import { getMetadata, setMetadata } from '../db/localDB';
 
 const DataContext = createContext();
 
@@ -109,7 +110,6 @@ export const DataProvider = ({ children }) => {
         await syncService.init(db, user, pin, salt);
 
         // Verificar se é um user diferente (UID mudou)
-        const { getMetadata, setMetadata } = await import('../db/localDB');
         const lastUID = await getMetadata('lastFirebaseUID');
         const currentUID = user.uid;
 
