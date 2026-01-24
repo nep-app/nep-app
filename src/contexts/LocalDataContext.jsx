@@ -300,11 +300,18 @@ export const LocalDataProvider = ({ children }) => {
               const allItemsCount = await getAllItems('consumptions');
               if (consumptionsData.length >= allItemsCount.length) {
                 console.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
-                // Ainda assim actualizar stats com dados completos
-                if (consumptionsData.length > 0) {
+
+                // IMPORTANTE: Só atualizar stats se TODOS os goals foram carregados!
+                // FASE 2 pode carregar goals parcialmente, então precisamos verificar
+                const allGoals = await getAllItems('goals');
+                if (goalsData.length >= allGoals.length && consumptionsData.length > 0) {
                   console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
                   await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData);
+                  setAllDataLoaded(true); // Sinalizar que TUDO está carregado
+                } else {
+                  console.log('[LocalData] ⚠️ Goals parcialmente carregados - aguardar FASE 3 para stats');
                 }
+
                 setBackgroundLoading(false);
                 return;
               }
