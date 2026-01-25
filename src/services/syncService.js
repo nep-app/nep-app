@@ -365,72 +365,78 @@ class SyncService {
 
         const firebaseItems = new Map();
         const decryptStart = performance.now();
-        for (const docSnap of snapshot.docs) {
-          // ⛔ CIRCUIT BREAKER CHECK: Verificar a cada item
+
+        // 🚀 BATCH DECRYPTION: Processar em chunks paralelos (50 docs de cada vez)
+        const BATCH_SIZE = 50;
+        const docs = snapshot.docs;
+
+        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+          // ⛔ CIRCUIT BREAKER CHECK: Verificar antes de cada batch
           if (circuitBreaker.shouldStop()) {
             console.error(
               `[Sync] ⛔ Circuit breaker aberto durante processamento!\n` +
               `Coleção: ${collectionName}\n` +
               `PARANDO IMEDIATAMENTE.`
             );
-            break; // Sair do loop de items
+            break;
           }
 
-          try {
-            const firebaseData = docSnap.data();
+          const batch = docs.slice(i, i + BATCH_SIZE);
 
-            // ✅ Filtro de idade removido - agora feito server-side na query do Firestore
+          // Processar batch em paralelo
+          const results = await Promise.allSettled(
+            batch.map(async (docSnap) => {
+              const firebaseData = docSnap.data();
 
-            // Desencriptar
-            let item;
-            if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
-              item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+              // Desencriptar
+              let item;
+              if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+                item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
+              } else {
+                item = { ...firebaseData };
+              }
+
+              item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
+              return { id: docSnap.id, item, firebaseData };
+            })
+          );
+
+          // Processar resultados do batch
+          for (const result of results) {
+            if (result.status === 'fulfilled') {
+              const { id, item } = result.value;
+              firebaseItems.set(id, item);
+              circuitBreaker.recordSuccess(); // ✅ Sucesso
             } else {
-              item = { ...firebaseData };
-            }
+              // Erro na desencriptação
+              const error = result.reason;
 
-            item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
-            firebaseItems.set(docSnap.id, item);
+              // 🧟 MODO SKIP ZOMBIES: Ignorar SILENCIOSAMENTE
+              if (skipZombies) {
+                totalZombies++;
+                continue;
+              }
 
-            // ✅ Sucesso - reset circuit breaker
-            circuitBreaker.recordSuccess();
+              // ❌ Erro - registar no logger (SEM stack trace)
+              errorLogger.logError(collectionName, 'batch-item', error.name || 'DecryptError');
+              totalSkipped++;
 
-          } catch (error) {
-            // 🧟 MODO SKIP ZOMBIES: Ignorar SILENCIOSAMENTE
-            if (skipZombies) {
-              totalZombies++;
-              // Não fazer log, não registar erro, apenas continuar
-              continue;
-            }
-
-            // ❌ Erro - registar no logger (SEM stack trace)
-            errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
-            totalSkipped++;
-
-            // Guardar primeiro item que falhou para análise de salt
-            if (!firstFailedItem && firebaseData.encrypted) {
-              firstFailedItem = {
-                collection: collectionName,
-                id: docSnap.id,
-                data: firebaseData.data,
-                iv: firebaseData.iv,
-                error: error.name
-              };
-            }
-
-            // Registar no circuit breaker - SE ABRIR, PARA IMEDIATAMENTE
-            const shouldStop = circuitBreaker.recordError();
-            if (shouldStop) {
-              // Circuit breaker abriu - break IMEDIATAMENTE
-              console.error(
-                `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
-                `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
-                `Item: ${collectionName}/${docSnap.id}\n` +
-                `PARANDO SYNC AGORA!`
-              );
-              break; // Sair do loop de items IMEDIATAMENTE
+              // Registar no circuit breaker - SE ABRIR, PARA IMEDIATAMENTE
+              const shouldStop = circuitBreaker.recordError();
+              if (shouldStop) {
+                console.error(
+                  `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
+                  `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
+                  `Coleção: ${collectionName}\n` +
+                  `PARANDO SYNC AGORA!`
+                );
+                break;
+              }
             }
           }
+
+          // Se circuit breaker abriu durante processamento de resultados, parar
+          if (circuitBreaker.shouldStop()) break;
         }
 
         const decryptTime = (performance.now() - decryptStart).toFixed(0);
