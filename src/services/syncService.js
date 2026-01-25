@@ -338,10 +338,25 @@ class SyncService {
           break; // Sair IMEDIATAMENTE do loop de collections
         }
 
-        // 1. Buscar TODOS os dados do Firebase
+        // 1. Buscar dados do Firebase (com filtro server-side se effectiveMaxAge definido)
         const firebasePath = `users/${this.firebaseUser.uid}/${collectionName}`;
         const firebaseCollection = collection(this.firebaseDB, firebasePath);
-        const snapshot = await getDocs(firebaseCollection);
+
+        let snapshot;
+        if (effectiveMaxAge) {
+          // 🚀 FILTRO SERVER-SIDE: Só baixar documentos recentes
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
+          const q = query(
+            firebaseCollection,
+            where('lastModified', '>=', cutoffDate.toISOString())
+          );
+          snapshot = await getDocs(q);
+          console.log(`[Sync] 🚀 Query otimizada: apenas docs após ${cutoffDate.toLocaleDateString('pt-PT')} (${collectionName})`);
+        } else {
+          // Buscar tudo se não houver filtro de idade
+          snapshot = await getDocs(firebaseCollection);
+        }
 
         const firebaseItems = new Map();
         for (const docSnap of snapshot.docs) {
@@ -358,18 +373,7 @@ class SyncService {
           try {
             const firebaseData = docSnap.data();
 
-            // 🧟 FILTRO DE IDADE: Skip items muito antigos se effectiveMaxAge especificado
-            if (effectiveMaxAge && firebaseData.lastModified) {
-              const itemDate = new Date(firebaseData.lastModified);
-              const cutoffDate = new Date();
-              cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
-
-              if (itemDate < cutoffDate) {
-                // Item muito antigo - skip silenciosamente
-                totalZombies++;
-                continue;
-              }
-            }
+            // ✅ Filtro de idade removido - agora feito server-side na query do Firestore
 
             // Desencriptar
             let item;
