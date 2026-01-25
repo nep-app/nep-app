@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "firebase": "^10.7.1",
+    "firebase": "^12.8.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "recharts": "^3.4.1"
