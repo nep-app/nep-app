@@ -49,6 +49,7 @@ export function HistoryView({
     allItemsToShow,
     setAllItemsToShow,
     openEditConsumption,
+    openEditCycle,
     deleteItem,
     handleFillGap
 }) {
@@ -298,7 +299,10 @@ export function HistoryView({
                                                                                         return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    <button onClick={() => openEditCycle(cycle)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>
+                                                                                    <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             {cycle.bedtime && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
@@ -989,7 +993,10 @@ export function HistoryView({
                                                                                 return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
                                                                             })()}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        <div className="flex gap-2">
+                                                                            <button onClick={() => openEditCycle(cycle)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>
+                                                                            <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        </div>
                                                                     </div>
                                                                     {cycle.bedtime && (
                                                                         <div className="text-sm mb-1 text-gray-300">

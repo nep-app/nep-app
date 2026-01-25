@@ -134,7 +134,7 @@ function HarmReductionTracker() {
 function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // Custom hooks
             const { toasts, showToast } = useToast();
@@ -270,6 +270,8 @@ function AuthenticatedApp() {
             };
 
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
+
+            const openEditCycle = (cycle) => { setEditingCycle({...cycle}); setShowCycleModal(true); };
 
             // Função para preencher gaps - pré-preenche formulários com a data selecionada e abre o modal correspondente
             const handleFillGap = (type, dateKey) => {
@@ -619,28 +621,44 @@ function AuthenticatedApp() {
 
             const submitCycle = async () => {
                 try {
-                    // Se createdAt foi fornecido, usar esse; senão usar agora
-                    const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
-                    const timestampISO = customDateTime.toISOString();
-                    const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
+                    if (editingCycle) {
+                        // UPDATE: Atualizar ciclo existente
+                        const updatedData = {
+                            bedtime: cycleForm.bedtime,
+                            triggers: cycleForm.triggers,
+                            notes: cycleForm.notes,
+                            lastBefore00: cycleForm.lastBefore00,
+                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
+                        };
+                        await updateCycle(editingCycle.id, updatedData);
+                        setEditingCycle(null);
+                        showToast('✓ Ciclo atualizado', 'success');
+                    } else {
+                        // CREATE: Criar novo ciclo
+                        // Se createdAt foi fornecido, usar esse; senão usar agora
+                        const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
+                        const timestampISO = customDateTime.toISOString();
+                        const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
 
-                    const item = {
-                        id: genId(),
-                        timestamp: timestampISO,
-                        date: dateKey,
-                        bedtime: cycleForm.bedtime,
-                        triggers: cycleForm.triggers,
-                        notes: cycleForm.notes,
-                        lastBefore00: cycleForm.lastBefore00,
-                        // Converter sleep para número (se tiver valor)
-                        ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
-                    };
-                    await addCycle(item);
+                        const item = {
+                            id: genId(),
+                            timestamp: timestampISO,
+                            date: dateKey,
+                            bedtime: cycleForm.bedtime,
+                            triggers: cycleForm.triggers,
+                            notes: cycleForm.notes,
+                            lastBefore00: cycleForm.lastBefore00,
+                            // Converter sleep para número (se tiver valor)
+                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
+                        };
+                        await addCycle(item);
+                        showToast('✓ Novo ciclo criado', 'success');
+                    }
+
                     setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
                     setShowCycleModal(false);
-                    showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao criar ciclo', 'error');
+                    showToast('✗ Erro ao ' + (editingCycle ? 'atualizar' : 'criar') + ' ciclo', 'error');
                     logger.error(error);
                 }
             };
@@ -1282,6 +1300,7 @@ return {
                                         allItemsToShow={allItemsToShow}
                                         setAllItemsToShow={setAllItemsToShow}
                                         openEditConsumption={openEditConsumption}
+                                        openEditCycle={openEditCycle}
                                         deleteItem={deleteItem}
                                         handleFillGap={handleFillGap}
                                     />
@@ -1357,7 +1376,8 @@ return {
                         <Suspense fallback={null}>
                             <CycleModal
                                 isOpen={showCycleModal}
-                                onClose={() => setShowCycleModal(false)}
+                                onClose={() => { setShowCycleModal(false); setEditingCycle(null); }}
+                                editingCycle={editingCycle}
                                 cycleForm={cycleForm}
                                 setCycleForm={setCycleForm}
                                 onSubmit={submitCycle}

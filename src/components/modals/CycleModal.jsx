@@ -1,15 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const CycleModal = ({
   isOpen,
   onClose,
+  editingCycle,
   cycleForm,
   setCycleForm,
   onSubmit
 }) => {
   useModalKeyboard(isOpen, onClose, onSubmit);
+
+  // Preencher form quando editando ciclo existente
+  useEffect(() => {
+    if (editingCycle && isOpen) {
+      setCycleForm({
+        bedtime: editingCycle.bedtime || '',
+        sleep: editingCycle.sleep || '',
+        triggers: editingCycle.triggers || [],
+        notes: editingCycle.notes || '',
+        lastBefore00: editingCycle.lastBefore00 || false,
+        createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
+      });
+    }
+  }, [editingCycle, isOpen, setCycleForm]);
 
   if (!isOpen) return null;
 
@@ -23,15 +38,19 @@ export const CycleModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">🌙 Novo Ciclo</h3>
+          <h3 className="text-xl font-bold text-white">
+            🌙 {editingCycle ? 'Editar Ciclo' : 'Novo Ciclo'}
+          </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
             <Icons.X />
           </button>
         </div>
         <div className="space-y-4 overflow-y-auto pr-2">
-          <p className="text-sm text-gray-300">
-            Cria um novo ciclo quando acordas. Este registo documenta o período que acabou (desde o último acordar até agora).
-          </p>
+          {!editingCycle && (
+            <p className="text-sm text-gray-300">
+              Cria um novo ciclo quando acordas. Este registo documenta o período que acabou (desde o último acordar até agora).
+            </p>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Data e hora de criação do ciclo <span className="text-xs text-gray-400">(opcional - deixa vazio para usar agora)</span>
