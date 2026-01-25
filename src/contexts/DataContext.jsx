@@ -198,7 +198,9 @@ export const DataProvider = ({ children }) => {
   }, [addItem]);
 
   const updateCycle = useCallback(async (id, updates) => {
+    console.log('🔍 DEBUG updateCycle - id:', id, 'updates recebidos:', updates);
     const result = await updateItem('cycles', id, updates);
+    console.log('🔍 DEBUG updateCycle - result DEPOIS updateItem:', result);
     // ✅ AUTO-PUSH
     setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
