@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
@@ -19,6 +19,17 @@ export const ThoughtsModal = ({
   };
 
   useModalKeyboard(isOpen, onClose, handleSubmit);
+
+  // Auto-preencher data/hora atual quando modal abre
+  useEffect(() => {
+    if (isOpen && !thoughtDatetime) {
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+        .toISOString()
+        .slice(0, 16);
+      setThoughtDatetime(localDateTime);
+    }
+  }, [isOpen, thoughtDatetime, setThoughtDatetime]);
 
   if (!isOpen) return null;
 

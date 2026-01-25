@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
@@ -13,6 +13,17 @@ export const ReflectionModal = ({
   onSubmit
 }) => {
   useModalKeyboard(isOpen, onClose, onSubmit);
+
+  // Auto-preencher data/hora atual quando modal abre
+  useEffect(() => {
+    if (isOpen && !reflectionDatetime) {
+      const now = new Date();
+      const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+        .toISOString()
+        .slice(0, 16);
+      setReflectionDatetime(localDateTime);
+    }
+  }, [isOpen, reflectionDatetime, setReflectionDatetime]);
 
   if (!isOpen) return null;
 

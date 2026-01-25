@@ -29,7 +29,16 @@ export function HomeViewRefactored({
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
 
-  // Atualizar avisos quando dados mudam
+  // Carregar timeSince da cache no mount
+  useEffect(() => {
+    getUserStats().then(stats => {
+      if (stats.timeSinceLastConsumption) {
+        setCachedTimeSince(stats.timeSinceLastConsumption);
+      }
+    });
+  }, []); // Apenas no mount
+
+  // Atualizar avisos e timeSince quando dados mudam
   useEffect(() => {
     // Pequeno delay para garantir que recalculateStats já executou
     const timer = setTimeout(() => {
