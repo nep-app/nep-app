@@ -343,6 +343,8 @@ class SyncService {
         const firebaseCollection = collection(this.firebaseDB, firebasePath);
 
         let snapshot;
+        let queryTime;
+        const queryStart = performance.now();
         if (effectiveMaxAge) {
           // 🚀 FILTRO SERVER-SIDE: Só baixar documentos recentes
           const cutoffDate = new Date();
@@ -352,13 +354,17 @@ class SyncService {
             where('lastModified', '>=', cutoffDate.toISOString())
           );
           snapshot = await getDocs(q);
-          console.log(`[Sync] 🚀 Query otimizada: apenas docs após ${cutoffDate.toLocaleDateString('pt-PT')} (${collectionName})`);
+          queryTime = (performance.now() - queryStart).toFixed(0);
+          console.log(`[Sync] 🚀 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (após ${cutoffDate.toLocaleDateString('pt-PT')})`);
         } else {
           // Buscar tudo se não houver filtro de idade
           snapshot = await getDocs(firebaseCollection);
+          queryTime = (performance.now() - queryStart).toFixed(0);
+          console.log(`[Sync] 📥 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (TODOS)`);
         }
 
         const firebaseItems = new Map();
+        const decryptStart = performance.now();
         for (const docSnap of snapshot.docs) {
           // ⛔ CIRCUIT BREAKER CHECK: Verificar a cada item
           if (circuitBreaker.shouldStop()) {
@@ -427,6 +433,11 @@ class SyncService {
           }
         }
 
+        const decryptTime = (performance.now() - decryptStart).toFixed(0);
+        if (firebaseItems.size > 0) {
+          console.log(`[Sync] 🔓 ${collectionName}: ${firebaseItems.size} docs desencriptados em ${decryptTime}ms (${(decryptTime / firebaseItems.size).toFixed(1)}ms/doc)`);
+        }
+
         // ⛔ CRITICAL: Se circuit breaker abriu, PARAR TUDO (não processar merge)
         if (circuitBreaker.shouldStop()) {
           console.error(
@@ -458,6 +469,7 @@ class SyncService {
         }
 
         // 3. Merge: comparar timestamps e manter versão mais recente
+        const mergeStart = performance.now();
         for (const localItem of localItems) {
           const firebaseItem = firebaseItems.get(localItem.id);
 
@@ -513,13 +525,20 @@ class SyncService {
           }
         }
 
+        const mergeTime = (performance.now() - mergeStart).toFixed(0);
+
         // 4. Items que só existem no Firebase → PULL para local
+        const pullStart = performance.now();
         for (const [itemId, firebaseItem] of firebaseItems) {
           firebaseItem.syncStatus = 'synced';
           firebaseItem.deleted = false;
           await dexieDB[collectionName].put(firebaseItem);
           totalPulled++;
         }
+
+        const pullTime = (performance.now() - pullStart).toFixed(0);
+        const collectionTotal = (performance.now() - queryStart).toFixed(0);
+        console.log(`[Sync] ⏱️ ${collectionName}: TOTAL ${collectionTotal}ms (query: ${queryTime}ms, decrypt: ${decryptTime}ms, merge: ${mergeTime}ms, pull: ${pullTime}ms)`);
       }
 
       // Imprimir resumo de erros (apenas uma vez, limpo)
