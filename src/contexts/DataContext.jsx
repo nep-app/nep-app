@@ -285,7 +285,7 @@ export const DataProvider = ({ children }) => {
       console.log('[DataContext] 🔽 PULL: Recebendo do Firebase...');
       const result = await syncService.fullSync({
         skipZombies: true,  // Ignorar items antigos não desencriptáveis
-        maxAge: 7           // Sincronizar últimos 7 dias (rápido)
+        incremental: true   // Usar timestamp exato do último sync (máximo desempenho)
       });
 
       await loadAllCollections();
