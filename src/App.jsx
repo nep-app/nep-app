@@ -623,7 +623,6 @@ function AuthenticatedApp() {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
-                        console.log('🔍 [submitCycle UPDATE] cycleForm:', cycleForm);
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
@@ -631,13 +630,11 @@ function AuthenticatedApp() {
                             lastBefore00: cycleForm.lastBefore00,
                             ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                         };
-                        console.log('🔍 [submitCycle UPDATE] updatedData:', updatedData);
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);
                         showToast('✓ Ciclo atualizado', 'success');
                     } else {
                         // CREATE: Criar novo ciclo
-                        console.log('🔍 [submitCycle CREATE] cycleForm:', cycleForm);
                         // Se createdAt foi fornecido, usar esse; senão usar agora
                         const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
                         const timestampISO = customDateTime.toISOString();
@@ -654,7 +651,6 @@ function AuthenticatedApp() {
                             // Converter sleep para número (se tiver valor)
                             ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                         };
-                        console.log('🔍 [submitCycle CREATE] item FINAL a enviar:', item);
                         await addCycle(item);
                         showToast('✓ Novo ciclo criado', 'success');
                     }

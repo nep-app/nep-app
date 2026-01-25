@@ -99,10 +99,7 @@ export const CycleModal = ({
               max="24"
               step="any"
               value={cycleForm.sleep || ''}
-              onChange={(e) => {
-                console.log('🔍 [CycleModal onChange] e.target.value:', e.target.value, 'tipo:', typeof e.target.value);
-                setCycleForm({...cycleForm, sleep: e.target.value});
-              }}
+              onChange={(e) => setCycleForm({...cycleForm, sleep: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
               placeholder="Ex: 7.5"
             />
