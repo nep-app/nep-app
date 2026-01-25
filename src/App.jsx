@@ -623,27 +623,18 @@ function AuthenticatedApp() {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
-                        console.log('🔍 DEBUG UPDATE - cycleForm.sleep RAW:', cycleForm.sleep, 'tipo:', typeof cycleForm.sleep);
-                        const sleepParsed = parseFloat(cycleForm.sleep);
-                        console.log('🔍 DEBUG UPDATE - parseFloat result:', sleepParsed, 'tipo:', typeof sleepParsed);
-
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
                             notes: cycleForm.notes,
                             lastBefore00: cycleForm.lastBefore00,
-                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: sleepParsed } : {})
+                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                         };
-                        console.log('🔍 DEBUG UPDATE - updatedData completo:', updatedData);
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);
                         showToast('✓ Ciclo atualizado', 'success');
                     } else {
                         // CREATE: Criar novo ciclo
-                        console.log('🔍 DEBUG CREATE - cycleForm.sleep RAW:', cycleForm.sleep, 'tipo:', typeof cycleForm.sleep);
-                        const sleepParsed = parseFloat(cycleForm.sleep);
-                        console.log('🔍 DEBUG CREATE - parseFloat result:', sleepParsed, 'tipo:', typeof sleepParsed);
-
                         // Se createdAt foi fornecido, usar esse; senão usar agora
                         const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
                         const timestampISO = customDateTime.toISOString();
@@ -658,9 +649,8 @@ function AuthenticatedApp() {
                             notes: cycleForm.notes,
                             lastBefore00: cycleForm.lastBefore00,
                             // Converter sleep para número (se tiver valor)
-                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: sleepParsed } : {})
+                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
                         };
-                        console.log('🔍 DEBUG CREATE - item completo:', item);
                         await addCycle(item);
                         showToast('✓ Novo ciclo criado', 'success');
                     }

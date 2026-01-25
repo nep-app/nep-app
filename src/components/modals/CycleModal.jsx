@@ -97,7 +97,7 @@ export const CycleModal = ({
               type="number"
               min="0"
               max="24"
-              step="0.1"
+              step="any"
               value={cycleForm.sleep || ''}
               onChange={(e) => setCycleForm({...cycleForm, sleep: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
