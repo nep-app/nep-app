@@ -260,6 +260,7 @@ class SyncService {
     if (incremental && maxAge === null) {
       try {
         const lastSyncStr = await getMetadata('lastSyncTimestamp');
+        console.log(`[Sync] 🔍 DEBUG: lastSyncTimestamp lido do metadata: "${lastSyncStr}"`);
         if (lastSyncStr) {
           lastSyncTimestamp = lastSyncStr;
           const lastSync = new Date(lastSyncStr);
@@ -676,7 +677,14 @@ class SyncService {
       // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
       if (incremental) {
         try {
-          await setMetadata('lastSyncTimestamp', new Date().toISOString());
+          const newTimestamp = new Date().toISOString();
+          console.log(`[Sync] 🔍 DEBUG: Guardando novo lastSyncTimestamp: "${newTimestamp}"`);
+          await setMetadata('lastSyncTimestamp', newTimestamp);
+          console.log(`[Sync] ✅ DEBUG: lastSyncTimestamp guardado com sucesso`);
+
+          // Verificar imediatamente se foi salvo
+          const verifyTimestamp = await getMetadata('lastSyncTimestamp');
+          console.log(`[Sync] 🔍 DEBUG: Verificação imediata - timestamp lido: "${verifyTimestamp}"`);
         } catch (error) {
           console.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
         }
