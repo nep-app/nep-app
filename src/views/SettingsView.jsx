@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
-const APP_VERSION = '1.0.12';
+const APP_VERSION = '1.3.0';
 
 export const SettingsView = ({
     user,
