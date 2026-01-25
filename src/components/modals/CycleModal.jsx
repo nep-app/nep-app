@@ -12,20 +12,32 @@ export const CycleModal = ({
 }) => {
   useModalKeyboard(isOpen, onClose, onSubmit);
 
-  // Preencher form quando editando ciclo existente
+  // Preencher form quando editando ciclo existente OU criar novo
   useEffect(() => {
-    if (editingCycle && isOpen) {
-      console.log('🔍 DEBUG USEEFFECT - editingCycle.sleep:', editingCycle.sleep, 'tipo:', typeof editingCycle.sleep);
-      setCycleForm({
-        bedtime: editingCycle.bedtime || '',
-        sleep: editingCycle.sleep || '',
-        triggers: editingCycle.triggers || [],
-        notes: editingCycle.notes || '',
-        lastBefore00: editingCycle.lastBefore00 || false,
-        createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
-      });
+    if (isOpen) {
+      if (editingCycle) {
+        // EDITAR: preencher com dados existentes
+        setCycleForm({
+          bedtime: editingCycle.bedtime || '',
+          sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
+          triggers: editingCycle.triggers || [],
+          notes: editingCycle.notes || '',
+          lastBefore00: editingCycle.lastBefore00 || false,
+          createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
+        });
+      } else if (!cycleForm.createdAt) {
+        // CRIAR NOVO: preencher createdAt com data/hora atual (se não estiver preenchido)
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+          .toISOString()
+          .slice(0, 16);
+        setCycleForm(prev => ({
+          ...prev,
+          createdAt: localDateTime
+        }));
+      }
     }
-  }, [editingCycle, isOpen, setCycleForm]);
+  }, [editingCycle, isOpen, setCycleForm, cycleForm.createdAt]);
 
   if (!isOpen) return null;
 
@@ -85,13 +97,9 @@ export const CycleModal = ({
               type="number"
               min="0"
               max="24"
-              step="0.5"
+              step="0.1"
               value={cycleForm.sleep || ''}
-              onChange={(e) => {
-                console.log('🔍 DEBUG INPUT SLEEP - e.target.value RAW:', e.target.value, 'tipo:', typeof e.target.value);
-                setCycleForm({...cycleForm, sleep: e.target.value});
-                console.log('🔍 DEBUG INPUT SLEEP - cycleForm DEPOIS:', {...cycleForm, sleep: e.target.value});
-              }}
+              onChange={(e) => setCycleForm({...cycleForm, sleep: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
               placeholder="Ex: 7.5"
             />

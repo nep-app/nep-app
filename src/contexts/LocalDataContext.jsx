@@ -447,18 +447,14 @@ export const LocalDataProvider = ({ children }) => {
 
     const salt = await getUserSalt();
 
-    console.log('🔍 DEBUG LocalData updateItem - ANTES encrypt:', updates);
     // Encriptar campos sensíveis nos updates
     const encryptedUpdates = await encryptItem(collectionName, updates, encryptionKey, salt);
-    console.log('🔍 DEBUG LocalData updateItem - DEPOIS encrypt:', encryptedUpdates);
 
     // Atualizar no Dexie
     const updated = await updateItemWithSync(collectionName, id, encryptedUpdates);
-    console.log('🔍 DEBUG LocalData updateItem - DEPOIS Dexie:', updated);
 
     // Desencriptar para retornar
     const decrypted = await decryptItem(collectionName, updated, encryptionKey, salt);
-    console.log('🔍 DEBUG LocalData updateItem - DEPOIS decrypt (FINAL):', decrypted);
 
     // Atualizar estado local
     const setterMap = {
