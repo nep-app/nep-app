@@ -29,18 +29,28 @@ export function HomeViewRefactored({
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
 
+  // Atualizar avisos quando dados mudam
   useEffect(() => {
-    getUserStats().then(stats => {
-      if (stats.alerts && stats.alerts.length > 0) {
-        console.log('[HomeView] ⚡ Avisos do cache carregados:', stats.alerts);
-        setCachedAlerts(stats.alerts);
-      }
-      if (stats.timeSinceLastConsumption) {
-        console.log('[HomeView] ⚡ TimeSince do cache carregado:', stats.timeSinceLastConsumption);
-        setCachedTimeSince(stats.timeSinceLastConsumption);
-      }
-    });
-  }, []);
+    // Pequeno delay para garantir que recalculateStats já executou
+    const timer = setTimeout(() => {
+      getUserStats().then(stats => {
+        if (stats.alerts && stats.alerts.length > 0) {
+          console.log('[HomeView] ⚡ Avisos atualizados:', stats.alerts);
+          setCachedAlerts(stats.alerts);
+        } else {
+          // Se não há avisos, limpar array
+          console.log('[HomeView] 🧹 Nenhum aviso - limpando');
+          setCachedAlerts([]);
+        }
+        if (stats.timeSinceLastConsumption) {
+          console.log('[HomeView] ⚡ TimeSince atualizado:', stats.timeSinceLastConsumption);
+          setCachedTimeSince(stats.timeSinceLastConsumption);
+        }
+      });
+    }, 150); // Esperar um pouco mais que o setTimeout do recalculateStats (100ms)
+
+    return () => clearTimeout(timer);
+  }, [consumptions, cycles, dailyLogs, goals]); // ✅ Atualizar quando dados mudarem!
 
   const handleSync = async () => {
     try {
