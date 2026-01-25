@@ -377,6 +377,16 @@ export const LocalDataProvider = ({ children }) => {
   }, [encryptionKey, loadAllCollections]);
 
   /**
+   * Helper: Recalcular stats pré-calculadas usando dados atuais
+   */
+  const recalculateStats = useCallback(() => {
+    // Ler estados atuais e recalcular (async mas não esperamos)
+    updateUserStats(consumptions, cycles, dailyLogs, goals).catch(err =>
+      console.error('[LocalData] Erro ao recalcular stats:', err)
+    );
+  }, [consumptions, cycles, dailyLogs, goals]);
+
+  /**
    * CRUD: Adicionar item
    */
   const addItem = useCallback(async (collectionName, item) => {
@@ -411,24 +421,21 @@ export const LocalDataProvider = ({ children }) => {
       // Prevenir duplicados: se ID já existe, substituir em vez de adicionar
       setter(prev => {
         const existingIndex = prev.findIndex(item => item.id === decrypted.id);
-        const newData = existingIndex >= 0
+        return existingIndex >= 0
           ? prev.map((item, i) => i === existingIndex ? decrypted : item)
           : [decrypted, ...prev];
-
-        // Recalcular stats para consumptions (boot rápido futuro)
-        if (collectionName === 'consumptions') {
-          updateUserStats(newData).catch(err =>
-            console.error('[LocalData] Erro ao atualizar stats:', err)
-          );
-        }
-
-        return newData;
       });
+
+      // Recalcular stats para collections que afetam avisos (boot rápido futuro)
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+        // Usar setTimeout para recalcular DEPOIS do setState completar
+        setTimeout(() => recalculateStats(), 100);
+      }
     }
 
 
     return decrypted;
-  }, [encryptionKey, getUserSalt]);
+  }, [encryptionKey, getUserSalt, recalculateStats]);
 
   /**
    * CRUD: Atualizar item
@@ -463,11 +470,17 @@ export const LocalDataProvider = ({ children }) => {
     const setter = setterMap[collectionName];
     if (setter) {
       setter(prev => prev.map(item => item.id === id ? decrypted : item));
+
+      // Recalcular stats para collections que afetam avisos (boot rápido futuro)
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+        // Usar setTimeout para recalcular DEPOIS do setState completar
+        setTimeout(() => recalculateStats(), 100);
+      }
     }
 
 
     return decrypted;
-  }, [encryptionKey, getUserSalt]);
+  }, [encryptionKey, getUserSalt, recalculateStats]);
 
   /**
    * CRUD: Deletar item (soft delete)
@@ -496,21 +509,19 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => {
         const filtered = prev.filter(item => item.id !== id);
         console.log(`[LocalData] 🗑️ Removido do estado React: ${collectionName}/${id} (antes: ${prev.length}, depois: ${filtered.length})`);
-
-        // Recalcular stats para consumptions (boot rápido futuro)
-        if (collectionName === 'consumptions') {
-          updateUserStats(filtered).catch(err =>
-            console.error('[LocalData] Erro ao atualizar stats:', err)
-          );
-        }
-
         return filtered;
       });
+
+      // Recalcular stats para collections que afetam avisos (boot rápido futuro)
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+        // Usar setTimeout para recalcular DEPOIS do setState completar
+        setTimeout(() => recalculateStats(), 100);
+      }
     } else {
       console.warn(`[LocalData] ⚠️ Setter não encontrado para ${collectionName}`);
     }
 
-  }, [encryptionKey]);
+  }, [encryptionKey, recalculateStats]);
 
   /**
    * Obter items pendentes de sync
