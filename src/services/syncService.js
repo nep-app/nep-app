@@ -255,26 +255,26 @@ class SyncService {
   async fullSync(options = {}) {
     const { skipZombies = true, incremental = true, maxAge = null } = options;
 
-    // 🚀 SYNC INCREMENTAL: Calcular maxAge baseado no último sync
-    let effectiveMaxAge = maxAge;
+    // 🚀 SYNC INCREMENTAL: Usar timestamp EXATO do último sync (não dias!)
+    let lastSyncTimestamp = null;
     if (incremental && maxAge === null) {
       try {
         const lastSyncStr = await getMetadata('lastSyncTimestamp');
         if (lastSyncStr) {
+          lastSyncTimestamp = lastSyncStr;
           const lastSync = new Date(lastSyncStr);
-          const now = new Date();
-          const daysSinceLastSync = Math.ceil((now - lastSync) / (1000 * 60 * 60 * 24));
-          effectiveMaxAge = Math.max(daysSinceLastSync + 1, 7); // Mínimo 7 dias por segurança
-          console.log(`[Sync] 🚀 INCREMENTAL: Sincronizando últimos ${effectiveMaxAge} dias (desde ${lastSync.toLocaleString()})`);
+          console.log(`[Sync] 🎯 INCREMENTAL: Sincronizando apenas mudanças desde ${lastSync.toLocaleString()}`);
         } else {
           console.log('[Sync] 🚀 Primeiro sync - sincronizando tudo');
-          effectiveMaxAge = null; // Primeiro sync = tudo
         }
       } catch (error) {
         console.warn('[Sync] ⚠️ Erro ao calcular incremental, fazendo full sync:', error);
-        effectiveMaxAge = null;
+        lastSyncTimestamp = null;
       }
     }
+
+    // Fallback para maxAge se especificado manualmente (backward compatibility)
+    let effectiveMaxAge = maxAge;
 
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
       throw new Error('Sync não inicializado');
@@ -306,7 +306,9 @@ class SyncService {
         console.log('[Sync]    Sync vai continuar mesmo com erros\n');
       }
 
-      if (effectiveMaxAge) {
+      if (lastSyncTimestamp) {
+        console.log(`[Sync] 📅 Sincronizando apenas mudanças desde: ${lastSyncTimestamp}\n`);
+      } else if (effectiveMaxAge) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
         console.log(`[Sync] 📅 Sincronizando apenas items desde: ${cutoffDate.toISOString()}\n`);
@@ -345,8 +347,19 @@ class SyncService {
         let snapshot;
         let queryTime;
         const queryStart = performance.now();
-        if (effectiveMaxAge) {
-          // 🚀 FILTRO SERVER-SIDE: Só baixar documentos recentes
+
+        // 🎯 PRIORIDADE 1: Usar timestamp EXATO do último sync (incremental perfeito)
+        if (lastSyncTimestamp) {
+          const q = query(
+            firebaseCollection,
+            where('lastModified', '>', lastSyncTimestamp)
+          );
+          snapshot = await getDocs(q);
+          queryTime = (performance.now() - queryStart).toFixed(0);
+          console.log(`[Sync] 🎯 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (mudanças desde último sync)`);
+        }
+        // 🚀 PRIORIDADE 2: Usar maxAge em dias (se especificado manualmente)
+        else if (effectiveMaxAge) {
           const cutoffDate = new Date();
           cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
           const q = query(
@@ -355,23 +368,21 @@ class SyncService {
           );
           snapshot = await getDocs(q);
           queryTime = (performance.now() - queryStart).toFixed(0);
-          console.log(`[Sync] 🚀 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (após ${cutoffDate.toLocaleDateString('pt-PT')})`);
-        } else {
-          // Buscar tudo se não houver filtro de idade
+          console.log(`[Sync] 🚀 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (últimos ${effectiveMaxAge} dias)`);
+        }
+        // 📥 PRIORIDADE 3: Primeiro sync = buscar tudo
+        else {
           snapshot = await getDocs(firebaseCollection);
           queryTime = (performance.now() - queryStart).toFixed(0);
-          console.log(`[Sync] 📥 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (TODOS)`);
+          console.log(`[Sync] 📥 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (TODOS - primeiro sync)`);
         }
 
         const firebaseItems = new Map();
         const decryptStart = performance.now();
 
-        // 🚀 BATCH DECRYPTION: Processar em chunks paralelos (50 docs de cada vez)
-        const BATCH_SIZE = 50;
-        const docs = snapshot.docs;
-
-        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-          // ⛔ CIRCUIT BREAKER CHECK: Verificar antes de cada batch
+        // Desencriptar documentos (sequencial - mais rápido que paralelo com Web Crypto API)
+        for (const docSnap of snapshot.docs) {
+          // ⛔ CIRCUIT BREAKER CHECK
           if (circuitBreaker.shouldStop()) {
             console.error(
               `[Sync] ⛔ Circuit breaker aberto durante processamento!\n` +
@@ -381,62 +392,60 @@ class SyncService {
             break;
           }
 
-          const batch = docs.slice(i, i + BATCH_SIZE);
+          try {
+            const firebaseData = docSnap.data();
 
-          // Processar batch em paralelo
-          const results = await Promise.allSettled(
-            batch.map(async (docSnap) => {
-              const firebaseData = docSnap.data();
-
-              // Desencriptar
-              let item;
-              if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
-                item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
-              } else {
-                item = { ...firebaseData };
-              }
-
-              item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
-              return { id: docSnap.id, item, firebaseData };
-            })
-          );
-
-          // Processar resultados do batch
-          for (const result of results) {
-            if (result.status === 'fulfilled') {
-              const { id, item } = result.value;
-              firebaseItems.set(id, item);
-              circuitBreaker.recordSuccess(); // ✅ Sucesso
+            // Desencriptar
+            let item;
+            if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
+              item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
             } else {
-              // Erro na desencriptação
-              const error = result.reason;
+              item = { ...firebaseData };
+            }
 
-              // 🧟 MODO SKIP ZOMBIES: Ignorar SILENCIOSAMENTE
-              if (skipZombies) {
-                totalZombies++;
-                continue;
-              }
+            item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
+            firebaseItems.set(docSnap.id, item);
 
-              // ❌ Erro - registar no logger (SEM stack trace)
-              errorLogger.logError(collectionName, 'batch-item', error.name || 'DecryptError');
-              totalSkipped++;
+            // ✅ Sucesso
+            circuitBreaker.recordSuccess();
 
-              // Registar no circuit breaker - SE ABRIR, PARA IMEDIATAMENTE
-              const shouldStop = circuitBreaker.recordError();
-              if (shouldStop) {
-                console.error(
-                  `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
-                  `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
-                  `Coleção: ${collectionName}\n` +
-                  `PARANDO SYNC AGORA!`
-                );
-                break;
+          } catch (error) {
+            // 🧟 MODO SKIP ZOMBIES: Ignorar SILENCIOSAMENTE
+            if (skipZombies) {
+              totalZombies++;
+              continue;
+            }
+
+            // ❌ Erro - registar no logger
+            errorLogger.logError(collectionName, docSnap.id, error.name || 'DecryptError');
+            totalSkipped++;
+
+            // Guardar primeiro item que falhou
+            if (!firstFailedItem) {
+              const firebaseData = docSnap.data();
+              if (firebaseData.encrypted) {
+                firstFailedItem = {
+                  collection: collectionName,
+                  id: docSnap.id,
+                  data: firebaseData.data,
+                  iv: firebaseData.iv,
+                  error: error.name
+                };
               }
             }
-          }
 
-          // Se circuit breaker abriu durante processamento de resultados, parar
-          if (circuitBreaker.shouldStop()) break;
+            // Circuit breaker
+            const shouldStop = circuitBreaker.recordError();
+            if (shouldStop) {
+              console.error(
+                `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
+                `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
+                `Item: ${collectionName}/${docSnap.id}\n` +
+                `PARANDO SYNC AGORA!`
+              );
+              break;
+            }
+          }
         }
 
         const decryptTime = (performance.now() - decryptStart).toFixed(0);
@@ -457,14 +466,27 @@ class SyncService {
         // 2. Buscar dados locais (com filtro de idade se incremental)
         let localItems = await dexieDB[collectionName].toArray();
 
-        // 🚀 FILTRO DE IDADE LOCAL: Aplicar mesmo filtro que usamos no Firebase
-        if (effectiveMaxAge) {
+        // 🎯 FILTRO LOCAL: Aplicar mesmo filtro que usamos no Firebase
+        if (lastSyncTimestamp) {
+          // Filtrar por timestamp exato
+          const beforeFilter = localItems.length;
+          localItems = localItems.filter(item => {
+            if (!item.lastModified) return true; // Sem timestamp = incluir
+            return item.lastModified > lastSyncTimestamp;
+          });
+
+          const filtered = beforeFilter - localItems.length;
+          if (filtered > 0) {
+            console.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais já sincronizados (${localItems.length} novos/modificados)`);
+          }
+        } else if (effectiveMaxAge) {
+          // Filtrar por dias (fallback)
           const cutoffDate = new Date();
           cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
 
           const beforeFilter = localItems.length;
           localItems = localItems.filter(item => {
-            if (!item.lastModified) return true; // Sem timestamp = incluir por segurança
+            if (!item.lastModified) return true;
             return new Date(item.lastModified) >= cutoffDate;
           });
 
