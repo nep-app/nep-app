@@ -258,11 +258,11 @@ export function HistoryView({
                                                                                 <div className="flex-1">
                                                                                     <div className="font-medium mb-1 text-white">
                                                                                         💊 {(() => {
-                                                                                            const d = safeDate(log.timestamp || log.date);
+                                                                                            // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
+                                                                                            const d = safeDate(log.date || log.timestamp);
                                                                                             if (!d) return 'Data inválida';
                                                                                             const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                            const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                            return dateStr + timeStr;
+                                                                                            return dateStr;
                                                                                         })()}
                                                                                     </div>
                                                                                     <div className="flex items-center gap-3">
@@ -940,11 +940,11 @@ export function HistoryView({
                                                                                     <div className="flex-1">
                                                                                         <div className="font-medium mb-1 text-white">
                                                                                             {(() => {
-                                                                                                const d = safeDate(log.timestamp || log.date);
+                                                                                                // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
+                                                                                                const d = safeDate(log.date || log.timestamp);
                                                                                                 if (!d) return 'Data inválida';
                                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                                const timeStr = log.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                                return dateStr + timeStr;
+                                                                                                return dateStr;
                                                                                             })()}
                                                                                         </div>
                                                                                         <div className="flex items-center gap-3">
