@@ -15,6 +15,7 @@ export const CycleModal = ({
   // Preencher form quando editando ciclo existente
   useEffect(() => {
     if (editingCycle && isOpen) {
+      console.log('🔍 DEBUG USEEFFECT - editingCycle.sleep:', editingCycle.sleep, 'tipo:', typeof editingCycle.sleep);
       setCycleForm({
         bedtime: editingCycle.bedtime || '',
         sleep: editingCycle.sleep || '',
@@ -86,7 +87,11 @@ export const CycleModal = ({
               max="24"
               step="0.5"
               value={cycleForm.sleep || ''}
-              onChange={(e) => setCycleForm({...cycleForm, sleep: e.target.value})}
+              onChange={(e) => {
+                console.log('🔍 DEBUG INPUT SLEEP - e.target.value RAW:', e.target.value, 'tipo:', typeof e.target.value);
+                setCycleForm({...cycleForm, sleep: e.target.value});
+                console.log('🔍 DEBUG INPUT SLEEP - cycleForm DEPOIS:', {...cycleForm, sleep: e.target.value});
+              }}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
               placeholder="Ex: 7.5"
             />
