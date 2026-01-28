@@ -100,8 +100,8 @@ export function HomeViewRefactored({
       </div>
 
       {(() => {
-        // Usar cached timeSince até FASE 3 completar
-        const timeSince = !allDataLoaded && cachedTimeSince ? cachedTimeSince : metrics.timeSinceLastConsumption;
+        // Priorizar cache (atualizado automaticamente), fallback para metrics
+        const timeSince = cachedTimeSince || metrics.timeSinceLastConsumption;
         if (timeSince) {
           const isLong = timeSince.hours >= 2;
           return (
