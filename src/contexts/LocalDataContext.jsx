@@ -428,8 +428,8 @@ export const LocalDataProvider = ({ children }) => {
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
       if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
-        // Usar setTimeout para recalcular DEPOIS do setState completar
-        setTimeout(() => recalculateStats(), 100);
+        // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
+        queueMicrotask(() => recalculateStats());
       }
     }
 
@@ -473,8 +473,8 @@ export const LocalDataProvider = ({ children }) => {
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
       if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
-        // Usar setTimeout para recalcular DEPOIS do setState completar
-        setTimeout(() => recalculateStats(), 100);
+        // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
+        queueMicrotask(() => recalculateStats());
       }
     }
 
@@ -514,8 +514,8 @@ export const LocalDataProvider = ({ children }) => {
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
       if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
-        // Usar setTimeout para recalcular DEPOIS do setState completar
-        setTimeout(() => recalculateStats(), 100);
+        // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
+        queueMicrotask(() => recalculateStats());
       }
     } else {
       console.warn(`[LocalData] ⚠️ Setter não encontrado para ${collectionName}`);
