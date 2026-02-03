@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 export const SettingsView = ({
     user,
@@ -19,6 +19,19 @@ export const SettingsView = ({
     const [syncStatus, setSyncStatus] = useState(null);
     const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
     const [zombieStats, setZombieStats] = useState(null);
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+    // Capturar evento de install PWA
+    useEffect(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            console.log('[PWA] Install prompt capturado');
+        };
+
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
 
     const handleFullSync = async () => {
         if (!manualSync) {
@@ -188,16 +201,46 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* PWA Update */}
+            {/* PWA Install & Update */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.RefreshCw className="w-5 h-5" />
-                    Atualização da App
+                    Instalação & Atualização
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Se a app estiver desatualizada ou com bugs após um update, força uma atualização completa.
+                        Instala a app no teu dispositivo ou força atualização se houver bugs.
                     </p>
+
+                    {/* Botão Instalar App (só aparece se PWA prompt disponível) */}
+                    {deferredPrompt && (
+                        <button
+                            onClick={async () => {
+                                if (!deferredPrompt) return;
+
+                                try {
+                                    await deferredPrompt.prompt();
+                                    const { outcome } = await deferredPrompt.userChoice;
+
+                                    if (outcome === 'accepted') {
+                                        console.log('[PWA] User aceitou install');
+                                        alert('✅ App instalada! Procura o ícone NEP no teu dispositivo.');
+                                    } else {
+                                        console.log('[PWA] User rejeitou install');
+                                    }
+
+                                    setDeferredPrompt(null);
+                                } catch (error) {
+                                    console.error('[PWA] Erro ao instalar:', error);
+                                    alert('❌ Erro ao instalar. Tenta pelo menu do browser.');
+                                }
+                            }}
+                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
+                        >
+                            <Icons.Download className="w-4 h-4" />
+                            📲 Instalar App
+                        </button>
+                    )}
 
                     <button
                         onClick={async () => {
