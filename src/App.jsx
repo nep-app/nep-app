@@ -49,13 +49,6 @@ const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumpt
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 
-// Import UI components
-import { AlertCard } from './components/ui/AlertCard';
-import { GradientButton } from './components/ui/GradientButton';
-import { InfoBadge } from './components/ui/InfoBadge';
-import { MotivationalCard } from './components/ui/MotivationalCard';
-import { StatCard } from './components/ui/StatCard';
-
 function HarmReductionTracker() {
             const APP_VERSION = '1.5.0';
 
