@@ -26,8 +26,13 @@ import { logger } from './utils/logger';
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
-// Lazy load views (only load when user navigates to them)
-const HomeViewRefactored = lazy(() => import('./views/HomeViewRefactored').then(module => ({ default: module.HomeViewRefactored })));
+// ⚡ HomeView: IMPORT NORMAL (12.6KB, user SEMPRE visita, boot instantâneo)
+import { HomeViewRefactored } from './views/HomeViewRefactored';
+
+// 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
+// - AnalysesView: 143KB + recharts 243KB = 386KB
+// - PatternsView: 92KB + recharts
+// - HistoryView, SettingsView: carregam sob demanda
 const PatternsView = lazy(() => import('./views/PatternsView').then(module => ({ default: module.PatternsView })));
 const AnalysesView = lazy(() => import('./views/AnalysesView').then(module => ({ default: module.AnalysesView })));
 const HistoryView = lazy(() => import('./views/HistoryView').then(module => ({ default: module.HistoryView })));
@@ -1245,20 +1250,18 @@ return {
 
                         <div className='bg-gray-800/50 rounded-3xl shadow-xl p-6 mb-6'>
                             {currentView === 'home' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <HomeViewRefactored
-                                        currentReflection={currentReflection}
-                                        markConsumption={markConsumption}
-                                        openEditConsumption={openEditConsumption}
-                                        deleteItem={deleteItem}
-                                        last7={last7}
-                                        copingStrategies={copingStrategies}
-                                        badges={badges}
-                                        currentCycleCount={currentCycleCount}
-                                        consumptionsToShow={consumptionsToShow}
-                                        setConsumptionsToShow={setConsumptionsToShow}
-                                    />
-                                </Suspense>
+                                <HomeViewRefactored
+                                    currentReflection={currentReflection}
+                                    markConsumption={markConsumption}
+                                    openEditConsumption={openEditConsumption}
+                                    deleteItem={deleteItem}
+                                    last7={last7}
+                                    copingStrategies={copingStrategies}
+                                    badges={badges}
+                                    currentCycleCount={currentCycleCount}
+                                    consumptionsToShow={consumptionsToShow}
+                                    setConsumptionsToShow={setConsumptionsToShow}
+                                />
                             )}
                             {currentView === 'patterns' && (
                                 <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
