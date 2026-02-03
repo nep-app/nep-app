@@ -249,6 +249,12 @@ export const SettingsView = ({
                     <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
                         ⚠️ <strong>Atenção:</strong> Este botão limpa a cache e recarrega a app. Usa apenas se a app estiver com problemas após um update.
                     </div>
+
+                    {!deferredPrompt && (
+                        <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
+                            💡 <strong>Instalação PWA:</strong> O botão "📲 Instalar App" só aparece quando o browser permite. No <strong>telemóvel/tablet</strong> funciona sempre. No <strong>PC/Desktop</strong>, Chrome raramente permite instalar (limitação do browser, não da app). A app funciona perfeitamente no browser mesmo sem instalar.
+                        </div>
+                    )}
                 </div>
             </div>
 
