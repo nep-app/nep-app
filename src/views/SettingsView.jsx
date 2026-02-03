@@ -212,8 +212,8 @@ export const SettingsView = ({
                         Instala a app no teu dispositivo ou força atualização se houver bugs.
                     </p>
 
-                    {/* Botão Instalar App (só aparece se PWA prompt disponível) */}
-                    {deferredPrompt && (
+                    {/* Botão Instalar App */}
+                    {deferredPrompt ? (
                         <button
                             onClick={async () => {
                                 if (!deferredPrompt) return;
@@ -240,6 +240,16 @@ export const SettingsView = ({
                             <Icons.Download className="w-4 h-4" />
                             📲 Instalar App
                         </button>
+                    ) : (
+                        <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3 text-yellow-300">
+                            <p className="font-semibold mb-2">🔧 Instalação Manual:</p>
+                            <p className="mb-2">O browser ainda não ofereceu instalação automática. Podes instalar manualmente:</p>
+                            <ul className="list-disc ml-4 space-y-1">
+                                <li><strong>Desktop:</strong> Menu Chrome (⋮) → "Instalar NEP..."</li>
+                                <li><strong>Mobile:</strong> Menu Chrome → "Adicionar ao ecrã inicial"</li>
+                            </ul>
+                            <p className="mt-2 text-xs opacity-75">💡 Se já instalaste, o botão não aparece.</p>
+                        </div>
                     )}
 
                     <button
