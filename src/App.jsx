@@ -624,8 +624,6 @@ function AuthenticatedApp() {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
                         const sleepValueEdit = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
-                        console.log('[DEBUG Editar Ciclo] Valor original do form:', cycleForm.sleep);
-                        console.log('[DEBUG Editar Ciclo] Após parseFloat:', sleepValueEdit);
 
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
@@ -634,7 +632,6 @@ function AuthenticatedApp() {
                             lastBefore00: cycleForm.lastBefore00,
                             ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
                         };
-                        console.log('[DEBUG Editar Ciclo] updatedData:', JSON.stringify(updatedData));
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);
                         showToast('✓ Ciclo atualizado', 'success');
@@ -646,8 +643,6 @@ function AuthenticatedApp() {
                         const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
 
                         const sleepValue = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
-                        console.log('[DEBUG Ciclo] Valor original do form:', cycleForm.sleep);
-                        console.log('[DEBUG Ciclo] Após parseFloat:', sleepValue);
 
                         const item = {
                             id: genId(),
@@ -660,7 +655,6 @@ function AuthenticatedApp() {
                             // Converter sleep para número (se tiver valor)
                             ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };
-                        console.log('[DEBUG Ciclo] Item final:', JSON.stringify(item));
                         await addCycle(item);
                         showToast('✓ Novo ciclo criado', 'success');
                     }

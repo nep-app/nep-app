@@ -56,15 +56,12 @@ export function HomeViewRefactored({
   useEffect(() => {
     getUserStats().then(stats => {
       if (stats.alerts && stats.alerts.length > 0) {
-        console.log('[HomeView] ⚡ Avisos atualizados:', stats.alerts);
         setCachedAlerts(stats.alerts);
       } else {
         // Se não há avisos, limpar array
-        console.log('[HomeView] 🧹 Nenhum aviso - limpando');
         setCachedAlerts([]);
       }
       if (stats.timeSinceLastConsumption) {
-        console.log('[HomeView] ⚡ TimeSince atualizado:', stats.timeSinceLastConsumption);
         setCachedTimeSince(stats.timeSinceLastConsumption);
       }
     });
