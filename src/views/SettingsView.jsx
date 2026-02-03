@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from '../components/Icons';
 import { forceFirebaseReconnect, checkFirebaseConnection } from '../utils/firebaseSync';
 
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 
 export const SettingsView = ({
     user,
@@ -42,22 +42,16 @@ export const SettingsView = ({
 
         try {
             const result = await manualSync();
-            console.log('SYNC RESULTADO:', result);
 
             if (result && result.success) {
                 const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
                 setSyncStatus({ type: 'success', message });
-                console.log('SYNC SUCESSO!', result);
             } else {
-                console.log('SYNC FALHOU - resultado inválido');
                 setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
             }
         } catch (error) {
-            console.error('[SettingsView] Erro no sync:', error);
             const errorMsg = error?.message || error?.toString() || 'Erro desconhecido';
             setSyncStatus({ type: 'error', message: `❌ Erro: ${errorMsg}` });
-
-            // Limpar mensagem de erro após 10 segundos
             setTimeout(() => setSyncStatus(null), 10000);
         }
     };
@@ -71,9 +65,7 @@ export const SettingsView = ({
                 throw new Error('SyncService não disponível');
             }
 
-            // Dry-run: procurar TODOS os zombies (maxAge=0 = sem filtro de idade)
             const result = await window.syncService.cleanZombies(0, true);
-            console.log('ZOMBIE SCAN:', result);
 
             if (result.totalZombies > 0) {
                 setZombieStats(result);
@@ -88,7 +80,6 @@ export const SettingsView = ({
                 });
             }
         } catch (error) {
-            console.error('[SettingsView] Erro ao procurar zombies:', error);
             setCleanZombiesStatus({
                 type: 'error',
                 message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
@@ -109,9 +100,7 @@ export const SettingsView = ({
                 throw new Error('SyncService não disponível');
             }
 
-            // Limpar TODOS os zombies (maxAge=0 = sem filtro de idade)
             const result = await window.syncService.cleanZombies(0, false);
-            console.log('ZOMBIE CLEAN:', result);
 
             setZombieStats(null);
             setCleanZombiesStatus({
@@ -119,10 +108,8 @@ export const SettingsView = ({
                 message: `✅ Limpeza concluída!\n\n❌ Deletados: ${result.totalDeleted} items corrompidos do Firebase\n\n🚀 A app vai abrir MUITO mais rápido agora!\n\n💡 Faz refresh da página (Ctrl+Shift+R) para aplicar.`
             });
 
-            // Limpar mensagem após 15 segundos
             setTimeout(() => setCleanZombiesStatus(null), 15000);
         } catch (error) {
-            console.error('[SettingsView] Erro ao limpar zombies:', error);
             setCleanZombiesStatus({
                 type: 'error',
                 message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
@@ -179,7 +166,7 @@ export const SettingsView = ({
                             try {
                                 await manualSync();
                             } catch (error) {
-                                console.error('[Settings] Erro no sync:', error);
+                                // Error already handled in manualSync
                             }
                         }}
                         disabled={isSyncing}
@@ -223,7 +210,7 @@ export const SettingsView = ({
                                         setDeferredPrompt(null);
                                     }
                                 } catch (error) {
-                                    console.error('Erro ao instalar PWA:', error);
+                                    // Install cancelled or failed
                                 }
                             }}
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
@@ -236,7 +223,6 @@ export const SettingsView = ({
                     <button
                         onClick={async () => {
                             try {
-                                // Limpar todos os caches do Service Worker
                                 if ('serviceWorker' in navigator) {
                                     const registrations = await navigator.serviceWorker.getRegistrations();
                                     for (const registration of registrations) {
@@ -244,16 +230,13 @@ export const SettingsView = ({
                                     }
                                 }
 
-                                // Limpar cache storage
                                 if ('caches' in window) {
                                     const cacheNames = await caches.keys();
                                     await Promise.all(cacheNames.map(name => caches.delete(name)));
                                 }
 
-                                // Reload forçado
                                 window.location.reload(true);
                             } catch (error) {
-                                console.error('[Settings] Erro ao forçar update:', error);
                                 alert('❌ Erro ao limpar cache. Tenta fazer refresh manual (Ctrl+Shift+R)');
                             }
                         }}

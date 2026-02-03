@@ -1,1 +1,0 @@
-import{r as e}from"./vendor-react-Nuf_JWzj.js";const t=(t,r,n)=>{e.useEffect(()=>{if(!t)return;const e=e=>{"Escape"===e.key&&(e.preventDefault(),r()),"Enter"===e.key&&(e.ctrlKey||e.metaKey)&&n&&(e.preventDefault(),n())};return window.addEventListener("keydown",e),()=>window.removeEventListener("keydown",e)},[t,r,n])};export{t as u};

@@ -57,8 +57,7 @@ import { MotivationalCard } from './components/ui/MotivationalCard';
 import { StatCard } from './components/ui/StatCard';
 
 function HarmReductionTracker() {
-            // ===== NEW AUTHENTICATION FLOW: Firebase FIRST, then PIN =====
-            const APP_VERSION = '4.3.2'; // v4.3.2: Remover debug overlay e log capture
+            const APP_VERSION = '1.5.0';
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
@@ -259,15 +258,9 @@ function AuthenticatedApp() {
                 }
 
                 try {
-                    // Use deleteItem from LocalDataContext (with tombstones!)
                     await deleteItemFromContext(collectionName, id);
                     showToast('✓ Item apagado', 'success');
-
-                    // Trigger sync in background
-                    setTimeout(() => {
-                        console.log('[App] 🔄 Iniciando push para Firebase após delete...');
-                        syncService.pushToFirebase();
-                    }, 1000);
+                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast('✗ Erro ao apagar item', 'error');
                     logger.error('Erro ao apagar:', error);
@@ -342,17 +335,11 @@ function AuthenticatedApp() {
                 if (!editingConsumption) return;
 
                 try {
-                    // Use updateItem para atualizar o consumo existente (não criar duplicado!)
                     await updateItem('consumptions', editingConsumption.id, editingConsumption);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast('✓ Consumo editado', 'success');
-
-                    // Trigger sync in background
-                    setTimeout(() => {
-                        console.log('[App] 🔄 Iniciando push para Firebase após edit...');
-                        syncService.pushToFirebase();
-                    }, 1000);
+                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast('✗ Erro ao editar consumo', 'error');
                     logger.error('Erro ao editar:', error);
@@ -940,77 +927,6 @@ return {
     negativeCount: sentimentResult.distribution.negative + sentimentResult.distribution.very_negative, 
     label: sentimentResult.overall 
 };
-            };
-
-            // Memoized temporal correlation analysis (optimized)
-            // NOTE: temporalCorrelations and bidirectionalAnalysis removed (dead code - never used)
-            // If needed, these are available via metrics.temporalCorrelations and metrics.bidirectionalAnalysis from useAnalysis hook
-
-            // Analyze intra-day variation (how mood/energy change throughout the same day)
-            const getIntraDayVariation = () => {
-                if (wellbeingLogs.length < 2) return null;
-
-                // Group by date
-                const logsByDate = {};
-                wellbeingLogs.forEach(log => {
-                    if (!logsByDate[log.date]) logsByDate[log.date] = [];
-                    logsByDate[log.date].push(log);
-                });
-
-                // Filter days with multiple entries
-                const daysWithMultipleEntries = Object.entries(logsByDate).filter(([_, logs]) => logs.length > 1);
-
-                if (daysWithMultipleEntries.length === 0) return null;
-
-                const variations = [];
-
-                daysWithMultipleEntries.forEach(([date, logs]) => {
-                    // Sort by timestamp
-                    const sorted = logs.sort((a, b) => new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime());
-
-                    const first = sorted[0];
-                    const last = sorted[sorted.length - 1];
-
-                    // Calculate variations
-                    const moodChange = last.mood && first.mood ? parseInt(last.mood) - parseInt(first.mood) : null;
-                    const energyChange = last.energy && first.energy ? parseInt(last.energy) - parseInt(first.energy) : null;
-                    const sleepTotal = sorted.reduce((sum, log) => sum + (parseFloat(log.sleep) || 0), 0);
-
-                    if (moodChange !== null || energyChange !== null) {
-                        variations.push({
-                            date,
-                            moodChange,
-                            energyChange,
-                            sleepTotal,
-                            entriesCount: sorted.length,
-                            firstMood: first.mood ? parseInt(first.mood) : null,
-                            lastMood: last.mood ? parseInt(last.mood) : null,
-                            firstEnergy: first.energy ? parseInt(first.energy) : null,
-                            lastEnergy: last.energy ? parseInt(last.energy) : null
-                        });
-                    }
-                });
-
-                if (variations.length === 0) return null;
-
-                // Calculate averages
-                const avgMoodChange = variations.filter(v => v.moodChange !== null).reduce((sum, v) => sum + v.moodChange, 0) / variations.filter(v => v.moodChange !== null).length;
-                const avgEnergyChange = variations.filter(v => v.energyChange !== null).reduce((sum, v) => sum + v.energyChange, 0) / variations.filter(v => v.energyChange !== null).length;
-
-                // Find patterns
-                const improvingDays = variations.filter(v => (v.moodChange && v.moodChange > 1) || (v.energyChange && v.energyChange > 1)).length;
-                const decliningDays = variations.filter(v => (v.moodChange && v.moodChange < -1) || (v.energyChange && v.energyChange < -1)).length;
-                const stableDays = variations.length - improvingDays - decliningDays;
-
-                return {
-                    variations,
-                    avgMoodChange: isNaN(avgMoodChange) ? null : avgMoodChange,
-                    avgEnergyChange: isNaN(avgEnergyChange) ? null : avgEnergyChange,
-                    improvingDays,
-                    decliningDays,
-                    stableDays,
-                    totalDays: variations.length
-                };
             };
 
             // Analyze emotional patterns (which emotions correlate with consumption)

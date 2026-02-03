@@ -90,9 +90,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false,  // DESATIVADO para debug de sync
+        drop_console: true,
         drop_debugger: true,
-        // pure_funcs removido para permitir logs
         passes: 2
       },
       mangle: {
