@@ -313,7 +313,10 @@ export function HistoryView({
                                                                             {cycle.sleep && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
                                                                                     <span className="text-gray-400">Horas de sono: </span>
-                                                                                    <span className="font-medium">{cycle.sleep}h</span>
+                                                                                    <span className="font-medium">{(() => {
+                                                                                        console.log('[DEBUG HistoryView] Valor sleep:', cycle.sleep, 'Tipo:', typeof cycle.sleep);
+                                                                                        return cycle.sleep;
+                                                                                    })()}h</span>
                                                                                 </div>
                                                                             )}
                                                                             {cycle.triggers && cycle.triggers.length > 0 && (

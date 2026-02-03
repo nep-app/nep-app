@@ -640,6 +640,10 @@ function AuthenticatedApp() {
                         const timestampISO = customDateTime.toISOString();
                         const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
 
+                        const sleepValue = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+                        console.log('[DEBUG Ciclo] Valor original do form:', cycleForm.sleep);
+                        console.log('[DEBUG Ciclo] Após parseFloat:', sleepValue);
+
                         const item = {
                             id: genId(),
                             timestamp: timestampISO,
@@ -649,8 +653,9 @@ function AuthenticatedApp() {
                             notes: cycleForm.notes,
                             lastBefore00: cycleForm.lastBefore00,
                             // Converter sleep para número (se tiver valor)
-                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
+                            ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };
+                        console.log('[DEBUG Ciclo] Item final:', JSON.stringify(item));
                         await addCycle(item);
                         showToast('✓ Novo ciclo criado', 'success');
                     }
