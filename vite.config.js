@@ -46,6 +46,7 @@ export default defineConfig({
         name: 'NEP - Redução de Danos',
         short_name: 'NEP',
         description: 'Tracking e harm reduction',
+        id: '/nep-app/',
         theme_color: '#1e293b',
         background_color: '#0f172a',
         display: 'standalone', // Fullscreen (sem barra URL)
