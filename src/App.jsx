@@ -623,13 +623,18 @@ function AuthenticatedApp() {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
+                        const sleepValueEdit = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+                        console.log('[DEBUG Editar Ciclo] Valor original do form:', cycleForm.sleep);
+                        console.log('[DEBUG Editar Ciclo] Após parseFloat:', sleepValueEdit);
+
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
                             notes: cycleForm.notes,
                             lastBefore00: cycleForm.lastBefore00,
-                            ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
+                            ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
                         };
+                        console.log('[DEBUG Editar Ciclo] updatedData:', JSON.stringify(updatedData));
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);
                         showToast('✓ Ciclo atualizado', 'success');
