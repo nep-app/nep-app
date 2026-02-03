@@ -188,6 +188,53 @@ export const SettingsView = ({
                 </div>
             </div>
 
+            {/* PWA Update */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Icons.RefreshCw className="w-5 h-5" />
+                    Atualização da App
+                </h3>
+                <div className="space-y-3 text-gray-300">
+                    <p className="text-sm">
+                        Se a app estiver desatualizada ou com bugs após um update, força uma atualização completa.
+                    </p>
+
+                    <button
+                        onClick={async () => {
+                            try {
+                                // Limpar todos os caches do Service Worker
+                                if ('serviceWorker' in navigator) {
+                                    const registrations = await navigator.serviceWorker.getRegistrations();
+                                    for (const registration of registrations) {
+                                        await registration.unregister();
+                                    }
+                                }
+
+                                // Limpar cache storage
+                                if ('caches' in window) {
+                                    const cacheNames = await caches.keys();
+                                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                                }
+
+                                // Reload forçado
+                                window.location.reload(true);
+                            } catch (error) {
+                                console.error('[Settings] Erro ao forçar update:', error);
+                                alert('❌ Erro ao limpar cache. Tenta fazer refresh manual (Ctrl+Shift+R)');
+                            }
+                        }}
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium flex items-center justify-center gap-2"
+                    >
+                        <Icons.RefreshCw className="w-4 h-4" />
+                        🔄 Forçar Atualização
+                    </button>
+
+                    <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
+                        ⚠️ <strong>Atenção:</strong> Este botão limpa a cache e recarrega a app. Usa apenas se a app estiver com problemas após um update.
+                    </div>
+                </div>
+            </div>
+
             {/* Data Management */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
