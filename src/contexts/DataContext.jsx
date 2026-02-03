@@ -288,7 +288,15 @@ export const DataProvider = ({ children }) => {
         incremental: true   // Usar timestamp exato do último sync (máximo desempenho)
       });
 
-      await loadAllCollections();
+      // ✅ OTIMIZAÇÃO: fullSync já atualizou Dexie, mas precisamos recarregar
+      // estado React. Só recarregar se houve mudanças (pulled > 0)
+      if (result && (result.pulled > 0 || result.pushed > 0)) {
+        console.log('[DataContext] ♻️ Recarregando estado React após sync...');
+        await loadAllCollections();
+      } else {
+        console.log('[DataContext] ✅ Nenhuma mudança - skip reload');
+      }
+
       setLastSyncTime(new Date());
       return result;
     } catch (error) {

@@ -38,6 +38,20 @@ export function HomeViewRefactored({
     });
   }, []); // Apenas no mount
 
+  // ⏰ TIMER: Atualizar "Sem consumir há" a cada 30 segundos
+  // (para mostrar tempo a passar mesmo sem mudanças nos dados)
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      getUserStats().then(stats => {
+        if (stats.timeSinceLastConsumption) {
+          setCachedTimeSince(stats.timeSinceLastConsumption);
+        }
+      });
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(intervalId);
+  }, []); // Apenas setup/cleanup
+
   // Atualizar avisos e timeSince quando dados mudam (SEM DELAY!)
   useEffect(() => {
     getUserStats().then(stats => {
