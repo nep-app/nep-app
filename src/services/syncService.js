@@ -50,7 +50,6 @@ class SyncService {
     this.isSyncing = false;  // Para fullSync apenas
     this.isPushing = false;  // Para pushToFirebase apenas
     this.syncQueue = [];
-    this.onDataChanged = null; // Callback para notificar mudanças (usado pelo DataContext)
   }
 
   /**
@@ -915,11 +914,6 @@ class SyncService {
                     console.log(`[Sync] 🪦 Tombstone recebido: ${collectionName}/${itemId}`);
                   } else {
                     console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
-                  }
-
-                  // Notificar DataContext para recarregar dados
-                  if (this.onDataChanged) {
-                    this.onDataChanged(collectionName, itemId);
                   }
                 } catch (decryptError) {
                   // Ignorar SILENCIOSAMENTE zombies (items antigos não desencriptáveis)

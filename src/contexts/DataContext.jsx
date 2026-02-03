@@ -70,7 +70,6 @@ export const DataProvider = ({ children }) => {
   // Sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
-  const [realtimeSyncActive, setRealtimeSyncActive] = useState(false);
 
   // Firebase auth listener
   useEffect(() => {
@@ -121,44 +120,15 @@ export const DataProvider = ({ children }) => {
           await setMetadata('lastFirebaseUID', currentUID);
         }
 
-        // ✅ SYNC INICIAL: Pull incremental leve (apenas mudanças recentes)
-        // Não bloqueia UI - corre em background
-        console.log('[DataContext] 🔄 Iniciando sync incremental em background...');
-        syncService.fullSync({
-          skipZombies: true,    // Ignorar items antigos corrompidos
-          incremental: true     // Apenas mudanças desde último sync (rápido!)
-        })
-          .then(() => {
-            console.log('[DataContext] ✅ Sync inicial completo');
-            loadAllCollections(); // Recarregar dados locais
-          })
-          .catch(err => {
-            console.warn('[DataContext] ⚠️ Sync inicial falhou (esperado na primeira vez):', err.message);
-          });
+        // ❌ SYNC INICIAL DESATIVADO
+        // Sync 100% MANUAL - utilizador controla quando sincronizar
+        // (Antes fazia fullSync() aqui no boot, agora não)
 
-        // ❌ AUTO-SYNC DESATIVADO (não precisa - já há auto-push após CRUD)
+        // ❌ AUTO-SYNC DESATIVADO (sincronizar só quando utilizador pedir)
         // syncService.startAutoSync(5);
 
-        // ✅ REALTIME SYNC: Receber mudanças de outros dispositivos instantaneamente
-        console.log('[DataContext] 🔴 Ativando listeners em tempo real...');
-
-        // Callback para recarregar dados quando há mudanças remotas
-        let reloadTimeout = null;
-        syncService.onDataChanged = (collectionName, itemId) => {
-          console.log(`[DataContext] 🔄 Mudança remota detectada: ${collectionName}/${itemId}`);
-
-          // Debounce: Recarregar após 500ms de inatividade (evita reloads múltiplos)
-          if (reloadTimeout) clearTimeout(reloadTimeout);
-          reloadTimeout = setTimeout(() => {
-            console.log('[DataContext] ♻️ Recarregando dados após mudança remota...');
-            loadAllCollections().then(() => {
-              console.log('[DataContext] ✅ Dados atualizados do outro dispositivo!');
-            });
-          }, 500);
-        };
-
-        syncService.startRealtimeSync();
-        setRealtimeSyncActive(true);
+        // ❌ REALTIME SYNC DESATIVADO (mais rápido + menos bateria)
+        // syncService.startRealtimeSync();
 
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
@@ -173,8 +143,6 @@ export const DataProvider = ({ children }) => {
       if (syncService) {
         syncService.stopAutoSync();
         syncService.stopRealtimeSync();
-        syncService.onDataChanged = null; // Limpar callback
-        setRealtimeSyncActive(false);
       }
     };
   }, [user, pin, db, getUserSalt, loadAllCollections, firebaseLoading]);
