@@ -26,7 +26,6 @@ export const SettingsView = ({
         const handler = (e) => {
             e.preventDefault();
             setDeferredPrompt(e);
-            console.log('[PWA] Install prompt capturado');
         };
 
         window.addEventListener('beforeinstallprompt', handler);
@@ -201,38 +200,30 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* PWA Install & Update */}
+            {/* PWA Update */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.RefreshCw className="w-5 h-5" />
-                    Instalação & Atualização
+                    Atualização da App
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Instala a app no teu dispositivo ou força atualização se houver bugs.
+                        Se a app estiver desatualizada ou com bugs após um update, força uma atualização completa.
                     </p>
 
-                    {/* Botão Instalar App */}
-                    {deferredPrompt ? (
+                    {/* Botão Instalar (só aparece quando browser permitir) */}
+                    {deferredPrompt && (
                         <button
                             onClick={async () => {
                                 if (!deferredPrompt) return;
-
                                 try {
                                     await deferredPrompt.prompt();
                                     const { outcome } = await deferredPrompt.userChoice;
-
                                     if (outcome === 'accepted') {
-                                        console.log('[PWA] User aceitou install');
-                                        alert('✅ App instalada! Procura o ícone NEP no teu dispositivo.');
-                                    } else {
-                                        console.log('[PWA] User rejeitou install');
+                                        setDeferredPrompt(null);
                                     }
-
-                                    setDeferredPrompt(null);
                                 } catch (error) {
-                                    console.error('[PWA] Erro ao instalar:', error);
-                                    alert('❌ Erro ao instalar. Tenta pelo menu do browser.');
+                                    console.error('Erro ao instalar PWA:', error);
                                 }
                             }}
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
@@ -240,16 +231,6 @@ export const SettingsView = ({
                             <Icons.Download className="w-4 h-4" />
                             📲 Instalar App
                         </button>
-                    ) : (
-                        <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3 text-yellow-300">
-                            <p className="font-semibold mb-2">🔧 Instalação Manual:</p>
-                            <p className="mb-2">O browser ainda não ofereceu instalação automática. Podes instalar manualmente:</p>
-                            <ul className="list-disc ml-4 space-y-1">
-                                <li><strong>Desktop:</strong> Menu Chrome (⋮) → "Instalar NEP..."</li>
-                                <li><strong>Mobile:</strong> Menu Chrome → "Adicionar ao ecrã inicial"</li>
-                            </ul>
-                            <p className="mt-2 text-xs opacity-75">💡 Se já instalaste, o botão não aparece.</p>
-                        </div>
                     )}
 
                     <button
