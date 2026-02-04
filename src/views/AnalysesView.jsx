@@ -1963,71 +1963,18 @@ export function AnalysesView({
                                                                             {/* Paragraph 11: Tendência (se aplicável) */}
                                                                             {(() => {
                                                                                 if (totalConsumptions === 0) return null;
-                
-                                                                                const now = new Date();
-                                                                                let recentPeriod, previousPeriod, periodLabel;
-                
-                                                                                // Adaptar comparação ao filtro selecionado
-                                                                                if (patternsPeriod === 'hoje') {
-                                                                                    // Comparar hoje vs ontem
-                                                                                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                                                                                    const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
-                                                                                    const yesterdayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
-                
-                                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= todayStart);
-                                                                                    previousPeriod = consumptions.filter(c => {
-                                                                                        const d = new Date(c.timestamp);
-                                                                                        return d >= yesterdayStart && d <= yesterdayEnd;
-                                                                                    });
-                                                                                    periodLabel = { recent: 'hoje', previous: 'ontem' };
-                                                                                } else if (patternsPeriod === 'semana') {
-                                                                                    // Comparar esta semana vs semana anterior
-                                                                                    const sevenDaysAgo = getDateDaysAgo(7);
-                                                                                    const fourteenDaysAgo = getDateDaysAgo(14);
-                
-                                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= sevenDaysAgo);
-                                                                                    previousPeriod = consumptions.filter(c => {
-                                                                                        const d = new Date(c.timestamp);
-                                                                                        return d >= fourteenDaysAgo && d < sevenDaysAgo;
-                                                                                    });
-                                                                                    periodLabel = { recent: 'nesta semana', previous: 'na anterior' };
-                                                                                } else if (patternsPeriod === 'mês') {
-                                                                                    // Comparar este mês vs mês anterior
-                                                                                    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                                                                                    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                                                                                    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-                
-                                                                                    recentPeriod = consumptions.filter(c => new Date(c.timestamp) >= thisMonthStart);
-                                                                                    previousPeriod = consumptions.filter(c => {
-                                                                                        const d = new Date(c.timestamp);
-                                                                                        return d >= lastMonthStart && d <= lastMonthEnd;
-                                                                                    });
-                                                                                    periodLabel = { recent: 'neste mês', previous: 'no anterior' };
-                                                                                } else {
-                                                                                    // 'tudo': Dividir TODO o histórico em 2 metades e comparar
-                                                                                    if (consumptions.length < 6) return null; // Mínimo 6 consumos (3 por metade)
 
-                                                                                    // Ordenar por data
-                                                                                    const sorted = [...consumptions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                                                                                    const midpoint = Math.floor(sorted.length / 2);
+                                                                                // Comparar período atual (analysisConsumptions) vs período anterior
+                                                                                const currentPeriod = analysisConsumptions;
 
-                                                                                    previousPeriod = sorted.slice(0, midpoint);
-                                                                                    recentPeriod = sorted.slice(midpoint);
+                                                                                // Pegar o período anterior (mesmo tipo, offset+1)
+                                                                                const previousDateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset + 1);
+                                                                                const previousPeriod = filterByDateRange(consumptions, previousDateRange);
 
-                                                                                    // Validar que cada metade tem pelo menos 3 dias únicos
-                                                                                    const getUniqueDays = (data) => {
-                                                                                        const days = new Set(data.map(c => new Date(c.timestamp).toDateString()));
-                                                                                        return days.size;
-                                                                                    };
+                                                                                if (currentPeriod.length === 0 || previousPeriod.length === 0) return null;
+                                                                                if (currentPeriod.length < 3 || previousPeriod.length < 3) return null; // Mínimo 3 consumos em cada
 
-                                                                                    if (getUniqueDays(previousPeriod) < 3 || getUniqueDays(recentPeriod) < 3) return null;
-
-                                                                                    periodLabel = { recent: 'na segunda metade', previous: 'na primeira metade' };
-                                                                                }
-                
-                                                                                if (recentPeriod.length === 0 || previousPeriod.length === 0) return null;
-                
-                                                                                const percentChange = ((recentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
+                                                                                const percentChange = ((currentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
                 
                                                                                 // Só mostrar se mudança significativa (>20%)
                                                                                 if (Math.abs(percentChange) < 20) return null;
@@ -2036,12 +1983,12 @@ export function AnalysesView({
                                                                                     <p>
                                                                                         {percentChange > 0 ? (
                                                                                             <>
-                                                                                                📈 <strong className={('text-orange-400')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                                📈 <strong className={('text-orange-400')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> neste período comparado com o anterior (de {previousPeriod.length} para {currentPeriod.length} consumos).
                                                                                                 <span className={('text-yellow-400')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
                                                                                             </>
                                                                                         ) : (
                                                                                             <>
-                                                                                                📉 <strong className={('text-green-400')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> {periodLabel.recent} comparado {periodLabel.previous} (de {previousPeriod.length} para {recentPeriod.length} consumos).
+                                                                                                📉 <strong className={('text-green-400')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> neste período comparado com o anterior (de {previousPeriod.length} para {currentPeriod.length} consumos).
                                                                                                 <span className={'font-medium ' + ('text-green-400')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
                                                                                             </>
                                                                                         )}

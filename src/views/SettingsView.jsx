@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from '../components/Icons';
 
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.5.1';
 
 export const SettingsView = ({
     user,
