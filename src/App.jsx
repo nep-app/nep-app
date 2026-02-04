@@ -50,7 +50,7 @@ const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').the
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 
 function HarmReductionTracker() {
-            const APP_VERSION = '1.5.1';
+            const APP_VERSION = '1.5.3';
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {

@@ -3090,7 +3090,8 @@ export function AnalysesView({
                                                                 const mg = parseFloat(log.mg);
                                                                 if (!mg || mg <= 0) return;
 
-                                                                const week = getISOWeek(log.timestamp);
+                                                                const logDate = log.date || safeToISODate(log.timestamp);
+                                                                const week = getISOWeek(logDate);
                                                                 if (!weeklyData[week]) {
                                                                     weeklyData[week] = { week, totalMg: 0, days: 0 };
                                                                 }

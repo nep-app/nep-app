@@ -2215,7 +2215,7 @@ export function PatternsView({
                                                 <div className="space-y-4">
                                                     {/* 📊 DOSAGEM SEMANAL */}
                                                     {(() => {
-                                                        if (dailyLogs.length < 7) return null;
+                                                        if (filteredDailyLogs.length < 7) return null;
                                                         const getISOWeek = (date) => {
                                                             const d = new Date(date);
                                                             d.setHours(0, 0, 0, 0);
@@ -2225,10 +2225,11 @@ export function PatternsView({
                                                             return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
                                                         };
                                                         const weeklyData = {};
-                                                        dailyLogs.forEach(log => {
+                                                        filteredDailyLogs.forEach(log => {
                                                             const mg = parseFloat(log.mg);
                                                             if (!mg || mg <= 0) return;
-                                                            const week = getISOWeek(log.timestamp);
+                                                            const logDate = log.date || safeToISODate(log.timestamp);
+                                                            const week = getISOWeek(logDate);
                                                             if (!weeklyData[week]) weeklyData[week] = { week, totalMg: 0, days: 0 };
                                                             weeklyData[week].totalMg += mg;
                                                             weeklyData[week].days++;
