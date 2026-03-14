@@ -1,9 +1,59 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/nep-app/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/(firestore|identitytoolkit|securetoken)\.googleapis\.com\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /\.js$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'js-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+        ],
+        navigateFallback: null,
+      },
+      manifest: {
+        name: 'NEP - Redução de Danos',
+        short_name: 'NEP',
+        description: 'Tracking e harm reduction',
+        id: '/nep-app/',
+        theme_color: '#1e293b',
+        background_color: '#0f172a',
+        display: 'standalone',
+        orientation: 'portrait',
+        scope: '/nep-app/',
+        start_url: '/nep-app/',
+        icons: [
+          { src: '/nep-app/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/nep-app/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/nep-app/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/nep-app/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+    }),
+  ],
   build: {
     outDir: 'docs',
     sourcemap: false,
