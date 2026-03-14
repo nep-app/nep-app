@@ -126,7 +126,7 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
       // Mascarar após 700ms
       revealTimersRef.current[index] = setTimeout(() => {
         setRevealed(prev => { const r = [...prev]; r[index] = false; return r; });
-      }, 300);
+      }, 150);
     } else {
       // Dígito apagado — limpar revelação imediatamente
       if (revealTimersRef.current[index]) {
