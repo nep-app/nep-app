@@ -1,4 +1,5 @@
 import { db } from '../db/dexieDB';
+import i18n from '../i18n';
 
 /**
  * USER STATS - Sistema de estatísticas pré-calculadas
@@ -188,14 +189,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const targetInterval = parseFloat(intervalGoal.target);
       if (lastInterval < targetInterval) {
         alerts.push({
-          text: `Intervalo curto! ${lastInterval}h`,
+          text: i18n.t('alerts.shortInterval', { hours: lastInterval }),
           emoji: '⚠️',
           color: 'orange',
           type: 'negative'
         });
       } else {
         alerts.push({
-          text: `Bom intervalo! ${lastInterval}h`,
+          text: i18n.t('alerts.goodInterval', { hours: lastInterval }),
           emoji: '✨',
           color: 'green',
           type: 'positive'
@@ -209,14 +210,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const targetMg = parseFloat(quantityGoal.target);
       if (lastMg >= targetMg) {
         alerts.push({
-          text: `Atenção ao consumo de ontem! ${lastMg}mg`,
+          text: i18n.t('alerts.watchDose', { mg: lastMg }),
           emoji: '📊',
           color: 'orange',
           type: 'negative'
         });
       } else {
         alerts.push({
-          text: `Boa! Consumo de ontem: ${lastMg}mg`,
+          text: i18n.t('alerts.goodDose', { mg: lastMg }),
           emoji: '💚',
           color: 'green',
           type: 'positive'
@@ -238,21 +239,21 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (sleepHours >= targetSleep && sleepHours <= maxHealthySleep) {
           alerts.push({
-            text: `Parabéns! ${sleepHours}h de sono`,
+            text: i18n.t('alerts.goodSleep', { hours: sleepHours }),
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else if (sleepHours > maxHealthySleep) {
           alerts.push({
-            text: `Sono excessivo: ${sleepHours}h`,
+            text: i18n.t('alerts.excessiveSleep', { hours: sleepHours }),
             emoji: '😴',
             color: 'orange',
             type: 'warning'
           });
         } else {
           alerts.push({
-            text: `Atenção ao sono: ${sleepHours}h`,
+            text: i18n.t('alerts.lowSleep', { hours: sleepHours }),
             emoji: '😴',
             color: 'orange',
             type: 'negative'
@@ -277,20 +278,21 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (sleepHours < 6 && mood < 5) {
           alerts.push({
-            text: `⚠️ Risco elevado hoje: Dormiste ${sleepHours}h + humor baixo (${mood}/10)`,
+            text: i18n.t('alerts.highRisk', { hours: sleepHours, mood }),
             emoji: '🔴',
             color: 'red',
             type: 'predictive',
-            description: '75% probabilidade de dia desafiante. Considera estratégias preventivas.'
+            description: i18n.t('alerts.highRiskDesc')
           });
         } else if (sleepHours < 6 || mood < 5) {
-          const factor = sleepHours < 6 ? `sono curto (${sleepHours}h)` : `humor baixo (${mood}/10)`;
+          const factorKey = sleepHours < 6 ? 'alerts.moderateRiskSleep' : 'alerts.moderateRiskMood';
+          const factorVal = sleepHours < 6 ? { hours: sleepHours } : { mood };
           alerts.push({
-            text: `⚡ Atenção: ${factor} ontem`,
+            text: i18n.t(factorKey, factorVal),
             emoji: '⚠️',
             color: 'orange',
             type: 'predictive',
-            description: 'Risco moderado. Planeia bem o dia.'
+            description: i18n.t('alerts.moderateRiskDesc')
           });
         }
       }
@@ -319,14 +321,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (bedtimeMinutes <= targetMinutes && isHealthyBedtime) {
           alerts.push({
-            text: `Boa! Deitaste às ${lastCycle.bedtime}`,
+            text: i18n.t('alerts.goodBedtime', { time: lastCycle.bedtime }),
             emoji: '💤',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: `Atenção! Deitaste às ${lastCycle.bedtime}`,
+            text: i18n.t('alerts.lateBedtime', { time: lastCycle.bedtime }),
             emoji: '🌃',
             color: 'orange',
             type: 'negative'
@@ -344,14 +346,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       if (lastCycle && lastCycle.lastBefore00 !== undefined) {
         if (lastCycle.lastBefore00 === true) {
           alerts.push({
-            text: `Boa! Último consumo antes da 00h`,
+            text: i18n.t('alerts.goodLastUse'),
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: `Cuidado! Último após 00h`,
+            text: i18n.t('alerts.lateLastUse'),
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
@@ -377,14 +379,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
       if (todayCount < targetFrequency) {
         alerts.push({
-          text: `Boa! Só ${todayCount} ${todayCount === 1 ? 'consumo' : 'consumos'} hoje`,
+          text: i18n.t('alerts.goodFrequency', { count: todayCount }),
           emoji: '🎯',
           color: 'green',
           type: 'positive'
         });
       } else if (todayCount >= targetFrequency) {
         alerts.push({
-          text: `Atenção! Já ${todayCount} consumos hoje`,
+          text: i18n.t('alerts.highFrequency', { count: todayCount }),
           emoji: '⚠️',
           color: 'orange',
           type: 'negative'

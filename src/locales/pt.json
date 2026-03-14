@@ -52,7 +52,8 @@
   "home": {
     "syncing": "A sincronizar...",
     "sync": "Sincronizar",
-    "timeSinceLabel": "Sem consumir há",
+    "timeSinceLabel": "Tempo desde último consumo",
+    "dailyMessage": "Mensagem de Hoje",
     "markConsumption": "Marcar Consumo Agora",
     "thoughts": "Pensamentos",
     "wellbeing": "Bem-estar",
@@ -74,6 +75,26 @@
     "showMore": "Ver mais ({{count}} restantes)",
     "syncSuccess": "✓ Sincronizado! {{count}} registos atualizados.",
     "syncAlreadyDone": "✓ Já está tudo sincronizado!"
+  },
+  "alerts": {
+    "shortInterval": "Intervalo curto! {{hours}}h",
+    "goodInterval": "Bom intervalo! {{hours}}h",
+    "watchDose": "Atenção ao consumo de ontem! {{mg}}mg",
+    "goodDose": "Boa! Consumo de ontem: {{mg}}mg",
+    "goodSleep": "Parabéns! {{hours}}h de sono",
+    "excessiveSleep": "Sono excessivo: {{hours}}h",
+    "lowSleep": "Atenção ao sono: {{hours}}h",
+    "highRisk": "Risco elevado hoje: Dormiste {{hours}}h + humor baixo ({{mood}}/10)",
+    "highRiskDesc": "75% probabilidade de dia desafiante. Considera estratégias preventivas.",
+    "moderateRiskSleep": "⚡ Atenção: sono curto ({{hours}}h) ontem",
+    "moderateRiskMood": "⚡ Atenção: humor baixo ({{mood}}/10) ontem",
+    "moderateRiskDesc": "Risco moderado. Planeia bem o dia.",
+    "goodBedtime": "Boa! Deitaste às {{time}}",
+    "lateBedtime": "Atenção! Deitaste às {{time}}",
+    "goodLastUse": "Boa! Último consumo antes da 00h",
+    "lateLastUse": "Cuidado! Último após 00h",
+    "goodFrequency": "Boa! Só {{count}} consumo(s) hoje",
+    "highFrequency": "Atenção! Já {{count}} consumos hoje"
   },
   "nav": {
     "home": "Início",

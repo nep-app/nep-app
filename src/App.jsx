@@ -1104,7 +1104,7 @@ return {
                                     {/* Mensagem de Hoje - ABAIXO do streak */}
                                     <div className="text-right space-y-1">
                                         <p className='text-xs font-semibold text-purple-300'>
-                                            💜 Mensagem de Hoje
+                                            💜 {t('home.dailyMessage')}
                                         </p>
                                         <p className='text-xs italic max-w-xs text-white'>
                                             {currentReflection}
