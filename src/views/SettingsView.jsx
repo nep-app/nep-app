@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
-import i18n from '../i18n';
-
 const APP_VERSION = '1.5.3';
 
 export const SettingsView = ({
@@ -17,7 +15,7 @@ export const SettingsView = ({
     isSyncing,
     lastSyncTime
 }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
     const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
     const [zombieStats, setZombieStats] = useState(null);

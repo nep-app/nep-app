@@ -4,7 +4,6 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
 import { dbtQuestions as dbtQuestionsDefault, reflectiveQuestions as reflectiveQuestionsDefault, copingStrategies as copingStrategiesDefault, educationalResources as educationalResourcesDefault } from './data/constants';
-import i18n from './i18n';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
@@ -137,7 +136,7 @@ function AuthenticatedApp() {
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
-            const { t } = useTranslation();
+            const { t, i18n } = useTranslation();
 
             // Custom hooks
             const { toasts, showToast } = useToast();
