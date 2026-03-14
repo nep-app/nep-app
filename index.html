@@ -11,6 +11,12 @@
     <link rel="icon" type="image/png" href="/nep-app/favicon.png">
     <link rel="apple-touch-icon" href="/nep-app/icon-192.png">
     <script>
+        // Desregistar service workers antigos (PWA removido)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(reg => reg.unregister());
+            });
+        }
         // Forçar dark mode sempre (modo padrão)
         document.documentElement.classList.add('dark');
     </script>
