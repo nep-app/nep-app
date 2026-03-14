@@ -417,6 +417,49 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 };
 
 /**
+ * Atualizar streak de utilização da app (chamar em cada abertura autenticada)
+ * Conta dias consecutivos em que a app foi aberta, independentemente do que foi feito.
+ */
+export const updateAppUsageStreak = async () => {
+  try {
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const record = await db.metadata.get('appUsage');
+    const data = record?.value || { lastOpenDate: null, appStreak: 0 };
+
+    if (data.lastOpenDate === today) {
+      // Já registado hoje — nada a fazer
+      return data.appStreak;
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+    const newStreak = data.lastOpenDate === yesterdayStr
+      ? data.appStreak + 1  // Dia consecutivo
+      : 1;                  // Streak quebrada (ou primeiro uso)
+
+    await db.metadata.put({ key: 'appUsage', value: { lastOpenDate: today, appStreak: newStreak } });
+    return newStreak;
+  } catch (error) {
+    console.error('[UserStats] Erro ao atualizar app usage streak:', error);
+    return 0;
+  }
+};
+
+/**
+ * Ler streak de utilização da app (RÁPIDO - sem desencriptar!)
+ */
+export const getAppUsageStreak = async () => {
+  try {
+    const record = await db.metadata.get('appUsage');
+    return record?.value?.appStreak || 0;
+  } catch {
+    return 0;
+  }
+};
+
+/**
  * Ler stats do user (RÁPIDO - sem desencriptar!)
  */
 export const getUserStats = async () => {

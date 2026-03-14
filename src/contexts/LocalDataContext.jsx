@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { logger } from '../utils/logger';
 import { useAuth } from './AuthContext';
 import { db } from '../db/localDB';
 import {
@@ -7,7 +8,7 @@ import {
   encryptItems,
   decryptItems
 } from '../utils/dexieEncryption';
-import { updateUserStats } from '../utils/userStats';
+import { updateUserStats, updateAppUsageStreak } from '../utils/userStats';
 
 // Helper functions (using localDB instead of dexieDB)
 const addItemWithSync = async (collection, item) => {
@@ -18,7 +19,7 @@ const addItemWithSync = async (collection, item) => {
     deleted: false
   };
   await db[collection].put(itemWithSync);
-  console.log(`[LocalData] ✅ Item adicionado: ${collection}/${item.id} - syncStatus: pending`);
+  logger.log(`[LocalData] ✅ Item adicionado: ${collection}/${item.id} - syncStatus: pending`);
   return itemWithSync;
 };
 
@@ -33,7 +34,7 @@ const updateItemWithSync = async (collection, id, updates) => {
     lastModified: new Date().toISOString()
   };
   await db[collection].put(updated);
-  console.log(`[LocalData] ✏️ Item atualizado: ${collection}/${id} - syncStatus: pending`);
+  logger.log(`[LocalData] ✏️ Item atualizado: ${collection}/${id} - syncStatus: pending`);
   return updated;
 };
 
@@ -48,7 +49,7 @@ const deleteItemWithSync = async (collection, id) => {
     lastModified: new Date().toISOString()
   };
   await db[collection].put(deleted);
-  console.log(`[LocalData] 🗑️ Item marcado como deleted: ${collection}/${id}`, { deleted: deleted.deleted, syncStatus: deleted.syncStatus });
+  logger.log(`[LocalData] 🗑️ Item marcado como deleted: ${collection}/${id}`, { deleted: deleted.deleted, syncStatus: deleted.syncStatus });
   return deleted;
 };
 
@@ -57,7 +58,7 @@ const getAllItems = async (collection) => {
   const filtered = all.filter(item => !item.deleted);
   const deletedCount = all.length - filtered.length;
   if (deletedCount > 0) {
-    console.log(`[LocalData] 🗑️ ${collection}: ${deletedCount} deleted items filtrados (${filtered.length} ativos de ${all.length} total)`);
+    logger.log(`[LocalData] 🗑️ ${collection}: ${deletedCount} deleted items filtrados (${filtered.length} ativos de ${all.length} total)`);
   }
   return filtered;
 };
@@ -139,7 +140,7 @@ export const LocalDataProvider = ({ children }) => {
         return itemTime >= cutoffTime;
       });
 
-      console.log(`[LocalData] 📦 ${collectionName}: ${recentItems.length} recentes (últimos ${maxAgeDays}d) de ${allItems.length} total`);
+      logger.log(`[LocalData] 📦 ${collectionName}: ${recentItems.length} recentes (últimos ${maxAgeDays}d) de ${allItems.length} total`);
 
       // Desencriptar apenas items recentes (MUITO mais rápido!)
       const decrypted = await decryptItems(collectionName, recentItems, encryptionKey, salt);
@@ -153,7 +154,7 @@ export const LocalDataProvider = ({ children }) => {
 
       return sorted;
     } catch (error) {
-      console.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
+      logger.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
       return [];
     }
   }, [encryptionKey, getUserSalt]);
@@ -215,7 +216,7 @@ export const LocalDataProvider = ({ children }) => {
         itemsToLoad.push(oldestItem);
       }
 
-      console.log(`[LocalData] 📦 ${collectionName}: ${recentItems.length} recentes (últimos ${maxAgeDays}d) + primeiro item de ${allItems.length} total`);
+      logger.log(`[LocalData] 📦 ${collectionName}: ${recentItems.length} recentes (últimos ${maxAgeDays}d) + primeiro item de ${allItems.length} total`);
 
       // Desencriptar
       const decrypted = await decryptItems(collectionName, itemsToLoad, encryptionKey, salt);
@@ -229,7 +230,7 @@ export const LocalDataProvider = ({ children }) => {
 
       return sorted;
     } catch (error) {
-      console.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
+      logger.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
       return [];
     }
   }, [encryptionKey, getUserSalt]);
@@ -254,16 +255,17 @@ export const LocalDataProvider = ({ children }) => {
     try {
       // ⚡ FASE 1: App pronta IMEDIATAMENTE (sem desencriptar nada!)
       // Stats aparecem do cache (via useAnalysis), resto carrega em background
-      console.log('[LocalData] ⚡ FASE 1: App pronta instantânea (stats do cache)...');
+      logger.log('[LocalData] ⚡ FASE 1: App pronta instantânea (stats do cache)...');
 
       setLoading(false); // App PRONTA já!
-      console.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
+      updateAppUsageStreak(); // Registar abertura da app (streak de utilização)
+      logger.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
 
       // 🔄 FASE 2: Carregar últimos 7 dias em background (lista aparece)
       setTimeout(async () => {
         try {
           setBackgroundLoading(true);
-          console.log('[LocalData] 🔄 FASE 2: Carregando últimos 7 dias (lista aparece)...');
+          logger.log('[LocalData] 🔄 FASE 2: Carregando últimos 7 dias (lista aparece)...');
 
           const [
             consumptionsData,
@@ -291,7 +293,7 @@ export const LocalDataProvider = ({ children }) => {
           setGoals(goalsData);
           setThoughts(thoughtsData);
 
-          console.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
+          logger.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
 
           // 🔄 FASE 3: Carregar TUDO em background (dados antigos + actualizar stats)
           setTimeout(async () => {
@@ -299,24 +301,24 @@ export const LocalDataProvider = ({ children }) => {
               // Verificar se FASE 2 já carregou TUDO
               const allItemsCount = await getAllItems('consumptions');
               if (consumptionsData.length >= allItemsCount.length) {
-                console.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
+                logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
 
                 // IMPORTANTE: Só atualizar stats se TODOS os goals foram carregados!
                 // FASE 2 pode carregar goals parcialmente, então precisamos verificar
                 const allGoals = await getAllItems('goals');
                 if (goalsData.length >= allGoals.length && consumptionsData.length > 0) {
-                  console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+                  logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
                   await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData);
                   setAllDataLoaded(true); // Sinalizar que TUDO está carregado
                 } else {
-                  console.log('[LocalData] ⚠️ Goals parcialmente carregados - aguardar FASE 3 para stats');
+                  logger.log('[LocalData] ⚠️ Goals parcialmente carregados - aguardar FASE 3 para stats');
                 }
 
                 setBackgroundLoading(false);
                 return;
               }
 
-              console.log('[LocalData] 🔄 FASE 3: Carregando dados antigos...');
+              logger.log('[LocalData] 🔄 FASE 3: Carregando dados antigos...');
 
               const [
                 consumptionsFullData,
@@ -345,26 +347,26 @@ export const LocalDataProvider = ({ children }) => {
               setThoughts(thoughtsFullData);
 
               // Atualizar stats pré-calculadas (para próximo boot)
-              console.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+              logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
               await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData);
 
               setAllDataLoaded(true); // Sinalizar que FASE 3 está completa
-              console.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
+              logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
             } catch (error) {
-              console.error('[LocalData] Erro na FASE 3:', error);
+              logger.error('[LocalData] Erro na FASE 3:', error);
             } finally {
               setBackgroundLoading(false);
             }
           }, 0); // FASE 3 começa assim que o UI renderizar
 
         } catch (error) {
-          console.error('[LocalData] Erro na FASE 2:', error);
+          logger.error('[LocalData] Erro na FASE 2:', error);
           setBackgroundLoading(false);
         }
       }, 0); // Ceder ao event loop para UI renderizar, depois carregar dados
 
     } catch (error) {
-      console.error('[LocalData] Erro ao carregar dados (FASE 1):', error);
+      logger.error('[LocalData] Erro ao carregar dados (FASE 1):', error);
       setLoading(false);
     }
   }, [encryptionKey, loadCollection]);
@@ -382,7 +384,7 @@ export const LocalDataProvider = ({ children }) => {
   const recalculateStats = useCallback(() => {
     // Ler estados atuais e recalcular (async mas não esperamos)
     updateUserStats(consumptions, cycles, dailyLogs, goals).catch(err =>
-      console.error('[LocalData] Erro ao recalcular stats:', err)
+      logger.error('[LocalData] Erro ao recalcular stats:', err)
     );
   }, [consumptions, cycles, dailyLogs, goals]);
 
@@ -508,7 +510,7 @@ export const LocalDataProvider = ({ children }) => {
     if (setter) {
       setter(prev => {
         const filtered = prev.filter(item => item.id !== id);
-        console.log(`[LocalData] 🗑️ Removido do estado React: ${collectionName}/${id} (antes: ${prev.length}, depois: ${filtered.length})`);
+        logger.log(`[LocalData] 🗑️ Removido do estado React: ${collectionName}/${id} (antes: ${prev.length}, depois: ${filtered.length})`);
         return filtered;
       });
 
@@ -518,7 +520,7 @@ export const LocalDataProvider = ({ children }) => {
         queueMicrotask(() => recalculateStats());
       }
     } else {
-      console.warn(`[LocalData] ⚠️ Setter não encontrado para ${collectionName}`);
+      logger.warn(`[LocalData] ⚠️ Setter não encontrado para ${collectionName}`);
     }
 
   }, [encryptionKey, recalculateStats]);

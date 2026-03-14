@@ -19,7 +19,8 @@ export function HomeViewRefactored({
   badges,
   currentCycleCount,
   consumptionsToShow,
-  setConsumptionsToShow
+  setConsumptionsToShow,
+  showToast
 }) {
   const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing, allDataLoaded } = useData();
   const metrics = useMetrics();
@@ -78,15 +79,14 @@ export function HomeViewRefactored({
                          (result.cycles?.total || 0) +
                          (result.dailyLogs?.total || 0);
         if (totalDocs > 0) {
-          alert(`✅ Sincronizado! ${totalDocs} registos atualizados.`);
+          showToast(`✓ Sincronizado! ${totalDocs} registos atualizados.`, 'success');
         } else {
-          alert('✅ Já está tudo sincronizado!');
+          showToast('✓ Já está tudo sincronizado!', 'success');
         }
       }
     } catch (error) {
       console.error('[HomeView] ❌ Erro ao sincronizar:', error);
-      // Mostrar erro ao utilizador
-      alert(`❌ Erro ao sincronizar: ${error.message || 'Verifica a tua ligação à internet e tenta novamente.'}`);
+      showToast(`✗ Erro ao sincronizar: ${error.message || 'Verifica a tua ligação à internet.'}`, 'error');
     }
   };
 

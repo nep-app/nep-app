@@ -1170,6 +1170,7 @@ return {
                                     currentCycleCount={currentCycleCount}
                                     consumptionsToShow={consumptionsToShow}
                                     setConsumptionsToShow={setConsumptionsToShow}
+                                    showToast={showToast}
                                 />
                             )}
                             {currentView === 'patterns' && (

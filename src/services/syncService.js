@@ -1,4 +1,5 @@
 import { collection, getDocs, doc, setDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { logger } from '../utils/logger';
 import { db as dexieDB, getMetadata, setMetadata } from '../db/localDB';
 import { encryptForFirebase, decryptFromFirebase } from '../utils/dexieEncryption';
 import { validateKey, validateSalt, createControlItem, SyncCircuitBreaker, SyncErrorLogger } from '../utils/syncValidation';
@@ -121,7 +122,7 @@ class SyncService {
       }
 
     } catch (error) {
-      console.error('[Sync] ❌ Erro no PULL:', error);
+      logger.error('[Sync] ❌ Erro no PULL:', error);
       throw error;
     }
   }
@@ -131,7 +132,7 @@ class SyncService {
    * Usa quando sync está quebrado e precisa forçar tudo
    */
   async forceMarkAllPending() {
-    console.log('[Sync] 🔧 Forçando TODOS os items para pending...');
+    logger.log('[Sync] 🔧 Forçando TODOS os items para pending...');
 
     let totalMarked = 0;
     for (const collectionName of COLLECTIONS) {
@@ -148,7 +149,7 @@ class SyncService {
       }
     }
 
-    console.log(`[Sync] ✅ ${totalMarked} items marcados como pending`);
+    logger.log(`[Sync] ✅ ${totalMarked} items marcados como pending`);
     return totalMarked;
   }
 
@@ -157,17 +158,17 @@ class SyncService {
    */
   async pushToFirebase() {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
-      console.log('[Sync] ⚠️ pushToFirebase: não inicializado');
+      logger.log('[Sync] ⚠️ pushToFirebase: não inicializado');
       return;
     }
 
     if (this.isPushing) {
-      console.log('[Sync] ⚠️ pushToFirebase: já em curso');
+      logger.log('[Sync] ⚠️ pushToFirebase: já em curso');
       return;
     }
 
     this.isPushing = true;
-    console.log('[Sync] 🔄 pushToFirebase INICIADO');
+    logger.log('[Sync] 🔄 pushToFirebase INICIADO');
 
     try {
 
@@ -181,13 +182,13 @@ class SyncService {
           .toArray();
 
         // LOG: Mostrar TODAS as coleções, mesmo se 0 pending
-        console.log(`[Sync] 📊 ${collectionName}: ${pendingItems.length} pendentes`);
+        logger.log(`[Sync] 📊 ${collectionName}: ${pendingItems.length} pendentes`);
 
         if (pendingItems.length === 0) {
           continue;
         }
 
-        console.log(`[Sync] 📤 ${collectionName}: Enviando ${pendingItems.length} items...`);
+        logger.log(`[Sync] 📤 ${collectionName}: Enviando ${pendingItems.length} items...`);
 
         for (const item of pendingItems) {
           try {
@@ -212,24 +213,24 @@ class SyncService {
             await setDoc(docRef, firebaseData);
 
             if (item.deleted) {
-              console.log(`[Sync] 🪦 Tombstone enviado: ${collectionName}/${item.id}`);
+              logger.log(`[Sync] 🪦 Tombstone enviado: ${collectionName}/${item.id}`);
             } else {
-              console.log(`[Sync] ✅ Enviado: ${collectionName}/${item.id}`);
+              logger.log(`[Sync] ✅ Enviado: ${collectionName}/${item.id}`);
             }
 
             // Marcar como sincronizado
             await markAsSynced(collectionName, item.id);
             totalPushed++;
           } catch (error) {
-            console.error(`[Sync] ❌ Erro ao sincronizar item ${item.id}:`, error);
+            logger.error(`[Sync] ❌ Erro ao sincronizar item ${item.id}:`, error);
           }
         }
       }
 
-      console.log(`[Sync] ✅ pushToFirebase COMPLETO - ${totalPushed} items enviados`);
+      logger.log(`[Sync] ✅ pushToFirebase COMPLETO - ${totalPushed} items enviados`);
 
     } catch (error) {
-      console.error('[Sync] ❌ Erro no PUSH:', error);
+      logger.error('[Sync] ❌ Erro no PUSH:', error);
     } finally {
       this.isPushing = false;
     }
@@ -263,12 +264,12 @@ class SyncService {
         if (lastSyncStr) {
           lastSyncTimestamp = lastSyncStr;
           const lastSync = new Date(lastSyncStr);
-          console.log(`[Sync] 🎯 INCREMENTAL: Sincronizando apenas mudanças desde ${lastSync.toLocaleString()}`);
+          logger.log(`[Sync] 🎯 INCREMENTAL: Sincronizando apenas mudanças desde ${lastSync.toLocaleString()}`);
         } else {
-          console.log('[Sync] 🚀 Primeiro sync - sincronizando tudo');
+          logger.log('[Sync] 🚀 Primeiro sync - sincronizando tudo');
         }
       } catch (error) {
-        console.warn('[Sync] ⚠️ Erro ao calcular incremental, fazendo full sync:', error);
+        logger.warn('[Sync] ⚠️ Erro ao calcular incremental, fazendo full sync:', error);
         lastSyncTimestamp = null;
       }
     }
@@ -288,7 +289,7 @@ class SyncService {
 
     try {
       // ✅ PASSO 1: VALIDAR CHAVE COM ITEM DE CONTROLO (CRÍTICO)
-      console.log('[Sync] 🔐 Validando PIN e Salt antes de desencriptar dados...');
+      logger.log('[Sync] 🔐 Validando PIN e Salt antes de desencriptar dados...');
 
       // validateKey agora LANÇA ERRO se validação falhar
       await validateKey(
@@ -298,20 +299,20 @@ class SyncService {
         this.salt
       );
 
-      console.log('[Sync] ✅ Chave validada! Prosseguindo com sync...');
+      logger.log('[Sync] ✅ Chave validada! Prosseguindo com sync...');
 
       if (skipZombies) {
-        console.log('[Sync] 🧟 MODO SKIP ZOMBIES ATIVADO');
-        console.log('[Sync]    Items que falham desencriptação serão IGNORADOS');
-        console.log('[Sync]    Sync vai continuar mesmo com erros\n');
+        logger.log('[Sync] 🧟 MODO SKIP ZOMBIES ATIVADO');
+        logger.log('[Sync]    Items que falham desencriptação serão IGNORADOS');
+        logger.log('[Sync]    Sync vai continuar mesmo com erros\n');
       }
 
       if (lastSyncTimestamp) {
-        console.log(`[Sync] 📅 Sincronizando apenas mudanças desde: ${lastSyncTimestamp}\n`);
+        logger.log(`[Sync] 📅 Sincronizando apenas mudanças desde: ${lastSyncTimestamp}\n`);
       } else if (effectiveMaxAge) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - effectiveMaxAge);
-        console.log(`[Sync] 📅 Sincronizando apenas items desde: ${cutoffDate.toISOString()}\n`);
+        logger.log(`[Sync] 📅 Sincronizando apenas items desde: ${cutoffDate.toISOString()}\n`);
       }
 
       // Inicializar circuit breaker e error logger
@@ -331,7 +332,7 @@ class SyncService {
       for (const collectionName of COLLECTIONS) {
         // ⛔ CIRCUIT BREAKER CHECK: Verificar ANTES de processar collection
         if (circuitBreaker.shouldStop()) {
-          console.error(
+          logger.error(
             `[Sync] ⛔ SYNC COMPLETAMENTE INTERROMPIDO!\n` +
             `Circuit breaker aberto. Parando TODAS as operações.\n` +
             `Coleção atual: ${collectionName}\n` +
@@ -356,7 +357,7 @@ class SyncService {
           );
           snapshot = await getDocs(q);
           queryTime = (performance.now() - queryStart).toFixed(0);
-          console.log(`[Sync] 🎯 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (mudanças desde último sync)`);
+          logger.log(`[Sync] 🎯 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (mudanças desde último sync)`);
         }
         // 🚀 PRIORIDADE 2: Usar maxAge em dias (se especificado manualmente)
         else if (effectiveMaxAge) {
@@ -368,13 +369,13 @@ class SyncService {
           );
           snapshot = await getDocs(q);
           queryTime = (performance.now() - queryStart).toFixed(0);
-          console.log(`[Sync] 🚀 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (últimos ${effectiveMaxAge} dias)`);
+          logger.log(`[Sync] 🚀 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (últimos ${effectiveMaxAge} dias)`);
         }
         // 📥 PRIORIDADE 3: Primeiro sync = buscar tudo
         else {
           snapshot = await getDocs(firebaseCollection);
           queryTime = (performance.now() - queryStart).toFixed(0);
-          console.log(`[Sync] 📥 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (TODOS - primeiro sync)`);
+          logger.log(`[Sync] 📥 ${collectionName}: ${snapshot.size} docs baixados em ${queryTime}ms (TODOS - primeiro sync)`);
         }
 
         const firebaseItems = new Map();
@@ -384,7 +385,7 @@ class SyncService {
         for (const docSnap of snapshot.docs) {
           // ⛔ CIRCUIT BREAKER CHECK
           if (circuitBreaker.shouldStop()) {
-            console.error(
+            logger.error(
               `[Sync] ⛔ Circuit breaker aberto durante processamento!\n` +
               `Coleção: ${collectionName}\n` +
               `PARANDO IMEDIATAMENTE.`
@@ -437,7 +438,7 @@ class SyncService {
             // Circuit breaker
             const shouldStop = circuitBreaker.recordError();
             if (shouldStop) {
-              console.error(
+              logger.error(
                 `[Sync] ⛔ CIRCUIT BREAKER ABERTO!\n` +
                 `${circuitBreaker.consecutiveErrors} erros consecutivos.\n` +
                 `Item: ${collectionName}/${docSnap.id}\n` +
@@ -450,12 +451,12 @@ class SyncService {
 
         const decryptTime = (performance.now() - decryptStart).toFixed(0);
         if (firebaseItems.size > 0) {
-          console.log(`[Sync] 🔓 ${collectionName}: ${firebaseItems.size} docs desencriptados em ${decryptTime}ms (${(decryptTime / firebaseItems.size).toFixed(1)}ms/doc)`);
+          logger.log(`[Sync] 🔓 ${collectionName}: ${firebaseItems.size} docs desencriptados em ${decryptTime}ms (${(decryptTime / firebaseItems.size).toFixed(1)}ms/doc)`);
         }
 
         // ⛔ CRITICAL: Se circuit breaker abriu, PARAR TUDO (não processar merge)
         if (circuitBreaker.shouldStop()) {
-          console.error(
+          logger.error(
             `[Sync] ⛔ SYNC ABORTADO - Circuit breaker aberto.\n` +
             `NÃO vou processar merge de dados locais.\n` +
             `Motivo: Erros sistemáticos de desencriptação.`
@@ -477,7 +478,7 @@ class SyncService {
 
           const filtered = beforeFilter - localItems.length;
           if (filtered > 0) {
-            console.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais já sincronizados (${localItems.length} novos/modificados)`);
+            logger.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais já sincronizados (${localItems.length} novos/modificados)`);
           }
         } else if (effectiveMaxAge) {
           // Filtrar por dias (fallback)
@@ -492,7 +493,7 @@ class SyncService {
 
           const filtered = beforeFilter - localItems.length;
           if (filtered > 0) {
-            console.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais antigos (${localItems.length} recentes)`);
+            logger.log(`[Sync] 🧹 ${collectionName}: Ignorados ${filtered} items locais antigos (${localItems.length} recentes)`);
           }
         }
 
@@ -559,14 +560,14 @@ class SyncService {
         const pullStart = performance.now();
         for (const [itemId, firebaseItem] of firebaseItems) {
           firebaseItem.syncStatus = 'synced';
-          firebaseItem.deleted = false;
+          // Preservar o flag deleted do Firebase (não forçar false — tombstones devem manter-se)
           await dexieDB[collectionName].put(firebaseItem);
           totalPulled++;
         }
 
         const pullTime = (performance.now() - pullStart).toFixed(0);
         const collectionTotal = (performance.now() - queryStart).toFixed(0);
-        console.log(`[Sync] ⏱️ ${collectionName}: TOTAL ${collectionTotal}ms (query: ${queryTime}ms, decrypt: ${decryptTime}ms, merge: ${mergeTime}ms, pull: ${pullTime}ms)`);
+        logger.log(`[Sync] ⏱️ ${collectionName}: TOTAL ${collectionTotal}ms (query: ${queryTime}ms, decrypt: ${decryptTime}ms, merge: ${mergeTime}ms, pull: ${pullTime}ms)`);
       }
 
       // Imprimir resumo de erros (apenas uma vez, limpo)
@@ -577,9 +578,9 @@ class SyncService {
       // Verificar se circuit breaker foi ativado
       const breakerSummary = circuitBreaker.getSummary();
       if (breakerSummary.isOpen) {
-        console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('🔍 EXECUTANDO DIAGNÓSTICO DE SALT...');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+        logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        logger.log('🔍 EXECUTANDO DIAGNÓSTICO DE SALT...');
+        logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
         // PASSO 1: DIAGNÓSTICO - Verificar se recuperação é possível
         const diagnosis = await diagnoseSaltSituation(
@@ -587,7 +588,7 @@ class SyncService {
           this.firebaseUser.uid
         );
 
-        console.log(`\n${diagnosis.message}\n`);
+        logger.log(`\n${diagnosis.message}\n`);
 
         // Se dados IRRECUPERÁVEIS → avisar e parar
         if (!diagnosis.canRecover) {
@@ -605,9 +606,9 @@ class SyncService {
 
         // Se PODE ser recuperável → tentar Salt Detective
         if (diagnosis.canRecover === true || diagnosis.canRecover === 'maybe') {
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-          console.log('🕵️ EXECUTANDO SALT DETECTIVE...');
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+          logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          logger.log('🕵️ EXECUTANDO SALT DETECTIVE...');
+          logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
           // Analisar conflito
           const conflictAnalysis = await analyzeSaltConflict(
@@ -620,7 +621,7 @@ class SyncService {
           if (conflictAnalysis.hasConflict || diagnosis.canRecover === 'maybe') {
             // Tentar detectar salt correto com item que falhou
             if (firstFailedItem) {
-              console.log(`🧪 Testando salts com item: ${firstFailedItem.collection}/${firstFailedItem.id}\n`);
+              logger.log(`🧪 Testando salts com item: ${firstFailedItem.collection}/${firstFailedItem.id}\n`);
 
               const detection = await detectCorrectSalt(
                 this.firebaseDB,
@@ -630,11 +631,11 @@ class SyncService {
               );
 
               if (detection.found) {
-                console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                console.log('✅ SALT CORRETO ENCONTRADO!');
-                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                console.log(`Fonte: ${detection.label}`);
-                console.log(`Local: ${detection.source}\n`);
+                logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                logger.log('✅ SALT CORRETO ENCONTRADO!');
+                logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                logger.log(`Fonte: ${detection.label}`);
+                logger.log(`Local: ${detection.source}\n`);
 
                 throw new Error(
                   `✅ SALT CORRETO IDENTIFICADO!\n\n` +
@@ -645,8 +646,8 @@ class SyncService {
                   `Substituir salt em uso pelo salt correto e tentar sync novamente.`
                 );
               } else {
-                console.log('\n❌ Nenhum salt conseguiu desencriptar.');
-                console.log('Possíveis causas: PIN incorreto, dados corrompidos, ou salt perdido.\n');
+                logger.log('\n❌ Nenhum salt conseguiu desencriptar.');
+                logger.log('Possíveis causas: PIN incorreto, dados corrompidos, ou salt perdido.\n');
               }
             }
           }
@@ -661,24 +662,24 @@ class SyncService {
       }
 
       // Log final com estatísticas
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('✅ SYNC COMPLETO');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`📤 Pushed:  ${totalPushed}`);
-      console.log(`📥 Pulled:  ${totalPulled}`);
-      console.log(`🔄 Merged:  ${totalMerged}`);
-      console.log(`⏭️  Skipped: ${totalSkipped}`);
+      logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.log('✅ SYNC COMPLETO');
+      logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.log(`📤 Pushed:  ${totalPushed}`);
+      logger.log(`📥 Pulled:  ${totalPulled}`);
+      logger.log(`🔄 Merged:  ${totalMerged}`);
+      logger.log(`⏭️  Skipped: ${totalSkipped}`);
       if (totalZombies > 0) {
-        console.log(`🧟 Zombies: ${totalZombies} (ignorados)`);
+        logger.log(`🧟 Zombies: ${totalZombies} (ignorados)`);
       }
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
       // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
       if (incremental) {
         try {
           await setMetadata('lastSyncTimestamp', new Date().toISOString());
         } catch (error) {
-          console.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
+          logger.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
         }
       }
 
@@ -693,7 +694,7 @@ class SyncService {
       };
 
     } catch (error) {
-      console.error('[Sync] ❌ Erro na sincronização completa:', error.message);
+      logger.error('[Sync] ❌ Erro na sincronização completa:', error.message);
       throw error;
     } finally {
       this.isSyncing = false;
@@ -705,7 +706,7 @@ class SyncService {
    */
   async createControlItem() {
     if (!this.firebaseDB || !this.firebaseUser || !this.pin || !this.salt) {
-      console.warn('[Sync] ⚠️ Não é possível criar item de controlo (não inicializado)');
+      logger.warn('[Sync] ⚠️ Não é possível criar item de controlo (não inicializado)');
       return false;
     }
 
@@ -729,23 +730,23 @@ class SyncService {
       throw new Error('Sync não inicializado');
     }
 
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🧟 LIMPEZA DE ITEMS ZOMBIES');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.log('🧟 LIMPEZA DE ITEMS ZOMBIES');
+    logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     if (dryRun) {
-      console.log('🔍 MODO DRY-RUN: Apenas listar, SEM deletar\n');
+      logger.log('🔍 MODO DRY-RUN: Apenas listar, SEM deletar\n');
     } else {
-      console.log('⚠️  MODO ATIVO: Vai DELETAR items do Firebase!\n');
+      logger.log('⚠️  MODO ATIVO: Vai DELETAR items do Firebase!\n');
     }
 
     if (maxAge === 0 || maxAge === null) {
-      console.log(`📅 TODOS OS ITEMS (sem filtro de idade)\n`);
+      logger.log(`📅 TODOS OS ITEMS (sem filtro de idade)\n`);
     } else {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - maxAge);
-      console.log(`📅 Data de corte: ${cutoffDate.toISOString()}`);
-      console.log(`   (items mais antigos que ${maxAge} dias)\n`);
+      logger.log(`📅 Data de corte: ${cutoffDate.toISOString()}`);
+      logger.log(`   (items mais antigos que ${maxAge} dias)\n`);
     }
 
     const cutoffDate = new Date();
@@ -802,10 +803,10 @@ class SyncService {
             totalZombies++;
             collectionZombies++;
 
-            console.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
-            console.log(`   Data: ${firebaseData.lastModified || 'desconhecida'}`);
+            logger.log(`🧟 Zombie: ${collectionName}/${docSnap.id}`);
+            logger.log(`   Data: ${firebaseData.lastModified || 'desconhecida'}`);
             if (itemDate) {
-              console.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
+              logger.log(`   Idade: ${Math.floor((Date.now() - itemDate.getTime()) / (1000 * 60 * 60 * 24))} dias`);
             }
 
             if (!dryRun) {
@@ -813,9 +814,9 @@ class SyncService {
               const docRef = doc(this.firebaseDB, firebasePath, docSnap.id);
               await deleteDoc(docRef);
               totalDeleted++;
-              console.log(`   ❌ DELETADO\n`);
+              logger.log(`   ❌ DELETADO\n`);
             } else {
-              console.log(`   (seria deletado em modo ativo)\n`);
+              logger.log(`   (seria deletado em modo ativo)\n`);
             }
           }
         }
@@ -826,26 +827,26 @@ class SyncService {
       }
     }
 
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📊 RESUMO');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`Total de zombies encontrados: ${totalZombies}`);
+    logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.log('📊 RESUMO');
+    logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.log(`Total de zombies encontrados: ${totalZombies}`);
 
     if (Object.keys(zombiesByCollection).length > 0) {
-      console.log('\nPor coleção:');
+      logger.log('\nPor coleção:');
       for (const [col, count] of Object.entries(zombiesByCollection)) {
-        console.log(`  ${col}: ${count}`);
+        logger.log(`  ${col}: ${count}`);
       }
     }
 
     if (dryRun) {
-      console.log(`\n💡 Para DELETAR permanentemente, execute:`);
-      console.log(`   syncService.cleanZombies(${maxAge}, false)`);
+      logger.log(`\n💡 Para DELETAR permanentemente, execute:`);
+      logger.log(`   syncService.cleanZombies(${maxAge}, false)`);
     } else {
-      console.log(`\n❌ Items deletados: ${totalDeleted}`);
-      console.log(`✅ Limpeza concluída!`);
+      logger.log(`\n❌ Items deletados: ${totalDeleted}`);
+      logger.log(`✅ Limpeza concluída!`);
     }
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     return {
       totalZombies,
@@ -911,9 +912,9 @@ class SyncService {
                   await dexieDB[collectionName].put(item);
 
                   if (item.deleted) {
-                    console.log(`[Sync] 🪦 Tombstone recebido: ${collectionName}/${itemId}`);
+                    logger.log(`[Sync] 🪦 Tombstone recebido: ${collectionName}/${itemId}`);
                   } else {
-                    console.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
+                    logger.log(`[Sync] ✅ Atualizado de outro dispositivo: ${collectionName}/${itemId}`);
                   }
                 } catch (decryptError) {
                   // Ignorar SILENCIOSAMENTE zombies (items antigos não desencriptáveis)
@@ -923,7 +924,7 @@ class SyncService {
             }
           }
         } catch (error) {
-          console.error(`[Sync] ❌ Erro no listener de ${collectionName}:`, error);
+          logger.error(`[Sync] ❌ Erro no listener de ${collectionName}:`, error);
         }
       });
 
@@ -983,7 +984,7 @@ export const syncService = new SyncService();
 // Expor globalmente para debug na consola do browser
 if (typeof window !== 'undefined') {
   window.syncService = syncService;
-  console.log('[SyncService] Disponível globalmente como window.syncService');
+  logger.log('[SyncService] Disponível globalmente como window.syncService');
 }
 
 export default syncService;
