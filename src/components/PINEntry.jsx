@@ -13,6 +13,9 @@ import * as Icons from './Icons';
  */
 export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }) => {
   const [digits, setDigits] = useState(['', '', '', '']);
+  // revealed[i] = true → mostrar dígito; false → mostrar ● (se preenchido)
+  const [revealed, setRevealed] = useState([false, false, false, false]);
+  const revealTimersRef = useRef([null, null, null, null]);
 
   // Create 4 individual refs - no array to avoid Rules of Hooks issues
   const input0Ref = useRef(null);
@@ -41,10 +44,20 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      revealTimersRef.current.forEach(t => t && clearTimeout(t));
+    };
+  }, []);
+
   // Reset digits when error occurs
   useEffect(() => {
     if (error) {
+      revealTimersRef.current.forEach(t => t && clearTimeout(t));
+      revealTimersRef.current = [null, null, null, null];
       setDigits(['', '', '', '']);
+      setRevealed([false, false, false, false]);
       calledForPinRef.current = null;
       isProcessingRef.current = false;
       setTimeout(() => {
@@ -103,6 +116,26 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
     newDigits[index] = value;
     setDigits(newDigits);
 
+    if (value) {
+      // Cancelar timer anterior para este índice
+      if (revealTimersRef.current[index]) {
+        clearTimeout(revealTimersRef.current[index]);
+      }
+      // Mostrar dígito brevemente
+      setRevealed(prev => { const r = [...prev]; r[index] = true; return r; });
+      // Mascarar após 700ms
+      revealTimersRef.current[index] = setTimeout(() => {
+        setRevealed(prev => { const r = [...prev]; r[index] = false; return r; });
+      }, 700);
+    } else {
+      // Dígito apagado — limpar revelação imediatamente
+      if (revealTimersRef.current[index]) {
+        clearTimeout(revealTimersRef.current[index]);
+        revealTimersRef.current[index] = null;
+      }
+      setRevealed(prev => { const r = [...prev]; r[index] = false; return r; });
+    }
+
     // Auto-focus no próximo input
     if (value && index < 3) {
       getInputRef(index + 1).current?.focus();
@@ -122,13 +155,21 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
     const nums = paste.replace(/\D/g, '').slice(0, 4).split('');
 
     if (nums.length === 4) {
+      // Para paste, mascarar tudo imediatamente
+      revealTimersRef.current.forEach(t => t && clearTimeout(t));
+      revealTimersRef.current = [null, null, null, null];
+      setRevealed([false, false, false, false]);
       setDigits(nums);
       input3Ref.current?.focus();
     }
   };
 
   const clearPIN = () => {
+    revealTimersRef.current.forEach(t => t && clearTimeout(t));
+    revealTimersRef.current = [null, null, null, null];
+    setRevealed([false, false, false, false]);
     setDigits(['', '', '', '']);
+    calledForPinRef.current = null;
     input0Ref.current?.focus();
   };
 
@@ -153,7 +194,7 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
               type="text"
               inputMode="numeric"
               maxLength={1}
-              value={digit}
+              value={digit !== '' ? (revealed[index] ? digit : '●') : ''}
               onChange={(e) => handleChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               className={
