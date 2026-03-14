@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
-import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
+import { dbtQuestions as dbtQuestionsDefault, reflectiveQuestions as reflectiveQuestionsDefault, copingStrategies as copingStrategiesDefault, educationalResources as educationalResourcesDefault } from './data/constants';
+import i18n from './i18n';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
@@ -51,6 +53,7 @@ const LegalModal = lazy(() => import('./components/modals/LegalModal').then(modu
 
 function HarmReductionTracker() {
             const APP_VERSION = '1.5.3';
+            const { t } = useTranslation();
 
             // Initialize Firebase
             const firebaseAuth = useMemo(() => {
@@ -92,7 +95,7 @@ function HarmReductionTracker() {
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
                             <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-                            <p className="text-purple-300">Carregando...</p>
+                            <p className="text-purple-300">{t('auth.loading')}</p>
                         </div>
                     </div>
                 );
@@ -107,7 +110,7 @@ function HarmReductionTracker() {
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
                             <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-                            <p className="text-purple-300">Verificando PIN...</p>
+                            <p className="text-purple-300">{t('auth.verifyingPIN')}</p>
                         </div>
                     </div>
                 );
@@ -132,6 +135,9 @@ function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
+
+            // i18n
+            const { t } = useTranslation();
 
             // Custom hooks
             const { toasts, showToast } = useToast();
@@ -185,14 +191,16 @@ function AuthenticatedApp() {
             };
 
             const currentDbtQuestion = useMemo(() => {
+                const questions = i18n.t('dbtQuestions', { returnObjects: true });
                 const cycleIndex = getCurrentCycleIndex();
-                return dbtQuestions[cycleIndex % dbtQuestions.length];
-            }, [cycles.length]);
+                return questions[cycleIndex % questions.length];
+            }, [cycles.length, i18n.language]);
 
             const currentReflection = useMemo(() => {
+                const questions = i18n.t('reflectiveQuestions', { returnObjects: true });
                 const cycleIndex = getCurrentCycleIndex();
-                return reflectiveQuestions[cycleIndex % reflectiveQuestions.length];
-            }, [cycles.length]);
+                return questions[cycleIndex % questions.length];
+            }, [cycles.length, i18n.language]);
 
             // Global error handler
             useEffect(() => {
@@ -224,12 +232,12 @@ function AuthenticatedApp() {
                     const now = new Date();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
                     await addConsumption(item);
-                    showToast('✓ Consumo registado', 'success');
+                    showToast(t('messages.consumptionSaved'), 'success');
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
-                    showToast('✗ Erro ao guardar consumo', 'error');
+                    showToast(t('messages.consumptionSaveError'), 'error');
                 }
             };
 
@@ -252,10 +260,10 @@ function AuthenticatedApp() {
 
                 try {
                     await deleteItemFromContext(collectionName, id);
-                    showToast('✓ Item apagado', 'success');
+                    showToast(t('messages.itemDeleted'), 'success');
                     setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
-                    showToast('✗ Erro ao apagar item', 'error');
+                    showToast(t('messages.itemDeleteError'), 'error');
                     logger.error('Erro ao apagar:', error);
                 }
             };
@@ -271,7 +279,7 @@ function AuthenticatedApp() {
                     case 'consumption':
                         // Para consumos, não há formulário inicial - abre o modal de edição vazio ou apenas mostra mensagem
                         // Consumos são criados via botão + na home, então aqui podemos apenas navegar para lá
-                        showToast('ℹ️ Para registar consumos, usa o botão + na página inicial', 'info');
+                        showToast(t('messages.consumptionHint'), 'info');
                         break;
 
                     case 'dailyLog':
@@ -331,10 +339,10 @@ function AuthenticatedApp() {
                     await updateItem('consumptions', editingConsumption.id, editingConsumption);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
-                    showToast('✓ Consumo editado', 'success');
+                    showToast(t('messages.consumptionEdited'), 'success');
                     setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
-                    showToast('✗ Erro ao editar consumo', 'error');
+                    showToast(t('messages.consumptionEditError'), 'error');
                     logger.error('Erro ao editar:', error);
                 }
             };
@@ -362,9 +370,9 @@ function AuthenticatedApp() {
                     await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
                     setShowDailyLogModal(false);
-                    showToast('✓ Registo diário guardado', 'success');
+                    showToast(t('messages.dailyLogSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar registo', 'error');
+                    showToast(t('messages.dailyLogSaveError'), 'error');
                     logger.error(error);
                 }
             };
@@ -398,7 +406,7 @@ function AuthenticatedApp() {
                     localStorage.setItem('dailyLogsMigrationV1', 'done');
 
                     if (fixed > 0) {
-                        showToast(`✓ Corrigidos ${fixed} registos de mg automaticamente`, 'success');
+                        showToast(t('messages.mgFixed', { count: fixed }), 'success');
                         logger.info(`Migration completed: ${fixed} records fixed, ${errors} errors`);
                     }
                 } catch (error) {
@@ -484,12 +492,12 @@ function AuthenticatedApp() {
                         localStorage.setItem('reminderDismissed', JSON.stringify(dismissed));
                     }
 
-                    showToast('✓ Bem-estar guardado', 'success');
+                    showToast(t('messages.wellbeingSaved'), 'success');
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
-                    showToast('✗ Erro ao guardar bem-estar', 'error');
+                    showToast(t('messages.wellbeingSaveError'), 'error');
                 }
             };
 
@@ -504,7 +512,7 @@ function AuthenticatedApp() {
 
                     // Check if at least one emotion is selected
                     if (emotionsForm.emotions.length === 0) {
-                        showToast('✗ Seleciona pelo menos uma emoção', 'error');
+                        showToast(t('messages.emotionRequired'), 'error');
                         return;
                     }
 
@@ -536,10 +544,10 @@ function AuthenticatedApp() {
                     await addWellbeingLog(item);
                     setEmotionsForm({ datetime: '', emotions: [], notes: '' });
                     setShowEmotionsModal(false);
-                    showToast('✓ Emoções guardadas', 'success');
+                    showToast(t('messages.emotionsSaved'), 'success');
                 } catch (error) {
                     logger.error('❌ ERRO ao guardar emoções:', error);
-                    showToast('✗ Erro ao guardar emoções', 'error');
+                    showToast(t('messages.emotionsSaveError'), 'error');
                 }
             };
 
@@ -561,9 +569,9 @@ function AuthenticatedApp() {
                     setReflectionAnswer('');
                     setReflectionDatetime('');
                     setShowReflectionModal(false);
-                    showToast('✓ Reflexão guardada', 'success');
+                    showToast(t('messages.reflectionSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar reflexão', 'error');
+                    showToast(t('messages.reflectionSaveError'), 'error');
                     logger.error(error);
                 }
             };
@@ -597,9 +605,9 @@ function AuthenticatedApp() {
                     await addThought(item);
                     setThoughtDatetime('');
                     setShowThoughtsModal(false);
-                    showToast('✓ Pensamento guardado no diário', 'success');
+                    showToast(t('messages.thoughtSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar pensamento', 'error');
+                    showToast(t('messages.thoughtSaveError'), 'error');
                     logger.error(error);
                 }
             };
@@ -619,7 +627,7 @@ function AuthenticatedApp() {
                         };
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);
-                        showToast('✓ Ciclo atualizado', 'success');
+                        showToast(t('messages.cycleUpdated'), 'success');
                     } else {
                         // CREATE: Criar novo ciclo
                         // Se createdAt foi fornecido, usar esse; senão usar agora
@@ -641,13 +649,13 @@ function AuthenticatedApp() {
                             ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };
                         await addCycle(item);
-                        showToast('✓ Novo ciclo criado', 'success');
+                        showToast(t('messages.cycleCreated'), 'success');
                     }
 
                     setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
                     setShowCycleModal(false);
                 } catch (error) {
-                    showToast('✗ Erro ao ' + (editingCycle ? 'atualizar' : 'criar') + ' ciclo', 'error');
+                    showToast(t('messages.cycleError', { action: t(editingCycle ? 'messages.cycleActionUpdate' : 'messages.cycleActionCreate') }), 'error');
                     logger.error(error);
                 }
             };
@@ -661,7 +669,7 @@ function AuthenticatedApp() {
                         const updatedData = { type: goalForm.type, target };
                         await updateGoal(editingGoal.id, updatedData);
                         setEditingGoal(null);
-                        showToast('✓ Meta atualizada', 'success');
+                        showToast(t('messages.goalUpdated'), 'success');
                     } else {
                         // Check if goal of this type already exists
                         const existingGoal = goals.find(g => g.type === goalForm.type);
@@ -670,19 +678,19 @@ function AuthenticatedApp() {
                             // Replace existing goal
                             const updatedData = { type: goalForm.type, target };
                             await updateGoal(existingGoal.id, updatedData);
-                            showToast('✓ Meta substituída', 'success');
+                            showToast(t('messages.goalReplaced'), 'success');
                         } else {
                             // Create new goal
                             const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), completed: false };
                             await addGoal(item);
-                            showToast('✓ Meta criada', 'success');
+                            showToast(t('messages.goalCreated'), 'success');
                         }
                     }
 
                     setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' });
                     setShowGoalModal(false);
                 } catch (error) {
-                    showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');
+                    showToast(t('messages.goalError', { action: t(editingGoal ? 'messages.goalActionUpdate' : 'messages.goalActionCreate') }), 'error');
                     logger.error(error);
                 }
             };
@@ -717,7 +725,7 @@ function AuthenticatedApp() {
                 };
                 const csvString = exportToCSVNew(allData);
                 downloadCSV(csvString);
-                showToast('CSV exportado com sucesso! Inclui TODAS as coleções.', 'success');
+                showToast(t('messages.csvExported'), 'success');
             };
 
             const exportToJSON = () => {
@@ -731,7 +739,7 @@ function AuthenticatedApp() {
                     goals
                 };
                 const result = exportAndDownloadAll(allData);
-                showToast(`Backup completo criado! ${result.totalRecords} registos exportados.`, 'success');
+                showToast(t('messages.backupCreated', { count: result.totalRecords }), 'success');
             };
 
             // Get goal progress with percentage
@@ -963,60 +971,10 @@ return {
                 allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
                 const topTriggers = Object.entries(triggerCount).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
 
-                const strategies = {
-                    'Stress': [
-                        'Respiração 4-7-8: inspira 4seg, segura 7seg, expira 8seg. Repete 4x quando sentires tensão aumentar',
-                        'Técnica STOP: Stop (para), Take a breath (respira), Observe (observa o que sentes), Proceed (continua com escolha consciente)',
-                        'Escreve 3 coisas que consegues controlar agora (ex: beber água, sair 5min, avisar alguém)'
-                    ],
-                    'Ansiedade': [
-                        '5-4-3-2-1: Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas, 2 que cheiras, 1 que saboreias',
-                        'Gelo nas mãos ou rosto 30seg: sensação intensa traz-te ao presente (skill DBT - TIP)',
-                        'Desafia o pensamento: "É facto ou interpretação? Qual a probabilidade real? O que diria a um amigo?"'
-                    ],
-                    'Solidão': [
-                        'Mensagem para 3 pessoas (sem expectativa de resposta imediata): partilha algo neutro, cria conexão',
-                        'Sai de casa 15min: café, passeio, biblioteca. Presença de outros ajuda mesmo sem interação',
-                        'Atividade online com pessoas (discord, gaming, livestream): conexão conta, mesmo virtual'
-                    ],
-                    'Festa': [
-                        'Define limite ANTES: máximo X consumos, horário de saída, orçamento. Diz a alguém o teu plano',
-                        'Alterna: 1 bebida → 1 água/sumo. Mantém copo na mão (menos pressão social para beber)',
-                        'Identifica pessoa de confiança perto + transporte de volta planeado + local seguro se precisares sair'
-                    ],
-                    'Trabalho': [
-                        'Micro-pausas: cada 25min para 5min (lavar cara, esticar, snack). Evita burnout acumulado',
-                        'Prioriza 3 tarefas máximo/dia: resto é bonus. Pressão irrealista é gatilho para consumo',
-                        'Se overwhelmed: email/mensagem para chefe "preciso ajuste prazo/carga". Pedir ajuda ≠ fraqueza'
-                    ],
-                    'Família': [
-                        'Limites claros: "Não consigo falar sobre X agora" ou "Preciso de espaço, falo contigo amanhã"',
-                        'Auto-compaixão: "Estou a fazer o melhor que consigo com o que tenho agora". Culpa não ajuda',
-                        'Rede de apoio fora da família: amigo, terapeuta, grupo online. Não dependas só de quem te gatilha'
-                    ],
-                    'Hábito': [
-                        'Quebra padrão: muda 1 passo da rotina (caminho diferente, hora diferente, contexto diferente)',
-                        'Substitui: chá/café especial, duche frio, 10 flexões, 5min de jogo. Ocupa mãos + mente',
-                        'Adia 15min: "Posso fazer isto daqui a 15min se ainda quiser". Muitas vezes o impulso passa'
-                    ],
-                    'Tristeza': [
-                        'Valida emoção: "Faz sentido sentir isto". Tristeza não é fraqueza, é informação sobre o que importa',
-                        'Auto-cuidado radical: banho quente, refeição que gostas, roupa limpa. Corpo afeta mente',
-                        'Fala com alguém (amigo, familiar, terapeuta): partilhar alivia, não precisas resolver sozinho/a'
-                    ],
-                    'Dependência': [
-                        'HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro',
-                        'Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico',
-                        'Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)'
-                    ]
-                };
+                const strategies = i18n.t('copingStrategiesDetailed', { returnObjects: true });
 
                 if (topTriggers.length === 0) {
-                    return [
-                        'Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro',
-                        'Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis',
-                        'Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional'
-                    ];
+                    return i18n.t('defaultStrategies', { returnObjects: true });
                 }
 
                 const selectedStrategies = [];
@@ -1027,21 +985,21 @@ return {
                 });
 
                 return selectedStrategies.length > 0 ? selectedStrategies : strategies['Stress'];
-            }, [cycles]);
+            }, [cycles, i18n.language]);
 
             // Memoized positive daily feedback
             const positiveFeedback = useMemo(() => {
                 const messages = [];
 
                 // Check streak
-                if (streaks.current >= 7) messages.push(`🔥 Incrível! ${streaks.current} dias consecutivos de registo!`);
-                else if (streaks.current >= 3) messages.push(`💪 Mantém o ritmo! ${streaks.current} dias seguidos!`);
+                if (streaks.current >= 7) messages.push(t('feedback.streakHigh', { count: streaks.current }));
+                else if (streaks.current >= 3) messages.push(t('feedback.streakMid', { count: streaks.current }));
 
                 // Check interval quality
                 if (consumptions.length >= 2) {
                     const lastIntervalData = metrics.lastInterval;
                     if (lastIntervalData && !lastIntervalData.isShort) {
-                        messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastIntervalData.hours}h`);
+                        messages.push(t('feedback.intervalGood', { hours: lastIntervalData.hours }));
                     }
                 }
 
@@ -1049,7 +1007,7 @@ return {
                 if (wellbeingLogs.length > 0) {
                     const recent = wellbeingLogs[0];
                     const completedItems = [recent.water, recent.rest, recent.social, recent.food].filter(Boolean).length;
-                    if (completedItems >= 3) messages.push(`💚 Autocuidado em dia! ${completedItems}/4 itens`);
+                    if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 
                 // Check reduction trend
@@ -1057,7 +1015,7 @@ return {
                     const last = dailyLogs[0];
                     const prev = dailyLogs[1];
                     if (last.times < prev.times) {
-                        messages.push(`📉 Progresso visível! Menos ${prev.times - last.times} consumo(s) que antes`);
+                        messages.push(t('feedback.progressVisible', { count: prev.times - last.times }));
                     }
                 }
 
@@ -1086,14 +1044,14 @@ return {
                             onClick={() => {window.location.reload();}}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
                         >
-                            Recarregar Página
+                            {t('feedback.reloadPage')}
                         </button>
-                        <p className="text-xs text-gray-500 mt-4">Se o problema persistir, abre o browser numa janela privada ou limpa o cache.</p>
+                        <p className="text-xs text-gray-500 mt-4">{t('feedback.loadingError')}</p>
                     </div>
                 </div>
             );
 
-            if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">A carregar... 🔄</div></div>);
+            if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">{t('feedback.loading')}</div></div>);
 
             // NOTE: Firebase auth check removed - now handled in HarmReductionTracker
             // AuthenticatedApp only renders when BOTH Firebase AND PIN are authenticated
@@ -1174,7 +1132,7 @@ return {
                                 />
                             )}
                             {currentView === 'patterns' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <PatternsView
                                         patternsPeriod={patternsPeriod}
                                         setPatternsPeriod={setPatternsPeriod}
@@ -1186,7 +1144,7 @@ return {
                                 </Suspense>
                             )}
                             {currentView === 'analyses' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <AnalysesView
                                         analysisSubView={analysisSubView}
                                         setAnalysisSubView={setAnalysisSubView}
@@ -1198,7 +1156,7 @@ return {
                                 </Suspense>
                             )}
                             {currentView === 'history' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <HistoryView
                                         historyPeriod={historyPeriod}
                                         setHistoryPeriod={setHistoryPeriod}
@@ -1224,7 +1182,7 @@ return {
                                 </Suspense>
                             )}
                             {currentView === 'settings' && (
-                                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center p-8">{t('messages.loadingView')}</div>}>
                                     <SettingsView
                                         user={user}
                                         handleLogout={handleLogout}
@@ -1346,23 +1304,23 @@ return {
                                 <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Heart className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Início</div>
+                                                        <div className="text-xs font-medium mt-1">{t('nav.home')}</div>
                                     </button>
                                     <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BarChart3 className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Padrões</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.patterns')}</div>
                                     </button>
                                     <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Activity className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Análises</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.analyses')}</div>
                                     </button>
                                     <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BookOpen className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Histórico</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.history')}</div>
                                     </button>
                                     <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Settings className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Config</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.settings')}</div>
                                     </button>
                                 </div>
                             </div>

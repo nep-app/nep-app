@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
+import i18n from '../i18n';
 
 const APP_VERSION = '1.5.3';
 
@@ -15,10 +17,12 @@ export const SettingsView = ({
     isSyncing,
     lastSyncTime
 }) => {
+    const { t } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
     const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
     const [zombieStats, setZombieStats] = useState(null);
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
 
     // Capturar evento de install PWA
     useEffect(() => {
@@ -31,32 +35,38 @@ export const SettingsView = ({
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
 
+    const handleChangeLang = (lang) => {
+        i18n.changeLanguage(lang);
+        localStorage.setItem('nep_lang', lang);
+        setCurrentLang(lang);
+    };
+
     const handleFullSync = async () => {
         if (!manualSync) {
-            setSyncStatus({ type: 'error', message: '❌ Erro: Sincronização não disponível' });
+            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${t('settings.sync')} não disponível` });
             return;
         }
 
-        setSyncStatus({ type: 'loading', message: 'Sincronizando dados...' });
+        setSyncStatus({ type: 'loading', message: t('settings.syncing') });
 
         try {
             const result = await manualSync();
 
             if (result && result.success) {
-                const message = `✅ Sincronização completa!\n📤 Enviados: ${result.pushed}\n📥 Recebidos: ${result.pulled}\n✓ Já sincronizados: ${result.merged}${result.skipped > 0 ? `\n⚠️ Ignorados (dados corrompidos): ${result.skipped}` : ''}`;
+                const message = `✅ ${t('settings.syncNow')}!\n📤 ${result.pushed}\n📥 ${result.pulled}\n✓ ${result.merged}${result.skipped > 0 ? `\n⚠️ ${result.skipped}` : ''}`;
                 setSyncStatus({ type: 'success', message });
             } else {
-                setSyncStatus({ type: 'error', message: '❌ Erro: Resultado inválido' });
+                setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}` });
             }
         } catch (error) {
-            const errorMsg = error?.message || error?.toString() || 'Erro desconhecido';
-            setSyncStatus({ type: 'error', message: `❌ Erro: ${errorMsg}` });
+            const errorMsg = error?.message || error?.toString() || t('common.error');
+            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${errorMsg}` });
             setTimeout(() => setSyncStatus(null), 10000);
         }
     };
 
     const handleScanZombies = async () => {
-        setCleanZombiesStatus({ type: 'loading', message: '🔍 A procurar items corrompidos...' });
+        setCleanZombiesStatus({ type: 'loading', message: `🔍 ${t('settings.scanning')}` });
         setZombieStats(null);
 
         try {
@@ -70,29 +80,29 @@ export const SettingsView = ({
                 setZombieStats(result);
                 setCleanZombiesStatus({
                     type: 'warning',
-                    message: `🧟 Encontrados ${result.totalZombies} items corrompidos no Firebase!\n\nEstes items tornam a app MUITO mais lenta a abrir (tentam desencriptar a cada boot).\n\n⚠️ Recomendamos LIMPAR AGORA!`
+                    message: `🧟 ${result.totalZombies} items corrompidos no Firebase!\n\n⚠️ Recomendamos LIMPAR AGORA!`
                 });
             } else {
                 setCleanZombiesStatus({
                     type: 'success',
-                    message: '✅ Nenhum item corrompido encontrado! A tua base de dados está limpa.'
+                    message: `✅ ${t('settings.maintenanceDescription').split('.')[0]}!`
                 });
             }
         } catch (error) {
             setCleanZombiesStatus({
                 type: 'error',
-                message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
+                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
             });
             setTimeout(() => setCleanZombiesStatus(null), 10000);
         }
     };
 
     const handleCleanZombies = async () => {
-        if (!window.confirm('⚠️ Atenção!\n\nIsto vai DELETAR PERMANENTEMENTE TODOS os items corrompidos do Firebase.\n\nEsta ação NÃO pode ser desfeita!\n\n💡 Após limpar, a app vai abrir MUITO mais rápido.\n\nContinuar?')) {
+        if (!window.confirm(`⚠️ ${t('settings.cleanWarning')}`)) {
             return;
         }
 
-        setCleanZombiesStatus({ type: 'loading', message: '🧹 A limpar items corrompidos...' });
+        setCleanZombiesStatus({ type: 'loading', message: `🧹 ${t('settings.cleanZombies')}...` });
 
         try {
             if (!window.syncService) {
@@ -104,14 +114,14 @@ export const SettingsView = ({
             setZombieStats(null);
             setCleanZombiesStatus({
                 type: 'success',
-                message: `✅ Limpeza concluída!\n\n❌ Deletados: ${result.totalDeleted} items corrompidos do Firebase\n\n🚀 A app vai abrir MUITO mais rápido agora!\n\n💡 Faz refresh da página (Ctrl+Shift+R) para aplicar.`
+                message: `✅ ❌ ${result.totalDeleted} items deletados\n\n🚀 A app vai abrir MUITO mais rápido agora!`
             });
 
             setTimeout(() => setCleanZombiesStatus(null), 15000);
         } catch (error) {
             setCleanZombiesStatus({
                 type: 'error',
-                message: `❌ Erro: ${error?.message || 'Erro desconhecido'}`
+                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
             });
             setTimeout(() => setCleanZombiesStatus(null), 10000);
         }
@@ -119,26 +129,58 @@ export const SettingsView = ({
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white">
-                Definições
+                {t('settings.title')}
             </h2>
+
+            {/* Language Selector */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Icons.Settings className="w-5 h-5" />
+                    {t('settings.language')}
+                </h3>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => handleChangeLang('pt')}
+                        className={
+                            'flex-1 py-3 rounded-lg font-medium transition-all border-2 ' +
+                            (currentLang === 'pt'
+                                ? 'bg-purple-600 border-purple-500 text-white'
+                                : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
+                        }
+                    >
+                        🇵🇹 Português
+                    </button>
+                    <button
+                        onClick={() => handleChangeLang('en')}
+                        className={
+                            'flex-1 py-3 rounded-lg font-medium transition-all border-2 ' +
+                            (currentLang === 'en'
+                                ? 'bg-purple-600 border-purple-500 text-white'
+                                : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
+                        }
+                    >
+                        🇬🇧 English
+                    </button>
+                </div>
+            </div>
 
             {/* User Info */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.User className="w-5 h-5" />
-                    Conta
+                    {t('settings.account')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Email:</span>
-                        <span className="text-sm">{user?.email || 'Não disponível'}</span>
+                        <span className="text-sm font-medium">{t('settings.emailLabel')}</span>
+                        <span className="text-sm">{user?.email || t('settings.emailNotAvailable')}</span>
                     </div>
                     <button
                         onClick={handleLogout}
                         className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border-red-700/50 w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2"
                     >
                         <Icons.LogOut className="w-4 h-4" />
-                        Terminar Sessão
+                        {t('settings.logout')}
                     </button>
                 </div>
             </div>
@@ -147,16 +189,16 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.RefreshCw className="w-5 h-5" />
-                    Sincronização entre Dispositivos
+                    {t('settings.sync')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Sincroniza dados entre PC, telemóvel e outros dispositivos via cloud (Firebase).
+                        {t('settings.syncDescription')}
                     </p>
 
                     {lastSyncTime && (
                         <div className="text-xs text-gray-400 bg-gray-900/50 rounded p-2">
-                            Última sincronização: {new Date(lastSyncTime).toLocaleString('pt-PT')}
+                            {t('settings.lastSync')} {new Date(lastSyncTime).toLocaleString(currentLang === 'pt' ? 'pt-PT' : 'en-GB')}
                         </div>
                     )}
 
@@ -177,11 +219,11 @@ export const SettingsView = ({
                         }
                     >
                         <Icons.RefreshCw className={'w-4 h-4' + (isSyncing ? ' animate-spin' : '')} />
-                        {isSyncing ? 'A sincronizar...' : 'Sincronizar Agora'}
+                        {isSyncing ? t('settings.syncing') : t('settings.syncNow')}
                     </button>
 
                     <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                        💡 <strong>Nota:</strong> Dados novos são enviados automaticamente para a cloud. Use este botão para <strong>receber</strong> dados de outros dispositivos.
+                        {t('settings.syncNote')}
                     </div>
                 </div>
             </div>
@@ -190,11 +232,11 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.RefreshCw className="w-5 h-5" />
-                    Atualização da App
+                    {t('settings.appUpdate')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Se a app estiver desatualizada ou com bugs após um update, força uma atualização completa.
+                        {t('settings.appUpdateDescription')}
                     </p>
 
                     {/* Botão Instalar (só aparece quando browser permitir) */}
@@ -215,7 +257,7 @@ export const SettingsView = ({
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
                         >
                             <Icons.Download className="w-4 h-4" />
-                            📲 Instalar App
+                            {t('settings.installApp')}
                         </button>
                     )}
 
@@ -236,22 +278,22 @@ export const SettingsView = ({
 
                                 window.location.reload(true);
                             } catch (error) {
-                                alert('❌ Erro ao limpar cache. Tenta fazer refresh manual (Ctrl+Shift+R)');
+                                alert(`❌ ${t('common.error')} (Ctrl+Shift+R)`);
                             }
                         }}
                         className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium flex items-center justify-center gap-2"
                     >
                         <Icons.RefreshCw className="w-4 h-4" />
-                        🔄 Forçar Atualização
+                        {t('settings.forceUpdate')}
                     </button>
 
                     <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
-                        ⚠️ <strong>Atenção:</strong> Este botão limpa a cache e recarrega a app. Usa apenas se a app estiver com problemas após um update.
+                        {t('settings.forceUpdateWarning')}
                     </div>
 
                     {!deferredPrompt && (
                         <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                            💡 <strong>Instalação PWA:</strong> O botão "📲 Instalar App" só aparece quando o browser permite. No <strong>telemóvel/tablet</strong> funciona sempre. No <strong>PC/Desktop</strong>, Chrome raramente permite instalar (limitação do browser, não da app). A app funciona perfeitamente no browser mesmo sem instalar.
+                            {t('settings.pwaNote')}
                         </div>
                     )}
                 </div>
@@ -261,11 +303,11 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Database className="w-5 h-5" />
-                    Dados
+                    {t('settings.data')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Exporta TODOS os teus dados (consumos, ciclos, bem-estar, pensamentos, reflexões, objetivos).
+                        {t('settings.dataDescription')}
                     </p>
                     <div className="space-y-2">
                         <button
@@ -273,14 +315,14 @@ export const SettingsView = ({
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
                         >
                             <Icons.Download className="w-4 h-4" />
-                            💾 Backup Completo (JSON)
+                            {t('settings.backupJSON')}
                         </button>
                         <button
                             onClick={exportToCSV}
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
                         >
                             <Icons.Download className="w-4 h-4" />
-                            📊 Exportar para Excel (CSV)
+                            {t('settings.exportCSV')}
                         </button>
                     </div>
                 </div>
@@ -290,11 +332,11 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Trash2 className="w-5 h-5" />
-                    Manutenção da Base de Dados
+                    {t('settings.maintenance')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Limpar items corrompidos ("zombies") que não conseguem ser desencriptados. Estes items ocupam espaço e tornam a app mais lenta.
+                        {t('settings.maintenanceDescription')}
                     </p>
 
                     {cleanZombiesStatus && (
@@ -311,7 +353,7 @@ export const SettingsView = ({
 
                     {zombieStats && zombieStats.totalZombies > 0 && (
                         <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3">
-                            <div className="font-medium text-yellow-300 mb-2">📊 Detalhes:</div>
+                            <div className="font-medium text-yellow-300 mb-2">{t('settings.zombieDetails')}</div>
                             {Object.entries(zombieStats.zombiesByCollection).map(([col, count]) => (
                                 <div key={col} className="text-yellow-300/80">
                                     • {col}: {count} {count === 1 ? 'item' : 'items'}
@@ -332,7 +374,7 @@ export const SettingsView = ({
                             }
                         >
                             <Icons.Search className="w-4 h-4" />
-                            {cleanZombiesStatus?.type === 'loading' ? 'A procurar...' : '🔍 Procurar Items Corrompidos'}
+                            {cleanZombiesStatus?.type === 'loading' ? t('settings.scanning') : t('settings.scanZombies')}
                         </button>
 
                         {zombieStats && zombieStats.totalZombies > 0 && (
@@ -347,13 +389,13 @@ export const SettingsView = ({
                                 }
                             >
                                 <Icons.Trash2 className="w-4 h-4" />
-                                🧹 Limpar Items Corrompidos
+                                {t('settings.cleanZombies')}
                             </button>
                         )}
                     </div>
 
                     <div className="text-xs bg-red-900/20 border border-red-700/50 rounded p-2 text-red-300">
-                        ⚠️ <strong>Atenção:</strong> A limpeza é PERMANENTE e não pode ser desfeita. Apenas items CORROMPIDOS (que falham desencriptação) são deletados.
+                        {t('settings.cleanWarning')}
                     </div>
                 </div>
             </div>
@@ -362,16 +404,16 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Bell className="w-5 h-5" />
-                    Notificações
+                    {t('settings.notifications')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Recebe lembretes para registar bem-estar diariamente (às 18h).
+                        {t('settings.notificationsDescription')}
                     </p>
                     {notificationsEnabled ? (
                         <div className="flex items-center gap-2 text-green-600 py-2">
                             <Icons.CheckCircle className="w-5 h-5" />
-                            <span className="font-medium">Notificações ativadas</span>
+                            <span className="font-medium">{t('settings.notificationsEnabled')}</span>
                         </div>
                     ) : (
                         <button
@@ -379,7 +421,7 @@ export const SettingsView = ({
                             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
                         >
                             <Icons.Bell className="w-4 h-4" />
-                            Ativar Notificações
+                            {t('settings.enableNotifications')}
                         </button>
                     )}
                 </div>
@@ -389,7 +431,7 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.FileText className="w-5 h-5" />
-                    Legal & Ética
+                    {t('settings.legal')}
                 </h3>
                 <div className="space-y-2">
                     <button
@@ -398,7 +440,7 @@ export const SettingsView = ({
                     >
                         <span className="flex items-center gap-2">
                             <span>📜</span>
-                            <span>Licença</span>
+                            <span>{t('settings.license')}</span>
                         </span>
                         <Icons.ChevronRight className="w-4 h-4" />
                     </button>
@@ -408,7 +450,7 @@ export const SettingsView = ({
                     >
                         <span className="flex items-center gap-2">
                             <span>📋</span>
-                            <span>Termos de Uso</span>
+                            <span>{t('settings.terms')}</span>
                         </span>
                         <Icons.ChevronRight className="w-4 h-4" />
                     </button>
@@ -418,7 +460,7 @@ export const SettingsView = ({
                     >
                         <span className="flex items-center gap-2">
                             <span>⚖️</span>
-                            <span>Governança Ética</span>
+                            <span>{t('settings.governance')}</span>
                         </span>
                         <Icons.ChevronRight className="w-4 h-4" />
                     </button>
@@ -429,22 +471,22 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Info className="w-5 h-5" />
-                    Sobre a App
+                    {t('settings.about')}
                 </h3>
                 <div className="space-y-2 text-sm text-gray-300">
                     <p>
-                        <strong>NEP App - Notas de Experiências e Padrões</strong>
+                        <strong>{t('settings.appName')}</strong>
                     </p>
                     <p className="text-xs italic">
-                        Notice it. Explore it. Plan it.
+                        {t('settings.tagline')}
                     </p>
                     <p className="text-xs italic">
-                        Não Estás Perdida.
+                        {t('settings.motto')}
                     </p>
                     <div className="mt-4 pt-4 border-t text-xs border-gray-700 text-gray-400">
-                        <p>Versão {APP_VERSION}</p>
-                        <p className="mt-1">Copyright © Teresa Castro</p>
-                        <p className="mt-1">Os teus dados são privados e seguros.</p>
+                        <p>{t('settings.version', { version: APP_VERSION })}</p>
+                        <p className="mt-1">{t('settings.copyright')}</p>
+                        <p className="mt-1">{t('settings.privacyNote')}</p>
                     </div>
                 </div>
             </div>
@@ -454,10 +496,9 @@ export const SettingsView = ({
                 <div className="flex items-start gap-2">
                     <Icons.Shield className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-purple-300">
-                        <p className="font-medium mb-1">🔒 Privacidade & Segurança</p>
+                        <p className="font-medium mb-1">{t('settings.privacy')}</p>
                         <p className="text-xs opacity-90">
-                            Todos os teus dados são encriptados e só tu tens acesso.
-                            Nenhuma informação é partilhada com terceiros.
+                            {t('settings.privacyText')}
                         </p>
                     </div>
                 </div>

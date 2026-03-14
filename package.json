@@ -11,8 +11,10 @@
   "dependencies": {
     "dexie": "^4.2.1",
     "firebase": "^10.7.1",
+    "i18next": "^25.8.18",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-i18next": "^16.5.8",
     "recharts": "^3.4.1"
   },
   "devDependencies": {

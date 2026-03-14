@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PINEntry } from './PINEntry';
 import { useAuth } from '../contexts/AuthContext';
 import * as Icons from './Icons';
 
 /**
  * Ecrã de autenticação - Cria conta OU faz login
- * 
+ *
  * Fluxo:
  * 1. Verifica se já existe conta (hasAccount)
  * 2. Se não: mostra criação de conta (email + PIN + confirmar PIN)
  * 3. Se sim: mostra login (PIN)
  */
 export const AuthScreen = ({ onFirebaseLogout }) => {
+  const { t } = useTranslation();
   const { login, createAccount, hasAccount, checkRemoteAccount, resetApp, logout } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,11 +74,11 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
     const result = await login(pin);
 
     if (!result.success) {
-      setError(result.error || 'PIN incorreto. Tenta novamente.');
+      setError(result.error || t('auth.pinWrong'));
     }
 
     isSubmittingRef.current = false;
-  }, [login]);
+  }, [login, t]);
 
   // EMERGENCY RESET: Resetar dados locais e re-sincronizar do Firebase
   const handleEmergencyReset = async () => {
@@ -97,7 +99,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
       window.location.reload();
     } catch (error) {
       console.error('[AuthScreen] ❌ Erro no emergency reset:', error);
-      setError('Erro ao resetar. Tenta recarregar a página manualmente (Ctrl+Shift+R).');
+      setError(t('auth.resetError'));
       setLoading(false);
     }
   };
@@ -107,7 +109,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
     e.preventDefault();
 
     if (!email || !email.includes('@')) {
-      setError('Email inválido');
+      setError(t('auth.emailInvalid'));
       return;
     }
 
@@ -122,7 +124,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
 
   const handleConfirmPIN = useCallback(async (pin) => {
     if (pin !== firstPIN) {
-      setError('PINs não coincidem. Tenta novamente.');
+      setError(t('auth.pinMismatch'));
       setStep('pin');
       setFirstPIN('');
       return;
@@ -134,20 +136,20 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
     const result = await createAccount(email, pin);
 
     if (!result.success) {
-      setError(result.error || 'Erro ao criar conta. Tenta novamente.');
+      setError(result.error || t('auth.createError'));
       setStep('email');
       setEmail('');
       setFirstPIN('');
     }
     // Se success, o AuthContext já vai mudar isAuthenticated para true
-  }, [firstPIN, email, createAccount]);
+  }, [firstPIN, email, createAccount, t]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
         <div className="text-center">
           <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
-          <p className="text-purple-300">Carregando...</p>
+          <p className="text-purple-300">{t('auth.loading')}</p>
         </div>
       </div>
     );
@@ -162,26 +164,26 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
           <div className="w-full max-w-md bg-gray-800 rounded-lg p-6 border-2 border-red-500/50">
             <div className="text-center mb-6">
               <Icons.AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">⚠️ Resetar Dados Locais?</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{t('auth.resetTitle')}</h2>
               <p className="text-gray-300 text-sm mb-4">
-                Esta ação vai:
+                {t('auth.resetDescription')}
               </p>
               <ul className="text-left text-gray-300 text-sm space-y-2 mb-4">
                 <li className="flex items-start gap-2">
                   <span className="text-red-400">•</span>
-                  <span>Apagar TODOS os dados locais deste dispositivo</span>
+                  <span>{t('auth.resetBullet1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-green-400">•</span>
-                  <span>Manter dados do Firebase intactos (nada é perdido)</span>
+                  <span>{t('auth.resetBullet2')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400">•</span>
-                  <span>Re-sincronizar tudo do Firebase no próximo login</span>
+                  <span>{t('auth.resetBullet3')}</span>
                 </li>
               </ul>
               <p className="text-yellow-300 text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2">
-                💡 Usa isto se o PIN está correto mas não consegues entrar
+                {t('auth.resetHint')}
               </p>
             </div>
 
@@ -190,7 +192,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
                 onClick={handleEmergencyReset}
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition-all font-medium"
               >
-                Sim, Resetar Dados Locais
+                {t('auth.resetConfirm')}
               </button>
               <button
                 onClick={() => {
@@ -199,7 +201,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
                 }}
                 className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg transition-all font-medium"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -213,24 +215,24 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
         <div className="w-full max-w-md">
           <PINEntry
             key="login"
-            title="Bem-vinda de volta"
-            subtitle="Insere o teu PIN de 4 dígitos"
+            title={t('auth.loginTitle')}
+            subtitle={t('auth.loginSubtitle')}
             onComplete={handleLogin}
             error={error}
           />
 
           {/* Mostrar botão de reset APENAS se houver erro de PIN */}
-          {error && error.includes('PIN incorreto') && (
+          {error && error.includes('PIN') && (
             <div className="mt-6">
               <button
                 onClick={() => setShowResetConfirm(true)}
                 className="w-full bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/50 text-yellow-300 py-3 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2"
               >
                 <Icons.RefreshCw className="w-4 h-4" />
-                PIN correto mas não funciona? Resetar dados locais
+                {t('auth.resetLink')}
               </button>
               <p className="text-center text-xs text-gray-400 mt-2">
-                (Dados do Firebase não são afetados)
+                {t('auth.firebaseNote')}
               </p>
             </div>
           )}
@@ -242,7 +244,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               onClick={() => setAccountExists(false)}
               className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium"
             >
-              Não tenho conta? Criar nova
+              {t('auth.noAccount')}
             </button>
 
             {/* Botão para trocar de conta */}
@@ -256,7 +258,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium flex items-center justify-center gap-2"
             >
               <Icons.LogOut className="w-4 h-4" />
-              Trocar de conta (logout)
+              {t('auth.switchAccount')}
             </button>
           </div>
         </div>
@@ -275,21 +277,21 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
               <Icons.Shield className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Criar Conta</h1>
-            <p className="text-purple-300 text-sm">Passo 1 de 3: Email</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{t('auth.createTitle')}</h1>
+            <p className="text-purple-300 text-sm">{t('auth.step1')}</p>
           </div>
 
           {/* Email Form */}
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-purple-300 mb-2">
-                Email
+                {t('auth.emailLabel')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="exemplo@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
               />
@@ -305,7 +307,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               type="submit"
               className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-medium flex items-center justify-center gap-2"
             >
-              Continuar
+              {t('auth.continue')}
               <Icons.ChevronRight className="w-4 h-4" />
             </button>
           </form>
@@ -317,7 +319,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               onClick={() => setAccountExists(true)}
               className="w-full bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-300 py-3 rounded-lg transition-all text-sm font-medium"
             >
-              Já tenho conta? Fazer login
+              {t('auth.hasAccount')}
             </button>
           </div>
 
@@ -328,7 +330,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
                 <Icons.Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                 <div className="text-xs text-purple-300">
                   <p className="opacity-90">
-                    O email é usado para recuperar acesso à tua conta.
+                    {t('auth.emailInfo')}
                   </p>
                 </div>
               </div>
@@ -346,8 +348,8 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
         <div className="w-full max-w-md">
           <PINEntry
             key="create"
-            title="Criar PIN"
-            subtitle="Passo 2 de 3: Escolhe um PIN de 4 dígitos"
+            title={t('auth.createPIN')}
+            subtitle={t('auth.step2')}
             onComplete={handleFirstPIN}
             error={error}
           />
@@ -358,7 +360,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               onClick={() => setAccountExists(true)}
               className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors"
             >
-              Já tenho conta? Fazer login
+              {t('auth.hasAccount')}
             </button>
           </div>
         </div>
@@ -373,8 +375,8 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
         <div className="w-full max-w-md">
           <PINEntry
             key="confirm"
-            title="Confirmar PIN"
-            subtitle="Passo 3 de 3: Insere o PIN novamente"
+            title={t('auth.confirmPIN')}
+            subtitle={t('auth.step3')}
             onComplete={handleConfirmPIN}
             error={error}
           />
@@ -385,7 +387,7 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
               onClick={() => setAccountExists(true)}
               className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors"
             >
-              Já tenho conta? Fazer login
+              {t('auth.hasAccount')}
             </button>
           </div>
         </div>

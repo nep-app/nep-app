@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from './Icons';
 
 /**
@@ -12,6 +13,7 @@ import * as Icons from './Icons';
  * - darkMode: boolean
  */
 export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }) => {
+  const { t } = useTranslation();
   const [digits, setDigits] = useState(['', '', '', '']);
   // revealed[i] = true → mostrar dígito; false → mostrar ● (se preenchido)
   const [revealed, setRevealed] = useState([false, false, false, false]);
@@ -234,7 +236,7 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
             className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-all flex items-center justify-center gap-2"
           >
             <Icons.X className="w-4 h-4" />
-            Limpar
+            {t('pin.clear')}
           </button>
         )}
       </div>
@@ -245,11 +247,9 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
           <div className="flex items-start gap-2">
             <Icons.Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs text-purple-300">
-              <p className="font-medium mb-1">🔒 Segurança & Privacidade</p>
+              <p className="font-medium mb-1">{t('pin.securityTitle')}</p>
               <p className="opacity-90">
-                O teu PIN encripta todos os dados com AES-256-GCM. 
-                Sem o PIN, os dados são ilegíveis. 
-                Não partilhamos informação com terceiros.
+                {t('pin.securityText')}
               </p>
             </div>
           </div>

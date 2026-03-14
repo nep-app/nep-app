@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
@@ -10,6 +11,7 @@ export const GoalModal = ({
   setGoalForm,
   onSubmit
 }) => {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState(null);
 
   const handleSubmit = () => {
@@ -28,12 +30,12 @@ export const GoalModal = ({
   if (!isOpen) return null;
 
   const goalOptions = [
-    { type: 'reduce_quantity', icon: '📉', label: 'Reduzir quantidade diária', unit: 'mg' },
-    { type: 'reduce_frequency', icon: '🔢', label: 'Reduzir frequência diária', unit: 'consumos' },
-    { type: 'increase_interval', icon: '⏱️', label: 'Definir intervalo de consumo mínimo', unit: 'horas' },
-    { type: 'limit_last', icon: '🌙', label: 'Definir horário de último consumo', unit: 'hora' },
-    { type: 'bedtime_before', icon: '🛏️', label: 'Definir hora de ir deitar', unit: 'hora' },
-    { type: 'sleep_hours', icon: '😴', label: 'Definir horas de sono diárias', unit: 'horas' }
+    { type: 'reduce_quantity', icon: '📉', label: t('modals.goal.options.reduce_quantity'), unit: t('modals.goal.units.mg') },
+    { type: 'reduce_frequency', icon: '🔢', label: t('modals.goal.options.reduce_frequency'), unit: t('modals.goal.units.consumos') },
+    { type: 'increase_interval', icon: '⏱️', label: t('modals.goal.options.increase_interval'), unit: t('modals.goal.units.horas') },
+    { type: 'limit_last', icon: '🌙', label: t('modals.goal.options.limit_last'), unit: t('modals.goal.units.hora') },
+    { type: 'bedtime_before', icon: '🛏️', label: t('modals.goal.options.bedtime_before'), unit: t('modals.goal.units.hora') },
+    { type: 'sleep_hours', icon: '😴', label: t('modals.goal.options.sleep_hours'), unit: t('modals.goal.units.horas') }
   ];
 
   const handleSelectType = (type) => {
@@ -59,7 +61,7 @@ export const GoalModal = ({
               </button>
             )}
             <h3 className="text-xl font-bold text-white">
-              {selectedType ? selectedOption?.label : 'Escolher Meta'}
+              {selectedType ? selectedOption?.label : t('modals.goal.title')}
             </h3>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
@@ -79,7 +81,7 @@ export const GoalModal = ({
                 <div className="flex-1">
                   <div className="font-medium">{option.label}</div>
                   <div className="text-xs text-gray-400">
-                    Meta em {option.unit}
+                    {t('modals.goal.metaIn', { unit: option.unit })}
                   </div>
                 </div>
                 <Icons.ChevronRight className="text-gray-400 w-5 h-5" />
@@ -90,7 +92,7 @@ export const GoalModal = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                {isTimeType ? 'Hora limite' : `Meta (${selectedOption?.unit})`}
+                {isTimeType ? t('modals.goal.timeLimit') : t('modals.goal.metaUnit', { unit: selectedOption?.unit })}
               </label>
               <input
                 type={isTimeType ? 'time' : 'number'}
@@ -105,7 +107,7 @@ export const GoalModal = ({
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
             >
-              Criar Meta
+              {t('modals.goal.create')}
             </button>
           </div>
         )}
