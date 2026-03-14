@@ -66,6 +66,21 @@ export const AuthProvider = ({ children }) => {
   const AUTO_LOCK_TIMEOUT = 15 * 60 * 1000; // 15 minutos
 
   /**
+   * Logout (limpa chave de encriptação da memória + dados do utilizador)
+   */
+  const logout = useCallback(async () => {
+    // Limpar apenas dados do utilizador, MAS manter metadados de autenticação
+    // (userEmail, salt, pinVerification) para que a app saiba que a conta existe
+    await clearUserDataOnly();
+    logger.log('[Auth] 🗑️ Dados do utilizador limpos no logout (metadados mantidos)');
+
+    // Limpar estado
+    setEncryptionKey(null);
+    setIsAuthenticated(false);
+    setUserEmail(null);
+  }, []);
+
+  /**
    * Verifica se a app já foi inicializada (conta criada)
    */
   const checkInitialization = useCallback(async () => {
@@ -477,21 +492,6 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
   }, [firebaseInstances]);
-
-  /**
-   * Logout (limpa chave de encriptação da memória + dados do utilizador)
-   */
-  const logout = useCallback(async () => {
-    // Limpar apenas dados do utilizador, MAS manter metadados de autenticação
-    // (userEmail, salt, pinVerification) para que a app saiba que a conta existe
-    await clearUserDataOnly();
-    logger.log('[Auth] 🗑️ Dados do utilizador limpos no logout (metadados mantidos)');
-
-    // Limpar estado
-    setEncryptionKey(null);
-    setIsAuthenticated(false);
-    setUserEmail(null);
-  }, []);
 
   /**
    * Alterar PIN
