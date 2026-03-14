@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { safeLocalStorage } from '../utils/storage';
 
 const UIContext = createContext();
@@ -50,13 +50,13 @@ export const UIProvider = ({ children }) => {
   }, []);
 
   // Helper to open education modal
-  const openEducationModal = (title, content) => {
+  const openEducationModal = useCallback((title, content) => {
     setEducationContent({ title, content });
     setShowEducationModal(true);
-  };
+  }, []);
 
   // Helper to close all modals
-  const closeAllModals = () => {
+  const closeAllModals = useCallback(() => {
     setShowModal(false);
     setShowDailyLogModal(false);
     setShowReflectionModal(false);
@@ -71,9 +71,9 @@ export const UIProvider = ({ children }) => {
     setEditingGoal(null);
     setEditingCycle(null);
     setEditingConsumption(null);
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     // Theme (sempre dark mode)
     darkMode,
 
@@ -128,7 +128,15 @@ export const UIProvider = ({ children }) => {
 
     // Helpers
     closeAllModals,
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    selectedTab, showModal, showDailyLogModal, showReflectionModal,
+    showWellbeingModal, showEmotionsModal, showCycleModal, showGoalModal,
+    showEditConsumptionModal, showCopingModal, showEducationModal,
+    showThoughtsModal, editingGoal, editingCycle, editingConsumption,
+    selectedCycle, analysisWellbeing, analysisConsumptions, educationContent,
+    openEducationModal, closeAllModals,
+  ]);
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
 };

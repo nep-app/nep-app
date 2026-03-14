@@ -40,13 +40,6 @@ const checkForUpdates = () => {
   return false;
 };
 
-// Limpar cache SEMPRE (temporário para debug)
-if ('caches' in window) {
-  caches.keys().then(names => {
-    names.forEach(name => caches.delete(name));
-  });
-}
-
 // Verificar updates antes de renderizar
 if (!checkForUpdates()) {
   ReactDOM.createRoot(document.getElementById('root')).render(

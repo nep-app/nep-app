@@ -355,13 +355,13 @@ export const LocalDataProvider = ({ children }) => {
             } finally {
               setBackgroundLoading(false);
             }
-          }, 100); // FASE 3 começa 100ms depois da FASE 2
+          }, 0); // FASE 3 começa assim que o UI renderizar
 
         } catch (error) {
           console.error('[LocalData] Erro na FASE 2:', error);
           setBackgroundLoading(false);
         }
-      }, 500); // Esperar 500ms antes de carregar resto
+      }, 0); // Ceder ao event loop para UI renderizar, depois carregar dados
 
     } catch (error) {
       console.error('[LocalData] Erro ao carregar dados (FASE 1):', error);
