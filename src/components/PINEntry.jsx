@@ -188,27 +188,35 @@ export const PINEntry = ({ onComplete, title, subtitle, error, darkMode = true }
       <div className="w-full max-w-xs">
         <div className="flex gap-4 justify-center mb-6" onPaste={handlePaste}>
           {digits.map((digit, index) => (
-            <input
+            <div
               key={index}
-              ref={getInputRef(index)}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit !== '' ? (revealed[index] ? digit : '●') : ''}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
               className={
-                'w-16 h-16 text-center text-2xl font-bold rounded-lg ' +
-                'bg-gray-800 border-2 text-white ' +
-                'focus:outline-none focus:ring-2 focus:ring-purple-500 ' +
-                'transition-all ' +
+                'relative w-16 h-16 rounded-lg bg-gray-800 border-2 ' +
+                'transition-all focus-within:ring-2 focus-within:ring-purple-500 ' +
                 (error
                   ? 'border-red-500 animate-shake'
                   : digit
                     ? 'border-purple-500'
                     : 'border-gray-700')
               }
-            />
+            >
+              <input
+                ref={getInputRef(index)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                className="absolute inset-0 w-full h-full bg-transparent text-center text-2xl font-bold outline-none rounded-lg"
+                style={{ color: digit && !revealed[index] ? 'transparent' : 'white', caretColor: 'white' }}
+              />
+              {digit && !revealed[index] && (
+                <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white pointer-events-none select-none">
+                  ●
+                </span>
+              )}
+            </div>
           ))}
         </div>
 
