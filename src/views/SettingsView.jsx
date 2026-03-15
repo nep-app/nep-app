@@ -12,6 +12,7 @@ export const SettingsView = ({
     requestNotificationPermission,
     onOpenLegalDoc,
     manualSync,
+    forcePushAll,
     isSyncing,
     lastSyncTime
 }) => {
@@ -222,6 +223,39 @@ export const SettingsView = ({
 
                     <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
                         {t('settings.syncNote')}
+                    </div>
+
+                    <button
+                        onClick={async () => {
+                            try {
+                                const result = await forcePushAll();
+                                const total = (result?.pulled || 0) + (result?.pushed || 0);
+                                setSyncStatus(total > 0 ? `✓ ${t('settings.forceSyncDone', { count: total })}` : `✓ ${t('settings.syncAlreadyDone')}`);
+                            } catch (error) {
+                                setSyncStatus(`✗ ${error.message}`);
+                            }
+                            setTimeout(() => setSyncStatus(null), 5000);
+                        }}
+                        disabled={isSyncing}
+                        className={
+                            'w-full py-2 rounded-lg transition-all text-sm flex items-center justify-center gap-2 border ' +
+                            (isSyncing
+                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600'
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600')
+                        }
+                    >
+                        <Icons.RefreshCw className={'w-3 h-3' + (isSyncing ? ' animate-spin' : '')} />
+                        {t('settings.forceSyncNow')}
+                    </button>
+
+                    {syncStatus && (
+                        <div className="text-xs bg-gray-900/50 rounded p-2 text-gray-300">
+                            {syncStatus}
+                        </div>
+                    )}
+
+                    <div className="text-xs text-gray-500">
+                        {t('settings.forceSyncNote')}
                     </div>
                 </div>
             </div>

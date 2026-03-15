@@ -64,9 +64,7 @@ export function HomeViewRefactored({
     try {
       const result = await manualSync();
       if (result) {
-        const totalDocs = (result.consumptions?.total || 0) +
-                         (result.cycles?.total || 0) +
-                         (result.dailyLogs?.total || 0);
+        const totalDocs = (result.pulled || 0) + (result.pushed || 0);
         if (totalDocs > 0) {
           showToast(t('home.syncSuccess', { count: totalDocs }), 'success');
         } else {

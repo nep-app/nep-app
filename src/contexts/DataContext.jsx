@@ -307,6 +307,38 @@ export const DataProvider = ({ children }) => {
     }
   }, [isSyncing, loadAllCollections]);
 
+  /**
+   * Force full sync: limpa lastSyncTimestamp, marca tudo pending, push + pull completo
+   */
+  const forcePushAll = useCallback(async () => {
+    if (isSyncing) {
+      throw new Error('Sincronização já em curso');
+    }
+
+    setIsSyncing(true);
+
+    try {
+      // Limpar timestamp para forçar sync completo (não incremental)
+      await setMetadata('lastSyncTimestamp', null);
+      // Marcar todos itens locais como pending para garantir push
+      await syncService.forceMarkAllPending();
+      // Push de tudo para Firebase
+      await syncService.pushToFirebase();
+      // Pull de TUDO do Firebase (incremental: false ignora timestamp)
+      const result = await syncService.fullSync({ skipZombies: true, incremental: false });
+      if (result && (result.pulled > 0 || result.pushed > 0)) {
+        await loadAllCollections();
+      }
+      setLastSyncTime(new Date());
+      return result;
+    } catch (error) {
+      console.error('[DataContext] Erro no force sync:', error);
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isSyncing, loadAllCollections]);
+
   const value = {
     // Firebase (para compatibilidade)
     app,
@@ -347,6 +379,7 @@ export const DataProvider = ({ children }) => {
     isSyncing,
     lastSyncTime,
     manualSync,
+    forcePushAll,
     countPendingItems
   };
 
