@@ -11,7 +11,10 @@
     "notes": "Notes",
     "notesOptional": "Notes (optional)",
     "day_one": "day",
-    "day_other": "days"
+    "day_other": "days",
+    "total": "Total",
+    "average": "Average",
+    "max": "Maximum"
   },
   "auth": {
     "loading": "Loading...",
@@ -512,7 +515,27 @@
     "noIntervals": "No intervals (need ≥2 logs)",
     "noData": "No data",
     "noCorrelations": "Not enough data for correlations.",
-    "dayNames": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+    "dayNames": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+    "summary": "Personalised summary of the selected period",
+    "wellbeing": {
+      "sleep": "Sleep",
+      "mood": "Mood",
+      "energy": "Energy"
+    },
+    "intervalStats": {
+      "good": "Good Intervals (≥2h)",
+      "short": "Short Intervals (<2h)",
+      "motivationGood": "🌟 Great! More than half the intervals are ≥2h. Keep it up!",
+      "motivationBad": "💪 Focus on increasing the time between uses. Every improvement counts!"
+    },
+    "correlations": {
+      "noData": "No data",
+      "strongNeg": "Strong Negative",
+      "neg": "Negative",
+      "strongPos": "Strong Positive",
+      "pos": "Positive",
+      "none": "No Correlation"
+    }
   },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",

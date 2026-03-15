@@ -98,7 +98,7 @@ export function AnalysesView({
         const sleepData = daysWithData.filter(d => d.sleep !== null);
         if (sleepData.length >= 2) {
             correlations.push({
-                name: 'Sono', icon: '😴', unit: 'h',
+                name: t('analyses.wellbeing.sleep'), icon: '😴', unit: 'h',
                 correlation: analyticsService.calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep'),
                 average: (sleepData.reduce((s, d) => s + d.sleep, 0) / sleepData.length).toFixed(1),
                 dataPoints: sleepData.length
@@ -108,7 +108,7 @@ export function AnalysesView({
         const moodData = daysWithData.filter(d => d.mood !== null);
         if (moodData.length >= 2) {
             correlations.push({
-                name: 'Humor', icon: '😊', unit: '/10',
+                name: t('analyses.wellbeing.mood'), icon: '😊', unit: '/10',
                 correlation: analyticsService.calculatePearsonCorrelation(moodData, 'consumptions', 'mood'),
                 average: (moodData.reduce((s, d) => s + d.mood, 0) / moodData.length).toFixed(1),
                 dataPoints: moodData.length
@@ -118,7 +118,7 @@ export function AnalysesView({
         const energyData = daysWithData.filter(d => d.energy !== null);
         if (energyData.length >= 2) {
             correlations.push({
-                name: 'Energia', icon: '⚡', unit: '/10',
+                name: t('analyses.wellbeing.energy'), icon: '⚡', unit: '/10',
                 correlation: analyticsService.calculatePearsonCorrelation(energyData, 'consumptions', 'energy'),
                 average: (energyData.reduce((s, d) => s + d.energy, 0) / energyData.length).toFixed(1),
                 dataPoints: energyData.length
@@ -192,7 +192,7 @@ export function AnalysesView({
                                 </h3>
                             </div>
                             <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
-                                Resumo personalizado do período selecionado
+                                {t('analyses.summary')}
                             </p>
                         </div>
 
@@ -303,15 +303,15 @@ export function AnalysesView({
                                         <div className="grid grid-cols-3 gap-3 mb-4">
                                             <div className={`${darkMode ? 'bg-purple-900/30 border border-purple-700/50' : 'bg-purple-50 border-purple-200'} rounded-lg p-3 text-center border`}>
                                                 <div className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{intervals.length}</div>
-                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total</div>
+                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('common.total')}</div>
                                             </div>
                                             <div className={`${darkMode ? 'bg-blue-900/30 border border-blue-700/50' : 'bg-blue-50 border-blue-200'} rounded-lg p-3 text-center border`}>
                                                 <div className={`text-2xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>{avgInterval.toFixed(1)}h</div>
-                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Média</div>
+                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('common.average')}</div>
                                             </div>
                                             <div className={`${darkMode ? 'bg-green-900/30 border border-green-700/50' : 'bg-green-50 border-green-200'} rounded-lg p-3 text-center border`}>
                                                 <div className={`text-2xl font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{maxInterval.toFixed(1)}h</div>
-                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Máximo</div>
+                                                <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('common.max')}</div>
                                             </div>
                                         </div>
 
@@ -321,7 +321,7 @@ export function AnalysesView({
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
                                                         <span>✅</span>
-                                                        <span>Intervalos Bons (≥2h)</span>
+                                                        <span>{t('analyses.intervalStats.good')}</span>
                                                     </div>
                                                     <div className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
                                                         {goodIntervals.length} ({goodPercent}%)
@@ -337,7 +337,7 @@ export function AnalysesView({
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className={`text-sm font-medium flex items-center gap-2 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
                                                         <span>⚠️</span>
-                                                        <span>Intervalos Curtos (&lt;2h)</span>
+                                                        <span>{t('analyses.intervalStats.short')}</span>
                                                     </div>
                                                     <div className={`text-sm font-bold ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
                                                         {shortIntervals.length} ({shortPercent}%)
@@ -352,8 +352,8 @@ export function AnalysesView({
                                         <div className={`${darkMode ? 'bg-indigo-900/20 border-indigo-700/50' : 'bg-indigo-50 border-indigo-200'} rounded-lg p-3 mt-4 border`}>
                                             <p className={`text-xs leading-relaxed ${themeClasses.textSecondary(darkMode)}`}>
                                                 {goodPercent >= 50
-                                                    ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
-                                                    : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
+                                                    ? t('analyses.intervalStats.motivationGood')
+                                                    : t('analyses.intervalStats.motivationBad')}
                                             </p>
                                         </div>
                                     </>
@@ -371,12 +371,12 @@ export function AnalysesView({
                             <div className="space-y-3">
                                 {correlationData.map((corr, i) => {
                                     const getCorrelationLabel = (r) => {
-                                        if (r === null) return { text: 'Sem dados', color: 'gray' };
-                                        if (r < -0.7) return { text: 'Forte Negativa', color: 'red' };
-                                        if (r < -0.4) return { text: 'Negativa', color: 'orange' };
-                                        if (r > 0.7) return { text: 'Forte Positiva', color: 'green' };
-                                        if (r > 0.4) return { text: 'Positiva', color: 'green' };
-                                        return { text: 'Sem Correlação', color: 'gray' };
+                                        if (r === null) return { text: t('analyses.correlations.noData'), color: 'gray' };
+                                        if (r < -0.7) return { text: t('analyses.correlations.strongNeg'), color: 'red' };
+                                        if (r < -0.4) return { text: t('analyses.correlations.neg'), color: 'orange' };
+                                        if (r > 0.7) return { text: t('analyses.correlations.strongPos'), color: 'green' };
+                                        if (r > 0.4) return { text: t('analyses.correlations.pos'), color: 'green' };
+                                        return { text: t('analyses.correlations.none'), color: 'gray' };
                                     };
                                     const corrLabel = getCorrelationLabel(corr.correlation);
                                     return (

@@ -11,7 +11,10 @@
     "notes": "Notas",
     "notesOptional": "Notas (opcional)",
     "day_one": "dia",
-    "day_other": "dias"
+    "day_other": "dias",
+    "total": "Total",
+    "average": "Média",
+    "max": "Máximo"
   },
   "auth": {
     "loading": "Carregando...",
@@ -620,7 +623,27 @@
     "noIntervals": "Sem intervalos (necessário ≥2 consumos)",
     "noData": "Sem dados",
     "noCorrelations": "Sem dados suficientes para correlações.",
-    "dayNames": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
+    "dayNames": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],
+    "summary": "Resumo personalizado do período selecionado",
+    "wellbeing": {
+      "sleep": "Sono",
+      "mood": "Humor",
+      "energy": "Energia"
+    },
+    "intervalStats": {
+      "good": "Intervalos Bons (≥2h)",
+      "short": "Intervalos Curtos (<2h)",
+      "motivationGood": "🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!",
+      "motivationBad": "💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!"
+    },
+    "correlations": {
+      "noData": "Sem dados",
+      "strongNeg": "Forte Negativa",
+      "neg": "Negativa",
+      "strongPos": "Forte Positiva",
+      "pos": "Positiva",
+      "none": "Sem Correlação"
+    }
   },
   "defaultStrategies": [
     "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",
