@@ -99,11 +99,8 @@ export const getDateRangeForPeriod = (period, offset = 0) => {
         start = subtractDays(end, 29);
         start.setHours(0, 0, 0, 0);
     } else {
-        // tudo (últimos 30 dias - mesma lógica que Progresso)
-        const periodDays = 30;
-        end = subtractDays(now, offset * periodDays);
-        start = subtractDays(end, periodDays - 1);
-        start.setHours(0, 0, 0, 0);
+        // tudo: retornar TODOS os dados (sem filtro de data)
+        return { start: null, end: null };
     }
 
     return { start, end };

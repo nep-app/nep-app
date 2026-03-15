@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { dbtQuestions, reflectiveQuestions, copingStrategies, educationalResources } from './data/constants';
+import { useTranslation } from 'react-i18next';
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig } from './utils/firebase';
+import { dbtQuestions as dbtQuestionsDefault, reflectiveQuestions as reflectiveQuestionsDefault, copingStrategies as copingStrategiesDefault, educationalResources as educationalResourcesDefault } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
+import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV } from './services/exportService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useMetrics } from './contexts/MetricsContext';
 import { useUI } from './contexts/UIContext';
+import { useAuth } from './contexts/AuthContext';
 import { useToast } from './hooks/useToast';
-import { useAuth } from './hooks/useAuth';
+import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
+import { AuthScreen } from './components/AuthScreen';
+import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
 import { GOAL_TYPE_LABELS } from './constants/goalTypes';
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -20,8 +27,13 @@ import { logger } from './utils/logger';
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
-// Lazy load views (only load when user navigates to them)
-const HomeViewRefactored = lazy(() => import('./views/HomeViewRefactored').then(module => ({ default: module.HomeViewRefactored })));
+// ⚡ HomeView: IMPORT NORMAL (12.6KB, user SEMPRE visita, boot instantâneo)
+import { HomeViewRefactored } from './views/HomeViewRefactored';
+
+// 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
+// - AnalysesView: 143KB + recharts 243KB = 386KB
+// - PatternsView: 92KB + recharts
+// - HistoryView, SettingsView: carregam sob demanda
 const PatternsView = lazy(() => import('./views/PatternsView').then(module => ({ default: module.PatternsView })));
 const AnalysesView = lazy(() => import('./views/AnalysesView').then(module => ({ default: module.AnalysesView })));
 const HistoryView = lazy(() => import('./views/HistoryView').then(module => ({ default: module.HistoryView })));
@@ -30,6 +42,7 @@ const SettingsView = lazy(() => import('./views/SettingsView').then(module => ({
 // Lazy load modals (only load when user opens them)
 const DailyLogModal = lazy(() => import('./components/modals/DailyLogModal').then(module => ({ default: module.DailyLogModal })));
 const WellbeingModal = lazy(() => import('./components/modals/WellbeingModal').then(module => ({ default: module.WellbeingModal })));
+const EmotionsModal = lazy(() => import('./components/modals/EmotionsModal').then(module => ({ default: module.EmotionsModal })));
 const ReflectionModal = lazy(() => import('./components/modals/ReflectionModal').then(module => ({ default: module.ReflectionModal })));
 const CycleModal = lazy(() => import('./components/modals/CycleModal').then(module => ({ default: module.CycleModal })));
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
@@ -37,23 +50,98 @@ const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumpt
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 
-// Import UI components
-import { AlertCard } from './components/ui/AlertCard';
-import { GradientButton } from './components/ui/GradientButton';
-import { InfoBadge } from './components/ui/InfoBadge';
-import { MotivationalCard } from './components/ui/MotivationalCard';
-import { StatCard } from './components/ui/StatCard';
-
 function HarmReductionTracker() {
-            // ===== 2. STATE MANAGEMENT =====
-            // Use contexts for data and UI state
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal } = useUI();
+            const APP_VERSION = '1.5.3';
+            const { t } = useTranslation();
 
-            // Use custom hooks
+            // Initialize Firebase
+            const firebaseAuth = useMemo(() => {
+                const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+                return getAuth(app);
+            }, []);
+
+            const [firebaseUser, setFirebaseUser] = useState(null);
+            const [firebaseLoading, setFirebaseLoading] = useState(true);
+            const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
+            const [hasPinAccount, setHasPinAccount] = useState(null);
+
+            // 1. Listen to Firebase auth state
+            useEffect(() => {
+                const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+                    setFirebaseUser(user);
+                    setFirebaseLoading(false);
+                });
+                return unsubscribe;
+            }, [firebaseAuth]);
+
+            // 2. Check if PIN account exists (only when Firebase user exists)
+            useEffect(() => {
+                const checkPinAccount = async () => {
+                    if (firebaseUser && !firebaseLoading) {
+                        const exists = await hasAccount();
+                        setHasPinAccount(exists);
+                    }
+                };
+                checkPinAccount();
+            }, [firebaseUser, firebaseLoading, hasAccount]);
+
+            // Render content based on auth state
+            let content;
+
+            // LOADING: Firebase auth state checking
+            if (firebaseLoading || pinLoading) {
+                content = (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+                        <div className="text-center">
+                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                            <p className="text-purple-300">{t('auth.loading')}</p>
+                        </div>
+                    </div>
+                );
+            }
+            // STEP 1: NO Firebase user → Show Firebase login
+            else if (!firebaseUser) {
+                content = <FirebaseLoginScreen auth={firebaseAuth} />;
+            }
+            // STEP 2: Checking PIN account
+            else if (hasPinAccount === null) {
+                content = (
+                    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+                        <div className="text-center">
+                            <Icons.RefreshCw className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+                            <p className="text-purple-300">{t('auth.verifyingPIN')}</p>
+                        </div>
+                    </div>
+                );
+            }
+            // STEP 3: Firebase user exists but not PIN authenticated → Show PIN screen
+            else if (!pinAuthenticated) {
+                content = <AuthScreen onFirebaseLogout={() => firebaseAuth.signOut()} />;
+            }
+            // STEP 4: Both Firebase AND PIN authenticated → Show app
+            else {
+                content = <AuthenticatedApp />;
+            }
+
+            return content;
+        }
+
+/**
+ * AuthenticatedApp - Only renders when user is authenticated with PIN
+ * This prevents Firebase/data hooks from running before authentication
+ */
+function AuthenticatedApp() {
+            // Data and UI contexts
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
+
+            // i18n
+            const { t, i18n } = useTranslation();
+
+            // Custom hooks
             const { toasts, showToast } = useToast();
-            const { isLogin, setIsLogin, email, setEmail, password, setPassword, authError, handleAuth, handleLogout } = useAuth(auth);
-            const { notificationsEnabled, requestNotificationPermission } = useReminders(user, wellbeingLogs, consumptions, cycles, showToast);
+            const { handleLogout } = useFirebaseAuth(auth); // Only need logout for settings
+            const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast);
 
             // Use metrics context for centralized analytics and computations
             const metrics = useMetrics();
@@ -71,7 +159,7 @@ function HarmReductionTracker() {
             const [historyTopic, setHistoryTopic] = useState('todos'); // todos, consumo, reflexoes, ciclos, bem-estar, dbt
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
-            const [analysisSubView, setAnalysisSubView] = useState('estrutural'); // For analyses tab: temporal, structural, correlations
+            const [analysisSubView, setAnalysisSubView] = useState('correlacoes'); // For analyses tab: correlacoes, emocoes, gatilhos, coach
 
             // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
@@ -79,17 +167,21 @@ function HarmReductionTracker() {
             const [wellbeingToShow, setWellbeingToShow] = useState(14);
             const [cyclesHistoryToShow, setCyclesHistoryToShow] = useState(10);
             const [thoughtsToShow, setThoughtsToShow] = useState(10);
+            const [allItemsToShow, setAllItemsToShow] = useState(20); // Para tab "Tudo"
 
             // Legal Modal State
             const [showLegalModal, setShowLegalModal] = useState(false);
             const [legalDocType, setLegalDocType] = useState(null); // 'license', 'terms', 'governance'
 
             // Form States
-            const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '' });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+            const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
+            const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
+            const [reflectionDatetime, setReflectionDatetime] = useState('');
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
+            const [thoughtDatetime, setThoughtDatetime] = useState('');
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
@@ -98,14 +190,16 @@ function HarmReductionTracker() {
             };
 
             const currentDbtQuestion = useMemo(() => {
+                const questions = i18n.t('dbtQuestions', { returnObjects: true });
                 const cycleIndex = getCurrentCycleIndex();
-                return dbtQuestions[cycleIndex % dbtQuestions.length];
-            }, [cycles.length]);
+                return questions[cycleIndex % questions.length];
+            }, [cycles.length, i18n.language]);
 
             const currentReflection = useMemo(() => {
+                const questions = i18n.t('reflectiveQuestions', { returnObjects: true });
                 const cycleIndex = getCurrentCycleIndex();
-                return reflectiveQuestions[cycleIndex % reflectiveQuestions.length];
-            }, [cycles.length]);
+                return questions[cycleIndex % questions.length];
+            }, [cycles.length, i18n.language]);
 
             // Global error handler
             useEffect(() => {
@@ -130,26 +224,23 @@ function HarmReductionTracker() {
                 document.body.classList.add('dark');
             }, []);
 
-            // Firebase initialization and listeners now handled by DataContext
-
+            // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
             const markConsumption = async () => {
                 try {
                     const now = new Date();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
                     await addConsumption(item);
-                    showToast('✓ Consumo registado', 'success');
+                    showToast(t('messages.consumptionSaved'), 'success');
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
-                    showToast('✗ Erro ao guardar consumo', 'error');
+                    showToast(t('messages.consumptionSaveError'), 'error');
                 }
             };
 
             const deleteItem = async (collectionName, id) => {
-                if (!user || !db) return;
-
                 // Confirm before deleting
                 const itemNames = {
                     'consumptions': 'este consumo',
@@ -166,44 +257,175 @@ function HarmReductionTracker() {
                     return;
                 }
 
-                
                 try {
-                    await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, id));
-                    showToast('✓ Item apagado', 'success');
+                    await deleteItemFromContext(collectionName, id);
+                    showToast(t('messages.itemDeleted'), 'success');
+                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
-                    showToast('✗ Erro ao apagar item', 'error');
+                    showToast(t('messages.itemDeleteError'), 'error');
                     logger.error('Erro ao apagar:', error);
                 }
             };
 
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
+            const openEditCycle = (cycle) => { setEditingCycle({...cycle}); setShowCycleModal(true); };
+
+            // Função para preencher gaps - pré-preenche formulários com a data selecionada e abre o modal correspondente
+            const handleFillGap = (type, dateKey) => {
+                // dateKey formato: YYYY-MM-DD
+                switch (type) {
+                    case 'consumption':
+                        // Para consumos, não há formulário inicial - abre o modal de edição vazio ou apenas mostra mensagem
+                        // Consumos são criados via botão + na home, então aqui podemos apenas navegar para lá
+                        showToast(t('messages.consumptionHint'), 'info');
+                        break;
+
+                    case 'dailyLog':
+                        setDailyForm({ mg: 30, notes: '', date: dateKey });
+                        setShowDailyLogModal(true);
+                        break;
+
+                    case 'cycle':
+                        // Para ciclos, o createdAt deve ser um datetime. Usamos o início do dia selecionado.
+                        const cycleDate = new Date(dateKey + 'T08:00'); // 8h da manhã por defeito
+                        const cycleDatetimeStr = cycleDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: cycleDatetimeStr });
+                        setShowCycleModal(true);
+                        break;
+
+                    case 'wellbeing':
+                        // Para wellbeing (estado), o datetime deve ser completo
+                        const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        setShowWellbeingModal(true);
+                        break;
+
+                    case 'emotions':
+                        // Para emoções, pré-preencher datetime com a data selecionada
+                        const emDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const emDatetimeStr = emDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setEmotionsForm({ datetime: emDatetimeStr, emotions: [], notes: '' });
+                        setShowEmotionsModal(true);
+                        break;
+
+                    case 'reflection':
+                        // Para reflexão DBT, pré-preencher datetime com a data selecionada
+                        const reflDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const reflDatetimeStr = reflDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setReflectionDatetime(reflDatetimeStr);
+                        setShowReflectionModal(true);
+                        break;
+
+                    case 'thought':
+                        // Para pensamentos, pré-preencher datetime com a data selecionada
+                        const thDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
+                        const thDatetimeStr = thDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        setThoughtDatetime(thDatetimeStr);
+                        setShowThoughtsModal(true);
+                        break;
+
+                    default:
+                        break;
+                }
+            };
+
             const saveEditedConsumption = async () => {
                 if (!editingConsumption) return;
 
                 try {
-                    await addConsumption(editingConsumption);
+                    await updateItem('consumptions', editingConsumption.id, editingConsumption);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
-                    showToast('✓ Consumo editado', 'success');
+                    showToast(t('messages.consumptionEdited'), 'success');
+                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
-                    showToast('✗ Erro ao editar consumo', 'error');
+                    showToast(t('messages.consumptionEditError'), 'error');
                     logger.error('Erro ao editar:', error);
                 }
             };
 
             const submitDailyLog = async () => {
                 try {
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), times: metrics.todayConsumptions.length, mg: parseInt(dailyForm.mg), notes: dailyForm.notes };
+                    // Usar data escolhida ou hoje
+                    const selectedDate = dailyForm.date || getTodayKey();
+
+                    // Usar timestamp REAL (hora atual de submissão)
+                    const timestamp = new Date().toISOString();
+
+                    // Contar consumos do dia SELECIONADO (não de hoje)
+                    const consumptionsOnSelectedDate = consumptions.filter(c => c.date === selectedDate);
+                    const timesCount = consumptionsOnSelectedDate.length;
+
+                    const item = {
+                        id: genId(),
+                        date: selectedDate,
+                        timestamp: timestamp,
+                        times: timesCount,
+                        mg: parseInt(dailyForm.mg),
+                        notes: dailyForm.notes
+                    };
                     await addDailyLog(item);
-                    setDailyForm({ mg: 30, notes: '' });
+                    setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
                     setShowDailyLogModal(false);
-                    showToast('✓ Registo diário guardado', 'success');
+                    showToast(t('messages.dailyLogSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar registo', 'error');
+                    showToast(t('messages.dailyLogSaveError'), 'error');
                     logger.error(error);
                 }
             };
+
+            // Função de migração para corrigir o campo "times" nos dailyLogs antigos
+            const fixDailyLogsTimes = async () => {
+                try {
+                    let fixed = 0;
+                    let errors = 0;
+
+                    for (const log of dailyLogs) {
+                        try {
+                            // Contar consumos do mesmo dia
+                            const consumptionsOnDate = consumptions.filter(c => c.date === log.date);
+                            const correctTimes = consumptionsOnDate.length;
+
+                            // Se o times estiver errado, corrigir
+                            if (log.times !== correctTimes) {
+                                // Usar updateItem para atualizar Dexie + Firebase + React state
+                                await updateItem('dailyLogs', log.id, { times: correctTimes });
+                                fixed++;
+                                logger.info(`Fixed dailyLog ${log.id}: ${log.times} -> ${correctTimes}`);
+                            }
+                        } catch (error) {
+                            logger.error(`Error fixing dailyLog ${log.id}:`, error);
+                            errors++;
+                        }
+                    }
+
+                    // Marcar migração como completa
+                    localStorage.setItem('dailyLogsMigrationV1', 'done');
+
+                    if (fixed > 0) {
+                        showToast(t('messages.mgFixed', { count: fixed }), 'success');
+                        logger.info(`Migration completed: ${fixed} records fixed, ${errors} errors`);
+                    }
+                } catch (error) {
+                    logger.error('Migration error:', error);
+                }
+            };
+
+            // Executar migração automaticamente uma vez
+            useEffect(() => {
+                const migrationDone = localStorage.getItem('dailyLogsMigrationV1');
+
+                if (!migrationDone && user && dailyLogs.length > 0 && consumptions.length > 0) {
+                    // Esperar 2 segundos após carregar para não interferir com a UI
+                    const timer = setTimeout(() => {
+                        fixDailyLogsTimes();
+                    }, 2000);
+
+                    return () => clearTimeout(timer);
+                }
+            }, [user, dailyLogs.length, consumptions.length]);
 
             const submitWellbeing = async () => {
                 try {
@@ -233,10 +455,22 @@ function HarmReductionTracker() {
                         return;
                     }
 
+                    // Parse datetime or use current timestamp
+                    let timestamp = new Date().toISOString();
+                    let date = getTodayKey();
+                    if (wellbeingForm.datetime) {
+                        const selectedDate = new Date(wellbeingForm.datetime);
+                        timestamp = selectedDate.toISOString();
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        date = `${year}-${month}-${day}`;
+                    }
+
                     const item = {
                         id: genId(),
-                        date: getTodayKey(),
-                        timestamp: new Date().toISOString(),
+                        date: date,
+                        timestamp: timestamp,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         water: wellbeingForm.water,
@@ -247,26 +481,96 @@ function HarmReductionTracker() {
                         notes: sanitizeText(wellbeingForm.notes)
                     };
                     await addWellbeingLog(item);
-                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '' });
+                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
-                    showToast('✓ Bem-estar guardado', 'success');
+
+                    // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
+                    if (dismissReminder) {
+                        const dismissed = JSON.parse(localStorage.getItem('reminderDismissed') || '{}');
+                        delete dismissed['wellbeing-consumption'];
+                        localStorage.setItem('reminderDismissed', JSON.stringify(dismissed));
+                    }
+
+                    showToast(t('messages.wellbeingSaved'), 'success');
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
-                    showToast('✗ Erro ao guardar bem-estar', 'error');
+                    showToast(t('messages.wellbeingSaveError'), 'error');
+                }
+            };
+
+            const submitEmotions = async () => {
+                try {
+                    // Validate notes
+                    const notesValidation = validateText(emotionsForm.notes, MAX_NOTE_LENGTH);
+                    if (!notesValidation.valid) {
+                        showToast('✗ ' + notesValidation.error, 'error');
+                        return;
+                    }
+
+                    // Check if at least one emotion is selected
+                    if (emotionsForm.emotions.length === 0) {
+                        showToast(t('messages.emotionRequired'), 'error');
+                        return;
+                    }
+
+                    // Parse datetime or use current timestamp
+                    let timestamp = new Date().toISOString();
+                    let date = getTodayKey();
+                    if (emotionsForm.datetime) {
+                        const selectedDate = new Date(emotionsForm.datetime);
+                        timestamp = selectedDate.toISOString();
+                        const year = selectedDate.getFullYear();
+                        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(selectedDate.getDate()).padStart(2, '0');
+                        date = `${year}-${month}-${day}`;
+                    }
+
+                    const item = {
+                        id: genId(),
+                        date: date,
+                        timestamp: timestamp,
+                        mood: null,
+                        energy: null,
+                        water: false,
+                        rest: false,
+                        social: false,
+                        food: false,
+                        emotions: emotionsForm.emotions,
+                        notes: sanitizeText(emotionsForm.notes)
+                    };
+                    await addWellbeingLog(item);
+                    setEmotionsForm({ datetime: '', emotions: [], notes: '' });
+                    setShowEmotionsModal(false);
+                    showToast(t('messages.emotionsSaved'), 'success');
+                } catch (error) {
+                    logger.error('❌ ERRO ao guardar emoções:', error);
+                    showToast(t('messages.emotionsSaveError'), 'error');
                 }
             };
 
             const submitReflection = async () => {
                 try {
-                    const item = { id: genId(), date: getTodayKey(), timestamp: new Date().toISOString(), question: currentDbtQuestion, answer: reflectionAnswer };
+                    // Se reflectionDatetime estiver preenchido, usar essa data; senão usar hoje
+                    let timestamp, dateKey;
+                    if (reflectionDatetime) {
+                        const selectedDate = new Date(reflectionDatetime);
+                        timestamp = selectedDate.toISOString();
+                        dateKey = selectedDate.toISOString().split('T')[0];
+                    } else {
+                        timestamp = new Date().toISOString();
+                        dateKey = getTodayKey();
+                    }
+
+                    const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
                     await addReflection(item);
                     setReflectionAnswer('');
+                    setReflectionDatetime('');
                     setShowReflectionModal(false);
-                    showToast('✓ Reflexão guardada', 'success');
+                    showToast(t('messages.reflectionSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar reflexão', 'error');
+                    showToast(t('messages.reflectionSaveError'), 'error');
                     logger.error(error);
                 }
             };
@@ -280,40 +584,77 @@ function HarmReductionTracker() {
                         return;
                     }
 
+                    // Se thoughtDatetime estiver preenchido, usar essa data; senão usar hoje
+                    let timestamp, dateKey;
+                    if (thoughtDatetime) {
+                        const selectedDate = new Date(thoughtDatetime);
+                        timestamp = selectedDate.toISOString();
+                        dateKey = selectedDate.toISOString().split('T')[0];
+                    } else {
+                        timestamp = new Date().toISOString();
+                        dateKey = getTodayKey();
+                    }
+
                     const item = {
                         id: genId(),
-                        date: getTodayKey(),
-                        timestamp: new Date().toISOString(),
+                        date: dateKey,
+                        timestamp,
                         content: sanitizeText(thoughtsText)
                     };
                     await addThought(item);
+                    setThoughtDatetime('');
                     setShowThoughtsModal(false);
-                    showToast('✓ Pensamento guardado no diário', 'success');
+                    showToast(t('messages.thoughtSaved'), 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao guardar pensamento', 'error');
+                    showToast(t('messages.thoughtSaveError'), 'error');
                     logger.error(error);
                 }
             };
 
             const submitCycle = async () => {
                 try {
-                    const item = {
-                        id: genId(),
-                        timestamp: new Date().toISOString(),
-                        date: getTodayKey(),
-                        bedtime: cycleForm.bedtime,
-                        triggers: cycleForm.triggers,
-                        notes: cycleForm.notes,
-                        lastBefore00: cycleForm.lastBefore00,
-                        // Converter sleep para número (se tiver valor)
-                        ...(cycleForm.sleep && cycleForm.sleep !== '' ? { sleep: parseFloat(cycleForm.sleep) } : {})
-                    };
-                    await addCycle(item);
-                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false });
+                    if (editingCycle) {
+                        // UPDATE: Atualizar ciclo existente
+                        const sleepValueEdit = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+
+                        const updatedData = {
+                            bedtime: cycleForm.bedtime,
+                            triggers: cycleForm.triggers,
+                            notes: cycleForm.notes,
+                            lastBefore00: cycleForm.lastBefore00,
+                            ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
+                        };
+                        await updateCycle(editingCycle.id, updatedData);
+                        setEditingCycle(null);
+                        showToast(t('messages.cycleUpdated'), 'success');
+                    } else {
+                        // CREATE: Criar novo ciclo
+                        // Se createdAt foi fornecido, usar esse; senão usar agora
+                        const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
+                        const timestampISO = customDateTime.toISOString();
+                        const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
+
+                        const sleepValue = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+
+                        const item = {
+                            id: genId(),
+                            timestamp: timestampISO,
+                            date: dateKey,
+                            bedtime: cycleForm.bedtime,
+                            triggers: cycleForm.triggers,
+                            notes: cycleForm.notes,
+                            lastBefore00: cycleForm.lastBefore00,
+                            // Converter sleep para número (se tiver valor)
+                            ...(sleepValue !== null ? { sleep: sleepValue } : {})
+                        };
+                        await addCycle(item);
+                        showToast(t('messages.cycleCreated'), 'success');
+                    }
+
+                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
                     setShowCycleModal(false);
-                    showToast('✓ Novo ciclo criado', 'success');
                 } catch (error) {
-                    showToast('✗ Erro ao criar ciclo', 'error');
+                    showToast(t('messages.cycleError', { action: t(editingCycle ? 'messages.cycleActionUpdate' : 'messages.cycleActionCreate') }), 'error');
                     logger.error(error);
                 }
             };
@@ -327,7 +668,7 @@ function HarmReductionTracker() {
                         const updatedData = { type: goalForm.type, target };
                         await updateGoal(editingGoal.id, updatedData);
                         setEditingGoal(null);
-                        showToast('✓ Meta atualizada', 'success');
+                        showToast(t('messages.goalUpdated'), 'success');
                     } else {
                         // Check if goal of this type already exists
                         const existingGoal = goals.find(g => g.type === goalForm.type);
@@ -336,19 +677,19 @@ function HarmReductionTracker() {
                             // Replace existing goal
                             const updatedData = { type: goalForm.type, target };
                             await updateGoal(existingGoal.id, updatedData);
-                            showToast('✓ Meta substituída', 'success');
+                            showToast(t('messages.goalReplaced'), 'success');
                         } else {
                             // Create new goal
                             const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), completed: false };
                             await addGoal(item);
-                            showToast('✓ Meta criada', 'success');
+                            showToast(t('messages.goalCreated'), 'success');
                         }
                     }
 
                     setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' });
                     setShowGoalModal(false);
                 } catch (error) {
-                    showToast('✗ Erro ao ' + (editingGoal ? 'atualizar' : 'criar') + ' meta', 'error');
+                    showToast(t('messages.goalError', { action: t(editingGoal ? 'messages.goalActionUpdate' : 'messages.goalActionCreate') }), 'error');
                     logger.error(error);
                 }
             };
@@ -370,7 +711,35 @@ function HarmReductionTracker() {
             // REMOVED: getGoalProgress - now in MetricsContext as metrics.getGoalProgress(goal)
             // REMOVED: getTimeSinceLastConsumption - now in MetricsContext as metrics.timeSinceLastConsumption
 
-            const exportToCSV = () => { const headers = ['Data', 'Hora', 'Tipo', 'Detalhes']; const rows = [...consumptions.map(c => [new Date(c.timestamp).toLocaleDateString('pt-PT'), new Date(c.timestamp).toLocaleTimeString('pt-PT'), 'Consumo', c.notes || '']), ...dailyLogs.map(l => [l.date, '', 'Dosagem', l.times + 'x, ' + l.mg + 'mg' + (l.notes ? ', ' + l.notes : '')]), ...wellbeingLogs.map(w => [w.date, '', 'Bem-estar', 'Sono: ' + w.sleep + '/10, Humor: ' + w.mood + '/10'])]; const csv = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'reducao-danos-' + getTodayKey() + '.csv'; a.click(); };
+            // Export functions using new service
+            const exportToCSV = () => {
+                const allData = {
+                    consumptions,
+                    cycles,
+                    dailyLogs,
+                    wellbeingLogs,
+                    reflections,
+                    thoughts,
+                    goals
+                };
+                const csvString = exportToCSVNew(allData);
+                downloadCSV(csvString);
+                showToast(t('messages.csvExported'), 'success');
+            };
+
+            const exportToJSON = () => {
+                const allData = {
+                    consumptions,
+                    cycles,
+                    dailyLogs,
+                    wellbeingLogs,
+                    reflections,
+                    thoughts,
+                    goals
+                };
+                const result = exportAndDownloadAll(allData);
+                showToast(t('messages.backupCreated', { count: result.totalRecords }), 'success');
+            };
 
             // Get goal progress with percentage
             const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
@@ -560,77 +929,6 @@ return {
 };
             };
 
-            // Memoized temporal correlation analysis (optimized)
-            // NOTE: temporalCorrelations and bidirectionalAnalysis removed (dead code - never used)
-            // If needed, these are available via metrics.temporalCorrelations and metrics.bidirectionalAnalysis from useAnalysis hook
-
-            // Analyze intra-day variation (how mood/energy change throughout the same day)
-            const getIntraDayVariation = () => {
-                if (wellbeingLogs.length < 2) return null;
-
-                // Group by date
-                const logsByDate = {};
-                wellbeingLogs.forEach(log => {
-                    if (!logsByDate[log.date]) logsByDate[log.date] = [];
-                    logsByDate[log.date].push(log);
-                });
-
-                // Filter days with multiple entries
-                const daysWithMultipleEntries = Object.entries(logsByDate).filter(([_, logs]) => logs.length > 1);
-
-                if (daysWithMultipleEntries.length === 0) return null;
-
-                const variations = [];
-
-                daysWithMultipleEntries.forEach(([date, logs]) => {
-                    // Sort by timestamp
-                    const sorted = logs.sort((a, b) => new Date(a.timestamp || a.date).getTime() - new Date(b.timestamp || b.date).getTime());
-
-                    const first = sorted[0];
-                    const last = sorted[sorted.length - 1];
-
-                    // Calculate variations
-                    const moodChange = last.mood && first.mood ? parseInt(last.mood) - parseInt(first.mood) : null;
-                    const energyChange = last.energy && first.energy ? parseInt(last.energy) - parseInt(first.energy) : null;
-                    const sleepTotal = sorted.reduce((sum, log) => sum + (parseFloat(log.sleep) || 0), 0);
-
-                    if (moodChange !== null || energyChange !== null) {
-                        variations.push({
-                            date,
-                            moodChange,
-                            energyChange,
-                            sleepTotal,
-                            entriesCount: sorted.length,
-                            firstMood: first.mood ? parseInt(first.mood) : null,
-                            lastMood: last.mood ? parseInt(last.mood) : null,
-                            firstEnergy: first.energy ? parseInt(first.energy) : null,
-                            lastEnergy: last.energy ? parseInt(last.energy) : null
-                        });
-                    }
-                });
-
-                if (variations.length === 0) return null;
-
-                // Calculate averages
-                const avgMoodChange = variations.filter(v => v.moodChange !== null).reduce((sum, v) => sum + v.moodChange, 0) / variations.filter(v => v.moodChange !== null).length;
-                const avgEnergyChange = variations.filter(v => v.energyChange !== null).reduce((sum, v) => sum + v.energyChange, 0) / variations.filter(v => v.energyChange !== null).length;
-
-                // Find patterns
-                const improvingDays = variations.filter(v => (v.moodChange && v.moodChange > 1) || (v.energyChange && v.energyChange > 1)).length;
-                const decliningDays = variations.filter(v => (v.moodChange && v.moodChange < -1) || (v.energyChange && v.energyChange < -1)).length;
-                const stableDays = variations.length - improvingDays - decliningDays;
-
-                return {
-                    variations,
-                    avgMoodChange: isNaN(avgMoodChange) ? null : avgMoodChange,
-                    avgEnergyChange: isNaN(avgEnergyChange) ? null : avgEnergyChange,
-                    improvingDays,
-                    decliningDays,
-                    stableDays,
-                    totalDays: variations.length
-                };
-            };
-
             // Analyze emotional patterns (which emotions correlate with consumption)
             const todayCount = metrics.todayConsumptions.length;
             // Use the FIRST cycle (most recent, since sorted by timestamp desc)
@@ -672,60 +970,10 @@ return {
                 allTriggers.forEach(t => { triggerCount[t] = (triggerCount[t] || 0) + 1; });
                 const topTriggers = Object.entries(triggerCount).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([t]) => t);
 
-                const strategies = {
-                    'Stress': [
-                        'Respiração 4-7-8: inspira 4seg, segura 7seg, expira 8seg. Repete 4x quando sentires tensão aumentar',
-                        'Técnica STOP: Stop (para), Take a breath (respira), Observe (observa o que sentes), Proceed (continua com escolha consciente)',
-                        'Escreve 3 coisas que consegues controlar agora (ex: beber água, sair 5min, avisar alguém)'
-                    ],
-                    'Ansiedade': [
-                        '5-4-3-2-1: Nomeia 5 coisas que vês, 4 que ouves, 3 que tocas, 2 que cheiras, 1 que saboreias',
-                        'Gelo nas mãos ou rosto 30seg: sensação intensa traz-te ao presente (skill DBT - TIP)',
-                        'Desafia o pensamento: "É facto ou interpretação? Qual a probabilidade real? O que diria a um amigo?"'
-                    ],
-                    'Solidão': [
-                        'Mensagem para 3 pessoas (sem expectativa de resposta imediata): partilha algo neutro, cria conexão',
-                        'Sai de casa 15min: café, passeio, biblioteca. Presença de outros ajuda mesmo sem interação',
-                        'Atividade online com pessoas (discord, gaming, livestream): conexão conta, mesmo virtual'
-                    ],
-                    'Festa': [
-                        'Define limite ANTES: máximo X consumos, horário de saída, orçamento. Diz a alguém o teu plano',
-                        'Alterna: 1 bebida → 1 água/sumo. Mantém copo na mão (menos pressão social para beber)',
-                        'Identifica pessoa de confiança perto + transporte de volta planeado + local seguro se precisares sair'
-                    ],
-                    'Trabalho': [
-                        'Micro-pausas: cada 25min para 5min (lavar cara, esticar, snack). Evita burnout acumulado',
-                        'Prioriza 3 tarefas máximo/dia: resto é bonus. Pressão irrealista é gatilho para consumo',
-                        'Se overwhelmed: email/mensagem para chefe "preciso ajuste prazo/carga". Pedir ajuda ≠ fraqueza'
-                    ],
-                    'Família': [
-                        'Limites claros: "Não consigo falar sobre X agora" ou "Preciso de espaço, falo contigo amanhã"',
-                        'Auto-compaixão: "Estou a fazer o melhor que consigo com o que tenho agora". Culpa não ajuda',
-                        'Rede de apoio fora da família: amigo, terapeuta, grupo online. Não dependas só de quem te gatilha'
-                    ],
-                    'Hábito': [
-                        'Quebra padrão: muda 1 passo da rotina (caminho diferente, hora diferente, contexto diferente)',
-                        'Substitui: chá/café especial, duche frio, 10 flexões, 5min de jogo. Ocupa mãos + mente',
-                        'Adia 15min: "Posso fazer isto daqui a 15min se ainda quiser". Muitas vezes o impulso passa'
-                    ],
-                    'Tristeza': [
-                        'Valida emoção: "Faz sentido sentir isto". Tristeza não é fraqueza, é informação sobre o que importa',
-                        'Auto-cuidado radical: banho quente, refeição que gostas, roupa limpa. Corpo afeta mente',
-                        'Fala com alguém (amigo, familiar, terapeuta): partilhar alivia, não precisas resolver sozinho/a'
-                    ],
-                    'Dependência': [
-                        'HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro',
-                        'Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico',
-                        'Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)'
-                    ]
-                };
+                const strategies = i18n.t('copingStrategiesDetailed', { returnObjects: true });
 
                 if (topTriggers.length === 0) {
-                    return [
-                        'Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro',
-                        'Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis',
-                        'Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional'
-                    ];
+                    return i18n.t('defaultStrategies', { returnObjects: true });
                 }
 
                 const selectedStrategies = [];
@@ -736,21 +984,21 @@ return {
                 });
 
                 return selectedStrategies.length > 0 ? selectedStrategies : strategies['Stress'];
-            }, [cycles]);
+            }, [cycles, i18n.language]);
 
             // Memoized positive daily feedback
             const positiveFeedback = useMemo(() => {
                 const messages = [];
 
                 // Check streak
-                if (streaks.current >= 7) messages.push(`🔥 Incrível! ${streaks.current} dias consecutivos de registo!`);
-                else if (streaks.current >= 3) messages.push(`💪 Mantém o ritmo! ${streaks.current} dias seguidos!`);
+                if (streaks.current >= 7) messages.push(t('feedback.streakHigh', { count: streaks.current }));
+                else if (streaks.current >= 3) messages.push(t('feedback.streakMid', { count: streaks.current }));
 
                 // Check interval quality
                 if (consumptions.length >= 2) {
                     const lastIntervalData = metrics.lastInterval;
                     if (lastIntervalData && !lastIntervalData.isShort) {
-                        messages.push(`✨ Ótimo trabalho! Último intervalo de ${lastIntervalData.hours}h`);
+                        messages.push(t('feedback.intervalGood', { hours: lastIntervalData.hours }));
                     }
                 }
 
@@ -758,7 +1006,7 @@ return {
                 if (wellbeingLogs.length > 0) {
                     const recent = wellbeingLogs[0];
                     const completedItems = [recent.water, recent.rest, recent.social, recent.food].filter(Boolean).length;
-                    if (completedItems >= 3) messages.push(`💚 Autocuidado em dia! ${completedItems}/4 itens`);
+                    if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 
                 // Check reduction trend
@@ -766,7 +1014,7 @@ return {
                     const last = dailyLogs[0];
                     const prev = dailyLogs[1];
                     if (last.times < prev.times) {
-                        messages.push(`📉 Progresso visível! Menos ${prev.times - last.times} consumo(s) que antes`);
+                        messages.push(t('feedback.progressVisible', { count: prev.times - last.times }));
                     }
                 }
 
@@ -795,114 +1043,37 @@ return {
                             onClick={() => {window.location.reload();}}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
                         >
-                            Recarregar Página
+                            {t('feedback.reloadPage')}
                         </button>
-                        <p className="text-xs text-gray-500 mt-4">Se o problema persistir, abre o browser numa janela privada ou limpa o cache.</p>
+                        <p className="text-xs text-gray-500 mt-4">{t('feedback.loadingError')}</p>
                     </div>
                 </div>
             );
 
-            if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">A carregar... 🔄</div></div>);
+            if (dataLoading) return (<div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4"><div className="text-purple-600 text-xl">{t('feedback.loading')}</div></div>);
 
-            // Auth Screen
-            if (!user) return (
-                <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
-                        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                            NEP App
-                        </h1>
-                        <p className="text-gray-600 mb-6">Sincroniza entre dispositivos 💜</p>
-                        <form onSubmit={handleAuth} className="space-y-4">
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-                                required
-                            />
-                            <input
-                                type="password"
-                                placeholder="Password (mínimo 6 caracteres)"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-                                required
-                            />
-                            {authError && (
-                                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">{authError}</div>
-                            )}
-                            {!isLogin && (
-                                <div className="bg-purple-50 p-3 rounded-lg text-xs text-purple-900">
-                                    <p className="mb-2">
-                                        Ao criar conta, concordas com os{' '}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setLegalDocType('terms');
-                                                setShowLegalModal(true);
-                                            }}
-                                            className="text-purple-600 font-semibold hover:underline"
-                                        >
-                                            Termos de Uso
-                                        </button>
-                                        .
-                                    </p>
-                                </div>
-                            )}
-                            <button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
-                            >
-                                {isLogin ? 'Entrar' : 'Criar Conta'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsLogin(!isLogin)}
-                                className="w-full text-purple-600 text-sm hover:underline"
-                            >
-                                {isLogin ? 'Criar conta nova' : 'Já tenho conta'}
-                            </button>
-                        </form>
-                        <p className="text-xs text-gray-500 mt-6">
-                            💡 Usa o mesmo email e password no PC e telemóvel para sincronizar
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2 text-center">
-                            Copyright © Teresa Castro
-                        </p>
-                    </div>
-
-                    {/* Legal Modal for auth screen */}
-                    <Suspense fallback={null}>
-                        <LegalModal
-                            isOpen={showLegalModal}
-                            onClose={() => setShowLegalModal(false)}
-                            darkMode={false}
-                            documentType={legalDocType}
-                        />
-                    </Suspense>
-                </div>
-            );
+            // NOTE: Firebase auth check removed - now handled in HarmReductionTracker
+            // AuthenticatedApp only renders when BOTH Firebase AND PIN are authenticated
 
             return (
-                <div className={'min-h-screen ' + (darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50') + ' p-4 transition-colors pb-24'}>
+                <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24'>
                     <div className="max-w-2xl mx-auto">
-                        <div className={(darkMode ? 'bg-gray-800 text-white' : 'bg-white') + ' rounded-3xl shadow-xl p-8 mb-6'}>
+                        <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>
                             <div className="flex justify-between items-center gap-8">
                                 {/* Título - Esquerda */}
                                 <div className="flex-1">
-                                    <div className="space-y-1">
-                                        <div className="flex items-baseline gap-2">
+                                    <div className="space-y-0">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-purple-600 leading-none">N</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>otas de</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticN')}</span>
                                         </div>
-                                        <div className="flex items-baseline gap-2">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-pink-600 leading-none">E</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>xperiências e</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticE')}</span>
                                         </div>
-                                        <div className="flex items-baseline gap-2">
+                                        <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-blue-600 leading-none">P</span>
-                                            <span className={'text-2xl font-light ' + (themeClasses.textSecondary(darkMode))}>adrões</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticP')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -910,48 +1081,59 @@ return {
                                 {/* Subtítulo e Slogan - Direita */}
                                 <div className="flex flex-col items-end gap-3">
                                     <div className="text-right space-y-1">
-                                        <p className={'text-sm font-medium tracking-wide ' + (themeClasses.textTertiary(darkMode))}>
+                                        <p className='text-sm font-medium tracking-wide text-gray-400'>
                                             <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
                                         </p>
-                                        <p className={'text-xs italic ' + (darkMode ? 'text-gray-500' : 'text-gray-500')}>
-                                            <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
+                                        <p className='text-xs italic text-gray-500'>
+                                            {t('home.motto').split(' ').map((word, i) => (
+                                                <span key={i}>{i > 0 ? ' ' : ''}<span className={['text-purple-500','text-pink-500','text-blue-500'][i] || ''}>{word[0]}</span>{word.slice(1)}</span>
+                                            ))}
                                         </p>
                                     </div>
 
                                     {streaks.current > 0 ? (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
                                             <span>🔥</span>
-                                            <span>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                            <span>{streaks.current} {t('common.day', {count: streaks.current})}</span>
                                         </div>
                                     ) : streaks.max > 0 && (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
                                             <span>💪</span>
-                                            <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
+                                            <span>{t('home.record')}: {streaks.max} {t('common.day', {count: streaks.max})}</span>
                                         </div>
                                     )}
+
+                                    {/* Mensagem de Hoje - ABAIXO do streak */}
+                                    <div className="text-right space-y-1">
+                                        <p className='text-xs font-semibold text-purple-300'>
+                                            💜 {t('home.dailyMessage')}
+                                        </p>
+                                        <p className='text-xs italic max-w-xs text-white'>
+                                            {currentReflection}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className={(darkMode ? 'bg-gray-800/50' : 'bg-white') + ' rounded-3xl shadow-xl p-6 mb-6'}>
+                        <div className='bg-gray-800/50 rounded-3xl shadow-xl p-6 mb-6'>
                             {currentView === 'home' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
-                                    <HomeViewRefactored
-                                        currentReflection={currentReflection}
-                                        markConsumption={markConsumption}
-                                        openEditConsumption={openEditConsumption}
-                                        deleteItem={deleteItem}
-                                        last7={last7}
-                                        copingStrategies={copingStrategies}
-                                        badges={badges}
-                                        currentCycleCount={currentCycleCount}
-                                        consumptionsToShow={consumptionsToShow}
-                                        setConsumptionsToShow={setConsumptionsToShow}
-                                    />
-                                </Suspense>
+                                <HomeViewRefactored
+                                    currentReflection={currentReflection}
+                                    markConsumption={markConsumption}
+                                    openEditConsumption={openEditConsumption}
+                                    deleteItem={deleteItem}
+                                    last7={last7}
+                                    copingStrategies={copingStrategies}
+                                    badges={badges}
+                                    currentCycleCount={currentCycleCount}
+                                    consumptionsToShow={consumptionsToShow}
+                                    setConsumptionsToShow={setConsumptionsToShow}
+                                    showToast={showToast}
+                                />
                             )}
                             {currentView === 'patterns' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <PatternsView
                                         patternsPeriod={patternsPeriod}
                                         setPatternsPeriod={setPatternsPeriod}
@@ -963,7 +1145,7 @@ return {
                                 </Suspense>
                             )}
                             {currentView === 'analyses' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <AnalysesView
                                         analysisSubView={analysisSubView}
                                         setAnalysisSubView={setAnalysisSubView}
@@ -975,7 +1157,7 @@ return {
                                 </Suspense>
                             )}
                             {currentView === 'history' && (
-                                <Suspense fallback={<div className="text-center py-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center py-8">{t('messages.loadingView')}</div>}>
                                     <HistoryView
                                         historyPeriod={historyPeriod}
                                         setHistoryPeriod={setHistoryPeriod}
@@ -991,20 +1173,28 @@ return {
                                         setCyclesHistoryToShow={setCyclesHistoryToShow}
                                         thoughtsToShow={thoughtsToShow}
                                         setThoughtsToShow={setThoughtsToShow}
+                                        allItemsToShow={allItemsToShow}
+                                        setAllItemsToShow={setAllItemsToShow}
                                         openEditConsumption={openEditConsumption}
+                                        openEditCycle={openEditCycle}
                                         deleteItem={deleteItem}
+                                        handleFillGap={handleFillGap}
                                     />
                                 </Suspense>
                             )}
                             {currentView === 'settings' && (
-                                <Suspense fallback={<div className="text-center p-8">Carregando...</div>}>
+                                <Suspense fallback={<div className="text-center p-8">{t('messages.loadingView')}</div>}>
                                     <SettingsView
-                                        darkMode={darkMode}
                                         user={user}
                                         handleLogout={handleLogout}
                                         exportToCSV={exportToCSV}
+                                        exportToJSON={exportToJSON}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
+                                        manualSync={manualSync}
+                                        forcePushAll={forcePushAll}
+                                        isSyncing={isSyncing}
+                                        lastSyncTime={lastSyncTime}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
@@ -1020,7 +1210,6 @@ return {
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
                                 onClose={() => setShowDailyLogModal(false)}
-                                darkMode={darkMode}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
@@ -1031,7 +1220,6 @@ return {
                             <WellbeingModal
                                 isOpen={showWellbeingModal}
                                 onClose={() => setShowWellbeingModal(false)}
-                                darkMode={darkMode}
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
@@ -1040,13 +1228,24 @@ return {
                         </Suspense>
 
                         <Suspense fallback={null}>
+                            <EmotionsModal
+                                isOpen={showEmotionsModal}
+                                onClose={() => setShowEmotionsModal(false)}
+                                emotionsForm={emotionsForm}
+                                setEmotionsForm={setEmotionsForm}
+                                onSubmit={submitEmotions}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
                             <ReflectionModal
                                 isOpen={showReflectionModal}
                                 onClose={() => setShowReflectionModal(false)}
-                                darkMode={darkMode}
                                 currentDbtQuestion={currentDbtQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
+                                reflectionDatetime={reflectionDatetime}
+                                setReflectionDatetime={setReflectionDatetime}
                                 onSubmit={submitReflection}
                             />
                         </Suspense>
@@ -1054,8 +1253,8 @@ return {
                         <Suspense fallback={null}>
                             <CycleModal
                                 isOpen={showCycleModal}
-                                onClose={() => setShowCycleModal(false)}
-                                darkMode={darkMode}
+                                onClose={() => { setShowCycleModal(false); setEditingCycle(null); }}
+                                editingCycle={editingCycle}
                                 cycleForm={cycleForm}
                                 setCycleForm={setCycleForm}
                                 onSubmit={submitCycle}
@@ -1066,7 +1265,6 @@ return {
                             <GoalModal
                                 isOpen={showGoalModal}
                                 onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
-                                darkMode={darkMode}
                                 editingGoal={editingGoal}
                                 goalForm={goalForm}
                                 setGoalForm={setGoalForm}
@@ -1078,7 +1276,6 @@ return {
                             <EditConsumptionModal
                                 isOpen={showEditConsumptionModal}
                                 onClose={() => setShowEditConsumptionModal(false)}
-                                darkMode={darkMode}
                                 editingConsumption={editingConsumption}
                                 setEditingConsumption={setEditingConsumption}
                                 onSubmit={saveEditedConsumption}
@@ -1090,7 +1287,8 @@ return {
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
                                 onClose={() => setShowThoughtsModal(false)}
-                                darkMode={darkMode}
+                                thoughtDatetime={thoughtDatetime}
+                                setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
                             />
                         </Suspense>
@@ -1099,33 +1297,32 @@ return {
                             <LegalModal
                                 isOpen={showLegalModal}
                                 onClose={() => setShowLegalModal(false)}
-                                darkMode={darkMode}
                                 documentType={legalDocType}
                             />
                         </Suspense>
 
-                        <div className={(darkMode ? 'bg-gray-800' : 'bg-white') + ' fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'}>
+                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
-                                    <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Heart className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Início</div>
+                                                        <div className="text-xs font-medium mt-1">{t('nav.home')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BarChart3 className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Padrões</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.patterns')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Activity className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Análises</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.analyses')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.BookOpen className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Histórico</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.history')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
+                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                         <Icons.Settings className="w-5 h-5" />
-                                        <div className="text-xs font-medium mt-1">Config</div>
+                                        <div className="text-xs font-medium mt-1">{t('nav.settings')}</div>
                                     </button>
                                 </div>
                             </div>

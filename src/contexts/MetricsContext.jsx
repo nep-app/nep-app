@@ -20,6 +20,40 @@ export const MetricsProvider = ({ children }) => {
   // Use analysis hook for core analytics
   const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals);
 
+  // OTIMIZAÇÃO: Criar índices por data para acesso O(1) em vez de O(n)
+  const cyclesByDate = useMemo(() => {
+    const index = {};
+    cycles.forEach(c => {
+      const dateKey = getDateKeyFromItem(c);
+      if (!index[dateKey]) {
+        index[dateKey] = c;
+      }
+    });
+    return index;
+  }, [cycles]);
+
+  const dailyLogsByDate = useMemo(() => {
+    const index = {};
+    dailyLogs.forEach(log => {
+      const dateKey = log.date || getDateKeyFromItem(log);
+      if (!index[dateKey]) {
+        index[dateKey] = log;
+      }
+    });
+    return index;
+  }, [dailyLogs]);
+
+  const wellbeingByDate = useMemo(() => {
+    const index = {};
+    wellbeingLogs.forEach(w => {
+      const dateKey = getDateKeyFromItem(w);
+      if (!index[dateKey]) {
+        index[dateKey] = w;
+      }
+    });
+    return index;
+  }, [wellbeingLogs]);
+
   // ===== CONSUMPTION METRICS =====
 
   // Time since last consumption
@@ -45,12 +79,9 @@ export const MetricsProvider = ({ children }) => {
     const mgValues = [];
 
     last7Dates.forEach(date => {
-      // Buscar primeiro nos cycles (novo método)
-      const cycle = cycles.find(c => {
-        const cycleDate = getDateKeyFromItem(c);
-        return cycleDate === date && c.mg !== undefined && c.mg !== '';
-      });
-      if (cycle) {
+      // Buscar primeiro nos cycles (novo método) - OTIMIZADO com índice
+      const cycle = cyclesByDate[date];
+      if (cycle && cycle.mg !== undefined && cycle.mg !== '') {
         const mgValue = typeof cycle.mg === 'number' ? cycle.mg : parseFloat(cycle.mg);
         if (!isNaN(mgValue) && mgValue > 0) {
           mgValues.push(mgValue);
@@ -58,9 +89,9 @@ export const MetricsProvider = ({ children }) => {
         }
       }
 
-      // Fallback: buscar nos dailyLogs (compatibilidade)
-      const dailyLog = dailyLogs.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-      if (dailyLog) {
+      // Fallback: buscar nos dailyLogs (compatibilidade) - OTIMIZADO com índice
+      const dailyLog = dailyLogsByDate[date];
+      if (dailyLog && dailyLog.mg !== undefined && !isNaN(parseFloat(dailyLog.mg))) {
         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
         if (!isNaN(mgValue) && mgValue > 0) {
           mgValues.push(mgValue);
@@ -71,7 +102,7 @@ export const MetricsProvider = ({ children }) => {
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [consumptions, cycles, dailyLogs]);
+  }, [consumptions, cyclesByDate, dailyLogsByDate]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
@@ -159,12 +190,9 @@ export const MetricsProvider = ({ children }) => {
 
         const sleepValues = [];
         last7Dates.forEach(date => {
-          // Primeiro tenta buscar em cycles
-          const cycle = cycles.find(c => {
-            const cycleDate = getDateKeyFromItem(c);
-            return cycleDate === date && c.sleep !== undefined && c.sleep !== '';
-          });
-          if (cycle) {
+          // Primeiro tenta buscar em cycles - OTIMIZADO com índice
+          const cycle = cyclesByDate[date];
+          if (cycle && cycle.sleep !== undefined && cycle.sleep !== '') {
             const sleepValue = typeof cycle.sleep === 'number' ? cycle.sleep : parseFloat(cycle.sleep);
             if (!isNaN(sleepValue) && sleepValue > 0) {
               sleepValues.push(sleepValue);
@@ -172,12 +200,9 @@ export const MetricsProvider = ({ children }) => {
             }
           }
 
-          // Fallback: buscar em wellbeingLogs
-          const wellbeing = wellbeingLogs.find(w => {
-            const wDate = getDateKeyFromItem(w);
-            return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
-          });
-          if (wellbeing) {
+          // Fallback: buscar em wellbeingLogs - OTIMIZADO com índice
+          const wellbeing = wellbeingByDate[date];
+          if (wellbeing && wellbeing.sleep !== undefined && !isNaN(parseFloat(wellbeing.sleep))) {
             const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
             if (!isNaN(sleepValue) && sleepValue > 0) {
               sleepValues.push(sleepValue);
@@ -214,7 +239,7 @@ export const MetricsProvider = ({ children }) => {
 
       return 0;
     };
-  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, cycles, wellbeingLogs]);
+  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, cycles, cyclesByDate, wellbeingByDate]);
 
   const value = {
     // From useAnalysis hook

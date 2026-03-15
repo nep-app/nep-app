@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
-const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }) => {
+const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
   const [selectedDate, setSelectedDate] = useState(null); // Data selecionada
 
   // Encontra todas as datas únicas com bem-estar registado
@@ -110,8 +110,8 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
     if (active && payload && payload.length) {
       const data = payload[0]?.payload;
       return (
-        <div className={`p-4 rounded-lg shadow-xl border-2 ${darkMode ? 'bg-gray-900 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}>
-          <p className="font-bold mb-3 text-base pb-2 border-b" style={{ borderColor: darkMode ? '#444' : '#ddd' }}>
+        <div className="p-4 rounded-lg shadow-xl border-2 bg-gray-900 text-white border-gray-600">
+          <p className="font-bold mb-3 text-base pb-2 border-b" style={{ borderColor: '#444' }}>
             🕐 {data?.time}
           </p>
           <div className="space-y-2 mt-2">
@@ -130,7 +130,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
             ))}
           </div>
           {data?.hasConsumption && (
-            <div className="mt-3 pt-2 border-t" style={{ borderColor: darkMode ? '#444' : '#ddd' }}>
+            <div className="mt-3 pt-2 border-t" style={{ borderColor: '#444' }}>
               <p className="text-red-500 font-bold text-sm flex items-center gap-2">
                 💊 <span className="text-base">{data.consumptionCount}</span> consumo{data.consumptionCount !== 1 ? 's' : ''}
               </p>
@@ -144,7 +144,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
 
   if (availableDates.length === 0 || chartData.length === 0) {
     return (
-      <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+      <div className="p-4 rounded-lg bg-gray-700 text-gray-300">
         <p className="text-sm">Sem dados de bem-estar registados</p>
       </div>
     );
@@ -253,10 +253,10 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
   }, [chartData]);
 
   return (
-    <div className={`rounded-lg p-3 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+    <div className="rounded-lg p-3 border bg-gray-700/50 border-gray-600">
       {/* Header compacto */}
       <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
-        <div className={'text-xs font-medium ' + (darkMode ? 'text-gray-400' : 'text-gray-600')}>
+        <div className="text-xs font-medium text-gray-400">
           📈 Impacto do Consumo no Humor/Energia
         </div>
       </div>
@@ -264,9 +264,9 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {/* Análise */}
       {analysis && (
         <div className={`text-xs p-2 rounded-lg mb-2 ${
-          analysis.type === 'negative' ? (darkMode ? 'bg-red-900/20 text-red-400 border border-red-800' : 'bg-red-50 text-red-700 border border-red-200') :
-          analysis.type === 'positive' ? (darkMode ? 'bg-green-900/20 text-green-400 border border-green-800' : 'bg-green-50 text-green-700 border border-green-200') :
-          (darkMode ? 'bg-gray-600/20 text-gray-300 border border-gray-600' : 'bg-gray-100 text-gray-600 border border-gray-300')
+          analysis.type === 'negative' ? 'bg-red-900/20 text-red-400 border border-red-800' :
+          analysis.type === 'positive' ? 'bg-green-900/20 text-green-400 border border-green-800' :
+          'bg-gray-600/20 text-gray-300 border border-gray-600'
         }`}>
           <span className="font-medium">💡 Análise:</span> {analysis.text}
         </div>
@@ -275,22 +275,22 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
       {/* SCATTER CHART */}
       <div className="w-full">
         <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, bottom: 5, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#444' : '#ddd'} />
+            <LineChart data={chartData} margin={{ top: 20, right: 5, bottom: 5, left: -5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#444" />
             <XAxis
               type="number"
               dataKey="minutesSinceMidnight"
               domain={[0, 1440]}
               ticks={[0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380]}
               tickFormatter={(minutes) => minutesToTimeStr(minutes)}
-              tick={{ fontSize: 11, fill: darkMode ? '#999' : '#666' }}
+              tick={{ fontSize: 11, fill: '#999' }}
               angle={-45}
               height={60}
             />
             <YAxis
               domain={[0, 10]}
               ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-              tick={{ fontSize: 14, fill: darkMode ? '#ccc' : '#444', fontWeight: 600 }}
+              tick={{ fontSize: 14, fill: '#ccc', fontWeight: 600 }}
               width={35}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -303,7 +303,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, darkMode, selectedCycle }
               iconType="line"
               formatter={(value, entry) => (
                 <span style={{
-                  color: darkMode ? '#ddd' : '#333',
+                  color: '#ddd',
                   fontSize: '14px',
                   fontWeight: 600,
                   marginLeft: '8px'

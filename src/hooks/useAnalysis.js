@@ -1,7 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { getUserStats } from '../utils/userStats';
 
 export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
+  // Carregar stats pré-calculadas (para mostrar streak LOGO no boot)
+  const [cachedStats, setCachedStats] = useState(null);
+
+  useEffect(() => {
+    // Carregar stats ao montar
+    getUserStats().then(stats => {
+      console.log('[useAnalysis] 📊 Stats carregadas do cache:', stats);
+      setCachedStats(stats);
+    });
+  }, []);
   // Helper: Get last 7 days dates
   const getLast7Days = useMemo(() => {
     const days = [];
@@ -176,10 +187,22 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     };
   }, [wellbeingLogs, consumptions]);
 
-  // Streak calculation
+  // Streak calculation (usa cachedStats durante FASE 1 - boot rápido!)
   const streaks = useMemo(() => {
-    if (consumptions.length === 0 && wellbeingLogs.length === 0) return { current: 0, max: 0 };
+    // PRIORIDADE 1: Se temos cachedStats, usar SEMPRE (são calculados com TODOS os dados)
+    // Isto garante streak correto mesmo durante FASE 1 (7 dias incompletos)
+    if (cachedStats?.streak !== undefined && cachedStats.streak > 0) {
+      console.log('[useAnalysis] ⚡ Usando streak do cache (completo):', cachedStats.streak);
+      return { current: cachedStats.streak, max: cachedStats.streak };
+    }
 
+    // PRIORIDADE 2: Calcular dos dados desencriptados (FASE 2 ou se cache vazio)
+    if (consumptions.length === 0 && wellbeingLogs.length === 0) {
+      console.log('[useAnalysis] ℹ️ Sem dados para calcular streak');
+      return { current: 0, max: 0 };
+    }
+
+    console.log('[useAnalysis] 🔢 Calculando streak dos dados desencriptados...');
     const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
     let streak = 1;
     let maxStreak = 1;
@@ -198,7 +221,7 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     }
 
     return { current: streak, max: maxStreak };
-  }, [consumptions, wellbeingLogs]);
+  }, [consumptions, wellbeingLogs, cachedStats]);
 
   // Goal progress calculation
   const getGoalProgress = (goal) => {

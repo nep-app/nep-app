@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { safeLocalStorage } from '../utils/storage';
 
 const UIContext = createContext();
@@ -12,10 +12,8 @@ export const useUI = () => {
 };
 
 export const UIProvider = ({ children }) => {
-  // Theme
-  const [darkMode, setDarkMode] = useState(() => {
-    return safeLocalStorage.get('darkMode', false);
-  });
+  // Theme - SEMPRE dark mode (não há light mode nesta app)
+  const darkMode = true;
 
   // Main navigation
   const [selectedTab, setSelectedTab] = useState('dashboard');
@@ -25,6 +23,7 @@ export const UIProvider = ({ children }) => {
   const [showDailyLogModal, setShowDailyLogModal] = useState(false);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [showWellbeingModal, setShowWellbeingModal] = useState(false);
+  const [showEmotionsModal, setShowEmotionsModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
@@ -45,28 +44,24 @@ export const UIProvider = ({ children }) => {
   // Education modal content
   const [educationContent, setEducationContent] = useState({ title: '', content: '' });
 
-  // Persist dark mode to localStorage
+  // Garantir dark mode sempre ativo
   useEffect(() => {
-    safeLocalStorage.set('darkMode', darkMode);
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Helper to open education modal
-  const openEducationModal = (title, content) => {
+  const openEducationModal = useCallback((title, content) => {
     setEducationContent({ title, content });
     setShowEducationModal(true);
-  };
+  }, []);
 
   // Helper to close all modals
-  const closeAllModals = () => {
+  const closeAllModals = useCallback(() => {
     setShowModal(false);
     setShowDailyLogModal(false);
     setShowReflectionModal(false);
     setShowWellbeingModal(false);
+    setShowEmotionsModal(false);
     setShowCycleModal(false);
     setShowGoalModal(false);
     setShowEditConsumptionModal(false);
@@ -76,12 +71,11 @@ export const UIProvider = ({ children }) => {
     setEditingGoal(null);
     setEditingCycle(null);
     setEditingConsumption(null);
-  };
+  }, []);
 
-  const value = {
-    // Theme
+  const value = useMemo(() => ({
+    // Theme (sempre dark mode)
     darkMode,
-    setDarkMode,
 
     // Navigation
     selectedTab,
@@ -96,6 +90,8 @@ export const UIProvider = ({ children }) => {
     setShowReflectionModal,
     showWellbeingModal,
     setShowWellbeingModal,
+    showEmotionsModal,
+    setShowEmotionsModal,
     showCycleModal,
     setShowCycleModal,
     showGoalModal,
@@ -132,7 +128,15 @@ export const UIProvider = ({ children }) => {
 
     // Helpers
     closeAllModals,
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    selectedTab, showModal, showDailyLogModal, showReflectionModal,
+    showWellbeingModal, showEmotionsModal, showCycleModal, showGoalModal,
+    showEditConsumptionModal, showCopingModal, showEducationModal,
+    showThoughtsModal, editingGoal, editingCycle, editingConsumption,
+    selectedCycle, analysisWellbeing, analysisConsumptions, educationContent,
+    openEducationModal, closeAllModals,
+  ]);
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
 };

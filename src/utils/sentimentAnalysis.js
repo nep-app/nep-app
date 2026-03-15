@@ -1,10 +1,40 @@
 // ==========================================
-// CÓDIGO DE SENTIMENT ANALYSIS V2.0
+// CÓDIGO DE SENTIMENT ANALYSIS V3.0
 // ==========================================
 
-// Versão V2.0 - com normalização de acentos e tratamento inteligente de palavrões
+// Versão V3.0 - com emojis, frases coloquiais PT-PT, "tou", e deteção de contraste
 function _calculateRawSentiment(text) {
   const normalize = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  // Extrair e pontuar emojis
+  function extractEmojis(txt) {
+    const emojiMap = {
+      // Muito positivos
+      '😊': 2, '😃': 2, '😄': 2, '😁': 2, '🎉': 2.5, '💪': 2.5, '✨': 2, '🌟': 2, '❤️': 2.5, '💕': 2, '🥰': 2.5, '😍': 2.5,
+      '👍': 1.5, '✅': 1.5, '🙌': 2, '🔥': 2, '💯': 2, '👏': 2,
+      // Ligeiramente positivos
+      '🙂': 1, '😌': 1, '😇': 1.5, '🤗': 1.5,
+      // Neutros
+      '😐': 0, '😶': 0, '🤔': 0,
+      // Ligeiramente negativos
+      '😕': -1, '🤷': -0.5, '😬': -1, '🥴': -1.5,
+      // Negativos
+      '😢': -2, '😭': -2.5, '😞': -2, '😔': -2, '😟': -1.5, '😣': -2, '😖': -2, '😫': -2, '😩': -2.5,
+      '😤': -2, '😠': -2.5, '😡': -3, '🤬': -3, '😰': -2.5, '😨': -2, '😱': -2.5, '😓': -2, '😥': -2,
+      '🤢': -2, '🤮': -2.5, '💔': -2.5, '😵': -2, '🥺': -1.5
+    };
+
+    let emojiScore = 0;
+    let emojiCount = 0;
+    for (const [emoji, score] of Object.entries(emojiMap)) {
+      const count = (txt.match(new RegExp(emoji, 'g')) || []).length;
+      if (count > 0) {
+        emojiScore += score * count;
+        emojiCount += count;
+      }
+    }
+    return { emojiScore, emojiCount };
+  }
 
   function tokenize(t) {
     if (!t) return [];
@@ -14,35 +44,45 @@ function _calculateRawSentiment(text) {
 
   const POSITIVE_WORDS_RAW = {
     'excelente': 3, 'otimo': 3, 'fantastico': 3, 'incrivel': 3, 'maravilhoso': 3, 'perfeito': 3, 'espetacular': 3, 'magnifico': 3,
-    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3, 'demais': 3, 'brilhante': 3, 'impecavel': 3,
+    'brutal': 3, 'lindo': 3, 'amei': 3, 'adoro': 3, 'adorei': 3, 'demais': 3, 'brilhante': 3, 'impecavel': 3, 'amazing': 3,
     'bom': 2, 'boa': 2, 'feliz': 2, 'alegre': 2, 'contente': 2, 'satisfeito': 2, 'satisfeita': 2, 'melhor': 2, 'positivo': 2, 'positiva': 2,
     'confiante': 2, 'motivado': 2, 'motivada': 2, 'orgulhoso': 2, 'orgulhosa': 2, 'grato': 2, 'grata': 2, 'fixe': 2, 'bacano': 2, 'top': 2, 'nice': 2, 'capaz': 2,
     'giro': 2, 'bestial': 2, 'calmo': 2, 'calma': 2, 'tranquilo': 2, 'tranquila': 2, 'relaxado': 2, 'relaxada': 2,
     'focado': 2, 'focada': 2, 'produtivo': 2, 'produtiva': 2, 'equilibrado': 2, 'equilibrada': 2, 'energico': 2, 'energica': 2,
-    'bem': 1, 'ok': 1, 'okay': 1, 'razoavel': 1, 'aceitavel': 1, 'normal': 1, 'esperancoso': 1, 'otimista': 1, 'consegui': 1, 'conseguir': 1, 'melhorar': 1,
-    'progresso': 1, 'sobrevivi': 1, 'safe': 1, 'beca': 1, 'finalmente': 1, 'melhorzinho': 1, 'decente': 1, 'estavel': 1, 'vontade': 2
+    'forte': 2, 'ativo': 2, 'ativa': 2, 'descansado': 2, 'descansada': 2, 'confortavel': 2, 'agradavel': 2, 'leve': 2, 'aliviado': 2, 'aliviada': 2,
+    'bem': 1.5, 'ok': 1.5, 'okay': 1.5, 'razoavel': 1.5, 'aceitavel': 1.5, 'normal': 1, 'esperancoso': 2, 'otimista': 2, 'consegui': 1.5, 'conseguir': 1.5, 'melhorar': 1.5,
+    'progresso': 1.5, 'sobrevivi': 1.5, 'safe': 1.5, 'beca': 1, 'finalmente': 1.5, 'melhorzinho': 1.5, 'decente': 1.5, 'estavel': 1.5, 'vontade': 2,
+    'sorte': 1.5, 'legal': 1.5, 'gostei': 2, 'gostar': 1.5, 'gosto': 1.5, 'divertido': 2, 'divertida': 2, 'interessante': 1.5,
+    'limpo': 1.5, 'limpa': 1.5, 'saudavel': 2, 'controlado': 1.5, 'controlada': 1.5, 'lucido': 2, 'lucida': 2, 'claro': 1.5, 'clara': 1.5,
+    'correu': 1.5, 'valeu': 1.5, 'pena': 1.5, 'aguentei': 2, 'consegues': 1.5
   };
 
   const NEGATIVE_WORDS_RAW = {
     'estupida': 3, 'estupido': 3, 'burra': 3, 'idiota': 3, 'imbecil': 3, 'atrasada': 3, 'atrasado': 3, 'retardada': 3, 'morrer': 3, 'morte': 3,
-    'horrivel': 3, 'pessimo': 3, 'terrivel': 3,
-    'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
-    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2,
-    'dificil': 2, 'complicado': 2, 'pior': 2, 'negativo': 2, 'raiva': 2, 'fodido': 2, 'fodida': 2, 'lixado': 2, 'lixada': 2,
+    'horrivel': 3, 'pessimo': 3, 'terrivel': 3, 'miseravel': 3, 'desgraçado': 3, 'desgraçada': 3,
+    'mal': 2, 'triste': 2, 'ansioso': 2, 'ansiosa': 2, 'preocupado': 2, 'preocupada': 2, 'cansado': 2, 'cansada': 2, 'frustrado': 2, 'frustrada': 2,
+    'stressado': 2, 'stressada': 2, 'estressado': 2, 'estressada': 2, 'inseguro': 2, 'insegura': 2, 'sozinho': 2, 'sozinha': 2, 'vazio': 2, 'vazia': 2,
+    'dificil': 2, 'complicado': 2, 'complicada': 2, 'pior': 2, 'negativo': 2, 'negativa': 2, 'raiva': 2, 'fodido': 2, 'fodida': 2, 'lixado': 2, 'lixada': 2,
     'doi': 2, 'dor': 2, 'doer': 2, 'azia': 2, 'enjoo': 2, 'vomitar': 2, 'doente': 2, 'arrependido': 2, 'arrependida': 2, 'mania': 2,
     'nervoso': 2, 'nervosa': 2, 'irritado': 2, 'irritada': 2, 'zangado': 2, 'zangada': 2, 'infeliz': 2,
     'deprimido': 2, 'deprimida': 2, 'esgotado': 2, 'esgotada': 2, 'exausto': 2, 'exausta': 2, 'fraco': 2, 'fraca': 2,
-    'cansaco': 1, 'chato': 1, 'chata': 1, 'aborrecido': 1, 'sono': 1, 'confuso': 1, 'confusa': 1, 'incerto': 1, 'duvida': 1, 'problema': 1,
-    'meh': 1, 'nhe': 1, 'down': 1, 'estranha': 1, 'estranho': 1, 'medo': 2, 'desconfortavel': 1,
-    'desconcentrado': 1, 'desconcentrada': 1, 'distraido': 1, 'distraida': 1, 'desanimado': 1, 'desanimada': 1, 'saudades': 1
+    'pesado': 2, 'pesada': 2, 'lento': 1.5, 'lenta': 1.5, 'nausea': 2, 'nauseado': 2, 'tremores': 2, 'taquicardia': 2,
+    'cansaco': 1.5, 'chato': 1.5, 'chata': 1.5, 'aborrecido': 1.5, 'aborrecida': 1.5, 'sono': 1.5, 'confuso': 1.5, 'confusa': 1.5, 'incerto': 1.5, 'incerta': 1.5,
+    'duvida': 1.5, 'problema': 1.5, 'falhar': 1.5, 'falha': 1.5, 'falhei': 2, 'perdi': 1.5, 'perde': 1.5, 'perdido': 1.5, 'perdida': 1.5,
+    'meh': 1.5, 'nhe': 1, 'down': 1.5, 'estranha': 1.5, 'estranho': 1.5, 'medo': 2, 'desconfortavel': 1.5, 'insuportavel': 2,
+    'desconcentrado': 1.5, 'desconcentrada': 1.5, 'distraido': 1.5, 'distraida': 1.5, 'desanimado': 1.5, 'desanimada': 1.5, 'saudades': 1.5,
+    'culpa': 2, 'culpado': 2, 'culpada': 2, 'vergonha': 2.5, 'envergonhado': 2, 'envergonhada': 2, 'panico': 2,
+    'craving': 2, 'ressaca': 2, 'sintomas': 1.5, 'abstinencia': 2, 'withdrawal': 2, 'dependencia': 1.5,
+    'entupidos': 1.5, 'entupido': 1.5
   };
 
   const SWEAR_WORDS = new Set(['merda', 'caralho', 'crl', 'fdss', 'fds', 'fodasse', 'foda-se', 'porra']);
   const NEGATIONS_RAW = ['nao', 'nunca', 'nem', 'jamais', 'nenhum', 'nenhuma', 'sem', 'tampouco', 'sequer', 'nada', 'naosei'];
-  const INTENSIFIERS_RAW = { 'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8, 'incrivelmente': 1.8, 'demasiado': 1.5, 'realmente': 1.3, 'profundamente': 1.5, 'completamente': 1.4, 'tao': 1.3, 'bue': 1.5, 'mega': 1.5, 'ganda': 1.5, 'tanto': 1.3, 'cheia': 1.3, 'cheio': 1.3, 'sempre': 1.4 };
-  const REDUCERS_RAW = { 'pouco': 0.5, 'meio': 0.6, 'maisoumenos': 0.6, 'ligeiramente': 0.5, 'raramente': 0.4, 'assim': 0.8, 'lol': 0.5 };
-  const SELF_EVAL_VERBS = new Set(['sou', 'estou', 'to', 'sinto', 'ta', 'estava']);
+  const INTENSIFIERS_RAW = { 'muito': 1.5, 'bastante': 1.4, 'super': 1.6, 'extremamente': 1.8, 'incrivelmente': 1.8, 'demasiado': 1.5, 'realmente': 1.3, 'profundamente': 1.5, 'completamente': 1.4, 'tao': 1.3, 'bue': 1.5, 'mega': 1.6, 'ganda': 1.5, 'tanto': 1.3, 'cheia': 1.4, 'cheio': 1.4, 'sempre': 1.4, 'mais': 1.3 };
+  const REDUCERS_RAW = { 'pouco': 0.5, 'meio': 0.6, 'maisoumenos': 0.6, 'ligeiramente': 0.5, 'raramente': 0.4, 'assim': 0.8, 'lol': 0.5, 'ate': 0.8 };
+  const SELF_EVAL_VERBS = new Set(['sou', 'estou', 'tou', 'to', 'sinto', 'ta', 'estava', 'fico', 'fiquei', 'senti']);
   const NEGATIVE_EXPRESSIONS = new Set(['que', 'uma', 'um', 'este', 'esta', 'isto', 'isso']);
+  const RESIGNATION_WORDS = new Set(['enfim', 'pronto', 'ok', 'whatever']);
 
   const POSITIVE_WORDS = {}, NEGATIVE_WORDS = {}, INTENSIFIERS = {}, REDUCERS = {};
   Object.entries(POSITIVE_WORDS_RAW).forEach(([k, v]) => POSITIVE_WORDS[normalize(k)] = v);
@@ -84,15 +124,112 @@ function _calculateRawSentiment(text) {
     return { score: 0, magnitude: 0, classification: 'neutral', positiveCount: 0, negativeCount: 0, neutralCount: 0, details: [] };
   }
 
+  // Emojis removidos - utilizador não usa emojis nas notas de texto
+  // const emojiData = extractEmojis(text);
+
   const words = tokenize(text);
   const details = [];
   let totalScore = 0, positiveCount = 0, negativeCount = 0, neutralCount = 0;
 
+  // Score dos emojis desativado
+  // if (emojiData.emojiCount > 0) {
+  //   totalScore += emojiData.emojiScore;
+  //   if (emojiData.emojiScore > 0) positiveCount++;
+  //   else if (emojiData.emojiScore < 0) negativeCount++;
+  //   details.push({ word: `[${emojiData.emojiCount} emojis]`, score: emojiData.emojiScore, context: 'emoji analysis' });
+  // }
+
   for (let i = 0; i < words.length; i++) {
+    // Frases positivas
     if (words[i] === 'consegui' && words[i+1] === 'nao' && words[i+2] === 'conseguir') {
       totalScore += 1.5; positiveCount++;
       details.push({ word: 'consegui nao conseguir', score: 1.5, context: words.slice(Math.max(0, i-3), i+3).join(' ') });
       i += 2; continue;
+    }
+    if (words[i] === 'correu' && words[i+1] === 'bem') {
+      totalScore += 2; positiveCount++;
+      details.push({ word: 'correu bem', score: 2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'valeu' && words[i+1] === 'a' && words[i+2] === 'pena') {
+      totalScore += 2; positiveCount++;
+      details.push({ word: 'valeu a pena', score: 2, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
+      i += 2; continue;
+    }
+    if ((words[i] === 'tou' || words[i] === 'estou' || words[i] === 'to') && words[i+1] === 'fixe') {
+      totalScore += 2.5; positiveCount++;
+      details.push({ word: 'tou fixe', score: 2.5, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if ((words[i] === 'tou' || words[i] === 'estou') && words[i+1] === 'bem') {
+      totalScore += 2; positiveCount++;
+      details.push({ word: 'tou bem', score: 2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'tendo' && words[i+1] === 'em' && words[i+2] === 'conta') {
+      // Contexto de superação - ligeiramente positivo
+      totalScore += 1; positiveCount++;
+      details.push({ word: 'tendo em conta', score: 1, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
+      i += 2; continue;
+    }
+
+    // Frases negativas comuns
+    if ((words[i] === 'nao' && words[i+1] === 'consegui') || (words[i] === 'nao' && words[i+1] === 'conseguir')) {
+      totalScore += -2; negativeCount++;
+      details.push({ word: 'nao consegui', score: -2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'nao' && (words[i+1] === 'deu' || words[i+1] === 'da')) {
+      totalScore += -1.5; negativeCount++;
+      details.push({ word: 'nao deu', score: -1.5, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'falta' && (words[i+1] === 'me' || words[i+1] === 'de')) {
+      totalScore += -1.5; negativeCount++;
+      details.push({ word: 'falta me', score: -1.5, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if ((words[i] === 'ta' || words[i] === 'tá') && words[i+1] === 'dificil') {
+      totalScore += -2; negativeCount++;
+      details.push({ word: 'ta dificil', score: -2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'correu' && words[i+1] === 'mal') {
+      totalScore += -2; negativeCount++;
+      details.push({ word: 'correu mal', score: -2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if ((words[i] === 'nao' || words[i] === 'n') && (words[i+1] === 'tou' || words[i+1] === 'to' || words[i+1] === 'estou') && words[i+2] === 'fixe') {
+      totalScore += -2.5; negativeCount++;
+      details.push({ word: 'n tou fixe', score: -2.5, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
+      i += 2; continue;
+    }
+    if (words[i] === 'nao' && (words[i+1] === 'existe' || words[i+1] === 'fala')) {
+      totalScore += -2; negativeCount++;
+      details.push({ word: `nao ${words[i+1]}`, score: -2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if ((words[i] === 'tou' || words[i] === 'estou' || words[i] === 'to') && words[i+1] === 'meh') {
+      totalScore += -1.5; negativeCount++;
+      details.push({ word: 'tou meh', score: -1.5, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      i += 1; continue;
+    }
+    if (words[i] === 'cheia' && words[i+1] === 'de' && words[i+2] === 'sono') {
+      totalScore += -2; negativeCount++;
+      details.push({ word: 'cheia de sono', score: -2, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
+      i += 2; continue;
+    }
+
+    // Palavras de resignação/frustração
+    if (RESIGNATION_WORDS.has(words[i])) {
+      const prev = words[i-1] || '';
+      const next = words[i+1] || '';
+      // Se vem sozinho ou no fim = ligeiramente negativo
+      if (!prev || !next || next.length < 2) {
+        totalScore += -0.8; negativeCount++;
+        details.push({ word: words[i], score: -0.8, context: words.slice(Math.max(0, i-2), i+2).join(' ') });
+        continue;
+      }
     }
 
     if (isSwear(words[i])) {
@@ -106,8 +243,10 @@ function _calculateRawSentiment(text) {
         totalScore += val; negativeCount++;
         details.push({ word: words[i], score: val, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
       } else {
-        neutralCount++;
-        details.push({ word: words[i], score: 0, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
+        // Palavrões soltos/frustração = ligeiramente negativo
+        const val = -1;
+        totalScore += val; negativeCount++;
+        details.push({ word: words[i], score: val, context: words.slice(Math.max(0, i-3), i+1).join(' ') });
       }
       continue;
     }
@@ -124,12 +263,17 @@ function _calculateRawSentiment(text) {
 
   const magnitude = details.reduce((sum, d) => sum + Math.abs(d.score), 0);
   let classification = 'neutral';
-  if (totalScore > 1.5) classification = 'very_positive';
-  else if (totalScore > 0.3) classification = 'positive';
-  else if (totalScore < -1.5) classification = 'very_negative';
-  else if (totalScore < -0.3) classification = 'negative';
+  if (totalScore > 1.0) classification = 'very_positive';
+  else if (totalScore > 0.15) classification = 'positive';
+  else if (totalScore < -1.0) classification = 'very_negative';
+  else if (totalScore < -0.15) classification = 'negative';
 
   return { score: Number(totalScore.toFixed(3)), magnitude: Number(magnitude.toFixed(3)), classification, positiveCount, negativeCount, neutralCount, details };
+}
+
+// Exportar análise individual para debug
+export function analyzeNote(text) {
+  return _calculateRawSentiment(text);
 }
 
 // Esta é a função principal que o teu código já chama!
@@ -160,10 +304,10 @@ export function analyzeMultipleNotes(notes) {
   };
 
   let overall = 'neutral';
-  if (avgScore > 1.5) overall = 'very_positive';
-  else if (avgScore > 0.3) overall = 'positive';
-  else if (avgScore < -1.5) overall = 'very_negative';
-  else if (avgScore < -0.3) overall = 'negative';
+  if (avgScore > 1.0) overall = 'very_positive';
+  else if (avgScore > 0.15) overall = 'positive';
+  else if (avgScore < -1.0) overall = 'very_negative';
+  else if (avgScore < -0.15) overall = 'negative';
 
   let trend = 'stable';
   if (analyses.length >= 4) {
