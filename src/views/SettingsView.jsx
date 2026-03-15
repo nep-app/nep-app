@@ -157,7 +157,7 @@ export const SettingsView = ({
                                 : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
                         }
                     >
-                        🇬🇧 English
+                        ENG
                     </button>
                 </div>
             </div>

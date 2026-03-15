@@ -9,7 +9,9 @@
     "back": "Back",
     "optional": "optional",
     "notes": "Notes",
-    "notesOptional": "Notes (optional)"
+    "notesOptional": "Notes (optional)",
+    "day_one": "day",
+    "day_other": "days"
   },
   "auth": {
     "loading": "Loading...",
@@ -74,12 +76,17 @@
     "recentConsumptions": "Recent Logs",
     "showMore": "Show more ({{count}} remaining)",
     "syncSuccess": "✓ Synced! {{count}} records updated.",
-    "syncAlreadyDone": "✓ Everything is already in sync!"
+    "syncAlreadyDone": "✓ Everything is already in sync!",
+    "record": "Record",
+    "acrosticN": "avigate",
+    "acrosticE": "very",
+    "acrosticP": "roblem",
+    "motto": "Navigate Every Problem."
   },
   "alerts": {
-    "shortInterval": "Short interval! {{hours}}h",
+    "shortInterval": "Short break! {{hours}}h",
     "goodInterval": "Good interval! {{hours}}h",
-    "watchDose": "Watch yesterday's use! {{mg}}mg",
+    "watchDose": "Watch out yesterday's dosage! {{mg}}mg",
     "goodDose": "Good! Yesterday: {{mg}}mg",
     "goodSleep": "Great! {{hours}}h sleep",
     "excessiveSleep": "Too much sleep: {{hours}}h",
@@ -92,8 +99,8 @@
     "goodBedtime": "Good! Bedtime: {{time}}",
     "lateBedtime": "Late bedtime! {{time}}",
     "goodLastUse": "Good! Last use before midnight",
-    "lateLastUse": "Heads up! Last use after midnight",
-    "goodFrequency": "Good! Only {{count}} use(s) today",
+    "lateLastUse": "Heads up: last log after midnight",
+    "goodFrequency": "Way to go! Only {{count}} use(s) today",
     "highFrequency": "Heads up! {{count}} uses today"
   },
   "nav": {
@@ -207,6 +214,22 @@
       "lastBefore00": "✓ Last consumption of the cycle was before midnight (00h)",
       "submit": "Start New Cycle",
       "submitEdit": "Save Cycle"
+    },
+    "emotions": {
+      "title": "Emotions of the Day",
+      "dateLabel": "Date & Time",
+      "negativeLabel": "Difficult Emotions",
+      "positiveLabel": "Positive Emotions",
+      "otherLabel": "Other Emotions",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "How are you feeling today?"
+    },
+    "editConsumption": {
+      "title": "Edit Log",
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Add notes about this log..."
     },
     "goal": {
       "title": "Choose Goal",
@@ -408,6 +431,83 @@
       "Surf the urge: imagine it as a wave - rises, peaks (3-15min), falls. I don't have to act at the peak",
       "If I'm going to use: plan harm reduction (smaller dose, safe context, someone knows where I am, water/food ready)"
     ]
+  },
+  "patterns": {
+    "title": "Patterns",
+    "noData": "No data for this period",
+    "periods": {
+      "hoje": "📅 Today",
+      "semana": "📊 Week",
+      "mes": "📈 Month",
+      "tudo": "🌐 All"
+    },
+    "views": {
+      "dashboard": "📊 Dashboard",
+      "progress": "📈 Progress",
+      "temporal": "⏰ Temporal",
+      "estrutural": "📐 Structural"
+    },
+    "partOfDay": {
+      "manha": "Morning",
+      "tarde": "Afternoon",
+      "noite": "Evening",
+      "madrugada": "Late night"
+    },
+    "todayForecast": "Today's Forecast",
+    "risk": "Risk",
+    "identified": "Identified Patterns",
+    "doseDistribution": "Dose Distribution",
+    "moderateRisk": "Moderate risk. Keep an eye on your patterns.",
+    "patternInsight": "Pattern: {{percent}}% of uses occur in the {{part}}. Prepare strategies for that period. 🎯",
+    "day_one": "day",
+    "day_other": "days"
+  },
+  "history": {
+    "title": "History",
+    "filterAll": "📋 All",
+    "filterLogs": "💊 Logs",
+    "filterCycles": "🌙 Cycles",
+    "filterWellbeing": "💚 Wellbeing",
+    "filterDiary": "📝 Diary",
+    "noRecords": "No records for this period",
+    "showMore": "Show more ({{count}} remaining)",
+    "sectionReflections": "Daily Reflections",
+    "sectionThoughts": "Thoughts",
+    "sectionState": "Wellbeing",
+    "sectionCycles": "🌙 Cycles",
+    "invalidDate": "Invalid date",
+    "hideAnalysis": "▼ Hide analysis",
+    "showAnalysis": "▶ Show analysis",
+    "classification": "Classification:",
+    "detectedWords": "Detected words:",
+    "bedtime": "Bedtime:",
+    "sleepHours": "Sleep hours:",
+    "triggers": "Triggers:",
+    "dailyUse": "Daily use:"
+  },
+  "analyses": {
+    "title": "Analyses",
+    "period": "Analysis period",
+    "periods": {
+      "hoje": "Today",
+      "semana": "Week",
+      "mes": "Month",
+      "tudo": "All"
+    },
+    "tabs": {
+      "structural": "📊 Structural",
+      "correlations": "🔗 Correlations",
+      "reflection": "💬 General Reflection"
+    },
+    "generalReflection": "General Reflection",
+    "correlationTitle": "Logs → Wellbeing Correlation",
+    "hourlyDist": "⏰ Hourly Distribution",
+    "weeklyDist": "📅 Weekly Distribution",
+    "intervals": "⏱️ Intervals Between Uses",
+    "noIntervals": "No intervals (need ≥2 logs)",
+    "noData": "No data",
+    "noCorrelations": "Not enough data for correlations.",
+    "dayNames": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
   },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",

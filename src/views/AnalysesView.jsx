@@ -1,4 +1,5 @@
 import React, { useMemo, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
@@ -25,6 +26,7 @@ export function AnalysesView({
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { darkMode, currentCycle } = useUI();
     const metrics = useMetrics();
+    const { t } = useTranslation();
 
     // Prepare data for insights hook (memoized to prevent infinite loops in hook)
     const { analysisConsumptions, analysisWellbeing, analysisCycles, analysisReflections, analysisDailyLogs, analysisThoughts } = useMemo(() => {
@@ -58,7 +60,7 @@ export function AnalysesView({
         });
 
         // Weekly
-        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const days = t('analyses.dayNames', { returnObjects: true });
         const weekly = days.map(d => ({ name: d, count: 0 }));
         sortedData.forEach(c => {
             const d = new Date(c.timestamp).getDay();
@@ -127,12 +129,12 @@ export function AnalysesView({
 
     return (
         <div className="space-y-6">
-            <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>Análises</h2>
+            <h2 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.title')}</h2>
 
             {/* Temporal Filters */}
             <div className={themeClasses.container(darkMode) + ' rounded-xl p-4 border'}>
                 <div className="flex items-center justify-between mb-3">
-                    <div className={'text-sm font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>Período de análise</div>
+                    <div className={'text-sm font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.period')}</div>
                     <div className="flex gap-2">
                         <button onClick={() => setPatternsPeriodOffset(prev => prev + 1)} disabled={patternsPeriodOffset >= 100 || patternsPeriod === 'tudo'} className={(patternsPeriodOffset >= 100 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded transition' : 'p-1.5 rounded transition hover:bg-gray-700'}>
                             <Icons.ChevronLeft className="w-4 h-4" />
@@ -145,10 +147,10 @@ export function AnalysesView({
                 <div className="flex gap-2 overflow-x-auto pb-2">
                     {['hoje', 'semana', 'mes', 'tudo'].map(period => (
                         <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}>
-                            {period === 'hoje' && 'Hoje'}
-                            {period === 'semana' && 'Semana'}
-                            {period === 'mes' && 'Mês'}
-                            {period === 'tudo' && 'Tudo'}
+                            {period === 'hoje' && t('analyses.periods.hoje')}
+                            {period === 'semana' && t('analyses.periods.semana')}
+                            {period === 'mes' && t('analyses.periods.mes')}
+                            {period === 'tudo' && t('analyses.periods.tudo')}
                         </button>
                     ))}
                 </div>
@@ -171,9 +173,9 @@ export function AnalysesView({
                             onClick={() => setAnalysisSubView(subView)}
                             className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? (darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-500 text-white') : (darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'))}
                         >
-                            {subView === 'estrutural' && '📊 Estrutural'}
-                            {subView === 'correlacoes' && '🔗 Correlações'}
-                            {subView === 'coach' && '💬 Reflexão Geral'}
+                            {subView === 'estrutural' && t('analyses.tabs.structural')}
+                            {subView === 'correlacoes' && t('analyses.tabs.correlations')}
+                            {subView === 'coach' && t('analyses.tabs.reflection')}
                         </button>
                     ))}
                 </div>
@@ -186,7 +188,7 @@ export function AnalysesView({
                             <div className="flex items-center gap-3 mb-2">
                                 <span className="text-4xl">💬</span>
                                 <h3 className={'text-2xl font-bold ' + (themeClasses.textPrimaryAlt(darkMode))}>
-                                    Reflexão Geral
+                                    {t('analyses.generalReflection')}
                                 </h3>
                             </div>
                             <p className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
@@ -230,7 +232,7 @@ export function AnalysesView({
                                     ))
                                 ) : (
                                     <p className="text-center text-gray-500 py-4">
-                                        Ainda não há dados suficientes para gerar insights avançados neste período. Continue a registar!
+                                        {t('analyses.noData')}
                                     </p>
                                 )}
                             </div>
@@ -243,7 +245,7 @@ export function AnalysesView({
                     <div className="space-y-4">
                         {/* Distribuição Horária */}
                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏰ Distribuição Horária</h3>
+                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.hourlyDist')}</h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={hourlyData}>
@@ -265,7 +267,7 @@ export function AnalysesView({
 
                         {/* Distribuição Semanal */}
                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>📅 Distribuição Semanal</h3>
+                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.weeklyDist')}</h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={weeklyData}>
@@ -283,10 +285,10 @@ export function AnalysesView({
 
                         {/* Análise de Intervalos Simplificada */}
                         <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>⏱️ Intervalos Entre Consumos</h3>
+                            <h3 className={'font-semibold mb-4 ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.intervals')}</h3>
                             {intervals.length === 0 ? (
                                 <div className={'text-center py-4 text-sm ' + (themeClasses.textTertiaryAlt(darkMode))}>
-                                    Sem intervalos (necessário ≥2 consumos)
+                                    {t('analyses.noIntervals')}
                                 </div>
                             ) : (() => {
                                 const goodIntervals = intervals.filter(i => i.hours >= 2);
@@ -364,7 +366,7 @@ export function AnalysesView({
                 {/* CORRELAÇÕES */}
                 {analysisSubView === 'correlacoes' && (
                     <div className={themeClasses.container(darkMode) + ' rounded-xl p-6 border'}>
-                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>Correlação Consumos → Bem-estar</h3>
+                        <h3 className={'font-semibold mb-2 ' + (themeClasses.textPrimaryAlt(darkMode))}>{t('analyses.correlationTitle')}</h3>
                         {correlationData ? (
                             <div className="space-y-3">
                                 {correlationData.map((corr, i) => {
@@ -400,7 +402,7 @@ export function AnalysesView({
                                 })}
                             </div>
                         ) : (
-                            <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>Sem dados suficientes para correlações.</p>
+                            <p className={'text-sm ' + (themeClasses.textTertiary(darkMode))}>{t('analyses.noCorrelations')}</p>
                         )}
                     </div>
                 )}

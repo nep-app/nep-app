@@ -9,7 +9,9 @@
     "back": "Voltar",
     "optional": "opcional",
     "notes": "Notas",
-    "notesOptional": "Notas (opcional)"
+    "notesOptional": "Notas (opcional)",
+    "day_one": "dia",
+    "day_other": "dias"
   },
   "auth": {
     "loading": "Carregando...",
@@ -74,7 +76,12 @@
     "recentConsumptions": "Consumos Recentes",
     "showMore": "Ver mais ({{count}} restantes)",
     "syncSuccess": "✓ Sincronizado! {{count}} registos atualizados.",
-    "syncAlreadyDone": "✓ Já está tudo sincronizado!"
+    "syncAlreadyDone": "✓ Já está tudo sincronizado!",
+    "record": "Recorde",
+    "acrosticN": "otas de",
+    "acrosticE": "xperiências e",
+    "acrosticP": "adrões",
+    "motto": "Não Estás Perdida."
   },
   "alerts": {
     "shortInterval": "Intervalo curto! {{hours}}h",
@@ -207,6 +214,22 @@
       "lastBefore00": "✓ Último consumo do ciclo foi antes da meia-noite (00h)",
       "submit": "Iniciar Novo Ciclo",
       "submitEdit": "Guardar Ciclo"
+    },
+    "emotions": {
+      "title": "Emoções do Dia",
+      "dateLabel": "Data e Hora do Registo",
+      "negativeLabel": "Emoções Negativas",
+      "positiveLabel": "Emoções Positivas",
+      "otherLabel": "Outras Emoções",
+      "notesLabel": "Notas (opcional)",
+      "notesPlaceholder": "Como te sentes hoje?"
+    },
+    "editConsumption": {
+      "title": "Editar Consumo",
+      "dateLabel": "Data",
+      "timeLabel": "Hora",
+      "notesLabel": "Notas",
+      "notesPlaceholder": "Adiciona notas sobre este consumo..."
     },
     "goal": {
       "title": "Escolher Meta",
@@ -408,6 +431,83 @@
       "Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico",
       "Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)"
     ]
+  },
+  "patterns": {
+    "title": "Padrões",
+    "noData": "Sem dados para este período",
+    "periods": {
+      "hoje": "📅 Hoje",
+      "semana": "📊 Semana",
+      "mes": "📈 Mês",
+      "tudo": "🌐 Tudo"
+    },
+    "views": {
+      "dashboard": "📊 Dashboard",
+      "progress": "📈 Progresso",
+      "temporal": "⏰ Temporal",
+      "estrutural": "📐 Estrutural"
+    },
+    "partOfDay": {
+      "manha": "manhã",
+      "tarde": "tarde",
+      "noite": "noite",
+      "madrugada": "madrugada"
+    },
+    "todayForecast": "🔮 Previsão para Hoje",
+    "risk": "Risco",
+    "identified": "Padrões Identificados",
+    "doseDistribution": "Distribuição de Dosagens",
+    "moderateRisk": "💡 Risco moderado. Mantém atenção aos teus padrões e reforça autocuidado se necessário.",
+    "patternInsight": "Padrão identificado: {{percent}}% dos consumos ocorrem à {{part}}. Prepara estratégias para esse período. 🎯",
+    "day_one": "dia",
+    "day_other": "dias"
+  },
+  "history": {
+    "title": "Histórico",
+    "filterAll": "📋 Tudo",
+    "filterLogs": "💊 Consumos",
+    "filterCycles": "🌙 Ciclos",
+    "filterWellbeing": "💚 Estado",
+    "filterDiary": "📝 Diário",
+    "noRecords": "Sem registos neste período",
+    "showMore": "Ver mais ({{count}} restantes)",
+    "sectionReflections": "Reflexões diárias",
+    "sectionThoughts": "Pensamentos",
+    "sectionState": "Estado",
+    "sectionCycles": "🌙 Ciclos",
+    "invalidDate": "Data inválida",
+    "hideAnalysis": "▼ Ocultar análise",
+    "showAnalysis": "▶ Ver análise",
+    "classification": "Classificação:",
+    "detectedWords": "Palavras detectadas:",
+    "bedtime": "Hora de deitar:",
+    "sleepHours": "Horas de sono:",
+    "triggers": "Gatilhos:",
+    "dailyUse": "Consumo diário:"
+  },
+  "analyses": {
+    "title": "Análises",
+    "period": "Período de análise",
+    "periods": {
+      "hoje": "Hoje",
+      "semana": "Semana",
+      "mes": "Mês",
+      "tudo": "Tudo"
+    },
+    "tabs": {
+      "structural": "📊 Estrutural",
+      "correlations": "🔗 Correlações",
+      "reflection": "💬 Reflexão Geral"
+    },
+    "generalReflection": "Reflexão Geral",
+    "correlationTitle": "Consumos → Correlação Bem-estar",
+    "hourlyDist": "⏰ Distribuição Horária",
+    "weeklyDist": "📅 Distribuição Semanal",
+    "intervals": "⏱️ Intervalos Entre Consumos",
+    "noIntervals": "Sem intervalos (necessário ≥2 consumos)",
+    "noData": "Sem dados",
+    "noCorrelations": "Sem dados suficientes para correlações.",
+    "dayNames": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
   },
   "defaultStrategies": [
     "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",

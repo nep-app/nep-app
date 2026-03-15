@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -55,6 +56,7 @@ export function HistoryView({
 }) {
     const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const metrics = useMetrics();
+    const { t } = useTranslation();
 
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);
 
@@ -163,7 +165,7 @@ export function HistoryView({
 
     return (
                                 <div className="space-y-6">
-                                    <h2 className="text-2xl font-bold text-white">Histórico</h2>
+                                    <h2 className="text-2xl font-bold text-white">{t('history.title')}</h2>
 
                                     {/* Gaps Report - Preencher dados em falta */}
                                     {handleFillGap && <GapsReport onFillGap={handleFillGap} />}
@@ -198,11 +200,11 @@ export function HistoryView({
                                     {/* Topic Filters */}
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {[
-                                            { id: 'todos', label: '📋 Tudo' },
-                                            { id: 'consumos', label: '💊 Consumos' },
-                                            { id: 'ciclos', label: '🌙 Ciclos' },
-                                            { id: 'estado', label: '💚 Estado' },
-                                            { id: 'diario', label: '📝 Diário' }
+                                            { id: 'todos', label: t('history.filterAll') },
+                                            { id: 'consumos', label: t('history.filterLogs') },
+                                            { id: 'ciclos', label: t('history.filterCycles') },
+                                            { id: 'estado', label: t('history.filterWellbeing') },
+                                            { id: 'diario', label: t('history.filterDiary') }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {topic.label}
@@ -212,7 +214,7 @@ export function HistoryView({
 
                                     {!hasData ? (
                                         <div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">
-                                            Sem registos neste período
+                                            {t('history.noRecords')}
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -261,7 +263,7 @@ export function HistoryView({
                                                                                         💊 {(() => {
                                                                                             // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
                                                                                             const d = safeDate(log.date || log.timestamp);
-                                                                                            if (!d) return 'Data inválida';
+                                                                                            if (!d) return t('history.invalidDate');
                                                                                             const dateStr = d.toLocaleDateString('pt-PT');
                                                                                             return dateStr;
                                                                                         })()}
@@ -306,19 +308,19 @@ export function HistoryView({
                                                                             </div>
                                                                             {cycle.bedtime && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
-                                                                                    <span className="text-gray-400">Hora de deitar: </span>
+                                                                                    <span className="text-gray-400">{t('history.bedtime')} </span>
                                                                                     <span className="font-medium">{cycle.bedtime}</span>
                                                                                 </div>
                                                                             )}
                                                                             {cycle.sleep && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
-                                                                                    <span className="text-gray-400">Horas de sono: </span>
+                                                                                    <span className="text-gray-400">{t('history.sleepHours')} </span>
                                                                                     <span className="font-medium">{cycle.sleep}h</span>
                                                                                 </div>
                                                                             )}
                                                                             {cycle.triggers && cycle.triggers.length > 0 && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
-                                                                                    <span className="text-gray-400">Gatilhos: </span>
+                                                                                    <span className="text-gray-400">{t('history.triggers')} </span>
                                                                                     <span className="font-medium">{cycle.triggers.join(', ')}</span>
                                                                                 </div>
                                                                             )}
@@ -338,7 +340,7 @@ export function HistoryView({
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     💚 {(() => {
                                                                                         const d = safeDate(w.timestamp || w.date);
-                                                                                        if (!d) return 'Data inválida';
+                                                                                        if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
                                                                                         const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
@@ -419,7 +421,7 @@ export function HistoryView({
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(r.timestamp || r.date);
-                                                                                        if (!d) return 'Data inválida';
+                                                                                        if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
                                                                                         const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
@@ -432,19 +434,19 @@ export function HistoryView({
                                                                             {analysis && (
                                                                                 <>
                                                                                     <button onClick={() => toggleAnalysis(`reflection-${r.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-purple-800/50 text-purple-300 hover:bg-purple-800">
-                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                        {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
                                                                                         <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                             <div className="mb-2">
-                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                                 <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
                                                                                                     {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
                                                                                                 </span>
                                                                                             </div>
                                                                                             {analysis.details && analysis.details.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                                     <div className="space-y-1">
                                                                                                         {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
                                                                                                             <div key={i} className="text-gray-300">
@@ -473,7 +475,7 @@ export function HistoryView({
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(t.timestamp || t.date);
-                                                                                        if (!d) return 'Data inválida';
+                                                                                        if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
                                                                                         const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
@@ -485,19 +487,19 @@ export function HistoryView({
                                                                             {analysis && (
                                                                                 <>
                                                                                     <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
-                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                        {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
                                                                                         <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                             <div className="mb-2">
-                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                                 <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
                                                                                                     {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
                                                                                                 </span>
                                                                                             </div>
                                                                                             {analysis.details && analysis.details.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                                     <div className="space-y-1">
                                                                                                         {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
                                                                                                             <div key={i} className="text-gray-300">
@@ -528,7 +530,7 @@ export function HistoryView({
                                                                 onClick={() => setAllItemsToShow(prev => prev + 20)}
                                                                 className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2"
                                                             >
-                                                                Ver mais ({remaining} restantes)
+                                                                {t('history.showMore', { count: remaining })}
                                                             </button>
                                                         );
                                                     })()}
@@ -554,7 +556,7 @@ export function HistoryView({
                                                                                 <div className="text-xs text-gray-400">
                                                                                     {(() => {
                                                                                         const d = safeDate(r.timestamp || r.date);
-                                                                                        if (!d) return 'Data inválida';
+                                                                                        if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
                                                                                         const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
@@ -567,19 +569,19 @@ export function HistoryView({
                                                                             {analysis && (
                                                                                 <>
                                                                                     <button onClick={() => toggleAnalysis(`reflection-${r.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-purple-800/50 text-purple-300 hover:bg-purple-800">
-                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                        {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
                                                                                         <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                             <div className="mb-2">
-                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                                 <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
                                                                                                     {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
                                                                                                 </span>
                                                                                             </div>
                                                                                             {analysis.details && analysis.details.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                                     <div className="space-y-1">
                                                                                                         {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
                                                                                                             <div key={i} className="text-gray-300">
@@ -608,7 +610,7 @@ export function HistoryView({
                                                                                 <div className="text-xs text-gray-400">
                                                                                     {(() => {
                                                                                         const d = safeDate(t.timestamp || t.date);
-                                                                                        if (!d) return 'Data inválida';
+                                                                                        if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
                                                                                         const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
@@ -620,19 +622,19 @@ export function HistoryView({
                                                                             {analysis && (
                                                                                 <>
                                                                                     <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
-                                                                                        {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                        {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
                                                                                         <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                             <div className="mb-2">
-                                                                                                <span className="font-medium text-white">Classificação: </span>
+                                                                                                <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                                 <span className={analysis.classification.includes('positive') ? 'text-green-400' : analysis.classification.includes('negative') ? 'text-red-400' : 'text-gray-400'}>
                                                                                                     {getSentimentDescription(analysis.classification)} (score: {analysis.score.toFixed(2)})
                                                                                                 </span>
                                                                                             </div>
                                                                                             {analysis.details && analysis.details.length > 0 && (
                                                                                                 <div>
-                                                                                                    <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                                    <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                                     <div className="space-y-1">
                                                                                                         {analysis.details.filter(d => Math.abs(d.score) > 0.1).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 10).map((d, i) => (
                                                                                                             <div key={i} className="text-gray-300">
@@ -661,7 +663,7 @@ export function HistoryView({
                                             {/* Blocos individuais para tabs específicas e tab "todos" */}
                                             {historyTopic !== 'diario' && filteredReflections.length > 0 && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Brain className="w-4 h-4 text-purple-400" /> Reflexões diárias ({filteredReflections.length})</h3>
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Brain className="w-4 h-4 text-purple-400" /> {t('history.sectionReflections')} ({filteredReflections.length})</h3>
                                                     <div className="space-y-4">
                                                         {filteredReflections.slice(0, reflectionsToShow).map(r => {
                                                             const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
@@ -673,7 +675,7 @@ export function HistoryView({
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
                                                                                 const d = safeDate(r.timestamp || r.date);
-                                                                                if (!d) return 'Data inválida';
+                                                                                if (!d) return t('history.invalidDate');
                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
                                                                                 const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
@@ -690,13 +692,13 @@ export function HistoryView({
                                                                                 onClick={() => toggleAnalysis(`reflection-${r.id}`)}
                                                                                 className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-purple-800/50 text-purple-300 hover:bg-purple-800"
                                                                             >
-                                                                                {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                             </button>
 
                                                                             {isExpanded && (
                                                                                 <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                     <div className="mb-2">
-                                                                                        <span className="font-medium text-white">Classificação: </span>
+                                                                                        <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                         <span className={
                                                                                             analysis.classification.includes('positive') ? 'text-green-400' :
                                                                                             analysis.classification.includes('negative') ? 'text-red-400' :
@@ -708,7 +710,7 @@ export function HistoryView({
 
                                                                                     {analysis.details && analysis.details.length > 0 && (
                                                                                         <div>
-                                                                                            <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                            <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                             <div className="space-y-1">
                                                                                                 {analysis.details
                                                                                                     .filter(d => Math.abs(d.score) > 0.1)
@@ -734,7 +736,7 @@ export function HistoryView({
                                                         </div>
                                                         {filteredReflections.length > reflectionsToShow && (
                                                             <button onClick={() => setReflectionsToShow(prev => prev + 10)} className="text-purple-400 hover:text-purple-300 text-sm font-medium mt-3 w-full py-2">
-                                                                Ver mais ({filteredReflections.length - reflectionsToShow} restantes)
+                                                                {t('history.showMore', { count: filteredReflections.length - reflectionsToShow })}
                                                             </button>
                                                         )}
                                                     </div>
@@ -742,7 +744,7 @@ export function HistoryView({
 
                                                 {historyTopic !== 'diario' && filteredThoughts.length > 0 && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.BookOpen className="w-4 h-4 text-pink-400" /> Pensamentos ({filteredThoughts.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.BookOpen className="w-4 h-4 text-pink-400" /> {t('history.sectionThoughts')} ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
                                                             {filteredThoughts.slice(0, thoughtsToShow).map(t => {
                                                                 const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
@@ -754,7 +756,7 @@ export function HistoryView({
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
                                                                                 const d = safeDate(t.timestamp || t.date);
-                                                                                if (!d) return 'Data inválida';
+                                                                                if (!d) return t('history.invalidDate');
                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
                                                                                 const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
@@ -770,13 +772,13 @@ export function HistoryView({
                                                                                 onClick={() => toggleAnalysis(`thought-${t.id}`)}
                                                                                 className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800"
                                                                             >
-                                                                                {isExpanded ? '▼ Ocultar análise' : '▶ Ver análise'}
+                                                                                {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                             </button>
 
                                                                             {isExpanded && (
                                                                                 <div className="mt-2 p-3 rounded text-xs bg-gray-800/50 border border-gray-700">
                                                                                     <div className="mb-2">
-                                                                                        <span className="font-medium text-white">Classificação: </span>
+                                                                                        <span className="font-medium text-white">{t('history.classification')} </span>
                                                                                         <span className={
                                                                                             analysis.classification.includes('positive') ? 'text-green-400' :
                                                                                             analysis.classification.includes('negative') ? 'text-red-400' :
@@ -788,7 +790,7 @@ export function HistoryView({
 
                                                                                     {analysis.details && analysis.details.length > 0 && (
                                                                                         <div>
-                                                                                            <div className="font-medium mb-1 text-white">Palavras detectadas:</div>
+                                                                                            <div className="font-medium mb-1 text-white">{t('history.detectedWords')}</div>
                                                                                             <div className="space-y-1">
                                                                                                 {analysis.details
                                                                                                     .filter(d => Math.abs(d.score) > 0.1)
@@ -814,7 +816,7 @@ export function HistoryView({
                                                         </div>
                                                         {filteredThoughts.length > thoughtsToShow && (
                                                             <button onClick={() => setThoughtsToShow(prev => prev + 10)} className="text-pink-400 hover:text-pink-300 text-sm font-medium mt-3 w-full py-2">
-                                                                Ver mais ({filteredThoughts.length - thoughtsToShow} restantes)
+                                                                {t('history.showMore', { count: filteredThoughts.length - thoughtsToShow })}
                                                             </button>
                                                         )}
                                                     </div>
@@ -822,7 +824,7 @@ export function HistoryView({
 
                                                 {filteredWellbeing.length > 0 && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Heart className="w-4 h-4 text-blue-400" /> Estado ({filteredWellbeing.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Heart className="w-4 h-4 text-blue-400" /> {t('history.sectionState')} ({filteredWellbeing.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredWellbeing.slice(0, wellbeingToShow).map(w => (
                                                                 <div key={w.id} className="bg-blue-900/30 border-blue-700/50 p-3 rounded-lg border">
@@ -830,7 +832,7 @@ export function HistoryView({
                                                                         <div className="text-sm font-medium text-white">
                                                                             {(() => {
                                                                                 const d = safeDate(w.timestamp || w.date);
-                                                                                if (!d) return 'Data inválida';
+                                                                                if (!d) return t('history.invalidDate');
                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
                                                                                 const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
@@ -904,7 +906,7 @@ export function HistoryView({
                                                         </div>
                                                         {filteredWellbeing.length > wellbeingToShow && (
                                                             <button onClick={() => setWellbeingToShow(prev => prev + 14)} className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2">
-                                                                Ver mais ({filteredWellbeing.length - wellbeingToShow} restantes)
+                                                                {t('history.showMore', { count: filteredWellbeing.length - wellbeingToShow })}
                                                             </button>
                                                         )}
                                                     </div>
@@ -946,7 +948,7 @@ export function HistoryView({
                                                                                             {(() => {
                                                                                                 // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
                                                                                                 const d = safeDate(log.date || log.timestamp);
-                                                                                                if (!d) return 'Data inválida';
+                                                                                                if (!d) return t('history.invalidDate');
                                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
                                                                                                 return dateStr;
                                                                                             })()}
@@ -982,7 +984,7 @@ export function HistoryView({
 
                                                 {filteredCycles.length > 0 && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">🌙 Ciclos ({filteredCycles.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.sectionCycles')} ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.map(cycle => (
                                                                 <div key={cycle.id} className="bg-indigo-900/30 border-indigo-700/50 p-3 rounded-lg border">
@@ -1000,25 +1002,25 @@ export function HistoryView({
                                                                     </div>
                                                                     {cycle.bedtime && (
                                                                         <div className="text-sm mb-1 text-gray-300">
-                                                                            <span className="text-gray-400">Hora de deitar: </span>
+                                                                            <span className="text-gray-400">{t('history.bedtime')} </span>
                                                                             <span className="font-medium">{cycle.bedtime}</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.sleep && (
                                                                         <div className="text-sm mb-1 text-gray-300">
-                                                                            <span className="text-gray-400">Horas de sono: </span>
+                                                                            <span className="text-gray-400">{t('history.sleepHours')} </span>
                                                                             <span className="font-medium">{cycle.sleep}h</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.triggers && cycle.triggers.length > 0 && (
                                                                         <div className="text-sm mb-1 text-gray-300">
-                                                                            <span className="text-gray-400">Gatilhos: </span>
+                                                                            <span className="text-gray-400">{t('history.triggers')} </span>
                                                                             <span className="font-medium">{cycle.triggers.join(', ')}</span>
                                                                         </div>
                                                                     )}
                                                                     {cycle.mg && (
                                                                         <div className="text-sm mb-1 text-gray-300">
-                                                                            <span className="text-gray-400">Consumo diário: </span>
+                                                                            <span className="text-gray-400">{t('history.dailyUse')} </span>
                                                                             <span className="font-medium">{cycle.mg} mg</span>
                                                                         </div>
                                                                     )}

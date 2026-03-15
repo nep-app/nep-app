@@ -1,4 +1,5 @@
 import React, { useMemo, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -22,10 +23,11 @@ export function PatternsView({
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const metrics = useMetrics();
+    const { t } = useTranslation();
 
     return (
                                 <div className="space-y-6">
-                                    <h2 className="text-2xl font-bold text-white">Padrões</h2>
+                                    <h2 className="text-2xl font-bold text-white">{t('patterns.title')}</h2>
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
@@ -33,10 +35,7 @@ export function PatternsView({
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
                                                     <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                        {period === 'hoje' && '📅 Hoje'}
-                                                        {period === 'semana' && '📊 Semana'}
-                                                        {period === 'mes' && '📈 Mês'}
-                                                        {period === 'tudo' && '🌐 Tudo'}
+                                                        {t('patterns.periods.' + period)}
                                                     </button>
                                                 ))}
                                             </div>
@@ -58,10 +57,7 @@ export function PatternsView({
                                     <div className="flex gap-2 overflow-x-auto pb-2">
                                         {['dashboard', 'progress', 'temporal', 'estrutural'].map(view => (
                                             <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                {view === 'dashboard' && '📊 Dashboard'}
-                                                {view === 'progress' && '📈 Progresso'}
-                                                {view === 'temporal' && '⏰ Temporal'}
-                                                {view === 'estrutural' && '📐 Estrutural'}
+                                                {t('patterns.views.' + view)}
                                             </button>
                                         ))}
                                     </div>
@@ -77,7 +73,7 @@ export function PatternsView({
 
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
-                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={'bg-gray-800 border-gray-700 text-gray-400' + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+                                            if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={'bg-gray-800 border-gray-700 text-gray-400' + ' rounded-xl p-6 border text-center'}>{t('patterns.noData')}</div>);
 
                                             // Calculate metrics
                                             const totalConsumptions = filteredConsumptions.length;
@@ -184,10 +180,9 @@ export function PatternsView({
                                             // Time pattern insight
                                             const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
                                             if (maxPartOfDay[1] > 0) {
-                                                const partNames = { manha: 'manhã', tarde: 'tarde', noite: 'noite', madrugada: 'madrugada' };
                                                 const percentage = ((maxPartOfDay[1] / filteredConsumptions.length) * 100).toFixed(0);
                                                 insights.push({
-                                                    text: `Padrão identificado: ${percentage}% dos consumos ocorrem à ${partNames[maxPartOfDay[0]]}. Prepara estratégias para esse período. 🎯`,
+                                                    text: t('patterns.patternInsight', { percent: percentage, part: t('patterns.partOfDay.' + maxPartOfDay[0]) }),
                                                     type: 'info'
                                                 });
                                             }
@@ -536,7 +531,7 @@ export function PatternsView({
                                                             <div className={`${riskBg} border ${riskBorder} rounded-lg p-4 mt-4`}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <div className={'text-xs font-semibold uppercase tracking-wide ' + riskColor}>
-                                                                        🔮 Previsão para Hoje
+                                                                        {t('patterns.todayForecast')}
                                                                     </div>
                                                                     <span className="text-2xl">{riskEmoji}</span>
                                                                 </div>
@@ -564,7 +559,7 @@ export function PatternsView({
                                                                         {riskScore >= 70 ? (
                                                                             '💡 Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.'
                                                                         ) : riskScore >= 55 ? (
-                                                                            '💡 Risco moderado. Mantém atenção aos teus padrões e reforça autocuidado se necessário.'
+                                                                            t('patterns.moderateRisk')
                                                                         ) : (
                                                                             '💡 Condições favoráveis para redução. Aproveita o dia para consolidar progresso!'
                                                                         )}
@@ -692,7 +687,7 @@ export function PatternsView({
                                                         <div className={'bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-700/50' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'font-semibold ' + ('text-white') + ' mb-4 flex items-center gap-2'}>
                                                                 <span className="text-xl">💡</span>
-                                                                Padrões Identificados
+                                                                {t('patterns.identified')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {insights.map((insight, i) => (
@@ -2500,7 +2495,7 @@ export function PatternsView({
                                                                 {/* Distribuição */}
                                                                 <div className="space-y-3">
                                                                     <div className={'text-sm font-medium mb-2 ' + 'text-gray-300'}>
-                                                                        Distribuição de Dosagens
+                                                                        {t('patterns.doseDistribution')}
                                                                         {rangeMethod === 'meta' && (
                                                                             <span className={`text-xs ml-2 ${'text-gray-400'}`}>
                                                                                 (baseado na tua meta de {reduceQuantityGoal.target}mg)

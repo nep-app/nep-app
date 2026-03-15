@@ -13,7 +13,9 @@ import * as Icons from './Icons';
  * 3. Se sim: mostra login (PIN)
  */
 export const AuthScreen = ({ onFirebaseLogout }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+  const handleChangeLang = (lang) => { i18n.changeLanguage(lang); localStorage.setItem('nep_lang', lang); };
   const { login, createAccount, hasAccount, checkRemoteAccount, resetApp, logout } = useAuth();
   const [accountExists, setAccountExists] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -211,7 +213,12 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
 
     // Tela de login normal
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+      <div className="relative flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+        <div className="absolute top-4 right-4 flex gap-2 text-sm">
+          <button onClick={() => handleChangeLang('pt')} className={currentLang === 'pt' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>PT</button>
+          <span className="text-gray-600">|</span>
+          <button onClick={() => handleChangeLang('en')} className={currentLang === 'en' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>ENG</button>
+        </div>
         <div className="w-full max-w-md">
           <PINEntry
             key="login"
@@ -270,7 +277,12 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   // Step 1: Email
   if (step === 'email') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+      <div className="relative flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
+        <div className="absolute top-4 right-4 flex gap-2 text-sm">
+          <button onClick={() => handleChangeLang('pt')} className={currentLang === 'pt' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>PT</button>
+          <span className="text-gray-600">|</span>
+          <button onClick={() => handleChangeLang('en')} className={currentLang === 'en' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>ENG</button>
+        </div>
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8 text-center">
@@ -344,7 +356,12 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   // Step 2: Criar PIN
   if (step === 'pin') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="relative flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="absolute top-4 right-4 flex gap-2 text-sm">
+          <button onClick={() => handleChangeLang('pt')} className={currentLang === 'pt' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>PT</button>
+          <span className="text-gray-600">|</span>
+          <button onClick={() => handleChangeLang('en')} className={currentLang === 'en' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>ENG</button>
+        </div>
         <div className="w-full max-w-md">
           <PINEntry
             key="create"
@@ -371,7 +388,12 @@ export const AuthScreen = ({ onFirebaseLogout }) => {
   // Step 3: Confirmar PIN
   if (step === 'confirm') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+      <div className="relative flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="absolute top-4 right-4 flex gap-2 text-sm">
+          <button onClick={() => handleChangeLang('pt')} className={currentLang === 'pt' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>PT</button>
+          <span className="text-gray-600">|</span>
+          <button onClick={() => handleChangeLang('en')} className={currentLang === 'en' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>ENG</button>
+        </div>
         <div className="w-full max-w-md">
           <PINEntry
             key="confirm"

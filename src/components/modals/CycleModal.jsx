@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
@@ -10,13 +11,12 @@ export const CycleModal = ({
   setCycleForm,
   onSubmit
 }) => {
+  const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
-  // Preencher form quando editando ciclo existente OU criar novo
   useEffect(() => {
     if (isOpen) {
       if (editingCycle) {
-        // EDITAR: preencher com dados existentes
         setCycleForm({
           bedtime: editingCycle.bedtime || '',
           sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
@@ -26,15 +26,11 @@ export const CycleModal = ({
           createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
         });
       } else if (!cycleForm.createdAt) {
-        // CRIAR NOVO: preencher createdAt com data/hora atual (se não estiver preenchido)
         const now = new Date();
         const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
           .toISOString()
           .slice(0, 16);
-        setCycleForm(prev => ({
-          ...prev,
-          createdAt: localDateTime
-        }));
+        setCycleForm(prev => ({ ...prev, createdAt: localDateTime }));
       }
     }
   }, [editingCycle, isOpen, setCycleForm, cycleForm.createdAt]);
@@ -52,7 +48,7 @@ export const CycleModal = ({
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">
-            🌙 {editingCycle ? 'Editar Ciclo' : 'Novo Ciclo'}
+            🌙 {editingCycle ? t('modals.cycle.editTitle') : t('modals.cycle.newTitle')}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
             <Icons.X />
@@ -60,13 +56,11 @@ export const CycleModal = ({
         </div>
         <div className="space-y-4 overflow-y-auto pr-2">
           {!editingCycle && (
-            <p className="text-sm text-gray-300">
-              Cria um novo ciclo quando acordas. Este registo documenta o período que acabou (desde o último acordar até agora).
-            </p>
+            <p className="text-sm text-gray-300">{t('modals.cycle.description')}</p>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Data e hora de criação do ciclo <span className="text-xs text-gray-400">(opcional - deixa vazio para usar agora)</span>
+              {t('modals.cycle.dateLabel')} <span className="text-xs text-gray-400">({t('modals.cycle.dateHint')})</span>
             </label>
             <input
               type="datetime-local"
@@ -74,13 +68,11 @@ export const CycleModal = ({
               onChange={(e) => setCycleForm({...cycleForm, createdAt: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
             />
-            <p className="text-xs mt-1 text-gray-400">
-              💡 Usa isto se te esqueceste de criar o ciclo no passado
-            </p>
+            <p className="text-xs mt-1 text-gray-400">{t('modals.cycle.dateNote')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Hora a que te deitaste <span className="text-xs text-gray-400">(ciclo anterior)</span>
+              {t('modals.cycle.bedtimeLabel')} <span className="text-xs text-gray-400">({t('modals.cycle.bedtimeHint')})</span>
             </label>
             <input
               type="time"
@@ -91,7 +83,7 @@ export const CycleModal = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Horas de sono <span className="text-xs text-gray-400">(última noite)</span>
+              {t('modals.cycle.sleepLabel')} <span className="text-xs text-gray-400">({t('modals.cycle.sleepHint')})</span>
             </label>
             <input
               type="number"
@@ -105,7 +97,7 @@ export const CycleModal = ({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Gatilhos identificados</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.cycle.triggersLabel')}</label>
             <div className="grid grid-cols-2 gap-2">
               {triggersList.map(trigger => (
                 <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
@@ -121,18 +113,18 @@ export const CycleModal = ({
                     }}
                     className="rounded text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm text-gray-300">{trigger}</span>
+                  <span className="text-sm text-gray-300">{t('triggers.' + trigger, trigger)}</span>
                 </label>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-300">Notas sobre este ciclo (opcional)</label>
+            <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.cycle.notesLabel')}</label>
             <textarea
               value={cycleForm.notes}
               onChange={(e) => setCycleForm({...cycleForm, notes: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-20"
-              placeholder="Como foi o ciclo? O que observaste?"
+              placeholder={t('modals.cycle.notesPlaceholder')}
             />
           </div>
           <div className="bg-green-900/20 border-green-700/50 rounded-lg p-3 border">
@@ -143,14 +135,14 @@ export const CycleModal = ({
                 onChange={(e) => setCycleForm({...cycleForm, lastBefore00: e.target.checked})}
                 className="rounded text-green-600 focus:ring-green-500 w-5 h-5"
               />
-              <span className="text-sm font-medium text-green-300">✓ Último consumo do ciclo foi antes da meia-noite (00h)</span>
+              <span className="text-sm font-medium text-green-300">{t('modals.cycle.lastBefore00')}</span>
             </label>
           </div>
           <button
             onClick={onSubmit}
             className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all font-medium"
           >
-            Iniciar Novo Ciclo
+            {editingCycle ? t('modals.cycle.submitEdit') : t('modals.cycle.submit')}
           </button>
         </div>
       </div>

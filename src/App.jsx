@@ -1065,15 +1065,15 @@ return {
                                     <div className="space-y-0">
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-purple-600 leading-none">N</span>
-                                            <span className='text-2xl font-light text-gray-300'>otas de</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticN')}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-pink-600 leading-none">E</span>
-                                            <span className='text-2xl font-light text-gray-300'>xperiências e</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticE')}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
                                             <span className="text-5xl font-black text-blue-600 leading-none">P</span>
-                                            <span className='text-2xl font-light text-gray-300'>adrões</span>
+                                            <span className='text-2xl font-light text-gray-300'>{t('home.acrosticP')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1085,19 +1085,21 @@ return {
                                             <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
                                         </p>
                                         <p className='text-xs italic text-gray-500'>
-                                            <span className="text-purple-500">N</span>ão <span className="text-pink-500">E</span>stás <span className="text-blue-500">P</span>erdida.
+                                            {t('home.motto').split(' ').map((word, i) => (
+                                                <span key={i}>{i > 0 ? ' ' : ''}<span className={['text-purple-500','text-pink-500','text-blue-500'][i] || ''}>{word[0]}</span>{word.slice(1)}</span>
+                                            ))}
                                         </p>
                                     </div>
 
                                     {streaks.current > 0 ? (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
                                             <span>🔥</span>
-                                            <span>{streaks.current} {streaks.current === 1 ? 'dia' : 'dias'}</span>
+                                            <span>{streaks.current} {t('common.day', {count: streaks.current})}</span>
                                         </div>
                                     ) : streaks.max > 0 && (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
                                             <span>💪</span>
-                                            <span>Recorde: {streaks.max} {streaks.max === 1 ? 'dia' : 'dias'}</span>
+                                            <span>{t('home.record')}: {streaks.max} {t('common.day', {count: streaks.max})}</span>
                                         </div>
                                     )}
 
