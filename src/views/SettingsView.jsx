@@ -227,14 +227,19 @@ export const SettingsView = ({
 
                     <button
                         onClick={async () => {
+                            setSyncStatus({ type: 'loading', message: t('settings.syncing') });
                             try {
                                 const result = await forcePushAll();
-                                const total = (result?.pulled || 0) + (result?.pushed || 0);
-                                setSyncStatus(total > 0 ? `✓ ${t('settings.forceSyncDone', { count: total })}` : `✓ ${t('settings.syncAlreadyDone')}`);
+                                const pulled = result?.pulled || 0;
+                                const pushed = result?.pushed || 0;
+                                if (pulled > 0 || pushed > 0) {
+                                    setSyncStatus({ type: 'success', message: `✓ ${t('settings.forceSyncDone', { count: pulled + pushed })} (↓${pulled} ↑${pushed})` });
+                                } else {
+                                    setSyncStatus({ type: 'warning', message: t('settings.forceSyncZero') });
+                                }
                             } catch (error) {
-                                setSyncStatus(`✗ ${error.message}`);
+                                setSyncStatus({ type: 'error', message: `✗ ${error.message}` });
                             }
-                            setTimeout(() => setSyncStatus(null), 5000);
                         }}
                         disabled={isSyncing}
                         className={
@@ -245,12 +250,21 @@ export const SettingsView = ({
                         }
                     >
                         <Icons.RefreshCw className={'w-3 h-3' + (isSyncing ? ' animate-spin' : '')} />
-                        {t('settings.forceSyncNow')}
+                        {isSyncing ? t('settings.syncing') : t('settings.forceSyncNow')}
                     </button>
 
                     {syncStatus && (
-                        <div className="text-xs bg-gray-900/50 rounded p-2 text-gray-300">
-                            {syncStatus}
+                        <div className={
+                            'rounded p-3 text-sm flex items-start justify-between gap-2 ' +
+                            (syncStatus.type === 'success' ? 'bg-green-900/40 border border-green-600/50 text-green-300' :
+                             syncStatus.type === 'warning' ? 'bg-yellow-900/40 border border-yellow-600/50 text-yellow-300' :
+                             syncStatus.type === 'loading' ? 'bg-gray-700 border border-gray-600 text-gray-300' :
+                             'bg-red-900/40 border border-red-600/50 text-red-300')
+                        }>
+                            <span>{syncStatus.message}</span>
+                            {syncStatus.type !== 'loading' && (
+                                <button onClick={() => setSyncStatus(null)} className="text-current opacity-60 hover:opacity-100 shrink-0">✕</button>
+                            )}
                         </div>
                     )}
 

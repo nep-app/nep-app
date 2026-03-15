@@ -318,14 +318,17 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
+      console.log('[ForceSync] A iniciar force sync completo...');
       // Limpar timestamp para forçar sync completo (não incremental)
       await setMetadata('lastSyncTimestamp', null);
       // Marcar todos itens locais como pending para garantir push
-      await syncService.forceMarkAllPending();
+      const marked = await syncService.forceMarkAllPending();
+      console.log(`[ForceSync] ${marked} items marcados como pending`);
       // Push de tudo para Firebase
       await syncService.pushToFirebase();
       // Pull de TUDO do Firebase (incremental: false ignora timestamp)
       const result = await syncService.fullSync({ skipZombies: true, incremental: false });
+      console.log('[ForceSync] Resultado:', { pushed: result?.pushed, pulled: result?.pulled, merged: result?.merged, zombies: result?.zombies, success: result?.success });
       if (result && (result.pulled > 0 || result.pushed > 0)) {
         await loadAllCollections();
       }

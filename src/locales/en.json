@@ -124,6 +124,7 @@
     "syncNote": "💡 Note: New data is automatically sent to the cloud. Use this button to receive data from other devices.",
     "forceSyncNow": "Force Full Sync",
     "forceSyncNote": "Fetches all data from the server, ignoring sync history. Use when normal sync fails.",
+    "forceSyncZero": "⚠️ Firebase returned 0 documents. Open browser console (F12 → Console) to see details.",
     "forceSyncDone": "Synced: {{count}} documents",
     "syncAlreadyDone": "Already in sync",
     "appUpdate": "App Update",
