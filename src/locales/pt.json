@@ -465,7 +465,111 @@
     "moderateRisk": "💡 Risco moderado. Mantém atenção aos teus padrões e reforça autocuidado se necessário.",
     "patternInsight": "Padrão identificado: {{percent}}% dos consumos ocorrem à {{part}}. Prepara estratégias para esse período. 🎯",
     "day_one": "dia",
-    "day_other": "dias"
+    "day_other": "dias",
+    "dashboard": {
+      "summaryText": "Tiveste {{total}} {{consumos}} (média {{avg}}/dia).{{interval}}",
+      "intervalPart": " Intervalo médio: {{avgInterval}}h.",
+      "consumoOne": "consumo",
+      "consumoOther": "consumos",
+      "total": "Total",
+      "avgPerDay": "Média/dia",
+      "avgInterval": "Intervalo médio",
+      "bestDaySingle": "Neste dia registaste",
+      "bestDayMultiple": "Teu melhor dia foi",
+      "bestDayOne": "apenas 1 consumo",
+      "bestDayOther": "{{count}} consumos",
+      "bestDayLow": "Identifica o que funcionou! ⭐",
+      "bestDayHigh": "Continua a melhorar! 💪"
+    },
+    "trend": {
+      "title": "📈 Tendência (30 dias)",
+      "increasing": "Escalada detectada:",
+      "increasingDesc": "A tua frequência está a aumentar {{slope}} consumos por dia. Se continuar assim, daqui a 10 dias poderás estar em ~{{projection}} consumos/dia.",
+      "decreasing": "Redução em progresso:",
+      "decreasingDesc": "Estás a reduzir {{slope}} consumos por dia. Continua assim! Projeção 10 dias: ~{{projection}} consumos/dia.",
+      "stable": "Padrão estável:",
+      "stableDesc": "A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias.",
+      "stableValue": "~{{avg}} consumos/dia (variação mínima)",
+      "unit": "consumos/dia",
+      "slopeIncreasing": "+{{slope}} consumos/dia em média.",
+      "slopeDecreasing": "{{slope}} consumos/dia em média."
+    },
+    "forecast": {
+      "highRisk": "Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.",
+      "favorableConditions": "Condições favoráveis para redução. Aproveita o dia para consolidar progresso!",
+      "sleepVeryLow": "Sono muito baixo ontem ({{value}}/10)",
+      "sleepLow": "Sono baixo ontem ({{value}}/10)",
+      "noSelfCare": "Sem autocuidado registado ontem (0/4 áreas)",
+      "minSelfCare": "Autocuidado mínimo: {{details}}",
+      "risingTrend": "Tendência crescente últimos 7 dias",
+      "highRiskDayOfWeek": "{{day}} costuma ser dia de mais consumo"
+    },
+    "goals": {
+      "reduceFreq": "🔢 Reduzir frequência",
+      "limitLast": "🌙 Limitar último consumo",
+      "increaseInterval": "⏳ Aumentar intervalo",
+      "sleepHours": "😴 Horas de sono"
+    },
+    "progress": {
+      "title": "📈 Análise de Progresso Temporal",
+      "summary": "💡 Resumo do Progresso",
+      "metricsImproving": "{{count}} de {{total}} métricas em melhoria",
+      "noImprovement": "Nenhuma melhoria significativa detetada (mudanças <5%)",
+      "before": "antes: {{value}}",
+      "was": "era: {{value}}",
+      "metrics": {
+        "frequency": "Frequência média diária",
+        "dosage": "Dosagem média diária",
+        "sleep": "Horas de sono médias",
+        "mood": "Humor médio",
+        "energy": "Energia média",
+        "bedtimeConsistency": "Consistência da hora de deitar",
+        "avgBedtime": "Hora média de deitar",
+        "hydration": "Hidratação",
+        "food": "Alimentação",
+        "rest": "Descanso",
+        "social": "Socialização",
+        "negativeEmotions": "Emoções negativas (% do total)",
+        "positiveEmotions": "Emoções positivas (% do total)"
+      }
+    },
+    "comparison": {
+      "todayVsYesterday": "Comparação entre hoje (até agora) vs ontem (dia completo)",
+      "weekVsWeek": "Comparação entre esta semana vs semana anterior",
+      "monthVsMonth": "Comparação entre este mês vs mês anterior",
+      "lastDaysVsPrev": "Comparação entre os últimos {{days}} dias vs os {{days}} dias anteriores"
+    },
+    "bedtime": {
+      "veryConsistent": "Muito consistente",
+      "consistent": "Consistente",
+      "variable": "Variável",
+      "veryConsistentMsg": "Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.",
+      "moderateMsg": "Variação moderada (±{{hours}}h nas horas de deitar). Há alguma consistência, mas podes melhorar. Tenta definir uma janela de 30min (ex: 23h-23h30) para deitar, mesmo aos fins-de-semana.",
+      "variableMsg": "Horas muito variáveis (±{{hours}}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda.",
+      "lateWarning": "Atenção: deitar muito tarde (madrugada) pode afetar a qualidade do sono.",
+      "goodWindow": "Boa janela para deitar! (22h-00h)",
+      "morningWarning": "Dormir de manhã pode indicar inversão do ciclo."
+    },
+    "intervals": {
+      "good": "Intervalos Bons (≥2h)",
+      "short": "Intervalos Curtos (<2h)",
+      "motivationGood": "🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!",
+      "motivationBad": "💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!",
+      "noIntervals": "Sem intervalos (necessário ≥2 consumos)"
+    },
+    "dosage": {
+      "average": "Dosagem média",
+      "stable": "Estáveis",
+      "rose": "subiu",
+      "decreased": "reduziu",
+      "tolerance": "Possível tolerância?"
+    },
+    "selfCare": {
+      "hydration": "Hidratação",
+      "food": "Alimentação",
+      "rest": "Descanso",
+      "social": "Socialização"
+    }
   },
   "history": {
     "title": "Histórico",
@@ -481,6 +585,10 @@
     "sectionState": "Estado",
     "sectionCycles": "🌙 Ciclos",
     "invalidDate": "Data inválida",
+    "month": "📈 Mês",
+    "mgDaily": "mg diários",
+    "consumoOne": "consumo",
+    "consumoOther": "consumos",
     "hideAnalysis": "▼ Ocultar análise",
     "showAnalysis": "▶ Ver análise",
     "classification": "Classificação:",
