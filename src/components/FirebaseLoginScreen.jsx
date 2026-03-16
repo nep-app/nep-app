@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import * as Icons from './Icons';
 
@@ -15,6 +16,10 @@ import * as Icons from './Icons';
  * 4. DEPOIS vai para PIN creation/entry
  */
 export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+  const handleChangeLang = (lang) => { i18n.changeLanguage(lang); localStorage.setItem('nep_lang', lang); };
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,31 +33,27 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
 
     try {
       if (isLogin) {
-        // Login com email/password existente
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        // Criar nova conta Firebase
         await createUserWithEmailAndPassword(auth, email, password);
       }
-      // Firebase auth state change vai disparar e App.jsx vai mostrar próximo ecrã (PIN)
     } catch (err) {
       console.error('[FirebaseLogin] ❌ Erro:', err);
 
-      // Mensagens de erro em português
       if (err.code === 'auth/user-not-found') {
-        setError('Email não encontrado. Cria conta primeiro.');
+        setError(t('firebase.errUserNotFound'));
       } else if (err.code === 'auth/wrong-password') {
-        setError('Password incorreta.');
+        setError(t('firebase.errWrongPassword'));
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('Este email já está registado. Faz login.');
+        setError(t('firebase.errEmailInUse'));
       } else if (err.code === 'auth/weak-password') {
-        setError('Password fraca (mínimo 6 caracteres).');
+        setError(t('firebase.errWeakPassword'));
       } else if (err.code === 'auth/invalid-email') {
-        setError('Email inválido.');
+        setError(t('auth.emailInvalid'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError('Email ou password incorretos.');
+        setError(t('firebase.errInvalidCred'));
       } else {
-        setError('Erro: ' + err.message);
+        setError(t('common.error') + ': ' + err.message);
       }
     } finally {
       setLoading(false);
@@ -62,6 +63,13 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
       <div className="w-full max-w-md">
+        {/* Language toggle */}
+        <div className="flex justify-end gap-2 mb-4 text-sm">
+          <button onClick={() => handleChangeLang('pt')} className={currentLang === 'pt' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>PT</button>
+          <span className="text-gray-600">|</span>
+          <button onClick={() => handleChangeLang('en')} className={currentLang === 'en' ? 'font-bold text-white' : 'text-gray-500 hover:text-gray-300'}>ENG</button>
+        </div>
+
         {/* Logo */}
         <div className="mb-8 text-center">
           <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
@@ -69,7 +77,7 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">NEP App</h1>
           <p className="text-purple-300 text-sm">
-            {isLogin ? 'Bem-vinda de volta' : 'Criar nova conta'}
+            {isLogin ? t('auth.loginTitle') : t('firebase.createNew')}
           </p>
         </div>
 
@@ -77,13 +85,13 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-purple-300 mb-2">
-              Email
+              {t('auth.emailLabel')}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="exemplo@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
               disabled={loading}
@@ -92,13 +100,13 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
 
           <div>
             <label className="block text-sm font-medium text-purple-300 mb-2">
-              Password
+              {t('firebase.passwordLabel')}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
+              placeholder={t('firebase.passwordPlaceholder')}
               className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
               disabled={loading}
@@ -125,11 +133,11 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
             {loading ? (
               <>
                 <Icons.RefreshCw className="w-4 h-4 animate-spin" />
-                {isLogin ? 'Entrando...' : 'Criando conta...'}
+                {isLogin ? t('firebase.signingIn') : t('firebase.creating')}
               </>
             ) : (
               <>
-                {isLogin ? 'Entrar' : 'Criar Conta'}
+                {isLogin ? t('firebase.signIn') : t('auth.createTitle')}
                 <Icons.ChevronRight className="w-4 h-4" />
               </>
             )}
@@ -144,7 +152,7 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
             disabled={loading}
             className="w-full text-purple-400 text-sm hover:text-purple-300 transition-colors disabled:opacity-50"
           >
-            {isLogin ? 'Não tens conta? Criar conta nova' : 'Já tens conta? Fazer login'}
+            {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
           </button>
         </form>
 
@@ -154,21 +162,16 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
             <div className="flex items-start gap-2">
               <Icons.Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-purple-300">
-                <p className="font-medium mb-1">💜 A tua conta pessoal</p>
-                <p className="opacity-90 mb-2">
-                  Cria um email e password para acederes aos teus dados em qualquer dispositivo.
-                  Podes usar um email "inventado" se quiseres (ex: minhaapp@email.com).
-                </p>
-                <p className="opacity-75">
-                  Após login, vais criar um PIN de 4 dígitos para segurança extra.
-                </p>
+                <p className="font-medium mb-1">{t('firebase.infoTitle')}</p>
+                <p className="opacity-90 mb-2">{t('firebase.infoText1')}</p>
+                <p className="opacity-75">{t('firebase.infoText2')}</p>
               </div>
             </div>
           </div>
         </div>
 
         <p className="text-xs text-gray-500 mt-6 text-center">
-          Copyright © Teresa Castro
+          {t('settings.copyright')}
         </p>
       </div>
     </div>

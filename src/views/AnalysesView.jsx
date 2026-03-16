@@ -386,7 +386,7 @@ export function AnalysesView({
                                                     <span className="text-2xl">{corr.icon}</span>
                                                     <div>
                                                         <div className={'font-semibold ' + (themeClasses.textPrimaryAlt(darkMode))}>{corr.name}</div>
-                                                        <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>Média: {corr.average}{corr.unit}</div>
+                                                        <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>{t('common.average')}: {corr.average}{corr.unit}</div>
                                                     </div>
                                                 </div>
                                                 <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (corrLabel.color === 'red' ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-700') : corrLabel.color === 'orange' ? (darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-orange-700') : corrLabel.color === 'green' ? (darkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700') : (darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-600'))}>
@@ -395,7 +395,7 @@ export function AnalysesView({
                                             </div>
                                             <div className={'text-xs ' + (themeClasses.textTertiary(darkMode))}>
                                                 <span className="ml-2">• r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'}</span>
-                                                <span className="ml-2">• {corr.dataPoints} dias</span>
+                                                <span className="ml-2">• {corr.dataPoints} {t('common.day', { count: corr.dataPoints })}</span>
                                             </div>
                                         </div>
                                     );
