@@ -1264,13 +1264,13 @@ export function PatternsView({
                                                 let suggestion = '';
                                                 if (lowAreas.length >= 3) {
                                                     // Mencionar as 2 áreas MAIS BAIXAS
-                                                    suggestion = `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
+                                                    suggestion = i18n.language === 'en' ? `Below 50% in several areas. Small daily habits make a difference - start with ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}.` : `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
                                                 } else if (lowAreas.length === 2) {
-                                                    suggestion = `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
+                                                    suggestion = i18n.language === 'en' ? `Focus on ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}. Simple routines can help!` : `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
                                                 } else if (lowAreas.length === 1) {
-                                                    suggestion = `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
+                                                    suggestion = i18n.language === 'en' ? `Focus on improving ${lowAreas[0].name.toLowerCase()} - small steps count!` : `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
                                                 } else {
-                                                    suggestion = `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
+                                                    suggestion = i18n.language === 'en' ? `Excellent! You're maintaining good self-care habits in all areas (≥50%).` : `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
                                                 }
 
                                                 progressData.selfCareDetailed = {
@@ -1373,24 +1373,24 @@ export function PatternsView({
                                                     <div className={'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
                                                             <h3 className={'text-xl font-bold ' + ('text-white')}>
-                                                                📈 Análise de Progresso Temporal
+                                                                {t('patterns.progress.title')}
                                                             </h3>
                                                             <div className={'text-4xl font-black ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                 {progressScore}%
                                                             </div>
                                                         </div>
                                                         <p className={'text-sm mb-3 ' + ('text-gray-300')}>
-                                                            {patternsPeriod === 'hoje' ? 'Comparação entre hoje (até agora) vs ontem (dia completo)' :
-                                                             patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
-                                                             patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
-                                                             `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
+                                                            {patternsPeriod === 'hoje' ? t('patterns.progress.comparisons.hoje') :
+                                                             patternsPeriod === 'semana' ? t('patterns.progress.comparisons.semana') :
+                                                             patternsPeriod === 'mes' ? t('patterns.progress.comparisons.mes') :
+                                                             t('patterns.progress.comparisons.tudo', { days: periodDays })}
                                                         </p>
                                                         <div className="flex items-center gap-2">
                                                             <div className={'flex-1 h-3 rounded-full overflow-hidden ' + ('bg-gray-700')}>
                                                                 <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
                                                             </div>
                                                             <span className={'text-xs font-medium ' + ('text-gray-400')}>
-                                                                {improvements} de {total} métricas em melhoria
+                                                                {t('patterns.progress.metricsImproving', { count: improvements, total: total })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1399,7 +1399,7 @@ export function PatternsView({
                                                     {(progressData.frequency || progressData.dosage) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💊 Consumo
+                                                                {t('patterns.progress.consumption')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.frequency && (
@@ -1423,10 +1423,10 @@ export function PatternsView({
                                                                                 {progressData.frequency.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                consumos/dia
+                                                                                {t('patterns.progress.usesPerDay')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.frequency.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.frequency.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1455,7 +1455,7 @@ export function PatternsView({
                                                                                 mg/dia
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.dosage.previous.toFixed(0)} mg
+                                                                                {t('patterns.progress.before')} {progressData.dosage.previous.toFixed(0)} mg
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1468,7 +1468,7 @@ export function PatternsView({
                                                     {(progressData.sleep || progressData.mood || progressData.energy) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💚 Bem-Estar
+                                                                {t('patterns.progress.wellbeing')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.sleep && (
@@ -1488,10 +1488,10 @@ export function PatternsView({
                                                                                 {progressData.sleep.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                horas
+                                                                                {t('patterns.progress.hours')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.sleep.previous.toFixed(1)}h
+                                                                                {t('patterns.progress.before')} {progressData.sleep.previous.toFixed(1)}h
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1516,7 +1516,7 @@ export function PatternsView({
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.mood.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.mood.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1541,7 +1541,7 @@ export function PatternsView({
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.energy.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.energy.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1554,7 +1554,7 @@ export function PatternsView({
                                                     {(progressData.bedtimeConsistency || progressData.selfCare) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                🌙 Rotinas e Autocuidado
+                                                                {t('patterns.progress.routines')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.bedtimeConsistency && (
@@ -1571,19 +1571,19 @@ export function PatternsView({
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2 mb-2">
                                                                             <span className={'text-2xl font-bold ' + 'text-white'}>
-                                                                                {progressData.bedtimeConsistency.recent < 30 ? 'Muito consistente' : progressData.bedtimeConsistency.recent < 60 ? 'Consistente' : 'Variável'}
+                                                                                {progressData.bedtimeConsistency.recent < 30 ? t('patterns.progress.bedtimeConsist.veryConsistent') : progressData.bedtimeConsistency.recent < 60 ? t('patterns.progress.bedtimeConsist.consistent') : t('patterns.progress.bedtimeConsist.variable')}
                                                                             </span>
                                                                             <span className={'text-xs ml-auto ' + 'text-gray-500'}>
-                                                                                variação: ±{(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h
+                                                                                {t('patterns.progress.bedtimeConsist.variation', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(0) })}
                                                                             </span>
                                                                         </div>
                                                                         <div className={'bg-gray-800/50' + ' rounded px-3 py-2'}>
                                                                             <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
-                                                                                    ? '🎯 Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.'
+                                                                                    ? t('patterns.progress.bedtimeConsist.msgVeryConsistent')
                                                                                     : progressData.bedtimeConsistency.recent < 60
-                                                                                    ? `⚖️ Variação moderada (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h nas horas de deitar). Há alguma consistência, mas podes melhorar. Tenta definir uma janela de 30min (ex: 23h-23h30) para deitar, mesmo aos fins-de-semana.`
-                                                                                    : `🌪️ Horas muito variáveis (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda.`}
+                                                                                    ? t('patterns.progress.bedtimeConsist.msgConsistent', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })
+                                                                                    : t('patterns.progress.bedtimeConsist.msgVariable', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })}
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -1596,7 +1596,7 @@ export function PatternsView({
                                                                             </span>
                                                                             {progressData.avgBedtime.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.avgBedtime.change.direction === 'up' ? 'Mais tarde' : 'Mais cedo'}
+                                                                                    {progressData.avgBedtime.change.direction === 'up' ? t('patterns.progress.avgBedtime.later') : t('patterns.progress.avgBedtime.earlier')}
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1605,18 +1605,18 @@ export function PatternsView({
                                                                                 {progressData.avgBedtime.recentTime}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                era: {progressData.avgBedtime.previousTime}
+                                                                                {t('patterns.progress.avgBedtime.wasBefore', { time: progressData.avgBedtime.previousTime })}
                                                                             </span>
                                                                         </div>
                                                                         {(() => {
                                                                             const hour = parseInt(progressData.avgBedtime.recentTime.split(':')[0]);
                                                                             let feedback = '';
                                                                             if (hour >= 0 && hour < 6) {
-                                                                                feedback = 'Atenção: deitar muito tarde (madrugada) pode afetar a qualidade do sono.';
+                                                                                feedback = t('patterns.progress.avgBedtime.lateNight');
                                                                             } else if (hour >= 22 && hour < 24) {
-                                                                                feedback = 'Boa janela para deitar! (22h-00h)';
+                                                                                feedback = t('patterns.progress.avgBedtime.goodWindow');
                                                                             } else if (hour >= 6 && hour < 12) {
-                                                                                feedback = 'Dormir de manhã pode indicar inversão do ciclo.';
+                                                                                feedback = t('patterns.progress.avgBedtime.morning');
                                                                             }
                                                                             return feedback ? (
                                                                                 <div className={'text-xs mt-2 ' + ('text-gray-400')}>
@@ -1643,10 +1643,10 @@ export function PatternsView({
                                                                                 {progressData.selfCare.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                atividades/ciclo
+                                                                                {t('patterns.progress.activitiesPerCycle')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.selfCare.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.selfCare.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1659,7 +1659,7 @@ export function PatternsView({
                                                     {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                🧠 Estado Emocional
+                                                                {t('patterns.progress.emotional')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.negativeEmotions && (
@@ -1667,7 +1667,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😔</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-purple-400'}>
-                                                                                Emoções Negativas
+                                                                                {t('patterns.progress.negEmotions')}
                                                                             </span>
                                                                             {progressData.negativeEmotions.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
@@ -1682,15 +1682,15 @@ export function PatternsView({
                                                                                         {progressData.negativeEmotions.recent.toFixed(0)}%
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-purple-300/70'}>
-                                                                                        do total
+                                                                                        {t('patterns.progress.ofTotal')}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className={'text-xs mt-1 ' + 'text-purple-400/60'}>
-                                                                                    {progressData.negativeEmotions.recentCount} de {progressData.negativeEmotions.recentTotal} emoções
+                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.negativeEmotions.recentCount, total: progressData.negativeEmotions.recentTotal })}
                                                                                 </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
-                                                                                era {progressData.negativeEmotions.previous.toFixed(0)}%
+                                                                                {t('patterns.progress.wasPercent', { val: progressData.negativeEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1700,7 +1700,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😊</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-green-400'}>
-                                                                                Emoções Positivas
+                                                                                {t('patterns.progress.posEmotions')}
                                                                             </span>
                                                                             {progressData.positiveEmotions.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
@@ -1715,15 +1715,15 @@ export function PatternsView({
                                                                                         {progressData.positiveEmotions.recent.toFixed(0)}%
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-green-300/70'}>
-                                                                                        do total
+                                                                                        {t('patterns.progress.ofTotal')}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className={'text-xs mt-1 ' + 'text-green-400/60'}>
-                                                                                    {progressData.positiveEmotions.recentCount} de {progressData.positiveEmotions.recentTotal} emoções
+                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.positiveEmotions.recentCount, total: progressData.positiveEmotions.recentTotal })}
                                                                                 </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
-                                                                                era {progressData.positiveEmotions.previous.toFixed(0)}%
+                                                                                {t('patterns.progress.wasPercent', { val: progressData.positiveEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1733,7 +1733,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-3">
                                                                             <span className="text-lg">🌟</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-blue-400'}>
-                                                                                Top 3 Emoções
+                                                                                {t('patterns.progress.top3Emotions')}
                                                                             </span>
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -1759,14 +1759,14 @@ export function PatternsView({
                                                     {progressData.selfCareDetailed && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💚 Análise de Autocuidado
+                                                                {t('patterns.progress.selfCare')}
                                                             </h3>
 
                                                             {/* Overall score */}
                                                             <div className={'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        Taxa geral de autocuidado
+                                                                        {t('patterns.progress.overallRate')}
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
@@ -1787,7 +1787,7 @@ export function PatternsView({
                                                             <div className={'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        🎯 Ciclos completos (4 indicadores)
+                                                                        {t('patterns.progress.completeCycles')}
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
@@ -1800,7 +1800,7 @@ export function PatternsView({
                                                                     ></div>
                                                                 </div>
                                                                 <div className={'text-xs mt-2 ' + ('text-gray-400')}>
-                                                                    {progressData.selfCareDetailed.completeCycles.recentCount} de {progressData.selfCareDetailed.completeCycles.recentTotal} ciclos com todos os indicadores
+                                                                    {t('patterns.progress.completeCyclesDetail', { count: progressData.selfCareDetailed.completeCycles.recentCount, total: progressData.selfCareDetailed.completeCycles.recentTotal })}
                                                                 </div>
                                                             </div>
 
@@ -1843,20 +1843,20 @@ export function PatternsView({
                                                     {/* Summary insights */}
                                                     <div className={('bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
-                                                            💡 Resumo do Progresso
+                                                            {t('patterns.progress.summaryTitle')}
                                                         </h3>
                                                         <div className={'text-sm leading-relaxed space-y-2 ' + ('text-gray-300')}>
                                                             {progressScore >= 70 && (
-                                                                <p>🎉 <strong>Excelente progresso!</strong> A maioria das métricas mostra melhoria clara. Continua neste caminho!</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.excellent') }} />
                                                             )}
                                                             {progressScore >= 40 && progressScore < 70 && (
-                                                                <p>👍 <strong>Progresso moderado.</strong> Algumas áreas melhoraram, outras mantiveram-se estáveis. Identifica o que funcionou nas áreas positivas.</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.moderate') }} />
                                                             )}
                                                             {progressScore < 40 && (
-                                                                <p>💪 <strong>Momento desafiante.</strong> Os dados mostram dificuldades em várias áreas. Lembra-te: recaídas fazem parte da recuperação. Foca-te em pequenas vitórias.</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.challenging') }} />
                                                             )}
                                                             <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                <p className="text-xs font-medium mb-1">Áreas com maior melhoria:</p>
+                                                                <p className="text-xs font-medium mb-1">{t('patterns.progress.improvingAreas')}</p>
                                                                 <ul className="text-xs space-y-1">
                                                                     {Object.entries(progressData)
                                                                         .filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable')
@@ -1866,13 +1866,13 @@ export function PatternsView({
                                                                             <li key={i}>✅ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
                                                                         ))}
                                                                     {Object.entries(progressData).filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable').length === 0 && (
-                                                                        <li className="text-gray-500 italic">Nenhuma melhoria significativa detetada (mudanças &lt;5%)</li>
+                                                                        <li className="text-gray-500 italic">{t('patterns.progress.noImprovement')}</li>
                                                                     )}
                                                                 </ul>
                                                             </div>
                                                             {Object.entries(progressData).filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew).length > 0 && (
                                                                 <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                    <p className="text-xs font-medium mb-1">Áreas que precisam de atenção:</p>
+                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.attentionAreas')}</p>
                                                                     <ul className="text-xs space-y-1">
                                                                         {Object.entries(progressData)
                                                                             .filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew)
@@ -1915,7 +1915,7 @@ export function PatternsView({
 
                                             // Calculate byWeekday
                                             const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-                                            const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                            const weekdayNames = t('analyses.dayNames', { returnObjects: true });
                                             filteredConsumptions.forEach(c => {
                                                 const day = new Date(c.timestamp).getDay();
                                                 byWeekday[day]++;
@@ -1925,9 +1925,9 @@ export function PatternsView({
                                         <div className="space-y-4">
                                             {/* Por horário */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🕐 Consumo por Horário</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byHour')}</h3>
                                                 {Object.keys(byHour).length === 0 ? (
-                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
+                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>
                                                 ) : (() => {
                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
 
@@ -1993,7 +1993,7 @@ export function PatternsView({
 
                                                             {/* Legenda */}
                                                             <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + 'text-gray-400 border-gray-700'}>
-                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
+                                                                <span>{t('patterns.freq.intensityLegend')}</span>
                                                             </div>
                                                         </div>
                                                     );
@@ -2002,10 +2002,10 @@ export function PatternsView({
 
                                             {/* Por período do dia */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🌅 Por Período do Dia</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byPeriod')}</h3>
                                                 {(() => {
                                                     const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>;
+                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>;
 
                                                     const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
                                                     const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
@@ -2016,28 +2016,28 @@ export function PatternsView({
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                             <div className={('bg-yellow-900/30 border-yellow-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌅</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Manhã</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.manha')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>6h-12h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-yellow-400'}>{manhaPercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.manha}x</div>
                                                             </div>
                                                             <div className={('bg-orange-900/30 border-orange-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">☀️</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Tarde</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.tarde')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>12h-18h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-orange-400'}>{tardePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.tarde}x</div>
                                                             </div>
                                                             <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌙</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Noite</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.noite')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>18h-24h</div>
                                                                 <div className={'text-xl font-bold ' + ('text-indigo-400')}>{noitePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.noite}x</div>
                                                             </div>
                                                             <div className={('bg-purple-900/30 border-purple-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">⭐</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Madrugada</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.madrugada')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>0h-6h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-purple-400'}>{madrugadaPercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.madrugada}x</div>
@@ -2049,10 +2049,10 @@ export function PatternsView({
 
                                             {/* Por dia da semana */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>📅 Por Dia da Semana</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byWeekday')}</h3>
                                                 <div className="space-y-3">
                                                     {Object.values(byWeekday).every(v => v === 0) ? (
-                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
+                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>
                                                     ) : (() => {
                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
                                                         const weekdayEntries = Object.entries(byWeekday).filter(([_, count]) => count > 0);
@@ -2093,9 +2093,9 @@ export function PatternsView({
                                                                 {/* Padrão Semanal */}
                                                                 {weekdayEntries.length > 1 && (
                                                                     <div className={'mt-4 pt-3 border-t text-xs ' + ('border-gray-700 text-gray-400')}>
-                                                                        <span className={'font-semibold ' + 'text-red-400'}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: dia com mais consumo ({maxEntry[1]}x, {Math.round((maxEntry[1] / totalWeekday) * 100)}%)
+                                                                        <span className={'font-semibold ' + 'text-red-400'}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: {i18n.language === 'en' ? `highest-use day (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)` : `dia com mais consumo (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)`}
                                                                         {' • '}
-                                                                        <span className={'font-semibold ' + 'text-green-400'}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: dia com menos consumo ({minEntry[1]}x, {Math.round((minEntry[1] / totalWeekday) * 100)}%)
+                                                                        <span className={'font-semibold ' + 'text-green-400'}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: {i18n.language === 'en' ? `lowest-use day (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)` : `dia com menos consumo (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)`}
                                                                     </div>
                                                                 )}
                                                             </>
