@@ -123,34 +123,11 @@ export const DataProvider = ({ children }) => {
         // 🔄 MIGRAÇÃO: Garantir que todos os dados históricos do Firebase estão em local
         // Se `syncMigrationV1` não está definido, limpar o lastSyncTimestamp para que
         // o próximo manualSync faça um pull completo (não incremental) e busque tudo.
-        // Isto resolve o problema de utilizadores que têm dados no Firebase que nunca
-        // foram importados para o Dexie local porque o sync incremental só busca mudanças recentes.
         const migrationDone = await getMetadata('syncMigrationV1');
         if (!migrationDone) {
-          console.log('[DataContext] 🔄 Migração V1: limpando lastSyncTimestamp para forçar pull completo no próximo sync...');
+          console.log('[DataContext] 🔄 Migração V1: limpando lastSyncTimestamp...');
           await setMetadata('lastSyncTimestamp', null);
           await setMetadata('syncMigrationV1', 'done');
-        }
-
-        // 🔄 BOOT SYNC: Se nunca sincronizou (lastSyncTimestamp === null), fazer pull completo
-        // automático ao iniciar. Isto garante que dados históricos do Firebase são importados
-        // sem precisar que o utilizador pressione o botão de sync manualmente.
-        const lastSyncTs = await getMetadata('lastSyncTimestamp');
-        if (!lastSyncTs) {
-          console.log('[DataContext] 🔄 Boot sync: sem lastSyncTimestamp, fazendo pull completo do Firebase...');
-          try {
-            setIsSyncing(true);
-            await syncService.pushToFirebase();
-            const bootResult = await syncService.fullSync({ skipZombies: true, incremental: false });
-            if (bootResult && bootResult.pulled > 0) {
-              console.log(`[DataContext] ✅ Boot sync completo: ${bootResult.pulled} docs recebidos`);
-              await loadAllCollections();
-            }
-          } catch (bootErr) {
-            console.warn('[DataContext] ⚠️ Boot sync falhou (sem ligação?):', bootErr.message);
-          } finally {
-            setIsSyncing(false);
-          }
         }
 
       } catch (error) {

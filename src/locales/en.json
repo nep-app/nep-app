@@ -134,6 +134,7 @@
     "lastSync": "Last sync:",
     "syncing": "Syncing...",
     "syncNow": "Sync Now",
+    "forceImport": "↙ Re-import everything from Firebase",
     "syncRecords": "✅ {{count}} records synced",
     "syncUpToDate": "✅ Everything up to date",
     "exportTitle": "Export data",

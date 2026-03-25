@@ -134,6 +134,7 @@
     "lastSync": "Última sincronização:",
     "syncing": "A sincronizar...",
     "syncNow": "Sincronizar Agora",
+    "forceImport": "↙ Reimportar tudo do Firebase",
     "syncRecords": "✅ {{count}} registos sincronizados",
     "syncUpToDate": "✅ Tudo atualizado",
     "exportTitle": "Exportar dados",

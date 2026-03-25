@@ -12,6 +12,7 @@ export const SettingsView = ({
     onOpenExport,
     onExportJSON,
     manualSync,
+    onForceSync,
     isSyncing,
     lastSyncTime
 }) => {
@@ -127,6 +128,27 @@ export const SettingsView = ({
                         <Icons.RefreshCw className={'w-4 h-4' + (isSyncing ? ' animate-spin' : '')} />
                         {isSyncing ? t('settings.syncing') : t('settings.syncNow')}
                     </button>
+
+                    {onForceSync && (
+                        <button
+                            onClick={async () => {
+                                setSyncStatus({ type: 'loading', message: t('settings.syncing') });
+                                try {
+                                    const result = await onForceSync();
+                                    const total = (result?.pushed || 0) + (result?.pulled || 0);
+                                    setSyncStatus({ type: 'success', message: total > 0 ? t('settings.syncRecords', { count: total }) : t('settings.syncUpToDate') });
+                                } catch (error) {
+                                    setSyncStatus({ type: 'error', message: `❌ ${error?.message || t('common.error')}` });
+                                }
+                                setTimeout(() => setSyncStatus(null), 8000);
+                            }}
+                            disabled={isSyncing}
+                            className="w-full py-2.5 rounded-lg transition-all font-medium text-sm flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Icons.RefreshCw className="w-4 h-4" />
+                            {t('settings.forceImport')}
+                        </button>
+                    )}
 
                     {syncStatus && (
                         <div className={
