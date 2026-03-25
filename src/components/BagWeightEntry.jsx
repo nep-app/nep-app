@@ -11,7 +11,7 @@ const toLocalDatetimeValue = (d) => {
 
 export function BagWeightEntry({ onClose, showToast }) {
   const { t } = useTranslation();
-  const { addConsumption, consumptions } = useData();
+  const { addDailyLog, dailyLogs } = useData();
   const { darkMode } = useUI();
 
   const [weightBefore, setWeightBefore] = useState('');
@@ -29,28 +29,27 @@ export function BagWeightEntry({ onClose, showToast }) {
 
   const todayMg = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    return consumptions
-      .filter(c => c.method === 'bagWeight' && c.date === today && c.amount > 0)
-      .reduce((sum, c) => sum + (c.amount || 0), 0);
-  }, [consumptions]);
+    return dailyLogs
+      .filter(l => l.method === 'bagWeight' && l.date === today && l.mg > 0)
+      .reduce((sum, l) => sum + (l.mg || 0), 0);
+  }, [dailyLogs]);
 
-  const avgMgPerConsumption = useMemo(() => {
-    const weighted = consumptions.filter(c => c.method === 'bagWeight' && c.amount > 0);
+  const avgMgPerEntry = useMemo(() => {
+    const weighted = dailyLogs.filter(l => l.method === 'bagWeight' && l.mg > 0);
     if (weighted.length === 0) return null;
-    const total = weighted.reduce((sum, c) => sum + (c.amount || 0), 0);
+    const total = weighted.reduce((sum, l) => sum + (l.mg || 0), 0);
     return Math.round(total / weighted.length);
-  }, [consumptions]);
+  }, [dailyLogs]);
 
   const handleSubmit = async () => {
     if (!mgConsumed || mgConsumed <= 0) return;
     setLoading(true);
     try {
       const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
-      await addConsumption({
+      await addDailyLog({
         timestamp: ts,
         date: selectedDate,
-        amount: mgConsumed,
-        unit: 'mg',
+        mg: mgConsumed,
         method: 'bagWeight',
         weightBefore: before,
         weightAfter: after,
@@ -145,7 +144,7 @@ export function BagWeightEntry({ onClose, showToast }) {
         {loading ? '...' : t('home.bagWeightRegister')}
       </button>
 
-      {(todayMg > 0 || avgMgPerConsumption !== null) && (
+      {(todayMg > 0 || avgMgPerEntry !== null) && (
         <div className={`grid grid-cols-2 gap-2 mt-3 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
           {todayMg > 0 && (
             <div className="text-center">
@@ -154,10 +153,10 @@ export function BagWeightEntry({ onClose, showToast }) {
               <div className={`text-xs ${label}`}>mg</div>
             </div>
           )}
-          {avgMgPerConsumption !== null && (
+          {avgMgPerEntry !== null && (
             <div className="text-center">
               <div className={`text-xs ${label}`}>{t('home.bagWeightAvgMg')}</div>
-              <div className={`text-lg font-bold ${darkMode ? 'text-pink-300' : 'text-pink-600'}`}>{avgMgPerConsumption}</div>
+              <div className={`text-lg font-bold ${darkMode ? 'text-pink-300' : 'text-pink-600'}`}>{avgMgPerEntry}</div>
               <div className={`text-xs ${label}`}>mg</div>
             </div>
           )}
