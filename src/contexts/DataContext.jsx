@@ -277,27 +277,9 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
-      // PUSH: Enviar apenas items pendentes (novos/alterados)
-      console.log('[DataContext] 🔼 PUSH: Enviando items pendentes...');
       await syncService.pushToFirebase();
-
-      // PULL: Receber alterações recentes do Firebase
-      // Se não há lastSyncTimestamp (primeiro sync ou após migração), buscar TUDO do Firebase
-      console.log('[DataContext] 🔽 PULL: Recebendo do Firebase...');
-      const lastSyncTs = await getMetadata('lastSyncTimestamp');
-      const result = await syncService.fullSync({
-        skipZombies: true,
-        incremental: lastSyncTs !== null  // Full pull se nunca sincronizou ou após migração
-      });
-
-      // ✅ OTIMIZAÇÃO: fullSync já atualizou Dexie, mas precisamos recarregar
-      // estado React. Só recarregar se houve mudanças (pulled > 0)
-      if (result && (result.pulled > 0 || result.pushed > 0)) {
-        console.log('[DataContext] ♻️ Recarregando estado React após sync...');
-        await loadAllCollections();
-      } else {
-        console.log('[DataContext] ✅ Nenhuma mudança - skip reload');
-      }
+      const result = await syncService.fullSync({ skipZombies: true, incremental: false });
+      await loadAllCollections();
 
       setLastSyncTime(new Date());
       return result;
