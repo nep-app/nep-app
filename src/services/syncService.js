@@ -674,13 +674,12 @@ class SyncService {
       }
       logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-      // 🚀 SYNC INCREMENTAL: Guardar timestamp do sync bem-sucedido
-      if (incremental) {
-        try {
-          await setMetadata('lastSyncTimestamp', new Date().toISOString());
-        } catch (error) {
-          logger.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
-        }
+      // Guardar timestamp do sync bem-sucedido (sempre, incremental ou não)
+      // Isto garante que o próximo sync é incremental, mesmo após um full sync
+      try {
+        await setMetadata('lastSyncTimestamp', new Date().toISOString());
+      } catch (error) {
+        logger.warn('[Sync] ⚠️ Erro ao guardar lastSyncTimestamp:', error);
       }
 
       return {

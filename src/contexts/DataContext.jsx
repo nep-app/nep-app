@@ -120,6 +120,18 @@ export const DataProvider = ({ children }) => {
           await setMetadata('lastFirebaseUID', currentUID);
         }
 
+        // 🔄 MIGRAÇÃO: Garantir que todos os dados históricos do Firebase estão em local
+        // Se `syncMigrationV1` não está definido, limpar o lastSyncTimestamp para que
+        // o próximo manualSync faça um pull completo (não incremental) e busque tudo.
+        // Isto resolve o problema de utilizadores que têm dados no Firebase que nunca
+        // foram importados para o Dexie local porque o sync incremental só busca mudanças recentes.
+        const migrationDone = await getMetadata('syncMigrationV1');
+        if (!migrationDone) {
+          console.log('[DataContext] 🔄 Migração V1: limpando lastSyncTimestamp para forçar pull completo no próximo sync...');
+          await setMetadata('lastSyncTimestamp', null);
+          await setMetadata('syncMigrationV1', 'done');
+        }
+
         // ❌ SYNC INICIAL DESATIVADO
         // Sync 100% MANUAL - utilizador controla quando sincronizar
         // (Antes fazia fullSync() aqui no boot, agora não)
@@ -282,10 +294,12 @@ export const DataProvider = ({ children }) => {
       await syncService.pushToFirebase();
 
       // PULL: Receber alterações recentes do Firebase
+      // Se não há lastSyncTimestamp (primeiro sync ou após migração), buscar TUDO do Firebase
       console.log('[DataContext] 🔽 PULL: Recebendo do Firebase...');
+      const lastSyncTs = await getMetadata('lastSyncTimestamp');
       const result = await syncService.fullSync({
-        skipZombies: true,  // Ignorar items antigos não desencriptáveis
-        incremental: true   // Usar timestamp exato do último sync (máximo desempenho)
+        skipZombies: true,
+        incremental: lastSyncTs !== null  // Full pull se nunca sincronizou ou após migração
       });
 
       // ✅ OTIMIZAÇÃO: fullSync já atualizou Dexie, mas precisamos recarregar
