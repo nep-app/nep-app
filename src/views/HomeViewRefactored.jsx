@@ -176,15 +176,19 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
-      <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-4 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-xl mb-1">🌙</div>
-          <div className="text-sm">{t('home.newCycle')}</div>
+      {/* Linha 2: Novo Ciclo, Registar mg, Pesar saco, Metas */}
+      <div className="grid grid-cols-4 gap-2">
+        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-3 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">🌙</div>
+          <div className="text-xs">{t('home.newCycle')}</div>
         </button>
-        <button onClick={() => setShowBagWeight(prev => !prev)} className={`rounded-xl p-4 font-medium transition-all shadow-md hover:shadow-lg flex flex-col items-center ${showBagWeight ? 'bg-gradient-to-br from-rose-600 to-pink-700 ring-2 ring-rose-400' : 'bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700'} text-white`}>
-          <div className="text-xl mb-1">⚖️</div>
-          <div className="text-sm">{t('home.bagWeight')}</div>
+        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-3 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">📊</div>
+          <div className="text-xs">{t('home.registerMg')}</div>
+        </button>
+        <button onClick={() => setShowBagWeight(prev => !prev)} className={`rounded-xl p-3 font-medium transition-all shadow-md hover:shadow-lg flex flex-col items-center ${showBagWeight ? 'bg-gradient-to-br from-fuchsia-600 to-purple-700 ring-2 ring-fuchsia-400' : 'bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700'} text-white`}>
+          <div className="text-lg mb-1">⚖️</div>
+          <div className="text-xs">{t('home.bagWeight')}</div>
         </button>
         <GradientButton
           onClick={() => setShowGoalModal(true)}

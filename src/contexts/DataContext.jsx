@@ -132,15 +132,26 @@ export const DataProvider = ({ children }) => {
           await setMetadata('syncMigrationV1', 'done');
         }
 
-        // ❌ SYNC INICIAL DESATIVADO
-        // Sync 100% MANUAL - utilizador controla quando sincronizar
-        // (Antes fazia fullSync() aqui no boot, agora não)
-
-        // ❌ AUTO-SYNC DESATIVADO (sincronizar só quando utilizador pedir)
-        // syncService.startAutoSync(5);
-
-        // ❌ REALTIME SYNC DESATIVADO (mais rápido + menos bateria)
-        // syncService.startRealtimeSync();
+        // 🔄 BOOT SYNC: Se nunca sincronizou (lastSyncTimestamp === null), fazer pull completo
+        // automático ao iniciar. Isto garante que dados históricos do Firebase são importados
+        // sem precisar que o utilizador pressione o botão de sync manualmente.
+        const lastSyncTs = await getMetadata('lastSyncTimestamp');
+        if (!lastSyncTs) {
+          console.log('[DataContext] 🔄 Boot sync: sem lastSyncTimestamp, fazendo pull completo do Firebase...');
+          try {
+            setIsSyncing(true);
+            await syncService.pushToFirebase();
+            const bootResult = await syncService.fullSync({ skipZombies: true, incremental: false });
+            if (bootResult && bootResult.pulled > 0) {
+              console.log(`[DataContext] ✅ Boot sync completo: ${bootResult.pulled} docs recebidos`);
+              await loadAllCollections();
+            }
+          } catch (bootErr) {
+            console.warn('[DataContext] ⚠️ Boot sync falhou (sem ligação?):', bootErr.message);
+          } finally {
+            setIsSyncing(false);
+          }
+        }
 
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
