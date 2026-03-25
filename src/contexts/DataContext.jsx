@@ -71,6 +71,7 @@ export const DataProvider = ({ children }) => {
   // Sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [syncReady, setSyncReady] = useState(false);
 
   // Firebase auth listener
   useEffect(() => {
@@ -131,6 +132,8 @@ export const DataProvider = ({ children }) => {
           await setMetadata('syncMigrationV1', 'done');
         }
 
+        setSyncReady(true);
+
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
         setIsSyncing(false);
@@ -151,21 +154,26 @@ export const DataProvider = ({ children }) => {
   // Auto-pull quando Dexie está vazio após carregamento completo (ex: novo dispositivo)
   const autoSyncAttempted = useRef(false);
   useEffect(() => {
-    if (!allDataLoaded || !user || !pin) return;
+    if (!allDataLoaded || !syncReady || isSyncing) return;
     if (autoSyncAttempted.current) return;
-    autoSyncAttempted.current = true;
 
     const total = consumptions.length + dailyLogs.length + wellbeingLogs.length +
                   cycles.length + reflections.length + thoughts.length;
-    if (total > 0) return; // já tem dados, não precisa
+    if (total > 0) {
+      autoSyncAttempted.current = true; // tem dados, não precisa de auto-pull
+      return;
+    }
 
+    autoSyncAttempted.current = true;
     console.log('[DataContext] 📥 Dexie vazio após boot — pull automático do Firebase...');
+    setIsSyncing(true);
     syncService.fullSync({ skipZombies: true, incremental: false })
       .then(result => {
-        if (result?.pulled > 0 || result?.pushed > 0) loadAllCollections();
+        if (result?.pulled > 0 || result?.pushed > 0) return loadAllCollections();
       })
-      .catch(err => console.warn('[DataContext] Auto-pull falhou (sync não pronto?):', err.message));
-  }, [allDataLoaded, user, pin, consumptions, dailyLogs, wellbeingLogs, cycles, reflections, thoughts, loadAllCollections]);
+      .catch(err => console.warn('[DataContext] Auto-pull falhou:', err.message))
+      .finally(() => setIsSyncing(false));
+  }, [allDataLoaded, syncReady, isSyncing, consumptions, dailyLogs, wellbeingLogs, cycles, reflections, thoughts, loadAllCollections]);
 
   /**
    * CRUD Operations - AUTO-PUSH para Firebase
