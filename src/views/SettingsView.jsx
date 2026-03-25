@@ -107,7 +107,7 @@ export const SettingsView = ({
                                 const result = await manualSync();
                                 if (result && result.success) {
                                     const total = (result.pushed || 0) + (result.pulled || 0);
-                                    setSyncStatus({ type: 'success', message: total > 0 ? `✅ ${total} registos sincronizados` : '✅ Tudo atualizado' });
+                                    setSyncStatus({ type: 'success', message: total > 0 ? t('settings.syncRecords', { count: total }) : t('settings.syncUpToDate') });
                                 } else {
                                     setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}` });
                                 }
@@ -148,28 +148,28 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Download className="w-5 h-5" />
-                    Exportar dados
+                    {t('settings.exportTitle')}
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Gera um relatório para partilhar com profissionais de saúde ou guarda os teus dados.
+                        {t('settings.exportDescription')}
                     </p>
                     <button
                         onClick={onOpenExport}
                         className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium flex items-center justify-center gap-2"
                     >
                         <Icons.Download className="w-4 h-4" />
-                        📤 Exportar / Gerar Relatório PDF ou CSV
+                        {t('settings.exportButton')}
                     </button>
                     <button
                         onClick={onExportJSON}
                         className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
                     >
                         <Icons.Download className="w-4 h-4" />
-                        💾 Backup completo (JSON)
+                        {t('settings.backupJSONButton')}
                     </button>
                     <p className="text-xs text-gray-500">
-                        O backup JSON contém todos os dados em bruto. Guarda numa pasta segura — permite recuperar tudo se necessário.
+                        {t('settings.backupJSONDescription')}
                     </p>
                 </div>
             </div>

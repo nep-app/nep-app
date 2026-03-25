@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
-import { dbtQuestions as dbtQuestionsDefault, reflectiveQuestions as reflectiveQuestionsDefault, copingStrategies as copingStrategiesDefault, educationalResources as educationalResourcesDefault } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
@@ -133,7 +132,7 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -262,7 +261,6 @@ function AuthenticatedApp() {
                 try {
                     await deleteItemFromContext(collectionName, id);
                     showToast(t('messages.itemDeleted'), 'success');
-                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast(t('messages.itemDeleteError'), 'error');
                     logger.error('Erro ao apagar:', error);
@@ -341,7 +339,6 @@ function AuthenticatedApp() {
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast(t('messages.consumptionEdited'), 'success');
-                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast(t('messages.consumptionEditError'), 'error');
                     logger.error('Erro ao editar:', error);
