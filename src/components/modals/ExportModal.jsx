@@ -80,16 +80,26 @@ const downloadCSV = (filename, rows) => {
   URL.revokeObjectURL(url);
 };
 
+// Compute cycle end dates: each cycle ends when the next one starts
+const computeCycleEnds = (cycles) => {
+  const sorted = [...cycles].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return sorted.map((c, i) => ({
+    ...c,
+    _computedEnd: i < sorted.length - 1 ? sorted[i + 1].timestamp : null,
+  }));
+};
+
 const buildCSVs = (data, selected) => {
   const files = [];
 
   if (selected.consumptions && data.consumptions.length > 0) {
-    const rows = [csvRow(['Data', 'Hora', 'Notas'])];
+    const rows = [csvRow(['Data', 'Hora', 'Quantidade', 'Notas'])];
     data.consumptions.forEach(c => {
       const d = safeDate(c.timestamp);
       rows.push(csvRow([
         d ? d.toLocaleDateString('pt-PT') : '',
         d ? d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
+        c.amount ? `${c.amount} ${c.unit || 'mg'}` : '',
         c.notes || '',
       ]));
     });
@@ -110,14 +120,15 @@ const buildCSVs = (data, selected) => {
   }
 
   if (selected.cycles && data.cycles.length > 0) {
+    const cyclesWithEnd = computeCycleEnds(data.cycles);
     const rows = [csvRow(['Início', 'Fim', 'Duração (dias)', 'Hora deitar', 'Horas sono', 'Gatilhos', 'Notas'])];
-    data.cycles.forEach(c => {
-      const start = safeDate(c.startDate || c.timestamp);
-      const end   = safeDate(c.endDate);
+    cyclesWithEnd.forEach(c => {
+      const start = safeDate(c.timestamp);
+      const end   = c._computedEnd ? safeDate(c._computedEnd) : null;
       const days  = (start && end) ? Math.round((end - start) / 86400000) : '';
       rows.push(csvRow([
         start ? start.toLocaleDateString('pt-PT') : '',
-        end   ? end.toLocaleDateString('pt-PT')   : '',
+        end   ? end.toLocaleDateString('pt-PT')   : 'Em curso',
         days,
         c.bedtime || '',
         c.sleep ? `${c.sleep}h` : '',
@@ -171,88 +182,125 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   const periodLabel = PERIODS.find(p => p.id === period)?.label || period;
   const now = new Date().toLocaleDateString('pt-PT', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const section = (title, emoji, rows, headers) => {
-    if (!rows.length) return '';
-    const headerRow = headers.map(h => `<th>${h}</th>`).join('');
-    const dataRows = rows.map(r => `<tr>${r.map(c => `<td>${c ?? '—'}</td>`).join('')}</tr>`).join('');
-    return `
+  // Compute cycle end dates
+  const cyclesWithEnd = computeCycleEnds(data.cycles || []);
+
+  // Collect all entries with a dateKey (YYYY-MM-DD) and a sort timestamp
+  const allEntries = [];
+
+  if (selected.consumptions) {
+    data.consumptions.forEach(c => {
+      const d = safeDate(c.timestamp);
+      if (!d) return;
+      const dateKey = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const detail = [
+        c.amount ? `${c.amount} ${c.unit || 'mg'}` : null,
+        c.notes || null,
+      ].filter(Boolean).join(' — ') || '—';
+      allEntries.push({ dateKey, sort: d, row: ['💊 Consumo', time, detail] });
+    });
+  }
+
+  if (selected.dailyLogs) {
+    data.dailyLogs.forEach(l => {
+      const d = safeDate(l.date || l.timestamp);
+      if (!d) return;
+      const dateKey = l.date || d.toISOString().split('T')[0];
+      const detail = [
+        l.mg ? `${l.mg} mg` : null,
+        l.times != null ? `${l.times}× consumos` : null,
+        l.notes || null,
+      ].filter(Boolean).join(' — ') || '—';
+      allEntries.push({ dateKey, sort: d, row: ['📋 Registo diário', '—', detail] });
+    });
+  }
+
+  if (selected.cycles) {
+    cyclesWithEnd.forEach(c => {
+      const d = safeDate(c.timestamp);
+      if (!d) return;
+      const dateKey = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
+      const detail = [
+        endD ? `Fim: ${endD.toLocaleDateString('pt-PT')}` : 'Em curso',
+        c.sleep ? `Sono: ${c.sleep}h` : null,
+        (c.triggers || []).length ? `Gatilhos: ${(c.triggers || []).join(', ')}` : null,
+        c.notes || null,
+      ].filter(Boolean).join(' — ') || '—';
+      allEntries.push({ dateKey, sort: d, row: ['🌙 Ciclo', time, detail] });
+    });
+  }
+
+  if (selected.wellbeing) {
+    data.wellbeingLogs.forEach(w => {
+      const d = safeDate(w.timestamp || w.date);
+      if (!d) return;
+      const dateKey = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const detail = [
+        w.mood   ? `Humor: ${w.mood}/10`   : null,
+        w.energy ? `Energia: ${w.energy}/10` : null,
+        [w.water && 'Água', w.rest && 'Descanso', w.food && 'Alimentação', w.social && 'Social'].filter(Boolean).join(', ') || null,
+        (w.emotions || []).length ? (w.emotions || []).join(', ') : null,
+        w.notes || null,
+      ].filter(Boolean).join(' — ') || '—';
+      allEntries.push({ dateKey, sort: d, row: ['💚 Bem-estar', time, detail] });
+    });
+  }
+
+  if (selected.reflections) {
+    data.reflections.forEach(r => {
+      const d = safeDate(r.timestamp || r.date);
+      if (!d) return;
+      const dateKey = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      const detail = [r.question, r.answer].filter(Boolean).join(': ') || '—';
+      allEntries.push({ dateKey, sort: d, row: ['📝 Reflexão', time, detail] });
+    });
+  }
+
+  if (selected.thoughts) {
+    data.thoughts.forEach(t => {
+      const d = safeDate(t.timestamp || t.date);
+      if (!d) return;
+      const dateKey = d.toISOString().split('T')[0];
+      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+      allEntries.push({ dateKey, sort: d, row: ['💭 Pensamento', time, t.content || '—'] });
+    });
+  }
+
+  // Group by date and sort dates descending (newest first)
+  const byDate = {};
+  allEntries.forEach(entry => {
+    if (!byDate[entry.dateKey]) byDate[entry.dateKey] = [];
+    byDate[entry.dateKey].push(entry);
+  });
+
+  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
+  let content = '';
+  if (sortedDates.length === 0) {
+    content = '<p>Sem dados para o período selecionado.</p>';
+  } else {
+    sortedDates.forEach(dateKey => {
+      const entries = byDate[dateKey].sort((a, b) => a.sort - b.sort);
+      const dayLabel = new Date(dateKey + 'T12:00:00').toLocaleDateString('pt-PT', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const dataRows = entries.map(e =>
+        `<tr>${e.row.map(c => `<td>${c ?? '—'}</td>`).join('')}</tr>`
+      ).join('');
+      content += `
       <div class="section">
-        <h2>${emoji} ${title}</h2>
+        <h2>${dayLabel}</h2>
         <table>
-          <thead><tr>${headerRow}</tr></thead>
+          <thead><tr><th>Tipo</th><th>Hora</th><th>Detalhes</th></tr></thead>
           <tbody>${dataRows}</tbody>
         </table>
       </div>`;
-  };
-
-  let content = '';
-
-  if (selected.consumptions && data.consumptions.length > 0) {
-    const rows = data.consumptions.map(c => {
-      const d = safeDate(c.timestamp);
-      return [
-        d ? d.toLocaleDateString('pt-PT') : '—',
-        d ? d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '—',
-        c.notes || '',
-      ];
     });
-    content += section('Consumos', '💊', rows, ['Data', 'Hora', 'Notas']);
-  }
-
-  if (selected.dailyLogs && data.dailyLogs.length > 0) {
-    const rows = data.dailyLogs.map(l => [
-      fmtDate(l.date || l.timestamp),
-      l.mg ? `${l.mg} mg` : '—',
-      l.times != null ? l.times : '—',
-      l.notes || '',
-    ]);
-    content += section('Registos Diários', '📋', rows, ['Data', 'Dose', 'Nº consumos', 'Notas']);
-  }
-
-  if (selected.cycles && data.cycles.length > 0) {
-    const rows = data.cycles.map(c => {
-      const start = safeDate(c.startDate || c.timestamp);
-      const end   = safeDate(c.endDate);
-      const days  = (start && end) ? Math.round((end - start) / 86400000) : '—';
-      return [
-        start ? start.toLocaleDateString('pt-PT') : '—',
-        end   ? end.toLocaleDateString('pt-PT')   : 'Em curso',
-        days !== '—' ? `${days} dias` : '—',
-        c.sleep ? `${c.sleep}h` : '—',
-        (c.triggers || []).join(', ') || '—',
-        c.notes || '',
-      ];
-    });
-    content += section('Ciclos / Pausas', '🌙', rows, ['Início', 'Fim', 'Duração', 'Sono', 'Gatilhos', 'Notas']);
-  }
-
-  if (selected.wellbeing && data.wellbeingLogs.length > 0) {
-    const rows = data.wellbeingLogs.map(w => [
-      fmtDateTime(w.timestamp || w.date),
-      w.mood   ? `${w.mood}/10`   : '—',
-      w.energy ? `${w.energy}/10` : '—',
-      [w.water && 'Água', w.rest && 'Descanso', w.food && 'Alimentação', w.social && 'Social'].filter(Boolean).join(', ') || '—',
-      (w.emotions || []).join(', ') || '—',
-      w.notes || '',
-    ]);
-    content += section('Bem-estar', '💚', rows, ['Data/Hora', 'Humor', 'Energia', 'Check-ins', 'Emoções', 'Notas']);
-  }
-
-  if (selected.reflections && data.reflections.length > 0) {
-    const rows = data.reflections.map(r => [
-      fmtDate(r.timestamp || r.date),
-      r.question || '',
-      r.answer || '',
-    ]);
-    content += section('Reflexões', '📝', rows, ['Data', 'Pergunta', 'Resposta']);
-  }
-
-  if (selected.thoughts && data.thoughts.length > 0) {
-    const rows = data.thoughts.map(t => [
-      fmtDate(t.timestamp || t.date),
-      t.content || '',
-    ]);
-    content += section('Pensamentos', '💭', rows, ['Data', 'Conteúdo']);
   }
 
   const rangeLabel = period === 'custom'
@@ -290,7 +338,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     Este relatório foi gerado automaticamente. Partilha com o teu profissional de saúde.
   </p>
 </header>
-${content || '<p>Sem dados para o período selecionado.</p>'}
+${content}
 <div class="no-print" style="margin-top:32px;text-align:center;">
   <button onclick="window.print()" style="padding:10px 28px;font-size:12pt;cursor:pointer;border:none;background:#333;color:#fff;border-radius:6px;">
     🖨️ Imprimir / Guardar como PDF
@@ -322,7 +370,7 @@ export const ExportModal = ({ isOpen, onClose }) => {
   const filteredData = useMemo(() => ({
     consumptions: filterByPeriod(consumptions,  period, customFrom, customTo, 'timestamp'),
     dailyLogs:    filterByPeriod(dailyLogs,     period, customFrom, customTo, 'date'),
-    cycles:       filterByPeriod(cycles,        period, customFrom, customTo, 'startDate'),
+    cycles:       filterByPeriod(cycles,        period, customFrom, customTo, 'timestamp'),
     wellbeingLogs:filterByPeriod(wellbeingLogs, period, customFrom, customTo, 'timestamp'),
     reflections:  filterByPeriod(reflections,   period, customFrom, customTo, 'timestamp'),
     thoughts:     filterByPeriod(thoughts,      period, customFrom, customTo, 'timestamp'),
