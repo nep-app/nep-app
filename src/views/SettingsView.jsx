@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 const APP_VERSION = '1.5.3';
@@ -6,124 +6,22 @@ const APP_VERSION = '1.5.3';
 export const SettingsView = ({
     user,
     handleLogout,
-    exportToCSV,
-    exportToJSON,
     notificationsEnabled,
     requestNotificationPermission,
     onOpenLegalDoc,
+    onOpenExport,
     manualSync,
-    forcePushAll,
     isSyncing,
     lastSyncTime
 }) => {
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
-    const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
-    const [zombieStats, setZombieStats] = useState(null);
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
-
-    // Capturar evento de install PWA
-    useEffect(() => {
-        const handler = (e) => {
-            e.preventDefault();
-            setDeferredPrompt(e);
-        };
-
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
-    }, []);
 
     const handleChangeLang = (lang) => {
         i18n.changeLanguage(lang);
         localStorage.setItem('nep_lang', lang);
         setCurrentLang(lang);
-    };
-
-    const handleFullSync = async () => {
-        if (!manualSync) {
-            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${t('settings.sync')} não disponível` });
-            return;
-        }
-
-        setSyncStatus({ type: 'loading', message: t('settings.syncing') });
-
-        try {
-            const result = await manualSync();
-
-            if (result && result.success) {
-                const message = `✅ ${t('settings.syncNow')}!\n📤 ${result.pushed}\n📥 ${result.pulled}\n✓ ${result.merged}${result.skipped > 0 ? `\n⚠️ ${result.skipped}` : ''}`;
-                setSyncStatus({ type: 'success', message });
-            } else {
-                setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}` });
-            }
-        } catch (error) {
-            const errorMsg = error?.message || error?.toString() || t('common.error');
-            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${errorMsg}` });
-            setTimeout(() => setSyncStatus(null), 10000);
-        }
-    };
-
-    const handleScanZombies = async () => {
-        setCleanZombiesStatus({ type: 'loading', message: `🔍 ${t('settings.scanning')}` });
-        setZombieStats(null);
-
-        try {
-            if (!window.syncService) {
-                throw new Error('SyncService não disponível');
-            }
-
-            const result = await window.syncService.cleanZombies(0, true);
-
-            if (result.totalZombies > 0) {
-                setZombieStats(result);
-                setCleanZombiesStatus({
-                    type: 'warning',
-                    message: `🧟 ${result.totalZombies} items corrompidos no Firebase!\n\n⚠️ Recomendamos LIMPAR AGORA!`
-                });
-            } else {
-                setCleanZombiesStatus({
-                    type: 'success',
-                    message: `✅ ${t('settings.maintenanceDescription').split('.')[0]}!`
-                });
-            }
-        } catch (error) {
-            setCleanZombiesStatus({
-                type: 'error',
-                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
-            });
-            setTimeout(() => setCleanZombiesStatus(null), 10000);
-        }
-    };
-
-    const handleCleanZombies = async () => {
-        if (!window.confirm(`⚠️ ${t('settings.cleanWarning')}`)) {
-            return;
-        }
-
-        setCleanZombiesStatus({ type: 'loading', message: `🧹 ${t('settings.cleanZombies')}...` });
-
-        try {
-            if (!window.syncService) {
-                throw new Error('SyncService não disponível');
-            }
-
-            const result = await window.syncService.cleanZombies(0, false);
-
-            setZombieStats(null);
-            setCleanZombiesStatus({
-                type: 'success',
-                message: `✅ ❌ ${result.totalDeleted} items deletados\n\n🚀 A app vai abrir MUITO mais rápido agora!`
-            });
-
-            setTimeout(() => setCleanZombiesStatus(null), 15000);
-        } catch (error) {
-            setCleanZombiesStatus({
-                type: 'error',
-                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
-            });
-            setTimeout(() => setCleanZombiesStatus(null), 10000);
-        }
     };
     return (
         <div className="space-y-6">
@@ -203,11 +101,19 @@ export const SettingsView = ({
 
                     <button
                         onClick={async () => {
+                            setSyncStatus({ type: 'loading', message: t('settings.syncing') });
                             try {
-                                await manualSync();
+                                const result = await manualSync();
+                                if (result && result.success) {
+                                    const total = (result.pushed || 0) + (result.pulled || 0);
+                                    setSyncStatus({ type: 'success', message: total > 0 ? `✅ ${total} registos sincronizados` : '✅ Tudo atualizado' });
+                                } else {
+                                    setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}` });
+                                }
                             } catch (error) {
-                                // Error already handled in manualSync
+                                setSyncStatus({ type: 'error', message: `❌ ${error?.message || t('common.error')}` });
                             }
+                            setTimeout(() => setSyncStatus(null), 5000);
                         }}
                         disabled={isSyncing}
                         className={
@@ -221,43 +127,10 @@ export const SettingsView = ({
                         {isSyncing ? t('settings.syncing') : t('settings.syncNow')}
                     </button>
 
-                    <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                        {t('settings.syncNote')}
-                    </div>
-
-                    <button
-                        onClick={async () => {
-                            setSyncStatus({ type: 'loading', message: t('settings.syncing') });
-                            try {
-                                const result = await forcePushAll();
-                                const pulled = result?.pulled || 0;
-                                const pushed = result?.pushed || 0;
-                                if (pulled > 0 || pushed > 0) {
-                                    setSyncStatus({ type: 'success', message: `✓ ${t('settings.forceSyncDone', { count: pulled + pushed })} (↓${pulled} ↑${pushed})` });
-                                } else {
-                                    setSyncStatus({ type: 'warning', message: t('settings.forceSyncZero') });
-                                }
-                            } catch (error) {
-                                setSyncStatus({ type: 'error', message: `✗ ${error.message}` });
-                            }
-                        }}
-                        disabled={isSyncing}
-                        className={
-                            'w-full py-2 rounded-lg transition-all text-sm flex items-center justify-center gap-2 border ' +
-                            (isSyncing
-                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600')
-                        }
-                    >
-                        <Icons.RefreshCw className={'w-3 h-3' + (isSyncing ? ' animate-spin' : '')} />
-                        {isSyncing ? t('settings.syncing') : t('settings.forceSyncNow')}
-                    </button>
-
                     {syncStatus && (
                         <div className={
                             'rounded p-3 text-sm flex items-start justify-between gap-2 ' +
                             (syncStatus.type === 'success' ? 'bg-green-900/40 border border-green-600/50 text-green-300' :
-                             syncStatus.type === 'warning' ? 'bg-yellow-900/40 border border-yellow-600/50 text-yellow-300' :
                              syncStatus.type === 'loading' ? 'bg-gray-700 border border-gray-600 text-gray-300' :
                              'bg-red-900/40 border border-red-600/50 text-red-300')
                         }>
@@ -267,182 +140,26 @@ export const SettingsView = ({
                             )}
                         </div>
                     )}
-
-                    <div className="text-xs text-gray-500">
-                        {t('settings.forceSyncNote')}
-                    </div>
                 </div>
             </div>
 
-            {/* PWA Update */}
+            {/* Exportar Relatório */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.RefreshCw className="w-5 h-5" />
-                    {t('settings.appUpdate')}
+                    <Icons.Download className="w-5 h-5" />
+                    Exportar dados
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        {t('settings.appUpdateDescription')}
+                        Gera um relatório para partilhar com profissionais de saúde ou guarda os teus dados em CSV para o Excel.
                     </p>
-
-                    {/* Botão Instalar (só aparece quando browser permitir) */}
-                    {deferredPrompt && (
-                        <button
-                            onClick={async () => {
-                                if (!deferredPrompt) return;
-                                try {
-                                    await deferredPrompt.prompt();
-                                    const { outcome } = await deferredPrompt.userChoice;
-                                    if (outcome === 'accepted') {
-                                        setDeferredPrompt(null);
-                                    }
-                                } catch (error) {
-                                    // Install cancelled or failed
-                                }
-                            }}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.installApp')}
-                        </button>
-                    )}
-
                     <button
-                        onClick={async () => {
-                            try {
-                                if ('serviceWorker' in navigator) {
-                                    const registrations = await navigator.serviceWorker.getRegistrations();
-                                    for (const registration of registrations) {
-                                        await registration.unregister();
-                                    }
-                                }
-
-                                if ('caches' in window) {
-                                    const cacheNames = await caches.keys();
-                                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                                }
-
-                                window.location.reload(true);
-                            } catch (error) {
-                                alert(`❌ ${t('common.error')} (Ctrl+Shift+R)`);
-                            }
-                        }}
-                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium flex items-center justify-center gap-2"
+                        onClick={onOpenExport}
+                        className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium flex items-center justify-center gap-2"
                     >
-                        <Icons.RefreshCw className="w-4 h-4" />
-                        {t('settings.forceUpdate')}
+                        <Icons.Download className="w-4 h-4" />
+                        📤 Exportar / Gerar Relatório
                     </button>
-
-                    <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
-                        {t('settings.forceUpdateWarning')}
-                    </div>
-
-                    {!deferredPrompt && (
-                        <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                            {t('settings.pwaNote')}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Data Management */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Database className="w-5 h-5" />
-                    {t('settings.data')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.dataDescription')}
-                    </p>
-                    <div className="space-y-2">
-                        <button
-                            onClick={exportToJSON}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.backupJSON')}
-                        </button>
-                        <button
-                            onClick={exportToCSV}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.exportCSV')}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Database Maintenance */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Trash2 className="w-5 h-5" />
-                    {t('settings.maintenance')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.maintenanceDescription')}
-                    </p>
-
-                    {cleanZombiesStatus && (
-                        <div className={
-                            'p-3 rounded-lg text-sm whitespace-pre-line ' +
-                            (cleanZombiesStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
-                             cleanZombiesStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
-                             cleanZombiesStatus.type === 'warning' ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50' :
-                             'bg-blue-900/30 text-blue-300 border border-blue-700/50')
-                        }>
-                            {cleanZombiesStatus.message}
-                        </div>
-                    )}
-
-                    {zombieStats && zombieStats.totalZombies > 0 && (
-                        <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3">
-                            <div className="font-medium text-yellow-300 mb-2">{t('settings.zombieDetails')}</div>
-                            {Object.entries(zombieStats.zombiesByCollection).map(([col, count]) => (
-                                <div key={col} className="text-yellow-300/80">
-                                    • {col}: {count} {count === 1 ? 'item' : 'items'}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="space-y-2">
-                        <button
-                            onClick={handleScanZombies}
-                            disabled={cleanZombiesStatus?.type === 'loading'}
-                            className={
-                                'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                                (cleanZombiesStatus?.type === 'loading'
-                                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600')
-                            }
-                        >
-                            <Icons.Search className="w-4 h-4" />
-                            {cleanZombiesStatus?.type === 'loading' ? t('settings.scanning') : t('settings.scanZombies')}
-                        </button>
-
-                        {zombieStats && zombieStats.totalZombies > 0 && (
-                            <button
-                                onClick={handleCleanZombies}
-                                disabled={cleanZombiesStatus?.type === 'loading'}
-                                className={
-                                    'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                                    (cleanZombiesStatus?.type === 'loading'
-                                        ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700')
-                                }
-                            >
-                                <Icons.Trash2 className="w-4 h-4" />
-                                {t('settings.cleanZombies')}
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="text-xs bg-red-900/20 border border-red-700/50 rounded p-2 text-red-300">
-                        {t('settings.cleanWarning')}
-                    </div>
                 </div>
             </div>
 

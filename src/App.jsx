@@ -49,6 +49,7 @@ const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
+const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
 function HarmReductionTracker() {
             const APP_VERSION = '1.5.3';
@@ -171,6 +172,7 @@ function AuthenticatedApp() {
 
             // Legal Modal State
             const [showLegalModal, setShowLegalModal] = useState(false);
+            const [showExportModal, setShowExportModal] = useState(false);
             const [legalDocType, setLegalDocType] = useState(null); // 'license', 'terms', 'governance'
 
             // Form States
@@ -1187,14 +1189,12 @@ return {
                                     <SettingsView
                                         user={user}
                                         handleLogout={handleLogout}
-                                        exportToCSV={exportToCSV}
-                                        exportToJSON={exportToJSON}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
                                         manualSync={manualSync}
-                                        forcePushAll={forcePushAll}
                                         isSyncing={isSyncing}
                                         lastSyncTime={lastSyncTime}
+                                        onOpenExport={() => setShowExportModal(true)}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
@@ -1298,6 +1298,13 @@ return {
                                 isOpen={showLegalModal}
                                 onClose={() => setShowLegalModal(false)}
                                 documentType={legalDocType}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <ExportModal
+                                isOpen={showExportModal}
+                                onClose={() => setShowExportModal(false)}
                             />
                         </Suspense>
 
