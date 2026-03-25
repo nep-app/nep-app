@@ -1195,6 +1195,7 @@ return {
                                         isSyncing={isSyncing}
                                         lastSyncTime={lastSyncTime}
                                         onOpenExport={() => setShowExportModal(true)}
+                                        onExportJSON={exportToJSON}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);

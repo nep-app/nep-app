@@ -10,6 +10,7 @@ export const SettingsView = ({
     requestNotificationPermission,
     onOpenLegalDoc,
     onOpenExport,
+    onExportJSON,
     manualSync,
     isSyncing,
     lastSyncTime
@@ -151,15 +152,25 @@ export const SettingsView = ({
                 </h3>
                 <div className="space-y-3 text-gray-300">
                     <p className="text-sm">
-                        Gera um relatório para partilhar com profissionais de saúde ou guarda os teus dados em CSV para o Excel.
+                        Gera um relatório para partilhar com profissionais de saúde ou guarda os teus dados.
                     </p>
                     <button
                         onClick={onOpenExport}
                         className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium flex items-center justify-center gap-2"
                     >
                         <Icons.Download className="w-4 h-4" />
-                        📤 Exportar / Gerar Relatório
+                        📤 Exportar / Gerar Relatório PDF ou CSV
                     </button>
+                    <button
+                        onClick={onExportJSON}
+                        className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
+                    >
+                        <Icons.Download className="w-4 h-4" />
+                        💾 Backup completo (JSON)
+                    </button>
+                    <p className="text-xs text-gray-500">
+                        O backup JSON contém todos os dados em bruto. Guarda numa pasta segura — permite recuperar tudo se necessário.
+                    </p>
                 </div>
             </div>
 
