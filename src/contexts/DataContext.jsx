@@ -278,8 +278,10 @@ export const DataProvider = ({ children }) => {
 
     try {
       await syncService.pushToFirebase();
-      const result = await syncService.fullSync({ skipZombies: true, incremental: false });
-      await loadAllCollections();
+      const result = await syncService.fullSync({ skipZombies: true, incremental: true });
+      if (result && (result.pulled > 0 || result.pushed > 0)) {
+        await loadAllCollections();
+      }
 
       setLastSyncTime(new Date());
       return result;

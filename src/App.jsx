@@ -1188,7 +1188,6 @@ return {
                                         handleLogout={handleLogout}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
-                                        manualSync={manualSync}
                                         onForceSync={forcePushAll}
                                         isSyncing={isSyncing}
                                         lastSyncTime={lastSyncTime}
