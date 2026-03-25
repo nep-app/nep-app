@@ -68,10 +68,20 @@ export const calculateStreak = (allItems) => {
  */
 export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null) => {
   try {
+    // Calcular streak com todas as fontes de atividade (independente de consumptions)
+    const allActivityItems = [
+      ...(consumptions || []),
+      ...(dailyLogs || []),
+      ...(wellbeingLogs || []),
+      ...(thoughts || []),
+      ...(reflections || []),
+    ];
+    const streak = calculateStreak(allActivityItems);
+
     if (!consumptions || consumptions.length === 0) {
-      // Sem dados, guardar stats vazias
+      // Sem consumptions: guardar apenas streak (preservar valor correto)
       await db.metadata.put({ key: 'userStats', value: {
-        streak: 0,
+        streak,
         lastConsumptionTime: null,
         totalConsumptions: 0,
         last7DaysCount: 0,
@@ -92,16 +102,6 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     if (cycles === null) cycles = [];
     if (dailyLogs === null) dailyLogs = [];
     if (goals === null) goals = previousStats.goals || [];
-
-    // Calcular streak com todas as fontes de atividade
-    const allActivityItems = [
-      ...consumptions,
-      ...(dailyLogs || []),
-      ...(wellbeingLogs || []),
-      ...(thoughts || []),
-      ...(reflections || []),
-    ];
-    const streak = calculateStreak(allActivityItems);
 
     // Último consumo + intervalo
     const sorted = [...consumptions].sort((a, b) => {
