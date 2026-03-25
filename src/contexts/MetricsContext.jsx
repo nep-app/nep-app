@@ -15,10 +15,10 @@ export const useMetrics = () => {
 };
 
 export const MetricsProvider = ({ children }) => {
-  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs } = useData();
+  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts } = useData();
 
   // Use analysis hook for core analytics
-  const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals);
+  const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals, thoughts, dailyLogs);
 
   // OTIMIZAÇÃO: Criar índices por data para acesso O(1) em vez de O(n)
   const cyclesByDate = useMemo(() => {

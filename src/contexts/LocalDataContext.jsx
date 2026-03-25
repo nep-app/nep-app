@@ -315,7 +315,7 @@ export const LocalDataProvider = ({ children }) => {
                 logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
 
                 logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-                await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData);
+                await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData);
                 setAllDataLoaded(true);
 
                 setBackgroundLoading(false);
@@ -352,7 +352,7 @@ export const LocalDataProvider = ({ children }) => {
 
               // Atualizar stats pré-calculadas (para próximo boot)
               logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData);
+              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
 
               setAllDataLoaded(true); // Sinalizar que FASE 3 está completa
               logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
@@ -387,10 +387,10 @@ export const LocalDataProvider = ({ children }) => {
    */
   const recalculateStats = useCallback(() => {
     // Ler estados atuais e recalcular (async mas não esperamos)
-    updateUserStats(consumptions, cycles, dailyLogs, goals).catch(err =>
+    updateUserStats(consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections).catch(err =>
       logger.error('[LocalData] Erro ao recalcular stats:', err)
     );
-  }, [consumptions, cycles, dailyLogs, goals]);
+  }, [consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections]);
 
   /**
    * CRUD: Adicionar item

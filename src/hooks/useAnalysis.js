@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
 
-export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals) => {
+export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals, thoughts = [], dailyLogs = []) => {
   // Carregar stats pré-calculadas (para mostrar streak LOGO no boot)
   const [cachedStats, setCachedStats] = useState(null);
 
@@ -197,13 +197,20 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     }
 
     // PRIORIDADE 2: Calcular dos dados desencriptados (FASE 2 ou se cache vazio)
-    if (consumptions.length === 0 && wellbeingLogs.length === 0) {
+    const hasAnyData = consumptions.length > 0 || wellbeingLogs.length > 0 || thoughts.length > 0 || reflections.length > 0 || dailyLogs.length > 0;
+    if (!hasAnyData) {
       console.log('[useAnalysis] ℹ️ Sem dados para calcular streak');
       return { current: 0, max: 0 };
     }
 
     console.log('[useAnalysis] 🔢 Calculando streak dos dados desencriptados...');
-    const allDates = [...new Set([...consumptions.map(c => c.date), ...wellbeingLogs.map(w => w.date)])].sort();
+    const allDates = [...new Set([
+      ...consumptions.map(c => c.date),
+      ...wellbeingLogs.map(w => w.date),
+      ...thoughts.map(t => t.date),
+      ...reflections.map(r => r.date),
+      ...dailyLogs.map(l => l.date),
+    ].filter(Boolean))].sort();
     let streak = 1;
     let maxStreak = 1;
 
@@ -221,7 +228,7 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     }
 
     return { current: streak, max: maxStreak };
-  }, [consumptions, wellbeingLogs, cachedStats]);
+  }, [consumptions, wellbeingLogs, thoughts, reflections, dailyLogs, cachedStats]);
 
   // Goal progress calculation
   const getGoalProgress = (goal) => {
