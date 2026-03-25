@@ -4,6 +4,7 @@ import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
+import { BagWeightEntry } from '../components/BagWeightEntry';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
@@ -31,6 +32,7 @@ export function HomeViewRefactored({
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
+  const [showBagWeight, setShowBagWeight] = useState(false);
 
   useEffect(() => {
     getUserStats().then(stats => {
@@ -180,9 +182,9 @@ export function HomeViewRefactored({
           <div className="text-xl mb-1">🌙</div>
           <div className="text-sm">{t('home.newCycle')}</div>
         </button>
-        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-4 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-xl mb-1">📊</div>
-          <div className="text-sm">{t('home.registerMg')}</div>
+        <button onClick={() => setShowBagWeight(prev => !prev)} className={`rounded-xl p-4 font-medium transition-all shadow-md hover:shadow-lg flex flex-col items-center ${showBagWeight ? 'bg-gradient-to-br from-rose-600 to-pink-700 ring-2 ring-rose-400' : 'bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700'} text-white`}>
+          <div className="text-xl mb-1">⚖️</div>
+          <div className="text-sm">{t('home.bagWeight')}</div>
         </button>
         <GradientButton
           onClick={() => setShowGoalModal(true)}
@@ -194,6 +196,10 @@ export function HomeViewRefactored({
           {t('home.goals')}
         </GradientButton>
       </div>
+
+      {showBagWeight && (
+        <BagWeightEntry onClose={() => setShowBagWeight(false)} showToast={showToast} />
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>
