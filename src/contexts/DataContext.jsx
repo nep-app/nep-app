@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -58,7 +58,8 @@ export const DataProvider = ({ children }) => {
     updateItem,
     deleteItem,
     loadAllCollections,
-    getPendingSyncItems
+    getPendingSyncItems,
+    allDataLoaded,
   } = useLocalData();
 
   // Coping strategies (legacy - vazio por agora)
@@ -146,6 +147,25 @@ export const DataProvider = ({ children }) => {
       }
     };
   }, [user, pin, db, getUserSalt, loadAllCollections, firebaseLoading]);
+
+  // Auto-pull quando Dexie está vazio após carregamento completo (ex: novo dispositivo)
+  const autoSyncAttempted = useRef(false);
+  useEffect(() => {
+    if (!allDataLoaded || !user || !pin) return;
+    if (autoSyncAttempted.current) return;
+    autoSyncAttempted.current = true;
+
+    const total = consumptions.length + dailyLogs.length + wellbeingLogs.length +
+                  cycles.length + reflections.length + thoughts.length;
+    if (total > 0) return; // já tem dados, não precisa
+
+    console.log('[DataContext] 📥 Dexie vazio após boot — pull automático do Firebase...');
+    syncService.fullSync({ skipZombies: true, incremental: false })
+      .then(result => {
+        if (result?.pulled > 0 || result?.pushed > 0) loadAllCollections();
+      })
+      .catch(err => console.warn('[DataContext] Auto-pull falhou (sync não pronto?):', err.message));
+  }, [allDataLoaded, user, pin, consumptions, dailyLogs, wellbeingLogs, cycles, reflections, thoughts, loadAllCollections]);
 
   /**
    * CRUD Operations - AUTO-PUSH para Firebase
