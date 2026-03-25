@@ -70,6 +70,7 @@
     "newCycle": "New Cycle",
     "registerMg": "Log mg",
     "bagWeight": "Weigh bag",
+    "bagWeightDatetime": "Date and time",
     "bagWeightBefore": "Weight before (g)",
     "bagWeightAfter": "Weight after (g)",
     "bagWeightResult": "{{mg}} mg calculated",

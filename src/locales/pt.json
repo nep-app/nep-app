@@ -70,6 +70,7 @@
     "newCycle": "Novo Ciclo",
     "registerMg": "Registar mg",
     "bagWeight": "Pesar saco",
+    "bagWeightDatetime": "Data e hora",
     "bagWeightBefore": "Peso antes (g)",
     "bagWeightAfter": "Peso depois (g)",
     "bagWeightResult": "{{mg}} mg calculados",

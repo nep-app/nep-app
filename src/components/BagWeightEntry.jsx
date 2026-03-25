@@ -3,6 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { useUI } from '../contexts/UIContext';
 
+// Format a Date to "YYYY-MM-DDTHH:MM" for datetime-local input
+const toLocalDatetimeValue = (d) => {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export function BagWeightEntry({ onClose, showToast }) {
   const { t } = useTranslation();
   const { addConsumption, consumptions } = useData();
@@ -10,6 +16,7 @@ export function BagWeightEntry({ onClose, showToast }) {
 
   const [weightBefore, setWeightBefore] = useState('');
   const [weightAfter, setWeightAfter] = useState('');
+  const [datetime, setDatetime] = useState(() => toLocalDatetimeValue(new Date()));
   const [loading, setLoading] = useState(false);
 
   const before = parseFloat(weightBefore);
@@ -17,6 +24,8 @@ export function BagWeightEntry({ onClose, showToast }) {
   const hasValues = weightBefore !== '' && weightAfter !== '';
   const isNegative = hasValues && after >= before;
   const mgConsumed = hasValues && !isNegative ? Math.round((before - after) * 1000) : null;
+
+  const selectedDate = datetime ? datetime.split('T')[0] : new Date().toISOString().split('T')[0];
 
   const todayMg = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -36,10 +45,10 @@ export function BagWeightEntry({ onClose, showToast }) {
     if (!mgConsumed || mgConsumed <= 0) return;
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
       await addConsumption({
-        timestamp: new Date().toISOString(),
-        date: today,
+        timestamp: ts,
+        date: selectedDate,
         amount: mgConsumed,
         unit: 'mg',
         method: 'bagWeight',
@@ -50,6 +59,7 @@ export function BagWeightEntry({ onClose, showToast }) {
       showToast && showToast(`✓ ${mgConsumed} mg ${t('home.bagWeightRegistered')}`, 'success');
       setWeightBefore('');
       setWeightAfter('');
+      setDatetime(toLocalDatetimeValue(new Date()));
       onClose();
     } catch (err) {
       showToast && showToast(`✗ ${err.message}`, 'error');
@@ -76,6 +86,16 @@ export function BagWeightEntry({ onClose, showToast }) {
         <button onClick={onClose} className={`text-xs px-2 py-1 rounded ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
           ✕
         </button>
+      </div>
+
+      <div className="mb-3">
+        <label className={`block text-xs mb-1 ${label}`}>{t('home.bagWeightDatetime')}</label>
+        <input
+          type="datetime-local"
+          value={datetime}
+          onChange={e => setDatetime(e.target.value)}
+          className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${input}`}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -146,3 +166,4 @@ export function BagWeightEntry({ onClose, showToast }) {
     </div>
   );
 }
+
