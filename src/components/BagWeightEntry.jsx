@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { useUI } from '../contexts/UIContext';
+import { getMetadata, setMetadata } from '../db/localDB';
 
-// Format a Date to "YYYY-MM-DDTHH:MM" for datetime-local input
 const toLocalDatetimeValue = (d) => {
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -14,50 +14,71 @@ export function BagWeightEntry({ onClose, showToast }) {
   const { addDailyLog, dailyLogs } = useData();
   const { darkMode } = useUI();
 
-  const [weightBefore, setWeightBefore] = useState('');
-  const [weightAfter, setWeightAfter] = useState('');
+  const [tare, setTare] = useState(null);
+  const [editingTare, setEditingTare] = useState(false);
+  const [tareInput, setTareInput] = useState('');
+  const [grossWeight, setGrossWeight] = useState('');
   const [datetime, setDatetime] = useState(() => toLocalDatetimeValue(new Date()));
   const [loading, setLoading] = useState(false);
 
-  const before = parseFloat(weightBefore);
-  const after = parseFloat(weightAfter);
-  const hasValues = weightBefore !== '' && weightAfter !== '';
-  const isNegative = hasValues && before >= after;
-  const mgConsumed = hasValues && !isNegative ? Math.round((after - before) * 1000) : null;
+  useEffect(() => {
+    getMetadata('bagTare').then(val => {
+      if (val != null) {
+        setTare(parseFloat(val));
+        setTareInput(String(val));
+      } else {
+        setEditingTare(true);
+      }
+    });
+  }, []);
+
+  // Last bagWeight entry (with new-format grossWeight field)
+  const lastEntry = useMemo(() => {
+    return dailyLogs
+      .filter(l => l.method === 'bagWeight' && l.grossWeight != null)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0] || null;
+  }, [dailyLogs]);
+
+  const gross = parseFloat(grossWeight);
+  const hasGross = grossWeight !== '' && !isNaN(gross);
+  const netWeight = hasGross && tare != null ? gross - tare : null;
+  const netValid = netWeight != null && netWeight >= 0;
+  const mgRemaining = netValid ? Math.round(netWeight * 1000) : null;
+
+  // mg change since last entry: positive = consumed, negative = refilled
+  const mgChangeSinceLast = useMemo(() => {
+    if (!lastEntry || !netValid || lastEntry.netWeight == null) return null;
+    return Math.round((lastEntry.netWeight - netWeight) * 1000);
+  }, [lastEntry, netWeight, netValid]);
 
   const selectedDate = datetime ? datetime.split('T')[0] : new Date().toISOString().split('T')[0];
 
-  const todayMg = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return dailyLogs
-      .filter(l => l.method === 'bagWeight' && l.date === today && l.mg > 0)
-      .reduce((sum, l) => sum + (l.mg || 0), 0);
-  }, [dailyLogs]);
-
-  const avgMgPerEntry = useMemo(() => {
-    const weighted = dailyLogs.filter(l => l.method === 'bagWeight' && l.mg > 0);
-    if (weighted.length === 0) return null;
-    const total = weighted.reduce((sum, l) => sum + (l.mg || 0), 0);
-    return Math.round(total / weighted.length);
-  }, [dailyLogs]);
+  const handleSaveTare = async () => {
+    const val = parseFloat(tareInput);
+    if (isNaN(val) || val < 0) return;
+    await setMetadata('bagTare', val);
+    setTare(val);
+    setEditingTare(false);
+  };
 
   const handleSubmit = async () => {
-    if (!mgConsumed || mgConsumed <= 0) return;
+    if (!netValid || tare == null) return;
     setLoading(true);
     try {
       const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
+      const mgConsumed = mgChangeSinceLast != null && mgChangeSinceLast > 0 ? mgChangeSinceLast : 0;
       await addDailyLog({
         timestamp: ts,
         date: selectedDate,
         mg: mgConsumed,
         method: 'bagWeight',
-        weightBefore: before,
-        weightAfter: after,
-        notes: `${t('home.bagWeightNote')}: ${weightBefore}g → ${weightAfter}g`
+        grossWeight: gross,
+        tare,
+        netWeight,
+        notes: `${t('home.bagWeightNote')}: ${gross}g (tara ${tare}g) → ${netWeight.toFixed(2)}g`,
       });
-      showToast && showToast(`✓ ${mgConsumed} mg ${t('home.bagWeightRegistered')}`, 'success');
-      setWeightBefore('');
-      setWeightAfter('');
+      showToast && showToast(t('home.bagWeightRegistered', { mg: mgRemaining }), 'success');
+      setGrossWeight('');
       setDatetime(toLocalDatetimeValue(new Date()));
       onClose();
     } catch (err) {
@@ -68,13 +89,14 @@ export function BagWeightEntry({ onClose, showToast }) {
   };
 
   const base = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const label = darkMode ? 'text-gray-400' : 'text-gray-500';
-  const input = darkMode
+  const muted = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const inp = darkMode
     ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-rose-500'
     : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-rose-500';
 
   return (
     <div className={`rounded-xl border p-4 ${base} shadow-md`}>
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">⚖️</span>
@@ -87,82 +109,104 @@ export function BagWeightEntry({ onClose, showToast }) {
         </button>
       </div>
 
+      {/* Tare row */}
+      {editingTare ? (
+        <div className="flex gap-2 mb-3">
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            placeholder="430"
+            value={tareInput}
+            onChange={e => setTareInput(e.target.value)}
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${inp}`}
+          />
+          <button
+            onClick={handleSaveTare}
+            disabled={!tareInput || isNaN(parseFloat(tareInput))}
+            className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-medium disabled:opacity-40"
+          >
+            {t('home.bagWeightSaveTare')}
+          </button>
+        </div>
+      ) : (
+        <div className={`flex items-center justify-between mb-3 text-xs ${muted}`}>
+          <span>{t('home.bagWeightTareLabel', { g: tare })}</span>
+          <button onClick={() => setEditingTare(true)} className="underline hover:opacity-70">
+            {t('home.bagWeightChangeBag')}
+          </button>
+        </div>
+      )}
+
+      {/* Datetime */}
       <div className="mb-3">
-        <label className={`block text-xs mb-1 ${label}`}>{t('home.bagWeightDatetime')}</label>
+        <label className={`block text-xs mb-1 ${muted}`}>{t('home.bagWeightDatetime')}</label>
         <input
           type="datetime-local"
           value={datetime}
           onChange={e => setDatetime(e.target.value)}
-          className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${input}`}
+          className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${inp}`}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label className={`block text-xs mb-1 ${label}`}>{t('home.bagWeightBefore')}</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={weightBefore}
-            onChange={e => setWeightBefore(e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${input}`}
-          />
-        </div>
-        <div>
-          <label className={`block text-xs mb-1 ${label}`}>{t('home.bagWeightAfter')}</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            value={weightAfter}
-            onChange={e => setWeightAfter(e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${input}`}
-          />
-        </div>
+      {/* Gross weight input */}
+      <div className="mb-3">
+        <label className={`block text-xs mb-1 ${muted}`}>{t('home.bagWeightGross')}</label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder={tare != null ? `> ${tare}` : '0.00'}
+          value={grossWeight}
+          onChange={e => setGrossWeight(e.target.value)}
+          className={`w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${inp}`}
+        />
       </div>
 
-      {hasValues && (
-        <div className={`rounded-lg px-3 py-2 mb-3 text-sm font-medium text-center ${
-          isNegative
+      {/* Result */}
+      {hasGross && tare != null && (
+        <div className={`rounded-lg px-3 py-2 mb-3 text-sm text-center ${
+          !netValid
             ? (darkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600')
             : (darkMode ? 'bg-rose-900/30 text-rose-300' : 'bg-rose-50 text-rose-700')
         }`}>
-          {isNegative
-            ? t('home.bagWeightNegative')
-            : t('home.bagWeightResult', { mg: mgConsumed })}
+          {!netValid
+            ? t('home.bagWeightBelowTare')
+            : (
+              <>
+                <div className="font-semibold">{t('home.bagWeightRemaining', { g: netWeight.toFixed(2), mg: mgRemaining })}</div>
+                {mgChangeSinceLast != null && (
+                  <div className="text-xs mt-0.5 opacity-80">
+                    {mgChangeSinceLast > 0
+                      ? t('home.bagWeightConsumedSince', { mg: mgChangeSinceLast })
+                      : mgChangeSinceLast < 0
+                        ? t('home.bagWeightRefilled', { mg: Math.abs(mgChangeSinceLast) })
+                        : null}
+                  </div>
+                )}
+              </>
+            )
+          }
         </div>
       )}
 
       <button
         onClick={handleSubmit}
-        disabled={!mgConsumed || mgConsumed <= 0 || loading}
+        disabled={!netValid || tare == null || loading}
         className="w-full py-2.5 rounded-lg bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:from-rose-600 hover:to-pink-700 transition-all"
       >
         {loading ? '...' : t('home.bagWeightRegister')}
       </button>
 
-      {(todayMg > 0 || avgMgPerEntry !== null) && (
-        <div className={`grid grid-cols-2 gap-2 mt-3 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          {todayMg > 0 && (
-            <div className="text-center">
-              <div className={`text-xs ${label}`}>{t('home.bagWeightTodayMg')}</div>
-              <div className={`text-lg font-bold ${darkMode ? 'text-rose-300' : 'text-rose-600'}`}>{todayMg}</div>
-              <div className={`text-xs ${label}`}>mg</div>
-            </div>
-          )}
-          {avgMgPerEntry !== null && (
-            <div className="text-center">
-              <div className={`text-xs ${label}`}>{t('home.bagWeightAvgMg')}</div>
-              <div className={`text-lg font-bold ${darkMode ? 'text-pink-300' : 'text-pink-600'}`}>{avgMgPerEntry}</div>
-              <div className={`text-xs ${label}`}>mg</div>
-            </div>
-          )}
+      {/* Last entry info */}
+      {lastEntry && (
+        <div className={`mt-3 pt-3 border-t text-xs text-center ${darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-100 text-gray-500'}`}>
+          {t('home.bagWeightLastEntry', {
+            date: new Date(lastEntry.timestamp).toLocaleDateString('pt-PT'),
+            mg: Math.round((lastEntry.netWeight || 0) * 1000),
+          })}
         </div>
       )}
     </div>
   );
 }
-
