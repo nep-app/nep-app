@@ -93,7 +93,7 @@ export const MetricsProvider = ({ children }) => {
       const dailyLog = dailyLogsByDate[date];
       if (dailyLog && dailyLog.mg !== undefined && !isNaN(parseFloat(dailyLog.mg))) {
         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-        if (!isNaN(mgValue) && mgValue > 0) {
+        if (!isNaN(mgValue)) {
           mgValues.push(mgValue);
         }
       }

@@ -50,7 +50,7 @@ export function BagWeightEntry({ onClose, showToast }) {
 
   // Total mg from all dailyLog entries (bag weight + manual)
   const totalMgAll = useMemo(() => {
-    return dailyLogs.filter(l => l.mg > 0).reduce((s, l) => s + (l.mg || 0), 0);
+    return dailyLogs.filter(l => l.mg != null).reduce((s, l) => s + (l.mg || 0), 0);
   }, [dailyLogs]);
 
   const gross = parseFloat(grossWeight);
