@@ -32,11 +32,25 @@ export function BagWeightEntry({ onClose, showToast }) {
     });
   }, []);
 
-  // Last bagWeight entry (with new-format grossWeight field)
+  // Last bagWeight entry — new format (grossWeight) or old format (weightAfter)
+  // netWeight for old entries is approximated using current tare
   const lastEntry = useMemo(() => {
-    return dailyLogs
-      .filter(l => l.method === 'bagWeight' && l.grossWeight != null)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0] || null;
+    const entries = dailyLogs
+      .filter(l => l.method === 'bagWeight' && (l.grossWeight != null || l.weightAfter != null))
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const entry = entries[0];
+    if (!entry) return null;
+    if (entry.netWeight != null) return entry;
+    // Old format: approximate netWeight from weightAfter minus current tare
+    if (entry.weightAfter != null && tare != null) {
+      return { ...entry, netWeight: entry.weightAfter - tare };
+    }
+    return entry;
+  }, [dailyLogs, tare]);
+
+  // Total mg from all dailyLog entries (bag weight + manual)
+  const totalMgAll = useMemo(() => {
+    return dailyLogs.filter(l => l.mg > 0).reduce((s, l) => s + (l.mg || 0), 0);
   }, [dailyLogs]);
 
   const gross = parseFloat(grossWeight);
@@ -198,13 +212,27 @@ export function BagWeightEntry({ onClose, showToast }) {
         {loading ? '...' : t('home.bagWeightRegister')}
       </button>
 
-      {/* Last entry info */}
-      {lastEntry && (
-        <div className={`mt-3 pt-3 border-t text-xs text-center ${darkMode ? 'border-gray-700 text-gray-400' : 'border-gray-100 text-gray-500'}`}>
-          {t('home.bagWeightLastEntry', {
-            date: new Date(lastEntry.timestamp).toLocaleDateString('pt-PT'),
-            mg: Math.round((lastEntry.netWeight || 0) * 1000),
-          })}
+      {/* Stats */}
+      {(lastEntry || totalMgAll > 0) && (
+        <div className={`mt-3 pt-3 border-t grid grid-cols-2 gap-2 ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          {lastEntry && (
+            <div className="text-center">
+              <div className={`text-xs ${muted}`}>{t('home.bagWeightLastEntry')}</div>
+              <div className={`text-sm font-bold ${darkMode ? 'text-rose-300' : 'text-rose-600'}`}>
+                {Math.round((lastEntry.netWeight || 0) * 1000)}mg
+              </div>
+              <div className={`text-xs ${muted}`}>{new Date(lastEntry.timestamp).toLocaleDateString('pt-PT')}</div>
+            </div>
+          )}
+          {totalMgAll > 0 && (
+            <div className="text-center">
+              <div className={`text-xs ${muted}`}>{t('home.bagWeightTotalMg')}</div>
+              <div className={`text-sm font-bold ${darkMode ? 'text-pink-300' : 'text-pink-600'}`}>
+                {totalMgAll}mg
+              </div>
+              <div className={`text-xs ${muted}`}>{t('home.bagWeightAllLogs')}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
