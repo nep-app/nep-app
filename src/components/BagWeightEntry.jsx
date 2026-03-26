@@ -22,8 +22,8 @@ export function BagWeightEntry({ onClose, showToast }) {
   const before = parseFloat(weightBefore);
   const after = parseFloat(weightAfter);
   const hasValues = weightBefore !== '' && weightAfter !== '';
-  const isNegative = hasValues && after >= before;
-  const mgConsumed = hasValues && !isNegative ? Math.round((before - after) * 1000) : null;
+  const isNegative = hasValues && before >= after;
+  const mgConsumed = hasValues && !isNegative ? Math.round((after - before) * 1000) : null;
 
   const selectedDate = datetime ? datetime.split('T')[0] : new Date().toISOString().split('T')[0];
 
