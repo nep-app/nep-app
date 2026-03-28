@@ -944,13 +944,14 @@ export function PatternsView({
                                                     }
                                                 }
 
-                                                // Fallback: buscar nos dailyLogs
-                                                const dailyLog = dailyLogsData.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-                                                if (dailyLog) {
-                                                    const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                                    if (!isNaN(mgValue) && mgValue > 0) {
-                                                        return mgValue;
-                                                    }
+                                                // Fallback: somar todos os dailyLogs desse dia
+                                                const logsForDate = dailyLogsData.filter(l => l.date === date && l.mg != null);
+                                                if (logsForDate.length > 0) {
+                                                    const total = logsForDate.reduce((sum, l) => {
+                                                        const v = typeof l.mg === 'number' ? l.mg : parseFloat(l.mg);
+                                                        return sum + (isNaN(v) ? 0 : v);
+                                                    }, 0);
+                                                    return total;
                                                 }
 
                                                 return null;

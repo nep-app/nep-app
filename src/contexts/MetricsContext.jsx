@@ -33,12 +33,19 @@ export const MetricsProvider = ({ children }) => {
   }, [cycles]);
 
   const dailyLogsByDate = useMemo(() => {
-    const index = {};
+    // Accumulate total mg per date (multiple entries per day are summed)
+    const mgByDate = {};
     dailyLogs.forEach(log => {
       const dateKey = log.date || getDateKeyFromItem(log);
-      if (!index[dateKey]) {
-        index[dateKey] = log;
-      }
+      if (log.mg == null) return;
+      const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
+      if (isNaN(mgValue)) return;
+      mgByDate[dateKey] = (mgByDate[dateKey] || 0) + mgValue;
+    });
+    // Return objects with mg field for compatibility with consumers
+    const index = {};
+    Object.entries(mgByDate).forEach(([date, mg]) => {
+      index[date] = { mg };
     });
     return index;
   }, [dailyLogs]);

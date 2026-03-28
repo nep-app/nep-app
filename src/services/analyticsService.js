@@ -289,7 +289,7 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
 
         // Ler mg de dailyLogs (novo sistema)
         dailyLogs.forEach(log => {
-            if (!log.date || !log.mg) return;
+            if (!log.date || log.mg == null) return;
             if (!mgByDate[log.date]) mgByDate[log.date] = 0;
             const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
             if (!isNaN(mgValue)) mgByDate[log.date] += mgValue;
