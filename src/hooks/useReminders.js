@@ -86,8 +86,8 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         // Only show reminders between 8h and 22h
         if (hour < 8 || hour > 22) return;
 
-        // Morning check (9h): wellbeing + reflection
-        if (hour === 9 && shouldShowReminder('morning-check')) {
+        // Morning check (9h–17h): wellbeing + reflection
+        if (hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
           const missing = [];
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
           if (!hasWellbeingToday) missing.push('bem-estar');
@@ -123,9 +123,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           dismissReminder('daily-check');
         }
 
-        // Bag weighing alarm: at user-configured hour
+        // Bag weighing alarm: from configured hour onwards (if not yet weighed today)
         const bagAlarmHour = safeLocalStorage.get('bagWeighAlarmHour', null);
-        if (bagAlarmHour !== null && hour === parseInt(bagAlarmHour) && shouldShowReminder('bag-weigh')) {
+        if (bagAlarmHour !== null && hour >= parseInt(bagAlarmHour) && shouldShowReminder('bag-weigh')) {
           const hasBagWeighToday = dailyLogs.some(d => d.date === today && d.method === 'bagWeight');
           if (!hasBagWeighToday) {
             showToast('⚖️ Lembrete: Pesa o saco hoje!', 'info');
@@ -139,6 +139,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     };
 
     try {
+      checkReminders(); // Run immediately on mount / data change
       const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
       return () => clearInterval(interval);
     } catch (e) {
