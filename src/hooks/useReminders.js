@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
@@ -11,6 +11,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return safeLocalStorage.get('notificationsEnabled', false);
   });
+
+  // Resets every time the app is opened (session-level, not persisted)
+  const bagAlarmShownThisSession = useRef(false);
 
   const dismissReminder = (type) => {
     const today = getTodayKey();
@@ -123,15 +126,19 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           dismissReminder('daily-check');
         }
 
-        // Bag weighing alarm: from configured hour onwards (if not yet weighed today)
+        // Bag weighing alarm: from configured hour onwards
+        // Shows once per app session until weighed; resets on next open
         const bagAlarmHour = safeLocalStorage.get('bagWeighAlarmHour', null);
-        if (bagAlarmHour !== null && hour >= parseInt(bagAlarmHour) && shouldShowReminder('bag-weigh')) {
+        if (bagAlarmHour !== null && hour >= parseInt(bagAlarmHour)) {
           const hasBagWeighToday = dailyLogs.some(d => d.date === today && d.method === 'bagWeight');
-          if (!hasBagWeighToday) {
-            showToast('⚖️ Lembrete: Pesa o saco hoje!', 'info');
-            showBrowserNotification('Lembrete - NEP', 'Pesa o saco hoje!');
+          if (hasBagWeighToday) {
+            // Already weighed today — reset session flag so tomorrow works
+            bagAlarmShownThisSession.current = false;
+          } else if (!bagAlarmShownThisSession.current) {
+            showToast('⚖️ Lembrete: Pesa a dosagem diária!', 'info');
+            showBrowserNotification('Lembrete - NEP', 'Pesa a dosagem diária!');
+            bagAlarmShownThisSession.current = true; // Don't repeat until next app open
           }
-          dismissReminder('bag-weigh');
         }
       } catch (e) {
         logger.error('Error checking reminders:', e);
