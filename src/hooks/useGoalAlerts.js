@@ -38,7 +38,7 @@ export const useGoalAlerts = () => {
                 .map(c => ({ source: 'cycle', mg: c.mg, timestamp: c.timestamp, date: c.date }));
 
             const dailyLogsWithMg = dailyLogs
-                .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
+                .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '' && !(l.mg === 0 && l.method === 'bagWeight'))
                 .map(l => ({ source: 'dailyLog', mg: l.mg, timestamp: l.timestamp, date: l.date }));
 
             const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg]

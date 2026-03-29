@@ -38,6 +38,8 @@ export const MetricsProvider = ({ children }) => {
     dailyLogs.forEach(log => {
       const dateKey = log.date || getDateKeyFromItem(log);
       if (log.mg == null) return;
+      // Skip bag weight baseline snapshots (mg=0 with method bagWeight = no previous entry or refill)
+      if (log.mg === 0 && log.method === 'bagWeight') return;
       const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
       if (isNaN(mgValue)) return;
       mgByDate[dateKey] = (mgByDate[dateKey] || 0) + mgValue;

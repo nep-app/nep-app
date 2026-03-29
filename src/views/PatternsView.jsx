@@ -2372,7 +2372,7 @@ export function PatternsView({
                                                     {(() => {
                                                         // Usar APENAS dailyLogs.mg (dosagens diárias precisas)
                                                         // NÃO usar cycles.mg porque representa dosagem total do ciclo (pode ser vários dias)
-                                                        const dailyDosageRecords = filteredDailyLogs.filter(log => log.mg != null);
+                                                        const dailyDosageRecords = filteredDailyLogs.filter(log => log.mg != null && !(log.mg === 0 && log.method === 'bagWeight'));
 
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (

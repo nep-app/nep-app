@@ -80,7 +80,8 @@ export function BagWeightEntry({ onClose, showToast }) {
     setLoading(true);
     try {
       const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
-      const mgConsumed = mgChangeSinceLast != null && mgChangeSinceLast > 0 ? mgChangeSinceLast : 0;
+      // null = no consumption data (first entry or refill); only store delta when actually consumed
+      const mgConsumed = mgChangeSinceLast != null && mgChangeSinceLast > 0 ? mgChangeSinceLast : null;
       await addDailyLog({
         timestamp: ts,
         date: selectedDate,
