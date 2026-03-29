@@ -59,11 +59,12 @@ export function BagWeightEntry({ onClose, showToast }) {
   const netValid = netWeight != null && netWeight >= 0;
   const mgRemaining = netValid ? Math.round(netWeight * 1000) : null;
 
-  // mg change since last entry: positive = consumed, negative = refilled
-  const mgChangeSinceLast = useMemo(() => {
-    if (!lastEntry || !netValid || lastEntry.netWeight == null) return null;
-    return Math.round((lastEntry.netWeight - netWeight) * 1000);
-  }, [lastEntry, netWeight, netValid]);
+  // mg consumed in the previous period = what was loaded last time (previous netWeight * 1000)
+  // because each weighing = loading for the NEXT period; previous load is what was consumed
+  const mgConsumedPrevPeriod = useMemo(() => {
+    if (!lastEntry || lastEntry.netWeight == null) return null;
+    return Math.round(lastEntry.netWeight * 1000);
+  }, [lastEntry]);
 
   const selectedDate = datetime ? datetime.split('T')[0] : new Date().toISOString().split('T')[0];
 
@@ -80,8 +81,9 @@ export function BagWeightEntry({ onClose, showToast }) {
     setLoading(true);
     try {
       const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
-      // null = no consumption data (first entry or refill); only store delta when actually consumed
-      const mgConsumed = mgChangeSinceLast != null && mgChangeSinceLast > 0 ? mgChangeSinceLast : null;
+      // mg consumed = what was loaded in the previous period (previous netWeight)
+      // first entry has no previous → null (just a baseline snapshot)
+      const mgConsumed = mgConsumedPrevPeriod;
       await addDailyLog({
         timestamp: ts,
         date: selectedDate,
@@ -190,13 +192,9 @@ export function BagWeightEntry({ onClose, showToast }) {
             : (
               <>
                 <div className="font-semibold">{t('home.bagWeightRemaining', { g: netWeight.toFixed(2), mg: mgRemaining })}</div>
-                {mgChangeSinceLast != null && (
+                {mgConsumedPrevPeriod != null && (
                   <div className="text-xs mt-0.5 opacity-80">
-                    {mgChangeSinceLast > 0
-                      ? t('home.bagWeightConsumedSince', { mg: mgChangeSinceLast })
-                      : mgChangeSinceLast < 0
-                        ? t('home.bagWeightRefilled', { mg: Math.abs(mgChangeSinceLast) })
-                        : null}
+                    {t('home.bagWeightConsumedSince', { mg: mgConsumedPrevPeriod })}
                   </div>
                 )}
               </>
