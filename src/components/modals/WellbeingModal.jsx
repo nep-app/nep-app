@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
@@ -15,17 +15,37 @@ export const WellbeingModal = ({
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
-  if (!isOpen) return null;
+  // Derive selected date from form datetime (fallback to today)
+  const selectedDate = wellbeingForm.datetime
+    ? wellbeingForm.datetime.split('T')[0]
+    : getTodayKey();
 
-  // Verificar se já existe registo de autocuidado hoje
-  const today = getTodayKey();
-  const todayLogs = wellbeingLogs.filter(log => log.date === today);
+  // Existing logs for the selected date
+  const selectedDateLogs = wellbeingLogs.filter(log => log.date === selectedDate);
+
   const alreadyChecked = {
-    water: todayLogs.some(log => log.water === true),
-    rest: todayLogs.some(log => log.rest === true),
-    social: todayLogs.some(log => log.social === true),
-    food: todayLogs.some(log => log.food === true)
+    water: selectedDateLogs.some(log => log.water === true),
+    rest: selectedDateLogs.some(log => log.rest === true),
+    social: selectedDateLogs.some(log => log.social === true),
+    food: selectedDateLogs.some(log => log.food === true)
   };
+
+  // When date changes, pre-populate form with most recent existing log for that date
+  useEffect(() => {
+    if (!isOpen) return;
+    if (selectedDateLogs.length === 0) return;
+    const existing = [...selectedDateLogs].sort((a, b) =>
+      new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)
+    )[0];
+    setWellbeingForm(prev => ({
+      ...prev,
+      mood: existing.mood ?? prev.mood,
+      energy: existing.energy ?? prev.energy,
+      sleep: existing.sleep ?? prev.sleep,
+      notes: existing.notes || prev.notes,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, isOpen]);
 
   // Get current datetime for default value (formato: YYYY-MM-DDTHH:mm)
   const getCurrentDateTime = () => {
