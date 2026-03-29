@@ -83,10 +83,25 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         const hour = now.getHours();
         const today = getTodayKey();
 
-        // Only show reminders between 10h and 22h
-        if (hour < 10 || hour > 22) return;
+        // Only show reminders between 8h and 22h
+        if (hour < 8 || hour > 22) return;
 
-        // Check what's missing today (wellbeing, reflection, mg from yesterday)
+        // Morning check (9h): wellbeing + reflection
+        if (hour === 9 && shouldShowReminder('morning-check')) {
+          const missing = [];
+          const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+          if (!hasWellbeingToday) missing.push('bem-estar');
+          const hasReflectionToday = reflections.some(r => r.date === today);
+          if (!hasReflectionToday) missing.push('reflexão');
+          if (missing.length > 0) {
+            const message = '🌅 Bom dia! Falta registar: ' + missing.join(', ');
+            showToast(message, 'info');
+            showBrowserNotification('Bom dia - NEP', 'Falta registar: ' + missing.join(', '));
+          }
+          dismissReminder('morning-check');
+        }
+
+        // Evening check (18h): wellbeing, reflection, mg from yesterday
         if (hour >= 18 && shouldShowReminder('daily-check')) {
           const missing = [];
 
@@ -96,7 +111,6 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           const hasReflectionToday = reflections.some(r => r.date === today);
           if (!hasReflectionToday) missing.push('reflexão');
 
-          // Calculate yesterday's date
           const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           const hasMgYesterday = dailyLogs.some(d => d.date === yesterday);
           if (!hasMgYesterday) missing.push('mg de ontem');
@@ -105,11 +119,19 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
             const message = '💭 Lembrete: Falta registar: ' + missing.join(', ');
             showToast(message, 'info');
             showBrowserNotification('Lembrete - NEP', 'Falta registar: ' + missing.join(', '));
-            dismissReminder('daily-check');
-          } else {
-            // Se já não falta nada, dismiss também para não mostrar mais hoje
-            dismissReminder('daily-check');
           }
+          dismissReminder('daily-check');
+        }
+
+        // Bag weighing alarm: at user-configured hour
+        const bagAlarmHour = safeLocalStorage.get('bagWeighAlarmHour', null);
+        if (bagAlarmHour !== null && hour === parseInt(bagAlarmHour) && shouldShowReminder('bag-weigh')) {
+          const hasBagWeighToday = dailyLogs.some(d => d.date === today && d.method === 'bagWeight');
+          if (!hasBagWeighToday) {
+            showToast('⚖️ Lembrete: Pesa o saco hoje!', 'info');
+            showBrowserNotification('Lembrete - NEP', 'Pesa o saco hoje!');
+          }
+          dismissReminder('bag-weigh');
         }
       } catch (e) {
         logger.error('Error checking reminders:', e);

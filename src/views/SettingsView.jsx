@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
+import { safeLocalStorage } from '../utils/storage';
 const APP_VERSION = '1.5.3';
 
 export const SettingsView = ({
@@ -18,6 +19,22 @@ export const SettingsView = ({
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
     const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
+    const [bagAlarmHour, setBagAlarmHour] = useState(() => {
+        const saved = safeLocalStorage.get('bagWeighAlarmHour', null);
+        if (saved === null) return '';
+        const h = parseInt(saved);
+        return String(h).padStart(2, '0') + ':00';
+    });
+
+    const handleBagAlarmChange = (timeStr) => {
+        setBagAlarmHour(timeStr);
+        if (!timeStr) {
+            safeLocalStorage.set('bagWeighAlarmHour', null);
+        } else {
+            const hour = parseInt(timeStr.split(':')[0]);
+            safeLocalStorage.set('bagWeighAlarmHour', hour);
+        }
+    };
 
     const handleChangeLang = (lang) => {
         i18n.changeLanguage(lang);
@@ -195,6 +212,36 @@ export const SettingsView = ({
                         </button>
                     )}
                 </div>
+            </div>
+
+            {/* Bag weighing alarm */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <span>⚖️</span>
+                    Alarme diário — pesar saco
+                </h3>
+                <p className="text-sm text-gray-400 mb-3">
+                    Recebe um lembrete diário para pesar o saco. A notificação só aparece se ainda não pesaste hoje.
+                </p>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="time"
+                        value={bagAlarmHour}
+                        onChange={e => handleBagAlarmChange(e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-500 text-sm"
+                    />
+                    {bagAlarmHour && (
+                        <button
+                            onClick={() => handleBagAlarmChange('')}
+                            className="text-xs text-gray-400 hover:text-gray-200 underline"
+                        >
+                            Desativar
+                        </button>
+                    )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                    Alarmes de bem-estar: 9h e 18h (sempre ativos quando as notificações estão ligadas)
+                </p>
             </div>
 
             {/* Legal & Ethics */}
