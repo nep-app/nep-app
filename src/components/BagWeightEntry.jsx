@@ -59,12 +59,8 @@ export function BagWeightEntry({ onClose, showToast }) {
   const netValid = netWeight != null && netWeight >= 0;
   const mgRemaining = netValid ? Math.round(netWeight * 1000) : null;
 
-  // mg consumed in the previous period = what was loaded last time (previous netWeight * 1000)
-  // because each weighing = loading for the NEXT period; previous load is what was consumed
-  const mgConsumedPrevPeriod = useMemo(() => {
-    if (!lastEntry || lastEntry.netWeight == null) return null;
-    return Math.round(lastEntry.netWeight * 1000);
-  }, [lastEntry]);
+  // mg for this entry = current net * 1000 (what you loaded = what you'll consume this period)
+  // identical convention to manual "Registar mg" entries
 
   const selectedDate = datetime ? datetime.split('T')[0] : new Date().toISOString().split('T')[0];
 
@@ -81,9 +77,8 @@ export function BagWeightEntry({ onClose, showToast }) {
     setLoading(true);
     try {
       const ts = datetime ? new Date(datetime).toISOString() : new Date().toISOString();
-      // mg consumed = what was loaded in the previous period (previous netWeight)
-      // first entry has no previous → null (just a baseline snapshot)
-      const mgConsumed = mgConsumedPrevPeriod;
+      // mg = current net converted to mg (same as manual "Registar mg")
+      const mgConsumed = mgRemaining;
       await addDailyLog({
         timestamp: ts,
         date: selectedDate,
@@ -192,9 +187,9 @@ export function BagWeightEntry({ onClose, showToast }) {
             : (
               <>
                 <div className="font-semibold">{t('home.bagWeightRemaining', { g: netWeight.toFixed(2), mg: mgRemaining })}</div>
-                {mgConsumedPrevPeriod != null && (
+                {lastEntry?.netWeight != null && (
                   <div className="text-xs mt-0.5 opacity-80">
-                    {t('home.bagWeightConsumedSince', { mg: mgConsumedPrevPeriod })}
+                    {t('home.bagWeightLastEntry')}: {Math.round(lastEntry.netWeight * 1000)}mg
                   </div>
                 )}
               </>

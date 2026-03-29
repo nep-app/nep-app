@@ -129,7 +129,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       .map(c => ({ mg: c.mg, timestamp: c.timestamp }));
 
     const dailyLogsWithMg = (dailyLogs || [])
-      .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '' && !(l.mg === 0 && l.method === 'bagWeight'))
+      .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
       .map(l => ({ mg: l.mg, timestamp: l.timestamp }));
 
     const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg]

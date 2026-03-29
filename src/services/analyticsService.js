@@ -290,8 +290,6 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Ler mg de dailyLogs (novo sistema)
         dailyLogs.forEach(log => {
             if (!log.date || log.mg == null) return;
-            // Skip bag weight baseline snapshots (mg=0 = no previous entry or refill)
-            if (log.mg === 0 && log.method === 'bagWeight') return;
             if (!mgByDate[log.date]) mgByDate[log.date] = 0;
             const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
             if (!isNaN(mgValue)) mgByDate[log.date] += mgValue;
