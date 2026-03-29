@@ -209,7 +209,7 @@ class SyncService {
             };
 
             // Salvar no Firebase (mesmo se deleted)
-            const docRef = doc(this.firebaseDB, firebasePath, item.id);
+            const docRef = doc(this.firebaseDB, firebasePath, String(item.id));
             await setDoc(docRef, firebaseData);
 
             if (item.deleted) {
@@ -500,57 +500,58 @@ class SyncService {
         // 3. Merge: comparar timestamps e manter versão mais recente
         const mergeStart = performance.now();
         for (const localItem of localItems) {
-          const firebaseItem = firebaseItems.get(localItem.id);
+          const itemId = String(localItem.id); // Firebase requires string IDs
+          const firebaseItem = firebaseItems.get(itemId);
 
-          if (!firebaseItem) {
-            // Item só existe localmente → PUSH para Firebase
-            if (!localItem.deleted) {
-              const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
-              const firebaseData = {
-                encrypted: true,
-                data,
-                iv,
-                lastModified: localItem.lastModified || new Date().toISOString()
-              };
-              const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
-              await setDoc(docRef, firebaseData);
-              await markAsSynced(collectionName, localItem.id);
-              totalPushed++;
-            }
-          } else {
-            // Item existe em ambos → comparar timestamps
-            const localTime = new Date(localItem.lastModified || '1970-01-01');
-            const firebaseTime = new Date(firebaseItem.lastModified || '1970-01-01');
-
-            if (firebaseTime > localTime) {
-              // Firebase mais recente → atualizar local
-              firebaseItem.syncStatus = 'synced';
-              // 🪦 TOMBSTONE: Respeitar deleted flag do Firebase
-              // (já vem correto do decrypt, não sobrescrever)
-              await dexieDB[collectionName].put(firebaseItem);
-              totalPulled++;
-            } else if (localTime > firebaseTime) {
-              // Local mais recente → atualizar Firebase
-              // 🪦 TOMBSTONE: Enviar SEMPRE, mesmo se deleted (para propagar tombstones)
-              const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
-              const firebaseData = {
-                encrypted: true,
-                data,
-                iv,
-                lastModified: localItem.lastModified,
-                deleted: localItem.deleted || false  // 🪦 Tombstone flag
-              };
-              const docRef = doc(this.firebaseDB, firebasePath, localItem.id);
-              await setDoc(docRef, firebaseData);
-              await markAsSynced(collectionName, localItem.id);
-              totalPushed++;
+          try {
+            if (!firebaseItem) {
+              // Item só existe localmente → PUSH para Firebase
+              if (!localItem.deleted) {
+                const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+                const firebaseData = {
+                  encrypted: true,
+                  data,
+                  iv,
+                  lastModified: localItem.lastModified || new Date().toISOString()
+                };
+                const docRef = doc(this.firebaseDB, firebasePath, itemId);
+                await setDoc(docRef, firebaseData);
+                await markAsSynced(collectionName, localItem.id);
+                totalPushed++;
+              }
             } else {
-              // Timestamps iguais → já sincronizado
-              totalMerged++;
-            }
+              // Item existe em ambos → comparar timestamps
+              const localTime = new Date(localItem.lastModified || '1970-01-01');
+              const firebaseTime = new Date(firebaseItem.lastModified || '1970-01-01');
 
-            // Remover do Map para saber quais items só existem no Firebase
-            firebaseItems.delete(localItem.id);
+              if (firebaseTime > localTime) {
+                // Firebase mais recente → atualizar local
+                firebaseItem.syncStatus = 'synced';
+                await dexieDB[collectionName].put(firebaseItem);
+                totalPulled++;
+              } else if (localTime > firebaseTime) {
+                // Local mais recente → atualizar Firebase
+                const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+                const firebaseData = {
+                  encrypted: true,
+                  data,
+                  iv,
+                  lastModified: localItem.lastModified,
+                  deleted: localItem.deleted || false
+                };
+                const docRef = doc(this.firebaseDB, firebasePath, itemId);
+                await setDoc(docRef, firebaseData);
+                await markAsSynced(collectionName, localItem.id);
+                totalPushed++;
+              } else {
+                totalMerged++;
+              }
+
+              // Remover do Map para saber quais items só existem no Firebase
+              firebaseItems.delete(itemId);
+            }
+          } catch (itemError) {
+            logger.error(`[Sync] ❌ Erro ao processar item ${collectionName}/${localItem.id}:`, itemError);
           }
         }
 
