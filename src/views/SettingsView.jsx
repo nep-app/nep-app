@@ -218,7 +218,7 @@ export const SettingsView = ({
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <span>⚖️</span>
-                    Alarme diário — pesar saco
+                    Alarme diário — pesar dosagem diária
                 </h3>
                 <p className="text-sm text-gray-400 mb-3">
                     Recebe um lembrete diário para pesar o saco. A notificação só aparece se ainda não pesaste hoje.
