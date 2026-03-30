@@ -456,7 +456,7 @@ export function PatternsView({
                                                             } else if (sleep < 6) {
                                                                 riskScore += 10;
                                                                 riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepLow', { val: sleep }) });
-                                                            } else if (sleep >= 8) {
+                                                            } else if (sleep >= 7) {
                                                                 riskScore -= 10;
                                                             }
                                                         }
