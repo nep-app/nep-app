@@ -19,18 +19,37 @@ export const SettingsView = ({
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
     const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
-    const [bagAlarmHour, setBagAlarmHour] = useState(() => {
+
+    const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
+        safeLocalStorage.get('wellbeingAlarmEnabled', false)
+    );
+    const [bagAlarmOn, setBagAlarmOn] = useState(() =>
+        safeLocalStorage.get('bagWeighAlarmHour', null) !== null
+    );
+    const [bagAlarmTime, setBagAlarmTime] = useState(() => {
         const saved = safeLocalStorage.get('bagWeighAlarmHour', null);
-        if (saved === null) return '';
-        const h = parseInt(saved);
-        return String(h).padStart(2, '0') + ':00';
+        if (saved === null) return '10:00';
+        return String(parseInt(saved)).padStart(2, '0') + ':00';
     });
 
-    const handleBagAlarmChange = (timeStr) => {
-        setBagAlarmHour(timeStr);
-        if (!timeStr) {
-            safeLocalStorage.set('bagWeighAlarmHour', null);
+    const handleWellbeingAlarmToggle = (on) => {
+        setWellbeingAlarmOn(on);
+        safeLocalStorage.set('wellbeingAlarmEnabled', on);
+    };
+
+    const handleBagAlarmToggle = (on) => {
+        setBagAlarmOn(on);
+        if (on) {
+            const hour = parseInt(bagAlarmTime.split(':')[0]);
+            safeLocalStorage.set('bagWeighAlarmHour', hour);
         } else {
+            safeLocalStorage.set('bagWeighAlarmHour', null);
+        }
+    };
+
+    const handleBagAlarmTimeChange = (timeStr) => {
+        setBagAlarmTime(timeStr);
+        if (bagAlarmOn && timeStr) {
             const hour = parseInt(timeStr.split(':')[0]);
             safeLocalStorage.set('bagWeighAlarmHour', hour);
         }
@@ -214,34 +233,64 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* Bag weighing alarm */}
+            {/* Alarmes */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <span>⚖️</span>
-                    Alarme diário — pesar dosagem diária
+                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                    <Icons.Bell className="w-5 h-5" />
+                    Alarmes
                 </h3>
-                <p className="text-sm text-gray-400 mb-3">
-                    Recebe um lembrete diário para pesar o saco. A notificação só aparece se ainda não pesaste hoje.
-                </p>
-                <div className="flex items-center gap-3">
-                    <input
-                        type="time"
-                        value={bagAlarmHour}
-                        onChange={e => handleBagAlarmChange(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white px-3 py-2 rounded-lg border focus:ring-2 focus:ring-rose-500 text-sm"
-                    />
-                    {bagAlarmHour && (
-                        <button
-                            onClick={() => handleBagAlarmChange('')}
-                            className="text-xs text-gray-400 hover:text-gray-200 underline"
-                        >
-                            Desativar
-                        </button>
-                    )}
+                <div className="space-y-5">
+
+                    {/* Wellbeing alarm */}
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-200">Bem-estar diário</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Lembrete às 9h e às 18h</p>
+                            </div>
+                            <button
+                                onClick={() => handleWellbeingAlarmToggle(!wellbeingAlarmOn)}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${wellbeingAlarmOn ? 'bg-blue-500' : 'bg-gray-600'}`}
+                            >
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${wellbeingAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {wellbeingAlarmOn && (
+                            <p className="text-xs text-blue-400 mt-1.5">✓ Ativo — aparece às 9h e 18h se não registaste</p>
+                        )}
+                    </div>
+
+                    <div className="border-t border-gray-700" />
+
+                    {/* Bag weighing alarm */}
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-200">Pesar dosagem diária</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Lembrete diário para pesar o saco</p>
+                            </div>
+                            <button
+                                onClick={() => handleBagAlarmToggle(!bagAlarmOn)}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${bagAlarmOn ? 'bg-rose-500' : 'bg-gray-600'}`}
+                            >
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${bagAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                        {bagAlarmOn && (
+                            <div className="mt-2 flex items-center gap-3">
+                                <input
+                                    type="time"
+                                    value={bagAlarmTime}
+                                    onChange={e => handleBagAlarmTimeChange(e.target.value)}
+                                    className="bg-gray-700 border-gray-600 text-white px-3 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-rose-500"
+                                />
+                                <p className="text-xs text-rose-400">✓ Ativo às {bagAlarmTime.slice(0,5)}</p>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                    Alarmes de bem-estar: 9h e 18h (sempre ativos quando as notificações estão ligadas)
-                </p>
+                <p className="text-xs text-gray-600 mt-4">Requer notificações ativadas. Só aparece ao abrir a app.</p>
             </div>
 
             {/* Legal & Ethics */}

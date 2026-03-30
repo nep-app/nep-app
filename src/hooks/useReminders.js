@@ -89,8 +89,10 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         // Only show reminders between 8h and 22h
         if (hour < 8 || hour > 22) return;
 
+        const wellbeingAlarmEnabled = safeLocalStorage.get('wellbeingAlarmEnabled', false);
+
         // Morning check (9h–17h): wellbeing + reflection
-        if (hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
+        if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
           const missing = [];
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
           if (!hasWellbeingToday) missing.push('bem-estar');
@@ -105,7 +107,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         }
 
         // Evening check (18h): wellbeing, reflection, mg from yesterday
-        if (hour >= 18 && shouldShowReminder('daily-check')) {
+        if (wellbeingAlarmEnabled && hour >= 18 && shouldShowReminder('daily-check')) {
           const missing = [];
 
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
