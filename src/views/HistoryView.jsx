@@ -265,10 +265,13 @@ export function HistoryView({
                                                                                 <div className="flex-1">
                                                                                     <div className="font-medium mb-1 text-white">
                                                                                         💊 {(() => {
-                                                                                            // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
                                                                                             const d = safeDate(log.date || log.timestamp);
                                                                                             if (!d) return t('history.invalidDate');
                                                                                             const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                            if (log.timestamp) {
+                                                                                                const ts = safeDate(log.timestamp);
+                                                                                                if (ts) return `${dateStr} - ${ts.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}`;
+                                                                                            }
                                                                                             return dateStr;
                                                                                         })()}
                                                                                     </div>
