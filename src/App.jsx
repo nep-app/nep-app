@@ -183,6 +183,13 @@ function AuthenticatedApp() {
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
             const [thoughtDatetime, setThoughtDatetime] = useState('');
+            const [thoughtInitialContent, setThoughtInitialContent] = useState('');
+
+            // Editing states for items that don't use UIContext
+            const [editingDailyLog, setEditingDailyLog] = useState(null);
+            const [editingWellbeingLog, setEditingWellbeingLog] = useState(null);
+            const [editingReflection, setEditingReflection] = useState(null);
+            const [editingThought, setEditingThought] = useState(null);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
@@ -271,6 +278,46 @@ function AuthenticatedApp() {
 
             const openEditCycle = (cycle) => { setEditingCycle({...cycle}); setShowCycleModal(true); };
 
+            const openEditDailyLog = (log) => {
+                setEditingDailyLog({...log});
+                const dateStr = log.date || (log.timestamp ? log.timestamp.split('T')[0] : getTodayKey());
+                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr });
+                setShowDailyLogModal(true);
+            };
+
+            const openEditWellbeingLog = (w) => {
+                setEditingWellbeingLog({...w});
+                const datetime = w.timestamp ? w.timestamp.slice(0, 16) : (w.date ? w.date + 'T12:00' : '');
+                setWellbeingForm({
+                    mood: w.mood != null ? String(w.mood) : '',
+                    energy: w.energy != null ? String(w.energy) : '',
+                    water: w.water || false,
+                    rest: w.rest || false,
+                    social: w.social || false,
+                    food: w.food || false,
+                    emotions: w.emotions || [],
+                    notes: w.notes || '',
+                    datetime
+                });
+                setShowWellbeingModal(true);
+            };
+
+            const openEditReflection = (r) => {
+                setEditingReflection({...r});
+                setReflectionAnswer(r.answer || '');
+                const datetime = r.timestamp ? r.timestamp.slice(0, 16) : (r.date ? r.date + 'T12:00' : '');
+                setReflectionDatetime(datetime);
+                setShowReflectionModal(true);
+            };
+
+            const openEditThought = (thought) => {
+                setEditingThought({...thought});
+                setThoughtInitialContent(thought.content || '');
+                const datetime = thought.timestamp ? thought.timestamp.slice(0, 16) : (thought.date ? thought.date + 'T12:00' : '');
+                setThoughtDatetime(datetime);
+                setShowThoughtsModal(true);
+            };
+
             // Função para preencher gaps - pré-preenche formulários com a data selecionada e abre o modal correspondente
             const handleFillGap = (type, dateKey) => {
                 // dateKey formato: YYYY-MM-DD
@@ -347,6 +394,19 @@ function AuthenticatedApp() {
 
             const submitDailyLog = async () => {
                 try {
+                    if (editingDailyLog) {
+                        await updateItem('dailyLogs', editingDailyLog.id, {
+                            mg: dailyForm.mg !== '' ? parseInt(dailyForm.mg) : null,
+                            notes: dailyForm.notes,
+                            date: dailyForm.date
+                        });
+                        setEditingDailyLog(null);
+                        setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
+                        setShowDailyLogModal(false);
+                        showToast(t('messages.dailyLogSaved'), 'success');
+                        return;
+                    }
+
                     // Usar data escolhida ou hoje
                     const selectedDate = dailyForm.date || getTodayKey();
 
@@ -466,8 +526,7 @@ function AuthenticatedApp() {
                         date = `${year}-${month}-${day}`;
                     }
 
-                    const item = {
-                        id: genId(),
+                    const updatedFields = {
                         date: date,
                         timestamp: timestamp,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
@@ -479,12 +538,18 @@ function AuthenticatedApp() {
                         emotions: wellbeingForm.emotions,
                         notes: sanitizeText(wellbeingForm.notes)
                     };
-                    await addWellbeingLog(item);
+
+                    if (editingWellbeingLog) {
+                        await updateItem('wellbeingLogs', editingWellbeingLog.id, updatedFields);
+                        setEditingWellbeingLog(null);
+                    } else {
+                        await addWellbeingLog({ id: genId(), ...updatedFields });
+                    }
                     setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
-                    if (dismissReminder) {
+                    if (dismissReminder && !editingWellbeingLog) {
                         const dismissed = JSON.parse(localStorage.getItem('reminderDismissed') || '{}');
                         delete dismissed['wellbeing-consumption'];
                         localStorage.setItem('reminderDismissed', JSON.stringify(dismissed));
@@ -562,8 +627,13 @@ function AuthenticatedApp() {
                         dateKey = getTodayKey();
                     }
 
-                    const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
-                    await addReflection(item);
+                    if (editingReflection) {
+                        await updateItem('reflections', editingReflection.id, { date: dateKey, timestamp, answer: reflectionAnswer });
+                        setEditingReflection(null);
+                    } else {
+                        const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
+                        await addReflection(item);
+                    }
                     setReflectionAnswer('');
                     setReflectionDatetime('');
                     setShowReflectionModal(false);
@@ -594,13 +664,14 @@ function AuthenticatedApp() {
                         dateKey = getTodayKey();
                     }
 
-                    const item = {
-                        id: genId(),
-                        date: dateKey,
-                        timestamp,
-                        content: sanitizeText(thoughtsText)
-                    };
-                    await addThought(item);
+                    if (editingThought) {
+                        await updateItem('thoughts', editingThought.id, { date: dateKey, timestamp, content: sanitizeText(thoughtsText) });
+                        setEditingThought(null);
+                        setThoughtInitialContent('');
+                    } else {
+                        const item = { id: genId(), date: dateKey, timestamp, content: sanitizeText(thoughtsText) };
+                        await addThought(item);
+                    }
                     setThoughtDatetime('');
                     setShowThoughtsModal(false);
                     showToast(t('messages.thoughtSaved'), 'success');
@@ -1176,6 +1247,10 @@ return {
                                         setAllItemsToShow={setAllItemsToShow}
                                         openEditConsumption={openEditConsumption}
                                         openEditCycle={openEditCycle}
+                                        openEditDailyLog={openEditDailyLog}
+                                        openEditWellbeingLog={openEditWellbeingLog}
+                                        openEditReflection={openEditReflection}
+                                        openEditThought={openEditThought}
                                         deleteItem={deleteItem}
                                         handleFillGap={handleFillGap}
                                     />
@@ -1207,7 +1282,7 @@ return {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => setShowDailyLogModal(false)}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
@@ -1217,11 +1292,12 @@ return {
                         <Suspense fallback={null}>
                             <WellbeingModal
                                 isOpen={showWellbeingModal}
-                                onClose={() => setShowWellbeingModal(false)}
+                                onClose={() => { setShowWellbeingModal(false); setEditingWellbeingLog(null); }}
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
                                 wellbeingLogs={wellbeingLogs}
+                                editingId={editingWellbeingLog ? editingWellbeingLog.id : null}
                             />
                         </Suspense>
 
@@ -1238,8 +1314,8 @@ return {
                         <Suspense fallback={null}>
                             <ReflectionModal
                                 isOpen={showReflectionModal}
-                                onClose={() => setShowReflectionModal(false)}
-                                currentDbtQuestion={currentDbtQuestion}
+                                onClose={() => { setShowReflectionModal(false); setEditingReflection(null); }}
+                                currentDbtQuestion={editingReflection ? editingReflection.question : currentDbtQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
                                 reflectionDatetime={reflectionDatetime}
@@ -1284,10 +1360,11 @@ return {
                         <Suspense fallback={null}>
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
-                                onClose={() => setShowThoughtsModal(false)}
+                                onClose={() => { setShowThoughtsModal(false); setEditingThought(null); setThoughtInitialContent(''); }}
                                 thoughtDatetime={thoughtDatetime}
                                 setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
+                                initialContent={thoughtInitialContent}
                             />
                         </Suspense>
 

@@ -51,6 +51,10 @@ export function HistoryView({
     setAllItemsToShow,
     openEditConsumption,
     openEditCycle,
+    openEditDailyLog,
+    openEditWellbeingLog,
+    openEditReflection,
+    openEditThought,
     deleteItem,
     handleFillGap
 }) {
@@ -286,7 +290,10 @@ export function HistoryView({
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                <div className="flex gap-2 ml-2">
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     );
@@ -346,7 +353,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             {(w.mood || w.energy) && (
                                                                                 <div className="grid grid-cols-2 gap-2 text-sm mb-2">
@@ -427,7 +437,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
@@ -481,7 +494,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm text-gray-300">{thought.content}</div>
                                                                             {analysis && (
@@ -562,7 +578,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
@@ -616,7 +635,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm text-gray-300">{thought.content}</div>
                                                                             {analysis && (
@@ -971,7 +993,10 @@ export function HistoryView({
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
-                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                    <div className="flex gap-2 ml-2">
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
                                                                                 </div>
                                                                             </div>
                                                                         );

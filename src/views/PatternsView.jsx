@@ -548,9 +548,6 @@ export function PatternsView({
                                                                             {riskScore}%
                                                                         </div>
                                                                     </div>
-                                                                    <div className={'text-xs mb-2 opacity-50 ' + 'text-gray-500'}>
-                                                                        {debugYesterday}
-                                                                    </div>
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <div className={'text-xs font-semibold ' + 'text-gray-400'}>{t('patterns.riskLevel.factors')}</div>

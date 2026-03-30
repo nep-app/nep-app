@@ -10,7 +10,8 @@ export const WellbeingModal = ({
   wellbeingForm,
   setWellbeingForm,
   onSubmit,
-  wellbeingLogs = []
+  wellbeingLogs = [],
+  editingId = null
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -20,8 +21,8 @@ export const WellbeingModal = ({
     ? wellbeingForm.datetime.split('T')[0]
     : getTodayKey();
 
-  // Existing logs for the selected date
-  const selectedDateLogs = wellbeingLogs.filter(log => log.date === selectedDate);
+  // Existing logs for the selected date, excluding the one being edited
+  const selectedDateLogs = wellbeingLogs.filter(log => log.date === selectedDate && log.id !== editingId);
 
   const alreadyChecked = {
     water: selectedDateLogs.some(log => log.water === true),
