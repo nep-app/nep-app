@@ -130,8 +130,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
 
         // Bag weighing alarm: from configured hour onwards
         // Shows once per app session until weighed; resets on next open
-        const bagAlarmHour = safeLocalStorage.get('bagWeighAlarmHour', null);
-        if (bagAlarmHour !== null && hour >= parseInt(bagAlarmHour)) {
+        const bagAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
+        const bagAlarmHour = (bagAlarmRaw !== null && bagAlarmRaw !== 'null') ? parseInt(bagAlarmRaw) : null;
+        if (bagAlarmHour !== null && !isNaN(bagAlarmHour) && hour >= bagAlarmHour) {
           const hasBagWeighToday = dailyLogs.some(d => d.date === today && d.method === 'bagWeight');
           if (hasBagWeighToday) {
             // Already weighed today — reset session flag so tomorrow works

@@ -23,13 +23,15 @@ export const SettingsView = ({
     const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
         safeLocalStorage.get('wellbeingAlarmEnabled', false)
     );
-    const [bagAlarmOn, setBagAlarmOn] = useState(() =>
-        safeLocalStorage.get('bagWeighAlarmHour', null) !== null
-    );
+    const [bagAlarmOn, setBagAlarmOn] = useState(() => {
+        const raw = localStorage.getItem('bagWeighAlarmHour');
+        return raw !== null && raw !== 'null';
+    });
     const [bagAlarmTime, setBagAlarmTime] = useState(() => {
-        const saved = safeLocalStorage.get('bagWeighAlarmHour', null);
-        if (saved === null) return '10:00';
-        return String(parseInt(saved)).padStart(2, '0') + ':00';
+        const raw = localStorage.getItem('bagWeighAlarmHour');
+        if (raw === null || raw === 'null') return '10:00';
+        const h = parseInt(raw);
+        return isNaN(h) ? '10:00' : String(h).padStart(2, '0') + ':00';
     });
 
     const handleWellbeingAlarmToggle = (on) => {
@@ -206,34 +208,7 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* Notifications */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Bell className="w-5 h-5" />
-                    {t('settings.notifications')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.notificationsDescription')}
-                    </p>
-                    {notificationsEnabled ? (
-                        <div className="flex items-center gap-2 text-green-600 py-2">
-                            <Icons.CheckCircle className="w-5 h-5" />
-                            <span className="font-medium">{t('settings.notificationsEnabled')}</span>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={requestNotificationPermission}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Bell className="w-4 h-4" />
-                            {t('settings.enableNotifications')}
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Alarmes */}
+            {/* Alarmes e Notificações */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <Icons.Bell className="w-5 h-5" />
@@ -241,7 +216,28 @@ export const SettingsView = ({
                 </h3>
                 <div className="space-y-5">
 
-                    {/* Wellbeing alarm */}
+                    {/* Permissão do sistema */}
+                    {!notificationsEnabled ? (
+                        <div className="bg-gray-700/50 rounded-lg p-3">
+                            <p className="text-xs text-gray-400 mb-2">{t('settings.notificationsDescription')}</p>
+                            <button
+                                onClick={requestNotificationPermission}
+                                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium text-sm flex items-center justify-center gap-2"
+                            >
+                                <Icons.Bell className="w-4 h-4" />
+                                {t('settings.enableNotifications')}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-green-500 text-sm">
+                            <Icons.CheckCircle className="w-4 h-4" />
+                            <span>{t('settings.notificationsEnabled')}</span>
+                        </div>
+                    )}
+
+                    <div className="border-t border-gray-700" />
+
+                    {/* Bem-estar */}
                     <div>
                         <div className="flex items-center justify-between">
                             <div>
@@ -262,7 +258,7 @@ export const SettingsView = ({
 
                     <div className="border-t border-gray-700" />
 
-                    {/* Bag weighing alarm */}
+                    {/* Pesar saco */}
                     <div>
                         <div className="flex items-center justify-between">
                             <div>
@@ -290,7 +286,7 @@ export const SettingsView = ({
                     </div>
 
                 </div>
-                <p className="text-xs text-gray-600 mt-4">Requer notificações ativadas. Só aparece ao abrir a app.</p>
+                <p className="text-xs text-gray-600 mt-4">Os lembretes só aparecem ao abrir a app.</p>
             </div>
 
             {/* Legal & Ethics */}
