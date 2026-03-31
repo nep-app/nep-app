@@ -7,7 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
-import { getEmotionCategory } from '../constants/emotions';
+import { getEmotionCategory, EMOTION_CATEGORIES } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -416,15 +416,42 @@ export function PatternsView({
                                                         const sleep = wavg('sleep'), mood = wavg('mood'), energy = wavg('energy');
                                                         const fmt = (v) => v != null ? v.toFixed(1) : '?';
 
-                                                        // Autocuidado de ontem
+                                                        // Autocuidado médio (ontem + anteontem)
                                                         const yd = dailyData[d1] || {};
                                                         const hasYesterdayWellbeing = !!(dailyData[d1]);
-                                                        let selfCareScore = 0;
+                                                        const scDays = [d1, d2].filter(d => dailyData[d]);
+                                                        let selfCareAvg = null;
+                                                        if (scDays.length > 0) {
+                                                            const scores = scDays.map(d => {
+                                                                const day = dailyData[d];
+                                                                return (day.water ? 1 : 0) + (day.rest ? 1 : 0) + (day.food ? 1 : 0) + (day.social ? 1 : 0);
+                                                            });
+                                                            selfCareAvg = scores.reduce((s, v) => s + v, 0) / scores.length;
+                                                        }
+                                                        // Detalhes de ontem para display
                                                         const selfCareDetails = [];
-                                                        if (yd.water) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água'); }
-                                                        if (yd.rest) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso'); }
-                                                        if (yd.food) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação'); }
-                                                        if (yd.social) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Social' : 'Social'); }
+                                                        if (yd.water) selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água');
+                                                        if (yd.rest) selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso');
+                                                        if (yd.food) selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação');
+                                                        if (yd.social) selfCareDetails.push('Social');
+
+                                                        // Emoções (d1, d2, d3) — valência e instabilidade
+                                                        const getEmotionsForDay = (date) =>
+                                                            wellbeingLogs.filter(w => (w.date || safeToISODate(w.timestamp)) === date).flatMap(w => w.emotions || []);
+                                                        const emotionsD1 = getEmotionsForDay(d1);
+                                                        const emotionsD2 = getEmotionsForDay(d2);
+                                                        const emotionsD3 = getEmotionsForDay(d3);
+                                                        const allRecentEmotions = [...emotionsD1, ...emotionsD2, ...emotionsD3];
+                                                        const negEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.negative.includes(e));
+                                                        const posEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.positive.includes(e));
+                                                        const totalEmotions = allRecentEmotions.length;
+                                                        const negRatio = totalEmotions >= 2 ? negEmotions.length / totalEmotions : null;
+                                                        const hasCravingYesterday = emotionsD1.includes('🔥 Com craving');
+                                                        const uniqueD1 = new Set(emotionsD1).size;
+                                                        const emotionFlux = emotionsD1.length > 0 && emotionsD2.length > 0
+                                                            ? emotionsD1.filter(e => !emotionsD2.includes(e)).length
+                                                            : 0;
+                                                        const emotionallyUnstable = uniqueD1 >= 5 || emotionFlux >= 4;
 
                                                         // Tendência humor/energia últimos 7 dias (oldest→newest)
                                                         const calcTrend = (field) => {
@@ -472,26 +499,27 @@ export function PatternsView({
                                                             else if (sleep >= 7) { riskScore -= 10; riskFactors.push({ emoji: '😴', positive: true, text: `Sono bom ${lbl}: ${fmt(sleep)}h` }); }
                                                         }
 
-                                                        // 2. Humor (média pond. 3 dias)
+                                                        // 2. Humor (média pond. 3 dias) — pesos reduzidos pois tendência já captura a variação
                                                         if (mood !== null) {
-                                                            if (mood < 4) { riskScore += 15; riskFactors.push({ emoji: '😔', positive: false, text: `Humor muito baixo ${lbl}: ${fmt(mood)}/10` }); }
-                                                            else if (mood < 6) { riskScore += 8; riskFactors.push({ emoji: '😐', positive: false, text: `Humor moderado ${lbl}: ${fmt(mood)}/10` }); }
+                                                            if (mood < 4) { riskScore += 10; riskFactors.push({ emoji: '😔', positive: false, text: `Humor muito baixo ${lbl}: ${fmt(mood)}/10` }); }
+                                                            else if (mood < 6) { riskScore += 5; riskFactors.push({ emoji: '😐', positive: false, text: `Humor moderado ${lbl}: ${fmt(mood)}/10` }); }
                                                             else if (mood >= 7) { riskScore -= 8; riskFactors.push({ emoji: '😊', positive: true, text: `Humor bom ${lbl}: ${fmt(mood)}/10` }); }
                                                         }
 
-                                                        // 3. Energia (média pond. 3 dias)
+                                                        // 3. Energia (média pond. 3 dias) — pesos reduzidos
                                                         if (energy !== null) {
-                                                            if (energy < 4) { riskScore += 15; riskFactors.push({ emoji: '🔋', positive: false, text: `Energia muito baixa ${lbl}: ${fmt(energy)}/10` }); }
-                                                            else if (energy < 6) { riskScore += 8; riskFactors.push({ emoji: '🪫', positive: false, text: `Energia moderada ${lbl}: ${fmt(energy)}/10` }); }
+                                                            if (energy < 4) { riskScore += 10; riskFactors.push({ emoji: '🔋', positive: false, text: `Energia muito baixa ${lbl}: ${fmt(energy)}/10` }); }
+                                                            else if (energy < 6) { riskScore += 5; riskFactors.push({ emoji: '🪫', positive: false, text: `Energia moderada ${lbl}: ${fmt(energy)}/10` }); }
                                                             else if (energy >= 7) { riskScore -= 8; riskFactors.push({ emoji: '⚡', positive: true, text: `Energia boa ${lbl}: ${fmt(energy)}/10` }); }
                                                         }
 
-                                                        // 4. Autocuidado ontem
-                                                        if (hasYesterdayWellbeing) {
-                                                            if (selfCareScore === 0) { riskScore += 15; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.noSelfCare') }); }
-                                                            else if (selfCareScore === 1) { riskScore += 8; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
-                                                            else if (selfCareScore === 2) { riskFactors.push({ emoji: '🟡', positive: null, text: `Autocuidado parcial ontem: ${selfCareDetails.join(', ')}` }); }
-                                                            else if (selfCareScore >= 3) { riskScore -= 12; riskFactors.push({ emoji: '✅', positive: true, text: t('patterns.riskLevel.goodSelfCare', { score: selfCareScore, items: selfCareDetails.join(', ') }) }); }
+                                                        // 4. Autocuidado (média 2 dias)
+                                                        if (selfCareAvg !== null) {
+                                                            const scLbl = scDays.length > 1 ? '(média 2d)' : '(ontem)';
+                                                            if (selfCareAvg < 1) { riskScore += 15; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.noSelfCare') }); }
+                                                            else if (selfCareAvg < 2) { riskScore += 8; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
+                                                            else if (selfCareAvg < 3) { riskFactors.push({ emoji: '🟡', positive: null, text: `Autocuidado parcial ${scLbl}: ${selfCareAvg.toFixed(1)}/4` }); }
+                                                            else { riskScore -= 12; riskFactors.push({ emoji: '✅', positive: true, text: t('patterns.riskLevel.goodSelfCare', { score: selfCareAvg.toFixed(1), items: selfCareDetails.join(', ') }) }); }
                                                         }
 
                                                         // 5. Tendência humor/energia (últimos 7 dias)
@@ -521,6 +549,15 @@ export function PatternsView({
                                                         // 8. Tendência consumo últimos 7 dias
                                                         if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', positive: false, text: t('patterns.riskLevel.trendIncreasing') }); }
                                                         else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📉', positive: true, text: 'Consumos a diminuir nos últimos 7 dias' }); }
+
+                                                        // 9. Emoções — craving, valência e instabilidade
+                                                        if (hasCravingYesterday) { riskScore += 15; riskFactors.push({ emoji: '🔥', positive: false, text: 'Craving registado ontem' }); }
+                                                        if (negRatio !== null) {
+                                                            if (negRatio > 0.6 && totalEmotions >= 3) { riskScore += 12; riskFactors.push({ emoji: '😰', positive: false, text: `Maioria das emoções negativas (${Math.round(negRatio * 100)}%)` }); }
+                                                            else if (negRatio > 0.4 && totalEmotions >= 2) { riskScore += 6; riskFactors.push({ emoji: '😐', positive: false, text: `Mais de metade das emoções negativas (${Math.round(negRatio * 100)}%)` }); }
+                                                            else if (negRatio < 0.25 && posEmotions.length >= 3) { riskScore -= 8; riskFactors.push({ emoji: '💚', positive: true, text: 'Emoções maioritariamente positivas nos últimos dias' }); }
+                                                        }
+                                                        if (emotionallyUnstable) { riskScore += 8; riskFactors.push({ emoji: '🌊', positive: false, text: 'Instabilidade emocional nos últimos dias' }); }
 
                                                         riskScore = Math.max(0, Math.min(100, riskScore));
 
