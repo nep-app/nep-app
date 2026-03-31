@@ -463,61 +463,64 @@ export function PatternsView({
                                                         // ── CALCULAR SCORE ──────────────────────────────────
                                                         let riskScore = 30;
                                                         const riskFactors = [];
+                                                        const lbl = i18n.language === 'en' ? '(avg 3d)' : '(média 3 dias)';
 
-                                                        // 1. Sono (média pond. 3 dias)
+                                                        // 1. Sono — horas dormidas (média pond. 3 dias)
                                                         if (sleep !== null) {
-                                                            if (sleep < 4) { riskScore += 20; riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepVeryLow', { val: fmt(sleep) }) }); }
-                                                            else if (sleep < 6) { riskScore += 10; riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepLow', { val: fmt(sleep) }) }); }
-                                                            else if (sleep >= 7) { riskScore -= 10; }
+                                                            if (sleep < 4) { riskScore += 20; riskFactors.push({ emoji: '😴', positive: false, text: `Sono muito baixo ${lbl}: ${fmt(sleep)}h` }); }
+                                                            else if (sleep < 6) { riskScore += 10; riskFactors.push({ emoji: '😴', positive: false, text: `Sono baixo ${lbl}: ${fmt(sleep)}h` }); }
+                                                            else if (sleep >= 7) { riskScore -= 10; riskFactors.push({ emoji: '😴', positive: true, text: `Sono bom ${lbl}: ${fmt(sleep)}h` }); }
                                                         }
 
                                                         // 2. Humor (média pond. 3 dias)
                                                         if (mood !== null) {
-                                                            if (mood < 4) { riskScore += 15; riskFactors.push({ emoji: '😔', text: t('patterns.riskLevel.moodLow', { val: fmt(mood) }) }); }
-                                                            else if (mood < 6) { riskScore += 8; riskFactors.push({ emoji: '😔', text: t('patterns.riskLevel.moodLow', { val: fmt(mood) }) }); }
-                                                            else if (mood >= 7) { riskScore -= 8; }
+                                                            if (mood < 4) { riskScore += 15; riskFactors.push({ emoji: '😔', positive: false, text: `Humor muito baixo ${lbl}: ${fmt(mood)}/10` }); }
+                                                            else if (mood < 6) { riskScore += 8; riskFactors.push({ emoji: '😐', positive: false, text: `Humor moderado ${lbl}: ${fmt(mood)}/10` }); }
+                                                            else if (mood >= 7) { riskScore -= 8; riskFactors.push({ emoji: '😊', positive: true, text: `Humor bom ${lbl}: ${fmt(mood)}/10` }); }
                                                         }
 
                                                         // 3. Energia (média pond. 3 dias)
                                                         if (energy !== null) {
-                                                            if (energy < 4) { riskScore += 15; riskFactors.push({ emoji: '🔋', text: t('patterns.riskLevel.energyLow', { val: fmt(energy) }) }); }
-                                                            else if (energy < 6) { riskScore += 8; riskFactors.push({ emoji: '🔋', text: t('patterns.riskLevel.energyLow', { val: fmt(energy) }) }); }
-                                                            else if (energy >= 7) { riskScore -= 8; }
+                                                            if (energy < 4) { riskScore += 15; riskFactors.push({ emoji: '🔋', positive: false, text: `Energia muito baixa ${lbl}: ${fmt(energy)}/10` }); }
+                                                            else if (energy < 6) { riskScore += 8; riskFactors.push({ emoji: '🪫', positive: false, text: `Energia moderada ${lbl}: ${fmt(energy)}/10` }); }
+                                                            else if (energy >= 7) { riskScore -= 8; riskFactors.push({ emoji: '⚡', positive: true, text: `Energia boa ${lbl}: ${fmt(energy)}/10` }); }
                                                         }
 
                                                         // 4. Autocuidado ontem
                                                         if (hasYesterdayWellbeing) {
-                                                            if (selfCareScore === 0) { riskScore += 15; riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.noSelfCare') }); }
-                                                            else if (selfCareScore === 1) { riskScore += 8; riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
-                                                            else if (selfCareScore >= 3) { riskScore -= 12; riskFactors.push({ emoji: '✅', text: t('patterns.riskLevel.goodSelfCare', { score: selfCareScore, items: selfCareDetails.join(', ') }) }); }
+                                                            if (selfCareScore === 0) { riskScore += 15; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.noSelfCare') }); }
+                                                            else if (selfCareScore === 1) { riskScore += 8; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
+                                                            else if (selfCareScore === 2) { riskFactors.push({ emoji: '🟡', positive: null, text: `Autocuidado parcial ontem: ${selfCareDetails.join(', ')}` }); }
+                                                            else if (selfCareScore >= 3) { riskScore -= 12; riskFactors.push({ emoji: '✅', positive: true, text: t('patterns.riskLevel.goodSelfCare', { score: selfCareScore, items: selfCareDetails.join(', ') }) }); }
                                                         }
 
                                                         // 5. Tendência humor/energia (últimos 7 dias)
                                                         if (moodTrend < -1.5 || energyTrend < -1.5) {
                                                             riskScore += 12;
-                                                            const which = moodTrend < -1.5 && energyTrend < -1.5 ? (i18n.language === 'en' ? 'mood & energy' : 'humor e energia') : moodTrend < -1.5 ? (i18n.language === 'en' ? 'mood' : 'humor') : (i18n.language === 'en' ? 'energy' : 'energia');
-                                                            riskFactors.push({ emoji: '📉', text: i18n.language === 'en' ? `${which} declining over last 7 days` : `${which} em queda nos últimos 7 dias` });
+                                                            const which = moodTrend < -1.5 && energyTrend < -1.5 ? 'humor e energia' : moodTrend < -1.5 ? 'humor' : 'energia';
+                                                            riskFactors.push({ emoji: '📉', positive: false, text: `${which} em queda nos últimos 7 dias` });
                                                         } else if (moodTrend > 1.5 && energyTrend > 1.5) {
                                                             riskScore -= 8;
+                                                            riskFactors.push({ emoji: '📈', positive: true, text: 'Humor e energia a melhorar nos últimos 7 dias' });
                                                         }
 
                                                         // 6. mg ontem vs. média histórica
                                                         if (mgYesterday !== null && mgAvg !== null) {
-                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', text: i18n.language === 'en' ? `Yesterday's dose (${mgYesterday}mg) well above your avg (${Math.round(mgAvg)}mg)` : `Dose de ontem (${mgYesterday}mg) bem acima da tua média (${Math.round(mgAvg)}mg)` }); }
-                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', text: i18n.language === 'en' ? `Yesterday's dose (${mgYesterday}mg) above your avg (${Math.round(mgAvg)}mg)` : `Dose de ontem (${mgYesterday}mg) acima da tua média (${Math.round(mgAvg)}mg)` }); }
-                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; }
+                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', positive: false, text: `Dose de ontem (${mgYesterday}mg) bem acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', positive: false, text: `Dose de ontem (${mgYesterday}mg) acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; riskFactors.push({ emoji: '💊', positive: true, text: `Dose de ontem (${mgYesterday}mg) abaixo da tua média (${Math.round(mgAvg)}mg)` }); }
                                                         }
 
                                                         // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
                                                         if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
                                                             riskScore += 12;
                                                             const dayNames = t('analyses.dayNames', { returnObjects: true });
-                                                            riskFactors.push({ emoji: '📅', text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
+                                                            riskFactors.push({ emoji: '📅', positive: false, text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
                                                         }
 
                                                         // 8. Tendência consumo últimos 7 dias
-                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', text: t('patterns.riskLevel.trendIncreasing') }); }
-                                                        else if (trendRecent < -0.5) { riskScore -= 10; }
+                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', positive: false, text: t('patterns.riskLevel.trendIncreasing') }); }
+                                                        else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📉', positive: true, text: 'Consumos a diminuir nos últimos 7 dias' }); }
 
                                                         riskScore = Math.max(0, Math.min(100, riskScore));
 
@@ -562,7 +565,7 @@ export function PatternsView({
                                                                         <div className="mt-2 space-y-1">
                                                                             <div className={'text-xs font-semibold ' + 'text-gray-400'}>{t('patterns.riskLevel.factors')}</div>
                                                                             {riskFactors.map((rf, idx) => (
-                                                                                <div key={idx} className={'text-xs ' + 'text-gray-300'}>
+                                                                                <div key={idx} className={'text-xs ' + (rf.positive === true ? 'text-green-400' : rf.positive === false ? 'text-red-300' : 'text-yellow-400')}>
                                                                                     {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}
