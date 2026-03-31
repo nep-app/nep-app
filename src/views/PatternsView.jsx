@@ -363,18 +363,12 @@ export function PatternsView({
                                                     {/* Alertas Preditivos */}
                                                     {(() => {
                                                         // Agregar dados por dia
-                                                        const parseSafe = (val) => {
-                                                            const num = parseFloat(val);
-                                                            return isNaN(num) ? null : Math.round(num);
-                                                        };
+                                                        const parseSafe = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };
                                                         const dailyData = {};
                                                         const ensureDay = (date) => {
-                                                            if (!dailyData[date]) {
-                                                                dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0 };
-                                                            }
+                                                            if (!dailyData[date]) dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0, mg: null };
                                                         };
 
-                                                        // Mood e energy são numéricos (1-10); water/rest/food/social são booleanos
                                                         wellbeingLogs.forEach(w => {
                                                             const date = w.date || safeToISODate(w.timestamp);
                                                             if (!date) return;
@@ -386,15 +380,19 @@ export function PatternsView({
                                                             if (w.food) dailyData[date].food = true;
                                                             if (w.social) dailyData[date].social = true;
                                                         });
-
-                                                        // Sleep vem dos ciclos (horas dormidas)
                                                         cycles.forEach(c => {
                                                             const date = c.date || safeToISODate(c.timestamp);
                                                             if (!date || c.sleep == null) return;
                                                             ensureDay(date);
                                                             dailyData[date].sleep = parseFloat(c.sleep);
                                                         });
-
+                                                        dailyLogs.forEach(l => {
+                                                            if (l.mg == null) return;
+                                                            const date = l.date || safeToISODate(l.timestamp);
+                                                            if (!date) return;
+                                                            ensureDay(date);
+                                                            dailyData[date].mg = (dailyData[date].mg || 0) + l.mg;
+                                                        });
                                                         consumptions.forEach(c => {
                                                             const date = c.date || safeToISODate(c.timestamp);
                                                             if (!date) return;
@@ -402,110 +400,125 @@ export function PatternsView({
                                                             dailyData[date].consumptions++;
                                                         });
 
-                                                        // Obter dados de ontem
                                                         const today = new Date();
-                                                        const yesterday = new Date(today);
-                                                        yesterday.setDate(yesterday.getDate() - 1);
-                                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+                                                        const getDS = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0]; };
+                                                        const d1 = getDS(1), d2 = getDS(2), d3 = getDS(3);
 
-                                                        const yesterdayData = dailyData[yesterdayStr];
-                                                        if (!yesterdayData) return null;
+                                                        if (![d1, d2, d3].some(d => dailyData[d])) return null;
 
-                                                        const sleep = yesterdayData.sleep;   // horas (ex: 7.5)
-                                                        const mood = yesterdayData.mood;       // 1-10
-                                                        const energy = yesterdayData.energy;   // 1-10
+                                                        // Média ponderada 3 dias: ontem ×3, anteontem ×2, há 3 dias ×1
+                                                        const wavg = (field) => {
+                                                            const pts = [{ d: d1, w: 3 }, { d: d2, w: 2 }, { d: d3, w: 1 }].filter(p => dailyData[p.d]?.[field] != null);
+                                                            if (!pts.length) return null;
+                                                            const tw = pts.reduce((s, p) => s + p.w, 0);
+                                                            return pts.reduce((s, p) => s + dailyData[p.d][field] * p.w, 0) / tw;
+                                                        };
+                                                        const sleep = wavg('sleep'), mood = wavg('mood'), energy = wavg('energy');
+                                                        const fmt = (v) => v != null ? v.toFixed(1) : '?';
 
-                                                        // Calcular score de autocuidado de ontem (0-4, baseado nos booleanos)
+                                                        // Autocuidado de ontem
+                                                        const yd = dailyData[d1] || {};
+                                                        const hasYesterdayWellbeing = !!(dailyData[d1]);
                                                         let selfCareScore = 0;
                                                         const selfCareDetails = [];
-                                                        if (yesterdayData.water) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água'); }
-                                                        if (yesterdayData.rest) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso'); }
-                                                        if (yesterdayData.food) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação'); }
-                                                        if (yesterdayData.social) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Social' : 'Social'); }
+                                                        if (yd.water) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água'); }
+                                                        if (yd.rest) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso'); }
+                                                        if (yd.food) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação'); }
+                                                        if (yd.social) { selfCareScore++; selfCareDetails.push(i18n.language === 'en' ? 'Social' : 'Social'); }
 
-                                                        // Padrão do dia da semana
-                                                        const todayDayOfWeek = today.getDay();
-                                                        const weekdayConsumptions = {};
-                                                        Object.entries(dailyData).forEach(([date, data]) => {
-                                                            const d = new Date(date);
-                                                            const dow = d.getDay();
-                                                            if (!weekdayConsumptions[dow]) weekdayConsumptions[dow] = [];
-                                                            weekdayConsumptions[dow].push(data.consumptions);
+                                                        // Tendência humor/energia últimos 7 dias (oldest→newest)
+                                                        const calcTrend = (field) => {
+                                                            const vals = Array.from({ length: 7 }, (_, i) => dailyData[getDS(7 - i)]?.[field] ?? null).filter(v => v != null);
+                                                            if (vals.length < 3) return 0;
+                                                            const h = Math.floor(vals.length / 2);
+                                                            return (vals.slice(-h).reduce((s, v) => s + v, 0) / h) - (vals.slice(0, h).reduce((s, v) => s + v, 0) / h);
+                                                        };
+                                                        const moodTrend = calcTrend('mood'), energyTrend = calcTrend('energy');
+
+                                                        // mg ontem vs. média dos 30 dias anteriores
+                                                        const mgYesterday = yd.mg ?? null;
+                                                        const mgHistory = Array.from({ length: 30 }, (_, i) => dailyData[getDS(i + 2)]?.mg).filter(v => v != null && v > 0);
+                                                        const mgAvg = mgHistory.length >= 7 ? mgHistory.reduce((s, v) => s + v, 0) / mgHistory.length : null;
+
+                                                        // Dia da semana
+                                                        const allDays = Object.keys(dailyData);
+                                                        const weeksOfData = allDays.length / 7;
+                                                        const todayDOW = today.getDay();
+                                                        const wkCons = {};
+                                                        allDays.forEach(date => {
+                                                            const dow = new Date(date).getDay();
+                                                            if (!wkCons[dow]) wkCons[dow] = [];
+                                                            wkCons[dow].push(dailyData[date].consumptions);
                                                         });
-                                                        const todayAvg = weekdayConsumptions[todayDayOfWeek]
-                                                            ? weekdayConsumptions[todayDayOfWeek].reduce((s, c) => s + c, 0) / weekdayConsumptions[todayDayOfWeek].length
-                                                            : null;
-                                                        const overallAvg = Object.values(dailyData).reduce((s, d) => s + d.consumptions, 0) / Object.keys(dailyData).length;
+                                                        const todayAvg = wkCons[todayDOW] ? wkCons[todayDOW].reduce((s, c) => s + c, 0) / wkCons[todayDOW].length : null;
+                                                        const overallAvg = allDays.reduce((s, d) => s + dailyData[d].consumptions, 0) / allDays.length;
 
-                                                        // Tendência últimos 7 dias
-                                                        const last7Days = Object.keys(dailyData).sort().slice(-7);
-                                                        const last7Consumptions = last7Days.map(d => dailyData[d].consumptions);
-                                                        const trendRecent = last7Consumptions.length >= 3
-                                                            ? (last7Consumptions.slice(-3).reduce((s, c) => s + c, 0) / 3) - (last7Consumptions.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
+                                                        // Tendência consumo últimos 7 dias
+                                                        const last7S = Object.keys(dailyData).sort().slice(-7);
+                                                        const l7c = last7S.map(d => dailyData[d].consumptions);
+                                                        const trendRecent = l7c.length >= 6
+                                                            ? (l7c.slice(-3).reduce((s, c) => s + c, 0) / 3) - (l7c.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
                                                             : 0;
 
-                                                        // CALCULAR SCORE DE RISCO (0-100)
-                                                        let riskScore = 50; // baseline
+                                                        // ── CALCULAR SCORE ──────────────────────────────────
+                                                        let riskScore = 30;
                                                         const riskFactors = [];
 
-                                                        // 1. Sono baixo ontem (+risco)
+                                                        // 1. Sono (média pond. 3 dias)
                                                         if (sleep !== null) {
-                                                            if (sleep < 4) {
-                                                                riskScore += 20;
-                                                                riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepVeryLow', { val: sleep }) });
-                                                            } else if (sleep < 6) {
-                                                                riskScore += 10;
-                                                                riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepLow', { val: sleep }) });
-                                                            } else if (sleep >= 7) {
-                                                                riskScore -= 10;
-                                                            }
+                                                            if (sleep < 4) { riskScore += 20; riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepVeryLow', { val: fmt(sleep) }) }); }
+                                                            else if (sleep < 6) { riskScore += 10; riskFactors.push({ emoji: '😴', text: t('patterns.riskLevel.sleepLow', { val: fmt(sleep) }) }); }
+                                                            else if (sleep >= 7) { riskScore -= 10; }
                                                         }
 
-                                                        // 2. Humor/Energia baixos ontem (+risco)
-                                                        if (mood !== null && mood < 5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '😔', text: t('patterns.riskLevel.moodLow', { val: mood }) });
-                                                        } else if (mood !== null && mood >= 7) {
+                                                        // 2. Humor (média pond. 3 dias)
+                                                        if (mood !== null) {
+                                                            if (mood < 4) { riskScore += 15; riskFactors.push({ emoji: '😔', text: t('patterns.riskLevel.moodLow', { val: fmt(mood) }) }); }
+                                                            else if (mood < 6) { riskScore += 8; riskFactors.push({ emoji: '😔', text: t('patterns.riskLevel.moodLow', { val: fmt(mood) }) }); }
+                                                            else if (mood >= 7) { riskScore -= 8; }
+                                                        }
+
+                                                        // 3. Energia (média pond. 3 dias)
+                                                        if (energy !== null) {
+                                                            if (energy < 4) { riskScore += 15; riskFactors.push({ emoji: '🔋', text: t('patterns.riskLevel.energyLow', { val: fmt(energy) }) }); }
+                                                            else if (energy < 6) { riskScore += 8; riskFactors.push({ emoji: '🔋', text: t('patterns.riskLevel.energyLow', { val: fmt(energy) }) }); }
+                                                            else if (energy >= 7) { riskScore -= 8; }
+                                                        }
+
+                                                        // 4. Autocuidado ontem
+                                                        if (hasYesterdayWellbeing) {
+                                                            if (selfCareScore === 0) { riskScore += 15; riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.noSelfCare') }); }
+                                                            else if (selfCareScore === 1) { riskScore += 8; riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
+                                                            else if (selfCareScore >= 3) { riskScore -= 12; riskFactors.push({ emoji: '✅', text: t('patterns.riskLevel.goodSelfCare', { score: selfCareScore, items: selfCareDetails.join(', ') }) }); }
+                                                        }
+
+                                                        // 5. Tendência humor/energia (últimos 7 dias)
+                                                        if (moodTrend < -1.5 || energyTrend < -1.5) {
+                                                            riskScore += 12;
+                                                            const which = moodTrend < -1.5 && energyTrend < -1.5 ? (i18n.language === 'en' ? 'mood & energy' : 'humor e energia') : moodTrend < -1.5 ? (i18n.language === 'en' ? 'mood' : 'humor') : (i18n.language === 'en' ? 'energy' : 'energia');
+                                                            riskFactors.push({ emoji: '📉', text: i18n.language === 'en' ? `${which} declining over last 7 days` : `${which} em queda nos últimos 7 dias` });
+                                                        } else if (moodTrend > 1.5 && energyTrend > 1.5) {
                                                             riskScore -= 8;
                                                         }
 
-                                                        if (energy !== null && energy < 5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '🔋', text: t('patterns.riskLevel.energyLow', { val: energy }) });
-                                                        } else if (energy !== null && energy >= 7) {
-                                                            riskScore -= 8;
+                                                        // 6. mg ontem vs. média histórica
+                                                        if (mgYesterday !== null && mgAvg !== null) {
+                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', text: i18n.language === 'en' ? `Yesterday's dose (${mgYesterday}mg) well above your avg (${Math.round(mgAvg)}mg)` : `Dose de ontem (${mgYesterday}mg) bem acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', text: i18n.language === 'en' ? `Yesterday's dose (${mgYesterday}mg) above your avg (${Math.round(mgAvg)}mg)` : `Dose de ontem (${mgYesterday}mg) acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; }
                                                         }
 
-                                                        // 3. Autocuidado ontem
-                                                        if (selfCareScore === 0) {
-                                                            riskScore += 15;
-                                                            riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.noSelfCare') });
-                                                        } else if (selfCareScore === 1) {
-                                                            riskScore += 8;
-                                                            riskFactors.push({ emoji: '⚠️', text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) });
-                                                        } else if (selfCareScore === 2) {
-                                                            // Neutro - não adiciona fator
-                                                        } else if (selfCareScore >= 3) {
-                                                            riskScore -= 12;
-                                                            riskFactors.push({ emoji: '✅', text: t('patterns.riskLevel.goodSelfCare', { score: selfCareScore, items: selfCareDetails.join(', ') }) });
-                                                        }
-
-                                                        // 4. Dia da semana com mais consumo (+risco)
-                                                        if (todayAvg !== null && todayAvg > overallAvg * 1.3) {
+                                                        // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
+                                                        if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
                                                             riskScore += 12;
                                                             const dayNames = t('analyses.dayNames', { returnObjects: true });
-                                                            riskFactors.push({ emoji: '📅', text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDayOfWeek] }) });
+                                                            riskFactors.push({ emoji: '📅', text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
                                                         }
 
-                                                        // 5. Tendência crescente (+risco)
-                                                        if (trendRecent > 0.5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '📈', text: t('patterns.riskLevel.trendIncreasing') });
-                                                        } else if (trendRecent < -0.5) {
-                                                            riskScore -= 10;
-                                                        }
+                                                        // 8. Tendência consumo últimos 7 dias
+                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', text: t('patterns.riskLevel.trendIncreasing') }); }
+                                                        else if (trendRecent < -0.5) { riskScore -= 10; }
 
-                                                        // Limitar score entre 0-100
                                                         riskScore = Math.max(0, Math.min(100, riskScore));
 
                                                         // Classificar risco
@@ -558,6 +571,11 @@ export function PatternsView({
                                                                     <div className={'text-xs mt-3 pt-2 border-t ' + 'border-gray-600 text-gray-400'}>
                                                                         {riskScore >= 70 ? t('patterns.riskLevel.msgHigh') : riskScore >= 55 ? t('patterns.moderateRisk') : t('patterns.riskLevel.msgLow')}
                                                                     </div>
+                                                                    {weeksOfData < 4 && (
+                                                                        <div className="text-xs mt-2 text-yellow-600/70">
+                                                                            ⚠️ {i18n.language === 'en' ? 'The day-of-week factor needs at least 4–6 weeks of data to be reliable.' : 'O fator dia da semana precisa de pelo menos 4–6 semanas de dados para ser fiável.'}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );
