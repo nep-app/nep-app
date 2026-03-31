@@ -216,27 +216,6 @@ export const SettingsView = ({
                 </h3>
                 <div className="space-y-5">
 
-                    {/* Permissão do sistema */}
-                    {!notificationsEnabled ? (
-                        <div className="bg-gray-700/50 rounded-lg p-3">
-                            <p className="text-xs text-gray-400 mb-2">{t('settings.notificationsDescription')}</p>
-                            <button
-                                onClick={requestNotificationPermission}
-                                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium text-sm flex items-center justify-center gap-2"
-                            >
-                                <Icons.Bell className="w-4 h-4" />
-                                {t('settings.enableNotifications')}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2 text-green-500 text-sm">
-                            <Icons.CheckCircle className="w-4 h-4" />
-                            <span>{t('settings.notificationsEnabled')}</span>
-                        </div>
-                    )}
-
-                    <div className="border-t border-gray-700" />
-
                     {/* Bem-estar */}
                     <div>
                         <div className="flex items-center justify-between">
