@@ -12,8 +12,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     return safeLocalStorage.get('notificationsEnabled', false);
   });
 
-  // Resets every time the app is opened (session-level, not persisted)
-  const bagAlarmShownThisSession = useRef(false);
+  // Ref to always have fresh dailyLogs in the interval callback (avoids stale closure)
+  const dailyLogsRef = useRef(dailyLogs);
+  useEffect(() => { dailyLogsRef.current = dailyLogs; }, [dailyLogs]);
 
   const dismissReminder = (type) => {
     const today = getTodayKey();
@@ -128,19 +129,21 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           dismissReminder('daily-check');
         }
 
-        // Bag weighing alarm: from configured hour onwards
-        // Shows once per app session until weighed; resets on next open
+        // Bag weighing alarm: fires once per day from configured hour (date-based)
         const bagAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
         const bagAlarmHour = (bagAlarmRaw !== null && bagAlarmRaw !== 'null') ? parseInt(bagAlarmRaw) : null;
         if (bagAlarmHour !== null && !isNaN(bagAlarmHour) && hour >= bagAlarmHour) {
-          const hasBagWeighToday = dailyLogs.some(d => d.date === today && d.method === 'bagWeight');
-          if (hasBagWeighToday) {
-            // Already weighed today — reset session flag so tomorrow works
-            bagAlarmShownThisSession.current = false;
-          } else if (!bagAlarmShownThisSession.current) {
-            showToast('⚖️ Lembrete: Pesa a dosagem diária!', 'info');
-            showBrowserNotification('Lembrete - NEP', 'Pesa a dosagem diária!');
-            bagAlarmShownThisSession.current = true; // Don't repeat until next app open
+          // Read dismissal fresh from localStorage to avoid stale closure issue
+          const dismissed = safeLocalStorage.get('reminderDismissed', {});
+          const alreadyDismissedToday = dismissed['bag-alarm'] === today;
+          if (!alreadyDismissedToday) {
+            const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
+            if (!hasDailyLogToday) {
+              showToast('⚖️ Lembrete: Regista a tua dose diária!', 'info');
+              showBrowserNotification('Lembrete - NEP', 'Regista a tua dose diária!');
+            }
+            // Dismiss for today regardless (avoid re-checking every hour)
+            dismissReminder('bag-alarm');
           }
         }
       } catch (e) {

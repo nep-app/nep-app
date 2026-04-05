@@ -365,6 +365,8 @@ export function PatternsView({
                                                         // Agregar dados por dia
                                                         const parseSafe = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };
                                                         const dailyData = {};
+                                                        // Track mood/energy sums and counts for averaging
+                                                        const moodCounts = {}, energyCounts = {};
                                                         const ensureDay = (date) => {
                                                             if (!dailyData[date]) dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0, mg: null };
                                                         };
@@ -373,8 +375,22 @@ export function PatternsView({
                                                             const date = w.date || safeToISODate(w.timestamp);
                                                             if (!date) return;
                                                             ensureDay(date);
-                                                            if (w.mood != null) dailyData[date].mood = parseSafe(w.mood);
-                                                            if (w.energy != null) dailyData[date].energy = parseSafe(w.energy);
+                                                            if (w.mood != null) {
+                                                                const v = parseSafe(w.mood);
+                                                                if (v !== null) {
+                                                                    moodCounts[date] = moodCounts[date] || { sum: 0, n: 0 };
+                                                                    moodCounts[date].sum += v; moodCounts[date].n++;
+                                                                    dailyData[date].mood = moodCounts[date].sum / moodCounts[date].n;
+                                                                }
+                                                            }
+                                                            if (w.energy != null) {
+                                                                const v = parseSafe(w.energy);
+                                                                if (v !== null) {
+                                                                    energyCounts[date] = energyCounts[date] || { sum: 0, n: 0 };
+                                                                    energyCounts[date].sum += v; energyCounts[date].n++;
+                                                                    dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
+                                                                }
+                                                            }
                                                             if (w.water) dailyData[date].water = true;
                                                             if (w.rest) dailyData[date].rest = true;
                                                             if (w.food) dailyData[date].food = true;
@@ -400,11 +416,24 @@ export function PatternsView({
                                                             dailyData[date].consumptions++;
                                                         });
 
+                                                        // Use local date to avoid UTC midnight edge case
                                                         const today = new Date();
-                                                        const getDS = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().split('T')[0]; };
+                                                        const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                                        const getDS = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return localDateStr(d); };
                                                         const d1 = getDS(1), d2 = getDS(2), d3 = getDS(3);
 
-                                                        if (![d1, d2, d3].some(d => dailyData[d])) return null;
+                                                        if (![d1, d2, d3].some(d => dailyData[d])) {
+                                                            return (
+                                                                <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mt-4">
+                                                                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{t('patterns.todayForecast')}</div>
+                                                                    <div className="text-sm text-gray-400">
+                                                                        {i18n.language === 'en'
+                                                                            ? 'Not enough data yet. Register wellbeing, sleep cycles or daily dose for the last 3 days to see a prediction.'
+                                                                            : 'Dados insuficientes. Regista bem-estar, ciclos de sono ou dose diária nos últimos 3 dias para ver uma previsão.'}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
 
                                                         // Média ponderada 3 dias: ontem ×3, anteontem ×2, há 3 dias ×1
                                                         const wavg = (field) => {
