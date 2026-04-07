@@ -182,167 +182,249 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   const periodLabel = PERIODS.find(p => p.id === period)?.label || period;
   const now = new Date().toLocaleDateString('pt-PT', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Compute cycle end dates
-  const cyclesWithEnd = computeCycleEnds(data.cycles || []);
-
-  // Collect all entries with a dateKey (YYYY-MM-DD) and a sort timestamp
-  const allEntries = [];
-
-  if (selected.consumptions) {
-    data.consumptions.forEach(c => {
-      const d = safeDate(c.timestamp);
-      if (!d) return;
-      const dateKey = d.toISOString().split('T')[0];
-      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      const detail = [
-        c.amount ? `${c.amount} ${c.unit || 'mg'}` : null,
-        c.notes || null,
-      ].filter(Boolean).join(' — ') || '—';
-      allEntries.push({ dateKey, sort: d, row: ['💊 Consumo', time, detail] });
-    });
-  }
-
-  if (selected.dailyLogs) {
-    data.dailyLogs.forEach(l => {
-      const d = safeDate(l.date || l.timestamp);
-      if (!d) return;
-      const dateKey = l.date || d.toISOString().split('T')[0];
-      const detail = [
-        l.mg ? `${l.mg} mg` : null,
-        l.times != null ? `${l.times}× consumos` : null,
-        l.notes || null,
-      ].filter(Boolean).join(' — ') || '—';
-      allEntries.push({ dateKey, sort: d, row: ['📋 Registo diário', '—', detail] });
-    });
-  }
-
-  if (selected.cycles) {
-    cyclesWithEnd.forEach(c => {
-      const d = safeDate(c.timestamp);
-      if (!d) return;
-      const dateKey = d.toISOString().split('T')[0];
-      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
-      const detail = [
-        endD ? `Fim: ${endD.toLocaleDateString('pt-PT')}` : 'Em curso',
-        c.sleep ? `Sono: ${c.sleep}h` : null,
-        (c.triggers || []).length ? `Gatilhos: ${(c.triggers || []).join(', ')}` : null,
-        c.notes || null,
-      ].filter(Boolean).join(' — ') || '—';
-      allEntries.push({ dateKey, sort: d, row: ['🌙 Ciclo', time, detail] });
-    });
-  }
-
-  if (selected.wellbeing) {
-    data.wellbeingLogs.forEach(w => {
-      const d = safeDate(w.timestamp || w.date);
-      if (!d) return;
-      const dateKey = d.toISOString().split('T')[0];
-      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      const detail = [
-        w.mood   ? `Humor: ${w.mood}/10`   : null,
-        w.energy ? `Energia: ${w.energy}/10` : null,
-        [w.water && 'Água', w.rest && 'Descanso', w.food && 'Alimentação', w.social && 'Social'].filter(Boolean).join(', ') || null,
-        (w.emotions || []).length ? (w.emotions || []).join(', ') : null,
-        w.notes || null,
-      ].filter(Boolean).join(' — ') || '—';
-      allEntries.push({ dateKey, sort: d, row: ['💚 Bem-estar', time, detail] });
-    });
-  }
-
-  if (selected.reflections) {
-    data.reflections.forEach(r => {
-      const d = safeDate(r.timestamp || r.date);
-      if (!d) return;
-      const dateKey = d.toISOString().split('T')[0];
-      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      const detail = [r.question, r.answer].filter(Boolean).join(': ') || '—';
-      allEntries.push({ dateKey, sort: d, row: ['📝 Reflexão', time, detail] });
-    });
-  }
-
-  if (selected.thoughts) {
-    data.thoughts.forEach(t => {
-      const d = safeDate(t.timestamp || t.date);
-      if (!d) return;
-      const dateKey = d.toISOString().split('T')[0];
-      const time = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-      allEntries.push({ dateKey, sort: d, row: ['💭 Pensamento', time, t.content || '—'] });
-    });
-  }
-
-  // Group by date and sort dates descending (newest first)
-  const byDate = {};
-  allEntries.forEach(entry => {
-    if (!byDate[entry.dateKey]) byDate[entry.dateKey] = [];
-    byDate[entry.dateKey].push(entry);
-  });
-
-  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-
-  let content = '';
-  if (sortedDates.length === 0) {
-    content = '<p>Sem dados para o período selecionado.</p>';
-  } else {
-    sortedDates.forEach(dateKey => {
-      const entries = byDate[dateKey].sort((a, b) => a.sort - b.sort);
-      const dayLabel = new Date(dateKey + 'T12:00:00').toLocaleDateString('pt-PT', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      });
-      const dataRows = entries.map(e =>
-        `<tr>${e.row.map(c => `<td>${c ?? '—'}</td>`).join('')}</tr>`
-      ).join('');
-      content += `
-      <div class="section">
-        <h2>${dayLabel}</h2>
-        <table>
-          <thead><tr><th>Tipo</th><th>Hora</th><th>Detalhes</th></tr></thead>
-          <tbody>${dataRows}</tbody>
-        </table>
-      </div>`;
-    });
-  }
-
   const rangeLabel = period === 'custom'
     ? `${customFrom ? new Date(customFrom).toLocaleDateString('pt-PT') : '…'} — ${customTo ? new Date(customTo).toLocaleDateString('pt-PT') : '…'}`
     : periodLabel;
+
+  // ── Summary stats ──────────────────────────────────────────────────────────
+  const avg = (arr) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+  const fmtN = (v, dec = 1) => v != null ? v.toFixed(dec) : null;
+
+  const moodVals   = selected.wellbeing ? data.wellbeingLogs.map(w => parseFloat(w.mood)).filter(v => !isNaN(v)) : [];
+  const energyVals = selected.wellbeing ? data.wellbeingLogs.map(w => parseFloat(w.energy)).filter(v => !isNaN(v)) : [];
+  const sleepVals  = selected.cycles    ? data.cycles.map(c => parseFloat(c.sleep)).filter(v => !isNaN(v) && v > 0) : [];
+  const mgVals     = selected.dailyLogs ? data.dailyLogs.map(l => parseFloat(l.mg)).filter(v => !isNaN(v) && v > 0) : [];
+
+  const avgMood   = fmtN(avg(moodVals));
+  const avgEnergy = fmtN(avg(energyVals));
+  const avgSleep  = fmtN(avg(sleepVals));
+  const avgMg     = mgVals.length ? Math.round(avg(mgVals)) : null;
+
+  const emotionCounts = {};
+  if (selected.wellbeing) {
+    data.wellbeingLogs.forEach(w => (w.emotions || []).forEach(e => { emotionCounts[e] = (emotionCounts[e] || 0) + 1; }));
+  }
+  const topEmotions = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
+
+  const scTotal = selected.wellbeing ? data.wellbeingLogs.length : 0;
+  const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => w.water || w.rest || w.food || w.social).length : 0;
+  const scPct   = scTotal > 0 ? Math.round((scDays / scTotal) * 100) : null;
+
+  // ── Trend analysis (first half vs second half of period) ──────────────────
+  const trendFor = (vals) => {
+    if (vals.length < 4) return null;
+    const h = Math.floor(vals.length / 2);
+    const first = avg(vals.slice(0, h)), last = avg(vals.slice(-h));
+    if (first == null || last == null) return null;
+    const diff = last - first;
+    if (Math.abs(diff) < 0.3) return 'stable';
+    return diff > 0 ? 'up' : 'down';
+  };
+  const moodTrend   = trendFor(moodVals);
+  const energyTrend = trendFor(energyVals);
+  const sleepTrend  = trendFor(sleepVals);
+
+  const trendLabel = (t, upGood = true) => {
+    if (!t) return '';
+    if (t === 'stable') return '→ estável';
+    if (t === 'up')  return upGood  ? '↑ a melhorar' : '↑ a aumentar';
+    if (t === 'down') return upGood ? '↓ a baixar'   : '↓ a diminuir';
+    return '';
+  };
+  const trendColor = (t, upGood = true) => {
+    if (!t || t === 'stable') return '#6b7280';
+    return (t === 'up') === upGood ? '#16a34a' : '#dc2626';
+  };
+
+  // ── Build stats cards ──────────────────────────────────────────────────────
+  const statCards = [
+    selected.consumptions && data.consumptions.length > 0
+      ? { icon: '💊', value: data.consumptions.length, label: 'Consumos' } : null,
+    avgMg != null
+      ? { icon: '📋', value: `${avgMg}mg`, label: 'Dose média/dia' } : null,
+    avgMood != null
+      ? { icon: '😊', value: `${avgMood}/10`, label: 'Humor médio', trend: trendLabel(moodTrend), trendColor: trendColor(moodTrend) } : null,
+    avgEnergy != null
+      ? { icon: '⚡', value: `${avgEnergy}/10`, label: 'Energia média', trend: trendLabel(energyTrend), trendColor: trendColor(energyTrend) } : null,
+    avgSleep != null
+      ? { icon: '🌙', value: `${avgSleep}h`, label: 'Sono médio', trend: trendLabel(sleepTrend), trendColor: trendColor(sleepTrend) } : null,
+    scPct != null
+      ? { icon: '💚', value: `${scPct}%`, label: 'Autocuidado' } : null,
+  ].filter(Boolean);
+
+  const statsHTML = statCards.length > 0 ? `
+  <section class="summary">
+    <div class="section-label">Resumo do período</div>
+    <div class="stat-grid">
+      ${statCards.map(s => `
+        <div class="stat">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-value">${s.value}</div>
+          <div class="stat-label">${s.label}</div>
+          ${s.trend ? `<div class="stat-trend" style="color:${s.trendColor}">${s.trend}</div>` : ''}
+        </div>`).join('')}
+    </div>
+    ${topEmotions.length > 0 ? `
+    <div class="emotions-row">
+      <span class="emotions-label">Emoções mais frequentes:</span>
+      ${topEmotions.map(e => `<span class="emotion-tag">${e}</span>`).join('')}
+    </div>` : ''}
+  </section>` : '';
+
+  // ── Build timeline ─────────────────────────────────────────────────────────
+  const cyclesWithEnd = computeCycleEnds(data.cycles || []);
+  const allEntries = [];
+
+  const push = (type, dateKey, sort, badge, time, detail) =>
+    allEntries.push({ type, dateKey, sort, badge, time, detail });
+
+  if (selected.consumptions) {
+    data.consumptions.forEach(c => {
+      const d = safeDate(c.timestamp); if (!d) return;
+      const dk = d.toISOString().split('T')[0];
+      const detail = [c.amount ? `${c.amount} ${c.unit || 'mg'}` : null, c.notes || null].filter(Boolean).join(' · ') || '—';
+      push('consumption', dk, d, '💊 Consumo', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+    });
+  }
+  if (selected.dailyLogs) {
+    data.dailyLogs.forEach(l => {
+      const d = safeDate(l.date || l.timestamp); if (!d) return;
+      const dk = l.date || d.toISOString().split('T')[0];
+      const detail = [l.mg ? `${l.mg} mg total` : null, l.notes || null].filter(Boolean).join(' · ') || '—';
+      push('daily', dk, d, '📋 Dose diária', '—', detail);
+    });
+  }
+  if (selected.cycles) {
+    cyclesWithEnd.forEach(c => {
+      const d = safeDate(c.timestamp); if (!d) return;
+      const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
+      const detail = [
+        c.bedtime ? `Deitou: ${c.bedtime}` : null,
+        c.sleep ? `Sono: ${c.sleep}h` : null,
+        endD ? `Até: ${endD.toLocaleDateString('pt-PT')}` : 'Em curso',
+        (c.triggers || []).length ? `Gatilhos: ${c.triggers.join(', ')}` : null,
+        c.notes || null,
+      ].filter(Boolean).join(' · ') || '—';
+      push('cycle', d.toISOString().split('T')[0], d, '🌙 Ciclo', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+    });
+  }
+  if (selected.wellbeing) {
+    data.wellbeingLogs.forEach(w => {
+      const d = safeDate(w.timestamp || w.date); if (!d) return;
+      const detail = [
+        w.mood   ? `Humor ${w.mood}/10` : null,
+        w.energy ? `Energia ${w.energy}/10` : null,
+        [w.water && 'Água', w.rest && 'Descanso', w.food && 'Alim.', w.social && 'Social'].filter(Boolean).join(', ') || null,
+        (w.emotions || []).length ? w.emotions.join(', ') : null,
+        w.notes || null,
+      ].filter(Boolean).join(' · ') || '—';
+      push('wellbeing', d.toISOString().split('T')[0], d, '💚 Bem-estar', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+    });
+  }
+  if (selected.reflections) {
+    data.reflections.forEach(r => {
+      const d = safeDate(r.timestamp || r.date); if (!d) return;
+      push('reflection', d.toISOString().split('T')[0], d, '📝 Reflexão', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), [r.question, r.answer].filter(Boolean).join(': ') || '—');
+    });
+  }
+  if (selected.thoughts) {
+    data.thoughts.forEach(t => {
+      const d = safeDate(t.timestamp || t.date); if (!d) return;
+      push('thought', d.toISOString().split('T')[0], d, '💭 Pensamento', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), t.content || '—');
+    });
+  }
+
+  const byDate = {};
+  allEntries.forEach(e => { if (!byDate[e.dateKey]) byDate[e.dateKey] = []; byDate[e.dateKey].push(e); });
+  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
+  const TC = {
+    consumption: { bg: '#f3e8ff', border: '#7c3aed', text: '#5b21b6' },
+    daily:       { bg: '#dbeafe', border: '#2563eb', text: '#1d4ed8' },
+    cycle:       { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
+    wellbeing:   { bg: '#dcfce7', border: '#16a34a', text: '#14532d' },
+    reflection:  { bg: '#fce7f3', border: '#db2777', text: '#831843' },
+    thought:     { bg: '#f3f4f6', border: '#6b7280', text: '#374151' },
+  };
+
+  let timelineHTML = '';
+  if (sortedDates.length === 0) {
+    timelineHTML = '<p style="color:#888;font-style:italic;padding:12px 0;">Sem dados para o período selecionado.</p>';
+  } else {
+    sortedDates.forEach(dk => {
+      const entries = byDate[dk].sort((a, b) => a.sort - b.sort);
+      const dayLabel = new Date(dk + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
+      const rows = entries.map(e => {
+        const c = TC[e.type] || TC.thought;
+        return `<div class="entry">
+          <span class="badge" style="background:${c.bg};border-color:${c.border};color:${c.text}">${e.badge}</span>
+          <span class="time">${e.time}</span>
+          <span class="detail">${e.detail}</span>
+        </div>`;
+      }).join('');
+      timelineHTML += `<div class="day"><div class="day-header">${dayLabel}</div><div class="entries">${rows}</div></div>`;
+    });
+  }
 
   return `<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Saúde</title>
+<title>N.E.P. · Relatório</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 11pt; color: #111; padding: 20mm 18mm; }
-  header { border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 24px; }
-  header h1 { font-size: 20pt; margin-bottom: 4px; }
-  header p { color: #555; font-size: 10pt; }
-  .section { margin-bottom: 28px; page-break-inside: avoid; }
-  .section h2 { font-size: 13pt; border-left: 4px solid #555; padding-left: 10px; margin-bottom: 10px; }
-  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-  th { background: #f0f0f0; text-align: left; padding: 6px 8px; border: 1px solid #ccc; font-weight: bold; }
-  td { padding: 5px 8px; border: 1px solid #ddd; vertical-align: top; }
-  tr:nth-child(even) td { background: #fafafa; }
-  @media print {
-    body { padding: 10mm 12mm; }
-    .no-print { display: none; }
-  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:10pt;color:#1a1a2e;background:#fff;padding:14mm 18mm}
+  /* Header */
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #7c3aed;padding-bottom:10px;margin-bottom:18px}
+  .hdr-l h1{font-size:17pt;font-weight:900;color:#7c3aed;letter-spacing:-0.5px}
+  .hdr-l p{font-size:9pt;color:#6b7280;margin-top:2px}
+  .hdr-r{text-align:right;font-size:8.5pt;color:#9ca3af;line-height:1.5}
+  /* Summary */
+  .summary{background:#f9f6ff;border:1px solid #ddd6fe;border-radius:8px;padding:12px 14px;margin-bottom:18px}
+  .section-label{font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:10px}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-bottom:10px}
+  .stat{text-align:center}
+  .stat-icon{font-size:13pt;line-height:1;margin-bottom:2px}
+  .stat-value{font-size:12pt;font-weight:800;color:#111827;line-height:1.1}
+  .stat-label{font-size:7pt;color:#6b7280;margin-top:1px}
+  .stat-trend{font-size:7pt;font-weight:600;margin-top:1px}
+  .emotions-row{border-top:1px solid #e0d5ff;padding-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .emotions-label{font-size:8pt;color:#6b7280}
+  .emotion-tag{font-size:8pt;background:#ede9fe;color:#5b21b6;border-radius:20px;padding:2px 8px}
+  /* Timeline */
+  .tl-label{font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:12px}
+  .day{margin-bottom:16px;page-break-inside:avoid}
+  .day-header{font-size:9.5pt;font-weight:700;color:#374151;padding-bottom:5px;border-bottom:1px solid #e5e7eb;margin-bottom:7px;text-transform:capitalize}
+  .entries{display:flex;flex-direction:column;gap:4px}
+  .entry{display:flex;align-items:baseline;gap:7px;font-size:9pt}
+  .badge{display:inline-block;font-size:7.5pt;font-weight:600;padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .time{color:#9ca3af;font-size:8pt;flex-shrink:0;min-width:34px}
+  .detail{color:#374151;flex:1;line-height:1.45}
+  /* Print */
+  @media print{body{padding:8mm 14mm}.no-print{display:none!important}.summary{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  .print-btn{display:block;margin:24px auto 0;padding:9px 30px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:10.5pt;font-weight:600;cursor:pointer}
+  .print-btn:hover{background:#6d28d9}
 </style>
 </head>
 <body>
-<header>
-  <h1>Relatório de Saúde</h1>
-  <p>Período: <strong>${rangeLabel}</strong> &nbsp;·&nbsp; Gerado em ${now}</p>
-  <p style="margin-top:6px;font-size:9.5pt;color:#777;">
-    Este relatório foi gerado automaticamente. Partilha com o teu profissional de saúde.
-  </p>
-</header>
-${content}
-<div class="no-print" style="margin-top:32px;text-align:center;">
-  <button onclick="window.print()" style="padding:10px 28px;font-size:12pt;cursor:pointer;border:none;background:#333;color:#fff;border-radius:6px;">
-    🖨️ Imprimir / Guardar como PDF
-  </button>
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>N.E.P.</h1>
+    <p>Relatório de saúde · ${rangeLabel}</p>
+  </div>
+  <div class="hdr-r">
+    Gerado em ${now}<br>
+    <span style="font-size:7.5pt">Gerado localmente · partilha com o teu profissional de saúde</span>
+  </div>
+</div>
+
+${statsHTML}
+
+${sortedDates.length > 0 ? `<div class="tl-label">Registos por dia</div>` : ''}
+${timelineHTML}
+
+<div class="no-print">
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
 </div>
 </body>
 </html>`;
