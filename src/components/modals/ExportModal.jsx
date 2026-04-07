@@ -217,58 +217,45 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     const first = avg(vals.slice(0, h)), last = avg(vals.slice(-h));
     if (first == null || last == null) return null;
     const diff = last - first;
-    if (Math.abs(diff) < 0.3) return 'stable';
-    return diff > 0 ? 'up' : 'down';
+    return { direction: Math.abs(diff) < 0.3 ? 'stable' : diff > 0 ? 'up' : 'down', first: first.toFixed(1), last: last.toFixed(1) };
   };
   const moodTrend   = trendFor(moodVals);
   const energyTrend = trendFor(energyVals);
   const sleepTrend  = trendFor(sleepVals);
 
-  const trendLabel = (t, upGood = true) => {
+  const trendHTML = (t, unit = '', upGood = true) => {
     if (!t) return '';
-    if (t === 'stable') return '→ estável';
-    if (t === 'up')  return upGood  ? '↑ a melhorar' : '↑ a aumentar';
-    if (t === 'down') return upGood ? '↓ a baixar'   : '↓ a diminuir';
-    return '';
-  };
-  const trendColor = (t, upGood = true) => {
-    if (!t || t === 'stable') return '#6b7280';
-    return (t === 'up') === upGood ? '#16a34a' : '#dc2626';
+    if (t.direction === 'stable') return `<span style="color:#6b7280"> (estável)</span>`;
+    const color = (t.direction === 'up') === upGood ? '#16a34a' : '#dc2626';
+    const arrow = t.direction === 'up' ? '↑' : '↓';
+    return `<span style="color:${color}"> ${arrow} ${t.first}→${t.last}${unit}</span>`;
   };
 
-  // ── Build stats cards ──────────────────────────────────────────────────────
-  const statCards = [
+  // ── Build stats rows ───────────────────────────────────────────────────────
+  const statsRows = [
     selected.consumptions && data.consumptions.length > 0
-      ? { icon: '💊', value: data.consumptions.length, label: 'Consumos' } : null,
+      ? `<tr><td>💊 Consumos</td><td><b>${data.consumptions.length}</b></td></tr>` : '',
     avgMg != null
-      ? { icon: '📋', value: `${avgMg}mg`, label: 'Dose média/dia' } : null,
+      ? `<tr><td>📋 Dose média/dia</td><td><b>${avgMg}mg</b></td></tr>` : '',
     avgMood != null
-      ? { icon: '😊', value: `${avgMood}/10`, label: 'Humor médio', trend: trendLabel(moodTrend), trendColor: trendColor(moodTrend) } : null,
+      ? `<tr><td>😊 Humor médio</td><td><b>${avgMood}/10</b>${trendHTML(moodTrend)}</td></tr>` : '',
     avgEnergy != null
-      ? { icon: '⚡', value: `${avgEnergy}/10`, label: 'Energia média', trend: trendLabel(energyTrend), trendColor: trendColor(energyTrend) } : null,
+      ? `<tr><td>⚡ Energia média</td><td><b>${avgEnergy}/10</b>${trendHTML(energyTrend)}</td></tr>` : '',
     avgSleep != null
-      ? { icon: '🌙', value: `${avgSleep}h`, label: 'Sono médio', trend: trendLabel(sleepTrend), trendColor: trendColor(sleepTrend) } : null,
+      ? `<tr><td>🌙 Sono médio</td><td><b>${avgSleep}h</b>${trendHTML(sleepTrend, 'h')}</td></tr>` : '',
     scPct != null
-      ? { icon: '💚', value: `${scPct}%`, label: 'Autocuidado' } : null,
+      ? `<tr><td>💚 Autocuidado<span style="font-size:7.5pt;color:#9ca3af"> (água/descanso/alim./social)</span></td><td><b>${scPct}%</b> <span style="font-size:8pt;color:#6b7280">dos registos</span></td></tr>` : '',
+    topEmotions.length > 0
+      ? `<tr><td>🎭 Emoções frequentes</td><td>${topEmotions.join(' · ')}</td></tr>` : '',
   ].filter(Boolean);
 
-  const statsHTML = statCards.length > 0 ? `
+  const statsHTML = statsRows.length > 0 ? `
   <section class="summary">
-    <div class="section-label">Resumo do período</div>
-    <div class="stat-grid">
-      ${statCards.map(s => `
-        <div class="stat">
-          <div class="stat-icon">${s.icon}</div>
-          <div class="stat-value">${s.value}</div>
-          <div class="stat-label">${s.label}</div>
-          ${s.trend ? `<div class="stat-trend" style="color:${s.trendColor}">${s.trend}</div>` : ''}
-        </div>`).join('')}
-    </div>
-    ${topEmotions.length > 0 ? `
-    <div class="emotions-row">
-      <span class="emotions-label">Emoções mais frequentes:</span>
-      ${topEmotions.map(e => `<span class="emotion-tag">${e}</span>`).join('')}
-    </div>` : ''}
+    <div class="section-label">Resumo · ${rangeLabel}</div>
+    <table class="stats-table">
+      <tbody>${statsRows.join('')}</tbody>
+    </table>
+    <p class="trend-note">Tendências: primeira metade vs. segunda metade do período</p>
   </section>` : '';
 
   // ── Build timeline ─────────────────────────────────────────────────────────
@@ -373,36 +360,28 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
 <title>N.E.P. · Relatório</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:10pt;color:#1a1a2e;background:#fff;padding:14mm 18mm}
-  /* Header */
-  .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #7c3aed;padding-bottom:10px;margin-bottom:18px}
-  .hdr-l h1{font-size:17pt;font-weight:900;color:#7c3aed;letter-spacing:-0.5px}
-  .hdr-l p{font-size:9pt;color:#6b7280;margin-top:2px}
-  .hdr-r{text-align:right;font-size:8.5pt;color:#9ca3af;line-height:1.5}
-  /* Summary */
-  .summary{background:#f9f6ff;border:1px solid #ddd6fe;border-radius:8px;padding:12px 14px;margin-bottom:18px}
-  .section-label{font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:10px}
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-bottom:10px}
-  .stat{text-align:center}
-  .stat-icon{font-size:13pt;line-height:1;margin-bottom:2px}
-  .stat-value{font-size:12pt;font-weight:800;color:#111827;line-height:1.1}
-  .stat-label{font-size:7pt;color:#6b7280;margin-top:1px}
-  .stat-trend{font-size:7pt;font-weight:600;margin-top:1px}
-  .emotions-row{border-top:1px solid #e0d5ff;padding-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .emotions-label{font-size:8pt;color:#6b7280}
-  .emotion-tag{font-size:8pt;background:#ede9fe;color:#5b21b6;border-radius:20px;padding:2px 8px}
-  /* Timeline */
-  .tl-label{font-size:7.5pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:12px}
-  .day{margin-bottom:16px;page-break-inside:avoid}
-  .day-header{font-size:9.5pt;font-weight:700;color:#374151;padding-bottom:5px;border-bottom:1px solid #e5e7eb;margin-bottom:7px;text-transform:capitalize}
-  .entries{display:flex;flex-direction:column;gap:4px}
-  .entry{display:flex;align-items:baseline;gap:7px;font-size:9pt}
-  .badge{display:inline-block;font-size:7.5pt;font-weight:600;padding:2px 7px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .time{color:#9ca3af;font-size:8pt;flex-shrink:0;min-width:34px}
-  .detail{color:#374151;flex:1;line-height:1.45}
-  /* Print */
-  @media print{body{padding:8mm 14mm}.no-print{display:none!important}.summary{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  .print-btn{display:block;margin:24px auto 0;padding:9px 30px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:10.5pt;font-weight:600;cursor:pointer}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:9.5pt;color:#1a1a2e;background:#fff;padding:12mm 16mm}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #7c3aed;padding-bottom:8px;margin-bottom:14px}
+  .hdr-l h1{font-size:15pt;font-weight:900;color:#7c3aed;letter-spacing:-0.5px}
+  .hdr-l p{font-size:8.5pt;color:#6b7280;margin-top:1px}
+  .hdr-r{text-align:right;font-size:8pt;color:#9ca3af;line-height:1.4}
+  .summary{background:#f9f6ff;border:1px solid #ddd6fe;border-radius:6px;padding:9px 12px;margin-bottom:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .section-label{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:7px}
+  .stats-table{width:100%;border-collapse:collapse;font-size:8.5pt}
+  .stats-table td{padding:2px 6px 2px 0;vertical-align:top;line-height:1.5}
+  .stats-table td:first-child{color:#374151;white-space:nowrap;padding-right:12px}
+  .stats-table td:last-child{color:#111827}
+  .trend-note{font-size:7pt;color:#9ca3af;margin-top:6px}
+  .tl-label{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:0.9px;color:#7c3aed;margin-bottom:10px}
+  .day{margin-bottom:12px;page-break-inside:avoid}
+  .day-header{font-size:8.5pt;font-weight:700;color:#374151;padding-bottom:3px;border-bottom:1px solid #e5e7eb;margin-bottom:5px;text-transform:capitalize}
+  .entries{display:flex;flex-direction:column;gap:3px}
+  .entry{display:flex;align-items:baseline;gap:6px;font-size:8.5pt}
+  .badge{display:inline-block;font-size:7pt;font-weight:600;padding:1px 6px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .time{color:#9ca3af;font-size:7.5pt;flex-shrink:0;min-width:32px}
+  .detail{color:#374151;flex:1;line-height:1.4}
+  @media print{body{padding:8mm 12mm}.no-print{display:none!important}}
+  .print-btn{display:block;margin:20px auto 0;padding:8px 28px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:10pt;font-weight:600;cursor:pointer}
   .print-btn:hover{background:#6d28d9}
 </style>
 </head>
@@ -413,8 +392,8 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     <p>Relatório de saúde · ${rangeLabel}</p>
   </div>
   <div class="hdr-r">
-    Gerado em ${now}<br>
-    <span style="font-size:7.5pt">Gerado localmente · partilha com o teu profissional de saúde</span>
+    ${now}<br>
+    <span style="font-size:7pt">gerado localmente · partilha com o teu profissional de saúde</span>
   </div>
 </div>
 
