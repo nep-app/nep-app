@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
-const APP_VERSION = '1.6.9';
+const APP_VERSION = '1.7.0';
 
 export const SettingsView = ({
     user,

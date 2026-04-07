@@ -488,7 +488,6 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
       timelineHTML += `<div class="day"><div class="day-header">${dayLabel}</div><div class="entries">${rows}</div></div>`;
     });
   }
-  }
 
   return `<!DOCTYPE html>
 <html lang="pt">
