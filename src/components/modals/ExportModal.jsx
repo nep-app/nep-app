@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import * as Icons from '../Icons';
 import { useData } from '../../contexts/DataContext';
 import { safeDate } from '../../utils/helpers';
+import { EMOTION_CATEGORIES } from '../../constants/emotions';
 
 const SECTIONS = [
   { id: 'consumptions', label: 'Consumos individuais', emoji: '💊' },
@@ -204,11 +205,51 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   if (selected.wellbeing) {
     data.wellbeingLogs.forEach(w => (w.emotions || []).forEach(e => { emotionCounts[e] = (emotionCounts[e] || 0) + 1; }));
   }
-  const topEmotions = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
+  const topNegEmotions = Object.entries(emotionCounts)
+    .filter(([e]) => EMOTION_CATEGORIES.negative.includes(e) && e !== '🔥 Com craving')
+    .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
+  const topPosEmotions = Object.entries(emotionCounts)
+    .filter(([e]) => EMOTION_CATEGORIES.positive.includes(e))
+    .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
 
   const scTotal = selected.wellbeing ? data.wellbeingLogs.length : 0;
   const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => w.water || w.rest || w.food || w.social).length : 0;
   const scPct   = scTotal > 0 ? Math.round((scDays / scTotal) * 100) : null;
+
+  // ── Self-care breakdown ───────────────────────────────────────────────────
+  const scItems = ['water', 'rest', 'food', 'social'];
+  const scLabels = { water: 'água', rest: 'descanso', food: 'alimentação', social: 'apoio social' };
+  const scItemPct = {};
+  if (scTotal > 0) {
+    scItems.forEach(k => {
+      const n = data.wellbeingLogs.filter(w => w[k]).length;
+      scItemPct[k] = Math.round((n / scTotal) * 100);
+    });
+  }
+  const mostMissedSC = scTotal > 0
+    ? scItems.reduce((a, b) => scItemPct[a] < scItemPct[b] ? a : b)
+    : null;
+
+  // ── Craving & low mood days ───────────────────────────────────────────────
+  const cravingDates = selected.wellbeing ? [...new Set(
+    data.wellbeingLogs
+      .filter(w => (w.emotions || []).includes('🔥 Com craving'))
+      .map(w => safeDate(w.timestamp || w.date))
+      .filter(Boolean)
+      .map(d => d.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' }))
+  )] : [];
+
+  const lowMoodDates = selected.wellbeing ? [...new Set(
+    data.wellbeingLogs
+      .filter(w => parseFloat(w.mood) <= 4 && !isNaN(parseFloat(w.mood)))
+      .map(w => safeDate(w.timestamp || w.date))
+      .filter(Boolean)
+      .map(d => d.toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' }))
+  )] : [];
+
+  // ── Sleep quality ─────────────────────────────────────────────────────────
+  const shortNights = sleepVals.filter(v => v < 6).length;
+  const longNights  = sleepVals.filter(v => v >= 8).length;
 
   // ── Trend analysis (first half vs second half of period) ──────────────────
   const trendFor = (vals) => {
@@ -242,12 +283,39 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     avgEnergy != null
       ? `<tr><td>⚡ Energia média</td><td><b>${avgEnergy}/10</b>${trendHTML(energyTrend)}</td></tr>` : '',
     avgSleep != null
-      ? `<tr><td>🌙 Sono médio</td><td><b>${avgSleep}h</b>${trendHTML(sleepTrend, 'h')}</td></tr>` : '',
+      ? `<tr><td>🌙 Sono médio</td><td><b>${avgSleep}h</b>${trendHTML(sleepTrend, 'h')}${shortNights > 0 ? `<span style="color:#9ca3af;font-size:7.5pt"> · ${shortNights}× abaixo de 6h</span>` : ''}</td></tr>` : '',
     scPct != null
-      ? `<tr><td>💚 Autocuidado<span style="font-size:7.5pt;color:#9ca3af"> (água/descanso/alim./social)</span></td><td><b>${scPct}%</b> <span style="font-size:8pt;color:#6b7280">dos registos</span></td></tr>` : '',
-    topEmotions.length > 0
-      ? `<tr><td>🎭 Emoções frequentes</td><td>${topEmotions.join(' · ')}</td></tr>` : '',
+      ? `<tr><td>💚 Autocuidado</td><td><b>${scPct}%</b>${mostMissedSC ? `<span style="font-size:7.5pt;color:#9ca3af"> · mais em falta: ${scLabels[mostMissedSC]} (${scItemPct[mostMissedSC]}%)</span>` : ''}</td></tr>` : '',
+    cravingDates.length > 0
+      ? `<tr><td>🔥 Dias com craving</td><td><b>${cravingDates.length}</b><span style="font-size:7.5pt;color:#9ca3af"> · ${cravingDates.slice(0,5).join(', ')}${cravingDates.length > 5 ? '…' : ''}</span></td></tr>` : '',
+    lowMoodDates.length > 0
+      ? `<tr><td>😔 Dias com humor ≤4</td><td><b>${lowMoodDates.length}</b><span style="font-size:7.5pt;color:#9ca3af"> · ${lowMoodDates.slice(0,5).join(', ')}${lowMoodDates.length > 5 ? '…' : ''}</span></td></tr>` : '',
   ].filter(Boolean);
+
+  // ── Patterns section ──────────────────────────────────────────────────────
+  const patternRows = [
+    topPosEmotions.length > 0
+      ? `<tr><td>🌱 Emoções positivas</td><td>${topPosEmotions.join(' · ')}</td></tr>` : '',
+    topNegEmotions.length > 0
+      ? `<tr><td>⚠️ Emoções negativas</td><td>${topNegEmotions.join(' · ')}</td></tr>` : '',
+    scTotal > 0
+      ? `<tr><td>💧 Hidratação</td><td>${scItemPct.water}%</td></tr>` : '',
+    scTotal > 0
+      ? `<tr><td>🛌 Descanso</td><td>${scItemPct.rest}%</td></tr>` : '',
+    scTotal > 0
+      ? `<tr><td>🍽️ Alimentação</td><td>${scItemPct.food}%</td></tr>` : '',
+    scTotal > 0
+      ? `<tr><td>👥 Apoio social</td><td>${scItemPct.social}%</td></tr>` : '',
+  ].filter(Boolean);
+
+  const patternsHTML = patternRows.length > 0 ? `
+  <section class="summary" style="margin-top:10px">
+    <div class="section-label">Padrões emocionais e autocuidado</div>
+    <table class="stats-table">
+      <tbody>${patternRows.join('')}</tbody>
+    </table>
+    <p class="trend-note">Percentagem dos registos em que cada item foi assinalado</p>
+  </section>` : '';
 
   const statsHTML = statsRows.length > 0 ? `
   <section class="summary">
@@ -256,7 +324,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
       <tbody>${statsRows.join('')}</tbody>
     </table>
     <p class="trend-note">Tendências: primeira metade vs. segunda metade do período</p>
-  </section>` : '';
+  </section>${patternsHTML}` : '';
 
   // ── Build timeline ─────────────────────────────────────────────────────────
   const cyclesWithEnd = computeCycleEnds(data.cycles || []);
@@ -378,8 +446,10 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
       // Wellbeing — compact single line per entry
       if (selected.wellbeing) {
         if (raw.wellbeing.length > 0) {
-          raw.wellbeing.forEach(({ w }) => {
+          raw.wellbeing.forEach(({ d, w }) => {
+            const timeStr = fmt(d);
             const parts = [
+              timeStr,
               w.mood   != null ? `😊${w.mood}/10` : null,
               w.energy != null ? `⚡${w.energy}/10` : null,
               [w.water && '💧', w.rest && '🛌', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
