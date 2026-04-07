@@ -2,19 +2,9 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
-    "close": "Close",
-    "clear": "Clear",
     "error": "Error",
-    "loading": "Loading...",
-    "back": "Back",
-    "optional": "optional",
-    "notes": "Notes",
-    "notesOptional": "Notes (optional)",
     "day_one": "day",
-    "day_other": "days",
-    "total": "Total",
-    "average": "Average",
-    "max": "Maximum"
+    "day_other": "days"
   },
   "auth": {
     "loading": "Loading...",
@@ -77,8 +67,6 @@
     "bagWeightGross": "Total bag weight (g)",
     "bagWeightRemaining": "{{g}}g of substance = {{mg}}mg",
     "bagWeightBelowTare": "Weight below tare — check the value",
-    "bagWeightConsumedSince": "↓ {{mg}}mg consumed since last weighing",
-    "bagWeightRefilled": "↑ Refilled +{{mg}}mg",
     "bagWeightRegister": "Register",
     "bagWeightNote": "Weighing",
     "bagWeightRegistered": "✓ {{mg}}mg in bag registered",
@@ -88,7 +76,6 @@
     "goals": "Goals",
     "today": "Today",
     "avg7days": "7-day avg",
-    "timesUnit": "x",
     "mgPerDay": "mg/day",
     "strategiesTitle": "💡 Strategies for Today",
     "strategiesBasedOnTriggers": "Based on your identified triggers",
@@ -112,8 +99,6 @@
     "lowSleep": "Sleep alert: {{hours}}h",
     "highRisk": "High risk today: {{hours}}h sleep + low mood ({{mood}}/10)",
     "highRiskDesc": "75% chance of a challenging day. Consider preventive strategies.",
-    "moderateRiskSleep": "⚡ Heads up: short sleep ({{hours}}h) yesterday",
-    "moderateRiskMood": "⚡ Heads up: low mood ({{mood}}/10) yesterday",
     "moderateRiskDesc": "Moderate risk. Plan your day well.",
     "goodBedtime": "Good! Bedtime: {{time}}",
     "lateBedtime": "Late bedtime! {{time}}",
@@ -140,7 +125,6 @@
     "lastSync": "Last sync:",
     "syncing": "Syncing...",
     "syncNow": "Sync Now",
-    "forceImport": "↙ Re-import everything from Firebase",
     "syncRecords": "✅ {{count}} records synced",
     "syncUpToDate": "✅ Everything up to date",
     "exportTitle": "Export data",
@@ -148,22 +132,6 @@
     "exportButton": "📤 Export / Generate PDF or CSV Report",
     "backupJSONButton": "💾 Full backup (JSON)",
     "backupJSONDescription": "The JSON backup contains all raw data. Store it in a safe folder — it allows you to recover everything if needed.",
-    "syncNote": "💡 Note: New data is automatically sent to the cloud. Use this button to receive data from other devices.",
-    "forceSyncNow": "Force Full Sync",
-    "forceSyncNote": "Fetches all data from the server, ignoring sync history. Use when normal sync fails.",
-    "forceSyncZero": "⚠️ Firebase returned 0 documents. Open browser console (F12 → Console) to see details.",
-    "forceSyncDone": "Synced: {{count}} documents",
-    "syncAlreadyDone": "Already in sync",
-    "appUpdate": "App Update",
-    "appUpdateDescription": "If the app is outdated or has bugs after an update, force a full refresh.",
-    "installApp": "📲 Install App",
-    "forceUpdate": "🔄 Force Update",
-    "forceUpdateWarning": "⚠️ Warning: This button clears the cache and reloads the app. Use only if the app has problems after an update.",
-    "pwaNote": "💡 PWA Installation: The \"📲 Install App\" button only appears when the browser allows it. On mobile/tablet it always works. On PC/Desktop, Chrome rarely allows installation (browser limitation). The app works fine in the browser without installing.",
-    "notifications": "Notifications",
-    "notificationsDescription": "Receive reminders to log well-being daily (at 6pm).",
-    "notificationsEnabled": "Notifications enabled",
-    "enableNotifications": "Enable Notifications",
     "legal": "Legal & Ethics",
     "license": "License",
     "terms": "Terms of Use",
@@ -274,23 +242,6 @@
       }
     }
   },
-  "triggers": {
-    "Stress": "Stress",
-    "Ansiedade": "Anxiety",
-    "Solidão": "Loneliness",
-    "Festa": "Party",
-    "Trabalho": "Work",
-    "Família": "Family",
-    "Hábito": "Habit",
-    "Tristeza": "Sadness",
-    "Dependência": "Dependency",
-    "Tédio": "Boredom",
-    "Cansaço": "Fatigue",
-    "Dor física": "Physical pain",
-    "Insónia": "Insomnia",
-    "Conflito": "Conflict",
-    "Celebração": "Celebration"
-  },
   "messages": {
     "consumptionSaved": "✓ Consumption logged",
     "consumptionSaveError": "✗ Error saving consumption",
@@ -395,17 +346,6 @@
     "Self-care doesn't have to be perfect to be valid.",
     "You are learning, and that's already incredible."
   ],
-  "copingStrategies": {
-    "Stress": ["4-7-8 breathing: inhale 4s, hold 7s, exhale 8s", "Quick 10-minute walk"],
-    "Ansiedade": ["5-4-3-2-1 technique", "Slow stretching"],
-    "Solidão": ["Send a message to a friend", "Go to a public space"],
-    "Festa": ["Prepare a harm reduction plan", "Bring water and snacks"],
-    "Trabalho": ["Take 5-min breaks every hour", "Priority list"],
-    "Família": ["Set clear boundaries", "Communicate needs calmly"],
-    "Hábito": ["Break the routine", "15-minute technique"],
-    "Tristeza": ["Allow yourself to cry without judgment", "Write what you feel"],
-    "Dependência": ["Acknowledge without shame", "Call a support line"]
-  },
   "copingStrategiesDetailed": {
     "Stress": [
       "4-7-8 breathing: inhale 4s, hold 7s, exhale 8s. Repeat 4x when you feel tension rising",
@@ -475,13 +415,10 @@
       "madrugada": "Late night"
     },
     "todayForecast": "Today's Forecast",
-    "risk": "Risk",
     "identified": "Identified Patterns",
     "doseDistribution": "Dose Distribution",
     "moderateRisk": "Moderate risk. Keep an eye on your patterns.",
     "patternInsight": "Pattern: {{percent}}% of uses occur in the {{part}}. Prepare strategies for that period. 🎯",
-    "day_one": "day",
-    "day_other": "days",
     "dashboard": {
       "summary": "You had {{count}} {{unit}} (avg {{avg}}/day).{{interval}}",
       "summaryInterval": " Avg interval: {{avg}}h.",
@@ -506,10 +443,6 @@
       "factors": "Analysed factors:",
       "msgHigh": "💡 High-risk day. Prepare preventive strategies: alternatives list, extra self-care, avoid triggers.",
       "msgLow": "💡 Favourable conditions for reduction. Use today to consolidate progress!",
-      "sleepVeryLow": "Very low sleep yesterday ({{val}}/10)",
-      "sleepLow": "Low sleep yesterday ({{val}}/10)",
-      "moodLow": "Low mood yesterday ({{val}}/10)",
-      "energyLow": "Low energy yesterday ({{val}}/10)",
       "noSelfCare": "No self-care recorded yesterday (0/4 areas)",
       "minSelfCare": "Minimal self-care: {{items}}",
       "goodSelfCare": "Good self-care yesterday ({{score}}/4): {{items}}",
@@ -560,7 +493,6 @@
       "consumption": "💊 Consumption",
       "usesPerDay": "uses/day",
       "before": "before:",
-      "era": "was:",
       "wellbeing": "💚 Wellbeing",
       "hours": "hours",
       "routines": "🌙 Routines & Self-care",
@@ -620,20 +552,7 @@
       "tarde": "Afternoon",
       "noite": "Evening",
       "madrugada": "Late night",
-      "byWeekday": "📅 By Day of Week",
-      "weekSummary": "🔴 {{max}}: highest-use day ({{maxCount}}x, {{maxPct}}%) • 🟢 {{min}}: lowest-use day ({{minCount}}x, {{minPct}}%)",
-      "monthlyCycle": "📆 Monthly Cycle",
-      "monthlyCycleDesc": "Average uses per day of month (with ≥2 records)",
-      "bestDay": "Best day of the month",
-      "worstDay": "Worst day of the month",
-      "bestDay_in_month": "{{day}} of each month",
-      "hourIntensity": "💡 Colour intensity = use frequency"
-    },
-    "structural": {
-      "title": "📐 Structural Analysis",
-      "intervalTitle": "⏱️ Interval Distribution",
-      "dosingTitle": "📊 Dosage Analysis (mg)",
-      "cycleDuration": "📈 Cycle Duration"
+      "byWeekday": "📅 By Day of Week"
     },
     "areas": {
       "water": "Hydration",
@@ -689,79 +608,9 @@
     "triggers": "Triggers:",
     "dailyUse": "Daily use:"
   },
-  "analyses": {
-    "title": "Analyses",
-    "period": "Analysis period",
-    "periods": {
-      "hoje": "Today",
-      "semana": "Week",
-      "mes": "Month",
-      "tudo": "All"
-    },
-    "tabs": {
-      "structural": "📊 Structural",
-      "correlations": "🔗 Correlations",
-      "reflection": "💬 General Reflection"
-    },
-    "generalReflection": "General Reflection",
-    "correlationTitle": "Logs → Wellbeing Correlation",
-    "hourlyDist": "⏰ Hourly Distribution",
-    "weeklyDist": "📅 Weekly Distribution",
-    "intervals": "⏱️ Intervals Between Uses",
-    "noIntervals": "No intervals (need ≥2 logs)",
-    "noData": "No data",
-    "noCorrelations": "Not enough data for correlations.",
-    "dayNames": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
-    "summary": "Personalised summary of the selected period",
-    "wellbeing": {
-      "sleep": "Sleep",
-      "mood": "Mood",
-      "energy": "Energy"
-    },
-    "intervalStats": {
-      "good": "Good Intervals (≥2h)",
-      "short": "Short Intervals (<2h)",
-      "motivationGood": "🌟 Great! More than half the intervals are ≥2h. Keep it up!",
-      "motivationBad": "💪 Focus on increasing the time between uses. Every improvement counts!"
-    },
-    "correlations": {
-      "noData": "No data",
-      "strongNeg": "Strong Negative",
-      "neg": "Negative",
-      "strongPos": "Strong Positive",
-      "pos": "Positive",
-      "none": "No Correlation"
-    }
-  },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",
     "Hydration + snack: brain functions better, decisions are better, urges more manageable",
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
-  ],
-  "educationalResources": [
-    {
-      "title": "What is Harm Reduction?",
-      "content": "HR is a set of practical strategies to minimize risks of drug use, without requiring abstinence."
-    },
-    {
-      "title": "Hydration & Rest",
-      "content": "Stimulants dehydrate. Drink water regularly. Sleep is essential for recovery."
-    },
-    {
-      "title": "Interval Between Uses",
-      "content": "Spacing reduces tolerance and body harm. Ideally >2h between doses."
-    },
-    {
-      "title": "Substance Testing",
-      "content": "Whenever possible, test before using. CheckIn (Lisbon), MAPS (Porto)."
-    },
-    {
-      "title": "Warning Signs",
-      "content": "Chest pain, confusion, high temperature = emergency (112)."
-    },
-    {
-      "title": "Tolerance & Breaks",
-      "content": "The body adapts. Breaks help reduce tolerance."
-    }
   ]
 }

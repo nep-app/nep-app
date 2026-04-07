@@ -2,19 +2,9 @@
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",
-    "close": "Fechar",
-    "clear": "Limpar",
     "error": "Erro",
-    "loading": "Carregando...",
-    "back": "Voltar",
-    "optional": "opcional",
-    "notes": "Notas",
-    "notesOptional": "Notas (opcional)",
     "day_one": "dia",
-    "day_other": "dias",
-    "total": "Total",
-    "average": "Média",
-    "max": "Máximo"
+    "day_other": "dias"
   },
   "auth": {
     "loading": "Carregando...",
@@ -77,8 +67,6 @@
     "bagWeightGross": "Peso total do saco (g)",
     "bagWeightRemaining": "{{g}}g de substância = {{mg}}mg",
     "bagWeightBelowTare": "Peso abaixo da tara — confirma o valor",
-    "bagWeightConsumedSince": "↓ {{mg}}mg consumidos desde última pesagem",
-    "bagWeightRefilled": "↑ Reabasteceu +{{mg}}mg",
     "bagWeightRegister": "Registar",
     "bagWeightNote": "Pesagem",
     "bagWeightRegistered": "✓ {{mg}}mg no saco registado",
@@ -88,7 +76,6 @@
     "goals": "Metas",
     "today": "Hoje",
     "avg7days": "Média 7 dias",
-    "timesUnit": "x",
     "mgPerDay": "mg/dia",
     "strategiesTitle": "💡 Estratégias para Hoje",
     "strategiesBasedOnTriggers": "Baseado nos teus gatilhos identificados",
@@ -112,8 +99,6 @@
     "lowSleep": "Atenção ao sono: {{hours}}h",
     "highRisk": "Risco elevado hoje: Dormiste {{hours}}h + humor baixo ({{mood}}/10)",
     "highRiskDesc": "75% probabilidade de dia desafiante. Considera estratégias preventivas.",
-    "moderateRiskSleep": "⚡ Atenção: sono curto ({{hours}}h) ontem",
-    "moderateRiskMood": "⚡ Atenção: humor baixo ({{mood}}/10) ontem",
     "moderateRiskDesc": "Risco moderado. Planeia bem o dia.",
     "goodBedtime": "Boa! Deitaste às {{time}}",
     "lateBedtime": "Atenção! Deitaste às {{time}}",
@@ -140,7 +125,6 @@
     "lastSync": "Última sincronização:",
     "syncing": "A sincronizar...",
     "syncNow": "Sincronizar Agora",
-    "forceImport": "↙ Reimportar tudo do Firebase",
     "syncRecords": "✅ {{count}} registos sincronizados",
     "syncUpToDate": "✅ Tudo atualizado",
     "exportTitle": "Exportar dados",
@@ -148,22 +132,6 @@
     "exportButton": "📤 Exportar / Gerar Relatório PDF ou CSV",
     "backupJSONButton": "💾 Backup completo (JSON)",
     "backupJSONDescription": "O backup JSON contém todos os dados em bruto. Guarda numa pasta segura — permite recuperar tudo se necessário.",
-    "syncNote": "💡 Nota: Dados novos são enviados automaticamente para a cloud. Use este botão para receber dados de outros dispositivos.",
-    "forceSyncNow": "Forçar Sync Completo",
-    "forceSyncNote": "Recebe todos os dados do servidor, ignorando o histórico de sincronização. Usa quando a sincronização normal não funciona.",
-    "forceSyncZero": "⚠️ Firebase devolveu 0 documentos. Abre a consola do browser (F12 → Consola) para ver detalhes.",
-    "forceSyncDone": "Sincronizado: {{count}} documentos",
-    "syncAlreadyDone": "Já está tudo sincronizado",
-    "appUpdate": "Atualização da App",
-    "appUpdateDescription": "Se a app estiver desatualizada ou com bugs após um update, força uma atualização completa.",
-    "installApp": "📲 Instalar App",
-    "forceUpdate": "🔄 Forçar Atualização",
-    "forceUpdateWarning": "⚠️ Atenção: Este botão limpa a cache e recarrega a app. Usa apenas se a app estiver com problemas após um update.",
-    "pwaNote": "💡 Instalação PWA: O botão \"📲 Instalar App\" só aparece quando o browser permite. No telemóvel/tablet funciona sempre. No PC/Desktop, Chrome raramente permite instalar (limitação do browser, não da app). A app funciona perfeitamente no browser mesmo sem instalar.",
-    "notifications": "Notificações",
-    "notificationsDescription": "Recebe lembretes para registar bem-estar diariamente (às 18h).",
-    "notificationsEnabled": "Notificações ativadas",
-    "enableNotifications": "Ativar Notificações",
     "legal": "Legal & Ética",
     "license": "Licença",
     "terms": "Termos de Uso",
@@ -274,23 +242,6 @@
       }
     }
   },
-  "triggers": {
-    "Stress": "Stress",
-    "Ansiedade": "Ansiedade",
-    "Solidão": "Solidão",
-    "Festa": "Festa",
-    "Trabalho": "Trabalho",
-    "Família": "Família",
-    "Hábito": "Hábito",
-    "Tristeza": "Tristeza",
-    "Dependência": "Dependência",
-    "Tédio": "Tédio",
-    "Cansaço": "Cansaço",
-    "Dor física": "Dor física",
-    "Insónia": "Insónia",
-    "Conflito": "Conflito",
-    "Celebração": "Celebração"
-  },
   "messages": {
     "consumptionSaved": "✓ Consumo registado",
     "consumptionSaveError": "✗ Erro ao guardar consumo",
@@ -395,17 +346,6 @@
     "O autocuidado não tem de ser perfeito para ser válido.",
     "Estás a aprender, e isso já é incrível."
   ],
-  "copingStrategies": {
-    "Stress": ["Respiração 4-7-8: inspira 4s, segura 7s, expira 8s", "Caminhada rápida de 10 minutos"],
-    "Ansiedade": ["Técnica 5-4-3-2-1", "Alongamentos lentos"],
-    "Solidão": ["Enviar mensagem a um amigo", "Ir a um espaço público"],
-    "Festa": ["Preparar um plano de redução de riscos", "Levar água e snacks"],
-    "Trabalho": ["Fazer pausas de 5min a cada hora", "Lista de prioridades"],
-    "Família": ["Estabelecer limites claros", "Comunicar necessidades com calma"],
-    "Hábito": ["Quebrar a rotina", "Técnica dos 15 minutos"],
-    "Tristeza": ["Permitir chorar sem julgamento", "Escrever o que sentes"],
-    "Dependência": ["Reconhecer sem vergonha", "Ligar para linha de apoio (1414)"]
-  },
   "copingStrategiesDetailed": {
     "Stress": [
       "Respiração 4-7-8: inspira 4seg, segura 7seg, expira 8seg. Repete 4x quando sentires tensão aumentar",
@@ -467,10 +407,6 @@
     "sectionState": "Estado",
     "sectionCycles": "🌙 Ciclos",
     "invalidDate": "Data inválida",
-    "month": "📈 Mês",
-    "mgDaily": "mg diários",
-    "consumoOne": "consumo",
-    "consumoOther": "consumos",
     "hideAnalysis": "▼ Ocultar análise",
     "showAnalysis": "▶ Ver análise",
     "classification": "Classificação:",
@@ -479,50 +415,6 @@
     "sleepHours": "Horas de sono:",
     "triggers": "Gatilhos:",
     "dailyUse": "Consumo diário:"
-  },
-  "analyses": {
-    "title": "Análises",
-    "period": "Período de análise",
-    "periods": {
-      "hoje": "Hoje",
-      "semana": "Semana",
-      "mes": "Mês",
-      "tudo": "Tudo"
-    },
-    "tabs": {
-      "structural": "📊 Estrutural",
-      "correlations": "🔗 Correlações",
-      "reflection": "💬 Reflexão Geral"
-    },
-    "generalReflection": "Reflexão Geral",
-    "correlationTitle": "Consumos → Correlação Bem-estar",
-    "hourlyDist": "⏰ Distribuição Horária",
-    "weeklyDist": "📅 Distribuição Semanal",
-    "intervals": "⏱️ Intervalos Entre Consumos",
-    "noIntervals": "Sem intervalos (necessário ≥2 consumos)",
-    "noData": "Sem dados",
-    "noCorrelations": "Sem dados suficientes para correlações.",
-    "dayNames": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],
-    "summary": "Resumo personalizado do período selecionado",
-    "wellbeing": {
-      "sleep": "Sono",
-      "mood": "Humor",
-      "energy": "Energia"
-    },
-    "intervalStats": {
-      "good": "Intervalos Bons (≥2h)",
-      "short": "Intervalos Curtos (<2h)",
-      "motivationGood": "🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!",
-      "motivationBad": "💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!"
-    },
-    "correlations": {
-      "noData": "Sem dados",
-      "strongNeg": "Forte Negativa",
-      "neg": "Negativa",
-      "strongPos": "Forte Positiva",
-      "pos": "Positiva",
-      "none": "Sem Correlação"
-    }
   },
   "firebase": {
     "createNew": "Criar nova conta",
@@ -562,13 +454,10 @@
       "madrugada": "Madrugada"
     },
     "todayForecast": "Previsão de Hoje",
-    "risk": "Risco",
     "identified": "Padrões Identificados",
     "doseDistribution": "Distribuição de Dose",
     "moderateRisk": "Risco moderado. Mantém atenção nos teus padrões.",
     "patternInsight": "Padrão: {{percent}}% dos consumos ocorrem de {{part}}. Prepara estratégias para esse período. 🎯",
-    "day_one": "dia",
-    "day_other": "dias",
     "dashboard": {
       "summary": "Tiveste {{count}} {{unit}} (média {{avg}}/dia).{{interval}}",
       "summaryInterval": " Intervalo médio: {{avg}}h.",
@@ -593,10 +482,6 @@
       "factors": "Fatores analisados:",
       "msgHigh": "💡 Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.",
       "msgLow": "💡 Condições favoráveis para redução. Aproveita o dia para consolidar progresso!",
-      "sleepVeryLow": "Sono muito baixo ontem ({{val}}/10)",
-      "sleepLow": "Sono baixo ontem ({{val}}/10)",
-      "moodLow": "Humor baixo ontem ({{val}}/10)",
-      "energyLow": "Energia baixa ontem ({{val}}/10)",
       "noSelfCare": "Sem autocuidado registado ontem (0/4 áreas)",
       "minSelfCare": "Autocuidado mínimo: {{items}}",
       "goodSelfCare": "Bom autocuidado ontem ({{score}}/4): {{items}}",
@@ -647,7 +532,6 @@
       "consumption": "💊 Consumo",
       "usesPerDay": "consumos/dia",
       "before": "antes:",
-      "era": "era:",
       "wellbeing": "💚 Bem-Estar",
       "hours": "horas",
       "routines": "🌙 Rotinas e Autocuidado",
@@ -707,20 +591,7 @@
       "tarde": "Tarde",
       "noite": "Noite",
       "madrugada": "Madrugada",
-      "byWeekday": "📅 Por Dia da Semana",
-      "weekSummary": "🔴 {{max}}: dia com mais consumo ({{maxCount}}x, {{maxPct}}%) • 🟢 {{min}}: dia com menos consumo ({{minCount}}x, {{minPct}}%)",
-      "monthlyCycle": "📆 Ciclo Mensal",
-      "monthlyCycleDesc": "Média de consumos por dia do mês (com ≥2 registos)",
-      "bestDay": "Melhor dia do mês",
-      "worstDay": "Pior dia do mês",
-      "bestDay_in_month": "{{day}} de cada mês",
-      "hourIntensity": "💡 Intensidade de cor = frequência de consumos"
-    },
-    "structural": {
-      "title": "📐 Análise Estrutural",
-      "intervalTitle": "⏱️ Distribuição de Intervalos",
-      "dosingTitle": "📊 Análise de Dosagem (mg)",
-      "cycleDuration": "📈 Duração dos Ciclos"
+      "byWeekday": "📅 Por Dia da Semana"
     },
     "areas": {
       "water": "Hidratação",
@@ -741,31 +612,5 @@
     "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",
     "Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis",
     "Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional"
-  ],
-  "educationalResources": [
-    {
-      "title": "O que é Redução de Danos?",
-      "content": "RD é um conjunto de estratégias práticas para minimizar riscos do uso de drogas, sem exigir abstinência."
-    },
-    {
-      "title": "Hidratação & Descanso",
-      "content": "Estimulantes desidratam. Bebe água regularmente. O sono é essencial para recuperação."
-    },
-    {
-      "title": "Intervalo entre Consumos",
-      "content": "Espaçar reduz tolerância e danos ao corpo. Idealmente >2h entre doses."
-    },
-    {
-      "title": "Testagem de Substâncias",
-      "content": "Sempre que possível, testa antes de consumir. CheckIn (Lisboa), MAPS (Porto)."
-    },
-    {
-      "title": "Sinais de Alerta",
-      "content": "Dor no peito, confusão, temperatura alta = emergência (112)."
-    },
-    {
-      "title": "Tolerância & Pausas",
-      "content": "O corpo adapta-se. Pausas ajudam a reduzir tolerância."
-    }
   ]
 }
