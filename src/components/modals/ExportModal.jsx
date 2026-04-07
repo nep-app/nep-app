@@ -260,70 +260,54 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
 
   // ── Build timeline ─────────────────────────────────────────────────────────
   const cyclesWithEnd = computeCycleEnds(data.cycles || []);
-  const allEntries = [];
 
-  const push = (type, dateKey, sort, badge, time, detail) =>
-    allEntries.push({ type, dateKey, sort, badge, time, detail });
+  // Group raw data by date
+  const rawByDate = {};
+  const ensureRaw = (dk) => {
+    if (!rawByDate[dk]) rawByDate[dk] = { consumptions: [], dailyLogs: [], cycles: [], wellbeing: [], reflections: [], thoughts: [] };
+  };
 
   if (selected.consumptions) {
     data.consumptions.forEach(c => {
       const d = safeDate(c.timestamp); if (!d) return;
       const dk = d.toISOString().split('T')[0];
-      const detail = [c.amount ? `${c.amount} ${c.unit || 'mg'}` : null, c.notes || null].filter(Boolean).join(' · ') || '—';
-      push('consumption', dk, d, '💊 Consumo', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+      ensureRaw(dk); rawByDate[dk].consumptions.push({ d, c });
     });
   }
   if (selected.dailyLogs) {
     data.dailyLogs.forEach(l => {
       const d = safeDate(l.date || l.timestamp); if (!d) return;
       const dk = l.date || d.toISOString().split('T')[0];
-      const detail = [l.mg ? `${l.mg} mg total` : null, l.notes || null].filter(Boolean).join(' · ') || '—';
-      push('daily', dk, d, '📋 Dose diária', '—', detail);
+      ensureRaw(dk); rawByDate[dk].dailyLogs.push(l);
     });
   }
   if (selected.cycles) {
     cyclesWithEnd.forEach(c => {
       const d = safeDate(c.timestamp); if (!d) return;
-      const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
-      const detail = [
-        c.bedtime ? `Deitou: ${c.bedtime}` : null,
-        c.sleep ? `Sono: ${c.sleep}h` : null,
-        endD ? `Até: ${endD.toLocaleDateString('pt-PT')}` : 'Em curso',
-        (c.triggers || []).length ? `Gatilhos: ${c.triggers.join(', ')}` : null,
-        c.notes || null,
-      ].filter(Boolean).join(' · ') || '—';
-      push('cycle', d.toISOString().split('T')[0], d, '🌙 Ciclo', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+      ensureRaw(d.toISOString().split('T')[0]); rawByDate[d.toISOString().split('T')[0]].cycles.push({ d, c });
     });
   }
   if (selected.wellbeing) {
     data.wellbeingLogs.forEach(w => {
       const d = safeDate(w.timestamp || w.date); if (!d) return;
-      const detail = [
-        w.mood   ? `Humor ${w.mood}/10` : null,
-        w.energy ? `Energia ${w.energy}/10` : null,
-        [w.water && 'Água', w.rest && 'Descanso', w.food && 'Alim.', w.social && 'Social'].filter(Boolean).join(', ') || null,
-        (w.emotions || []).length ? w.emotions.join(', ') : null,
-        w.notes || null,
-      ].filter(Boolean).join(' · ') || '—';
-      push('wellbeing', d.toISOString().split('T')[0], d, '💚 Bem-estar', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), detail);
+      const dk = d.toISOString().split('T')[0];
+      ensureRaw(dk); rawByDate[dk].wellbeing.push({ d, w });
     });
   }
   if (selected.reflections) {
     data.reflections.forEach(r => {
       const d = safeDate(r.timestamp || r.date); if (!d) return;
-      push('reflection', d.toISOString().split('T')[0], d, '📝 Reflexão', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), [r.question, r.answer].filter(Boolean).join(': ') || '—');
+      const dk = d.toISOString().split('T')[0];
+      ensureRaw(dk); rawByDate[dk].reflections.push({ d, r });
     });
   }
   if (selected.thoughts) {
     data.thoughts.forEach(t => {
       const d = safeDate(t.timestamp || t.date); if (!d) return;
-      push('thought', d.toISOString().split('T')[0], d, '💭 Pensamento', d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }), t.content || '—');
+      const dk = d.toISOString().split('T')[0];
+      ensureRaw(dk); rawByDate[dk].thoughts.push({ d, t });
     });
   }
-
-  const byDate = {};
-  allEntries.forEach(e => { if (!byDate[e.dateKey]) byDate[e.dateKey] = []; byDate[e.dateKey].push(e); });
-  const sortedDates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
   const TC = {
     consumption: { bg: '#f3e8ff', border: '#7c3aed', text: '#5b21b6' },
@@ -333,24 +317,107 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     reflection:  { bg: '#fce7f3', border: '#db2777', text: '#831843' },
     thought:     { bg: '#f3f4f6', border: '#6b7280', text: '#374151' },
   };
+  const badge = (type, label) => { const c = TC[type]; return `<span class="badge" style="background:${c.bg};border-color:${c.border};color:${c.text}">${label}</span>`; };
+  const fmt = (d) => d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  const entryLine = (type, badgeLabel, detail) => `<div class="entry">${badge(type, badgeLabel)}<span class="detail">${detail}</span></div>`;
+  const gapLine = (text) => `<div class="entry"><span class="gap">⚠️ ${text}</span></div>`;
+
+  const sortedDates = Object.keys(rawByDate).sort((a, b) => b.localeCompare(a));
 
   let timelineHTML = '';
   if (sortedDates.length === 0) {
     timelineHTML = '<p style="color:#888;font-style:italic;padding:12px 0;">Sem dados para o período selecionado.</p>';
   } else {
     sortedDates.forEach(dk => {
-      const entries = byDate[dk].sort((a, b) => a.sort - b.sort);
+      const raw = rawByDate[dk];
       const dayLabel = new Date(dk + 'T12:00:00').toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
-      const rows = entries.map(e => {
-        const c = TC[e.type] || TC.thought;
-        return `<div class="entry">
-          <span class="badge" style="background:${c.bg};border-color:${c.border};color:${c.text}">${e.badge}</span>
-          <span class="time">${e.time}</span>
-          <span class="detail">${e.detail}</span>
-        </div>`;
-      }).join('');
+      let rows = '';
+
+      // Consumptions — grouped into one line
+      if (selected.consumptions) {
+        if (raw.consumptions.length > 0) {
+          const sorted = raw.consumptions.sort((a, b) => a.d - b.d);
+          const times = sorted.map(({ d, c }) => c.notes ? `${fmt(d)} (${c.notes})` : fmt(d));
+          rows += entryLine('consumption', `💊 ${sorted.length}×`, times.join(' · '));
+        } else {
+          rows += gapLine('Sem consumos registados');
+        }
+      }
+
+      // Daily log
+      if (selected.dailyLogs) {
+        if (raw.dailyLogs.length > 0) {
+          raw.dailyLogs.forEach(l => {
+            const parts = [l.mg ? `${l.mg}mg total` : null, l.notes || null].filter(Boolean);
+            rows += entryLine('daily', '📋 Dose', parts.join(' · ') || '—');
+          });
+        } else {
+          rows += gapLine('Sem dose diária registada');
+        }
+      }
+
+      // Cycles
+      if (selected.cycles) {
+        if (raw.cycles.length > 0) {
+          raw.cycles.forEach(({ c }) => {
+            const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
+            const parts = [
+              c.bedtime ? `Deitou ${c.bedtime}` : null,
+              c.sleep   ? `Sono ${c.sleep}h` : null,
+              endD      ? `até ${endD.toLocaleDateString('pt-PT')}` : 'em curso',
+              (c.triggers || []).length ? c.triggers.join(', ') : null,
+              c.notes || null,
+            ].filter(Boolean);
+            rows += entryLine('cycle', '🌙 Ciclo', parts.join(' · '));
+          });
+        } else {
+          rows += gapLine('Sem ciclo registado');
+        }
+      }
+
+      // Wellbeing — compact single line per entry
+      if (selected.wellbeing) {
+        if (raw.wellbeing.length > 0) {
+          raw.wellbeing.forEach(({ w }) => {
+            const parts = [
+              w.mood   != null ? `😊${w.mood}/10` : null,
+              w.energy != null ? `⚡${w.energy}/10` : null,
+              [w.water && '💧', w.rest && '🛌', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
+              (w.emotions || []).join(' ') || null,
+              w.notes || null,
+            ].filter(Boolean);
+            rows += entryLine('wellbeing', '💚 Bem-estar', parts.join(' · ') || '—');
+          });
+        } else {
+          rows += gapLine('Sem bem-estar registado');
+        }
+      }
+
+      // Reflections
+      if (selected.reflections) {
+        if (raw.reflections.length > 0) {
+          raw.reflections.forEach(({ r }) => {
+            rows += entryLine('reflection', '📝 Reflexão', [r.question, r.answer].filter(Boolean).join(': ') || '—');
+          });
+        } else {
+          rows += gapLine('Sem reflexão registada');
+        }
+      }
+
+      // Thoughts
+      if (selected.thoughts) {
+        if (raw.thoughts.length > 0) {
+          raw.thoughts.forEach(({ t }) => {
+            rows += entryLine('thought', '💭 Pensamento', t.content || '—');
+          });
+        } else {
+          rows += gapLine('Sem pensamento registado');
+        }
+      }
+
       timelineHTML += `<div class="day"><div class="day-header">${dayLabel}</div><div class="entries">${rows}</div></div>`;
     });
+  }
   }
 
   return `<!DOCTYPE html>
@@ -380,6 +447,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   .badge{display:inline-block;font-size:7pt;font-weight:600;padding:1px 6px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .time{color:#9ca3af;font-size:7.5pt;flex-shrink:0;min-width:32px}
   .detail{color:#374151;flex:1;line-height:1.4}
+  .gap{font-size:7.5pt;color:#9ca3af;font-style:italic}
   @media print{body{padding:8mm 12mm}.no-print{display:none!important}}
   .print-btn{display:block;margin:20px auto 0;padding:8px 28px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:10pt;font-weight:600;cursor:pointer}
   .print-btn:hover{background:#6d28d9}
