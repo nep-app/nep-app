@@ -612,5 +612,16 @@
     "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",
     "Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis",
     "Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional"
-  ]
+  ],
+  "analyses": {
+    "dayNames": [
+      "Dom",
+      "Seg",
+      "Ter",
+      "Qua",
+      "Qui",
+      "Sex",
+      "Sáb"
+    ]
+  }
 }

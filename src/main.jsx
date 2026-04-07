@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './i18n'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { LocalDataProvider } from './contexts/LocalDataContext'
@@ -45,17 +46,19 @@ const checkForUpdates = () => {
 if (!checkForUpdates()) {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-      <AuthProvider>
-        <LocalDataProvider>
-          <DataProvider>
-            <MetricsProvider>
-              <UIProvider>
-                <App />
-              </UIProvider>
-            </MetricsProvider>
-          </DataProvider>
-        </LocalDataProvider>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <LocalDataProvider>
+            <DataProvider>
+              <MetricsProvider>
+                <UIProvider>
+                  <App />
+                </UIProvider>
+              </MetricsProvider>
+            </DataProvider>
+          </LocalDataProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

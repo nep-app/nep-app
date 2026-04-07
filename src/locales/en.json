@@ -612,5 +612,16 @@
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",
     "Hydration + snack: brain functions better, decisions are better, urges more manageable",
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
-  ]
+  ],
+  "analyses": {
+    "dayNames": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ]
+  }
 }
