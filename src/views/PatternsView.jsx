@@ -391,8 +391,8 @@ export function PatternsView({
                                                                     dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
                                                                 }
                                                             }
-                                                            if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
-                                                            if (w.rest || (w.exercise && w.exercise.trim())) dailyData[date].rest = true;
+                                                            if (w.water || (w.waterGlasses > 0) || (w.waterMl > 0)) dailyData[date].water = true;
+                                                            if (w.rest || (w.exercise && w.exercise.trim()) || (w.exerciseType && w.exerciseType.trim())) dailyData[date].rest = true;
                                                             if (w.food) dailyData[date].food = true;
                                                             if (w.social) dailyData[date].social = true;
                                                         });
@@ -1300,8 +1300,8 @@ export function PatternsView({
                                                 const previousDates = new Set(previousWellbeing.map(w => w.date));
 
                                                 const isAreaActive = (w, area) => {
-                                                    if (area === 'water') return w.water === true || (w.waterGlasses > 0);
-                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '');
+                                                    if (area === 'water') return w.water === true || (w.waterGlasses > 0) || (w.waterMl > 0);
+                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '') || (w.exerciseType && w.exerciseType.trim() !== '');
                                                     return w[area] === true;
                                                 };
                                                 Object.keys(areas).forEach(area => {

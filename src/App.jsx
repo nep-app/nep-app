@@ -176,7 +176,7 @@ function AuthenticatedApp() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterMl: 0, exerciseType: '', exerciseMinutes: '', symptoms: [], social: false, food: false, emotions: [], notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
@@ -291,8 +291,10 @@ function AuthenticatedApp() {
                 setWellbeingForm({
                     mood: w.mood != null ? String(w.mood) : '',
                     energy: w.energy != null ? String(w.energy) : '',
-                    waterGlasses: w.waterGlasses || 0,
-                    exercise: w.exercise || '',
+                    waterMl: w.waterMl || (w.waterGlasses ? w.waterGlasses * 250 : 0),
+                    exerciseType: w.exerciseType || (w.exercise || ''),
+                    exerciseMinutes: w.exerciseMinutes || '',
+                    symptoms: w.symptoms || [],
                     social: w.social || false,
                     food: w.food || false,
                     emotions: w.emotions || [],
@@ -345,7 +347,7 @@ function AuthenticatedApp() {
                         // Para wellbeing (estado), o datetime deve ser completo
                         const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
                         const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
-                        setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        setWellbeingForm({ mood: '', energy: '', waterMl: 0, exerciseType: '', exerciseMinutes: '', symptoms: [], social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
                         setShowWellbeingModal(true);
                         break;
 
@@ -531,8 +533,10 @@ function AuthenticatedApp() {
                         timestamp: timestamp,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
-                        waterGlasses: wellbeingForm.waterGlasses,
-                        exercise: wellbeingForm.exercise,
+                        waterMl: wellbeingForm.waterMl,
+                        exerciseType: wellbeingForm.exerciseType,
+                        exerciseMinutes: wellbeingForm.exerciseMinutes,
+                        symptoms: wellbeingForm.symptoms,
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
@@ -545,7 +549,7 @@ function AuthenticatedApp() {
                     } else {
                         await addWellbeingLog({ id: genId(), ...updatedFields });
                     }
-                    setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
+                    setWellbeingForm({ mood: '', energy: '', waterMl: 0, exerciseType: '', exerciseMinutes: '', symptoms: [], social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
@@ -597,8 +601,10 @@ function AuthenticatedApp() {
                         timestamp: timestamp,
                         mood: null,
                         energy: null,
-                        waterGlasses: 0,
-                        exercise: '',
+                        waterMl: 0,
+                        exerciseType: '',
+                        exerciseMinutes: '',
+                        symptoms: [],
                         social: false,
                         food: false,
                         emotions: emotionsForm.emotions,
@@ -1075,7 +1081,7 @@ return {
                 // Check wellbeing completion
                 if (wellbeingLogs.length > 0) {
                     const recent = wellbeingLogs[0];
-                    const completedItems = [(recent.waterGlasses > 0 || recent.water), (recent.exercise || recent.rest), recent.social, recent.food].filter(Boolean).length;
+                    const completedItems = [(recent.waterMl > 0 || recent.waterGlasses > 0 || recent.water), (recent.exerciseType || recent.exercise || recent.rest), recent.social, recent.food].filter(Boolean).length;
                     if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 

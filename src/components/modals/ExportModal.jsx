@@ -147,8 +147,8 @@ const buildCSVs = (data, selected) => {
         fmtDateTime(w.timestamp || w.date),
         w.mood   || '',
         w.energy || '',
-        w.waterGlasses != null ? w.waterGlasses : (w.water ? 1 : 0),
-        w.exercise || (w.rest ? 'Sim' : ''),
+        w.waterMl != null ? w.waterMl + 'ml' : (w.waterGlasses != null ? w.waterGlasses * 250 + 'ml' : (w.water ? '≥250ml' : '0ml')),
+        w.exerciseType ? (w.exerciseMinutes ? `${w.exerciseType} ${w.exerciseMinutes}min` : w.exerciseType) : (w.exercise || (w.rest ? 'Sim' : '')),
         w.food   ? 'Sim' : 'Não',
         w.social ? 'Sim' : 'Não',
         (w.emotions || []).join('; '),
@@ -213,7 +213,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
 
   const scTotal = selected.wellbeing ? data.wellbeingLogs.length : 0;
-  const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => (w.water || w.waterGlasses > 0) || (w.rest || w.exercise) || w.food || w.social).length : 0;
+  const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => (w.water || w.waterGlasses > 0 || w.waterMl > 0) || (w.rest || w.exercise || w.exerciseType) || w.food || w.social).length : 0;
   const scPct   = scTotal > 0 ? Math.round((scDays / scTotal) * 100) : null;
 
   // ── Self-care breakdown ───────────────────────────────────────────────────
@@ -223,8 +223,8 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   if (scTotal > 0) {
     scItems.forEach(k => {
       let n;
-      if (k === 'water') n = data.wellbeingLogs.filter(w => w.water || (w.waterGlasses > 0)).length;
-      else if (k === 'rest') n = data.wellbeingLogs.filter(w => w.rest || (w.exercise && w.exercise.trim())).length;
+      if (k === 'water') n = data.wellbeingLogs.filter(w => w.water || w.waterGlasses > 0 || w.waterMl > 0).length;
+      else if (k === 'rest') n = data.wellbeingLogs.filter(w => w.rest || (w.exercise && w.exercise.trim()) || (w.exerciseType && w.exerciseType.trim())).length;
       else n = data.wellbeingLogs.filter(w => w[k]).length;
       scItemPct[k] = Math.round((n / scTotal) * 100);
     });
@@ -455,7 +455,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
               timeStr,
               w.mood   != null ? `😊${w.mood}/10` : null,
               w.energy != null ? `⚡${w.energy}/10` : null,
-              [(w.water || w.waterGlasses > 0) && '💧', (w.rest || w.exercise) && '🏃', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
+              [(w.water || w.waterGlasses > 0 || w.waterMl > 0) && '💧', (w.rest || w.exercise || w.exerciseType) && '🏃', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
               (w.emotions || []).join(' ') || null,
               w.notes || null,
             ].filter(Boolean);
