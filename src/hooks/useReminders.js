@@ -129,6 +129,20 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           dismissReminder('daily-check');
         }
 
+        // Dose alarm: fires once per day from configured hour
+        const doseAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
+        const doseAlarmHour = (doseAlarmRaw !== null && doseAlarmRaw !== 'null') ? parseInt(doseAlarmRaw) : null;
+        if (doseAlarmHour !== null && !isNaN(doseAlarmHour) && hour >= doseAlarmHour) {
+          const dismissed = safeLocalStorage.get('reminderDismissed', {});
+          if (dismissed['bag-alarm'] !== today) {
+            const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
+            if (!hasDailyLogToday) {
+              showToast('📊 Lembrete: Regista a tua dose diária!', 'info');
+              showBrowserNotification('Lembrete - NEP', 'Regista a tua dose diária!');
+            }
+            dismissReminder('bag-alarm');
+          }
+        }
 
       } catch (e) {
         logger.error('Error checking reminders:', e);
