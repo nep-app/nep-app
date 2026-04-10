@@ -141,14 +141,14 @@ const buildCSVs = (data, selected) => {
   }
 
   if (selected.wellbeing && data.wellbeingLogs.length > 0) {
-    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água', 'Descanso', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
+    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água (copos)', 'Exercício', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
     data.wellbeingLogs.forEach(w => {
       rows.push(csvRow([
         fmtDateTime(w.timestamp || w.date),
         w.mood   || '',
         w.energy || '',
-        w.water  ? 'Sim' : 'Não',
-        w.rest   ? 'Sim' : 'Não',
+        w.waterGlasses != null ? w.waterGlasses : (w.water ? 1 : 0),
+        w.exercise || (w.rest ? 'Sim' : ''),
         w.food   ? 'Sim' : 'Não',
         w.social ? 'Sim' : 'Não',
         (w.emotions || []).join('; '),
@@ -213,16 +213,19 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([e]) => e);
 
   const scTotal = selected.wellbeing ? data.wellbeingLogs.length : 0;
-  const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => w.water || w.rest || w.food || w.social).length : 0;
+  const scDays  = selected.wellbeing ? data.wellbeingLogs.filter(w => (w.water || w.waterGlasses > 0) || (w.rest || w.exercise) || w.food || w.social).length : 0;
   const scPct   = scTotal > 0 ? Math.round((scDays / scTotal) * 100) : null;
 
   // ── Self-care breakdown ───────────────────────────────────────────────────
   const scItems = ['water', 'rest', 'food', 'social'];
-  const scLabels = { water: 'água', rest: 'descanso', food: 'alimentação', social: 'apoio social' };
+  const scLabels = { water: 'água', rest: 'exercício', food: 'alimentação', social: 'apoio social' };
   const scItemPct = {};
   if (scTotal > 0) {
     scItems.forEach(k => {
-      const n = data.wellbeingLogs.filter(w => w[k]).length;
+      let n;
+      if (k === 'water') n = data.wellbeingLogs.filter(w => w.water || (w.waterGlasses > 0)).length;
+      else if (k === 'rest') n = data.wellbeingLogs.filter(w => w.rest || (w.exercise && w.exercise.trim())).length;
+      else n = data.wellbeingLogs.filter(w => w[k]).length;
       scItemPct[k] = Math.round((n / scTotal) * 100);
     });
   }
@@ -301,7 +304,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
     scTotal > 0
       ? `<tr><td>💧 Hidratação</td><td>${scItemPct.water}%</td></tr>` : '',
     scTotal > 0
-      ? `<tr><td>🛌 Descanso</td><td>${scItemPct.rest}%</td></tr>` : '',
+      ? `<tr><td>🏃 Exercício</td><td>${scItemPct.rest}%</td></tr>` : '',
     scTotal > 0
       ? `<tr><td>🍽️ Alimentação</td><td>${scItemPct.food}%</td></tr>` : '',
     scTotal > 0
@@ -452,7 +455,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
               timeStr,
               w.mood   != null ? `😊${w.mood}/10` : null,
               w.energy != null ? `⚡${w.energy}/10` : null,
-              [w.water && '💧', w.rest && '🛌', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
+              [(w.water || w.waterGlasses > 0) && '💧', (w.rest || w.exercise) && '🏃', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
               (w.emotions || []).join(' ') || null,
               w.notes || null,
             ].filter(Boolean);

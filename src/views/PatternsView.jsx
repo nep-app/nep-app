@@ -391,8 +391,8 @@ export function PatternsView({
                                                                     dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
                                                                 }
                                                             }
-                                                            if (w.water) dailyData[date].water = true;
-                                                            if (w.rest) dailyData[date].rest = true;
+                                                            if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
+                                                            if (w.rest || (w.exercise && w.exercise.trim())) dailyData[date].rest = true;
                                                             if (w.food) dailyData[date].food = true;
                                                             if (w.social) dailyData[date].social = true;
                                                         });
@@ -1288,7 +1288,7 @@ export function PatternsView({
                                                 const areas = {
                                                     water: { name: t('patterns.areas.water'), emoji: '💧' },
                                                     food: { name: t('patterns.areas.food'), emoji: '🍎' },
-                                                    rest: { name: t('patterns.areas.rest'), emoji: '😴' },
+                                                    rest: { name: t('patterns.areas.rest'), emoji: '🏃' },
                                                     social: { name: t('patterns.areas.social'), emoji: '👥' }
                                                 };
 
@@ -1299,14 +1299,19 @@ export function PatternsView({
                                                 const recentDates = new Set(recentWellbeing.map(w => w.date));
                                                 const previousDates = new Set(previousWellbeing.map(w => w.date));
 
+                                                const isAreaActive = (w, area) => {
+                                                    if (area === 'water') return w.water === true || (w.waterGlasses > 0);
+                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '');
+                                                    return w[area] === true;
+                                                };
                                                 Object.keys(areas).forEach(area => {
-                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area:true
+                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area activa
                                                     const recentCyclesWithArea = Array.from(recentDates).filter(date => {
-                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     }).length;
 
                                                     const previousCyclesWithArea = Array.from(previousDates).filter(date => {
-                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     }).length;
 
                                                     const recentPercent = recentDates.size > 0 ? (recentCyclesWithArea / recentDates.size) * 100 : 0;
@@ -1323,13 +1328,13 @@ export function PatternsView({
                                                 // Calculate complete cycles (ciclos onde completaste os 4 indicadores)
                                                 const recentCompleteCycles = Array.from(recentDates).filter(date => {
                                                     return Object.keys(areas).every(area => {
-                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     });
                                                 }).length;
 
                                                 const previousCompleteCycles = Array.from(previousDates).filter(date => {
                                                     return Object.keys(areas).every(area => {
-                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     });
                                                 }).length;
 
@@ -1892,7 +1897,7 @@ export function PatternsView({
                                                                     const areaNames = {
                                                                         water: { name: t('patterns.areas.water'), emoji: '💧' },
                                                                         food: { name: t('patterns.areas.food'), emoji: '🍎' },
-                                                                        rest: { name: t('patterns.areas.rest'), emoji: '😴' },
+                                                                        rest: { name: t('patterns.areas.rest'), emoji: '🏃' },
                                                                         social: { name: t('patterns.areas.social'), emoji: '👥' }
                                                                     };
                                                                     const area = areaNames[areaKey];

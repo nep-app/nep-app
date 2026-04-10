@@ -148,8 +148,8 @@
       "moodLabel": "Humor: {{value}}/10",
       "energyLabel": "Energia: {{value}}/10",
       "selfcareLabel": "Autocuidado hoje",
-      "water": "💧 Bebi água suficiente",
-      "rest": "😴 Descansei o suficiente",
+      "water": "Água (copos)",
+      "rest": "Exercício físico",
       "social": "👥 Tive contacto social",
       "food": "🍽️ Comi refeições nutritivas",
       "notesLabel": "Notas (opcional)",
@@ -582,7 +582,7 @@
     "areas": {
       "water": "Hidratação",
       "food": "Alimentação",
-      "rest": "Descanso",
+      "rest": "Exercício",
       "social": "Socialização"
     },
     "bestDay": {

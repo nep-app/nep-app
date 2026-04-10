@@ -4,7 +4,6 @@ import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
-import { DailyHealthWidget } from '../components/DailyHealthWidget';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
@@ -195,8 +194,6 @@ export function HomeViewRefactored({
           {t('home.goals')}
         </GradientButton>
       </div>
-
-      <DailyHealthWidget darkMode={darkMode} />
 
       <div className="grid grid-cols-2 gap-3">
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>

@@ -25,8 +25,6 @@ export const WellbeingModal = ({
   const selectedDateLogs = wellbeingLogs.filter(log => log.date === selectedDate && log.id !== editingId);
 
   const alreadyChecked = {
-    water: selectedDateLogs.some(log => log.water === true),
-    rest: selectedDateLogs.some(log => log.rest === true),
     social: selectedDateLogs.some(log => log.social === true),
     food: selectedDateLogs.some(log => log.food === true)
   };
@@ -43,6 +41,7 @@ export const WellbeingModal = ({
       mood: existing.mood ?? prev.mood,
       energy: existing.energy ?? prev.energy,
       sleep: existing.sleep ?? prev.sleep,
+      waterGlasses: existing.waterGlasses ?? prev.waterGlasses,
       notes: existing.notes || prev.notes,
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,27 +103,37 @@ export const WellbeingModal = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.selfcareLabel')}</label>
-            <div className="space-y-2">
-              <label className={'flex items-center space-x-2 ' + (alreadyChecked.water ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
+            <div className="space-y-3">
+              {/* Water stepper */}
+              <div>
+                <span className="text-sm text-gray-300 block mb-1.5">💧 {t('modals.wellbeing.water')}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setWellbeingForm({...wellbeingForm, waterGlasses: Math.max(0, (wellbeingForm.waterGlasses || 0) - 1)})}
+                    className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center text-lg font-bold leading-none"
+                  >−</button>
+                  <span className="text-white font-semibold min-w-[4rem] text-center text-sm">
+                    {wellbeingForm.waterGlasses || 0} copo{(wellbeingForm.waterGlasses || 0) !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWellbeingForm({...wellbeingForm, waterGlasses: (wellbeingForm.waterGlasses || 0) + 1})}
+                    className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center text-lg font-bold leading-none"
+                  >+</button>
+                </div>
+              </div>
+              {/* Exercise text */}
+              <div>
+                <label className="text-sm text-gray-300 block mb-1.5">🏃 {t('modals.wellbeing.rest')} <span className="text-gray-500 text-xs">(opcional)</span></label>
                 <input
-                  type="checkbox"
-                  checked={wellbeingForm.water || alreadyChecked.water}
-                  onChange={(e) => setWellbeingForm({...wellbeingForm, water: e.target.checked})}
-                  disabled={alreadyChecked.water}
-                  className="rounded text-blue-600 focus:ring-blue-500"
+                  type="text"
+                  value={wellbeingForm.exercise || ''}
+                  onChange={(e) => setWellbeingForm({...wellbeingForm, exercise: e.target.value})}
+                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm"
+                  placeholder="Ex: 30 min caminhada, yoga..."
                 />
-                <span className="text-sm text-gray-300">{alreadyChecked.water ? '✓ ' : ''}{t('modals.wellbeing.water')}</span>
-              </label>
-              <label className={'flex items-center space-x-2 ' + (alreadyChecked.rest ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
-                <input
-                  type="checkbox"
-                  checked={wellbeingForm.rest || alreadyChecked.rest}
-                  onChange={(e) => setWellbeingForm({...wellbeingForm, rest: e.target.checked})}
-                  disabled={alreadyChecked.rest}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-300">{alreadyChecked.rest ? '✓ ' : ''}{t('modals.wellbeing.rest')}</span>
-              </label>
+              </div>
               <label className={'flex items-center space-x-2 ' + (alreadyChecked.social ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
