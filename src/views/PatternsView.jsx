@@ -7,7 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
-import { getEmotionCategory } from '../constants/emotions';
+import { getEmotionCategory, EMOTION_CATEGORIES } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -23,7 +23,7 @@ export function PatternsView({
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const metrics = useMetrics();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     return (
                                 <div className="space-y-6">
@@ -168,10 +168,12 @@ export function PatternsView({
                                                     const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                                     const bestDate = sortedDates[0];
                                                     const bestCount = byDate[bestDate];
-                                                    const bestDayName = new Date(bestDate).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
-                                                    const prefix = completedDates.length === 1 ? 'Neste dia registaste' : 'Teu melhor dia foi';
+                                                    const bestDayName = new Date(bestDate).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
+                                                    const countStr = bestCount === 1 ? t('patterns.bestDay.oneUse') : t('patterns.bestDay.multiUse', { count: bestCount });
+                                                    const suffixStr = bestCount <= 2 ? t('patterns.bestDay.identifyGood') : t('patterns.bestDay.keepImproving');
+                                                    const prefix = completedDates.length === 1 ? t('patterns.bestDay.single', { date: bestDayName, count: countStr }) : t('patterns.bestDay.multi', { date: bestDayName, count: countStr });
                                                     insights.push({
-                                                        text: `${prefix} ${bestDayName} com ${bestCount === 1 ? 'apenas 1 consumo' : `${bestCount} consumos`}. ${bestCount <= 2 ? 'Identifica o que funcionou! ⭐' : 'Continua a melhorar! 💪'}`,
+                                                        text: `${prefix} ${suffixStr}`,
                                                         type: 'positive'
                                                     });
                                                 }
@@ -277,22 +279,26 @@ export function PatternsView({
                                                     {/* Mini-resumo contextual */}
                                                     <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 border'}>
                                                         <p className={'text-sm leading-relaxed ' + 'text-gray-200'}>
-                                                            {`Tiveste ${totalConsumptions} ${totalConsumptions === 1 ? 'consumo' : 'consumos'} (média ${avgPerDay}/dia).${avgInterval > 0 ? ` Intervalo médio: ${avgInterval}h.` : ''}`}
+                                                            {(() => {
+                                                                const unit = totalConsumptions === 1 ? (i18n.language === 'en' ? 'use' : 'consumo') : (i18n.language === 'en' ? 'uses' : 'consumos');
+                                                                const intervalPart = avgInterval > 0 ? t('patterns.dashboard.summaryInterval', { avg: avgInterval }) : '';
+                                                                return t('patterns.dashboard.summary', { count: totalConsumptions, unit, avg: avgPerDay, interval: intervalPart });
+                                                            })()}
                                                         </p>
                                                     </div>
 
                                                     {/* Métricas essenciais */}
                                                     <div className="grid grid-cols-3 gap-3">
                                                         <div className={'bg-purple-900/30 border border-purple-700/50' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Total</div>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricTotal')}</div>
                                                             <div className={'text-purple-400' + ' text-2xl font-bold'}>{totalConsumptions}x</div>
                                                         </div>
                                                         <div className={'bg-blue-900/30 border border-blue-700/50' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Média/dia</div>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgDay')}</div>
                                                             <div className={'text-blue-400' + ' text-2xl font-bold'}>{avgPerDay}</div>
                                                         </div>
                                                         <div className={'bg-green-900/30 border border-green-700/50' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>Intervalo médio</div>
+                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgInterval')}</div>
                                                             <div className={'text-green-400' + ' text-2xl font-bold'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
@@ -315,7 +321,7 @@ export function PatternsView({
                                                                             ? 'text-green-400'
                                                                             : 'text-gray-400'
                                                                 )}>
-                                                                    📈 Tendência (30 dias)
+                                                                    {t('patterns.trend.title')}
                                                                 </div>
                                                                 <span className={'text-2xl ' + (
                                                                     trend.direction === 'increasing' ? '⚠️' :
@@ -325,28 +331,28 @@ export function PatternsView({
                                                             <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                 {trend.direction === 'increasing' && (
                                                                     <>
-                                                                        <strong className={'text-red-400'}>Escalada detectada:</strong> +{trend.slopePerDay} consumos/dia em média.
+                                                                        <strong className={'text-red-400'}>{t('patterns.trend.increasing')}</strong> +{trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            📊 A tua frequência está a aumentar {trend.slopePerDay} consumos por dia. Se continuar assim, daqui a 10 dias poderás estar em ~{trend.projection} consumos/dia.
+                                                                            {t('patterns.trend.increasingDetail', { slope: trend.slopePerDay, projection: trend.projection })}
                                                                         </span>
                                                                     </>
                                                                 )}
                                                                 {trend.direction === 'decreasing' && (
                                                                     <>
-                                                                        <strong className={'text-green-400'}>Redução em progresso:</strong> {trend.slopePerDay} consumos/dia em média.
+                                                                        <strong className={'text-green-400'}>{t('patterns.trend.decreasing')}</strong> {trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            📊 Estás a reduzir {Math.abs(parseFloat(trend.slopePerDay))} consumos por dia. Continua assim! Projeção 10 dias: ~{trend.projection} consumos/dia.
+                                                                            {t('patterns.trend.decreasingDetail', { slope: Math.abs(parseFloat(trend.slopePerDay)), projection: trend.projection })}
                                                                         </span>
                                                                     </>
                                                                 )}
                                                                 {trend.direction === 'stable' && (
                                                                     <>
-                                                                        <strong className={'text-gray-400'}>Padrão estável:</strong> ~{trend.currentAvg} consumos/dia (variação mínima)
+                                                                        <strong className={'text-gray-400'}>{t('patterns.trend.stable')}</strong> ~{trend.currentAvg} {i18n.language === 'en' ? 'uses/day (minimal variation)' : 'consumos/dia (variação mínima)'}
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            📊 A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias.
+                                                                            {t('patterns.trend.stableDetail')}
                                                                         </span>
                                                                     </>
                                                                 )}
@@ -357,170 +363,249 @@ export function PatternsView({
                                                     {/* Alertas Preditivos */}
                                                     {(() => {
                                                         // Agregar dados por dia
+                                                        const parseSafe = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };
                                                         const dailyData = {};
+                                                        // Track mood/energy sums and counts for averaging
+                                                        const moodCounts = {}, energyCounts = {};
+                                                        const ensureDay = (date) => {
+                                                            if (!dailyData[date]) dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0, mg: null };
+                                                        };
+
                                                         wellbeingLogs.forEach(w => {
                                                             const date = w.date || safeToISODate(w.timestamp);
-                                                            if (!dailyData[date]) {
-                                                                dailyData[date] = { sleep: null, mood: null, energy: null, exercise: null, food: null, social: null, consumptions: 0 };
+                                                            if (!date) return;
+                                                            ensureDay(date);
+                                                            if (w.mood != null) {
+                                                                const v = parseSafe(w.mood);
+                                                                if (v !== null) {
+                                                                    moodCounts[date] = moodCounts[date] || { sum: 0, n: 0 };
+                                                                    moodCounts[date].sum += v; moodCounts[date].n++;
+                                                                    dailyData[date].mood = moodCounts[date].sum / moodCounts[date].n;
+                                                                }
                                                             }
-                                                            // Usar parseFloat e validar se é número válido
-                                                            const parseSafe = (val) => {
-                                                                const num = parseFloat(val);
-                                                                return isNaN(num) ? null : Math.round(num);
-                                                            };
-                                                            if (w.sleep) dailyData[date].sleep = parseSafe(w.sleep);
-                                                            if (w.mood) dailyData[date].mood = parseSafe(w.mood);
-                                                            if (w.energy) dailyData[date].energy = parseSafe(w.energy);
-                                                            if (w.exercise) dailyData[date].exercise = parseSafe(w.exercise);
-                                                            if (w.food) dailyData[date].food = parseSafe(w.food);
-                                                            if (w.social) dailyData[date].social = parseSafe(w.social);
+                                                            if (w.energy != null) {
+                                                                const v = parseSafe(w.energy);
+                                                                if (v !== null) {
+                                                                    energyCounts[date] = energyCounts[date] || { sum: 0, n: 0 };
+                                                                    energyCounts[date].sum += v; energyCounts[date].n++;
+                                                                    dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
+                                                                }
+                                                            }
+                                                            if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
+                                                            if (w.rest || (w.exercise && w.exercise.trim())) dailyData[date].rest = true;
+                                                            if (w.food) dailyData[date].food = true;
+                                                            if (w.social) dailyData[date].social = true;
                                                         });
-
+                                                        cycles.forEach(c => {
+                                                            const date = c.date || safeToISODate(c.timestamp);
+                                                            if (!date || c.sleep == null) return;
+                                                            ensureDay(date);
+                                                            dailyData[date].sleep = parseFloat(c.sleep);
+                                                        });
+                                                        dailyLogs.forEach(l => {
+                                                            if (l.mg == null) return;
+                                                            const date = l.date || safeToISODate(l.timestamp);
+                                                            if (!date) return;
+                                                            ensureDay(date);
+                                                            dailyData[date].mg = (dailyData[date].mg || 0) + l.mg;
+                                                        });
                                                         consumptions.forEach(c => {
                                                             const date = c.date || safeToISODate(c.timestamp);
-                                                            if (!dailyData[date]) {
-                                                                dailyData[date] = { sleep: null, mood: null, energy: null, exercise: null, food: null, social: null, consumptions: 0 };
-                                                            }
+                                                            if (!date) return;
+                                                            ensureDay(date);
                                                             dailyData[date].consumptions++;
                                                         });
 
-                                                        // Obter dados de ontem
+                                                        // Use local date to avoid UTC midnight edge case
                                                         const today = new Date();
-                                                        const yesterday = new Date(today);
-                                                        yesterday.setDate(yesterday.getDate() - 1);
-                                                        const yesterdayStr = yesterday.toISOString().split('T')[0];
+                                                        const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                                        const getDS = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return localDateStr(d); };
+                                                        const d1 = getDS(1), d2 = getDS(2), d3 = getDS(3);
 
-                                                        const yesterdayData = dailyData[yesterdayStr];
-                                                        if (!yesterdayData) return null;
+                                                        if (![d1, d2, d3].some(d => dailyData[d])) {
+                                                            return (
+                                                                <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mt-4">
+                                                                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{t('patterns.todayForecast')}</div>
+                                                                    <div className="text-sm text-gray-400">
+                                                                        {i18n.language === 'en'
+                                                                            ? 'Not enough data yet. Register wellbeing, sleep cycles or daily dose for the last 3 days to see a prediction.'
+                                                                            : 'Dados insuficientes. Regista bem-estar, ciclos de sono ou dose diária nos últimos 3 dias para ver uma previsão.'}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
 
-                                                        // Debug: encontrar TODOS os registos de ontem (raw)
-                                                        const yesterdayRawLogs = wellbeingLogs.filter(w => {
-                                                            const wDate = w.date || safeToISODate(w.timestamp);
-                                                            return wDate === yesterdayStr;
-                                                        });
+                                                        // Média ponderada 3 dias: ontem ×3, anteontem ×2, há 3 dias ×1
+                                                        const wavg = (field) => {
+                                                            const pts = [{ d: d1, w: 3 }, { d: d2, w: 2 }, { d: d3, w: 1 }].filter(p => dailyData[p.d]?.[field] != null);
+                                                            if (!pts.length) return null;
+                                                            const tw = pts.reduce((s, p) => s + p.w, 0);
+                                                            return pts.reduce((s, p) => s + dailyData[p.d][field] * p.w, 0) / tw;
+                                                        };
+                                                        const sleep = wavg('sleep'), mood = wavg('mood'), energy = wavg('energy');
+                                                        const fmt = (v) => v != null ? v.toFixed(1) : '?';
 
-                                                        const sleep = yesterdayData.sleep;
-                                                        const mood = yesterdayData.mood;
-                                                        const energy = yesterdayData.energy;
-                                                        const exercise = yesterdayData.exercise;
-                                                        const food = yesterdayData.food;
-                                                        const social = yesterdayData.social;
-
-                                                        // Debug: mostrar dados brutos de ontem
-                                                        const rawDetails = yesterdayRawLogs.map((w, i) =>
-                                                            `Reg${i+1}[sleep=${w.sleep}, mood=${w.mood}, energy=${w.energy}, exercise=${w.exercise}, food=${w.food}, social=${w.social}]`
-                                                        ).join(' | ');
-                                                        const debugYesterday = `[DEBUG ontem ${yesterdayStr}: ${yesterdayRawLogs.length} registos | ${rawDetails || 'Nenhum'} → Agregado: sono=${sleep}, mood=${mood}, energy=${energy}, exercise=${exercise}, food=${food}, social=${social}]`;
-
-                                                        // Calcular score de autocuidado de ontem (0-4)
-                                                        let selfCareScore = 0;
+                                                        // Autocuidado médio (ontem + anteontem)
+                                                        const yd = dailyData[d1] || {};
+                                                        const hasYesterdayWellbeing = !!(dailyData[d1]);
+                                                        const scDays = [d1, d2].filter(d => dailyData[d]);
+                                                        let selfCareAvg = null;
+                                                        if (scDays.length > 0) {
+                                                            const scores = scDays.map(d => {
+                                                                const day = dailyData[d];
+                                                                return (day.water ? 1 : 0) + (day.rest ? 1 : 0) + (day.food ? 1 : 0) + (day.social ? 1 : 0);
+                                                            });
+                                                            selfCareAvg = scores.reduce((s, v) => s + v, 0) / scores.length;
+                                                        }
+                                                        // Detalhes de ontem para display
                                                         const selfCareDetails = [];
-                                                        if (sleep && sleep >= 6) { selfCareScore++; selfCareDetails.push(`Sono: ${sleep}/10`); }
-                                                        if (exercise && exercise >= 6) { selfCareScore++; selfCareDetails.push(`Exercício: ${exercise}/10`); }
-                                                        if (food && food >= 6) { selfCareScore++; selfCareDetails.push(`Alimentação: ${food}/10`); }
-                                                        if (social && social >= 6) { selfCareScore++; selfCareDetails.push(`Social: ${social}/10`); }
+                                                        if (yd.water) selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água');
+                                                        if (yd.rest) selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso');
+                                                        if (yd.food) selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação');
+                                                        if (yd.social) selfCareDetails.push('Social');
 
-                                                        // Padrão do dia da semana
-                                                        const todayDayOfWeek = today.getDay();
-                                                        const weekdayConsumptions = {};
-                                                        Object.entries(dailyData).forEach(([date, data]) => {
-                                                            const d = new Date(date);
-                                                            const dow = d.getDay();
-                                                            if (!weekdayConsumptions[dow]) weekdayConsumptions[dow] = [];
-                                                            weekdayConsumptions[dow].push(data.consumptions);
+                                                        // Emoções (d1, d2, d3) — valência e instabilidade
+                                                        const getEmotionsForDay = (date) =>
+                                                            wellbeingLogs.filter(w => (w.date || safeToISODate(w.timestamp)) === date).flatMap(w => w.emotions || []);
+                                                        const emotionsD1 = getEmotionsForDay(d1);
+                                                        const emotionsD2 = getEmotionsForDay(d2);
+                                                        const emotionsD3 = getEmotionsForDay(d3);
+                                                        const allRecentEmotions = [...emotionsD1, ...emotionsD2, ...emotionsD3];
+                                                        const negEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.negative.includes(e));
+                                                        const posEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.positive.includes(e));
+                                                        const totalEmotions = allRecentEmotions.length;
+                                                        const negRatio = totalEmotions >= 2 ? negEmotions.length / totalEmotions : null;
+                                                        const hasCravingYesterday = emotionsD1.includes('🔥 Com craving');
+                                                        const uniqueD1 = new Set(emotionsD1).size;
+                                                        const emotionFlux = emotionsD1.length > 0 && emotionsD2.length > 0
+                                                            ? emotionsD1.filter(e => !emotionsD2.includes(e)).length
+                                                            : 0;
+                                                        const emotionallyUnstable = uniqueD1 >= 5 || emotionFlux >= 4;
+
+                                                        // Tendência humor/energia últimos 7 dias (oldest→newest)
+                                                        const calcTrend = (field) => {
+                                                            const vals = Array.from({ length: 7 }, (_, i) => dailyData[getDS(7 - i)]?.[field] ?? null).filter(v => v != null);
+                                                            if (vals.length < 3) return 0;
+                                                            const h = Math.floor(vals.length / 2);
+                                                            return (vals.slice(-h).reduce((s, v) => s + v, 0) / h) - (vals.slice(0, h).reduce((s, v) => s + v, 0) / h);
+                                                        };
+                                                        const moodTrend = calcTrend('mood'), energyTrend = calcTrend('energy');
+
+                                                        // mg ontem vs. média dos 30 dias anteriores
+                                                        const mgYesterday = yd.mg ?? null;
+                                                        const mgHistory = Array.from({ length: 30 }, (_, i) => dailyData[getDS(i + 2)]?.mg).filter(v => v != null && v > 0);
+                                                        const mgAvg = mgHistory.length >= 7 ? mgHistory.reduce((s, v) => s + v, 0) / mgHistory.length : null;
+
+                                                        // Dia da semana
+                                                        const allDays = Object.keys(dailyData);
+                                                        const weeksOfData = allDays.length / 7;
+                                                        const todayDOW = today.getDay();
+                                                        const wkCons = {};
+                                                        allDays.forEach(date => {
+                                                            const dow = new Date(date).getDay();
+                                                            if (!wkCons[dow]) wkCons[dow] = [];
+                                                            wkCons[dow].push(dailyData[date].consumptions);
                                                         });
-                                                        const todayAvg = weekdayConsumptions[todayDayOfWeek]
-                                                            ? weekdayConsumptions[todayDayOfWeek].reduce((s, c) => s + c, 0) / weekdayConsumptions[todayDayOfWeek].length
-                                                            : null;
-                                                        const overallAvg = Object.values(dailyData).reduce((s, d) => s + d.consumptions, 0) / Object.keys(dailyData).length;
+                                                        const todayAvg = wkCons[todayDOW] ? wkCons[todayDOW].reduce((s, c) => s + c, 0) / wkCons[todayDOW].length : null;
+                                                        const overallAvg = allDays.reduce((s, d) => s + dailyData[d].consumptions, 0) / allDays.length;
 
-                                                        // Tendência últimos 7 dias
-                                                        const last7Days = Object.keys(dailyData).sort().slice(-7);
-                                                        const last7Consumptions = last7Days.map(d => dailyData[d].consumptions);
-                                                        const trendRecent = last7Consumptions.length >= 3
-                                                            ? (last7Consumptions.slice(-3).reduce((s, c) => s + c, 0) / 3) - (last7Consumptions.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
+                                                        // Tendência consumo últimos 7 dias
+                                                        const last7S = Object.keys(dailyData).sort().slice(-7);
+                                                        const l7c = last7S.map(d => dailyData[d].consumptions);
+                                                        const trendRecent = l7c.length >= 6
+                                                            ? (l7c.slice(-3).reduce((s, c) => s + c, 0) / 3) - (l7c.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
                                                             : 0;
 
-                                                        // CALCULAR SCORE DE RISCO (0-100)
-                                                        let riskScore = 50; // baseline
+                                                        // ── CALCULAR SCORE ──────────────────────────────────
+                                                        let riskScore = 30;
                                                         const riskFactors = [];
+                                                        const lbl = i18n.language === 'en' ? '(avg 3d)' : '(média 3 dias)';
 
-                                                        // 1. Sono baixo ontem (+risco)
+                                                        // 1. Sono — horas dormidas (média pond. 3 dias)
                                                         if (sleep !== null) {
-                                                            if (sleep < 4) {
-                                                                riskScore += 20;
-                                                                riskFactors.push({ emoji: '😴', text: `Sono muito baixo ontem (${sleep}/10)` });
-                                                            } else if (sleep < 6) {
-                                                                riskScore += 10;
-                                                                riskFactors.push({ emoji: '😴', text: `Sono baixo ontem (${sleep}/10)` });
-                                                            } else if (sleep >= 8) {
-                                                                riskScore -= 10;
-                                                            }
+                                                            if (sleep < 4) { riskScore += 20; riskFactors.push({ emoji: '😴', positive: false, text: `Sono muito baixo ${lbl}: ${fmt(sleep)}h` }); }
+                                                            else if (sleep < 6) { riskScore += 10; riskFactors.push({ emoji: '😴', positive: false, text: `Sono baixo ${lbl}: ${fmt(sleep)}h` }); }
+                                                            else if (sleep >= 7) { riskScore -= 10; riskFactors.push({ emoji: '😴', positive: true, text: `Sono bom ${lbl}: ${fmt(sleep)}h` }); }
                                                         }
 
-                                                        // 2. Humor/Energia baixos ontem (+risco)
-                                                        if (mood !== null && mood < 5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '😔', text: `Humor baixo ontem (${mood}/10)` });
-                                                        } else if (mood !== null && mood >= 7) {
-                                                            riskScore -= 8;
+                                                        // 2. Humor (média pond. 3 dias) — pesos reduzidos pois tendência já captura a variação
+                                                        if (mood !== null) {
+                                                            if (mood < 4) { riskScore += 10; riskFactors.push({ emoji: '😔', positive: false, text: `Humor muito baixo ${lbl}: ${fmt(mood)}/10` }); }
+                                                            else if (mood < 6) { riskScore += 5; riskFactors.push({ emoji: '😐', positive: false, text: `Humor moderado ${lbl}: ${fmt(mood)}/10` }); }
+                                                            else if (mood >= 7) { riskScore -= 8; riskFactors.push({ emoji: '😊', positive: true, text: `Humor bom ${lbl}: ${fmt(mood)}/10` }); }
                                                         }
 
-                                                        if (energy !== null && energy < 5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '🔋', text: `Energia baixa ontem (${energy}/10)` });
-                                                        } else if (energy !== null && energy >= 7) {
-                                                            riskScore -= 8;
+                                                        // 3. Energia (média pond. 3 dias) — pesos reduzidos
+                                                        if (energy !== null) {
+                                                            if (energy < 4) { riskScore += 10; riskFactors.push({ emoji: '🔋', positive: false, text: `Energia muito baixa ${lbl}: ${fmt(energy)}/10` }); }
+                                                            else if (energy < 6) { riskScore += 5; riskFactors.push({ emoji: '🪫', positive: false, text: `Energia moderada ${lbl}: ${fmt(energy)}/10` }); }
+                                                            else if (energy >= 7) { riskScore -= 8; riskFactors.push({ emoji: '⚡', positive: true, text: `Energia boa ${lbl}: ${fmt(energy)}/10` }); }
                                                         }
 
-                                                        // 3. Autocuidado ontem
-                                                        if (selfCareScore === 0) {
-                                                            riskScore += 15;
-                                                            riskFactors.push({ emoji: '⚠️', text: 'Sem autocuidado registado ontem (0/4 áreas)' });
-                                                        } else if (selfCareScore === 1) {
-                                                            riskScore += 8;
-                                                            riskFactors.push({ emoji: '⚠️', text: `Autocuidado mínimo: ${selfCareDetails.join(', ')}` });
-                                                        } else if (selfCareScore === 2) {
-                                                            // Neutro - não adiciona fator
-                                                        } else if (selfCareScore >= 3) {
-                                                            riskScore -= 12;
-                                                            riskFactors.push({ emoji: '✅', text: `Bom autocuidado ontem (${selfCareScore}/4): ${selfCareDetails.join(', ')}` });
+                                                        // 4. Autocuidado (média 2 dias)
+                                                        if (selfCareAvg !== null) {
+                                                            const scLbl = scDays.length > 1 ? '(média 2d)' : '(ontem)';
+                                                            if (selfCareAvg < 1) { riskScore += 15; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.noSelfCare') }); }
+                                                            else if (selfCareAvg < 2) { riskScore += 8; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
+                                                            else if (selfCareAvg < 3) { riskFactors.push({ emoji: '🟡', positive: null, text: `Autocuidado parcial ${scLbl}: ${selfCareAvg.toFixed(1)}/4` }); }
+                                                            else { riskScore -= 12; riskFactors.push({ emoji: '✅', positive: true, text: t('patterns.riskLevel.goodSelfCare', { score: selfCareAvg.toFixed(1), items: selfCareDetails.join(', ') }) }); }
                                                         }
 
-                                                        // 4. Dia da semana com mais consumo (+risco)
-                                                        if (todayAvg !== null && todayAvg > overallAvg * 1.3) {
+                                                        // 5. Tendência humor/energia (últimos 7 dias)
+                                                        if (moodTrend < -1.5 || energyTrend < -1.5) {
                                                             riskScore += 12;
-                                                            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                                            riskFactors.push({ emoji: '📅', text: `${dayNames[todayDayOfWeek]} costuma ser dia de mais consumo` });
+                                                            const which = moodTrend < -1.5 && energyTrend < -1.5 ? 'humor e energia' : moodTrend < -1.5 ? 'humor' : 'energia';
+                                                            riskFactors.push({ emoji: '📉', positive: false, text: `${which} em queda nos últimos 7 dias` });
+                                                        } else if (moodTrend > 1.5 && energyTrend > 1.5) {
+                                                            riskScore -= 8;
+                                                            riskFactors.push({ emoji: '📈', positive: true, text: 'Humor e energia a melhorar nos últimos 7 dias' });
                                                         }
 
-                                                        // 5. Tendência crescente (+risco)
-                                                        if (trendRecent > 0.5) {
-                                                            riskScore += 10;
-                                                            riskFactors.push({ emoji: '📈', text: 'Tendência crescente últimos 7 dias' });
-                                                        } else if (trendRecent < -0.5) {
-                                                            riskScore -= 10;
+                                                        // 6. mg ontem vs. média histórica
+                                                        if (mgYesterday !== null && mgAvg !== null) {
+                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', positive: false, text: `Dose de ontem (${mgYesterday}mg) bem acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', positive: false, text: `Dose de ontem (${mgYesterday}mg) acima da tua média (${Math.round(mgAvg)}mg)` }); }
+                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; riskFactors.push({ emoji: '💊', positive: true, text: `Dose de ontem (${mgYesterday}mg) abaixo da tua média (${Math.round(mgAvg)}mg)` }); }
                                                         }
 
-                                                        // Limitar score entre 0-100
+                                                        // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
+                                                        if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
+                                                            riskScore += 12;
+                                                            const dayNames = t('analyses.dayNames', { returnObjects: true });
+                                                            riskFactors.push({ emoji: '📅', positive: false, text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
+                                                        }
+
+                                                        // 8. Tendência consumo últimos 7 dias
+                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', positive: false, text: t('patterns.riskLevel.trendIncreasing') }); }
+                                                        else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📉', positive: true, text: 'Consumos a diminuir nos últimos 7 dias' }); }
+
+                                                        // 9. Emoções — craving, valência e instabilidade
+                                                        if (hasCravingYesterday) { riskScore += 15; riskFactors.push({ emoji: '🔥', positive: false, text: 'Craving registado ontem' }); }
+                                                        if (negRatio !== null) {
+                                                            if (negRatio > 0.6 && totalEmotions >= 3) { riskScore += 12; riskFactors.push({ emoji: '😰', positive: false, text: `Maioria das emoções negativas (${Math.round(negRatio * 100)}%)` }); }
+                                                            else if (negRatio > 0.4 && totalEmotions >= 2) { riskScore += 6; riskFactors.push({ emoji: '😐', positive: false, text: `Mais de metade das emoções negativas (${Math.round(negRatio * 100)}%)` }); }
+                                                            else if (negRatio < 0.25 && posEmotions.length >= 3) { riskScore -= 8; riskFactors.push({ emoji: '💚', positive: true, text: 'Emoções maioritariamente positivas nos últimos dias' }); }
+                                                        }
+                                                        if (emotionallyUnstable) { riskScore += 8; riskFactors.push({ emoji: '🌊', positive: false, text: 'Instabilidade emocional nos últimos dias' }); }
+
                                                         riskScore = Math.max(0, Math.min(100, riskScore));
 
                                                         // Classificar risco
                                                         let riskLevel, riskColor, riskBg, riskBorder, riskEmoji;
                                                         if (riskScore >= 70) {
-                                                            riskLevel = 'Alto';
+                                                            riskLevel = t('patterns.riskLevel.high');
                                                             riskColor = 'text-red-400';
                                                             riskBg = 'bg-red-900/30';
                                                             riskBorder = 'border-red-700/50';
                                                             riskEmoji = '🚨';
                                                         } else if (riskScore >= 55) {
-                                                            riskLevel = 'Moderado';
+                                                            riskLevel = t('patterns.riskLevel.moderate');
                                                             riskColor = 'text-yellow-400';
                                                             riskBg = 'bg-yellow-900/30';
                                                             riskBorder = 'border-yellow-700/50';
                                                             riskEmoji = '⚠️';
                                                         } else {
-                                                            riskLevel = 'Baixo';
+                                                            riskLevel = t('patterns.riskLevel.low');
                                                             riskColor = 'text-green-400';
                                                             riskBg = 'bg-green-900/30';
                                                             riskBorder = 'border-green-700/50';
@@ -537,33 +622,29 @@ export function PatternsView({
                                                                 </div>
                                                                 <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                     <div className="flex items-center gap-2 mb-2">
-                                                                        <strong className={riskColor}>Risco {riskLevel}</strong>
+                                                                        <strong className={riskColor}>{t('patterns.riskLevel.label', { level: riskLevel })}</strong>
                                                                         <div className={'text-xs px-2 py-0.5 rounded-full font-semibold ' + riskColor}>
                                                                             {riskScore}%
                                                                         </div>
                                                                     </div>
-                                                                    <div className={'text-xs mb-2 opacity-50 ' + 'text-gray-500'}>
-                                                                        {debugYesterday}
-                                                                    </div>
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
-                                                                            <div className={'text-xs font-semibold ' + 'text-gray-400'}>Fatores analisados:</div>
+                                                                            <div className={'text-xs font-semibold ' + 'text-gray-400'}>{t('patterns.riskLevel.factors')}</div>
                                                                             {riskFactors.map((rf, idx) => (
-                                                                                <div key={idx} className={'text-xs ' + 'text-gray-300'}>
+                                                                                <div key={idx} className={'text-xs ' + (rf.positive === true ? 'text-green-400' : rf.positive === false ? 'text-red-300' : 'text-yellow-400')}>
                                                                                     {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
                                                                     )}
                                                                     <div className={'text-xs mt-3 pt-2 border-t ' + 'border-gray-600 text-gray-400'}>
-                                                                        {riskScore >= 70 ? (
-                                                                            '💡 Dia de alto risco. Prepara estratégias preventivas: lista de alternativas, autocuidado reforçado, evitar gatilhos.'
-                                                                        ) : riskScore >= 55 ? (
-                                                                            t('patterns.moderateRisk')
-                                                                        ) : (
-                                                                            '💡 Condições favoráveis para redução. Aproveita o dia para consolidar progresso!'
-                                                                        )}
+                                                                        {riskScore >= 70 ? t('patterns.riskLevel.msgHigh') : riskScore >= 55 ? t('patterns.moderateRisk') : t('patterns.riskLevel.msgLow')}
                                                                     </div>
+                                                                    {weeksOfData < 4 && (
+                                                                        <div className="text-xs mt-2 text-yellow-600/70">
+                                                                            ⚠️ {i18n.language === 'en' ? 'The day-of-week factor needs at least 4–6 weeks of data to be reliable.' : 'O fator dia da semana precisa de pelo menos 4–6 semanas de dados para ser fiável.'}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );
@@ -581,10 +662,10 @@ export function PatternsView({
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <div className="mb-4">
                                                                 <h3 className={'font-semibold ' + ('text-white')}>
-                                                                    📈 Evolução da Frequência
+                                                                    {t('patterns.freq.title')}
                                                                 </h3>
                                                                 <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                                                    Número de consumos por dia ao longo do tempo. Cores indicam intensidade.
+                                                                    {t('patterns.freq.desc')}
                                                                 </p>
                                                             </div>
                                                             {(() => {
@@ -673,7 +754,7 @@ export function PatternsView({
                                                                             </div>
                                                                             <div className="flex items-center gap-1">
                                                                                 <div className="w-3 h-3 rounded bg-gradient-to-t from-yellow-500 to-orange-500"></div>
-                                                                                <span>Hoje</span>
+                                                                                <span>{t('patterns.freq.today')}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -705,42 +786,42 @@ export function PatternsView({
                                                     {goalsAnalysis && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                🎯 Metas
+                                                                {t('patterns.goals.title')}
                                                             </h3>
 
                                                             {/* Main stats */}
                                                             <div className="grid grid-cols-2 gap-3 mb-4">
                                                                 <div className={'bg-gradient-to-br from-pink-900/30 to-purple-900/30 border-pink-700/50' + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-pink-400'}>
-                                                                        Total de Cumprimentos
+                                                                        {t('patterns.goals.totalCompliances')}
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
                                                                         <span className={'text-3xl font-black ' + 'text-pink-400'}>
                                                                             {goalsAnalysis.totalAchievements}
                                                                         </span>
                                                                         <span className={'text-sm ' + ('text-gray-400')}>
-                                                                            vezes
+                                                                            {t('patterns.goals.times')}
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                                                        {goalsAnalysis.goalsWithAchievements}/{goalsAnalysis.totalGoals} metas cumpridas
+                                                                        {t('patterns.goals.metAchieved', { achieved: goalsAnalysis.goalsWithAchievements, total: goalsAnalysis.totalGoals })}
                                                                     </div>
                                                                 </div>
 
                                                                 <div className={'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700/50' + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-blue-400'}>
-                                                                        Média por Dia
+                                                                        {t('patterns.goals.avgPerDay')}
                                                                     </div>
                                                                     <div className="flex items-baseline gap-1">
                                                                         <span className={'text-3xl font-black ' + 'text-blue-400'}>
                                                                             {goalsAnalysis.avgAchievementsPerDay}
                                                                         </span>
                                                                         <span className={'text-sm ' + ('text-gray-400')}>
-                                                                            cumprimentos
+                                                                            {t('patterns.goals.times')}
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                                                        nos últimos {goalsAnalysis.periodDays} dias
+                                                                        {t('patterns.goals.avgPerDayLast', { days: goalsAnalysis.periodDays })}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -748,25 +829,25 @@ export function PatternsView({
                                                             {/* Per-goal breakdown */}
                                                             <div className={'bg-gray-700/30' + ' rounded-lg p-4'}>
                                                                 <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + ('text-gray-400')}>
-                                                                    Detalhes por Meta
+                                                                    {t('patterns.goals.breakdown')}
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                     {goalsAnalysis.goalBreakdown.map(goal => {
                                                                         const goalTypeLabels = {
-                                                                            'reduce_frequency': '🔢 Reduzir frequência',
-                                                                            'reduce_quantity': '⚖️ Reduzir quantidade',
-                                                                            'limit_last': '🌙 Limitar último consumo',
-                                                                            'increase_interval': '⏳ Aumentar intervalo',
-                                                                            'sleep_hours': '😴 Horas de sono',
-                                                                            'bedtime_before': '🛏️ Deitar antes de'
+                                                                            'reduce_frequency': t('patterns.goals.types.reduce_frequency'),
+                                                                            'reduce_quantity': t('patterns.goals.types.reduce_quantity'),
+                                                                            'limit_last': t('patterns.goals.types.limit_last'),
+                                                                            'increase_interval': t('patterns.goals.types.increase_interval'),
+                                                                            'sleep_hours': t('patterns.goals.types.sleep_hours'),
+                                                                            'bedtime_before': t('patterns.goals.types.bedtime_before')
                                                                         };
                                                                         const explanations = {
-                                                                            'reduce_frequency': `Dias com <${goal.target} consumos`,
-                                                                            'reduce_quantity': `Dias com <${goal.target}mg`,
-                                                                            'limit_last': `Dias com último antes da meia-noite`,
-                                                                            'increase_interval': `Dias com ≥50% intervalos >${goal.target}h`,
-                                                                            'sleep_hours': `Noites com ≥${goal.target}h de sono`,
-                                                                            'bedtime_before': `Noites a dormir antes de ${goal.target}`
+                                                                            'reduce_frequency': t('patterns.goals.explain.reduce_frequency', { target: goal.target }),
+                                                                            'reduce_quantity': t('patterns.goals.explain.reduce_quantity', { target: goal.target }),
+                                                                            'limit_last': t('patterns.goals.explain.limit_last'),
+                                                                            'increase_interval': t('patterns.goals.explain.increase_interval', { target: goal.target }),
+                                                                            'sleep_hours': t('patterns.goals.explain.sleep_hours', { target: goal.target }),
+                                                                            'bedtime_before': t('patterns.goals.explain.bedtime_before', { target: goal.target })
                                                                         };
                                                                         return (
                                                                             <div key={goal.id} className={'bg-gray-700/50 border-gray-600' + ' rounded-lg p-3 border'}>
@@ -776,7 +857,7 @@ export function PatternsView({
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs italic ' + ('text-gray-400')}>
-                                                                                            Meta: {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? 'x/dia' : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
+                                                                                            {t('patterns.goals.target')} {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? (i18n.language === 'en' ? 'x/day' : 'x/dia') : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
@@ -784,7 +865,7 @@ export function PatternsView({
                                                                                             {goal.achievementCount}
                                                                                         </div>
                                                                                         <div className={'text-xs ' + 'text-gray-500'}>
-                                                                                            vezes
+                                                                                            {t('patterns.goals.times')}
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
@@ -925,7 +1006,7 @@ export function PatternsView({
                                                     recent: recentAvgFreq,
                                                     previous: previousAvgFreq,
                                                     change: calculateChange(recentAvgFreq, previousAvgFreq, true),
-                                                    label: 'Frequência média diária'
+                                                    label: t('patterns.progress.freqLabel')
                                                 };
                                             }
 
@@ -944,13 +1025,14 @@ export function PatternsView({
                                                     }
                                                 }
 
-                                                // Fallback: buscar nos dailyLogs
-                                                const dailyLog = dailyLogsData.find(l => l.date === date && l.mg !== undefined && !isNaN(parseFloat(l.mg)));
-                                                if (dailyLog) {
-                                                    const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
-                                                    if (!isNaN(mgValue) && mgValue > 0) {
-                                                        return mgValue;
-                                                    }
+                                                // Fallback: somar todos os dailyLogs desse dia
+                                                const logsForDate = dailyLogsData.filter(l => l.date === date && l.mg != null);
+                                                if (logsForDate.length > 0) {
+                                                    const total = logsForDate.reduce((sum, l) => {
+                                                        const v = typeof l.mg === 'number' ? l.mg : parseFloat(l.mg);
+                                                        return sum + (isNaN(v) ? 0 : v);
+                                                    }, 0);
+                                                    return total;
                                                 }
 
                                                 return null;
@@ -1011,7 +1093,7 @@ export function PatternsView({
                                                     recent: recentAvgDosage,
                                                     previous: previousAvgDosage,
                                                     change: calculateChange(recentAvgDosage, previousAvgDosage, true),
-                                                    label: 'Dosagem média diária'
+                                                    label: t('patterns.progress.dosageLabel')
                                                 };
                                             }
 
@@ -1080,7 +1162,7 @@ export function PatternsView({
                                                     recent: recentAvgSleep,
                                                     previous: previousAvgSleep,
                                                     change: calculateChange(recentAvgSleep, previousAvgSleep, false), // Higher sleep is better
-                                                    label: 'Horas de sono médias'
+                                                    label: t('patterns.progress.sleepLabel')
                                                 };
                                             }
 
@@ -1100,7 +1182,7 @@ export function PatternsView({
                                                     recent: recentAvgMood,
                                                     previous: previousAvgMood,
                                                     change: calculateChange(recentAvgMood, previousAvgMood, false), // Higher mood is better
-                                                    label: 'Humor médio'
+                                                    label: t('patterns.progress.moodLabel')
                                                 };
                                             }
 
@@ -1120,7 +1202,7 @@ export function PatternsView({
                                                     recent: recentAvgEnergy,
                                                     previous: previousAvgEnergy,
                                                     change: calculateChange(recentAvgEnergy, previousAvgEnergy, false), // Higher energy is better
-                                                    label: 'Energia média'
+                                                    label: t('patterns.progress.energyLabel')
                                                 };
                                             }
 
@@ -1162,7 +1244,7 @@ export function PatternsView({
                                                         recent: recentStdDev,
                                                         previous: previousStdDev,
                                                         change: calculateChange(recentStdDev, previousStdDev, true), // Lower std dev is better
-                                                        label: 'Consistência da hora de deitar'
+                                                        label: t('patterns.progress.bedtimeConsistLabel')
                                                     };
 
                                                     // Calculate average bedtime
@@ -1180,7 +1262,7 @@ export function PatternsView({
                                                         previousTime: minutesToTime(previousAvgBedtime),
                                                         // Earlier bedtime is generally better (but depends on sleep quality)
                                                         change: calculateChange(recentAvgBedtime, previousAvgBedtime, true),
-                                                        label: 'Hora média de deitar'
+                                                        label: t('patterns.progress.avgBedtimeLabel')
                                                     };
                                                 }
                                             }
@@ -1197,17 +1279,17 @@ export function PatternsView({
                                                     recent: recentAvgSelfCare,
                                                     previous: previousAvgSelfCare,
                                                     change: calculateChange(recentAvgSelfCare, previousAvgSelfCare, false), // More is better
-                                                    label: 'Atividades de autocuidado por dia'
+                                                    label: t('patterns.progress.selfCareLabel')
                                                 };
                                             }
 
                                             // AUTOCUIDADO - Análise por área (water, rest, social, food)
                                             if (recentWellbeing.length > 0) {
                                                 const areas = {
-                                                    water: { name: 'Hidratação', emoji: '💧' },
-                                                    food: { name: 'Alimentação', emoji: '🍎' },
-                                                    rest: { name: 'Descanso', emoji: '😴' },
-                                                    social: { name: 'Socialização', emoji: '👥' }
+                                                    water: { name: t('patterns.areas.water'), emoji: '💧' },
+                                                    food: { name: t('patterns.areas.food'), emoji: '🍎' },
+                                                    rest: { name: t('patterns.areas.rest'), emoji: '🏃' },
+                                                    social: { name: t('patterns.areas.social'), emoji: '👥' }
                                                 };
 
                                                 const recentAreaStats = {};
@@ -1217,14 +1299,19 @@ export function PatternsView({
                                                 const recentDates = new Set(recentWellbeing.map(w => w.date));
                                                 const previousDates = new Set(previousWellbeing.map(w => w.date));
 
+                                                const isAreaActive = (w, area) => {
+                                                    if (area === 'water') return w.water === true || (w.waterGlasses > 0);
+                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '');
+                                                    return w[area] === true;
+                                                };
                                                 Object.keys(areas).forEach(area => {
-                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area:true
+                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area activa
                                                     const recentCyclesWithArea = Array.from(recentDates).filter(date => {
-                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     }).length;
 
                                                     const previousCyclesWithArea = Array.from(previousDates).filter(date => {
-                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     }).length;
 
                                                     const recentPercent = recentDates.size > 0 ? (recentCyclesWithArea / recentDates.size) * 100 : 0;
@@ -1241,13 +1328,13 @@ export function PatternsView({
                                                 // Calculate complete cycles (ciclos onde completaste os 4 indicadores)
                                                 const recentCompleteCycles = Array.from(recentDates).filter(date => {
                                                     return Object.keys(areas).every(area => {
-                                                        return recentWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     });
                                                 }).length;
 
                                                 const previousCompleteCycles = Array.from(previousDates).filter(date => {
                                                     return Object.keys(areas).every(area => {
-                                                        return previousWellbeing.some(w => w.date === date && w[area] === true);
+                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
                                                     });
                                                 }).length;
 
@@ -1264,13 +1351,13 @@ export function PatternsView({
                                                 let suggestion = '';
                                                 if (lowAreas.length >= 3) {
                                                     // Mencionar as 2 áreas MAIS BAIXAS
-                                                    suggestion = `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
+                                                    suggestion = i18n.language === 'en' ? `Below 50% in several areas. Small daily habits make a difference - start with ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}.` : `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
                                                 } else if (lowAreas.length === 2) {
-                                                    suggestion = `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
+                                                    suggestion = i18n.language === 'en' ? `Focus on ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}. Simple routines can help!` : `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
                                                 } else if (lowAreas.length === 1) {
-                                                    suggestion = `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
+                                                    suggestion = i18n.language === 'en' ? `Focus on improving ${lowAreas[0].name.toLowerCase()} - small steps count!` : `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
                                                 } else {
-                                                    suggestion = `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
+                                                    suggestion = i18n.language === 'en' ? `Excellent! You're maintaining good self-care habits in all areas (≥50%).` : `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
                                                 }
 
                                                 progressData.selfCareDetailed = {
@@ -1281,7 +1368,7 @@ export function PatternsView({
                                                     lowAreas,
                                                     suggestion,
                                                     change: calculateChange(recentOverall, previousOverall, false),
-                                                    label: 'Taxa geral de autocuidado',
+                                                    label: t('patterns.progress.selfCareOverallLabel'),
                                                     // Ciclos completos (onde completaste os 4 indicadores)
                                                     completeCycles: {
                                                         recent: recentCompleteCyclesPercent,
@@ -1330,7 +1417,7 @@ export function PatternsView({
                                                     recent: recentNegativePercent,
                                                     previous: previousNegativePercent,
                                                     change: calculateChange(recentNegativePercent, previousNegativePercent, true), // Lower is better
-                                                    label: 'Emoções negativas (% do total)',
+                                                    label: t('patterns.progress.negEmotionsLabel'),
                                                     recentCount: recentNegativeCount,
                                                     recentTotal: recentEmotions.length,
                                                     previousCount: previousNegativeCount,
@@ -1347,7 +1434,7 @@ export function PatternsView({
                                                     recent: recentPositivePercent,
                                                     previous: previousPositivePercent,
                                                     change: calculateChange(recentPositivePercent, previousPositivePercent, false), // Higher is better
-                                                    label: 'Emoções positivas (% do total)',
+                                                    label: t('patterns.progress.posEmotionsLabel'),
                                                     recentCount: recentPositiveCount,
                                                     recentTotal: recentEmotions.length,
                                                     previousCount: previousPositiveCount,
@@ -1373,24 +1460,24 @@ export function PatternsView({
                                                     <div className={'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
                                                             <h3 className={'text-xl font-bold ' + ('text-white')}>
-                                                                📈 Análise de Progresso Temporal
+                                                                {t('patterns.progress.title')}
                                                             </h3>
                                                             <div className={'text-4xl font-black ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                 {progressScore}%
                                                             </div>
                                                         </div>
                                                         <p className={'text-sm mb-3 ' + ('text-gray-300')}>
-                                                            {patternsPeriod === 'hoje' ? 'Comparação entre hoje (até agora) vs ontem (dia completo)' :
-                                                             patternsPeriod === 'semana' ? 'Comparação entre esta semana vs semana anterior' :
-                                                             patternsPeriod === 'mes' ? 'Comparação entre este mês vs mês anterior' :
-                                                             `Comparação entre os últimos ${periodDays} dias vs os ${periodDays} dias anteriores`}
+                                                            {patternsPeriod === 'hoje' ? t('patterns.progress.comparisons.hoje') :
+                                                             patternsPeriod === 'semana' ? t('patterns.progress.comparisons.semana') :
+                                                             patternsPeriod === 'mes' ? t('patterns.progress.comparisons.mes') :
+                                                             t('patterns.progress.comparisons.tudo', { days: periodDays })}
                                                         </p>
                                                         <div className="flex items-center gap-2">
                                                             <div className={'flex-1 h-3 rounded-full overflow-hidden ' + ('bg-gray-700')}>
                                                                 <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
                                                             </div>
                                                             <span className={'text-xs font-medium ' + ('text-gray-400')}>
-                                                                {improvements} de {total} métricas em melhoria
+                                                                {t('patterns.progress.metricsImproving', { count: improvements, total: total })}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -1399,7 +1486,7 @@ export function PatternsView({
                                                     {(progressData.frequency || progressData.dosage) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💊 Consumo
+                                                                {t('patterns.progress.consumption')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.frequency && (
@@ -1423,10 +1510,10 @@ export function PatternsView({
                                                                                 {progressData.frequency.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                consumos/dia
+                                                                                {t('patterns.progress.usesPerDay')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.frequency.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.frequency.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1455,7 +1542,7 @@ export function PatternsView({
                                                                                 mg/dia
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.dosage.previous.toFixed(0)} mg
+                                                                                {t('patterns.progress.before')} {progressData.dosage.previous.toFixed(0)} mg
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1468,7 +1555,7 @@ export function PatternsView({
                                                     {(progressData.sleep || progressData.mood || progressData.energy) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💚 Bem-Estar
+                                                                {t('patterns.progress.wellbeing')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.sleep && (
@@ -1488,10 +1575,10 @@ export function PatternsView({
                                                                                 {progressData.sleep.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                horas
+                                                                                {t('patterns.progress.hours')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.sleep.previous.toFixed(1)}h
+                                                                                {t('patterns.progress.before')} {progressData.sleep.previous.toFixed(1)}h
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1516,7 +1603,7 @@ export function PatternsView({
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.mood.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.mood.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1541,7 +1628,7 @@ export function PatternsView({
                                                                                 /10
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.energy.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.energy.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1554,7 +1641,7 @@ export function PatternsView({
                                                     {(progressData.bedtimeConsistency || progressData.selfCare) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                🌙 Rotinas e Autocuidado
+                                                                {t('patterns.progress.routines')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.bedtimeConsistency && (
@@ -1571,19 +1658,19 @@ export function PatternsView({
                                                                         </div>
                                                                         <div className="flex items-baseline gap-2 mb-2">
                                                                             <span className={'text-2xl font-bold ' + 'text-white'}>
-                                                                                {progressData.bedtimeConsistency.recent < 30 ? 'Muito consistente' : progressData.bedtimeConsistency.recent < 60 ? 'Consistente' : 'Variável'}
+                                                                                {progressData.bedtimeConsistency.recent < 30 ? t('patterns.progress.bedtimeConsist.veryConsistent') : progressData.bedtimeConsistency.recent < 60 ? t('patterns.progress.bedtimeConsist.consistent') : t('patterns.progress.bedtimeConsist.variable')}
                                                                             </span>
                                                                             <span className={'text-xs ml-auto ' + 'text-gray-500'}>
-                                                                                variação: ±{(progressData.bedtimeConsistency.recent / 60).toFixed(0)}h
+                                                                                {t('patterns.progress.bedtimeConsist.variation', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(0) })}
                                                                             </span>
                                                                         </div>
                                                                         <div className={'bg-gray-800/50' + ' rounded px-3 py-2'}>
                                                                             <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
-                                                                                    ? '🎯 Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.'
+                                                                                    ? t('patterns.progress.bedtimeConsist.msgVeryConsistent')
                                                                                     : progressData.bedtimeConsistency.recent < 60
-                                                                                    ? `⚖️ Variação moderada (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h nas horas de deitar). Há alguma consistência, mas podes melhorar. Tenta definir uma janela de 30min (ex: 23h-23h30) para deitar, mesmo aos fins-de-semana.`
-                                                                                    : `🌪️ Horas muito variáveis (±${(progressData.bedtimeConsistency.recent / 60).toFixed(1)}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda.`}
+                                                                                    ? t('patterns.progress.bedtimeConsist.msgConsistent', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })
+                                                                                    : t('patterns.progress.bedtimeConsist.msgVariable', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })}
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -1596,7 +1683,7 @@ export function PatternsView({
                                                                             </span>
                                                                             {progressData.avgBedtime.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.avgBedtime.change.direction === 'up' ? 'Mais tarde' : 'Mais cedo'}
+                                                                                    {progressData.avgBedtime.change.direction === 'up' ? t('patterns.progress.avgBedtime.later') : t('patterns.progress.avgBedtime.earlier')}
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -1605,18 +1692,18 @@ export function PatternsView({
                                                                                 {progressData.avgBedtime.recentTime}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                era: {progressData.avgBedtime.previousTime}
+                                                                                {t('patterns.progress.avgBedtime.wasBefore', { time: progressData.avgBedtime.previousTime })}
                                                                             </span>
                                                                         </div>
                                                                         {(() => {
                                                                             const hour = parseInt(progressData.avgBedtime.recentTime.split(':')[0]);
                                                                             let feedback = '';
                                                                             if (hour >= 0 && hour < 6) {
-                                                                                feedback = 'Atenção: deitar muito tarde (madrugada) pode afetar a qualidade do sono.';
+                                                                                feedback = t('patterns.progress.avgBedtime.lateNight');
                                                                             } else if (hour >= 22 && hour < 24) {
-                                                                                feedback = 'Boa janela para deitar! (22h-00h)';
+                                                                                feedback = t('patterns.progress.avgBedtime.goodWindow');
                                                                             } else if (hour >= 6 && hour < 12) {
-                                                                                feedback = 'Dormir de manhã pode indicar inversão do ciclo.';
+                                                                                feedback = t('patterns.progress.avgBedtime.morning');
                                                                             }
                                                                             return feedback ? (
                                                                                 <div className={'text-xs mt-2 ' + ('text-gray-400')}>
@@ -1643,10 +1730,10 @@ export function PatternsView({
                                                                                 {progressData.selfCare.recent.toFixed(1)}
                                                                             </span>
                                                                             <span className={'text-sm ' + ('text-gray-400')}>
-                                                                                atividades/ciclo
+                                                                                {t('patterns.progress.activitiesPerCycle')}
                                                                             </span>
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                antes: {progressData.selfCare.previous.toFixed(1)}
+                                                                                {t('patterns.progress.before')} {progressData.selfCare.previous.toFixed(1)}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -1659,7 +1746,7 @@ export function PatternsView({
                                                     {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                🧠 Estado Emocional
+                                                                {t('patterns.progress.emotional')}
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.negativeEmotions && (
@@ -1667,7 +1754,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😔</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-purple-400'}>
-                                                                                Emoções Negativas
+                                                                                {t('patterns.progress.negEmotions')}
                                                                             </span>
                                                                             {progressData.negativeEmotions.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
@@ -1682,15 +1769,15 @@ export function PatternsView({
                                                                                         {progressData.negativeEmotions.recent.toFixed(0)}%
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-purple-300/70'}>
-                                                                                        do total
+                                                                                        {t('patterns.progress.ofTotal')}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className={'text-xs mt-1 ' + 'text-purple-400/60'}>
-                                                                                    {progressData.negativeEmotions.recentCount} de {progressData.negativeEmotions.recentTotal} emoções
+                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.negativeEmotions.recentCount, total: progressData.negativeEmotions.recentTotal })}
                                                                                 </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
-                                                                                era {progressData.negativeEmotions.previous.toFixed(0)}%
+                                                                                {t('patterns.progress.wasPercent', { val: progressData.negativeEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1700,7 +1787,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😊</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-green-400'}>
-                                                                                Emoções Positivas
+                                                                                {t('patterns.progress.posEmotions')}
                                                                             </span>
                                                                             {progressData.positiveEmotions.change.direction !== 'stable' && (
                                                                                 <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
@@ -1715,15 +1802,15 @@ export function PatternsView({
                                                                                         {progressData.positiveEmotions.recent.toFixed(0)}%
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-green-300/70'}>
-                                                                                        do total
+                                                                                        {t('patterns.progress.ofTotal')}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div className={'text-xs mt-1 ' + 'text-green-400/60'}>
-                                                                                    {progressData.positiveEmotions.recentCount} de {progressData.positiveEmotions.recentTotal} emoções
+                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.positiveEmotions.recentCount, total: progressData.positiveEmotions.recentTotal })}
                                                                                 </div>
                                                                             </div>
                                                                             <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
-                                                                                era {progressData.positiveEmotions.previous.toFixed(0)}%
+                                                                                {t('patterns.progress.wasPercent', { val: progressData.positiveEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1733,7 +1820,7 @@ export function PatternsView({
                                                                         <div className="flex items-center gap-2 mb-3">
                                                                             <span className="text-lg">🌟</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-blue-400'}>
-                                                                                Top 3 Emoções
+                                                                                {t('patterns.progress.top3Emotions')}
                                                                             </span>
                                                                         </div>
                                                                         <div className="space-y-2">
@@ -1759,14 +1846,14 @@ export function PatternsView({
                                                     {progressData.selfCareDetailed && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                💚 Análise de Autocuidado
+                                                                {t('patterns.progress.selfCare')}
                                                             </h3>
 
                                                             {/* Overall score */}
                                                             <div className={'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        Taxa geral de autocuidado
+                                                                        {t('patterns.progress.overallRate')}
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
@@ -1787,7 +1874,7 @@ export function PatternsView({
                                                             <div className={'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' + ' rounded-lg p-4 border mb-4'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        🎯 Ciclos completos (4 indicadores)
+                                                                        {t('patterns.progress.completeCycles')}
                                                                     </span>
                                                                     <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
@@ -1800,7 +1887,7 @@ export function PatternsView({
                                                                     ></div>
                                                                 </div>
                                                                 <div className={'text-xs mt-2 ' + ('text-gray-400')}>
-                                                                    {progressData.selfCareDetailed.completeCycles.recentCount} de {progressData.selfCareDetailed.completeCycles.recentTotal} ciclos com todos os indicadores
+                                                                    {t('patterns.progress.completeCyclesDetail', { count: progressData.selfCareDetailed.completeCycles.recentCount, total: progressData.selfCareDetailed.completeCycles.recentTotal })}
                                                                 </div>
                                                             </div>
 
@@ -1808,10 +1895,10 @@ export function PatternsView({
                                                             <div className="grid grid-cols-2 gap-3">
                                                                 {Object.entries(progressData.selfCareDetailed.areas).map(([areaKey, percent]) => {
                                                                     const areaNames = {
-                                                                        water: { name: 'Hidratação', emoji: '💧' },
-                                                                        food: { name: 'Alimentação', emoji: '🍎' },
-                                                                        rest: { name: 'Descanso', emoji: '😴' },
-                                                                        social: { name: 'Socialização', emoji: '👥' }
+                                                                        water: { name: t('patterns.areas.water'), emoji: '💧' },
+                                                                        food: { name: t('patterns.areas.food'), emoji: '🍎' },
+                                                                        rest: { name: t('patterns.areas.rest'), emoji: '🏃' },
+                                                                        social: { name: t('patterns.areas.social'), emoji: '👥' }
                                                                     };
                                                                     const area = areaNames[areaKey];
                                                                     return (
@@ -1843,20 +1930,20 @@ export function PatternsView({
                                                     {/* Summary insights */}
                                                     <div className={('bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border-indigo-700/50') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
-                                                            💡 Resumo do Progresso
+                                                            {t('patterns.progress.summaryTitle')}
                                                         </h3>
                                                         <div className={'text-sm leading-relaxed space-y-2 ' + ('text-gray-300')}>
                                                             {progressScore >= 70 && (
-                                                                <p>🎉 <strong>Excelente progresso!</strong> A maioria das métricas mostra melhoria clara. Continua neste caminho!</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.excellent') }} />
                                                             )}
                                                             {progressScore >= 40 && progressScore < 70 && (
-                                                                <p>👍 <strong>Progresso moderado.</strong> Algumas áreas melhoraram, outras mantiveram-se estáveis. Identifica o que funcionou nas áreas positivas.</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.moderate') }} />
                                                             )}
                                                             {progressScore < 40 && (
-                                                                <p>💪 <strong>Momento desafiante.</strong> Os dados mostram dificuldades em várias áreas. Lembra-te: recaídas fazem parte da recuperação. Foca-te em pequenas vitórias.</p>
+                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.challenging') }} />
                                                             )}
                                                             <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                <p className="text-xs font-medium mb-1">Áreas com maior melhoria:</p>
+                                                                <p className="text-xs font-medium mb-1">{t('patterns.progress.improvingAreas')}</p>
                                                                 <ul className="text-xs space-y-1">
                                                                     {Object.entries(progressData)
                                                                         .filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable')
@@ -1866,13 +1953,13 @@ export function PatternsView({
                                                                             <li key={i}>✅ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
                                                                         ))}
                                                                     {Object.entries(progressData).filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable').length === 0 && (
-                                                                        <li className="text-gray-500 italic">Nenhuma melhoria significativa detetada (mudanças &lt;5%)</li>
+                                                                        <li className="text-gray-500 italic">{t('patterns.progress.noImprovement')}</li>
                                                                     )}
                                                                 </ul>
                                                             </div>
                                                             {Object.entries(progressData).filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew).length > 0 && (
                                                                 <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                    <p className="text-xs font-medium mb-1">Áreas que precisam de atenção:</p>
+                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.attentionAreas')}</p>
                                                                     <ul className="text-xs space-y-1">
                                                                         {Object.entries(progressData)
                                                                             .filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew)
@@ -1915,7 +2002,7 @@ export function PatternsView({
 
                                             // Calculate byWeekday
                                             const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-                                            const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                            const weekdayNames = t('analyses.dayNames', { returnObjects: true });
                                             filteredConsumptions.forEach(c => {
                                                 const day = new Date(c.timestamp).getDay();
                                                 byWeekday[day]++;
@@ -1925,9 +2012,9 @@ export function PatternsView({
                                         <div className="space-y-4">
                                             {/* Por horário */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🕐 Consumo por Horário</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byHour')}</h3>
                                                 {Object.keys(byHour).length === 0 ? (
-                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
+                                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>
                                                 ) : (() => {
                                                     const totalHour = Object.values(byHour).reduce((a, b) => a + b, 0);
 
@@ -1993,7 +2080,7 @@ export function PatternsView({
 
                                                             {/* Legenda */}
                                                             <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + 'text-gray-400 border-gray-700'}>
-                                                                <span>💡 Intensidade de cor = frequência de consumos</span>
+                                                                <span>{t('patterns.freq.intensityLegend')}</span>
                                                             </div>
                                                         </div>
                                                     );
@@ -2002,10 +2089,10 @@ export function PatternsView({
 
                                             {/* Por período do dia */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>🌅 Por Período do Dia</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byPeriod')}</h3>
                                                 {(() => {
                                                     const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
-                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>;
+                                                    if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>;
 
                                                     const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
                                                     const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
@@ -2016,28 +2103,28 @@ export function PatternsView({
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                             <div className={('bg-yellow-900/30 border-yellow-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌅</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Manhã</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.manha')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>6h-12h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-yellow-400'}>{manhaPercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.manha}x</div>
                                                             </div>
                                                             <div className={('bg-orange-900/30 border-orange-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">☀️</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Tarde</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.tarde')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>12h-18h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-orange-400'}>{tardePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.tarde}x</div>
                                                             </div>
                                                             <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌙</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Noite</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.noite')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>18h-24h</div>
                                                                 <div className={'text-xl font-bold ' + ('text-indigo-400')}>{noitePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.noite}x</div>
                                                             </div>
                                                             <div className={('bg-purple-900/30 border-purple-700/50') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">⭐</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>Madrugada</div>
+                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.madrugada')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>0h-6h</div>
                                                                 <div className={'text-xl font-bold ' + 'text-purple-400'}>{madrugadaPercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.madrugada}x</div>
@@ -2049,10 +2136,10 @@ export function PatternsView({
 
                                             {/* Por dia da semana */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>📅 Por Dia da Semana</h3>
+                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byWeekday')}</h3>
                                                 <div className="space-y-3">
                                                     {Object.values(byWeekday).every(v => v === 0) ? (
-                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>Sem dados</div>
+                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>
                                                     ) : (() => {
                                                         const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
                                                         const weekdayEntries = Object.entries(byWeekday).filter(([_, count]) => count > 0);
@@ -2093,9 +2180,9 @@ export function PatternsView({
                                                                 {/* Padrão Semanal */}
                                                                 {weekdayEntries.length > 1 && (
                                                                     <div className={'mt-4 pt-3 border-t text-xs ' + ('border-gray-700 text-gray-400')}>
-                                                                        <span className={'font-semibold ' + 'text-red-400'}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: dia com mais consumo ({maxEntry[1]}x, {Math.round((maxEntry[1] / totalWeekday) * 100)}%)
+                                                                        <span className={'font-semibold ' + 'text-red-400'}>🔴 {weekdayNames[parseInt(maxEntry[0])]}</span>: {i18n.language === 'en' ? `highest-use day (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)` : `dia com mais consumo (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)`}
                                                                         {' • '}
-                                                                        <span className={'font-semibold ' + 'text-green-400'}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: dia com menos consumo ({minEntry[1]}x, {Math.round((minEntry[1] / totalWeekday) * 100)}%)
+                                                                        <span className={'font-semibold ' + 'text-green-400'}>🟢 {weekdayNames[parseInt(minEntry[0])]}</span>: {i18n.language === 'en' ? `lowest-use day (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)` : `dia com menos consumo (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)`}
                                                                     </div>
                                                                 )}
                                                             </>
@@ -2371,7 +2458,7 @@ export function PatternsView({
                                                     {(() => {
                                                         // Usar APENAS dailyLogs.mg (dosagens diárias precisas)
                                                         // NÃO usar cycles.mg porque representa dosagem total do ciclo (pode ser vários dias)
-                                                        const dailyDosageRecords = filteredDailyLogs.filter(log => log.mg && log.mg > 0);
+                                                        const dailyDosageRecords = filteredDailyLogs.filter(log => log.mg != null);
 
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (

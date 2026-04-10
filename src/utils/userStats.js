@@ -20,46 +20,39 @@ import i18n from '../i18n';
  * Calcular streak (dias consecutivos sem consumo)
  * Recebe consumptions já desencriptados e ordenados
  */
-export const calculateStreak = (consumptions) => {
-  if (!consumptions || consumptions.length === 0) {
-    return 0;
-  }
+// calculateStreak accepts any mix of items (consumptions, wellbeingLogs, thoughts, etc.)
+export const calculateStreak = (allItems) => {
+  if (!allItems || allItems.length === 0) return 0;
 
-  // Ordenar por timestamp desc (mais recente primeiro)
-  const sorted = [...consumptions].sort((a, b) => {
-    const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
-    const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
-    return timeB - timeA;
-  });
+  // Extract unique date strings (YYYY-MM-DD), sorted desc
+  const uniqueDates = [...new Set(allItems.map(item => {
+    const raw = item.date || item.timestamp || item.createdAt;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d) ? null : d.toISOString().split('T')[0];
+  }).filter(Boolean))].sort().reverse();
+
+  if (uniqueDates.length === 0) return 0;
 
   const now = new Date();
-  const msPerDay = 24 * 60 * 60 * 1000;
+  now.setHours(0, 0, 0, 0);
+  const todayStr = now.toISOString().split('T')[0];
+  const yesterdayStr = new Date(now - 86400000).toISOString().split('T')[0];
+
+  // Streak only active if most recent date is today or yesterday
+  if (uniqueDates[0] !== todayStr && uniqueDates[0] !== yesterdayStr) return 0;
 
   let streak = 0;
-  let expectedDate = new Date(now);
-  expectedDate.setHours(0, 0, 0, 0);
+  let expectedDate = uniqueDates[0];
 
-  for (const consumption of sorted) {
-    const consumptionDate = new Date(consumption.timestamp || consumption.createdAt);
-    consumptionDate.setHours(0, 0, 0, 0);
-
-    const daysDiff = Math.floor((expectedDate - consumptionDate) / msPerDay);
-
-    if (daysDiff < 0) {
-      // Consumo futuro, ignorar
-      continue;
-    } else if (daysDiff === 0) {
-      // Mesmo dia esperado, continua streak
+  for (const date of uniqueDates) {
+    if (date === expectedDate) {
       streak++;
-      expectedDate.setDate(expectedDate.getDate() - 1);
-    } else if (daysDiff === 1) {
-      // Dia seguinte esperado, continua streak
-      streak++;
-      expectedDate = new Date(consumptionDate);
-      expectedDate.setDate(expectedDate.getDate() - 1);
+      const d = new Date(expectedDate);
+      d.setDate(d.getDate() - 1);
+      expectedDate = d.toISOString().split('T')[0];
     } else {
-      // Gap maior que 1 dia, streak quebrado
-      break;
+      break; // gap found
     }
   }
 
@@ -73,12 +66,22 @@ export const calculateStreak = (consumptions) => {
  * @param {Array} dailyLogs - Array de dailyLogs desencriptados (opcional - lê da DB se não passado)
  * @param {Array} goals - Array de goals desencriptados (opcional - lê da DB se não passado)
  */
-export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null) => {
+export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null) => {
   try {
+    // Calcular streak com todas as fontes de atividade (independente de consumptions)
+    const allActivityItems = [
+      ...(consumptions || []),
+      ...(dailyLogs || []),
+      ...(wellbeingLogs || []),
+      ...(thoughts || []),
+      ...(reflections || []),
+    ];
+    const streak = calculateStreak(allActivityItems);
+
     if (!consumptions || consumptions.length === 0) {
-      // Sem dados, guardar stats vazias
+      // Sem consumptions: guardar apenas streak (preservar valor correto)
       await db.metadata.put({ key: 'userStats', value: {
-        streak: 0,
+        streak,
         lastConsumptionTime: null,
         totalConsumptions: 0,
         last7DaysCount: 0,
@@ -99,9 +102,6 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     if (cycles === null) cycles = [];
     if (dailyLogs === null) dailyLogs = [];
     if (goals === null) goals = previousStats.goals || [];
-
-    // Calcular streak
-    const streak = calculateStreak(consumptions);
 
     // Último consumo + intervalo
     const sorted = [...consumptions].sort((a, b) => {

@@ -2,14 +2,7 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
-    "close": "Close",
-    "clear": "Clear",
     "error": "Error",
-    "loading": "Loading...",
-    "back": "Back",
-    "optional": "optional",
-    "notes": "Notes",
-    "notesOptional": "Notes (optional)",
     "day_one": "day",
     "day_other": "days"
   },
@@ -69,7 +62,6 @@
     "goals": "Goals",
     "today": "Today",
     "avg7days": "7-day avg",
-    "timesUnit": "x",
     "mgPerDay": "mg/day",
     "strategiesTitle": "💡 Strategies for Today",
     "strategiesBasedOnTriggers": "Based on your identified triggers",
@@ -93,8 +85,6 @@
     "lowSleep": "Sleep alert: {{hours}}h",
     "highRisk": "High risk today: {{hours}}h sleep + low mood ({{mood}}/10)",
     "highRiskDesc": "75% chance of a challenging day. Consider preventive strategies.",
-    "moderateRiskSleep": "⚡ Heads up: short sleep ({{hours}}h) yesterday",
-    "moderateRiskMood": "⚡ Heads up: low mood ({{mood}}/10) yesterday",
     "moderateRiskDesc": "Moderate risk. Plan your day well.",
     "goodBedtime": "Good! Bedtime: {{time}}",
     "lateBedtime": "Late bedtime! {{time}}",
@@ -121,32 +111,13 @@
     "lastSync": "Last sync:",
     "syncing": "Syncing...",
     "syncNow": "Sync Now",
-    "syncNote": "💡 Note: New data is automatically sent to the cloud. Use this button to receive data from other devices.",
-    "forceSyncNow": "Force Full Sync",
-    "forceSyncNote": "Fetches all data from the server, ignoring sync history. Use when normal sync fails.",
-    "forceSyncDone": "Synced: {{count}} documents",
-    "syncAlreadyDone": "Already in sync",
-    "appUpdate": "App Update",
-    "appUpdateDescription": "If the app is outdated or has bugs after an update, force a full refresh.",
-    "installApp": "📲 Install App",
-    "forceUpdate": "🔄 Force Update",
-    "forceUpdateWarning": "⚠️ Warning: This button clears the cache and reloads the app. Use only if the app has problems after an update.",
-    "pwaNote": "💡 PWA Installation: The \"📲 Install App\" button only appears when the browser allows it. On mobile/tablet it always works. On PC/Desktop, Chrome rarely allows installation (browser limitation). The app works fine in the browser without installing.",
-    "data": "Data",
-    "dataDescription": "Export ALL your data (consumptions, cycles, well-being, thoughts, reflections, goals).",
-    "backupJSON": "💾 Full Backup (JSON)",
-    "exportCSV": "📊 Export to Excel (CSV)",
-    "maintenance": "Database Maintenance",
-    "maintenanceDescription": "Remove corrupted items (\"zombies\") that cannot be decrypted. These items take up space and slow the app down.",
-    "scanning": "Scanning...",
-    "scanZombies": "🔍 Scan for Corrupted Items",
-    "cleanZombies": "🧹 Clean Corrupted Items",
-    "cleanWarning": "⚠️ Warning: Cleanup is PERMANENT and cannot be undone. Only CORRUPTED items (that fail decryption) are deleted.",
-    "zombieDetails": "📊 Details:",
-    "notifications": "Notifications",
-    "notificationsDescription": "Receive reminders to log well-being daily (at 6pm).",
-    "notificationsEnabled": "Notifications enabled",
-    "enableNotifications": "Enable Notifications",
+    "syncRecords": "✅ {{count}} records synced",
+    "syncUpToDate": "✅ Everything up to date",
+    "exportTitle": "Export data",
+    "exportDescription": "Generate a report to share with healthcare professionals or save your data.",
+    "exportButton": "📤 Export / Generate PDF or CSV Report",
+    "backupJSONButton": "💾 Full backup (JSON)",
+    "backupJSONDescription": "The JSON backup contains all raw data. Store it in a safe folder — it allows you to recover everything if needed.",
     "legal": "Legal & Ethics",
     "license": "License",
     "terms": "Terms of Use",
@@ -177,8 +148,8 @@
       "moodLabel": "Mood: {{value}}/10",
       "energyLabel": "Energy: {{value}}/10",
       "selfcareLabel": "Self-care today",
-      "water": "💧 Drank enough water",
-      "rest": "😴 Got enough rest",
+      "water": "Water (glasses)",
+      "rest": "Physical exercise",
       "social": "👥 Had social contact",
       "food": "🍽️ Ate nutritious meals",
       "notesLabel": "Notes (optional)",
@@ -256,23 +227,6 @@
         "hora": "hour"
       }
     }
-  },
-  "triggers": {
-    "Stress": "Stress",
-    "Ansiedade": "Anxiety",
-    "Solidão": "Loneliness",
-    "Festa": "Party",
-    "Trabalho": "Work",
-    "Família": "Family",
-    "Hábito": "Habit",
-    "Tristeza": "Sadness",
-    "Dependência": "Dependency",
-    "Tédio": "Boredom",
-    "Cansaço": "Fatigue",
-    "Dor física": "Physical pain",
-    "Insónia": "Insomnia",
-    "Conflito": "Conflict",
-    "Celebração": "Celebration"
   },
   "messages": {
     "consumptionSaved": "✓ Consumption logged",
@@ -378,17 +332,6 @@
     "Self-care doesn't have to be perfect to be valid.",
     "You are learning, and that's already incredible."
   ],
-  "copingStrategies": {
-    "Stress": ["4-7-8 breathing: inhale 4s, hold 7s, exhale 8s", "Quick 10-minute walk"],
-    "Ansiedade": ["5-4-3-2-1 technique", "Slow stretching"],
-    "Solidão": ["Send a message to a friend", "Go to a public space"],
-    "Festa": ["Prepare a harm reduction plan", "Bring water and snacks"],
-    "Trabalho": ["Take 5-min breaks every hour", "Priority list"],
-    "Família": ["Set clear boundaries", "Communicate needs calmly"],
-    "Hábito": ["Break the routine", "15-minute technique"],
-    "Tristeza": ["Allow yourself to cry without judgment", "Write what you feel"],
-    "Dependência": ["Acknowledge without shame", "Call a support line"]
-  },
   "copingStrategiesDetailed": {
     "Stress": [
       "4-7-8 breathing: inhale 4s, hold 7s, exhale 8s. Repeat 4x when you feel tension rising",
@@ -458,13 +401,175 @@
       "madrugada": "Late night"
     },
     "todayForecast": "Today's Forecast",
-    "risk": "Risk",
     "identified": "Identified Patterns",
     "doseDistribution": "Dose Distribution",
     "moderateRisk": "Moderate risk. Keep an eye on your patterns.",
     "patternInsight": "Pattern: {{percent}}% of uses occur in the {{part}}. Prepare strategies for that period. 🎯",
-    "day_one": "day",
-    "day_other": "days"
+    "dashboard": {
+      "summary": "You had {{count}} {{unit}} (avg {{avg}}/day).{{interval}}",
+      "summaryInterval": " Avg interval: {{avg}}h.",
+      "metricTotal": "Total",
+      "metricAvgDay": "Avg/day",
+      "metricAvgInterval": "Avg interval"
+    },
+    "trend": {
+      "title": "📈 Trend (30 days)",
+      "increasing": "Escalation detected:",
+      "increasingDetail": "📊 Your frequency is increasing by {{slope}} uses/day. At this rate, in 10 days you could be at ~{{projection}} uses/day.",
+      "decreasing": "Reduction in progress:",
+      "decreasingDetail": "📊 You're reducing by {{slope}} uses/day. Keep it up! 10-day projection: ~{{projection}} uses/day.",
+      "stable": "Stable pattern:",
+      "stableDetail": "📊 Your frequency is consistent, no major changes in the last 30 days."
+    },
+    "riskLevel": {
+      "high": "High",
+      "moderate": "Moderate",
+      "low": "Low",
+      "label": "Risk {{level}}",
+      "factors": "Analysed factors:",
+      "msgHigh": "💡 High-risk day. Prepare preventive strategies: alternatives list, extra self-care, avoid triggers.",
+      "msgLow": "💡 Favourable conditions for reduction. Use today to consolidate progress!",
+      "noSelfCare": "No self-care recorded yesterday (0/4 areas)",
+      "minSelfCare": "Minimal self-care: {{items}}",
+      "goodSelfCare": "Good self-care yesterday ({{score}}/4): {{items}}",
+      "highDayOfWeek": "{{day}} tends to be a high-use day",
+      "trendIncreasing": "Increasing trend over last 7 days"
+    },
+    "freq": {
+      "title": "📈 Frequency Evolution",
+      "desc": "Number of uses per day over time. Colours indicate intensity.",
+      "today": "Today",
+      "intensityLegend": "💡 Colour intensity = use frequency"
+    },
+    "goals": {
+      "title": "🎯 Goals",
+      "totalCompliances": "Total Achieved",
+      "times": "times",
+      "metAchieved": "{{achieved}}/{{total}} goals met",
+      "avgPerDay": "Daily Average",
+      "avgPerDayLast": "over the last {{days}} days",
+      "breakdown": "Goal Details",
+      "target": "Target:",
+      "types": {
+        "reduce_frequency": "🔢 Reduce frequency",
+        "reduce_quantity": "⚖️ Reduce quantity",
+        "limit_last": "🌙 Limit last use",
+        "increase_interval": "⏳ Increase interval",
+        "sleep_hours": "😴 Sleep hours",
+        "bedtime_before": "🛏️ Bedtime before"
+      },
+      "explain": {
+        "reduce_frequency": "Days with <{{target}} uses",
+        "reduce_quantity": "Days with <{{target}}mg",
+        "limit_last": "Days with last use before midnight",
+        "increase_interval": "Days with ≥50% intervals >{{target}}h",
+        "sleep_hours": "Nights with ≥{{target}}h sleep",
+        "bedtime_before": "Nights sleeping before {{target}}"
+      }
+    },
+    "progress": {
+      "title": "📈 Temporal Progress Analysis",
+      "comparisons": {
+        "hoje": "Comparing today (so far) vs yesterday (full day)",
+        "semana": "Comparing this week vs last week",
+        "mes": "Comparing this month vs last month",
+        "tudo": "Comparing the last {{days}} days vs the {{days}} days before"
+      },
+      "metricsImproving": "{{count}} of {{total}} metrics improving",
+      "consumption": "💊 Consumption",
+      "usesPerDay": "uses/day",
+      "before": "before:",
+      "wellbeing": "💚 Wellbeing",
+      "hours": "hours",
+      "routines": "🌙 Routines & Self-care",
+      "activitiesPerCycle": "activities/cycle",
+      "emotional": "🧠 Emotional State",
+      "negEmotions": "Negative Emotions",
+      "posEmotions": "Positive Emotions",
+      "ofTotal": "of total",
+      "ofEmotions": "{{count}} of {{total}} emotions",
+      "wasPercent": "was {{val}}%",
+      "top3Emotions": "Top 3 Emotions",
+      "selfCare": "💚 Self-care Analysis",
+      "overallRate": "Overall self-care rate",
+      "completeCycles": "🎯 Complete cycles (4 indicators)",
+      "completeCyclesDetail": "{{count}} of {{total}} cycles with all indicators",
+      "summaryTitle": "💡 Progress Summary",
+      "excellent": "🎉 <strong>Excellent progress!</strong> Most metrics show clear improvement. Keep it up!",
+      "moderate": "👍 <strong>Moderate progress.</strong> Some areas improved, others stayed stable. Identify what worked in the positive areas.",
+      "challenging": "💪 <strong>Challenging moment.</strong> Data shows difficulties in several areas. Remember: setbacks are part of recovery. Focus on small wins.",
+      "improvingAreas": "Areas with most improvement:",
+      "attentionAreas": "Areas that need attention:",
+      "noImprovement": "No significant improvement detected (changes <5%)",
+      "freqLabel": "Average daily frequency",
+      "dosageLabel": "Average daily dosage",
+      "sleepLabel": "Average sleep hours",
+      "moodLabel": "Average mood",
+      "energyLabel": "Average energy",
+      "bedtimeConsistLabel": "Bedtime consistency",
+      "avgBedtimeLabel": "Average bedtime",
+      "selfCareLabel": "Self-care activities per day",
+      "selfCareOverallLabel": "Overall self-care rate",
+      "negEmotionsLabel": "Negative emotions (% of total)",
+      "posEmotionsLabel": "Positive emotions (% of total)",
+      "bedtimeConsist": {
+        "veryConsistent": "Very consistent",
+        "consistent": "Consistent",
+        "variable": "Variable",
+        "variation": "variation: ±{{val}}h",
+        "msgVeryConsistent": "🎯 You go to bed at very similar times (variation <30min). Excellent! Your body learns to prepare for sleep at the same time, improving sleep quality and making it easier to fall asleep.",
+        "msgConsistent": "⚖️ Moderate variation (±{{val}}h in bedtime). Some consistency, but you can improve. Try to set a 30-min window (e.g. 11pm-11:30pm) for bedtime, even on weekends.",
+        "msgVariable": "🌪️ Very variable bedtimes (±{{val}}h difference). This confuses the circadian rhythm — the body doesn't know when to prepare for sleep. Result: harder to fall asleep, less deep sleep. Starting by reducing to ±1h already helps."
+      },
+      "avgBedtime": {
+        "later": "Later",
+        "earlier": "Earlier",
+        "wasBefore": "was: {{time}}",
+        "lateNight": "Heads up: going to bed very late (early morning) can affect sleep quality.",
+        "goodWindow": "Good bedtime window! (10pm-midnight)",
+        "morning": "Sleeping in the morning may indicate cycle inversion."
+      }
+    },
+    "temporal": {
+      "byHour": "🕐 Use by Hour",
+      "noData": "No data",
+      "byPeriod": "🌅 By Time of Day",
+      "manha": "Morning",
+      "tarde": "Afternoon",
+      "noite": "Evening",
+      "madrugada": "Late night",
+      "byWeekday": "📅 By Day of Week"
+    },
+    "areas": {
+      "water": "Hydration",
+      "food": "Nutrition",
+      "rest": "Exercise",
+      "social": "Social"
+    },
+    "bestDay": {
+      "single": "On this day you had {{date}} with {{count}}.",
+      "multi": "Your best day was {{date}} with {{count}}.",
+      "oneUse": "just 1 use",
+      "multiUse": "{{count}} uses",
+      "identifyGood": "Identify what worked! ⭐",
+      "keepImproving": "Keep improving! 💪"
+    }
+  },
+  "firebase": {
+    "createNew": "Create new account",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Minimum 6 characters",
+    "signingIn": "Signing in...",
+    "creating": "Creating account...",
+    "signIn": "Sign In",
+    "infoTitle": "💜 Your personal account",
+    "infoText1": "Create an email and password to access your data on any device. You can use a made-up email if you want (e.g. myapp@email.com).",
+    "infoText2": "After login, you'll create a 4-digit PIN for extra security.",
+    "errUserNotFound": "Email not found. Create an account first.",
+    "errWrongPassword": "Incorrect password.",
+    "errEmailInUse": "This email is already registered. Log in instead.",
+    "errWeakPassword": "Weak password (minimum 6 characters).",
+    "errInvalidCred": "Incorrect email or password."
   },
   "history": {
     "title": "History",
@@ -489,59 +594,20 @@
     "triggers": "Triggers:",
     "dailyUse": "Daily use:"
   },
-  "analyses": {
-    "title": "Analyses",
-    "period": "Analysis period",
-    "periods": {
-      "hoje": "Today",
-      "semana": "Week",
-      "mes": "Month",
-      "tudo": "All"
-    },
-    "tabs": {
-      "structural": "📊 Structural",
-      "correlations": "🔗 Correlations",
-      "reflection": "💬 General Reflection"
-    },
-    "generalReflection": "General Reflection",
-    "correlationTitle": "Logs → Wellbeing Correlation",
-    "hourlyDist": "⏰ Hourly Distribution",
-    "weeklyDist": "📅 Weekly Distribution",
-    "intervals": "⏱️ Intervals Between Uses",
-    "noIntervals": "No intervals (need ≥2 logs)",
-    "noData": "No data",
-    "noCorrelations": "Not enough data for correlations.",
-    "dayNames": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
-  },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",
     "Hydration + snack: brain functions better, decisions are better, urges more manageable",
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
   ],
-  "educationalResources": [
-    {
-      "title": "What is Harm Reduction?",
-      "content": "HR is a set of practical strategies to minimize risks of drug use, without requiring abstinence."
-    },
-    {
-      "title": "Hydration & Rest",
-      "content": "Stimulants dehydrate. Drink water regularly. Sleep is essential for recovery."
-    },
-    {
-      "title": "Interval Between Uses",
-      "content": "Spacing reduces tolerance and body harm. Ideally >2h between doses."
-    },
-    {
-      "title": "Substance Testing",
-      "content": "Whenever possible, test before using. CheckIn (Lisbon), MAPS (Porto)."
-    },
-    {
-      "title": "Warning Signs",
-      "content": "Chest pain, confusion, high temperature = emergency (112)."
-    },
-    {
-      "title": "Tolerance & Breaks",
-      "content": "The body adapts. Breaks help reduce tolerance."
-    }
-  ]
+  "analyses": {
+    "dayNames": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ]
+  }
 }

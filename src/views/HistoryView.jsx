@@ -51,6 +51,10 @@ export function HistoryView({
     setAllItemsToShow,
     openEditConsumption,
     openEditCycle,
+    openEditDailyLog,
+    openEditWellbeingLog,
+    openEditReflection,
+    openEditThought,
     deleteItem,
     handleFillGap
 }) {
@@ -261,10 +265,13 @@ export function HistoryView({
                                                                                 <div className="flex-1">
                                                                                     <div className="font-medium mb-1 text-white">
                                                                                         💊 {(() => {
-                                                                                            // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
                                                                                             const d = safeDate(log.date || log.timestamp);
                                                                                             if (!d) return t('history.invalidDate');
                                                                                             const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                            if (log.timestamp) {
+                                                                                                const ts = safeDate(log.timestamp);
+                                                                                                if (ts) return `${dateStr} - ${ts.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}`;
+                                                                                            }
                                                                                             return dateStr;
                                                                                         })()}
                                                                                     </div>
@@ -286,7 +293,10 @@ export function HistoryView({
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                <div className="flex gap-2 ml-2">
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     );
@@ -346,7 +356,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             {(w.mood || w.energy) && (
                                                                                 <div className="grid grid-cols-2 gap-2 text-sm mb-2">
@@ -427,7 +440,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
@@ -466,27 +482,30 @@ export function HistoryView({
                                                                         </div>
                                                                     );
                                                                 } else {
-                                                                    const t = item.data;
-                                                                    const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
-                                                                    const isExpanded = expandedAnalysis === `thought-${t.id}`;
+                                                                    const thought = item.data;
+                                                                    const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;
+                                                                    const isExpanded = expandedAnalysis === `thought-${thought.id}`;
                                                                     return (
-                                                                        <div key={`t-${t.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`t-${thought.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
-                                                                                        const d = safeDate(t.timestamp || t.date);
+                                                                                        const d = safeDate(thought.timestamp || thought.date);
                                                                                         if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="text-sm text-gray-300">{t.content}</div>
+                                                                            <div className="text-sm text-gray-300">{thought.content}</div>
                                                                             {analysis && (
                                                                                 <>
-                                                                                    <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
+                                                                                    <button onClick={() => toggleAnalysis(`thought-${thought.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
                                                                                         {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
@@ -562,7 +581,10 @@ export function HistoryView({
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
@@ -601,27 +623,30 @@ export function HistoryView({
                                                                         </div>
                                                                     );
                                                                 } else {
-                                                                    const t = item.data;
-                                                                    const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
-                                                                    const isExpanded = expandedAnalysis === `thought-${t.id}`;
+                                                                    const thought = item.data;
+                                                                    const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;
+                                                                    const isExpanded = expandedAnalysis === `thought-${thought.id}`;
                                                                     return (
-                                                                        <div key={`t-${t.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`t-${thought.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     {(() => {
-                                                                                        const d = safeDate(t.timestamp || t.date);
+                                                                                        const d = safeDate(thought.timestamp || thought.date);
                                                                                         if (!d) return t('history.invalidDate');
                                                                                         const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
-                                                                                <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                <div className="flex gap-2">
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
                                                                             </div>
-                                                                            <div className="text-sm text-gray-300">{t.content}</div>
+                                                                            <div className="text-sm text-gray-300">{thought.content}</div>
                                                                             {analysis && (
                                                                                 <>
-                                                                                    <button onClick={() => toggleAnalysis(`thought-${t.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
+                                                                                    <button onClick={() => toggleAnalysis(`thought-${thought.id}`)} className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800">
                                                                                         {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
                                                                                     </button>
                                                                                     {isExpanded && (
@@ -746,30 +771,30 @@ export function HistoryView({
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.BookOpen className="w-4 h-4 text-pink-400" /> {t('history.sectionThoughts')} ({filteredThoughts.length})</h3>
                                                         <div className="space-y-4">
-                                                            {filteredThoughts.slice(0, thoughtsToShow).map(t => {
-                                                                const analysis = t.content ? getCachedSentimentAnalysis(t.content) : null;
-                                                                const isExpanded = expandedAnalysis === `thought-${t.id}`;
+                                                            {filteredThoughts.slice(0, thoughtsToShow).map(thought => {
+                                                                const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;
+                                                                const isExpanded = expandedAnalysis === `thought-${thought.id}`;
 
                                                                 return (
-                                                                <div key={t.id} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                <div key={thought.id} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
-                                                                                const d = safeDate(t.timestamp || t.date);
+                                                                                const d = safeDate(thought.timestamp || thought.date);
                                                                                 if (!d) return t('history.invalidDate');
                                                                                 const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                const timeStr = t.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('thoughts', t.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className="text-sm text-gray-300">{t.content}</div>
+                                                                    <div className="text-sm text-gray-300">{thought.content}</div>
 
                                                                     {analysis && (
                                                                         <>
                                                                             <button
-                                                                                onClick={() => toggleAnalysis(`thought-${t.id}`)}
+                                                                                onClick={() => toggleAnalysis(`thought-${thought.id}`)}
                                                                                 className="text-xs mt-2 px-2 py-1 rounded transition-colors bg-pink-800/50 text-pink-300 hover:bg-pink-800"
                                                                             >
                                                                                 {isExpanded ? t('history.hideAnalysis') : t('history.showAnalysis')}
@@ -971,7 +996,10 @@ export function HistoryView({
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
-                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                    <div className="flex gap-2 ml-2">
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                </div>
                                                                                 </div>
                                                                             </div>
                                                                         );

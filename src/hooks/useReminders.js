@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
@@ -11,6 +11,10 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return safeLocalStorage.get('notificationsEnabled', false);
   });
+
+  // Ref to always have fresh dailyLogs in the interval callback (avoids stale closure)
+  const dailyLogsRef = useRef(dailyLogs);
+  useEffect(() => { dailyLogsRef.current = dailyLogs; }, [dailyLogs]);
 
   const dismissReminder = (type) => {
     const today = getTodayKey();
@@ -83,11 +87,28 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         const hour = now.getHours();
         const today = getTodayKey();
 
-        // Only show reminders between 10h and 22h
-        if (hour < 10 || hour > 22) return;
+        // Only show reminders between 8h and 22h
+        if (hour < 8 || hour > 22) return;
 
-        // Check what's missing today (wellbeing, reflection, mg from yesterday)
-        if (hour >= 18 && shouldShowReminder('daily-check')) {
+        const wellbeingAlarmEnabled = safeLocalStorage.get('wellbeingAlarmEnabled', false);
+
+        // Morning check (9h–17h): wellbeing + reflection
+        if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
+          const missing = [];
+          const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+          if (!hasWellbeingToday) missing.push('bem-estar');
+          const hasReflectionToday = reflections.some(r => r.date === today);
+          if (!hasReflectionToday) missing.push('reflexão');
+          if (missing.length > 0) {
+            const message = '🌅 Bom dia! Falta registar: ' + missing.join(', ');
+            showToast(message, 'info');
+            showBrowserNotification('Bom dia - NEP', 'Falta registar: ' + missing.join(', '));
+          }
+          dismissReminder('morning-check');
+        }
+
+        // Evening check (18h): wellbeing, reflection, mg from yesterday
+        if (wellbeingAlarmEnabled && hour >= 18 && shouldShowReminder('daily-check')) {
           const missing = [];
 
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
@@ -96,7 +117,6 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           const hasReflectionToday = reflections.some(r => r.date === today);
           if (!hasReflectionToday) missing.push('reflexão');
 
-          // Calculate yesterday's date
           const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           const hasMgYesterday = dailyLogs.some(d => d.date === yesterday);
           if (!hasMgYesterday) missing.push('mg de ontem');
@@ -105,18 +125,32 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
             const message = '💭 Lembrete: Falta registar: ' + missing.join(', ');
             showToast(message, 'info');
             showBrowserNotification('Lembrete - NEP', 'Falta registar: ' + missing.join(', '));
-            dismissReminder('daily-check');
-          } else {
-            // Se já não falta nada, dismiss também para não mostrar mais hoje
-            dismissReminder('daily-check');
+          }
+          dismissReminder('daily-check');
+        }
+
+        // Dose alarm: fires once per day from configured hour
+        const doseAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
+        const doseAlarmHour = (doseAlarmRaw !== null && doseAlarmRaw !== 'null') ? parseInt(doseAlarmRaw) : null;
+        if (doseAlarmHour !== null && !isNaN(doseAlarmHour) && hour >= doseAlarmHour) {
+          const dismissed = safeLocalStorage.get('reminderDismissed', {});
+          if (dismissed['bag-alarm'] !== today) {
+            const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
+            if (!hasDailyLogToday) {
+              showToast('📊 Lembrete: Regista a tua dose diária!', 'info');
+              showBrowserNotification('Lembrete - NEP', 'Regista a tua dose diária!');
+            }
+            dismissReminder('bag-alarm');
           }
         }
+
       } catch (e) {
         logger.error('Error checking reminders:', e);
       }
     };
 
     try {
+      checkReminders(); // Run immediately on mount / data change
       const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
       return () => clearInterval(interval);
     } catch (e) {

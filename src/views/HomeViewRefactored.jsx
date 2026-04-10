@@ -175,14 +175,14 @@ export function HomeViewRefactored({
       </div>
 
       {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
-      <div className="grid grid-cols-3 gap-3">
-        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-4 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-xl mb-1">🌙</div>
-          <div className="text-sm">{t('home.newCycle')}</div>
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-3 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">🌙</div>
+          <div className="text-xs">{t('home.newCycle')}</div>
         </button>
-        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-4 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-xl mb-1">📊</div>
-          <div className="text-sm">{t('home.registerMg')}</div>
+        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-3 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">📊</div>
+          <div className="text-xs">{t('home.registerMg')}</div>
         </button>
         <GradientButton
           onClick={() => setShowGoalModal(true)}

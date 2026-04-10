@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
-import { dbtQuestions as dbtQuestionsDefault, reflectiveQuestions as reflectiveQuestionsDefault, copingStrategies as copingStrategiesDefault, educationalResources as educationalResourcesDefault } from './data/constants';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
@@ -49,6 +48,7 @@ const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
+const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
 function HarmReductionTracker() {
             const APP_VERSION = '1.5.3';
@@ -171,17 +171,25 @@ function AuthenticatedApp() {
 
             // Legal Modal State
             const [showLegalModal, setShowLegalModal] = useState(false);
+            const [showExportModal, setShowExportModal] = useState(false);
             const [legalDocType, setLegalDocType] = useState(null); // 'license', 'terms', 'governance'
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
             const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
             const [thoughtDatetime, setThoughtDatetime] = useState('');
+            const [thoughtInitialContent, setThoughtInitialContent] = useState('');
+
+            // Editing states for items that don't use UIContext
+            const [editingDailyLog, setEditingDailyLog] = useState(null);
+            const [editingWellbeingLog, setEditingWellbeingLog] = useState(null);
+            const [editingReflection, setEditingReflection] = useState(null);
+            const [editingThought, setEditingThought] = useState(null);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
             const getCurrentCycleIndex = () => {
@@ -260,7 +268,6 @@ function AuthenticatedApp() {
                 try {
                     await deleteItemFromContext(collectionName, id);
                     showToast(t('messages.itemDeleted'), 'success');
-                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast(t('messages.itemDeleteError'), 'error');
                     logger.error('Erro ao apagar:', error);
@@ -270,6 +277,46 @@ function AuthenticatedApp() {
             const openEditConsumption = (consumption) => { setEditingConsumption({...consumption}); setShowEditConsumptionModal(true); };
 
             const openEditCycle = (cycle) => { setEditingCycle({...cycle}); setShowCycleModal(true); };
+
+            const openEditDailyLog = (log) => {
+                setEditingDailyLog({...log});
+                const dateStr = log.date || (log.timestamp ? log.timestamp.split('T')[0] : getTodayKey());
+                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr });
+                setShowDailyLogModal(true);
+            };
+
+            const openEditWellbeingLog = (w) => {
+                setEditingWellbeingLog({...w});
+                const datetime = w.timestamp ? w.timestamp.slice(0, 16) : (w.date ? w.date + 'T12:00' : '');
+                setWellbeingForm({
+                    mood: w.mood != null ? String(w.mood) : '',
+                    energy: w.energy != null ? String(w.energy) : '',
+                    waterGlasses: w.waterGlasses || 0,
+                    exercise: w.exercise || '',
+                    social: w.social || false,
+                    food: w.food || false,
+                    emotions: w.emotions || [],
+                    notes: w.notes || '',
+                    datetime
+                });
+                setShowWellbeingModal(true);
+            };
+
+            const openEditReflection = (r) => {
+                setEditingReflection({...r});
+                setReflectionAnswer(r.answer || '');
+                const datetime = r.timestamp ? r.timestamp.slice(0, 16) : (r.date ? r.date + 'T12:00' : '');
+                setReflectionDatetime(datetime);
+                setShowReflectionModal(true);
+            };
+
+            const openEditThought = (thought) => {
+                setEditingThought({...thought});
+                setThoughtInitialContent(thought.content || '');
+                const datetime = thought.timestamp ? thought.timestamp.slice(0, 16) : (thought.date ? thought.date + 'T12:00' : '');
+                setThoughtDatetime(datetime);
+                setShowThoughtsModal(true);
+            };
 
             // Função para preencher gaps - pré-preenche formulários com a data selecionada e abre o modal correspondente
             const handleFillGap = (type, dateKey) => {
@@ -298,7 +345,7 @@ function AuthenticatedApp() {
                         // Para wellbeing (estado), o datetime deve ser completo
                         const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
                         const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
-                        setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
                         setShowWellbeingModal(true);
                         break;
 
@@ -339,7 +386,6 @@ function AuthenticatedApp() {
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast(t('messages.consumptionEdited'), 'success');
-                    setTimeout(() => syncService.pushToFirebase(), 1000);
                 } catch (error) {
                     showToast(t('messages.consumptionEditError'), 'error');
                     logger.error('Erro ao editar:', error);
@@ -348,6 +394,19 @@ function AuthenticatedApp() {
 
             const submitDailyLog = async () => {
                 try {
+                    if (editingDailyLog) {
+                        await updateItem('dailyLogs', editingDailyLog.id, {
+                            mg: dailyForm.mg !== '' ? parseInt(dailyForm.mg) : null,
+                            notes: dailyForm.notes,
+                            date: dailyForm.date
+                        });
+                        setEditingDailyLog(null);
+                        setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
+                        setShowDailyLogModal(false);
+                        showToast(t('messages.dailyLogSaved'), 'success');
+                        return;
+                    }
+
                     // Usar data escolhida ou hoje
                     const selectedDate = dailyForm.date || getTodayKey();
 
@@ -467,25 +526,30 @@ function AuthenticatedApp() {
                         date = `${year}-${month}-${day}`;
                     }
 
-                    const item = {
-                        id: genId(),
+                    const updatedFields = {
                         date: date,
                         timestamp: timestamp,
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
-                        water: wellbeingForm.water,
-                        rest: wellbeingForm.rest,
+                        waterGlasses: wellbeingForm.waterGlasses,
+                        exercise: wellbeingForm.exercise,
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
                         notes: sanitizeText(wellbeingForm.notes)
                     };
-                    await addWellbeingLog(item);
-                    setWellbeingForm({ mood: '', energy: '', water: false, rest: false, social: false, food: false, emotions: [], notes: '', datetime: '' });
+
+                    if (editingWellbeingLog) {
+                        await updateItem('wellbeingLogs', editingWellbeingLog.id, updatedFields);
+                        setEditingWellbeingLog(null);
+                    } else {
+                        await addWellbeingLog({ id: genId(), ...updatedFields });
+                    }
+                    setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
-                    if (dismissReminder) {
+                    if (dismissReminder && !editingWellbeingLog) {
                         const dismissed = JSON.parse(localStorage.getItem('reminderDismissed') || '{}');
                         delete dismissed['wellbeing-consumption'];
                         localStorage.setItem('reminderDismissed', JSON.stringify(dismissed));
@@ -533,8 +597,8 @@ function AuthenticatedApp() {
                         timestamp: timestamp,
                         mood: null,
                         energy: null,
-                        water: false,
-                        rest: false,
+                        waterGlasses: 0,
+                        exercise: '',
                         social: false,
                         food: false,
                         emotions: emotionsForm.emotions,
@@ -563,8 +627,13 @@ function AuthenticatedApp() {
                         dateKey = getTodayKey();
                     }
 
-                    const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
-                    await addReflection(item);
+                    if (editingReflection) {
+                        await updateItem('reflections', editingReflection.id, { date: dateKey, timestamp, answer: reflectionAnswer });
+                        setEditingReflection(null);
+                    } else {
+                        const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
+                        await addReflection(item);
+                    }
                     setReflectionAnswer('');
                     setReflectionDatetime('');
                     setShowReflectionModal(false);
@@ -595,13 +664,14 @@ function AuthenticatedApp() {
                         dateKey = getTodayKey();
                     }
 
-                    const item = {
-                        id: genId(),
-                        date: dateKey,
-                        timestamp,
-                        content: sanitizeText(thoughtsText)
-                    };
-                    await addThought(item);
+                    if (editingThought) {
+                        await updateItem('thoughts', editingThought.id, { date: dateKey, timestamp, content: sanitizeText(thoughtsText) });
+                        setEditingThought(null);
+                        setThoughtInitialContent('');
+                    } else {
+                        const item = { id: genId(), date: dateKey, timestamp, content: sanitizeText(thoughtsText) };
+                        await addThought(item);
+                    }
                     setThoughtDatetime('');
                     setShowThoughtsModal(false);
                     showToast(t('messages.thoughtSaved'), 'success');
@@ -1005,7 +1075,7 @@ return {
                 // Check wellbeing completion
                 if (wellbeingLogs.length > 0) {
                     const recent = wellbeingLogs[0];
-                    const completedItems = [recent.water, recent.rest, recent.social, recent.food].filter(Boolean).length;
+                    const completedItems = [(recent.waterGlasses > 0 || recent.water), (recent.exercise || recent.rest), recent.social, recent.food].filter(Boolean).length;
                     if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 
@@ -1177,6 +1247,10 @@ return {
                                         setAllItemsToShow={setAllItemsToShow}
                                         openEditConsumption={openEditConsumption}
                                         openEditCycle={openEditCycle}
+                                        openEditDailyLog={openEditDailyLog}
+                                        openEditWellbeingLog={openEditWellbeingLog}
+                                        openEditReflection={openEditReflection}
+                                        openEditThought={openEditThought}
                                         deleteItem={deleteItem}
                                         handleFillGap={handleFillGap}
                                     />
@@ -1187,14 +1261,13 @@ return {
                                     <SettingsView
                                         user={user}
                                         handleLogout={handleLogout}
-                                        exportToCSV={exportToCSV}
-                                        exportToJSON={exportToJSON}
                                         notificationsEnabled={notificationsEnabled}
                                         requestNotificationPermission={requestNotificationPermission}
-                                        manualSync={manualSync}
-                                        forcePushAll={forcePushAll}
+                                        onForceSync={forcePushAll}
                                         isSyncing={isSyncing}
                                         lastSyncTime={lastSyncTime}
+                                        onOpenExport={() => setShowExportModal(true)}
+                                        onExportJSON={exportToJSON}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
@@ -1209,7 +1282,7 @@ return {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => setShowDailyLogModal(false)}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
@@ -1219,11 +1292,12 @@ return {
                         <Suspense fallback={null}>
                             <WellbeingModal
                                 isOpen={showWellbeingModal}
-                                onClose={() => setShowWellbeingModal(false)}
+                                onClose={() => { setShowWellbeingModal(false); setEditingWellbeingLog(null); }}
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
                                 wellbeingLogs={wellbeingLogs}
+                                editingId={editingWellbeingLog ? editingWellbeingLog.id : null}
                             />
                         </Suspense>
 
@@ -1240,8 +1314,8 @@ return {
                         <Suspense fallback={null}>
                             <ReflectionModal
                                 isOpen={showReflectionModal}
-                                onClose={() => setShowReflectionModal(false)}
-                                currentDbtQuestion={currentDbtQuestion}
+                                onClose={() => { setShowReflectionModal(false); setEditingReflection(null); }}
+                                currentDbtQuestion={editingReflection ? editingReflection.question : currentDbtQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
                                 reflectionDatetime={reflectionDatetime}
@@ -1286,10 +1360,11 @@ return {
                         <Suspense fallback={null}>
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
-                                onClose={() => setShowThoughtsModal(false)}
+                                onClose={() => { setShowThoughtsModal(false); setEditingThought(null); setThoughtInitialContent(''); }}
                                 thoughtDatetime={thoughtDatetime}
                                 setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
+                                initialContent={thoughtInitialContent}
                             />
                         </Suspense>
 
@@ -1298,6 +1373,13 @@ return {
                                 isOpen={showLegalModal}
                                 onClose={() => setShowLegalModal(false)}
                                 documentType={legalDocType}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <ExportModal
+                                isOpen={showExportModal}
+                                onClose={() => setShowExportModal(false)}
                             />
                         </Suspense>
 

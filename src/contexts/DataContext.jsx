@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -58,7 +58,8 @@ export const DataProvider = ({ children }) => {
     updateItem,
     deleteItem,
     loadAllCollections,
-    getPendingSyncItems
+    getPendingSyncItems,
+    allDataLoaded,
   } = useLocalData();
 
   // Coping strategies (legacy - vazio por agora)
@@ -70,6 +71,7 @@ export const DataProvider = ({ children }) => {
   // Sync status
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [syncReady, setSyncReady] = useState(false);
 
   // Firebase auth listener
   useEffect(() => {
@@ -120,15 +122,17 @@ export const DataProvider = ({ children }) => {
           await setMetadata('lastFirebaseUID', currentUID);
         }
 
-        // ❌ SYNC INICIAL DESATIVADO
-        // Sync 100% MANUAL - utilizador controla quando sincronizar
-        // (Antes fazia fullSync() aqui no boot, agora não)
+        // 🔄 MIGRAÇÃO: Garantir que todos os dados históricos do Firebase estão em local
+        // Se `syncMigrationV1` não está definido, limpar o lastSyncTimestamp para que
+        // o próximo manualSync faça um pull completo (não incremental) e busque tudo.
+        const migrationDone = await getMetadata('syncMigrationV1');
+        if (!migrationDone) {
+          console.log('[DataContext] 🔄 Migração V1: limpando lastSyncTimestamp...');
+          await setMetadata('lastSyncTimestamp', null);
+          await setMetadata('syncMigrationV1', 'done');
+        }
 
-        // ❌ AUTO-SYNC DESATIVADO (sincronizar só quando utilizador pedir)
-        // syncService.startAutoSync(5);
-
-        // ❌ REALTIME SYNC DESATIVADO (mais rápido + menos bateria)
-        // syncService.startRealtimeSync();
+        setSyncReady(true);
 
       } catch (error) {
         console.error('[DataContext] ❌ Erro ao inicializar sync:', error);
@@ -146,6 +150,30 @@ export const DataProvider = ({ children }) => {
       }
     };
   }, [user, pin, db, getUserSalt, loadAllCollections, firebaseLoading]);
+
+  // Auto-pull quando Dexie está vazio após carregamento completo (ex: novo dispositivo)
+  const autoSyncAttempted = useRef(false);
+  useEffect(() => {
+    if (!allDataLoaded || !syncReady || isSyncing) return;
+    if (autoSyncAttempted.current) return;
+
+    const total = consumptions.length + dailyLogs.length + wellbeingLogs.length +
+                  cycles.length + reflections.length + thoughts.length;
+    if (total > 0) {
+      autoSyncAttempted.current = true; // tem dados, não precisa de auto-pull
+      return;
+    }
+
+    autoSyncAttempted.current = true;
+    console.log('[DataContext] 📥 Dexie vazio após boot — pull automático do Firebase...');
+    setIsSyncing(true);
+    syncService.fullSync({ skipZombies: true, incremental: false })
+      .then(result => {
+        if (result?.pulled > 0 || result?.pushed > 0) return loadAllCollections();
+      })
+      .catch(err => console.warn('[DataContext] Auto-pull falhou:', err.message))
+      .finally(() => setIsSyncing(false));
+  }, [allDataLoaded, syncReady, isSyncing, consumptions, dailyLogs, wellbeingLogs, cycles, reflections, thoughts, loadAllCollections]);
 
   /**
    * CRUD Operations - AUTO-PUSH para Firebase
@@ -277,24 +305,10 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
-      // PUSH: Enviar apenas items pendentes (novos/alterados)
-      console.log('[DataContext] 🔼 PUSH: Enviando items pendentes...');
       await syncService.pushToFirebase();
-
-      // PULL: Receber alterações recentes do Firebase
-      console.log('[DataContext] 🔽 PULL: Recebendo do Firebase...');
-      const result = await syncService.fullSync({
-        skipZombies: true,  // Ignorar items antigos não desencriptáveis
-        incremental: true   // Usar timestamp exato do último sync (máximo desempenho)
-      });
-
-      // ✅ OTIMIZAÇÃO: fullSync já atualizou Dexie, mas precisamos recarregar
-      // estado React. Só recarregar se houve mudanças (pulled > 0)
+      const result = await syncService.fullSync({ skipZombies: true, incremental: true });
       if (result && (result.pulled > 0 || result.pushed > 0)) {
-        console.log('[DataContext] ♻️ Recarregando estado React após sync...');
         await loadAllCollections();
-      } else {
-        console.log('[DataContext] ✅ Nenhuma mudança - skip reload');
       }
 
       setLastSyncTime(new Date());
@@ -318,14 +332,17 @@ export const DataProvider = ({ children }) => {
     setIsSyncing(true);
 
     try {
+      console.log('[ForceSync] A iniciar force sync completo...');
       // Limpar timestamp para forçar sync completo (não incremental)
       await setMetadata('lastSyncTimestamp', null);
       // Marcar todos itens locais como pending para garantir push
-      await syncService.forceMarkAllPending();
+      const marked = await syncService.forceMarkAllPending();
+      console.log(`[ForceSync] ${marked} items marcados como pending`);
       // Push de tudo para Firebase
       await syncService.pushToFirebase();
       // Pull de TUDO do Firebase (incremental: false ignora timestamp)
       const result = await syncService.fullSync({ skipZombies: true, incremental: false });
+      console.log('[ForceSync] Resultado:', { pushed: result?.pushed, pulled: result?.pulled, merged: result?.merged, zombies: result?.zombies, success: result?.success });
       if (result && (result.pulled > 0 || result.pushed > 0)) {
         await loadAllCollections();
       }

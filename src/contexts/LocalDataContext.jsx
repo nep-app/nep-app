@@ -298,21 +298,25 @@ export const LocalDataProvider = ({ children }) => {
           // 🔄 FASE 3: Carregar TUDO em background (dados antigos + actualizar stats)
           setTimeout(async () => {
             try {
-              // Verificar se FASE 2 já carregou TUDO
-              const allItemsCount = await getAllItems('consumptions');
-              if (consumptionsData.length >= allItemsCount.length) {
+              // Verificar se FASE 2 já carregou TUDO (todas as coleções, não apenas consumptions)
+              const [allConsumptions, allDailyLogs, allReflections, allWellbeing, allCycles, allGoals, allThoughts] = await Promise.all([
+                getAllItems('consumptions'),
+                getAllItems('dailyLogs'),
+                getAllItems('reflections'),
+                getAllItems('wellbeingLogs'),
+                getAllItems('cycles'),
+                getAllItems('goals'),
+                getAllItems('thoughts')
+              ]);
+              const totalInDB = allConsumptions.length + allDailyLogs.length + allReflections.length + allWellbeing.length + allCycles.length + allGoals.length + allThoughts.length;
+              const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length;
+
+              if (totalLoaded >= totalInDB) {
                 logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
 
-                // IMPORTANTE: Só atualizar stats se TODOS os goals foram carregados!
-                // FASE 2 pode carregar goals parcialmente, então precisamos verificar
-                const allGoals = await getAllItems('goals');
-                if (goalsData.length >= allGoals.length && consumptionsData.length > 0) {
-                  logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-                  await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData);
-                  setAllDataLoaded(true); // Sinalizar que TUDO está carregado
-                } else {
-                  logger.log('[LocalData] ⚠️ Goals parcialmente carregados - aguardar FASE 3 para stats');
-                }
+                logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
+                await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData);
+                setAllDataLoaded(true);
 
                 setBackgroundLoading(false);
                 return;
@@ -348,7 +352,7 @@ export const LocalDataProvider = ({ children }) => {
 
               // Atualizar stats pré-calculadas (para próximo boot)
               logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData);
+              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
 
               setAllDataLoaded(true); // Sinalizar que FASE 3 está completa
               logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
@@ -383,10 +387,10 @@ export const LocalDataProvider = ({ children }) => {
    */
   const recalculateStats = useCallback(() => {
     // Ler estados atuais e recalcular (async mas não esperamos)
-    updateUserStats(consumptions, cycles, dailyLogs, goals).catch(err =>
+    updateUserStats(consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections).catch(err =>
       logger.error('[LocalData] Erro ao recalcular stats:', err)
     );
-  }, [consumptions, cycles, dailyLogs, goals]);
+  }, [consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections]);
 
   /**
    * CRUD: Adicionar item

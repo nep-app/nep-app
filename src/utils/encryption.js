@@ -16,14 +16,28 @@ const KEY_LENGTH = 256;
 const PBKDF2_ITERATIONS = 100000;
 const IV_LENGTH = 12; // 96 bits para GCM
 
+// Cache da chave derivada - evita re-derivar 100k iterações PBKDF2 para cada item
+// A chave só muda se o PIN ou salt mudar (o que não acontece numa sessão normal)
+let _cachedKey = null;
+let _cachedKeyId = null;
+
 /**
  * Deriva uma chave criptográfica a partir de um PIN/password
+ * Usa cache interno para evitar re-derivação em operações em batch (ex: 1000+ items)
  *
  * @param {string} password - PIN ou password do utilizador
  * @param {Uint8Array} salt - Salt único (deve ser guardado)
  * @returns {Promise<CryptoKey>} - Chave derivada para encriptação
  */
 async function deriveKey(password, salt) {
+  // Criar identificador único para este par (password, salt)
+  const saltStr = (salt instanceof Uint8Array ? salt : new Uint8Array(salt)).join(',');
+  const keyId = `${password}:${saltStr}`;
+
+  if (_cachedKeyId === keyId && _cachedKey) {
+    return _cachedKey;
+  }
+
   const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
 
@@ -53,6 +67,8 @@ async function deriveKey(password, salt) {
     ['encrypt', 'decrypt']
   );
 
+  _cachedKey = derivedKey;
+  _cachedKeyId = keyId;
   return derivedKey;
 }
 

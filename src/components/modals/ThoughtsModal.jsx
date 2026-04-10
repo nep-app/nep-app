@@ -8,7 +8,8 @@ export const ThoughtsModal = ({
   onClose,
   thoughtDatetime,
   setThoughtDatetime,
-  onSubmit
+  onSubmit,
+  initialContent = ''
 }) => {
   const { t } = useTranslation();
   const [thoughts, setThoughts] = useState('');
@@ -21,6 +22,15 @@ export const ThoughtsModal = ({
   };
 
   useModalKeyboard(isOpen, onClose, handleSubmit);
+
+  // Pre-fill with initialContent when editing
+  useEffect(() => {
+    if (isOpen && initialContent) {
+      setThoughts(initialContent);
+    } else if (!isOpen) {
+      setThoughts('');
+    }
+  }, [isOpen, initialContent]);
 
   // Auto-preencher data/hora atual quando modal abre
   useEffect(() => {

@@ -1,129 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
-const APP_VERSION = '1.5.3';
+import { safeLocalStorage } from '../utils/storage';
+const APP_VERSION = '1.7.3';
 
 export const SettingsView = ({
     user,
     handleLogout,
-    exportToCSV,
-    exportToJSON,
     notificationsEnabled,
     requestNotificationPermission,
     onOpenLegalDoc,
-    manualSync,
-    forcePushAll,
+    onOpenExport,
+    onExportJSON,
+    onForceSync,
     isSyncing,
     lastSyncTime
 }) => {
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
-    const [cleanZombiesStatus, setCleanZombiesStatus] = useState(null);
-    const [zombieStats, setZombieStats] = useState(null);
-    const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
 
-    // Capturar evento de install PWA
-    useEffect(() => {
-        const handler = (e) => {
-            e.preventDefault();
-            setDeferredPrompt(e);
-        };
-
-        window.addEventListener('beforeinstallprompt', handler);
-        return () => window.removeEventListener('beforeinstallprompt', handler);
-    }, []);
+    const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
+        safeLocalStorage.get('wellbeingAlarmEnabled', false)
+    );
+    const [doseAlarmOn, setDoseAlarmOn] = useState(() => {
+        const raw = localStorage.getItem('bagWeighAlarmHour');
+        return raw !== null && raw !== 'null';
+    });
+    const [doseAlarmTime, setDoseAlarmTime] = useState(() => {
+        const raw = localStorage.getItem('bagWeighAlarmHour');
+        if (raw === null || raw === 'null') return '10:00';
+        const h = parseInt(raw);
+        return isNaN(h) ? '10:00' : String(h).padStart(2, '0') + ':00';
+    });
+    const handleWellbeingAlarmToggle = (on) => {
+        setWellbeingAlarmOn(on);
+        safeLocalStorage.set('wellbeingAlarmEnabled', on);
+    };
+    const handleDoseAlarmToggle = (on) => {
+        setDoseAlarmOn(on);
+        if (on) {
+            const hour = parseInt(doseAlarmTime.split(':')[0]);
+            safeLocalStorage.set('bagWeighAlarmHour', hour);
+        } else {
+            safeLocalStorage.set('bagWeighAlarmHour', null);
+        }
+    };
+    const handleDoseAlarmTimeChange = (timeStr) => {
+        setDoseAlarmTime(timeStr);
+        if (doseAlarmOn && timeStr) {
+            safeLocalStorage.set('bagWeighAlarmHour', parseInt(timeStr.split(':')[0]));
+        }
+    };
 
     const handleChangeLang = (lang) => {
         i18n.changeLanguage(lang);
         localStorage.setItem('nep_lang', lang);
         setCurrentLang(lang);
-    };
-
-    const handleFullSync = async () => {
-        if (!manualSync) {
-            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${t('settings.sync')} não disponível` });
-            return;
-        }
-
-        setSyncStatus({ type: 'loading', message: t('settings.syncing') });
-
-        try {
-            const result = await manualSync();
-
-            if (result && result.success) {
-                const message = `✅ ${t('settings.syncNow')}!\n📤 ${result.pushed}\n📥 ${result.pulled}\n✓ ${result.merged}${result.skipped > 0 ? `\n⚠️ ${result.skipped}` : ''}`;
-                setSyncStatus({ type: 'success', message });
-            } else {
-                setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}` });
-            }
-        } catch (error) {
-            const errorMsg = error?.message || error?.toString() || t('common.error');
-            setSyncStatus({ type: 'error', message: `❌ ${t('common.error')}: ${errorMsg}` });
-            setTimeout(() => setSyncStatus(null), 10000);
-        }
-    };
-
-    const handleScanZombies = async () => {
-        setCleanZombiesStatus({ type: 'loading', message: `🔍 ${t('settings.scanning')}` });
-        setZombieStats(null);
-
-        try {
-            if (!window.syncService) {
-                throw new Error('SyncService não disponível');
-            }
-
-            const result = await window.syncService.cleanZombies(0, true);
-
-            if (result.totalZombies > 0) {
-                setZombieStats(result);
-                setCleanZombiesStatus({
-                    type: 'warning',
-                    message: `🧟 ${result.totalZombies} items corrompidos no Firebase!\n\n⚠️ Recomendamos LIMPAR AGORA!`
-                });
-            } else {
-                setCleanZombiesStatus({
-                    type: 'success',
-                    message: `✅ ${t('settings.maintenanceDescription').split('.')[0]}!`
-                });
-            }
-        } catch (error) {
-            setCleanZombiesStatus({
-                type: 'error',
-                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
-            });
-            setTimeout(() => setCleanZombiesStatus(null), 10000);
-        }
-    };
-
-    const handleCleanZombies = async () => {
-        if (!window.confirm(`⚠️ ${t('settings.cleanWarning')}`)) {
-            return;
-        }
-
-        setCleanZombiesStatus({ type: 'loading', message: `🧹 ${t('settings.cleanZombies')}...` });
-
-        try {
-            if (!window.syncService) {
-                throw new Error('SyncService não disponível');
-            }
-
-            const result = await window.syncService.cleanZombies(0, false);
-
-            setZombieStats(null);
-            setCleanZombiesStatus({
-                type: 'success',
-                message: `✅ ❌ ${result.totalDeleted} items deletados\n\n🚀 A app vai abrir MUITO mais rápido agora!`
-            });
-
-            setTimeout(() => setCleanZombiesStatus(null), 15000);
-        } catch (error) {
-            setCleanZombiesStatus({
-                type: 'error',
-                message: `❌ ${t('common.error')}: ${error?.message || t('common.error')}`
-            });
-            setTimeout(() => setCleanZombiesStatus(null), 10000);
-        }
     };
     return (
         <div className="space-y-6">
@@ -203,11 +136,15 @@ export const SettingsView = ({
 
                     <button
                         onClick={async () => {
+                            setSyncStatus({ type: 'loading', message: t('settings.syncing') });
                             try {
-                                await manualSync();
+                                const result = await onForceSync();
+                                const total = (result?.pushed || 0) + (result?.pulled || 0);
+                                setSyncStatus({ type: 'success', message: total > 0 ? t('settings.syncRecords', { count: total }) : t('settings.syncUpToDate') });
                             } catch (error) {
-                                // Error already handled in manualSync
+                                setSyncStatus({ type: 'error', message: `❌ ${error?.message || t('common.error')}` });
                             }
+                            setTimeout(() => setSyncStatus(null), 8000);
                         }}
                         disabled={isSyncing}
                         className={
@@ -221,242 +158,110 @@ export const SettingsView = ({
                         {isSyncing ? t('settings.syncing') : t('settings.syncNow')}
                     </button>
 
-                    <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                        {t('settings.syncNote')}
-                    </div>
-
-                    <button
-                        onClick={async () => {
-                            try {
-                                const result = await forcePushAll();
-                                const total = (result?.pulled || 0) + (result?.pushed || 0);
-                                setSyncStatus(total > 0 ? `✓ ${t('settings.forceSyncDone', { count: total })}` : `✓ ${t('settings.syncAlreadyDone')}`);
-                            } catch (error) {
-                                setSyncStatus(`✗ ${error.message}`);
-                            }
-                            setTimeout(() => setSyncStatus(null), 5000);
-                        }}
-                        disabled={isSyncing}
-                        className={
-                            'w-full py-2 rounded-lg transition-all text-sm flex items-center justify-center gap-2 border ' +
-                            (isSyncing
-                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-600')
-                        }
-                    >
-                        <Icons.RefreshCw className={'w-3 h-3' + (isSyncing ? ' animate-spin' : '')} />
-                        {t('settings.forceSyncNow')}
-                    </button>
-
                     {syncStatus && (
-                        <div className="text-xs bg-gray-900/50 rounded p-2 text-gray-300">
-                            {syncStatus}
-                        </div>
-                    )}
-
-                    <div className="text-xs text-gray-500">
-                        {t('settings.forceSyncNote')}
-                    </div>
-                </div>
-            </div>
-
-            {/* PWA Update */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.RefreshCw className="w-5 h-5" />
-                    {t('settings.appUpdate')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.appUpdateDescription')}
-                    </p>
-
-                    {/* Botão Instalar (só aparece quando browser permitir) */}
-                    {deferredPrompt && (
-                        <button
-                            onClick={async () => {
-                                if (!deferredPrompt) return;
-                                try {
-                                    await deferredPrompt.prompt();
-                                    const { outcome } = await deferredPrompt.userChoice;
-                                    if (outcome === 'accepted') {
-                                        setDeferredPrompt(null);
-                                    }
-                                } catch (error) {
-                                    // Install cancelled or failed
-                                }
-                            }}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.installApp')}
-                        </button>
-                    )}
-
-                    <button
-                        onClick={async () => {
-                            try {
-                                if ('serviceWorker' in navigator) {
-                                    const registrations = await navigator.serviceWorker.getRegistrations();
-                                    for (const registration of registrations) {
-                                        await registration.unregister();
-                                    }
-                                }
-
-                                if ('caches' in window) {
-                                    const cacheNames = await caches.keys();
-                                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                                }
-
-                                window.location.reload(true);
-                            } catch (error) {
-                                alert(`❌ ${t('common.error')} (Ctrl+Shift+R)`);
-                            }
-                        }}
-                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium flex items-center justify-center gap-2"
-                    >
-                        <Icons.RefreshCw className="w-4 h-4" />
-                        {t('settings.forceUpdate')}
-                    </button>
-
-                    <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-2 text-yellow-300">
-                        {t('settings.forceUpdateWarning')}
-                    </div>
-
-                    {!deferredPrompt && (
-                        <div className="text-xs bg-blue-900/20 border border-blue-700/50 rounded p-2 text-blue-300">
-                            {t('settings.pwaNote')}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Data Management */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Database className="w-5 h-5" />
-                    {t('settings.data')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.dataDescription')}
-                    </p>
-                    <div className="space-y-2">
-                        <button
-                            onClick={exportToJSON}
-                            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.backupJSON')}
-                        </button>
-                        <button
-                            onClick={exportToCSV}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Download className="w-4 h-4" />
-                            {t('settings.exportCSV')}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Database Maintenance */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Trash2 className="w-5 h-5" />
-                    {t('settings.maintenance')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.maintenanceDescription')}
-                    </p>
-
-                    {cleanZombiesStatus && (
                         <div className={
-                            'p-3 rounded-lg text-sm whitespace-pre-line ' +
-                            (cleanZombiesStatus.type === 'success' ? 'bg-green-900/30 text-green-300 border border-green-700/50' :
-                             cleanZombiesStatus.type === 'error' ? 'bg-red-900/30 text-red-300 border border-red-700/50' :
-                             cleanZombiesStatus.type === 'warning' ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50' :
-                             'bg-blue-900/30 text-blue-300 border border-blue-700/50')
+                            'rounded p-3 text-sm flex items-start justify-between gap-2 ' +
+                            (syncStatus.type === 'success' ? 'bg-green-900/40 border border-green-600/50 text-green-300' :
+                             syncStatus.type === 'loading' ? 'bg-gray-700 border border-gray-600 text-gray-300' :
+                             'bg-red-900/40 border border-red-600/50 text-red-300')
                         }>
-                            {cleanZombiesStatus.message}
+                            <span>{syncStatus.message}</span>
+                            {syncStatus.type !== 'loading' && (
+                                <button onClick={() => setSyncStatus(null)} className="text-current opacity-60 hover:opacity-100 shrink-0">✕</button>
+                            )}
                         </div>
                     )}
+                </div>
+            </div>
 
-                    {zombieStats && zombieStats.totalZombies > 0 && (
-                        <div className="text-xs bg-yellow-900/20 border border-yellow-700/50 rounded p-3">
-                            <div className="font-medium text-yellow-300 mb-2">{t('settings.zombieDetails')}</div>
-                            {Object.entries(zombieStats.zombiesByCollection).map(([col, count]) => (
-                                <div key={col} className="text-yellow-300/80">
-                                    • {col}: {count} {count === 1 ? 'item' : 'items'}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+            {/* Exportar Relatório */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                    <Icons.Download className="w-5 h-5" />
+                    {t('settings.exportTitle')}
+                </h3>
+                <div className="space-y-3 text-gray-300">
+                    <p className="text-sm">
+                        {t('settings.exportDescription')}
+                    </p>
+                    <button
+                        onClick={onOpenExport}
+                        className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium flex items-center justify-center gap-2"
+                    >
+                        <Icons.Download className="w-4 h-4" />
+                        {t('settings.exportButton')}
+                    </button>
+                    <button
+                        onClick={onExportJSON}
+                        className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
+                    >
+                        <Icons.Download className="w-4 h-4" />
+                        {t('settings.backupJSONButton')}
+                    </button>
+                    <p className="text-xs text-gray-500">
+                        {t('settings.backupJSONDescription')}
+                    </p>
+                </div>
+            </div>
 
-                    <div className="space-y-2">
-                        <button
-                            onClick={handleScanZombies}
-                            disabled={cleanZombiesStatus?.type === 'loading'}
-                            className={
-                                'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                                (cleanZombiesStatus?.type === 'loading'
-                                    ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:from-yellow-600 hover:to-orange-600')
-                            }
-                        >
-                            <Icons.Search className="w-4 h-4" />
-                            {cleanZombiesStatus?.type === 'loading' ? t('settings.scanning') : t('settings.scanZombies')}
-                        </button>
+            {/* Alarmes e Notificações */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                    <Icons.Bell className="w-5 h-5" />
+                    Alarmes
+                </h3>
+                <div className="space-y-5">
 
-                        {zombieStats && zombieStats.totalZombies > 0 && (
+                    {/* Bem-estar */}
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-200">Bem-estar diário</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Lembrete às 9h e às 18h</p>
+                            </div>
                             <button
-                                onClick={handleCleanZombies}
-                                disabled={cleanZombiesStatus?.type === 'loading'}
-                                className={
-                                    'w-full py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2 ' +
-                                    (cleanZombiesStatus?.type === 'loading'
-                                        ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-red-600 to-pink-600 text-white hover:from-red-700 hover:to-pink-700')
-                                }
+                                onClick={() => handleWellbeingAlarmToggle(!wellbeingAlarmOn)}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${wellbeingAlarmOn ? 'bg-blue-500' : 'bg-gray-600'}`}
                             >
-                                <Icons.Trash2 className="w-4 h-4" />
-                                {t('settings.cleanZombies')}
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${wellbeingAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
                             </button>
+                        </div>
+                        {wellbeingAlarmOn && (
+                            <p className="text-xs text-blue-400 mt-1.5">✓ Ativo — aparece às 9h e 18h se não registaste</p>
                         )}
                     </div>
 
-                    <div className="text-xs bg-red-900/20 border border-red-700/50 rounded p-2 text-red-300">
-                        {t('settings.cleanWarning')}
-                    </div>
-                </div>
-            </div>
+                    <div className="border-t border-gray-700" />
 
-            {/* Notifications */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Bell className="w-5 h-5" />
-                    {t('settings.notifications')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.notificationsDescription')}
-                    </p>
-                    {notificationsEnabled ? (
-                        <div className="flex items-center gap-2 text-green-600 py-2">
-                            <Icons.CheckCircle className="w-5 h-5" />
-                            <span className="font-medium">{t('settings.notificationsEnabled')}</span>
+                    {/* Dose diária */}
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-200">Dose diária</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Lembrete para registar a dose do dia</p>
+                            </div>
+                            <button
+                                onClick={() => handleDoseAlarmToggle(!doseAlarmOn)}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${doseAlarmOn ? 'bg-rose-500' : 'bg-gray-600'}`}
+                            >
+                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${doseAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
+                            </button>
                         </div>
-                    ) : (
-                        <button
-                            onClick={requestNotificationPermission}
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
-                        >
-                            <Icons.Bell className="w-4 h-4" />
-                            {t('settings.enableNotifications')}
-                        </button>
-                    )}
+                        {doseAlarmOn && (
+                            <div className="mt-2 flex items-center gap-3">
+                                <input
+                                    type="time"
+                                    value={doseAlarmTime}
+                                    onChange={e => handleDoseAlarmTimeChange(e.target.value)}
+                                    className="bg-gray-700 border-gray-600 text-white px-3 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-rose-500"
+                                />
+                                <p className="text-xs text-rose-400">✓ Ativo às {doseAlarmTime.slice(0,5)}</p>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
+                <p className="text-xs text-gray-600 mt-4">Os lembretes só aparecem ao abrir a app.</p>
             </div>
 
             {/* Legal & Ethics */}
