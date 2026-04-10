@@ -4,7 +4,7 @@ import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
-import { BagWeightEntry } from '../components/BagWeightEntry';
+import { DailyHealthWidget } from '../components/DailyHealthWidget';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
@@ -32,7 +32,6 @@ export function HomeViewRefactored({
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
-  const [showBagWeight, setShowBagWeight] = useState(false);
 
   useEffect(() => {
     getUserStats().then(stats => {
@@ -176,8 +175,8 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      {/* Linha 2: Novo Ciclo, Registar mg, Pesar saco, Metas */}
-      <div className="grid grid-cols-4 gap-2">
+      {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
+      <div className="grid grid-cols-3 gap-2">
         <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-3 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-lg mb-1">🌙</div>
           <div className="text-xs">{t('home.newCycle')}</div>
@@ -185,10 +184,6 @@ export function HomeViewRefactored({
         <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-3 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-lg mb-1">📊</div>
           <div className="text-xs">{t('home.registerMg')}</div>
-        </button>
-        <button onClick={() => setShowBagWeight(prev => !prev)} className={`rounded-xl p-3 font-medium transition-all shadow-md hover:shadow-lg flex flex-col items-center ${showBagWeight ? 'bg-gradient-to-br from-fuchsia-600 to-purple-700 ring-2 ring-fuchsia-400' : 'bg-gradient-to-br from-fuchsia-500 to-purple-600 hover:from-fuchsia-600 hover:to-purple-700'} text-white`}>
-          <div className="text-lg mb-1">⚖️</div>
-          <div className="text-xs">{t('home.bagWeight')}</div>
         </button>
         <GradientButton
           onClick={() => setShowGoalModal(true)}
@@ -201,9 +196,7 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      {showBagWeight && (
-        <BagWeightEntry onClose={() => setShowBagWeight(false)} showToast={showToast} />
-      )}
+      <DailyHealthWidget darkMode={darkMode} />
 
       <div className="grid grid-cols-2 gap-3">
         <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>

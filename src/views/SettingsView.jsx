@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 
 export const SettingsView = ({
     user,
@@ -23,38 +23,9 @@ export const SettingsView = ({
     const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
         safeLocalStorage.get('wellbeingAlarmEnabled', false)
     );
-    const [bagAlarmOn, setBagAlarmOn] = useState(() => {
-        const raw = localStorage.getItem('bagWeighAlarmHour');
-        return raw !== null && raw !== 'null';
-    });
-    const [bagAlarmTime, setBagAlarmTime] = useState(() => {
-        const raw = localStorage.getItem('bagWeighAlarmHour');
-        if (raw === null || raw === 'null') return '10:00';
-        const h = parseInt(raw);
-        return isNaN(h) ? '10:00' : String(h).padStart(2, '0') + ':00';
-    });
-
     const handleWellbeingAlarmToggle = (on) => {
         setWellbeingAlarmOn(on);
         safeLocalStorage.set('wellbeingAlarmEnabled', on);
-    };
-
-    const handleBagAlarmToggle = (on) => {
-        setBagAlarmOn(on);
-        if (on) {
-            const hour = parseInt(bagAlarmTime.split(':')[0]);
-            safeLocalStorage.set('bagWeighAlarmHour', hour);
-        } else {
-            safeLocalStorage.set('bagWeighAlarmHour', null);
-        }
-    };
-
-    const handleBagAlarmTimeChange = (timeStr) => {
-        setBagAlarmTime(timeStr);
-        if (bagAlarmOn && timeStr) {
-            const hour = parseInt(timeStr.split(':')[0]);
-            safeLocalStorage.set('bagWeighAlarmHour', hour);
-        }
     };
 
     const handleChangeLang = (lang) => {
@@ -232,35 +203,6 @@ export const SettingsView = ({
                         </div>
                         {wellbeingAlarmOn && (
                             <p className="text-xs text-blue-400 mt-1.5">✓ Ativo — aparece às 9h e 18h se não registaste</p>
-                        )}
-                    </div>
-
-                    <div className="border-t border-gray-700" />
-
-                    {/* Pesar saco */}
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-200">Pesar dosagem diária</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Lembrete diário para pesar o saco</p>
-                            </div>
-                            <button
-                                onClick={() => handleBagAlarmToggle(!bagAlarmOn)}
-                                className={`relative w-12 h-6 rounded-full transition-colors ${bagAlarmOn ? 'bg-rose-500' : 'bg-gray-600'}`}
-                            >
-                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${bagAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-                        {bagAlarmOn && (
-                            <div className="mt-2 flex items-center gap-3">
-                                <input
-                                    type="time"
-                                    value={bagAlarmTime}
-                                    onChange={e => handleBagAlarmTimeChange(e.target.value)}
-                                    className="bg-gray-700 border-gray-600 text-white px-3 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-rose-500"
-                                />
-                                <p className="text-xs text-rose-400">✓ Ativo às {bagAlarmTime.slice(0,5)}</p>
-                            </div>
                         )}
                     </div>
 

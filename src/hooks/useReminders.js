@@ -129,23 +129,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           dismissReminder('daily-check');
         }
 
-        // Bag weighing alarm: fires once per day from configured hour (date-based)
-        const bagAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
-        const bagAlarmHour = (bagAlarmRaw !== null && bagAlarmRaw !== 'null') ? parseInt(bagAlarmRaw) : null;
-        if (bagAlarmHour !== null && !isNaN(bagAlarmHour) && hour >= bagAlarmHour) {
-          // Read dismissal fresh from localStorage to avoid stale closure issue
-          const dismissed = safeLocalStorage.get('reminderDismissed', {});
-          const alreadyDismissedToday = dismissed['bag-alarm'] === today;
-          if (!alreadyDismissedToday) {
-            const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
-            if (!hasDailyLogToday) {
-              showToast('⚖️ Lembrete: Regista a tua dose diária!', 'info');
-              showBrowserNotification('Lembrete - NEP', 'Regista a tua dose diária!');
-            }
-            // Dismiss for today regardless (avoid re-checking every hour)
-            dismissReminder('bag-alarm');
-          }
-        }
+
       } catch (e) {
         logger.error('Error checking reminders:', e);
       }
