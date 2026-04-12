@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
-const SYMPTOM_TAGS = [
+export const SYMPTOM_TAGS = [
   { id: 'ansiedade', label: 'Ansiedade', emoji: '😰' },
   { id: 'retencao_liquidos', label: 'Retenção de líquidos', emoji: '💧' },
   { id: 'desmaio', label: 'Desmaio / tontura', emoji: '😵' },

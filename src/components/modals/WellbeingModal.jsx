@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { getTodayKey } from '../../utils/helpers';
+import { SYMPTOM_TAGS } from './HealthModal';
 
 export const WellbeingModal = ({
   isOpen,
@@ -170,6 +171,41 @@ export const WellbeingModal = ({
               </label>
             </div>
           </div>
+          {/* Sintomas de saúde */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span></label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {SYMPTOM_TAGS.map(tag => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => {
+                    const current = wellbeingForm.symptoms || [];
+                    const next = current.includes(tag.id)
+                      ? current.filter(t => t !== tag.id)
+                      : [...current, tag.id];
+                    setWellbeingForm({...wellbeingForm, symptoms: next});
+                  }}
+                  className={
+                    'px-2.5 py-1 rounded-full text-xs font-medium transition-all border ' +
+                    ((wellbeingForm.symptoms || []).includes(tag.id)
+                      ? 'bg-teal-600 border-teal-500 text-white'
+                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
+                  }
+                >
+                  {tag.emoji} {tag.label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={wellbeingForm.customSymptom || ''}
+              onChange={(e) => setWellbeingForm({...wellbeingForm, customSymptom: e.target.value})}
+              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg focus:ring-2 focus:ring-teal-400 text-sm"
+              placeholder="Outro sintoma... (opcional)"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{t('modals.wellbeing.notesLabel')}</label>
             <textarea
