@@ -123,16 +123,30 @@ export const WellbeingModal = ({
                   >+</button>
                 </div>
               </div>
-              {/* Exercise text */}
+              {/* Exercise: type + duration */}
               <div>
                 <label className="text-sm text-gray-300 block mb-1.5">🏃 {t('modals.wellbeing.rest')} <span className="text-gray-500 text-xs">(opcional)</span></label>
-                <input
-                  type="text"
-                  value={wellbeingForm.exercise || ''}
-                  onChange={(e) => setWellbeingForm({...wellbeingForm, exercise: e.target.value})}
-                  className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm"
-                  placeholder="Ex: 30 min caminhada, yoga..."
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={wellbeingForm.exerciseType || ''}
+                    onChange={(e) => setWellbeingForm({...wellbeingForm, exerciseType: e.target.value})}
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm"
+                    placeholder="O quê? ex: caminhar"
+                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="600"
+                      value={wellbeingForm.exerciseDuration || ''}
+                      onChange={(e) => setWellbeingForm({...wellbeingForm, exerciseDuration: e.target.value ? parseInt(e.target.value) : ''})}
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-16 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm text-center"
+                      placeholder="min"
+                    />
+                    <span className="text-gray-400 text-xs">min</span>
+                  </div>
+                </div>
               </div>
               <label className={'flex items-center space-x-2 ' + (alreadyChecked.social ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input

@@ -54,6 +54,7 @@ export const DataProvider = ({ children }) => {
     cycles,
     goals,
     thoughts,
+    healthLogs,
     addItem,
     updateItem,
     deleteItem,
@@ -273,6 +274,12 @@ export const DataProvider = ({ children }) => {
     return result;
   }, [addItem]);
 
+  const addHealthLog = useCallback(async (item) => {
+    const result = await addItem('healthLogs', item);
+    setTimeout(() => syncService.pushToFirebase(), 1000);
+    return result;
+  }, [addItem]);
+
   /**
    * Contar quantos items estão pendentes de sincronização
    */
@@ -373,6 +380,7 @@ export const DataProvider = ({ children }) => {
     goals,
     copingStrategies,
     thoughts,
+    healthLogs,
 
     // CRUD operations
     addConsumption,
@@ -389,6 +397,7 @@ export const DataProvider = ({ children }) => {
     addCopingStrategy,
     deleteCopingStrategy,
     addThought,
+    addHealthLog,
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
 

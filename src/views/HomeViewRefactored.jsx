@@ -27,7 +27,7 @@ export function HomeViewRefactored({
   const { t } = useTranslation();
   const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
-  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
+  const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal, setShowHealthModal } = useUI();
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
@@ -174,8 +174,8 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Linha 2: Novo Ciclo, Registar mg, Metas, Saúde */}
+      <div className="grid grid-cols-4 gap-2">
         <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-3 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
           <div className="text-lg mb-1">🌙</div>
           <div className="text-xs">{t('home.newCycle')}</div>
@@ -184,15 +184,14 @@ export function HomeViewRefactored({
           <div className="text-lg mb-1">📊</div>
           <div className="text-xs">{t('home.registerMg')}</div>
         </button>
-        <GradientButton
-          onClick={() => setShowGoalModal(true)}
-          icon={Icons.Target}
-          variant="orange"
-          size="medium"
-          className="h-full"
-        >
-          {t('home.goals')}
-        </GradientButton>
+        <button onClick={() => setShowGoalModal(true)} className="bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-xl p-3 font-medium hover:from-orange-600 hover:to-amber-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">🎯</div>
+          <div className="text-xs">{t('home.goals')}</div>
+        </button>
+        <button onClick={() => setShowHealthModal(true)} className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-xl p-3 font-medium hover:from-teal-600 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
+          <div className="text-lg mb-1">🩺</div>
+          <div className="text-xs">Saúde</div>
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

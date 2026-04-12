@@ -103,6 +103,7 @@ export const LocalDataProvider = ({ children }) => {
   const [cycles, setCycles] = useState([]);
   const [goals, setGoals] = useState([]);
   const [thoughts, setThoughts] = useState([]);
+  const [healthLogs, setHealthLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [allDataLoaded, setAllDataLoaded] = useState(false); // True quando FASE 3 completa
@@ -274,7 +275,8 @@ export const LocalDataProvider = ({ children }) => {
             wellbeingLogsData,
             cyclesData,
             goalsData,
-            thoughtsData
+            thoughtsData,
+            healthLogsData
           ] = await Promise.all([
             loadCollectionWithFirst('consumptions', 7),
             loadCollectionWithFirst('dailyLogs', 7),
@@ -282,7 +284,8 @@ export const LocalDataProvider = ({ children }) => {
             loadCollectionWithFirst('wellbeingLogs', 7),
             loadCollectionWithFirst('cycles', 7),
             loadCollectionWithFirst('goals', 7),
-            loadCollectionWithFirst('thoughts', 7)
+            loadCollectionWithFirst('thoughts', 7),
+            loadCollectionWithFirst('healthLogs', 7)
           ]);
 
           setConsumptions(consumptionsData);
@@ -292,6 +295,7 @@ export const LocalDataProvider = ({ children }) => {
           setCycles(cyclesData);
           setGoals(goalsData);
           setThoughts(thoughtsData);
+          setHealthLogs(healthLogsData);
 
           logger.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
 
@@ -299,17 +303,18 @@ export const LocalDataProvider = ({ children }) => {
           setTimeout(async () => {
             try {
               // Verificar se FASE 2 já carregou TUDO (todas as coleções, não apenas consumptions)
-              const [allConsumptions, allDailyLogs, allReflections, allWellbeing, allCycles, allGoals, allThoughts] = await Promise.all([
+              const [allConsumptions, allDailyLogs, allReflections, allWellbeing, allCycles, allGoals, allThoughts, allHealthLogs] = await Promise.all([
                 getAllItems('consumptions'),
                 getAllItems('dailyLogs'),
                 getAllItems('reflections'),
                 getAllItems('wellbeingLogs'),
                 getAllItems('cycles'),
                 getAllItems('goals'),
-                getAllItems('thoughts')
+                getAllItems('thoughts'),
+                getAllItems('healthLogs')
               ]);
-              const totalInDB = allConsumptions.length + allDailyLogs.length + allReflections.length + allWellbeing.length + allCycles.length + allGoals.length + allThoughts.length;
-              const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length;
+              const totalInDB = allConsumptions.length + allDailyLogs.length + allReflections.length + allWellbeing.length + allCycles.length + allGoals.length + allThoughts.length + allHealthLogs.length;
+              const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length + healthLogsData.length;
 
               if (totalLoaded >= totalInDB) {
                 logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
@@ -331,7 +336,8 @@ export const LocalDataProvider = ({ children }) => {
                 wellbeingLogsFullData,
                 cyclesFullData,
                 goalsFullData,
-                thoughtsFullData
+                thoughtsFullData,
+                healthLogsFullData
               ] = await Promise.all([
                 loadCollection('consumptions', 999999),
                 loadCollection('dailyLogs', 999999),
@@ -339,7 +345,8 @@ export const LocalDataProvider = ({ children }) => {
                 loadCollection('wellbeingLogs', 999999),
                 loadCollection('cycles', 999999),
                 loadCollection('goals', 999999),
-                loadCollection('thoughts', 999999)
+                loadCollection('thoughts', 999999),
+                loadCollection('healthLogs', 999999)
               ]);
 
               setConsumptions(consumptionsFullData);
@@ -349,6 +356,7 @@ export const LocalDataProvider = ({ children }) => {
               setCycles(cyclesFullData);
               setGoals(goalsFullData);
               setThoughts(thoughtsFullData);
+              setHealthLogs(healthLogsFullData);
 
               // Atualizar stats pré-calculadas (para próximo boot)
               logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
@@ -419,7 +427,8 @@ export const LocalDataProvider = ({ children }) => {
       wellbeingLogs: setWellbeingLogs,
       cycles: setCycles,
       goals: setGoals,
-      thoughts: setThoughts
+      thoughts: setThoughts,
+      healthLogs: setHealthLogs
     };
 
     const setter = setterMap[collectionName];
@@ -470,7 +479,8 @@ export const LocalDataProvider = ({ children }) => {
       wellbeingLogs: setWellbeingLogs,
       cycles: setCycles,
       goals: setGoals,
-      thoughts: setThoughts
+      thoughts: setThoughts,
+      healthLogs: setHealthLogs
     };
 
     const setter = setterMap[collectionName];
@@ -507,7 +517,8 @@ export const LocalDataProvider = ({ children }) => {
       wellbeingLogs: setWellbeingLogs,
       cycles: setCycles,
       goals: setGoals,
-      thoughts: setThoughts
+      thoughts: setThoughts,
+      healthLogs: setHealthLogs
     };
 
     const setter = setterMap[collectionName];
@@ -555,6 +566,7 @@ export const LocalDataProvider = ({ children }) => {
     cycles,
     goals,
     thoughts,
+    healthLogs,
 
     // CRUD operations
     addItem,

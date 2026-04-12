@@ -47,6 +47,7 @@ const CycleModal = lazy(() => import('./components/modals/CycleModal').then(modu
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
+const HealthModal = lazy(() => import('./components/modals/HealthModal').then(module => ({ default: module.HealthModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
@@ -132,8 +133,8 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, addHealthLog, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, showHealthModal, setShowHealthModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
             const { t, i18n } = useTranslation();
@@ -176,7 +177,7 @@ function AuthenticatedApp() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
@@ -292,7 +293,8 @@ function AuthenticatedApp() {
                     mood: w.mood != null ? String(w.mood) : '',
                     energy: w.energy != null ? String(w.energy) : '',
                     waterGlasses: w.waterGlasses || 0,
-                    exercise: w.exercise || '',
+                    exerciseType: w.exerciseType || '',
+                    exerciseDuration: w.exerciseDuration || '',
                     social: w.social || false,
                     food: w.food || false,
                     emotions: w.emotions || [],
@@ -345,7 +347,8 @@ function AuthenticatedApp() {
                         // Para wellbeing (estado), o datetime deve ser completo
                         const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
                         const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
-                        setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
+                        exerciseDuration: '', social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
                         setShowWellbeingModal(true);
                         break;
 
@@ -532,7 +535,8 @@ function AuthenticatedApp() {
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         waterGlasses: wellbeingForm.waterGlasses,
-                        exercise: wellbeingForm.exercise,
+                        exerciseType: wellbeingForm.exerciseType,
+                        exerciseDuration: wellbeingForm.exerciseDuration !== '' ? parseInt(wellbeingForm.exerciseDuration) : null,
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
@@ -545,7 +549,8 @@ function AuthenticatedApp() {
                     } else {
                         await addWellbeingLog({ id: genId(), ...updatedFields });
                     }
-                    setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exercise: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
+                    setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
+                        exerciseDuration: '', social: false, food: false, emotions: [], notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions
@@ -598,7 +603,8 @@ function AuthenticatedApp() {
                         mood: null,
                         energy: null,
                         waterGlasses: 0,
-                        exercise: '',
+                        exerciseType: '',
+                        exerciseDuration: '',
                         social: false,
                         food: false,
                         emotions: emotionsForm.emotions,
@@ -677,6 +683,28 @@ function AuthenticatedApp() {
                     showToast(t('messages.thoughtSaved'), 'success');
                 } catch (error) {
                     showToast(t('messages.thoughtSaveError'), 'error');
+                    logger.error(error);
+                }
+            };
+
+            const submitHealthLog = async ({ datetime, selectedTags, customSymptom, notes }) => {
+                try {
+                    const now = datetime ? new Date(datetime) : new Date();
+                    const timestamp = now.toISOString();
+                    const dateKey = timestamp.slice(0, 10);
+                    const item = {
+                        id: genId(),
+                        date: dateKey,
+                        timestamp,
+                        symptoms: selectedTags,
+                        customSymptom: sanitizeText(customSymptom),
+                        notes: sanitizeText(notes)
+                    };
+                    await addHealthLog(item);
+                    setShowHealthModal(false);
+                    showToast('✓ Sintoma guardado', 'success');
+                } catch (error) {
+                    showToast('Erro ao guardar sintoma', 'error');
                     logger.error(error);
                 }
             };
@@ -1075,7 +1103,7 @@ return {
                 // Check wellbeing completion
                 if (wellbeingLogs.length > 0) {
                     const recent = wellbeingLogs[0];
-                    const completedItems = [(recent.waterGlasses > 0 || recent.water), (recent.exercise || recent.rest), recent.social, recent.food].filter(Boolean).length;
+                    const completedItems = [(recent.waterGlasses > 0 || recent.water), (recent.exerciseType || recent.exercise || recent.rest), recent.social, recent.food].filter(Boolean).length;
                     if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 
@@ -1365,6 +1393,14 @@ return {
                                 setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
                                 initialContent={thoughtInitialContent}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <HealthModal
+                                isOpen={showHealthModal}
+                                onClose={() => setShowHealthModal(false)}
+                                onSubmit={submitHealthLog}
                             />
                         </Suspense>
 

@@ -30,6 +30,7 @@ export const UIProvider = ({ children }) => {
   const [showCopingModal, setShowCopingModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showThoughtsModal, setShowThoughtsModal] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
 
   // Edit states
   const [editingGoal, setEditingGoal] = useState(null);
@@ -68,6 +69,7 @@ export const UIProvider = ({ children }) => {
     setShowCopingModal(false);
     setShowEducationModal(false);
     setShowThoughtsModal(false);
+    setShowHealthModal(false);
     setEditingGoal(null);
     setEditingCycle(null);
     setEditingConsumption(null);
@@ -104,6 +106,8 @@ export const UIProvider = ({ children }) => {
     setShowEducationModal,
     showThoughtsModal,
     setShowThoughtsModal,
+    showHealthModal,
+    setShowHealthModal,
 
     // Edit states
     editingGoal,
@@ -133,7 +137,7 @@ export const UIProvider = ({ children }) => {
     selectedTab, showModal, showDailyLogModal, showReflectionModal,
     showWellbeingModal, showEmotionsModal, showCycleModal, showGoalModal,
     showEditConsumptionModal, showCopingModal, showEducationModal,
-    showThoughtsModal, editingGoal, editingCycle, editingConsumption,
+    showThoughtsModal, showHealthModal, editingGoal, editingCycle, editingConsumption,
     selectedCycle, analysisWellbeing, analysisConsumptions, educationContent,
     openEducationModal, closeAllModals,
   ]);
