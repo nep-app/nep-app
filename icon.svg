@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fundo gradient dark (tema da app) -->
+  <rect width="512" height="512" fill="#1e293b"/>
+
+  <!-- Círculo central (representando tracking/ciclo) -->
+  <circle cx="256" cy="256" r="120" fill="none" stroke="#3b82f6" stroke-width="8"/>
+
+  <!-- Ponto central (consumo/momento presente) -->
+  <circle cx="256" cy="256" r="24" fill="#3b82f6"/>
+
+  <!-- Três pontos ao redor (harm reduction - reduzir, não eliminar) -->
+  <circle cx="256" cy="136" r="16" fill="#60a5fa" opacity="0.7"/>
+  <circle cx="136" cy="316" r="16" fill="#60a5fa" opacity="0.7"/>
+  <circle cx="376" cy="316" r="16" fill="#60a5fa" opacity="0.7"/>
+
+  <!-- Texto NEP -->
+  <text x="256" y="420" font-family="system-ui, sans-serif" font-size="80" font-weight="bold" fill="#3b82f6" text-anchor="middle">NEP</text>
+</svg>
