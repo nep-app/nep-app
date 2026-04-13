@@ -107,7 +107,10 @@ export const WellbeingModal = ({
             <div className="space-y-3">
               {/* Water stepper */}
               <div>
-                <span className="text-sm text-gray-300 block mb-1.5">💧 {t('modals.wellbeing.water')}</span>
+                <span className="text-sm text-gray-300 block mb-1.5">
+                  💧 {t('modals.wellbeing.water')}
+                  {(wellbeingForm.waterGlasses > 0) && <span className="ml-2 text-xs text-teal-400 font-medium">✓ {wellbeingForm.waterGlasses} copo{wellbeingForm.waterGlasses !== 1 ? 's' : ''}</span>}
+                </span>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -126,7 +129,10 @@ export const WellbeingModal = ({
               </div>
               {/* Exercise: type + duration */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1.5">🏃 {t('modals.wellbeing.rest')} <span className="text-gray-500 text-xs">(opcional)</span></label>
+                <label className="text-sm text-gray-300 block mb-1.5">
+                  🏃 {t('modals.wellbeing.rest')} <span className="text-gray-500 text-xs">(opcional)</span>
+                  {(wellbeingForm.exerciseType || wellbeingForm.exerciseDuration) && <span className="ml-2 text-xs text-teal-400 font-medium">✓{wellbeingForm.exerciseType ? ` ${wellbeingForm.exerciseType}` : ''}{wellbeingForm.exerciseDuration ? ` · ${wellbeingForm.exerciseDuration}min` : ''}</span>}
+                </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -173,7 +179,12 @@ export const WellbeingModal = ({
           </div>
           {/* Sintomas de saúde */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span></label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span>
+              {((wellbeingForm.symptoms || []).length > 0 || wellbeingForm.customSymptom) && (
+                <span className="ml-2 text-xs text-teal-400 font-medium">✓ {(wellbeingForm.symptoms || []).length + (wellbeingForm.customSymptom ? 1 : 0)} seleccionado{((wellbeingForm.symptoms || []).length + (wellbeingForm.customSymptom ? 1 : 0)) !== 1 ? 's' : ''}</span>
+              )}
+            </label>
             <div className="flex flex-wrap gap-2 mb-2">
               {SYMPTOM_TAGS.map(tag => (
                 <button

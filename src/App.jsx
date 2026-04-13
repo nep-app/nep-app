@@ -47,7 +47,6 @@ const CycleModal = lazy(() => import('./components/modals/CycleModal').then(modu
 const GoalModal = lazy(() => import('./components/modals/GoalModal').then(module => ({ default: module.GoalModal })));
 const EditConsumptionModal = lazy(() => import('./components/modals/EditConsumptionModal').then(module => ({ default: module.EditConsumptionModal })));
 const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').then(module => ({ default: module.ThoughtsModal })));
-const HealthModal = lazy(() => import('./components/modals/HealthModal').then(module => ({ default: module.HealthModal })));
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
@@ -133,8 +132,8 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, addHealthLog, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
-            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, showHealthModal, setShowHealthModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
+            const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
             const { t, i18n } = useTranslation();
@@ -691,29 +690,7 @@ function AuthenticatedApp() {
                 }
             };
 
-            const submitHealthLog = async ({ datetime, selectedTags, customSymptom, notes }) => {
-                try {
-                    const now = datetime ? new Date(datetime) : new Date();
-                    const timestamp = now.toISOString();
-                    const dateKey = timestamp.slice(0, 10);
-                    const item = {
-                        id: genId(),
-                        date: dateKey,
-                        timestamp,
-                        symptoms: selectedTags,
-                        customSymptom: sanitizeText(customSymptom),
-                        notes: sanitizeText(notes)
-                    };
-                    await addHealthLog(item);
-                    setShowHealthModal(false);
-                    showToast('✓ Sintoma guardado', 'success');
-                } catch (error) {
-                    showToast('Erro ao guardar sintoma', 'error');
-                    logger.error(error);
-                }
-            };
-
-            const submitCycle = async () => {
+const submitCycle = async () => {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
@@ -1397,14 +1374,6 @@ return {
                                 setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}
                                 initialContent={thoughtInitialContent}
-                            />
-                        </Suspense>
-
-                        <Suspense fallback={null}>
-                            <HealthModal
-                                isOpen={showHealthModal}
-                                onClose={() => setShowHealthModal(false)}
-                                onSubmit={submitHealthLog}
                             />
                         </Suspense>
 

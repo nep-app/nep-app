@@ -160,7 +160,7 @@ export function HistoryView({
                 filteredDailyLogs: [],
                 filteredCycles: [],
                 filteredThoughts: [],
-                filteredWellbeing: [],
+                filteredWellbeing: tempFilteredWellbeing.filter(w => (w.symptoms && w.symptoms.length > 0) || w.customSymptom),
                 filteredHealthLogs: tempFilteredHealthLogs
             };
         } else if (historyTopic === 'diario') {
@@ -400,34 +400,12 @@ export function HistoryView({
                                                                                     )}
                                                                                 </div>
                                                                             )}
-                                                                            {(w.water || w.rest || w.food || w.social) && (
-                                                                                <div className="grid grid-cols-4 gap-2 text-sm mb-3">
-                                                                                    <div className="text-center">
-                                                                                        <div className="text-xs text-gray-300">Água</div>
-                                                                                        <div className="text-sm font-medium text-green-400">
-                                                                                            {w.water ? 'Sim' : '-'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-center">
-                                                                                        <div className="text-xs text-gray-300">Descanso</div>
-                                                                                        <div className="text-sm font-medium text-green-400">
-                                                                                            {w.rest ? 'Sim' : '-'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-center">
-                                                                                        <div className="text-xs text-gray-300">Alimentação</div>
-                                                                                        <div className="text-sm font-medium text-green-400">
-                                                                                            {w.food ? 'Sim' : '-'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div className="text-center">
-                                                                                        <div className="text-xs text-gray-300">Social</div>
-                                                                                        <div className="text-sm font-medium text-green-400">
-                                                                                            {w.social ? 'Sim' : '-'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
+                                                                            <div className="flex flex-wrap gap-2 text-xs mb-2">
+                                                                                {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses} copo{w.waterGlasses !== 1 ? 's' : ''}</span>}
+                                                                                {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
+                                                                                {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ Alimentação</span>}
+                                                                                {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 Social</span>}
+                                                                            </div>
                                                                             {w.emotions && w.emotions.length > 0 && (
                                                                                 <div className="mb-2">
                                                                                     <div className="text-xs mb-1 text-gray-400">Emoções:</div>
@@ -437,6 +415,17 @@ export function HistoryView({
                                                                                                 {emotion}
                                                                                             </span>
                                                                                         ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                            {(w.symptoms && w.symptoms.length > 0 || w.customSymptom) && (
+                                                                                <div className="mb-2">
+                                                                                    <div className="text-xs mb-1 text-teal-400">🩺 Sintomas:</div>
+                                                                                    <div className="flex flex-wrap gap-1">
+                                                                                        {(w.symptoms || []).map(s => (
+                                                                                            <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g,' ')}</span>
+                                                                                        ))}
+                                                                                        {w.customSymptom && <span className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{w.customSymptom}</span>}
                                                                                     </div>
                                                                                 </div>
                                                                             )}
@@ -927,34 +916,12 @@ export function HistoryView({
                                                                             )}
                                                                         </div>
                                                                     )}
-                                                                    {(w.water || w.rest || w.food || w.social) && (
-                                                                        <div className="grid grid-cols-4 gap-2 text-sm mb-3">
-                                                                            <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Água</div>
-                                                                                <div className="text-sm font-medium text-green-400">
-                                                                                    {w.water ? 'Sim' : '-'}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Descanso</div>
-                                                                                <div className="text-sm font-medium text-green-400">
-                                                                                    {w.rest ? 'Sim' : '-'}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Alimentação</div>
-                                                                                <div className="text-sm font-medium text-green-400">
-                                                                                    {w.food ? 'Sim' : '-'}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="text-center">
-                                                                                <div className="text-xs text-gray-300">Social</div>
-                                                                                <div className="text-sm font-medium text-green-400">
-                                                                                    {w.social ? 'Sim' : '-'}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+                                                                    <div className="flex flex-wrap gap-2 text-xs mb-2">
+                                                                        {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses} copo{w.waterGlasses !== 1 ? 's' : ''}</span>}
+                                                                        {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
+                                                                        {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ Alimentação</span>}
+                                                                        {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 Social</span>}
+                                                                    </div>
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
                                                                             <div className="text-xs mb-1 text-gray-400">Emoções:</div>
@@ -964,6 +931,17 @@ export function HistoryView({
                                                                                         {emotion}
                                                                                     </span>
                                                                                 ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                    {(w.symptoms && w.symptoms.length > 0 || w.customSymptom) && (
+                                                                        <div className="mb-2">
+                                                                            <div className="text-xs mb-1 text-teal-400">🩺 Sintomas:</div>
+                                                                            <div className="flex flex-wrap gap-1">
+                                                                                {(w.symptoms || []).map(s => (
+                                                                                    <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g,' ')}</span>
+                                                                                ))}
+                                                                                {w.customSymptom && <span className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{w.customSymptom}</span>}
                                                                             </div>
                                                                         </div>
                                                                     )}
@@ -1112,40 +1090,55 @@ export function HistoryView({
                                                 )}
 
                                                 {/* Secção Saúde */}
-                                                {historyTopic === 'saude' && (
-                                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">🩺 Saúde ({filteredHealthLogs.length})</h3>
-                                                        {filteredHealthLogs.length === 0 ? (
-                                                            <p className="text-gray-400 text-sm">Nenhum sintoma registado neste período.</p>
-                                                        ) : (
-                                                            <div className="space-y-3">
-                                                                {filteredHealthLogs.map(h => (
-                                                                    <div key={h.id} className="border-teal-500 bg-teal-900/20 border-l-4 pl-4 py-2 rounded-r-lg">
-                                                                        <div className="flex justify-between items-start mb-1">
-                                                                            <div className="text-xs text-gray-400">
-                                                                                {(() => {
-                                                                                    const d = safeDate(h.timestamp || h.date);
-                                                                                    if (!d) return t('history.invalidDate');
-                                                                                    return d.toLocaleDateString('pt-PT') + (h.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '');
-                                                                                })()}
+                                                {historyTopic === 'saude' && (() => {
+                                                    const allSymptomItems = [
+                                                        ...filteredWellbeing.map(w => ({ source: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
+                                                        ...filteredHealthLogs.map(h => ({ source: 'health', data: h, timestamp: h.timestamp || h.date }))
+                                                    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                                                    return (
+                                                        <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                                                            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">🩺 Saúde ({allSymptomItems.length})</h3>
+                                                            {allSymptomItems.length === 0 ? (
+                                                                <p className="text-gray-400 text-sm">Nenhum sintoma registado neste período.</p>
+                                                            ) : (
+                                                                <div className="space-y-3">
+                                                                    {allSymptomItems.map(item => {
+                                                                        const h = item.data;
+                                                                        const isWellbeing = item.source === 'wellbeing';
+                                                                        return (
+                                                                            <div key={`${item.source}-${h.id}`} className="border-teal-500 bg-teal-900/20 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                                <div className="flex justify-between items-start mb-1">
+                                                                                    <div className="text-xs text-gray-400">
+                                                                                        {(() => {
+                                                                                            const d = safeDate(h.timestamp || h.date);
+                                                                                            if (!d) return t('history.invalidDate');
+                                                                                            return d.toLocaleDateString('pt-PT') + (h.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '');
+                                                                                        })()}
+                                                                                    </div>
+                                                                                    <button onClick={() => deleteItem(isWellbeing ? 'wellbeingLogs' : 'healthLogs', h.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                </div>
+                                                                                {h.symptoms && h.symptoms.length > 0 && (
+                                                                                    <div className="flex flex-wrap gap-1 mb-1">
+                                                                                        {h.symptoms.map(s => (
+                                                                                            <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g, ' ')}</span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+                                                                                {h.customSymptom && <div className="text-sm text-teal-200">{h.customSymptom}</div>}
+                                                                                {h.notes && <div className="text-xs text-gray-400 mt-1 italic">{h.notes}</div>}
+                                                                                {isWellbeing && (h.mood || h.energy) && (
+                                                                                    <div className="text-xs text-gray-500 mt-1">
+                                                                                        {h.mood && `Humor: ${h.mood}/10`}{h.mood && h.energy && ' · '}{h.energy && `Energia: ${h.energy}/10`}
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
-                                                                            <button onClick={() => deleteItem('healthLogs', h.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
-                                                                        </div>
-                                                                        {h.symptoms && h.symptoms.length > 0 && (
-                                                                            <div className="flex flex-wrap gap-1 mb-1">
-                                                                                {h.symptoms.map(s => (
-                                                                                    <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g, ' ')}</span>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
-                                                                        {h.customSymptom && <div className="text-sm text-teal-200">{h.customSymptom}</div>}
-                                                                        {h.notes && <div className="text-xs text-gray-400 mt-1 italic">{h.notes}</div>}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                         </div>
                                     )}
                                 </div>
