@@ -132,7 +132,7 @@ function HarmReductionTracker() {
  */
 function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addCopingStrategy, deleteCopingStrategy, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
+            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n

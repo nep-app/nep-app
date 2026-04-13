@@ -27,8 +27,6 @@ export const UIProvider = ({ children }) => {
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showEditConsumptionModal, setShowEditConsumptionModal] = useState(false);
-  const [showCopingModal, setShowCopingModal] = useState(false);
-  const [showEducationModal, setShowEducationModal] = useState(false);
   const [showThoughtsModal, setShowThoughtsModal] = useState(false);
 
   // Edit states
@@ -41,18 +39,9 @@ export const UIProvider = ({ children }) => {
   const [analysisWellbeing, setAnalysisWellbeing] = useState([]);
   const [analysisConsumptions, setAnalysisConsumptions] = useState([]);
 
-  // Education modal content
-  const [educationContent, setEducationContent] = useState({ title: '', content: '' });
-
   // Garantir dark mode sempre ativo
   useEffect(() => {
     document.documentElement.classList.add('dark');
-  }, []);
-
-  // Helper to open education modal
-  const openEducationModal = useCallback((title, content) => {
-    setEducationContent({ title, content });
-    setShowEducationModal(true);
   }, []);
 
   // Helper to close all modals
@@ -65,8 +54,6 @@ export const UIProvider = ({ children }) => {
     setShowCycleModal(false);
     setShowGoalModal(false);
     setShowEditConsumptionModal(false);
-    setShowCopingModal(false);
-    setShowEducationModal(false);
     setShowThoughtsModal(false);
     setEditingGoal(null);
     setEditingCycle(null);
@@ -98,10 +85,6 @@ export const UIProvider = ({ children }) => {
     setShowGoalModal,
     showEditConsumptionModal,
     setShowEditConsumptionModal,
-    showCopingModal,
-    setShowCopingModal,
-    showEducationModal,
-    setShowEducationModal,
     showThoughtsModal,
     setShowThoughtsModal,
 
@@ -121,21 +104,16 @@ export const UIProvider = ({ children }) => {
     analysisConsumptions,
     setAnalysisConsumptions,
 
-    // Education
-    educationContent,
-    setEducationContent,
-    openEducationModal,
-
     // Helpers
     closeAllModals,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
     selectedTab, showModal, showDailyLogModal, showReflectionModal,
     showWellbeingModal, showEmotionsModal, showCycleModal, showGoalModal,
-    showEditConsumptionModal, showCopingModal, showEducationModal,
-    showThoughtsModal, editingGoal, editingCycle, editingConsumption,
-    selectedCycle, analysisWellbeing, analysisConsumptions, educationContent,
-    openEducationModal, closeAllModals,
+    showEditConsumptionModal, showThoughtsModal,
+    editingGoal, editingCycle, editingConsumption,
+    selectedCycle, analysisWellbeing, analysisConsumptions,
+    closeAllModals,
   ]);
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

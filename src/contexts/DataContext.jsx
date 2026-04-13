@@ -259,23 +259,9 @@ export const DataProvider = ({ children }) => {
     setTimeout(() => syncService.pushToFirebase(), 1000);
   }, [deleteItem]);
 
-  const addCopingStrategy = useCallback(async (item) => {
-    // Legacy - não usado
-  }, []);
-
-  const deleteCopingStrategy = useCallback(async (id) => {
-    // Legacy - não usado
-  }, []);
-
   const addThought = useCallback(async (item) => {
     const result = await addItem('thoughts', item);
     // ✅ AUTO-PUSH
-    setTimeout(() => syncService.pushToFirebase(), 1000);
-    return result;
-  }, [addItem]);
-
-  const addHealthLog = useCallback(async (item) => {
-    const result = await addItem('healthLogs', item);
     setTimeout(() => syncService.pushToFirebase(), 1000);
     return result;
   }, [addItem]);
@@ -394,10 +380,7 @@ export const DataProvider = ({ children }) => {
     addGoal,
     updateGoal,
     deleteGoal,
-    addCopingStrategy,
-    deleteCopingStrategy,
     addThought,
-    addHealthLog,
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
 
