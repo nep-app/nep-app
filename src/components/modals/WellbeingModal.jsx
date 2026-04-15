@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { getTodayKey } from '../../utils/helpers';
-import { SYMPTOM_TAGS } from './HealthModal';
 
 export const WellbeingModal = ({
   isOpen,
@@ -15,14 +14,13 @@ export const WellbeingModal = ({
   editingId = null
 }) => {
   const { t } = useTranslation();
+  const [symptomInput, setSymptomInput] = useState('');
   useModalKeyboard(isOpen, onClose, onSubmit);
 
-  // Derive selected date from form datetime (fallback to today)
   const selectedDate = wellbeingForm.datetime
     ? wellbeingForm.datetime.split('T')[0]
     : getTodayKey();
 
-  // Existing logs for the selected date, excluding the one being edited
   const selectedDateLogs = wellbeingLogs.filter(log => log.date === selectedDate && log.id !== editingId);
 
   const alreadyChecked = {
@@ -30,9 +28,31 @@ export const WellbeingModal = ({
     food: selectedDateLogs.some(log => log.food === true)
   };
 
-  // When date changes, pre-populate form with most recent existing log for that date
+  // Accumulated today values (shown as read-only context)
+  const todayWater = selectedDateLogs.reduce((sum, l) => sum + (l.waterGlasses || 0), 0);
+  const todayExercises = selectedDateLogs
+    .filter(l => l.exerciseType)
+    .map(l => `${l.exerciseType}${l.exerciseDuration ? ` · ${l.exerciseDuration}min` : ''}`);
+  const todaySymptomsList = [...new Set(
+    selectedDateLogs.flatMap(l => [
+      ...(l.symptoms || []),
+      ...(l.customSymptom ? [l.customSymptom] : [])
+    ]).filter(Boolean)
+  )];
+
+  // Past symptoms for autocomplete (from all wellbeing logs)
+  const allPastSymptoms = useMemo(() => {
+    const set = new Set();
+    wellbeingLogs.forEach(log => {
+      (log.symptoms || []).forEach(s => s && set.add(s));
+      if (log.customSymptom) set.add(log.customSymptom);
+    });
+    return [...set].sort();
+  }, [wellbeingLogs]);
+
   useEffect(() => {
     if (!isOpen) return;
+    setSymptomInput('');
     if (selectedDateLogs.length === 0) return;
     const existing = [...selectedDateLogs].sort((a, b) =>
       new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)
@@ -42,13 +62,34 @@ export const WellbeingModal = ({
       mood: existing.mood ?? prev.mood,
       energy: existing.energy ?? prev.energy,
       sleep: existing.sleep ?? prev.sleep,
-      waterGlasses: existing.waterGlasses ?? prev.waterGlasses,
       notes: existing.notes || prev.notes,
+      // Only pre-populate water/exercise/symptoms when editing a specific entry
+      ...(editingId ? {
+        waterGlasses: existing.waterGlasses ?? prev.waterGlasses,
+        exerciseType: existing.exerciseType || prev.exerciseType,
+        exerciseDuration: existing.exerciseDuration || prev.exerciseDuration,
+        symptoms: existing.symptoms || prev.symptoms,
+        customSymptom: existing.customSymptom || prev.customSymptom,
+      } : {})
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, isOpen]);
 
-  // Get current datetime for default value (formato: YYYY-MM-DDTHH:mm)
+  const addSymptom = () => {
+    const s = symptomInput.trim();
+    if (!s) return;
+    const current = wellbeingForm.symptoms || [];
+    if (!current.includes(s)) {
+      setWellbeingForm({ ...wellbeingForm, symptoms: [...current, s] });
+    }
+    setSymptomInput('');
+  };
+
+  const removeSymptom = (idx) => {
+    const next = (wellbeingForm.symptoms || []).filter((_, i) => i !== idx);
+    setWellbeingForm({ ...wellbeingForm, symptoms: next });
+  };
+
   const getCurrentDateTime = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -60,6 +101,8 @@ export const WellbeingModal = ({
   };
 
   if (!isOpen) return null;
+
+  const hasTodayContext = todayWater > 0 || todayExercises.length > 0 || todaySymptomsList.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
@@ -104,6 +147,28 @@ export const WellbeingModal = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.selfcareLabel')}</label>
+
+            {/* Today's accumulated context */}
+            {hasTodayContext && (
+              <div className="bg-gray-700/40 border border-gray-600/30 rounded-lg p-2.5 mb-3 space-y-1">
+                <div className="text-xs text-gray-400 font-medium">Hoje já registaste:</div>
+                {todayWater > 0 && (
+                  <div className="text-xs text-blue-300">💧 {todayWater} copo{todayWater !== 1 ? 's' : ''} de água</div>
+                )}
+                {todayExercises.map((e, i) => (
+                  <div key={i} className="text-xs text-green-300">🏃 {e}</div>
+                ))}
+                {todaySymptomsList.length > 0 && (
+                  <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                    <span className="text-xs text-teal-400">🩺</span>
+                    {todaySymptomsList.map((s, i) => (
+                      <span key={i} className="text-xs bg-teal-800/40 text-teal-300 px-1.5 py-0.5 rounded-full">{s}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3">
               {/* Water stepper */}
               <div>
@@ -127,6 +192,7 @@ export const WellbeingModal = ({
                   >+</button>
                 </div>
               </div>
+
               {/* Exercise: type + duration */}
               <div>
                 <label className="text-sm text-gray-300 block mb-1.5">
@@ -155,6 +221,7 @@ export const WellbeingModal = ({
                   </div>
                 </div>
               </div>
+
               <label className={'flex items-center space-x-2 ' + (alreadyChecked.social ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
                 <input
                   type="checkbox"
@@ -175,46 +242,46 @@ export const WellbeingModal = ({
                 />
                 <span className="text-sm text-gray-300">{alreadyChecked.food ? '✓ ' : ''}{t('modals.wellbeing.food')}</span>
               </label>
+
+              {/* Symptoms — free text with autocomplete */}
+              <div>
+                <label className="text-sm text-gray-300 block mb-1.5">
+                  🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span>
+                  {(wellbeingForm.symptoms || []).length > 0 && (
+                    <span className="ml-2 text-xs text-teal-400 font-medium">✓ {(wellbeingForm.symptoms || []).length}</span>
+                  )}
+                </label>
+                {/* Current session chips */}
+                {(wellbeingForm.symptoms || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {(wellbeingForm.symptoms || []).map((s, i) => (
+                      <span key={i} className="bg-teal-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        {s}
+                        <button type="button" onClick={() => removeSymptom(i)} className="text-teal-200 hover:text-white leading-none ml-0.5">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    list="symptom-suggestions"
+                    value={symptomInput}
+                    onChange={(e) => setSymptomInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { addSymptom(); e.preventDefault(); } }}
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-teal-400 text-sm"
+                    placeholder="Escreve um sintoma e pressiona Enter..."
+                  />
+                  <datalist id="symptom-suggestions">
+                    {allPastSymptoms.map(s => <option key={s} value={s} />)}
+                  </datalist>
+                  <button
+                    type="button"
+                    onClick={addSymptom}
+                    className="bg-teal-600 hover:bg-teal-500 text-white px-3 rounded-lg text-sm font-medium transition-colors"
+                  >+</button>
+                </div>
+              </div>
             </div>
-          </div>
-          {/* Sintomas de saúde */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span>
-              {((wellbeingForm.symptoms || []).length > 0 || wellbeingForm.customSymptom) && (
-                <span className="ml-2 text-xs text-teal-400 font-medium">✓ {(wellbeingForm.symptoms || []).length + (wellbeingForm.customSymptom ? 1 : 0)} seleccionado{((wellbeingForm.symptoms || []).length + (wellbeingForm.customSymptom ? 1 : 0)) !== 1 ? 's' : ''}</span>
-              )}
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {SYMPTOM_TAGS.map(tag => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => {
-                    const current = wellbeingForm.symptoms || [];
-                    const next = current.includes(tag.id)
-                      ? current.filter(t => t !== tag.id)
-                      : [...current, tag.id];
-                    setWellbeingForm({...wellbeingForm, symptoms: next});
-                  }}
-                  className={
-                    'px-2.5 py-1 rounded-full text-xs font-medium transition-all border ' +
-                    ((wellbeingForm.symptoms || []).includes(tag.id)
-                      ? 'bg-teal-600 border-teal-500 text-white'
-                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
-                  }
-                >
-                  {tag.emoji} {tag.label}
-                </button>
-              ))}
-            </div>
-            <input
-              type="text"
-              value={wellbeingForm.customSymptom || ''}
-              onChange={(e) => setWellbeingForm({...wellbeingForm, customSymptom: e.target.value})}
-              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg focus:ring-2 focus:ring-teal-400 text-sm"
-              placeholder="Outro sintoma... (opcional)"
-            />
           </div>
 
           <div>

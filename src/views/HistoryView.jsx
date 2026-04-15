@@ -58,7 +58,7 @@ export function HistoryView({
     deleteItem,
     handleFillGap
 }) {
-    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, healthLogs, db } = useData();
+    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const metrics = useMetrics();
     const { t } = useTranslation();
 
@@ -115,21 +115,14 @@ export function HistoryView({
         [thoughts, dateRange]
     );
 
-    const tempFilteredHealthLogs = useMemo(() =>
-        filterByDateRange(healthLogs || [], dateRange)
-            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)),
-        [healthLogs, dateRange]
-    );
-
     // Aplicar filtro de tópico
-    const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts, filteredHealthLogs } = useMemo(() => {
+    const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
         if (historyTopic === 'consumos') {
             return {
                 filteredReflections: [],
                 filteredWellbeing: [],
                 filteredCycles: [],
                 filteredThoughts: [],
-                filteredHealthLogs: [],
                 filteredDailyLogs: tempFilteredDailyLogs,
                 filteredConsumptions: tempFilteredConsumptions
             };
@@ -139,7 +132,6 @@ export function HistoryView({
                 filteredWellbeing: [],
                 filteredReflections: [],
                 filteredThoughts: [],
-                filteredHealthLogs: [],
                 filteredDailyLogs: [],
                 filteredCycles: tempFilteredCycles
             };
@@ -150,18 +142,7 @@ export function HistoryView({
                 filteredDailyLogs: [],
                 filteredCycles: [],
                 filteredThoughts: [],
-                filteredHealthLogs: [],
                 filteredWellbeing: tempFilteredWellbeing
-            };
-        } else if (historyTopic === 'saude') {
-            return {
-                filteredConsumptions: [],
-                filteredReflections: [],
-                filteredDailyLogs: [],
-                filteredCycles: [],
-                filteredThoughts: [],
-                filteredWellbeing: tempFilteredWellbeing.filter(w => (w.symptoms && w.symptoms.length > 0) || w.customSymptom),
-                filteredHealthLogs: tempFilteredHealthLogs
             };
         } else if (historyTopic === 'diario') {
             return {
@@ -169,7 +150,6 @@ export function HistoryView({
                 filteredWellbeing: [],
                 filteredDailyLogs: [],
                 filteredCycles: [],
-                filteredHealthLogs: [],
                 filteredReflections: tempFilteredReflections,
                 filteredThoughts: tempFilteredThoughts
             };
@@ -182,11 +162,10 @@ export function HistoryView({
             filteredConsumptions: tempFilteredConsumptions,
             filteredCycles: tempFilteredCycles,
             filteredThoughts: tempFilteredThoughts,
-            filteredHealthLogs: tempFilteredHealthLogs
         };
-    }, [historyTopic, tempFilteredReflections, tempFilteredWellbeing, tempFilteredDailyLogs, tempFilteredConsumptions, tempFilteredCycles, tempFilteredThoughts, tempFilteredHealthLogs]);
+    }, [historyTopic, tempFilteredReflections, tempFilteredWellbeing, tempFilteredDailyLogs, tempFilteredConsumptions, tempFilteredCycles, tempFilteredThoughts]);
 
-    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0 || filteredHealthLogs.length > 0;
+    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
     return (
                                 <div className="space-y-6">
@@ -229,8 +208,7 @@ export function HistoryView({
                                             { id: 'consumos', label: t('history.filterLogs') },
                                             { id: 'ciclos', label: t('history.filterCycles') },
                                             { id: 'estado', label: t('history.filterWellbeing') },
-                                            { id: 'diario', label: t('history.filterDiary') },
-                                            { id: 'saude', label: '🩺 Saúde' }
+                                            { id: 'diario', label: t('history.filterDiary') }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {topic.label}
@@ -247,7 +225,7 @@ export function HistoryView({
                                             {/* Timeline única para tab "todos" */}
                                             {historyTopic === 'todos' && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📋 Tudo ({filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length + filteredHealthLogs.length})</h3>
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📋 Tudo ({filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length})</h3>
                                                     <div className="space-y-3">
                                                         {(() => {
                                                             const allItems = [...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
@@ -255,8 +233,7 @@ export function HistoryView({
                                                               ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
                                                               ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
                                                               ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
-                                                              ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date })),
-                                                              ...filteredHealthLogs.map(h => ({ type: 'health', data: h, timestamp: h.timestamp || h.date }))]
+                                                              ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
                                                                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
                                                             return allItems
@@ -493,29 +470,6 @@ export function HistoryView({
                                                                             )}
                                                                         </div>
                                                                     );
-                                                                } else if (item.type === 'health') {
-                                                                    const h = item.data;
-                                                                    return (
-                                                                        <div key={`h-${h.id}`} className="border-teal-500 bg-teal-900/20 border-l-4 pl-4 py-2 rounded-r-lg">
-                                                                            <div className="flex justify-between items-start mb-1">
-                                                                                <div className="text-xs text-gray-400">
-                                                                                    🩺 {(() => {
-                                                                                        const d = safeDate(h.timestamp || h.date);
-                                                                                        if (!d) return t('history.invalidDate');
-                                                                                        return d.toLocaleDateString('pt-PT') + (h.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '');
-                                                                                    })()}
-                                                                                </div>
-                                                                                <button onClick={() => deleteItem('healthLogs', h.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
-                                                                            </div>
-                                                                            {h.symptoms && h.symptoms.length > 0 && (
-                                                                                <div className="flex flex-wrap gap-1 mb-1">
-                                                                                    {h.symptoms.map(s => <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g,' ')}</span>)}
-                                                                                </div>
-                                                                            )}
-                                                                            {h.customSymptom && <div className="text-sm text-teal-200">{h.customSymptom}</div>}
-                                                                            {h.notes && <div className="text-xs text-gray-400 mt-1 italic">{h.notes}</div>}
-                                                                        </div>
-                                                                    );
                                                                 } else {
                                                                     const thought = item.data;
                                                                     const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;
@@ -577,7 +531,7 @@ export function HistoryView({
                                                         })()}
                                                     </div>
                                                     {(() => {
-                                                        const totalItems = filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length + filteredHealthLogs.length;
+                                                        const totalItems = filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length;
                                                         const remaining = totalItems - allItemsToShow;
                                                         return remaining > 0 && (
                                                             <button
@@ -1089,56 +1043,6 @@ export function HistoryView({
                                                     </div>
                                                 )}
 
-                                                {/* Secção Saúde */}
-                                                {historyTopic === 'saude' && (() => {
-                                                    const allSymptomItems = [
-                                                        ...filteredWellbeing.map(w => ({ source: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
-                                                        ...filteredHealthLogs.map(h => ({ source: 'health', data: h, timestamp: h.timestamp || h.date }))
-                                                    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                                                    return (
-                                                        <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                            <h3 className="font-semibold text-white mb-4 flex items-center gap-2">🩺 Saúde ({allSymptomItems.length})</h3>
-                                                            {allSymptomItems.length === 0 ? (
-                                                                <p className="text-gray-400 text-sm">Nenhum sintoma registado neste período.</p>
-                                                            ) : (
-                                                                <div className="space-y-3">
-                                                                    {allSymptomItems.map(item => {
-                                                                        const h = item.data;
-                                                                        const isWellbeing = item.source === 'wellbeing';
-                                                                        return (
-                                                                            <div key={`${item.source}-${h.id}`} className="border-teal-500 bg-teal-900/20 border-l-4 pl-4 py-2 rounded-r-lg">
-                                                                                <div className="flex justify-between items-start mb-1">
-                                                                                    <div className="text-xs text-gray-400">
-                                                                                        {(() => {
-                                                                                            const d = safeDate(h.timestamp || h.date);
-                                                                                            if (!d) return t('history.invalidDate');
-                                                                                            return d.toLocaleDateString('pt-PT') + (h.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '');
-                                                                                        })()}
-                                                                                    </div>
-                                                                                    <button onClick={() => deleteItem(isWellbeing ? 'wellbeingLogs' : 'healthLogs', h.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
-                                                                                </div>
-                                                                                {h.symptoms && h.symptoms.length > 0 && (
-                                                                                    <div className="flex flex-wrap gap-1 mb-1">
-                                                                                        {h.symptoms.map(s => (
-                                                                                            <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g, ' ')}</span>
-                                                                                        ))}
-                                                                                    </div>
-                                                                                )}
-                                                                                {h.customSymptom && <div className="text-sm text-teal-200">{h.customSymptom}</div>}
-                                                                                {h.notes && <div className="text-xs text-gray-400 mt-1 italic">{h.notes}</div>}
-                                                                                {isWellbeing && (h.mood || h.energy) && (
-                                                                                    <div className="text-xs text-gray-500 mt-1">
-                                                                                        {h.mood && `Humor: ${h.mood}/10`}{h.mood && h.energy && ' · '}{h.energy && `Energia: ${h.energy}/10`}
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
                                         </div>
                                     )}
                                 </div>

@@ -141,14 +141,20 @@ const buildCSVs = (data, selected) => {
   }
 
   if (selected.wellbeing && data.wellbeingLogs.length > 0) {
-    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água (copos)', 'Exercício', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
+    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água (copos)', 'Exercício (tipo)', 'Duração (min)', 'Sintomas', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
     data.wellbeingLogs.forEach(w => {
+      const symptoms = [
+        ...(w.symptoms || []),
+        ...(w.customSymptom ? [w.customSymptom] : [])
+      ].join('; ');
       rows.push(csvRow([
         fmtDateTime(w.timestamp || w.date),
         w.mood   || '',
         w.energy || '',
         w.waterGlasses != null ? w.waterGlasses : (w.water ? 1 : 0),
-        w.exercise || (w.rest ? 'Sim' : ''),
+        w.exerciseType || w.exercise || (w.rest ? 'Sim' : ''),
+        w.exerciseDuration || '',
+        symptoms,
         w.food   ? 'Sim' : 'Não',
         w.social ? 'Sim' : 'Não',
         (w.emotions || []).join('; '),
@@ -451,11 +457,21 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
         if (raw.wellbeing.length > 0) {
           raw.wellbeing.forEach(({ d, w }) => {
             const timeStr = fmt(d);
+            const waterStr = w.waterGlasses > 0 ? `💧${w.waterGlasses}cp` : (w.water ? '💧' : null);
+            const exStr = w.exerciseType ? `🏃${w.exerciseType}${w.exerciseDuration ? ` ${w.exerciseDuration}min` : ''}` : ((w.rest || w.exercise) ? '🏃' : null);
+            const sympStr = (() => {
+              const all = [...(w.symptoms || []), ...(w.customSymptom ? [w.customSymptom] : [])];
+              return all.length ? `🩺${all.join(', ')}` : null;
+            })();
             const parts = [
               timeStr,
               w.mood   != null ? `😊${w.mood}/10` : null,
               w.energy != null ? `⚡${w.energy}/10` : null,
-              [(w.water || w.waterGlasses > 0) && '💧', (w.rest || w.exercise) && '🏃', w.food && '🍽️', w.social && '👥'].filter(Boolean).join('') || null,
+              waterStr,
+              exStr,
+              w.food   ? '🍽️' : null,
+              w.social ? '👥' : null,
+              sympStr,
               (w.emotions || []).join(' ') || null,
               w.notes || null,
             ].filter(Boolean);
@@ -496,9 +512,10 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>N.E.P. · Relatório</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:9.5pt;color:#1a1a2e;background:#fff;padding:12mm 16mm}
   .hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #7c3aed;padding-bottom:8px;margin-bottom:14px}
   .hdr-l h1{font-size:15pt;font-weight:900;color:#7c3aed;letter-spacing:-0.5px}
@@ -520,8 +537,10 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   .time{color:#9ca3af;font-size:7.5pt;flex-shrink:0;min-width:32px}
   .detail{color:#374151;flex:1;line-height:1.4}
   .gap{font-size:7.5pt;color:#9ca3af;font-style:italic}
-  @media print{body{padding:8mm 12mm}.no-print{display:none!important}}
-  .print-btn{display:block;margin:20px auto 0;padding:8px 28px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:10pt;font-weight:600;cursor:pointer}
+  @page{size:A4 portrait;margin:8mm 10mm}
+  @media print{body{padding:0!important}.no-print{display:none!important}.day{page-break-inside:avoid}.summary{page-break-inside:avoid}}
+  @media screen and (max-width:600px){body{padding:4vw 5vw;font-size:10pt}.entry{flex-wrap:wrap}.hdr{flex-direction:column;gap:4px}.hdr-r{text-align:left}}
+  .print-btn{display:block;margin:20px auto 0;padding:10px 28px;background:#7c3aed;color:#fff;border:none;border-radius:7px;font-size:10pt;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
   .print-btn:hover{background:#6d28d9}
 </style>
 </head>
@@ -588,11 +607,11 @@ export const ExportModal = ({ isOpen, onClose }) => {
 
   const handlePDF = () => {
     const html = buildPrintHTML(filteredData, selected, period, customFrom, customTo);
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-    }
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
   };
 
   const handleCSV = () => {
