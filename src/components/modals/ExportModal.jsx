@@ -618,6 +618,17 @@ export const ExportModal = ({ isOpen, onClose }) => {
     setTimeout(() => URL.revokeObjectURL(url), 120000);
   };
 
+  const handleDownloadHTML = () => {
+    const html = buildPrintHTML(filteredData, selected, period, customFrom, customTo);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nep-relatorio-${new Date().toISOString().split('T')[0]}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleCSV = () => {
     const csvData = {
       consumptions:  filteredData.consumptions,
@@ -737,9 +748,17 @@ export const ExportModal = ({ isOpen, onClose }) => {
           >
             📊 Exportar CSV (Excel)
           </button>
+          <button
+            onClick={handleDownloadHTML}
+            disabled={!anySelected}
+            className="w-full py-3 rounded-xl font-semibold text-sm transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            &lt;/&gt; Descarregar HTML
+          </button>
           <p className="text-xs text-gray-500 text-center">
             PDF: abre uma página para imprimir ou guardar como PDF.<br />
-            CSV: faz download de ficheiros para abrir no Excel.
+            CSV: faz download de ficheiros para abrir no Excel.<br />
+            HTML: ficheiro do relatório para editar ou partilhar.
           </p>
         </div>
       </div>
