@@ -136,7 +136,7 @@ export function AnalysesView({
                                                 <div className="space-y-4">
                                                     {/* Sub-tab navigation */}
                                                     <div className="flex gap-2 overflow-x-auto pb-2">
-                                                        {['correlacoes', 'estado', 'impacto', 'coach', 'estrutural'].map(subView => (
+                                                        {['correlacoes', 'estado', 'impacto', 'coach'].map(subView => (
                                                             <button
                                                                 key={subView}
                                                                 onClick={() => setAnalysisSubView(subView)}
@@ -146,7 +146,6 @@ export function AnalysesView({
                                                                 {subView === 'estado' && '🎭 Estado'}
                                                                 {subView === 'impacto' && '⏱️ Impacto'}
                                                                 {subView === 'coach' && '💬 Reflexão Geral'}
-                                                                {subView === 'estrutural' && '📊 Estrutural'}
                                                             </button>
                                                         ))}
                                                     </div>
