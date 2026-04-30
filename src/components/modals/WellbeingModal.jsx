@@ -68,6 +68,7 @@ export const WellbeingModal = ({
         waterGlasses: existing.waterGlasses ?? prev.waterGlasses,
         exerciseType: existing.exerciseType || prev.exerciseType,
         exerciseDuration: existing.exerciseDuration || prev.exerciseDuration,
+        napDuration: existing.napDuration || prev.napDuration,
         symptoms: existing.symptoms || prev.symptoms,
         customSymptom: existing.customSymptom || prev.customSymptom,
       } : {})
@@ -219,6 +220,26 @@ export const WellbeingModal = ({
                     />
                     <span className="text-gray-400 text-xs">min</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Nap */}
+              <div>
+                <label className="text-sm text-gray-300 block mb-1.5">
+                  🛌 Sesta <span className="text-gray-500 text-xs">(opcional)</span>
+                  {(wellbeingForm.napDuration > 0) && <span className="ml-2 text-xs text-teal-400 font-medium">✓ {wellbeingForm.napDuration}min</span>}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="600"
+                    value={wellbeingForm.napDuration || ''}
+                    onChange={(e) => setWellbeingForm({...wellbeingForm, napDuration: e.target.value ? parseInt(e.target.value) : ''})}
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-20 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm text-center"
+                    placeholder="0"
+                  />
+                  <span className="text-gray-400 text-xs">min</span>
                 </div>
               </div>
 

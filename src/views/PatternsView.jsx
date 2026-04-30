@@ -400,7 +400,10 @@ export function PatternsView({
                                                             const date = c.date || safeToISODate(c.timestamp);
                                                             if (!date || c.sleep == null) return;
                                                             ensureDay(date);
-                                                            dailyData[date].sleep = parseFloat(c.sleep);
+                                                            const napMins = wellbeingLogs
+                                                                .filter(w => (w.date || safeToISODate(w.timestamp)) === date && w.napDuration > 0)
+                                                                .reduce((sum, w) => sum + (w.napDuration || 0), 0);
+                                                            dailyData[date].sleep = parseFloat(c.sleep) + napMins / 60;
                                                         });
                                                         dailyLogs.forEach(l => {
                                                             if (l.mg == null) return;
@@ -1100,6 +1103,7 @@ export function PatternsView({
                                             // 3. BEM-ESTAR - Sono (from cycles and wellbeingLogs)
                                             // Helper para extrair sono de cycles + wellbeingLogs por data
                                             const getSleepForDate = (date, cyclesData, wellbeingData) => {
+                                                let nightSleep = null;
                                                 // Primeiro tenta buscar nos cycles
                                                 const cycle = cyclesData.find(c => {
                                                     const cycleDate = getDateKeyFromItem(c);
@@ -1107,23 +1111,29 @@ export function PatternsView({
                                                 });
                                                 if (cycle) {
                                                     const sleepValue = typeof cycle.sleep === 'number' ? cycle.sleep : parseFloat(cycle.sleep);
-                                                    if (!isNaN(sleepValue) && sleepValue > 0) {
-                                                        return sleepValue;
+                                                    if (!isNaN(sleepValue) && sleepValue > 0) nightSleep = sleepValue;
+                                                }
+
+                                                // Fallback: buscar nos wellbeingLogs (campo legado)
+                                                if (nightSleep === null) {
+                                                    const wellbeing = wellbeingData.find(w => {
+                                                        const wDate = getDateKeyFromItem(w);
+                                                        return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
+                                                    });
+                                                    if (wellbeing) {
+                                                        const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
+                                                        if (!isNaN(sleepValue) && sleepValue > 0) nightSleep = sleepValue;
                                                     }
                                                 }
 
-                                                // Fallback: buscar nos wellbeingLogs
-                                                const wellbeing = wellbeingData.find(w => {
-                                                    const wDate = getDateKeyFromItem(w);
-                                                    return wDate === date && w.sleep !== undefined && !isNaN(parseFloat(w.sleep));
-                                                });
-                                                if (wellbeing) {
-                                                    const sleepValue = typeof wellbeing.sleep === 'number' ? wellbeing.sleep : parseFloat(wellbeing.sleep);
-                                                    if (!isNaN(sleepValue) && sleepValue > 0) {
-                                                        return sleepValue;
-                                                    }
-                                                }
+                                                // Adicionar horas de sesta deste dia
+                                                const napMins = wellbeingData
+                                                    .filter(w => getDateKeyFromItem(w) === date && w.napDuration > 0)
+                                                    .reduce((sum, w) => sum + (w.napDuration || 0), 0);
+                                                const napHours = napMins / 60;
 
+                                                if (nightSleep !== null) return nightSleep + napHours;
+                                                if (napHours > 0) return napHours;
                                                 return null;
                                             };
 

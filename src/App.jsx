@@ -176,7 +176,7 @@ function AuthenticatedApp() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
@@ -538,6 +538,7 @@ function AuthenticatedApp() {
                         waterGlasses: wellbeingForm.waterGlasses,
                         exerciseType: wellbeingForm.exerciseType,
                         exerciseDuration: wellbeingForm.exerciseDuration !== '' ? parseInt(wellbeingForm.exerciseDuration) : null,
+                        napDuration: wellbeingForm.napDuration !== '' ? parseInt(wellbeingForm.napDuration) : null,
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
@@ -553,7 +554,7 @@ function AuthenticatedApp() {
                         await addWellbeingLog({ id: genId(), ...updatedFields });
                     }
                     setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
-                        exerciseDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
+                        exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions

@@ -1390,28 +1390,33 @@ export function AnalysesView({
                                                                                 // Combinar dados de sono de cycles e wellbeing
                                                                                 const allSleepData = [];
 
-                                                                                // Adicionar dados de cycles
+                                                                                // Adicionar dados de cycles (sono noturno + sesta do mesmo dia)
                                                                                 analysisCycles.forEach(c => {
                                                                                     if (c.sleep && c.bedtime) {
                                                                                         const date = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                                                                        const napMins = analysisWellbeing
+                                                                                            .filter(w => (w.date || safeToISODate(w.timestamp)) === date)
+                                                                                            .reduce((sum, w) => sum + (w.napDuration || 0), 0);
                                                                                         allSleepData.push({
                                                                                             date,
-                                                                                            sleep: parseFloat(c.sleep),
+                                                                                            sleep: parseFloat(c.sleep) + napMins / 60,
                                                                                             bedtime: c.bedtime,
                                                                                             timestamp: c.timestamp
                                                                                         });
                                                                                     }
                                                                                 });
 
-                                                                                // Adicionar dados de wellbeing (se não houver em cycles)
+                                                                                // Adicionar dados de wellbeing (se não houver em cycles — legado)
                                                                                 analysisWellbeing.forEach(w => {
                                                                                     if (w.sleep) {
                                                                                         const date = w.date || new Date(w.timestamp).toISOString().split('T')[0];
-                                                                                        // Só adicionar se não houver já dados deste dia em cycles
                                                                                         if (!allSleepData.some(s => s.date === date)) {
+                                                                                            const napMins = analysisWellbeing
+                                                                                                .filter(w2 => (w2.date || safeToISODate(w2.timestamp)) === date)
+                                                                                                .reduce((sum, w2) => sum + (w2.napDuration || 0), 0);
                                                                                             allSleepData.push({
                                                                                                 date,
-                                                                                                sleep: parseFloat(w.sleep),
+                                                                                                sleep: parseFloat(w.sleep) + napMins / 60,
                                                                                                 bedtime: null,
                                                                                                 timestamp: w.timestamp
                                                                                             });
@@ -2726,13 +2731,26 @@ export function AnalysesView({
                                                             dailyData[c.date].consumptions++;
                                                         });
 
-                                                        // Adicionar bem-estar
+                                                        // Adicionar sono dos ciclos (noturno + sesta)
+                                                        analysisCycles.forEach(c => {
+                                                            const cDate = c.date || safeToISODate(c.timestamp);
+                                                            if (!cDate || !c.sleep) return;
+                                                            if (!dailyData[cDate]) dailyData[cDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
+                                                            const nightSleep = parseFloat(c.sleep);
+                                                            if (!isNaN(nightSleep)) {
+                                                                const napMins = analysisWellbeing
+                                                                    .filter(w => (w.date || safeToISODate(w.timestamp)) === cDate)
+                                                                    .reduce((sum, w) => sum + (w.napDuration || 0), 0);
+                                                                dailyData[cDate].sleep = nightSleep + napMins / 60;
+                                                            }
+                                                        });
+
+                                                        // Adicionar bem-estar (humor, energia; sleep legado como fallback)
                                                         analysisWellbeing.forEach(w => {
-                                                            // Extrair data do timestamp se não houver campo date
                                                             const wDate = w.date || safeToISODate(w.timestamp);
-                                                            if (!wDate) return; // Skip if invalid date
+                                                            if (!wDate) return;
                                                             if (!dailyData[wDate]) dailyData[wDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
-                                                            if (w.sleep != null && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
+                                                            if (dailyData[wDate].sleep === null && w.sleep != null && !isNaN(parseFloat(w.sleep))) dailyData[wDate].sleep = parseFloat(w.sleep);
                                                             if (w.mood != null && !isNaN(parseInt(w.mood))) dailyData[wDate].mood = parseInt(w.mood);
                                                             if (w.energy != null && !isNaN(parseInt(w.energy))) dailyData[wDate].energy = parseInt(w.energy);
                                                         });

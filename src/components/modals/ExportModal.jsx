@@ -141,7 +141,7 @@ const buildCSVs = (data, selected) => {
   }
 
   if (selected.wellbeing && data.wellbeingLogs.length > 0) {
-    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água (ml)', 'Exercício (tipo)', 'Duração (min)', 'Sintomas', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
+    const rows = [csvRow(['Data', 'Humor (1-10)', 'Energia (1-10)', 'Água (ml)', 'Exercício (tipo)', 'Duração (min)', 'Sesta (min)', 'Sintomas', 'Alimentação', 'Social', 'Emoções', 'Notas'])];
     data.wellbeingLogs.forEach(w => {
       const symptoms = [
         ...(w.symptoms || []),
@@ -157,6 +157,7 @@ const buildCSVs = (data, selected) => {
         waterMl || '',
         w.exerciseType || w.exercise || (w.rest ? 'Sim' : ''),
         w.exerciseDuration || '',
+        w.napDuration || '',
         symptoms,
         w.food   ? 'Sim' : 'Não',
         w.social ? 'Sim' : 'Não',
@@ -463,6 +464,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
             const waterMl = w.waterGlasses >= 50 ? w.waterGlasses : (w.waterGlasses > 0 ? w.waterGlasses * 250 : 0);
             const waterStr = waterMl > 0 ? `💧${waterMl}ml` : (w.water ? '💧' : null);
             const exStr = w.exerciseType ? `🏃${w.exerciseType}${w.exerciseDuration ? ` ${w.exerciseDuration}min` : ''}` : ((w.rest || w.exercise) ? '🏃' : null);
+            const napStr = w.napDuration > 0 ? `🛌${w.napDuration}min` : null;
             const sympStr = (() => {
               const all = [...(w.symptoms || []), ...(w.customSymptom ? [w.customSymptom] : [])];
               return all.length ? `🩺${all.join(', ')}` : null;
@@ -473,6 +475,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
               w.energy != null ? `⚡${w.energy}/10` : null,
               waterStr,
               exStr,
+              napStr,
               w.food   ? '🍽️' : null,
               w.social ? '👥' : null,
               sympStr,
