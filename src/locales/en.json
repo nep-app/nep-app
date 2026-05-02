@@ -219,7 +219,7 @@
         "limit_last": "Set last consumption time",
         "bedtime_before": "Set bedtime",
         "sleep_hours": "Set daily sleep hours",
-        "first_not_before": "First consumption not before"
+        "first_not_before": "1st use after waking up"
       },
       "units": {
         "mg": "mg",
@@ -467,7 +467,7 @@
         "increase_interval": "Days with ≥50% intervals >{{target}}h",
         "sleep_hours": "Nights with ≥{{target}}h sleep",
         "bedtime_before": "Nights sleeping before {{target}}",
-        "first_not_before": "Days with 1st use after {{target}}"
+        "first_not_before": "Days with 1st use ≥{{target}}h after waking"
       }
     },
     "progress": {

@@ -33,7 +33,7 @@ export const GoalModal = ({
     { type: 'reduce_quantity', icon: '📉', label: t('modals.goal.options.reduce_quantity'), unit: t('modals.goal.units.mg') },
     { type: 'reduce_frequency', icon: '🔢', label: t('modals.goal.options.reduce_frequency'), unit: t('modals.goal.units.consumos') },
     { type: 'increase_interval', icon: '⏱️', label: t('modals.goal.options.increase_interval'), unit: t('modals.goal.units.horas') },
-    { type: 'first_not_before', icon: '☀️', label: t('modals.goal.options.first_not_before'), unit: t('modals.goal.units.hora') },
+    { type: 'first_not_before', icon: '☀️', label: t('modals.goal.options.first_not_before'), unit: t('modals.goal.units.horas') },
     { type: 'limit_last', icon: '🌙', label: t('modals.goal.options.limit_last'), unit: t('modals.goal.units.hora') },
     { type: 'bedtime_before', icon: '🛏️', label: t('modals.goal.options.bedtime_before'), unit: t('modals.goal.units.hora') },
     { type: 'sleep_hours', icon: '😴', label: t('modals.goal.options.sleep_hours'), unit: t('modals.goal.units.horas') }
@@ -49,7 +49,7 @@ export const GoalModal = ({
   };
 
   const selectedOption = goalOptions.find(opt => opt.type === selectedType);
-  const isTimeType = selectedType === 'limit_last' || selectedType === 'bedtime_before' || selectedType === 'first_not_before';
+  const isTimeType = selectedType === 'limit_last' || selectedType === 'bedtime_before';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>

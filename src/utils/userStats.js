@@ -394,33 +394,44 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
-    // Aviso 8: Primeiro consumo (se existe meta first_not_before)
+    // Aviso 8: Primeiro consumo após acordar (meta first_not_before)
     const firstNotBeforeGoal = (goals || []).find(g => g.type === 'first_not_before');
-    if (firstNotBeforeGoal && consumptions && consumptions.length > 0) {
+    if (firstNotBeforeGoal && consumptions && consumptions.length > 0 && cycles && cycles.length > 0) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayConsumptions = consumptions
         .filter(c => { const d = new Date(c.timestamp || c.createdAt); d.setHours(0,0,0,0); return d.getTime() === todayStart.getTime(); })
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      if (todayConsumptions.length > 0) {
+      // Ciclo mais recente com bedtime + sleep para calcular hora de acordar
+      const lastCycleWithSleep = [...cycles]
+        .filter(c => c.bedtime && c.sleep)
+        .sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt))[0];
+
+      if (todayConsumptions.length > 0 && lastCycleWithSleep) {
+        const [bh, bm] = lastCycleWithSleep.bedtime.split(':').map(Number);
+        let wakeupMinutes = bh * 60 + bm + parseFloat(lastCycleWithSleep.sleep) * 60;
+        if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+        const targetMinutes = (wakeupMinutes + parseFloat(firstNotBeforeGoal.target) * 60) % 1440;
+
         const first = todayConsumptions[0];
         const fd = new Date(first.timestamp);
         const firstMinutes = fd.getHours() * 60 + fd.getMinutes();
-        const [th, tm] = firstNotBeforeGoal.target.split(':').map(Number);
-        const targetMinutes = th * 60 + (tm || 0);
         const firstTimeStr = `${String(fd.getHours()).padStart(2,'0')}:${String(fd.getMinutes()).padStart(2,'0')}`;
+        const wakeupH = Math.floor(wakeupMinutes / 60);
+        const wakeupM = wakeupMinutes % 60;
+        const wakeupStr = `${String(wakeupH).padStart(2,'0')}:${String(wakeupM).padStart(2,'0')}`;
 
         if (firstMinutes < targetMinutes) {
           alerts.push({
-            text: `1º consumo às ${firstTimeStr} — meta era após as ${firstNotBeforeGoal.target}`,
+            text: `1º consumo às ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar (${wakeupStr})`,
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
           });
         } else {
           alerts.push({
-            text: `1º consumo às ${firstTimeStr} — meta cumprida ✓`,
+            text: `1º consumo às ${firstTimeStr} — ${firstNotBeforeGoal.target}h após acordar ✓`,
             emoji: '☀️',
             color: 'green',
             type: 'positive'

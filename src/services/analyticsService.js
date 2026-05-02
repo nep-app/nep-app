@@ -463,6 +463,8 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
 
     if (goal.type === 'first_not_before') {
         const today = getTodayPT();
+        const targetHours = parseFloat(goal.target) || 1;
+
         const consumptionsByDate = {};
         consumptions.forEach(c => {
             const dateKey = timestampToPT(c.timestamp);
@@ -471,16 +473,22 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         });
         delete consumptionsByDate[today];
 
-        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-        const [th, tm] = targetStr.split(':').map(Number);
-        const targetMinutes = th * 60 + (tm || 0);
-
-        Object.values(consumptionsByDate).forEach(dayConsumptions => {
+        Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
             if (dayConsumptions.length === 0) return;
+
+            // Calcular hora de acordar: bedtime + sleep do ciclo desse dia
+            const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.bedtime && c.sleep);
+            if (!cycle) return; // sem dados de sono = não avaliável
+
+            const [bh, bm] = cycle.bedtime.split(':').map(Number);
+            let wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
+            if (wakeupMinutes >= 1440) wakeupMinutes -= 1440; // normalizar para 0-1439
+
+            const targetMinutes = wakeupMinutes + targetHours * 60;
             const first = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
             const d = new Date(first.timestamp);
             const firstMinutes = d.getHours() * 60 + d.getMinutes();
-            if (firstMinutes >= targetMinutes) achievedCount++;
+            if (firstMinutes >= targetMinutes % 1440) achievedCount++;
         });
     }
 

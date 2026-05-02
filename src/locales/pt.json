@@ -219,7 +219,7 @@
         "limit_last": "Definir horário de último consumo",
         "bedtime_before": "Definir hora de ir deitar",
         "sleep_hours": "Definir horas de sono diárias",
-        "first_not_before": "Primeiro consumo não antes de"
+        "first_not_before": "1º consumo após acordar"
       },
       "units": {
         "mg": "mg",
@@ -506,7 +506,7 @@
         "increase_interval": "Dias com ≥50% intervalos >{{target}}h",
         "sleep_hours": "Noites com ≥{{target}}h de sono",
         "bedtime_before": "Noites a dormir antes de {{target}}",
-        "first_not_before": "Dias com 1º consumo após {{target}}"
+        "first_not_before": "Dias com 1º consumo ≥{{target}}h após acordar"
       }
     },
     "progress": {
