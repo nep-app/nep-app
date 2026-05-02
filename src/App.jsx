@@ -180,7 +180,7 @@ function AuthenticatedApp() {
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
-            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
+            const [cycleForm, setCycleForm] = useState({ bedtime: '', sleep: '', triggers: [], notes: '', createdAt: '' });
             const [goalForm, setGoalForm] = useState({ type: 'reduce_frequency', target: '', period: 'daily' });
             const [thoughtDatetime, setThoughtDatetime] = useState('');
             const [thoughtInitialContent, setThoughtInitialContent] = useState('');
@@ -340,7 +340,7 @@ function AuthenticatedApp() {
                         // Para ciclos, o createdAt deve ser um datetime. Usamos o início do dia selecionado.
                         const cycleDate = new Date(dateKey + 'T08:00'); // 8h da manhã por defeito
                         const cycleDatetimeStr = cycleDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
-                        setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: cycleDatetimeStr });
+                        setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', createdAt: cycleDatetimeStr });
                         setShowCycleModal(true);
                         break;
 
@@ -701,7 +701,6 @@ const submitCycle = async () => {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
                             notes: cycleForm.notes,
-                            lastBefore00: cycleForm.lastBefore00,
                             ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
                         };
                         await updateCycle(editingCycle.id, updatedData);
@@ -723,7 +722,6 @@ const submitCycle = async () => {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
                             notes: cycleForm.notes,
-                            lastBefore00: cycleForm.lastBefore00,
                             // Converter sleep para número (se tiver valor)
                             ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };
@@ -731,7 +729,7 @@ const submitCycle = async () => {
                         showToast(t('messages.cycleCreated'), 'success');
                     }
 
-                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', lastBefore00: false, createdAt: '' });
+                    setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', createdAt: '' });
                     setShowCycleModal(false);
                 } catch (error) {
                     showToast(t('messages.cycleError', { action: t(editingCycle ? 'messages.cycleActionUpdate' : 'messages.cycleActionCreate') }), 'error');
@@ -895,10 +893,23 @@ const submitCycle = async () => {
                 }
 
                 if (goal.type === 'limit_last') {
-                    total = dataCycles.length;
-                    dataCycles.forEach(cycle => {
-                        const isAchieved = cycle.lastBefore00 === true;
-                        if (isAchieved) achieved++;
+                    const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
+                    const [th, tm] = targetStr.split(':').map(Number);
+                    const targetMinutes = th * 60 + (tm || 0);
+                    const consByDate = {};
+                    dataConsumptions.forEach(c => {
+                        const dateKey = timestampToPT(c.timestamp);
+                        if (!consByDate[dateKey]) consByDate[dateKey] = [];
+                        consByDate[dateKey].push(c);
+                    });
+                    delete consByDate[today];
+                    Object.values(consByDate).forEach(dayConsumptions => {
+                        if (dayConsumptions.length === 0) return;
+                        total++;
+                        const last = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                        const d = new Date(last.timestamp);
+                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
+                        if (lastMinutes < targetMinutes) achieved++;
                     });
                 }
 

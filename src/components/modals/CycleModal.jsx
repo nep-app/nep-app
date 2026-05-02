@@ -22,7 +22,6 @@ export const CycleModal = ({
           sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
           triggers: editingCycle.triggers || [],
           notes: editingCycle.notes || '',
-          lastBefore00: editingCycle.lastBefore00 || false,
           createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
         });
       } else if (!cycleForm.createdAt) {
@@ -126,17 +125,6 @@ export const CycleModal = ({
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400 h-20"
               placeholder={t('modals.cycle.notesPlaceholder')}
             />
-          </div>
-          <div className="bg-green-900/20 border-green-700/50 rounded-lg p-3 border">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={cycleForm.lastBefore00}
-                onChange={(e) => setCycleForm({...cycleForm, lastBefore00: e.target.checked})}
-                className="rounded text-green-600 focus:ring-green-500 w-5 h-5"
-              />
-              <span className="text-sm font-medium text-green-300">{t('modals.cycle.lastBefore00')}</span>
-            </label>
           </div>
           <button
             onClick={onSubmit}
