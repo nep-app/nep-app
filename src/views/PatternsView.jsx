@@ -392,7 +392,7 @@ export function PatternsView({
                                                                 }
                                                             }
                                                             if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
-                                                            if (w.rest || (w.exercise && w.exercise.trim())) dailyData[date].rest = true;
+                                                            if (w.rest || (w.exercise && w.exercise.trim()) || w.exerciseType || (w.exerciseDuration > 0)) dailyData[date].rest = true;
                                                             if (w.food) dailyData[date].food = true;
                                                             if (w.social) dailyData[date].social = true;
                                                         });
@@ -1313,7 +1313,7 @@ export function PatternsView({
 
                                                 const isAreaActive = (w, area) => {
                                                     if (area === 'water') return w.water === true || (w.waterGlasses > 0);
-                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '');
+                                                    if (area === 'rest') return w.rest === true || (w.exercise && w.exercise.trim() !== '') || !!w.exerciseType || (w.exerciseDuration > 0);
                                                     return w[area] === true;
                                                 };
                                                 Object.keys(areas).forEach(area => {

@@ -928,7 +928,7 @@ export function AnalysesView({
 
                                                                                     const dayCons = consumptionsByDate[wDate] || 0;
 
-                                                                                    if (w.water === true) areas.water.push(dayCons);
+                                                                                    if (w.water === true || (w.waterGlasses > 0)) areas.water.push(dayCons);
                                                                                     if (w.food === true) areas.food.push(dayCons);
                                                                                     if (w.social === true) areas.social.push(dayCons);
                                                                                 });
@@ -2706,6 +2706,310 @@ export function AnalysesView({
                                                         );
                                                     })()}
 
+                                                    {/* EXERCÍCIO */}
+                                                    {analysisSubView === 'estado' && (() => {
+                                                        const exerciseLogs = analysisWellbeing.filter(w => w.exerciseType || (w.exerciseDuration > 0) || w.exercise);
+                                                        const totalLogged = analysisWellbeing.length;
+                                                        const daysWithExercise = new Set(exerciseLogs.map(w => w.date || safeToISODate(w.timestamp))).size;
+                                                        const totalDays = new Set(analysisWellbeing.map(w => w.date || safeToISODate(w.timestamp))).size;
+                                                        const exercisePercent = totalDays > 0 ? (daysWithExercise / totalDays) * 100 : 0;
+
+                                                        const durationsWithData = exerciseLogs.filter(w => w.exerciseDuration > 0);
+                                                        const avgDuration = durationsWithData.length > 0
+                                                            ? durationsWithData.reduce((s, w) => s + w.exerciseDuration, 0) / durationsWithData.length
+                                                            : null;
+
+                                                        const typeFreq = {};
+                                                        exerciseLogs.forEach(w => {
+                                                            const t = w.exerciseType || (w.exercise ? w.exercise.trim() : null) || 'Outros';
+                                                            if (t) typeFreq[t] = (typeFreq[t] || 0) + 1;
+                                                        });
+                                                        const topTypes = Object.entries(typeFreq).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+                                                        const exerciseDateSet = new Set(exerciseLogs.map(w => w.date || safeToISODate(w.timestamp)));
+                                                        const consWithExercise = [];
+                                                        const consWithoutExercise = [];
+                                                        const moodWithExercise = [];
+                                                        const moodWithoutExercise = [];
+                                                        const energyWithExercise = [];
+                                                        const energyWithoutExercise = [];
+
+                                                        const allLoggedDates = new Set(analysisWellbeing.map(w => w.date || safeToISODate(w.timestamp)));
+                                                        const consByDate = {};
+                                                        analysisConsumptions.forEach(c => {
+                                                            const d = c.date || safeToISODate(c.timestamp);
+                                                            if (d) consByDate[d] = (consByDate[d] || 0) + 1;
+                                                        });
+                                                        const moodByDate = {};
+                                                        const energyByDate = {};
+                                                        analysisWellbeing.forEach(w => {
+                                                            const d = w.date || safeToISODate(w.timestamp);
+                                                            if (!d) return;
+                                                            if (w.mood) { moodByDate[d] = moodByDate[d] || []; moodByDate[d].push(parseInt(w.mood)); }
+                                                            if (w.energy) { energyByDate[d] = energyByDate[d] || []; energyByDate[d].push(parseInt(w.energy)); }
+                                                        });
+
+                                                        allLoggedDates.forEach(date => {
+                                                            const cons = consByDate[date] || 0;
+                                                            const hasEx = exerciseDateSet.has(date);
+                                                            if (hasEx) consWithExercise.push(cons);
+                                                            else consWithoutExercise.push(cons);
+
+                                                            const moods = moodByDate[date];
+                                                            if (moods && moods.length > 0) {
+                                                                const avg = moods.reduce((s, v) => s + v, 0) / moods.length;
+                                                                if (hasEx) moodWithExercise.push(avg);
+                                                                else moodWithoutExercise.push(avg);
+                                                            }
+                                                            const energies = energyByDate[date];
+                                                            if (energies && energies.length > 0) {
+                                                                const avg = energies.reduce((s, v) => s + v, 0) / energies.length;
+                                                                if (hasEx) energyWithExercise.push(avg);
+                                                                else energyWithoutExercise.push(avg);
+                                                            }
+                                                        });
+
+                                                        const avg = arr => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+
+                                                        if (totalLogged === 0) {
+                                                            return (
+                                                                <div className={'bg-gray-800 border-gray-700 rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-4xl mb-3">🏃</div>
+                                                                    <p className={'text-lg font-medium mb-2 text-white'}>Sem dados de exercício</p>
+                                                                    <p className={'text-sm text-gray-400'}>Regista o exercício no Bem-estar para veres análises aqui.</p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div className="space-y-4">
+                                                                <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 text-white'}>🏃 Exercício</h3>
+                                                                    <div className="grid grid-cols-3 gap-4 mb-4">
+                                                                        <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                                                                            <div className={'text-2xl font-bold text-green-400'}>{daysWithExercise}</div>
+                                                                            <div className={'text-xs text-gray-400 mt-1'}>dias c/ exercício</div>
+                                                                        </div>
+                                                                        <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                                                                            <div className={'text-2xl font-bold text-green-400'}>{exercisePercent.toFixed(0)}%</div>
+                                                                            <div className={'text-xs text-gray-400 mt-1'}>dos dias registados</div>
+                                                                        </div>
+                                                                        <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                                                                            <div className={'text-2xl font-bold text-green-400'}>{avgDuration != null ? `${Math.round(avgDuration)}min` : '—'}</div>
+                                                                            <div className={'text-xs text-gray-400 mt-1'}>duração média</div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {topTypes.length > 0 && (
+                                                                        <div className="mb-4">
+                                                                            <p className={'text-sm font-medium text-gray-300 mb-2'}>Tipos de exercício</p>
+                                                                            <div className="space-y-1">
+                                                                                {topTypes.map(([type, count]) => (
+                                                                                    <div key={type} className="flex items-center gap-2">
+                                                                                        <span className={'text-xs text-gray-300 w-24 truncate'}>{type}</span>
+                                                                                        <div className="flex-1 bg-gray-700 rounded-full h-2">
+                                                                                            <div
+                                                                                                className="bg-green-500 h-2 rounded-full"
+                                                                                                style={{ width: `${(count / topTypes[0][1]) * 100}%` }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <span className={'text-xs text-gray-400 w-6 text-right'}>{count}x</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(consWithExercise.length >= 3 || moodWithExercise.length >= 3 || energyWithExercise.length >= 3) && (
+                                                                        <div className="border-t border-gray-700 pt-4">
+                                                                            <p className={'text-sm font-medium text-gray-300 mb-3'}>Impacto do exercício</p>
+                                                                            <div className="grid grid-cols-1 gap-2">
+                                                                                {consWithExercise.length >= 3 && consWithoutExercise.length >= 3 && (() => {
+                                                                                    const withEx = avg(consWithExercise);
+                                                                                    const withoutEx = avg(consWithoutExercise);
+                                                                                    const diff = withEx - withoutEx;
+                                                                                    const pct = withoutEx > 0 ? ((diff / withoutEx) * 100).toFixed(0) : 0;
+                                                                                    if (Math.abs(pct) < 5) return null;
+                                                                                    return (
+                                                                                        <p className={'text-xs text-gray-300'}>
+                                                                                            🔢 Dias com exercício: média de <strong>{withEx.toFixed(1)}</strong> consumos vs <strong>{withoutEx.toFixed(1)}</strong> sem exercício
+                                                                                            {' '}({diff < 0 ? <span className="text-green-400">−{Math.abs(pct)}%</span> : <span className="text-orange-400">+{pct}%</span>}).
+                                                                                        </p>
+                                                                                    );
+                                                                                })()}
+                                                                                {moodWithExercise.length >= 3 && moodWithoutExercise.length >= 3 && (() => {
+                                                                                    const withEx = avg(moodWithExercise);
+                                                                                    const withoutEx = avg(moodWithoutExercise);
+                                                                                    const diff = (withEx - withoutEx).toFixed(1);
+                                                                                    if (Math.abs(diff) < 0.3) return null;
+                                                                                    return (
+                                                                                        <p className={'text-xs text-gray-300'}>
+                                                                                            😊 Humor com exercício: <strong>{withEx.toFixed(1)}/5</strong> vs <strong>{withoutEx.toFixed(1)}/5</strong> sem exercício
+                                                                                            {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
+                                                                                        </p>
+                                                                                    );
+                                                                                })()}
+                                                                                {energyWithExercise.length >= 3 && energyWithoutExercise.length >= 3 && (() => {
+                                                                                    const withEx = avg(energyWithExercise);
+                                                                                    const withoutEx = avg(energyWithoutExercise);
+                                                                                    const diff = (withEx - withoutEx).toFixed(1);
+                                                                                    if (Math.abs(diff) < 0.3) return null;
+                                                                                    return (
+                                                                                        <p className={'text-xs text-gray-300'}>
+                                                                                            ⚡ Energia com exercício: <strong>{withEx.toFixed(1)}/5</strong> vs <strong>{withoutEx.toFixed(1)}/5</strong> sem exercício
+                                                                                            {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
+                                                                                        </p>
+                                                                                    );
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* SINTOMAS */}
+                                                    {analysisSubView === 'estado' && (() => {
+                                                        const allSymptoms = analysisWellbeing.flatMap(w => [
+                                                            ...(w.symptoms || []),
+                                                            ...(w.customSymptom ? [w.customSymptom] : [])
+                                                        ]).filter(s => s && s.trim());
+
+                                                        if (allSymptoms.length === 0) {
+                                                            return (
+                                                                <div className={'bg-gray-800 border-gray-700 rounded-xl p-8 border text-center'}>
+                                                                    <div className="text-4xl mb-3">🤒</div>
+                                                                    <p className={'text-lg font-medium mb-2 text-white'}>Sem sintomas registados</p>
+                                                                    <p className={'text-sm text-gray-400'}>Regista sintomas de saúde no Bem-estar para veres análises aqui.</p>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        const symptomFreq = {};
+                                                        allSymptoms.forEach(s => { symptomFreq[s] = (symptomFreq[s] || 0) + 1; });
+                                                        const topSymptoms = Object.entries(symptomFreq).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+                                                        const symptomDates = {};
+                                                        analysisWellbeing.forEach(w => {
+                                                            const d = w.date || safeToISODate(w.timestamp);
+                                                            if (!d) return;
+                                                            const syms = [...(w.symptoms || []), ...(w.customSymptom ? [w.customSymptom] : [])].filter(s => s && s.trim());
+                                                            syms.forEach(s => {
+                                                                if (!symptomDates[s]) symptomDates[s] = new Set();
+                                                                symptomDates[s].add(d);
+                                                            });
+                                                        });
+
+                                                        const daysWithAnySymptom = new Set(
+                                                            analysisWellbeing
+                                                                .filter(w => ((w.symptoms || []).length > 0) || w.customSymptom)
+                                                                .map(w => w.date || safeToISODate(w.timestamp))
+                                                        ).size;
+                                                        const totalDays = new Set(analysisWellbeing.map(w => w.date || safeToISODate(w.timestamp))).size;
+
+                                                        const consByDate = {};
+                                                        analysisConsumptions.forEach(c => {
+                                                            const d = c.date || safeToISODate(c.timestamp);
+                                                            if (d) consByDate[d] = (consByDate[d] || 0) + 1;
+                                                        });
+                                                        const moodByDate = {};
+                                                        analysisWellbeing.forEach(w => {
+                                                            const d = w.date || safeToISODate(w.timestamp);
+                                                            if (d && w.mood) { moodByDate[d] = moodByDate[d] || []; moodByDate[d].push(parseInt(w.mood)); }
+                                                        });
+                                                        const avg = arr => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+
+                                                        const symptomDaySet = new Set(
+                                                            analysisWellbeing
+                                                                .filter(w => ((w.symptoms || []).length > 0) || w.customSymptom)
+                                                                .map(w => w.date || safeToISODate(w.timestamp))
+                                                        );
+                                                        const allDays = new Set(analysisWellbeing.map(w => w.date || safeToISODate(w.timestamp)));
+                                                        const consWithSymptom = [];
+                                                        const consWithoutSymptom = [];
+                                                        const moodWithSymptom = [];
+                                                        const moodWithoutSymptom = [];
+                                                        allDays.forEach(date => {
+                                                            const hasSym = symptomDaySet.has(date);
+                                                            const cons = consByDate[date] || 0;
+                                                            if (hasSym) consWithSymptom.push(cons);
+                                                            else consWithoutSymptom.push(cons);
+                                                            const moods = moodByDate[date];
+                                                            if (moods && moods.length > 0) {
+                                                                const m = avg(moods);
+                                                                if (hasSym) moodWithSymptom.push(m);
+                                                                else moodWithoutSymptom.push(m);
+                                                            }
+                                                        });
+
+                                                        return (
+                                                            <div className="space-y-4">
+                                                                <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
+                                                                    <h3 className={'text-lg font-semibold mb-4 text-white'}>🤒 Sintomas de Saúde</h3>
+                                                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                        <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                                                                            <div className={'text-2xl font-bold text-orange-400'}>{allSymptoms.length}</div>
+                                                                            <div className={'text-xs text-gray-400 mt-1'}>registos de sintomas</div>
+                                                                        </div>
+                                                                        <div className="bg-gray-700/50 rounded-lg p-3 text-center">
+                                                                            <div className={'text-2xl font-bold text-orange-400'}>{totalDays > 0 ? ((daysWithAnySymptom / totalDays) * 100).toFixed(0) : 0}%</div>
+                                                                            <div className={'text-xs text-gray-400 mt-1'}>dias c/ sintomas</div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <p className={'text-sm font-medium text-gray-300 mb-2'}>Sintomas mais frequentes</p>
+                                                                    <div className="space-y-1 mb-4">
+                                                                        {topSymptoms.map(([symptom, count]) => (
+                                                                            <div key={symptom} className="flex items-center gap-2">
+                                                                                <span className={'text-xs text-gray-300 w-32 truncate'}>{symptom}</span>
+                                                                                <div className="flex-1 bg-gray-700 rounded-full h-2">
+                                                                                    <div
+                                                                                        className="bg-orange-500 h-2 rounded-full"
+                                                                                        style={{ width: `${(count / topSymptoms[0][1]) * 100}%` }}
+                                                                                    />
+                                                                                </div>
+                                                                                <span className={'text-xs text-gray-400 w-6 text-right'}>{count}x</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+
+                                                                    {(consWithSymptom.length >= 3 || moodWithSymptom.length >= 3) && (
+                                                                        <div className="border-t border-gray-700 pt-4">
+                                                                            <p className={'text-sm font-medium text-gray-300 mb-2'}>Sintomas vs padrão de consumo</p>
+                                                                            <div className="space-y-2">
+                                                                                {consWithSymptom.length >= 3 && consWithoutSymptom.length >= 3 && (() => {
+                                                                                    const withS = avg(consWithSymptom);
+                                                                                    const withoutS = avg(consWithoutSymptom);
+                                                                                    const diff = withS - withoutS;
+                                                                                    const pct = withoutS > 0 ? ((diff / withoutS) * 100).toFixed(0) : 0;
+                                                                                    if (Math.abs(pct) < 5) return <p className={'text-xs text-gray-400'}>Sem diferença significativa no consumo em dias com sintomas.</p>;
+                                                                                    return (
+                                                                                        <p className={'text-xs text-gray-300'}>
+                                                                                            🔢 Dias com sintomas: média de <strong>{withS.toFixed(1)}</strong> consumos vs <strong>{withoutS.toFixed(1)}</strong> sem sintomas
+                                                                                            {' '}({diff > 0 ? <span className="text-orange-400">+{pct}%</span> : <span className="text-green-400">−{Math.abs(pct)}%</span>}).
+                                                                                        </p>
+                                                                                    );
+                                                                                })()}
+                                                                                {moodWithSymptom.length >= 3 && moodWithoutSymptom.length >= 3 && (() => {
+                                                                                    const withS = avg(moodWithSymptom);
+                                                                                    const withoutS = avg(moodWithoutSymptom);
+                                                                                    const diff = (withS - withoutS).toFixed(1);
+                                                                                    if (Math.abs(diff) < 0.3) return null;
+                                                                                    return (
+                                                                                        <p className={'text-xs text-gray-300'}>
+                                                                                            😊 Humor em dias com sintomas: <strong>{withS.toFixed(1)}/5</strong> vs <strong>{withoutS.toFixed(1)}/5</strong> sem sintomas.
+                                                                                        </p>
+                                                                                    );
+                                                                                })()}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+
                                                     {/* CORRELAÇÕES */}
                                                     {/* CORRELAÇÕES */}
                                                     {analysisSubView === 'correlacoes' && (() => {
@@ -3353,7 +3657,7 @@ export function AnalysesView({
 
                                                                 // Autocuidado (4 áreas)
                                                                 if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
-                                                                if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
+                                                                if (w.exerciseType || (w.exerciseDuration > 0) || w.exercise) dailyData[date].exercise = 1;
                                                                 if (w.food) dailyData[date].food = parseInt(w.food);
                                                                 if (w.social) dailyData[date].social = parseInt(w.social);
                                                             });
@@ -4910,7 +5214,7 @@ export function AnalysesView({
                                                             }
 
                                                             if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
-                                                            if (w.exercise) dailyData[date].exercise = parseInt(w.exercise);
+                                                            if (w.exerciseType || (w.exerciseDuration > 0) || w.exercise) dailyData[date].exercise = 1;
                                                             if (w.food) dailyData[date].food = parseInt(w.food);
                                                             if (w.social) dailyData[date].social = parseInt(w.social);
                                                             if (w.mood) dailyData[date].mood = parseInt(w.mood);
