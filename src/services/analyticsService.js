@@ -314,28 +314,25 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'limit_last') {
-        // REGRA: Conta TODOS OS DIAS com consumptions
-        // Dias COM consumptions mas SEM lastBefore00 marcado = falha
-        // Dias SEM consumptions = não relevantes (não contam)
-        const allDays = getAllDaysSinceFirstRecord(consumptions);
+        const today = getTodayPT();
+        const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
+        const [th, tm] = targetStr.split(':').map(Number);
+        const targetMinutes = th * 60 + (tm || 0);
 
-        // Mapear consumptions por dia (usar ISO format)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
-            consumptionsByDate[dateKey] = true;
+            const dateKey = timestampToPT(c.timestamp);
+            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+            consumptionsByDate[dateKey].push(c);
         });
+        delete consumptionsByDate[today];
 
-        // Verificar cada dia
-        allDays.forEach(date => {
-            // Só conta dias com consumptions
-            if (!consumptionsByDate[date]) return;
-
-            // Buscar cycle para este dia
-            const cycle = cycles.find(c => getDateKeyFromItem(c) === date);
-
-            const isAchieved = cycle && cycle.lastBefore00 === true;
-            if (isAchieved) achievedCount++;
+        Object.values(consumptionsByDate).forEach(dayConsumptions => {
+            if (dayConsumptions.length === 0) return;
+            const last = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+            const d = new Date(last.timestamp);
+            const lastMinutes = d.getHours() * 60 + d.getMinutes();
+            if (lastMinutes < targetMinutes) achievedCount++;
         });
     }
 

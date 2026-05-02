@@ -463,7 +463,7 @@
       "explain": {
         "reduce_frequency": "Days with <{{target}} uses",
         "reduce_quantity": "Days with <{{target}}mg",
-        "limit_last": "Days with last use before midnight",
+        "limit_last": "Days with last use before {{target}}",
         "increase_interval": "Days with ≥50% intervals >{{target}}h",
         "sleep_hours": "Nights with ≥{{target}}h sleep",
         "bedtime_before": "Nights sleeping before {{target}}",

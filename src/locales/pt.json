@@ -502,7 +502,7 @@
       "explain": {
         "reduce_frequency": "Dias com <{{target}} consumos",
         "reduce_quantity": "Dias com <{{target}}mg",
-        "limit_last": "Dias com último antes da meia-noite",
+        "limit_last": "Dias com último consumo antes das {{target}}",
         "increase_interval": "Dias com ≥50% intervalos >{{target}}h",
         "sleep_hours": "Noites com ≥{{target}}h de sono",
         "bedtime_before": "Noites a dormir antes de {{target}}",

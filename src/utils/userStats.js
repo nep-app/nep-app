@@ -337,23 +337,34 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
-    // Aviso 6: Último consumo antes da 00h (se existe meta limit_last)
+    // Aviso 6: Último consumo (meta limit_last — automático por timestamp)
     const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
-    if (limitLastGoal && cycles && cycles.length > 0) {
-      const lastCycle = cycles
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    if (limitLastGoal && consumptions && consumptions.length > 0) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayConsumptions = consumptions
+        .filter(c => { const d = new Date(c.timestamp || c.createdAt); d.setHours(0,0,0,0); return d.getTime() === todayStart.getTime(); })
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-      if (lastCycle && lastCycle.lastBefore00 !== undefined) {
-        if (lastCycle.lastBefore00 === true) {
+      if (todayConsumptions.length > 0) {
+        const last = todayConsumptions[0];
+        const ld = new Date(last.timestamp);
+        const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+        const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
+        const [th, tm] = targetStr.split(':').map(Number);
+        const targetMinutes = th * 60 + (tm || 0);
+        const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
+
+        if (lastMinutes < targetMinutes) {
           alerts.push({
-            text: i18n.t('alerts.goodLastUse'),
+            text: `Último consumo às ${lastTimeStr} — antes das ${targetStr} ✓`,
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: i18n.t('alerts.lateLastUse'),
+            text: `Último consumo às ${lastTimeStr} — meta era antes das ${targetStr}`,
             emoji: '⏰',
             color: 'orange',
             type: 'negative'

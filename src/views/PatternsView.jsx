@@ -848,7 +848,7 @@ export function PatternsView({
                                                                         const explanations = {
                                                                             'reduce_frequency': t('patterns.goals.explain.reduce_frequency', { target: goal.target }),
                                                                             'reduce_quantity': t('patterns.goals.explain.reduce_quantity', { target: goal.target }),
-                                                                            'limit_last': t('patterns.goals.explain.limit_last'),
+                                                                            'limit_last': t('patterns.goals.explain.limit_last', { target: goal.target }),
                                                                             'increase_interval': t('patterns.goals.explain.increase_interval', { target: goal.target }),
                                                                             'sleep_hours': t('patterns.goals.explain.sleep_hours', { target: goal.target }),
                                                                             'bedtime_before': t('patterns.goals.explain.bedtime_before', { target: goal.target }),
