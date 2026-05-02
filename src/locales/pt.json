@@ -218,7 +218,8 @@
         "increase_interval": "Definir intervalo de consumo mínimo",
         "limit_last": "Definir horário de último consumo",
         "bedtime_before": "Definir hora de ir deitar",
-        "sleep_hours": "Definir horas de sono diárias"
+        "sleep_hours": "Definir horas de sono diárias",
+        "first_not_before": "Primeiro consumo não antes de"
       },
       "units": {
         "mg": "mg",
@@ -495,7 +496,8 @@
         "limit_last": "🌙 Limitar último consumo",
         "increase_interval": "⏳ Aumentar intervalo",
         "sleep_hours": "😴 Horas de sono",
-        "bedtime_before": "🛏️ Deitar antes de"
+        "bedtime_before": "🛏️ Deitar antes de",
+        "first_not_before": "☀️ Primeiro consumo após"
       },
       "explain": {
         "reduce_frequency": "Dias com <{{target}} consumos",
@@ -503,7 +505,8 @@
         "limit_last": "Dias com último antes da meia-noite",
         "increase_interval": "Dias com ≥50% intervalos >{{target}}h",
         "sleep_hours": "Noites com ≥{{target}}h de sono",
-        "bedtime_before": "Noites a dormir antes de {{target}}"
+        "bedtime_before": "Noites a dormir antes de {{target}}",
+        "first_not_before": "Dias com 1º consumo após {{target}}"
       }
     },
     "progress": {

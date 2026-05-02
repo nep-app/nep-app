@@ -394,6 +394,41 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
+    // Aviso 8: Primeiro consumo (se existe meta first_not_before)
+    const firstNotBeforeGoal = (goals || []).find(g => g.type === 'first_not_before');
+    if (firstNotBeforeGoal && consumptions && consumptions.length > 0) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayConsumptions = consumptions
+        .filter(c => { const d = new Date(c.timestamp || c.createdAt); d.setHours(0,0,0,0); return d.getTime() === todayStart.getTime(); })
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      if (todayConsumptions.length > 0) {
+        const first = todayConsumptions[0];
+        const fd = new Date(first.timestamp);
+        const firstMinutes = fd.getHours() * 60 + fd.getMinutes();
+        const [th, tm] = firstNotBeforeGoal.target.split(':').map(Number);
+        const targetMinutes = th * 60 + (tm || 0);
+        const firstTimeStr = `${String(fd.getHours()).padStart(2,'0')}:${String(fd.getMinutes()).padStart(2,'0')}`;
+
+        if (firstMinutes < targetMinutes) {
+          alerts.push({
+            text: `1º consumo às ${firstTimeStr} — meta era após as ${firstNotBeforeGoal.target}`,
+            emoji: '⏰',
+            color: 'orange',
+            type: 'negative'
+          });
+        } else {
+          alerts.push({
+            text: `1º consumo às ${firstTimeStr} — meta cumprida ✓`,
+            emoji: '☀️',
+            color: 'green',
+            type: 'positive'
+          });
+        }
+      }
+    }
+
     // Guardar em metadata
     const stats = {
       streak,

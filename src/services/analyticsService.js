@@ -461,5 +461,28 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         });
     }
 
+    if (goal.type === 'first_not_before') {
+        const today = getTodayPT();
+        const consumptionsByDate = {};
+        consumptions.forEach(c => {
+            const dateKey = timestampToPT(c.timestamp);
+            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
+            consumptionsByDate[dateKey].push(c);
+        });
+        delete consumptionsByDate[today];
+
+        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
+        const [th, tm] = targetStr.split(':').map(Number);
+        const targetMinutes = th * 60 + (tm || 0);
+
+        Object.values(consumptionsByDate).forEach(dayConsumptions => {
+            if (dayConsumptions.length === 0) return;
+            const first = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+            const d = new Date(first.timestamp);
+            const firstMinutes = d.getHours() * 60 + d.getMinutes();
+            if (firstMinutes >= targetMinutes) achievedCount++;
+        });
+    }
+
     return achievedCount;
 };

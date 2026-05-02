@@ -1726,7 +1726,7 @@ export function AnalysesView({
                                                                                             }
                                                                                         });
                                                                                         totalPossible = allDates.size;
-                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity') {
+                                                                                    } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'first_not_before') {
                                                                                         // DIAS com consumos
                                                                                         const allDates = new Set();
                                                                                         analysisConsumptions.forEach(c => {
@@ -1756,7 +1756,8 @@ export function AnalysesView({
                                                                                     increase_interval: 'Aumentar Intervalo',
                                                                                     limit_last: 'Limitar Último Consumo',
                                                                                     bedtime_before: 'Deitar Antes de',
-                                                                                    sleep_hours: 'Horas de Sono'
+                                                                                    sleep_hours: 'Horas de Sono',
+                                                                                    first_not_before: '☀️ 1º Consumo Após'
                                                                                 };
 
                                                                                 return (

@@ -842,7 +842,8 @@ export function PatternsView({
                                                                             'limit_last': t('patterns.goals.types.limit_last'),
                                                                             'increase_interval': t('patterns.goals.types.increase_interval'),
                                                                             'sleep_hours': t('patterns.goals.types.sleep_hours'),
-                                                                            'bedtime_before': t('patterns.goals.types.bedtime_before')
+                                                                            'bedtime_before': t('patterns.goals.types.bedtime_before'),
+                                                                            'first_not_before': t('patterns.goals.types.first_not_before')
                                                                         };
                                                                         const explanations = {
                                                                             'reduce_frequency': t('patterns.goals.explain.reduce_frequency', { target: goal.target }),
@@ -850,7 +851,8 @@ export function PatternsView({
                                                                             'limit_last': t('patterns.goals.explain.limit_last'),
                                                                             'increase_interval': t('patterns.goals.explain.increase_interval', { target: goal.target }),
                                                                             'sleep_hours': t('patterns.goals.explain.sleep_hours', { target: goal.target }),
-                                                                            'bedtime_before': t('patterns.goals.explain.bedtime_before', { target: goal.target })
+                                                                            'bedtime_before': t('patterns.goals.explain.bedtime_before', { target: goal.target }),
+                                                                            'first_not_before': t('patterns.goals.explain.first_not_before', { target: goal.target })
                                                                         };
                                                                         return (
                                                                             <div key={goal.id} className={'bg-gray-700/50 border-gray-600' + ' rounded-lg p-3 border'}>

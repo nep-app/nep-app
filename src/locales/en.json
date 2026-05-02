@@ -218,7 +218,8 @@
         "increase_interval": "Set minimum consumption interval",
         "limit_last": "Set last consumption time",
         "bedtime_before": "Set bedtime",
-        "sleep_hours": "Set daily sleep hours"
+        "sleep_hours": "Set daily sleep hours",
+        "first_not_before": "First consumption not before"
       },
       "units": {
         "mg": "mg",
@@ -456,7 +457,8 @@
         "limit_last": "🌙 Limit last use",
         "increase_interval": "⏳ Increase interval",
         "sleep_hours": "😴 Sleep hours",
-        "bedtime_before": "🛏️ Bedtime before"
+        "bedtime_before": "🛏️ Bedtime before",
+        "first_not_before": "☀️ First use after"
       },
       "explain": {
         "reduce_frequency": "Days with <{{target}} uses",
@@ -464,7 +466,8 @@
         "limit_last": "Days with last use before midnight",
         "increase_interval": "Days with ≥50% intervals >{{target}}h",
         "sleep_hours": "Nights with ≥{{target}}h sleep",
-        "bedtime_before": "Nights sleeping before {{target}}"
+        "bedtime_before": "Nights sleeping before {{target}}",
+        "first_not_before": "Days with 1st use after {{target}}"
       }
     },
     "progress": {
