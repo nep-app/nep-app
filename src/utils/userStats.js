@@ -345,18 +345,21 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       // 00:00 significa meia-noite = fim do dia = 1440 minutos
       const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // Usar data LOCAL (não UTC) para evitar bugs de timezone
+      const localDateKey = (ts) => {
+        const d = new Date(ts);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      };
+      const now = new Date();
+      const todayKey = localDateKey(now);
 
       const allByDay = {};
       consumptions.forEach(c => {
-        const d = new Date(c.timestamp || c.createdAt);
-        const key = d.toISOString().split('T')[0];
+        const key = localDateKey(c.timestamp || c.createdAt);
         if (!allByDay[key]) allByDay[key] = [];
         allByDay[key].push(c);
       });
 
-      const todayKey = todayStart.toISOString().split('T')[0];
       const todayConsumptions = (allByDay[todayKey] || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       // Só avisar hoje se já consumiste DEPOIS do alvo (ciclo em aberto violado)
@@ -371,7 +374,6 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
             color: 'orange',
             type: 'negative'
           });
-          // Não mostrar também o ciclo anterior — este alerta é suficiente
           return;
         }
       }
