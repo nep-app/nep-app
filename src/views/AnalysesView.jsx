@@ -2721,7 +2721,8 @@ export function AnalysesView({
 
                                                         const typeFreq = {};
                                                         exerciseLogs.forEach(w => {
-                                                            const t = w.exerciseType || (w.exercise ? w.exercise.trim() : null) || 'Outros';
+                                                            const raw = w.exerciseType || (w.exercise ? w.exercise.trim() : null) || 'outros';
+                                                            const t = raw.trim().toLowerCase();
                                                             if (t) typeFreq[t] = (typeFreq[t] || 0) + 1;
                                                         });
                                                         const topTypes = Object.entries(typeFreq).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -2874,7 +2875,7 @@ export function AnalysesView({
                                                         const allSymptoms = analysisWellbeing.flatMap(w => [
                                                             ...(w.symptoms || []),
                                                             ...(w.customSymptom ? [w.customSymptom] : [])
-                                                        ]).filter(s => s && s.trim());
+                                                        ]).filter(s => s && s.trim()).map(s => s.trim().toLowerCase());
 
                                                         if (allSymptoms.length === 0) {
                                                             return (
@@ -2887,14 +2888,14 @@ export function AnalysesView({
                                                         }
 
                                                         const symptomFreq = {};
-                                                        allSymptoms.forEach(s => { symptomFreq[s] = (symptomFreq[s] || 0) + 1; });
+                                                        allSymptoms.forEach(s => { const k = s.trim().toLowerCase(); symptomFreq[k] = (symptomFreq[k] || 0) + 1; });
                                                         const topSymptoms = Object.entries(symptomFreq).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
                                                         const symptomDates = {};
                                                         analysisWellbeing.forEach(w => {
                                                             const d = w.date || safeToISODate(w.timestamp);
                                                             if (!d) return;
-                                                            const syms = [...(w.symptoms || []), ...(w.customSymptom ? [w.customSymptom] : [])].filter(s => s && s.trim());
+                                                            const syms = [...(w.symptoms || []), ...(w.customSymptom ? [w.customSymptom] : [])].filter(s => s && s.trim()).map(s => s.trim().toLowerCase());
                                                             syms.forEach(s => {
                                                                 if (!symptomDates[s]) symptomDates[s] = new Set();
                                                                 symptomDates[s].add(d);

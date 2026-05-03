@@ -44,8 +44,18 @@ export const WellbeingModal = ({
   const allPastSymptoms = useMemo(() => {
     const set = new Set();
     wellbeingLogs.forEach(log => {
-      (log.symptoms || []).forEach(s => s && set.add(s));
-      if (log.customSymptom) set.add(log.customSymptom);
+      (log.symptoms || []).forEach(s => s && set.add(s.trim().toLowerCase()));
+      if (log.customSymptom) set.add(log.customSymptom.trim().toLowerCase());
+    });
+    return [...set].sort();
+  }, [wellbeingLogs]);
+
+  // Past exercise types for autocomplete
+  const allPastExerciseTypes = useMemo(() => {
+    const set = new Set();
+    wellbeingLogs.forEach(log => {
+      if (log.exerciseType) set.add(log.exerciseType.trim().toLowerCase());
+      if (log.exercise && log.exercise.trim()) set.add(log.exercise.trim().toLowerCase());
     });
     return [...set].sort();
   }, [wellbeingLogs]);
@@ -77,10 +87,10 @@ export const WellbeingModal = ({
   }, [selectedDate, isOpen]);
 
   const addSymptom = () => {
-    const s = symptomInput.trim();
+    const s = symptomInput.trim().toLowerCase();
     if (!s) return;
     const current = wellbeingForm.symptoms || [];
-    if (!current.includes(s)) {
+    if (!current.map(x => x.toLowerCase()).includes(s)) {
       setWellbeingForm({ ...wellbeingForm, symptoms: [...current, s] });
     }
     setSymptomInput('');
@@ -202,12 +212,16 @@ export const WellbeingModal = ({
                 </label>
                 <div className="flex gap-2">
                   <input
+                    list="exercise-suggestions"
                     type="text"
                     value={wellbeingForm.exerciseType || ''}
                     onChange={(e) => setWellbeingForm({...wellbeingForm, exerciseType: e.target.value})}
                     className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm"
                     placeholder="O quê? ex: caminhar"
                   />
+                  <datalist id="exercise-suggestions">
+                    {allPastExerciseTypes.map(t => <option key={t} value={t} />)}
+                  </datalist>
                   <div className="flex items-center gap-1">
                     <input
                       type="number"

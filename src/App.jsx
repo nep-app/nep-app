@@ -536,14 +536,14 @@ function AuthenticatedApp() {
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         waterGlasses: wellbeingForm.waterGlasses,
-                        exerciseType: wellbeingForm.exerciseType,
+                        exerciseType: (wellbeingForm.exerciseType || '').trim().toLowerCase() || null,
                         exerciseDuration: wellbeingForm.exerciseDuration !== '' ? parseInt(wellbeingForm.exerciseDuration) : null,
                         napDuration: wellbeingForm.napDuration !== '' ? parseInt(wellbeingForm.napDuration) : null,
                         social: wellbeingForm.social,
                         food: wellbeingForm.food,
                         emotions: wellbeingForm.emotions,
-                        symptoms: wellbeingForm.symptoms || [],
-                        customSymptom: sanitizeText(wellbeingForm.customSymptom || ''),
+                        symptoms: (wellbeingForm.symptoms || []).map(s => s.trim().toLowerCase()).filter(Boolean),
+                        customSymptom: sanitizeText((wellbeingForm.customSymptom || '').trim().toLowerCase()),
                         notes: sanitizeText(wellbeingForm.notes)
                     };
 
