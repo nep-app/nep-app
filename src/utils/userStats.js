@@ -340,31 +340,61 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     // Aviso 6: Último consumo (meta limit_last — automático por timestamp)
     const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
     if (limitLastGoal && consumptions && consumptions.length > 0) {
+      const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
+      const [th, tm] = targetStr.split(':').map(Number);
+      // 00:00 significa meia-noite = fim do dia = 1440 minutos
+      const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const todayConsumptions = consumptions
-        .filter(c => { const d = new Date(c.timestamp || c.createdAt); d.setHours(0,0,0,0); return d.getTime() === todayStart.getTime(); })
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+      const allByDay = {};
+      consumptions.forEach(c => {
+        const d = new Date(c.timestamp || c.createdAt);
+        const key = d.toISOString().split('T')[0];
+        if (!allByDay[key]) allByDay[key] = [];
+        allByDay[key].push(c);
+      });
+
+      const todayKey = todayStart.toISOString().split('T')[0];
+      const todayConsumptions = (allByDay[todayKey] || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Só avisar hoje se já consumiste DEPOIS do alvo (ciclo em aberto violado)
       if (todayConsumptions.length > 0) {
-        const last = todayConsumptions[0];
-        const ld = new Date(last.timestamp);
+        const ld = new Date(todayConsumptions[0].timestamp);
         const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
-        const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
-        const [th, tm] = targetStr.split(':').map(Number);
-        const targetMinutes = th * 60 + (tm || 0);
+        if (lastMinutes >= targetMinutes) {
+          const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
+          alerts.push({
+            text: `Último consumo às ${lastTimeStr} — meta era antes das ${targetStr}`,
+            emoji: '⏰',
+            color: 'orange',
+            type: 'negative'
+          });
+          // Não mostrar também o ciclo anterior — este alerta é suficiente
+          return;
+        }
+      }
+
+      // Caso contrário: mostrar resultado do ciclo anterior (fechado)
+      const previousKeys = Object.keys(allByDay).filter(k => k !== todayKey).sort().reverse();
+      if (previousKeys.length > 0) {
+        const prevConsumptions = allByDay[previousKeys[0]].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const prevLast = prevConsumptions[0];
+        const ld = new Date(prevLast.timestamp);
+        const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
         const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
 
         if (lastMinutes < targetMinutes) {
           alerts.push({
-            text: `Último consumo às ${lastTimeStr} — antes das ${targetStr} ✓`,
+            text: `Último consumo às ${lastTimeStr} (ontem) — antes das ${targetStr} ✓`,
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: `Último consumo às ${lastTimeStr} — meta era antes das ${targetStr}`,
+            text: `Último consumo às ${lastTimeStr} (ontem) — meta era antes das ${targetStr}`,
             emoji: '⏰',
             color: 'orange',
             type: 'negative'

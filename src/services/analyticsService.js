@@ -317,7 +317,8 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         const today = getTodayPT();
         const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
         const [th, tm] = targetStr.split(':').map(Number);
-        const targetMinutes = th * 60 + (tm || 0);
+        // 00:00 significa meia-noite = fim do dia = 1440 minutos
+        const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
 
         const consumptionsByDate = {};
         consumptions.forEach(c => {
