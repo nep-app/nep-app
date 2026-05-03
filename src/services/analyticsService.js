@@ -479,13 +479,24 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
 
             const [bh, bm] = cycle.bedtime.split(':').map(Number);
             let wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
-            if (wakeupMinutes >= 1440) wakeupMinutes -= 1440; // normalizar para 0-1439
+            if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
 
-            const targetMinutes = wakeupMinutes + targetHours * 60;
-            const first = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+            const targetMinutes = (wakeupMinutes + targetHours * 60) % 1440;
+
+            // Ignorar consumos antes de acordar (pertencem ao ciclo anterior)
+            const afterWakeup = dayConsumptions
+                .filter(c => {
+                    const d = new Date(c.timestamp);
+                    return (d.getHours() * 60 + d.getMinutes()) >= wakeupMinutes;
+                })
+                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            if (afterWakeup.length === 0) return; // sem consumo após acordar
+
+            const first = afterWakeup[0];
             const d = new Date(first.timestamp);
             const firstMinutes = d.getHours() * 60 + d.getMinutes();
-            if (firstMinutes >= targetMinutes % 1440) achievedCount++;
+            if (firstMinutes >= targetMinutes) achievedCount++;
         });
     }
 

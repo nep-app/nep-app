@@ -425,28 +425,39 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
         const targetMinutes = (wakeupMinutes + parseFloat(firstNotBeforeGoal.target) * 60) % 1440;
 
-        const first = todayConsumptions[0];
-        const fd = new Date(first.timestamp);
-        const firstMinutes = fd.getHours() * 60 + fd.getMinutes();
-        const firstTimeStr = `${String(fd.getHours()).padStart(2,'0')}:${String(fd.getMinutes()).padStart(2,'0')}`;
-        const wakeupH = Math.floor(wakeupMinutes / 60);
-        const wakeupM = wakeupMinutes % 60;
-        const wakeupStr = `${String(wakeupH).padStart(2,'0')}:${String(wakeupM).padStart(2,'0')}`;
+        // Ignorar consumos antes de acordar (pertencem ao ciclo anterior)
+        const afterWakeup = todayConsumptions.filter(c => {
+          const d = new Date(c.timestamp);
+          const mins = d.getHours() * 60 + d.getMinutes();
+          return mins >= wakeupMinutes;
+        });
 
-        if (firstMinutes < targetMinutes) {
-          alerts.push({
-            text: `1º consumo às ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar (${wakeupStr})`,
-            emoji: '⏰',
-            color: 'orange',
-            type: 'negative'
-          });
+        if (afterWakeup.length === 0) {
+          // Ainda sem consumo após acordar — não mostrar alerta
         } else {
-          alerts.push({
-            text: `1º consumo às ${firstTimeStr} — ${firstNotBeforeGoal.target}h após acordar ✓`,
-            emoji: '☀️',
-            color: 'green',
-            type: 'positive'
-          });
+          const first = afterWakeup[0];
+          const fd = new Date(first.timestamp);
+          const firstMinutes = fd.getHours() * 60 + fd.getMinutes();
+          const firstTimeStr = `${String(fd.getHours()).padStart(2,'0')}:${String(fd.getMinutes()).padStart(2,'0')}`;
+          const wakeupH = Math.floor(wakeupMinutes / 60);
+          const wakeupM = wakeupMinutes % 60;
+          const wakeupStr = `${String(wakeupH).padStart(2,'0')}:${String(wakeupM).padStart(2,'0')}`;
+
+          if (firstMinutes < targetMinutes) {
+            alerts.push({
+              text: `1º consumo às ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar (${wakeupStr})`,
+              emoji: '⏰',
+              color: 'orange',
+              type: 'negative'
+            });
+          } else {
+            alerts.push({
+              text: `1º consumo às ${firstTimeStr} — ${firstNotBeforeGoal.target}h após acordar ✓`,
+              emoji: '☀️',
+              color: 'green',
+              type: 'positive'
+            });
+          }
         }
       }
     }
