@@ -366,7 +366,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         if (lastMinutes >= targetMinutes) {
           const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
           alerts.push({
-            text: `Último consumo às ${lastTimeStr} — meta era antes das ${targetStr}`,
+            text: `Último consumo ${lastTimeStr} — meta: até ${targetStr}`,
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
@@ -387,14 +387,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (lastMinutes < targetMinutes) {
           alerts.push({
-            text: `Último consumo às ${lastTimeStr} (ontem) — antes das ${targetStr} ✓`,
+            text: `antes das ${targetStr} ✓`,
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: `Último consumo às ${lastTimeStr} (ontem) — meta era antes das ${targetStr}`,
+            text: `Último consumo ${lastTimeStr} — meta: até ${targetStr}`,
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
@@ -475,14 +475,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
           if (firstMinutes < targetMinutes) {
             alerts.push({
-              text: `1º consumo às ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar (${wakeupStr})`,
+              text: `1º consumo ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar`,
               emoji: '⏰',
               color: 'orange',
               type: 'negative'
             });
           } else {
             alerts.push({
-              text: `1º consumo às ${firstTimeStr} — ${firstNotBeforeGoal.target}h após acordar ✓`,
+              text: `${firstNotBeforeGoal.target}h após acordar ✓`,
               emoji: '☀️',
               color: 'green',
               type: 'positive'
