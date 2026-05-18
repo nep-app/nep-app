@@ -94,11 +94,20 @@ export function AnalysesView({
                                         const filteredReflections = filterByDateRange(reflections, dateRange);
                                         const filteredThoughts = filterByDateRange(thoughts, dateRange);
 
+                                        // Dias atípicos — excluir de análises/metas
+                                        const atypicalDates = new Set(
+                                            filteredWellbeingLogs
+                                                .filter(w => w.isAtypical)
+                                                .map(w => w.date || safeToISODate(w.timestamp))
+                                                .filter(Boolean)
+                                        );
+                                        const atypicalCount = atypicalDates.size;
+
                                         // Usar dados filtrados diretamente (sem excluir dia atual)
-                                        const analysisConsumptions = filteredConsumptions;
-                                        const analysisWellbeing = filteredWellbeingLogs;
-                                        const analysisCycles = filteredCycles;
-                                        const analysisDailyLogs = filteredDailyLogs;
+                                        const analysisConsumptions = filteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+                                        const analysisWellbeing = filteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
+                                        const analysisCycles = filteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+                                        const analysisDailyLogs = filteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
                                         const analysisReflections = filteredReflections;
                                         const analysisThoughts = filteredThoughts;
 
@@ -149,6 +158,14 @@ export function AnalysesView({
                                                             </button>
                                                         ))}
                                                     </div>
+
+                                                    {/* Nota dias atípicos */}
+                                                    {atypicalCount > 0 && (
+                                                        <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2">
+                                                            <span>📌</span>
+                                                            <span>{atypicalCount} dia{atypicalCount > 1 ? 's' : ''} atípico{atypicalCount > 1 ? 's' : ''} excluído{atypicalCount > 1 ? 's' : ''} das análises e metas.</span>
+                                                        </div>
+                                                    )}
 
                                                     {/* TEMPORAL */}
                                                     {analysisSubView === 'coach' && (() => {

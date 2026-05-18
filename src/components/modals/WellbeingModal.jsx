@@ -319,6 +319,30 @@ export const WellbeingModal = ({
             </div>
           </div>
 
+          {/* Dia atípico */}
+          <div className="border border-yellow-700/40 bg-yellow-900/10 rounded-lg p-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={wellbeingForm.isAtypical || false}
+                onChange={(e) => setWellbeingForm({...wellbeingForm, isAtypical: e.target.checked, atypicalReason: e.target.checked ? wellbeingForm.atypicalReason : ''})}
+                className="rounded focus:ring-yellow-400 w-4 h-4"
+              />
+              <span className="text-sm font-medium text-yellow-300">📌 Dia atípico</span>
+            </label>
+            {wellbeingForm.isAtypical && (
+              <input
+                type="text"
+                value={wellbeingForm.atypicalReason || ''}
+                onChange={(e) => setWellbeingForm({...wellbeingForm, atypicalReason: e.target.value})}
+                className="mt-2 bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400"
+                placeholder="Razão (opcional) — ex: festa, viagem, doença..."
+                maxLength={100}
+              />
+            )}
+            <p className="text-xs text-yellow-600/80 mt-1.5">Dias atípicos são excluídos dos cálculos de metas e análises.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{t('modals.wellbeing.notesLabel')}</label>
             <textarea

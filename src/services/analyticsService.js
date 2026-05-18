@@ -255,6 +255,19 @@ export const calculateAvgFrequencyLast7Days = (consumptions) => {
  * @returns {number} Number of times the goal was achieved
  */
 export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, wellbeingLogs) => {
+    // Excluir dias atípicos de todos os cálculos
+    const atypicalDates = new Set(
+        (wellbeingLogs || [])
+            .filter(w => w.isAtypical)
+            .map(w => w.date || getDateKeyFromItem(w))
+            .filter(Boolean)
+    );
+    const isAtypical = (date) => atypicalDates.has(date);
+
+    consumptions = consumptions.filter(c => !isAtypical(c.date || getDateKeyFromItem(c)));
+    dailyLogs = dailyLogs.filter(l => !isAtypical(l.date || getDateKeyFromItem(l)));
+    cycles = cycles.filter(c => !isAtypical(c.date || getDateKeyFromItem(c)));
+
     let achievedCount = 0;
 
     if (goal.type === 'reduce_frequency') {

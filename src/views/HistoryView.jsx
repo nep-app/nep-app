@@ -378,6 +378,7 @@ export function HistoryView({
                                                                                 </div>
                                                                             )}
                                                                             <div className="flex flex-wrap gap-2 text-xs mb-2">
+                                                                                {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 Atípico{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                                 {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                                 {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
                                                                                 {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ Alimentação</span>}
@@ -871,6 +872,7 @@ export function HistoryView({
                                                                         </div>
                                                                     )}
                                                                     <div className="flex flex-wrap gap-2 text-xs mb-2">
+                                                                        {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 Atípico{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                         {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                         {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
                                                                         {(w.napDuration > 0) && <span className="bg-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded-full">🛌 Sesta {w.napDuration}min</span>}

@@ -176,7 +176,7 @@ function AuthenticatedApp() {
 
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
-            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
+            const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '', isAtypical: false, atypicalReason: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
             const [reflectionDatetime, setReflectionDatetime] = useState('');
@@ -300,7 +300,9 @@ function AuthenticatedApp() {
                     symptoms: w.symptoms || [],
                     customSymptom: w.customSymptom || '',
                     notes: w.notes || '',
-                    datetime
+                    datetime,
+                    isAtypical: w.isAtypical || false,
+                    atypicalReason: w.atypicalReason || ''
                 });
                 setShowWellbeingModal(true);
             };
@@ -349,7 +351,7 @@ function AuthenticatedApp() {
                         const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
                         const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
                         setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
-                        exerciseDuration: '', social: false, food: false, emotions: [], notes: '', datetime: wbDatetimeStr });
+                        exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: wbDatetimeStr, isAtypical: false, atypicalReason: '' });
                         setShowWellbeingModal(true);
                         break;
 
@@ -544,7 +546,9 @@ function AuthenticatedApp() {
                         emotions: wellbeingForm.emotions,
                         symptoms: (wellbeingForm.symptoms || []).map(s => s.trim().toLowerCase()).filter(Boolean),
                         customSymptom: sanitizeText((wellbeingForm.customSymptom || '').trim().toLowerCase()),
-                        notes: sanitizeText(wellbeingForm.notes)
+                        notes: sanitizeText(wellbeingForm.notes),
+                        isAtypical: wellbeingForm.isAtypical || false,
+                        atypicalReason: sanitizeText(wellbeingForm.atypicalReason || '')
                     };
 
                     if (editingWellbeingLog) {
@@ -554,7 +558,7 @@ function AuthenticatedApp() {
                         await addWellbeingLog({ id: genId(), ...updatedFields });
                     }
                     setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
-                        exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '' });
+                        exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '', isAtypical: false, atypicalReason: '' });
                     setShowWellbeingModal(false);
 
                     // Reset wellbeing-consumption reminder so it can trigger again at next 2 consumptions

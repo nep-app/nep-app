@@ -66,10 +66,32 @@ export function PatternsView({
                                         // Apply temporal filter to all data
                                         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
 
-                                        const filteredConsumptions = filterByDateRange(consumptions, dateRange);
-                                        const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
-                                        const filteredCycles = filterByDateRange(cycles, dateRange);
-                                        const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
+                                        const allFilteredConsumptions = filterByDateRange(consumptions, dateRange);
+                                        const allFilteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
+                                        const allFilteredCycles = filterByDateRange(cycles, dateRange);
+                                        const allFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
+
+                                        // Dias atípicos — excluir de análises/metas
+                                        const atypicalDates = new Set(
+                                            allFilteredWellbeingLogs
+                                                .filter(w => w.isAtypical)
+                                                .map(w => w.date || safeToISODate(w.timestamp))
+                                                .filter(Boolean)
+                                        );
+                                        const atypicalCount = atypicalDates.size;
+
+                                        const filteredConsumptions = allFilteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+                                        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
+                                        const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+                                        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
+
+                                        // Nota dias atípicos (mostrar em qualquer view)
+                                        const atypicalBanner = atypicalCount > 0 ? (
+                                            <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2 mb-2">
+                                                <span>📌</span>
+                                                <span>{atypicalCount} dia{atypicalCount > 1 ? 's' : ''} atípico{atypicalCount > 1 ? 's' : ''} excluído{atypicalCount > 1 ? 's' : ''} das análises e metas.</span>
+                                            </div>
+                                        ) : null;
 
                                         // DASHBOARD (COMPACTO)
                                         if (patternView === 'dashboard') {
@@ -276,6 +298,7 @@ export function PatternsView({
 
                                             return (
                                                 <div className="space-y-4">
+                                                    {atypicalBanner}
                                                     {/* Mini-resumo contextual */}
                                                     <div className={'bg-indigo-900/30 border-indigo-700/50' + ' rounded-lg p-4 border'}>
                                                         <p className={'text-sm leading-relaxed ' + 'text-gray-200'}>
@@ -1468,6 +1491,7 @@ export function PatternsView({
 
                                             return (
                                                 <div className="space-y-4">
+                                                    {atypicalBanner}
                                                     {/* Period comparison header */}
                                                     <div className={'bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-purple-700/50' + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
@@ -2022,6 +2046,7 @@ export function PatternsView({
 
                                             return (
                                         <div className="space-y-4">
+                                            {atypicalBanner}
                                             {/* Por horário */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                 <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byHour')}</h3>
