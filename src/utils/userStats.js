@@ -263,12 +263,12 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     }
 
     // Aviso 4: Risco preditivo (sono <6h E humor <5)
-    if (cycles && cycles.length > 0 && dailyLogs && dailyLogs.length > 0) {
+    if (cycles && cycles.length > 0 && wellbeingLogs && wellbeingLogs.length > 0) {
       const lastCycleWithSleep = cycles
         .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-      const lastWellbeingWithMood = dailyLogs
+      const lastWellbeingWithMood = wellbeingLogs
         .filter(l => l.mood && !isNaN(parseInt(l.mood)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -363,6 +363,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const todayConsumptions = (allByDay[todayKey] || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       // Só avisar hoje se já consumiste DEPOIS do alvo (ciclo em aberto violado)
+      let shownLimitLastAlert = false;
       if (todayConsumptions.length > 0) {
         const ld = new Date(todayConsumptions[0].timestamp);
         const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
@@ -374,12 +375,12 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
             color: 'orange',
             type: 'negative'
           });
-          return;
+          shownLimitLastAlert = true;
         }
       }
 
       // Caso contrário: mostrar resultado do ciclo anterior (fechado)
-      const previousKeys = Object.keys(allByDay).filter(k => k !== todayKey).sort().reverse();
+      const previousKeys = shownLimitLastAlert ? [] : Object.keys(allByDay).filter(k => k !== todayKey).sort().reverse();
       if (previousKeys.length > 0) {
         const prevConsumptions = allByDay[previousKeys[0]].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const prevLast = prevConsumptions[0];

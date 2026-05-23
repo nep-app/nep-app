@@ -18,7 +18,6 @@ export function HomeViewRefactored({
   deleteItem,
   last7,
   copingStrategies,
-  badges,
   currentCycleCount,
   consumptionsToShow,
   setConsumptionsToShow,

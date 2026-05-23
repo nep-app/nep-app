@@ -180,10 +180,7 @@ export function HistoryView({
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
                                                     <button key={period} onClick={() => { setHistoryPeriod(period); setHistoryPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (historyPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                        {period === 'hoje' && '📅 Hoje'}
-                                                        {period === 'semana' && '📊 Semana'}
-                                                        {period === 'mes' && '📈 Mês'}
-                                                        {period === 'tudo' && '🌐 Tudo'}
+                                                        {t(`patterns.periods.${period}`)}
                                                     </button>
                                                 ))}
                                             </div>
@@ -225,7 +222,7 @@ export function HistoryView({
                                             {/* Timeline única para tab "todos" */}
                                             {historyTopic === 'todos' && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📋 Tudo ({filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length})</h3>
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.headerAll', { count: filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length })}</h3>
                                                     <div className="space-y-3">
                                                         {(() => {
                                                             const allItems = [...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
@@ -278,12 +275,12 @@ export function HistoryView({
                                                                                     <div className="flex items-center gap-3">
                                                                                         {log.mg && (
                                                                                             <div className="text-sm text-pink-300">
-                                                                                                <span className="font-bold text-lg">{log.mg}</span> mg diários
+                                                                                                <span className="font-bold text-lg">{log.mg}</span> {t('history.mgDaily')}
                                                                                             </div>
                                                                                         )}
                                                                                         {log.times != null && (
                                                                                             <div className="text-xs text-gray-400">
-                                                                                                ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                                ({log.times} {log.times === 1 ? t('history.use') : t('history.uses')})
                                                                                             </div>
                                                                                         )}
                                                                                     </div>
@@ -920,7 +917,7 @@ export function HistoryView({
 
                                                 {(filteredConsumptions.length > 0 || filteredDailyLogs.length > 0) && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> Consumos ({filteredConsumptions.length + filteredDailyLogs.length})</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
                                                         <div className="space-y-3">
                                                             {[...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
                                                               ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date }))]

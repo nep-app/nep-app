@@ -182,10 +182,33 @@ export const MetricsProvider = ({ children }) => {
 
       // ALTERAÇÃO 7: Nova meta "Hora do último consumo diário"
       if (goal.type === 'limit_last') {
-        const recentCycles = cycles.slice(0, 15);
-        if (recentCycles.length === 0) return 0;
-        const successCycles = recentCycles.filter(c => c.lastBefore00 === true).length;
-        return Math.min(100, (successCycles / recentCycles.length) * 100);
+        const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
+        const [th, tm] = targetStr.split(':').map(Number);
+        const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+
+        const localDateKey = (ts) => {
+          const d = new Date(ts);
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        };
+
+        const byDay = {};
+        consumptions.forEach(c => {
+          const key = localDateKey(c.timestamp || c.createdAt);
+          if (!byDay[key]) byDay[key] = [];
+          byDay[key].push(c);
+        });
+
+        const sortedDays = Object.keys(byDay).sort().reverse().slice(0, 15);
+        if (sortedDays.length === 0) return 0;
+
+        const successDays = sortedDays.filter(day => {
+          const last = byDay[day].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+          const ld = new Date(last.timestamp);
+          const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+          return lastMinutes < targetMinutes;
+        }).length;
+
+        return Math.min(100, (successDays / sortedDays.length) * 100);
       }
 
       if (goal.type === 'sleep_hours') {
@@ -232,12 +255,16 @@ export const MetricsProvider = ({ children }) => {
 
         const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
         const targetParts = targetStr.split(':');
-        const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+        let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
+        // Normalize early-morning targets (00:00-05:59) to after-midnight
+        if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
 
         let successCount = 0;
         cyclesWithBedtime.forEach(cycle => {
           const bedtimeParts = cycle.bedtime.split(':');
-          const bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+          let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
+          // Normalize early-morning bedtimes (00:00-05:59) to after-midnight
+          if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
           if (bedtimeMinutes <= targetMinutes) successCount++;
         });
 
@@ -246,7 +273,7 @@ export const MetricsProvider = ({ children }) => {
 
       return 0;
     };
-  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, cycles, cyclesByDate, wellbeingByDate]);
+  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, cycles, cyclesByDate, wellbeingByDate, consumptions]);
 
   const value = {
     // From useAnalysis hook

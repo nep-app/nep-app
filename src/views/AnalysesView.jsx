@@ -6,8 +6,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT } from '../utils/helpers';
-import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
-import { calculateBadges } from '../utils/badgesCalculator';
+import { analyzeMultipleNotes, analyzeNote, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 import { getEmotionCategory } from '../constants/emotions';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
@@ -1180,7 +1179,13 @@ export function AnalysesView({
                                                                                             // Encontrar dias com muitas reflexões negativas vs consumo
                                                                                             let highNegDays = 0, highNegHighCons = 0;
                                                                                             Object.entries(reflectionsByDate).forEach(([date, notes]) => {
-                                                                                                const negCount = notes.filter(n => n.sentiment && (n.sentiment.overall === 'negative' || n.sentiment.overall === 'very_negative')).length;
+                                                                                                const negCount = notes.filter(n => {
+                                                                                                    const text = n.text || n.content || n.note || '';
+                                                                                                    if (!text) return false;
+                                                                                                    const sentiment = analyzeNote ? analyzeNote(text) : null;
+                                                                                                    if (!sentiment) return false;
+                                                                                                    return sentiment.overall === 'negative' || sentiment.overall === 'very_negative';
+                                                                                                }).length;
                                                                                                 if (negCount >= notes.length * 0.6 && notes.length >= 2) {
                                                                                                     highNegDays++;
                                                                                                     if (consumptionsByDate[date] && consumptionsByDate[date] > avgPerDay) {
@@ -2096,33 +2101,6 @@ export function AnalysesView({
                                                                                 );
                                                                             })()}
 
-                                                                            {/* Paragraph 11b: Conquistas e Progresso */}
-                                                                            {(() => {
-                                                                                const badges = calculateBadges({
-                                                                                    consumptions: analysisConsumptions,
-                                                                                    reflections: analysisReflections,
-                                                                                    wellbeingLogs: analysisWellbeing,
-                                                                                    cycles: analysisCycles,
-                                                                                    goals,
-                                                                                    getGoalProgress: metrics.getGoalProgress
-                                                                                });
-
-                                                                                if (badges.length === 0) return null;
-
-                                                                                // Agrupar badges por tipo
-                                                                                const progressBadges = badges.filter(b =>
-                                                                                    b.id.includes('reflection') || b.id.includes('wellbeing') || b.id.includes('cycles') ||
-                                                                                    b.id.includes('goal') || b.id.includes('reduction') || b.id.includes('tracking')
-                                                                                );
-
-                                                                                const milestones = progressBadges.slice(0, 5).map(b => b.title).join(', ');
-
-                                                                                return (
-                                                                                    <p>
-                                                                                        🏆 <strong className={('text-yellow-400')}>Conquistas e Progresso:</strong> Conseguiste <strong>{badges.length} {badges.length === 1 ? 'conquista' : 'conquistas'}</strong> até agora{milestones && <>, incluindo: {milestones}</>}. Cada marco é uma prova do teu compromisso com a mudança. Continua assim!
-                                                                                    </p>
-                                                                                );
-                                                                            })()}
 
                                                                             {/* Paragraph 12: Autoconhecimento */}
                                                                             {(analysisWellbeing.length > 3 || analysisCycles.length > 2) && (
@@ -2876,7 +2854,7 @@ export function AnalysesView({
                                                                                     if (Math.abs(diff) < 0.3) return null;
                                                                                     return (
                                                                                         <p className={'text-xs text-gray-300'}>
-                                                                                            😊 Humor com exercício: <strong>{withEx.toFixed(1)}/5</strong> vs <strong>{withoutEx.toFixed(1)}/5</strong> sem exercício
+                                                                                            😊 Humor com exercício: <strong>{withEx.toFixed(1)}/10</strong> vs <strong>{withoutEx.toFixed(1)}/10</strong> sem exercício
                                                                                             {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
                                                                                         </p>
                                                                                     );
@@ -2888,7 +2866,7 @@ export function AnalysesView({
                                                                                     if (Math.abs(diff) < 0.3) return null;
                                                                                     return (
                                                                                         <p className={'text-xs text-gray-300'}>
-                                                                                            ⚡ Energia com exercício: <strong>{withEx.toFixed(1)}/5</strong> vs <strong>{withoutEx.toFixed(1)}/5</strong> sem exercício
+                                                                                            ⚡ Energia com exercício: <strong>{withEx.toFixed(1)}/10</strong> vs <strong>{withoutEx.toFixed(1)}/10</strong> sem exercício
                                                                                             {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
                                                                                         </p>
                                                                                     );
@@ -3030,7 +3008,7 @@ export function AnalysesView({
                                                                                     if (Math.abs(diff) < 0.3) return null;
                                                                                     return (
                                                                                         <p className={'text-xs text-gray-300'}>
-                                                                                            😊 Humor em dias com sintomas: <strong>{withS.toFixed(1)}/5</strong> vs <strong>{withoutS.toFixed(1)}/5</strong> sem sintomas.
+                                                                                            😊 Humor em dias com sintomas: <strong>{withS.toFixed(1)}/10</strong> vs <strong>{withoutS.toFixed(1)}/10</strong> sem sintomas.
                                                                                         </p>
                                                                                     );
                                                                                 })()}

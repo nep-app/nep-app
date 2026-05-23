@@ -4,7 +4,6 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { firebaseConfig } from './utils/firebase';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
-import { calculateBadges } from './utils/badgesCalculator';
 import * as analyticsService from './services/analyticsService';
 import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV } from './services/exportService';
 import * as Icons from './components/Icons';
@@ -402,7 +401,7 @@ function AuthenticatedApp() {
                 try {
                     if (editingDailyLog) {
                         await updateItem('dailyLogs', editingDailyLog.id, {
-                            mg: dailyForm.mg !== '' ? parseInt(dailyForm.mg) : null,
+                            mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
                             notes: dailyForm.notes,
                             date: dailyForm.date
                         });
@@ -428,7 +427,7 @@ function AuthenticatedApp() {
                         date: selectedDate,
                         timestamp: timestamp,
                         times: timesCount,
-                        mg: dailyForm.mg !== '' ? parseInt(dailyForm.mg) : null,
+                        mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
                         notes: dailyForm.notes
                     };
                     await addDailyLog(item);
@@ -715,7 +714,7 @@ const submitCycle = async () => {
                         // Se createdAt foi fornecido, usar esse; senão usar agora
                         const customDateTime = cycleForm.createdAt ? new Date(cycleForm.createdAt) : new Date();
                         const timestampISO = customDateTime.toISOString();
-                        const dateKey = timestampISO.split('T')[0]; // YYYY-MM-DD
+                        const dateKey = (() => { const d = new Date(timestampISO); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(); // YYYY-MM-DD local
 
                         const sleepValue = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
 
@@ -825,17 +824,6 @@ const submitCycle = async () => {
 
             // Streak calculation
             // getStreaks() removed - using metrics.streaks from useAnalysis hook
-
-            // ===== 7. BADGES & ACHIEVEMENTS =====
-            // Memoized badges calculation (extracted to separate file for better organization)
-            const badges = useMemo(() => calculateBadges({
-                consumptions,
-                reflections,
-                wellbeingLogs,
-                cycles,
-                goals,
-                getGoalProgress: metrics.getGoalProgress
-            }), [consumptions, reflections, wellbeingLogs, cycles, goals, metrics.getGoalProgress]);
 
             const todayCount = metrics.todayConsumptions.length;
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
@@ -1007,7 +995,6 @@ const submitCycle = async () => {
                                     deleteItem={deleteItem}
                                     last7={last7}
                                     copingStrategies={copingStrategies}
-                                    badges={badges}
                                     currentCycleCount={currentCycleCount}
                                     consumptionsToShow={consumptionsToShow}
                                     setConsumptionsToShow={setConsumptionsToShow}
