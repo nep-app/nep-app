@@ -627,7 +627,12 @@
     "bedtime": "Bedtime:",
     "sleepHours": "Sleep hours:",
     "triggers": "Triggers:",
-    "dailyUse": "Daily use:"
+    "dailyUse": "Daily use:",
+    "headerAll": "📋 All ({{count}})",
+    "headerLogs": "💊 Logs ({{count}})",
+    "mgDaily": "mg daily",
+    "use": "use",
+    "uses": "uses"
   },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",

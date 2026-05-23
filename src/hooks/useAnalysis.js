@@ -227,28 +227,16 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
       }
     }
 
-    return { current: streak, max: maxStreak };
+    // Only active if most recent date is today or yesterday
+    const mostRecentDate = allDates[allDates.length - 1];
+    const todayStr = getTodayKeyHelper();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+    const currentStreak = (mostRecentDate === todayStr || mostRecentDate === yesterdayStr) ? streak : 0;
+
+    return { current: currentStreak, max: maxStreak };
   }, [consumptions, wellbeingLogs, thoughts, reflections, dailyLogs, cachedStats]);
-
-  // Goal progress calculation
-  const getGoalProgress = (goal) => {
-    if (!goal) return 0;
-
-    const startDate = new Date(goal.startDate);
-    const endDate = new Date(goal.endDate);
-    const today = new Date();
-
-    const relevantConsumptions = consumptions.filter(c => {
-      const cDate = new Date(c.date);
-      return cDate >= startDate && cDate <= endDate;
-    });
-
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    const targetTotal = goal.targetCount * totalDays;
-    const actualTotal = relevantConsumptions.length;
-
-    return Math.min(100, ((targetTotal - actualTotal) / targetTotal) * 100);
-  };
 
   return {
     getLast7Days,
@@ -259,6 +247,5 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     temporalCorrelations,
     bidirectionalAnalysis,
     streaks,
-    getGoalProgress,
   };
 };

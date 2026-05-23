@@ -433,7 +433,12 @@
     "bedtime": "Hora de deitar:",
     "sleepHours": "Horas de sono:",
     "triggers": "Gatilhos:",
-    "dailyUse": "Consumo diário:"
+    "dailyUse": "Consumo diário:",
+    "headerAll": "📋 Tudo ({{count}})",
+    "headerLogs": "💊 Consumos ({{count}})",
+    "mgDaily": "mg diários",
+    "use": "consumo",
+    "uses": "consumos"
   },
   "firebase": {
     "createNew": "Criar nova conta",
