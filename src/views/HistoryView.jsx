@@ -165,6 +165,17 @@ export function HistoryView({
         };
     }, [historyTopic, tempFilteredReflections, tempFilteredWellbeing, tempFilteredDailyLogs, tempFilteredConsumptions, tempFilteredCycles, tempFilteredThoughts]);
 
+    const allItemsSorted = useMemo(() => {
+        return [
+            ...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
+            ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date })),
+            ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
+            ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
+            ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
+            ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))
+        ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    }, [filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeing, filteredReflections, filteredThoughts]);
+
     const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
     return (
@@ -225,15 +236,7 @@ export function HistoryView({
                                                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.headerAll', { count: filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length })}</h3>
                                                     <div className="space-y-3">
                                                         {(() => {
-                                                            const allItems = [...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
-                                                              ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date })),
-                                                              ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
-                                                              ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
-                                                              ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
-                                                              ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
-                                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-                                                            return allItems
+                                                            return allItemsSorted
                                                                 .slice(0, allItemsToShow)
                                                                 .map(item => {
                                                                 if (item.type === 'consumption') {
@@ -959,12 +962,12 @@ export function HistoryView({
                                                                                         <div className="flex items-center gap-3">
                                                                                             {log.mg && (
                                                                                                 <div className="text-sm text-pink-300">
-                                                                                                    <span className="font-bold text-lg">{log.mg}</span> mg diários
+                                                                                                    <span className="font-bold text-lg">{log.mg}</span> {t('history.mgDaily')}
                                                                                                 </div>
                                                                                             )}
                                                                                             {log.times != null && (
                                                                                                 <div className="text-xs text-gray-400">
-                                                                                                    ({log.times} {log.times === 1 ? 'consumo' : 'consumos'})
+                                                                                                    ({log.times} {log.times === 1 ? t('history.use') : t('history.uses')})
                                                                                                 </div>
                                                                                             )}
                                                                                         </div>

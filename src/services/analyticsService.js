@@ -61,7 +61,7 @@ export const predictNextEpisode = (history) => {
  * Calculate Pearson correlation coefficient between two variables
  */
 export const calculatePearsonCorrelation = (data, xKey, yKey) => {
-    if (data.length < 2) return null;
+    if (data.length < 3) return null;
     const n = data.length;
     const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
     const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
