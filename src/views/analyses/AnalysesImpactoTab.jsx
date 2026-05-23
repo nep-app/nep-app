@@ -770,3 +770,6 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                                 })()}
                                                             </div>
                                                         );
+        })()
+    );
+});
