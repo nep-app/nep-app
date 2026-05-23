@@ -25,7 +25,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
-    const { currentCycle, darkMode } = useUI();
+    const { selectedCycle, darkMode } = useUI();
     const metrics = useMetrics();
     const { t } = useTranslation();
 
@@ -46,6 +46,76 @@ export function AnalysesView({
     const toggleSection = (section) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
+
+    // ===== MEMOIZED DATA COMPUTATION =====
+    // Extrai computação pesada do render para evitar recalcular quando só o UI muda
+    const analysisData = useMemo(() => {
+        const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+        const filteredConsumptions = filterByDateRange(consumptions, dateRange);
+        const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
+        const filteredCycles = filterByDateRange(cycles, dateRange);
+        const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
+        const filteredReflections = filterByDateRange(reflections, dateRange);
+        const filteredThoughts = filterByDateRange(thoughts, dateRange);
+
+        // Dias atípicos — excluir de análises/metas
+        const atypicalDates = new Set(
+            filteredWellbeingLogs
+                .filter(w => w.isAtypical)
+                .map(w => w.date || safeToISODate(w.timestamp))
+                .filter(Boolean)
+        );
+        const atypicalCount = atypicalDates.size;
+
+        const analysisConsumptions = filteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+        const analysisWellbeing = filteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
+        const analysisCycles = filteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+        const analysisDailyLogs = filteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
+        const analysisReflections = filteredReflections;
+        const analysisThoughts = filteredThoughts;
+
+        const byHour = {};
+        analysisConsumptions.forEach(c => {
+            const hour = new Date(c.timestamp).getHours();
+            byHour[hour] = (byHour[hour] || 0) + 1;
+        });
+
+        const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+        analysisConsumptions.forEach(c => {
+            const hour = new Date(c.timestamp).getHours();
+            if (hour >= 6 && hour < 12) byPartOfDay.manha++;
+            else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
+            else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
+            else byPartOfDay.madrugada++;
+        });
+
+        const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        analysisConsumptions.forEach(c => {
+            const day = new Date(c.timestamp).getDay();
+            byWeekday[day]++;
+        });
+
+        const sortedConsumptions = [...analysisConsumptions].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+        const intervals = [];
+        for (let i = 1; i < sortedConsumptions.length; i++) {
+            const diff = (new Date(sortedConsumptions[i].timestamp) - new Date(sortedConsumptions[i-1].timestamp)) / (1000 * 60 * 60);
+            intervals.push({ hours: diff, date: sortedConsumptions[i].date });
+        }
+
+        return {
+            dateRange, atypicalCount, atypicalDates,
+            analysisConsumptions, analysisWellbeing, analysisCycles,
+            analysisDailyLogs, analysisReflections, analysisThoughts,
+            byHour, byPartOfDay, byWeekday, sortedConsumptions, intervals
+        };
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, reflections, thoughts, patternsPeriod, patternsPeriodOffset]);
+
+    const {
+        dateRange: memoDateRange, atypicalCount, atypicalDates,
+        analysisConsumptions, analysisWellbeing, analysisCycles,
+        analysisDailyLogs, analysisReflections, analysisThoughts,
+        byHour, byPartOfDay, byWeekday, sortedConsumptions, intervals
+    } = analysisData;
 
     return (
                                 <div className="space-y-6">
@@ -76,70 +146,14 @@ export function AnalysesView({
                                         </div>
                                         {patternsPeriod !== 'tudo' && (
                                             <div className={'text-xs mt-2 text-center ' + ('text-gray-400')}>
-                                                {(() => {
-                                                    const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                                    return new Date(dateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }) + ' - ' + new Date(dateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' });
-                                                })()}
+                                                {new Date(memoDateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }) + ' - ' + new Date(memoDateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
                                             </div>
                                         )}
                                     </div>
 
                                     {(() => {
-                                        // Apply temporal filter to all data
-                                        const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-                                        const filteredConsumptions = filterByDateRange(consumptions, dateRange);
-                                        const filteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
-                                        const filteredCycles = filterByDateRange(cycles, dateRange);
-                                        const filteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
-                                        const filteredReflections = filterByDateRange(reflections, dateRange);
-                                        const filteredThoughts = filterByDateRange(thoughts, dateRange);
-
-                                        // Dias atípicos — excluir de análises/metas
-                                        const atypicalDates = new Set(
-                                            filteredWellbeingLogs
-                                                .filter(w => w.isAtypical)
-                                                .map(w => w.date || safeToISODate(w.timestamp))
-                                                .filter(Boolean)
-                                        );
-                                        const atypicalCount = atypicalDates.size;
-
-                                        // Usar dados filtrados diretamente (sem excluir dia atual)
-                                        const analysisConsumptions = filteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-                                        const analysisWellbeing = filteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
-                                        const analysisCycles = filteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-                                        const analysisDailyLogs = filteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
-                                        const analysisReflections = filteredReflections;
-                                        const analysisThoughts = filteredThoughts;
-
-                                            // Calculate all needed data
-                                            const byHour = {};
-                                            analysisConsumptions.forEach(c => {
-                                                const hour = new Date(c.timestamp).getHours();
-                                                byHour[hour] = (byHour[hour] || 0) + 1;
-                                            });
-
-                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            analysisConsumptions.forEach(c => {
-                                                const hour = new Date(c.timestamp).getHours();
-                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
-                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
-                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
-                                                else byPartOfDay.madrugada++;
-                                            });
-
-                                            const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-                                            const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-                                            analysisConsumptions.forEach(c => {
-                                                const day = new Date(c.timestamp).getDay();
-                                                byWeekday[day]++;
-                                            });
-
-                                            const sorted = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
-                                            const intervals = [];
-                                            for (let i = 1; i < sorted.length; i++) {
-                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                intervals.push({ hours: diff, date: sorted[i].date });
-                                            }
+                                        const weekdayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                                        const sorted = sortedConsumptions;
 
                                             return (
                                                 <div className="space-y-4">
@@ -5947,7 +5961,7 @@ export function AnalysesView({
                                                                                             wellbeingLogs={analysisWellbeing}
                                                                                             consumptions={analysisConsumptions}
                                                                                             
-                                                                                            selectedCycle={currentCycle}
+                                                                                            selectedCycle={selectedCycle}
                                                                                         />
                                                                                     </Suspense>
                                                                                 </div>

@@ -133,7 +133,7 @@ export const MetricsProvider = ({ children }) => {
         return;
       }
 
-      const sorted = dayConsumptions.sort((a, b) => a.timestamp - b.timestamp);
+      const sorted = dayConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       let longIntervals = 0;
       for (let i = 1; i < sorted.length; i++) {
         const intervalHours = (sorted[i].timestamp - sorted[i - 1].timestamp) / (1000 * 60 * 60);

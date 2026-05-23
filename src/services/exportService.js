@@ -143,18 +143,21 @@ export function exportToCSV(data) {
 
   // CSV para cycles (SONO)
   csv += '\n\nCYCLES (SONO)\n';
-  csv += 'Date,Bedtime,Sleep Hours,Triggers,Last Before 00h,Notes\n';
+  csv += 'Date,Bedtime,Sleep Hours,Triggers,Notes\n';
   cycles.forEach(c => {
     const triggers = (c.triggers || []).join('; ');
-    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep || ''},"${triggers}",${c.lastBefore00 ? 'Sim' : 'Não'},"${(c.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep || ''},"${triggers}","${(c.notes || '').replace(/"/g, '""')}"\n`;
   });
 
   // CSV para wellbeingLogs
   csv += '\n\nWELLBEING LOGS\n';
-  csv += 'Date,Mood,Energy,Water,Rest,Social,Food,Emotions,Notes\n';
+  csv += 'Date,Mood,Energy,WaterGlasses,ExerciseType,ExerciseDuration,NapDuration,Social,Food,Symptoms,Emotions,IsAtypical,AtypicalReason,Notes\n';
   wellbeingLogs.forEach(w => {
     const emotions = (w.emotions || []).join('; ');
-    csv += `${w.date || ''},${w.mood || ''},${w.energy || ''},${w.water ? 'Sim' : 'Não'},${w.rest ? 'Sim' : 'Não'},${w.social ? 'Sim' : 'Não'},${w.food ? 'Sim' : 'Não'},"${emotions}","${(w.notes || '').replace(/"/g, '""')}"\n`;
+    const symptoms = (w.symptoms || []).join('; ');
+    const waterVal = w.waterGlasses != null ? w.waterGlasses : (w.water ? 'Sim' : 'Não');
+    const restVal = w.exerciseType || (w.exerciseDuration > 0 ? `${w.exerciseDuration}min` : (w.rest ? 'Sim' : 'Não'));
+    csv += `${w.date || ''},${w.mood || ''},${w.energy || ''},${waterVal},"${w.exerciseType || restVal}",${w.exerciseDuration || ''},${w.napDuration || ''},${w.social ? 'Sim' : 'Não'},${w.food ? 'Sim' : 'Não'},"${symptoms}","${emotions}",${w.isAtypical ? 'Sim' : 'Não'},"${(w.atypicalReason || '').replace(/"/g, '""')}","${(w.notes || '').replace(/"/g, '""')}"\n`;
   });
 
   // CSV para dailyLogs

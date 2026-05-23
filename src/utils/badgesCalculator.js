@@ -96,7 +96,11 @@ export function calculateBadges(data) {
     }
 
     // Self-care champion (checked all 4 items at least once)
-    const hasAllSelfCare = wellbeingLogs.some(w => w.water && w.rest && w.social && w.food);
+    const hasAllSelfCare = wellbeingLogs.some(w =>
+        (w.water === true || (w.waterGlasses > 0)) &&
+        (w.rest === true || !!w.exerciseType || (w.exerciseDuration > 0)) &&
+        w.social && w.food
+    );
     if (hasAllSelfCare) {
         badgesList.push({ id: 'selfcare_complete', title: 'Autocuidado Completo', description: 'Completaste todos os itens de autocuidado', icon: '⭐', color: 'yellow' });
     }

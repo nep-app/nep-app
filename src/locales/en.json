@@ -85,6 +85,8 @@
     "lowSleep": "Sleep alert: {{hours}}h",
     "highRisk": "High risk today: {{hours}}h sleep + low mood ({{mood}}/10)",
     "highRiskDesc": "75% chance of a challenging day. Consider preventive strategies.",
+    "moderateRiskSleep": "Moderate risk: only {{hours}}h sleep",
+    "moderateRiskMood": "Moderate risk: low mood ({{mood}}/10)",
     "moderateRiskDesc": "Moderate risk. Plan your day well.",
     "goodBedtime": "Good! Bedtime: {{time}}",
     "lateBedtime": "Late bedtime! {{time}}",

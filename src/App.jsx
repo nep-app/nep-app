@@ -428,7 +428,7 @@ function AuthenticatedApp() {
                         date: selectedDate,
                         timestamp: timestamp,
                         times: timesCount,
-                        mg: parseInt(dailyForm.mg),
+                        mg: dailyForm.mg !== '' ? parseInt(dailyForm.mg) : null,
                         notes: dailyForm.notes
                     };
                     await addDailyLog(item);
@@ -635,7 +635,7 @@ function AuthenticatedApp() {
                     if (reflectionDatetime) {
                         const selectedDate = new Date(reflectionDatetime);
                         timestamp = selectedDate.toISOString();
-                        dateKey = selectedDate.toISOString().split('T')[0];
+                        dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                     } else {
                         timestamp = new Date().toISOString();
                         dateKey = getTodayKey();
@@ -672,7 +672,7 @@ function AuthenticatedApp() {
                     if (thoughtDatetime) {
                         const selectedDate = new Date(thoughtDatetime);
                         timestamp = selectedDate.toISOString();
-                        dateKey = selectedDate.toISOString().split('T')[0];
+                        dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                     } else {
                         timestamp = new Date().toISOString();
                         dateKey = getTodayKey();

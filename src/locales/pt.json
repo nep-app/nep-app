@@ -85,6 +85,8 @@
     "lowSleep": "Atenção ao sono: {{hours}}h",
     "highRisk": "Risco elevado hoje: Dormiste {{hours}}h + humor baixo ({{mood}}/10)",
     "highRiskDesc": "75% probabilidade de dia desafiante. Considera estratégias preventivas.",
+    "moderateRiskSleep": "Risco moderado: só {{hours}}h de sono",
+    "moderateRiskMood": "Risco moderado: humor baixo ({{mood}}/10)",
     "moderateRiskDesc": "Risco moderado. Planeia bem o dia.",
     "goodBedtime": "Boa! Deitaste às {{time}}",
     "lateBedtime": "Atenção! Deitaste às {{time}}",

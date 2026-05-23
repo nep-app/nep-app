@@ -25,6 +25,30 @@ export function PatternsView({
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
 
+    // ===== MEMOIZED DATA COMPUTATION =====
+    const patternsData = useMemo(() => {
+        const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+        const allFilteredConsumptions = filterByDateRange(consumptions, dateRange);
+        const allFilteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
+        const allFilteredCycles = filterByDateRange(cycles, dateRange);
+        const allFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
+
+        const atypicalDates = new Set(
+            allFilteredWellbeingLogs
+                .filter(w => w.isAtypical)
+                .map(w => w.date || safeToISODate(w.timestamp))
+                .filter(Boolean)
+        );
+        const atypicalCount = atypicalDates.size;
+
+        const filteredConsumptions = allFilteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
+        const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
+        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
+
+        return { dateRange, atypicalDates, atypicalCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset]);
+
     return (
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-white">{t('patterns.title')}</h2>
@@ -63,27 +87,8 @@ export function PatternsView({
                                     </div>
 
                                     {(() => {
-                                        // Apply temporal filter to all data
-                                        const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
-
-                                        const allFilteredConsumptions = filterByDateRange(consumptions, dateRange);
-                                        const allFilteredWellbeingLogs = filterByDateRange(wellbeingLogs, dateRange);
-                                        const allFilteredCycles = filterByDateRange(cycles, dateRange);
-                                        const allFilteredDailyLogs = filterByDateRange(dailyLogs, dateRange);
-
-                                        // Dias atípicos — excluir de análises/metas
-                                        const atypicalDates = new Set(
-                                            allFilteredWellbeingLogs
-                                                .filter(w => w.isAtypical)
-                                                .map(w => w.date || safeToISODate(w.timestamp))
-                                                .filter(Boolean)
-                                        );
-                                        const atypicalCount = atypicalDates.size;
-
-                                        const filteredConsumptions = allFilteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-                                        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
-                                        const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-                                        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
+                                        // Usar dados pré-computados do useMemo (evita recomputação em cada render)
+                                        const { dateRange, atypicalDates, atypicalCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
 
                                         // Nota dias atípicos (mostrar em qualquer view)
                                         const atypicalBanner = atypicalCount > 0 ? (
