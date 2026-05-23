@@ -4,7 +4,7 @@ import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { themeClasses } from '../utils/classNames';
+
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateTime, getDateDaysAgo, getTodayPT, timestampToPT } from '../utils/helpers';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from '../utils/sentimentAnalysis';
 import { calculateBadges } from '../utils/badgesCalculator';
@@ -25,7 +25,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
-    const { selectedCycle, darkMode } = useUI();
+    const { selectedCycle } = useUI();
     const metrics = useMetrics();
     const { t } = useTranslation();
 

@@ -380,6 +380,36 @@
       "HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro",
       "Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico",
       "Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)"
+    ],
+    "Tédio": [
+      "Muda de ambiente: sai de casa 10min, vai a um café, parque ou biblioteca. Lugar diferente = estado diferente",
+      "Ativa o corpo: 10min de música alta, dança, caminhada rápida. Tédio é energia sem direção — dá-lhe direção",
+      "Lista de 5 coisas que tens adiado (mensagem a enviar, roupa a dobrar, série por ver). Tédio é oportunidade disfarçada"
+    ],
+    "Cansaço": [
+      "Descanso ativo: 20min de olhos fechados (não é preciso dormir). Põe alarme e deita-te — reseta o sistema",
+      "Micro-recuperação: água fria no rosto, fruta/proteína, 5 respirações lentas. Cansaço físico precisa de resposta física",
+      "Reduz estímulos 30min: sem redes sociais, luz baixa, silêncio. Cansaço mental piora com mais input"
+    ],
+    "Dor física": [
+      "Distingue dor aguda de crónica: se nova ou intensa, prioriza atenção médica — consumo mascara mas não resolve",
+      "Calor localizado (almofada quente), posição de conforto, analgésico se indicado. Gestão física primeiro",
+      "Dor persistente + consumo cria ciclo vicioso — regista onde/quando dói para identificar padrões e falar com médico"
+    ],
+    "Insónia": [
+      "Não te forces: sai da cama se não adormeceres em 20min, faz algo calmo (leitura, puzzle), volta quando sonolentas",
+      "Rotina de decompressão: temperatura baixa no quarto, sem ecrãs 30min antes, chá de camomila ou magnésio",
+      "O consumo piora a qualidade do sono — mesmo que adormeças, o sono é menos reparador. Regista para veres o padrão"
+    ],
+    "Conflito": [
+      "Pausa estratégica: \"Preciso de 10min para organizar ideias\" — é assertividade, não fuga",
+      "Separa a pessoa do problema: o que quero resolver? Atacar o comportamento, não a pessoa. Escreve antes de falar",
+      "Após conflito intenso, não decidires sozinha — o estado emocional distorce o julgamento. Espera 2h antes de agir"
+    ],
+    "Celebração": [
+      "Planeia antes: decide quantos consumos máximo, com quem és honesta sobre limites, como voltas para casa",
+      "Alterna com não-consumo: celebra com água com gás, sumo especial, comida boa. A celebração está nas pessoas, não na substância",
+      "Check-in a meio: como me estou a sentir? Cumpri o plano? Tens sempre permissão para sair mais cedo se precisares"
     ]
   },
   "history": {

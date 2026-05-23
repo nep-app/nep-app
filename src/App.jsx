@@ -17,7 +17,7 @@ import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
-import { GOAL_TYPE_LABELS } from './constants/goalTypes';
+
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
@@ -823,175 +823,6 @@ const submitCycle = async () => {
                 showToast(t('messages.backupCreated', { count: result.totalRecords }), 'success');
             };
 
-            // Get goal progress with percentage
-            const getGoalProgressStats = (goal, filteredConsumptions = null, filteredDailyLogs = null, filteredCycles = null, filteredWellbeing = null) => {
-                const dataConsumptions = filteredConsumptions || consumptions;
-                const dataDailyLogs = filteredDailyLogs || dailyLogs;
-                const dataCycles = filteredCycles || cycles;
-                const dataWellbeing = filteredWellbeing || wellbeingLogs;
-
-                let achieved = 0;
-                let total = 0;
-
-                const today = getTodayPT();
-
-                if (goal.type === 'increase_interval') {
-                    const consumptionsByDay = {};
-                    dataConsumptions.forEach(c => {
-                        const dateKey = c.date || new Date(c.timestamp).toISOString().split('T')[0];
-                        if (!dateKey) return;
-                        if (!consumptionsByDay[dateKey]) consumptionsByDay[dateKey] = [];
-                        consumptionsByDay[dateKey].push(c);
-                    });
-
-                    Object.values(consumptionsByDay).forEach(cycleConsumptions => {
-                        if (cycleConsumptions.length < 2) return; // Skip cycles with <2 consumptions
-                        total++;
-
-                        const sorted = cycleConsumptions.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                        let longIntervals = 0;
-                        let totalIntervals = 0;
-
-                        for (let i = 1; i < sorted.length; i++) {
-                            const intervalHours = (new Date(sorted[i].timestamp) - new Date(sorted[i - 1].timestamp)) / (1000 * 60 * 60);
-                            totalIntervals++;
-                            if (intervalHours > 2) longIntervals++;
-                        }
-
-                        if (longIntervals >= totalIntervals / 2) achieved++;
-                    });
-                }
-
-                if (goal.type === 'reduce_frequency') {
-                    const consumptionsByDate = {};
-                    dataConsumptions.forEach(c => {
-                        const dateKey = timestampToPT(c.timestamp);
-                        if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
-                        consumptionsByDate[dateKey]++;
-                    });
-
-                    Object.entries(consumptionsByDate).forEach(([date, count]) => {
-                        if (date === today) return; // Skip today
-                        total++;
-                        if (count < goal.target) achieved++;
-                    });
-                }
-
-                if (goal.type === 'reduce_quantity') {
-                    // Agrupar dailyLogs por data
-                    const mgByDate = {};
-                    dataDailyLogs.forEach(log => {
-                        if (!log.date || !log.mg) return;
-                        if (!mgByDate[log.date]) mgByDate[log.date] = 0;
-                        const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
-                        if (!isNaN(mgValue)) mgByDate[log.date] += mgValue;
-                    });
-
-                    // Contar dias (excluindo hoje)
-                    Object.entries(mgByDate).forEach(([date, totalMg]) => {
-                        if (date === today) return; // Excluir dia atual
-                        total++;
-                        const isAchieved = totalMg < parseFloat(goal.target);
-                        if (isAchieved) achieved++;
-                    });
-                }
-
-                if (goal.type === 'limit_last') {
-                    const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
-                    const [th, tm] = targetStr.split(':').map(Number);
-                    // 00:00 significa meia-noite = fim do dia = 1440 minutos
-                    const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
-                    const consByDate = {};
-                    dataConsumptions.forEach(c => {
-                        const dateKey = timestampToPT(c.timestamp);
-                        if (!consByDate[dateKey]) consByDate[dateKey] = [];
-                        consByDate[dateKey].push(c);
-                    });
-                    delete consByDate[today];
-                    Object.values(consByDate).forEach(dayConsumptions => {
-                        if (dayConsumptions.length === 0) return;
-                        total++;
-                        const last = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-                        const d = new Date(last.timestamp);
-                        const lastMinutes = d.getHours() * 60 + d.getMinutes();
-                        if (lastMinutes < targetMinutes) achieved++;
-                    });
-                }
-
-                if (goal.type === 'sleep_hours') {
-                    // COMPATIBILIDADE: Busca sono de cycles.sleep (novo) ou wellbeingLogs.sleep (antigo)
-                    // Coletar datas únicas de cycles e wellbeingLogs
-                    const allDates = new Set([
-                        ...dataCycles.map(c => getDateKeyFromItem(c)),
-                        ...dataWellbeing.map(w => getDateKeyFromItem(w))
-                    ]);
-
-                    allDates.forEach(date => {
-                        const dateObj = new Date(date);
-                        const dateStr = dateObj.toLocaleDateString('pt-PT');
-                        if (dateStr === today) return; // Skip today
-
-                        // Primeiro tenta buscar em cycles
-                        const cycle = dataCycles.find(c => {
-                            const cycleDate = getDateKeyFromItem(c);
-                            return cycleDate === date && c.sleep != null;
-                        });
-                        if (cycle) {
-                            total++;
-                            if (parseFloat(cycle.sleep) >= parseFloat(goal.target)) achieved++;
-                            return;
-                        }
-
-                        // Fallback: buscar em wellbeingLogs
-                        const wellbeing = dataWellbeing.find(w => {
-                            const wDate = getDateKeyFromItem(w);
-                            return wDate === date && w.sleep != null;
-                        });
-                        if (wellbeing) {
-                            total++;
-                            if (parseFloat(wellbeing.sleep) >= parseFloat(goal.target)) achieved++;
-                        }
-                    });
-                }
-
-                if (goal.type === 'bedtime_before') {
-                    const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-                    const targetParts = targetStr.split(':');
-                    const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-                    dataCycles.forEach(cycle => {
-                        if (!cycle.bedtime) {
-                            return;
-                        }
-                        const bedtimeParts = cycle.bedtime.split(':');
-                        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-                        const bedtimeOriginalMinutes = bedtimeMinutes;
-
-                        // Meta SÓ é cumprida se hora for entre 21:00-02:00
-                        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-                        total++;
-
-                        // Adjust for early morning (00:00-05:59 → 24:00-29:59)
-                        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
-                            bedtimeMinutes += 1440;
-                        }
-
-                        let targetAdjusted = targetMinutes;
-                        if (targetMinutes >= 0 && targetMinutes < 360) {
-                            targetAdjusted += 1440;
-                        }
-
-                        const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-                        if (isAchieved) achieved++;
-                    });
-                }
-
-                const percentage = total > 0 ? Math.min(100, Math.round((achieved / total) * 100)) : 0;
-
-                return { achieved, total, percentage };
-            };
-
             // Streak calculation
             // getStreaks() removed - using metrics.streaks from useAnalysis hook
 
@@ -1006,53 +837,8 @@ const submitCycle = async () => {
                 getGoalProgress: metrics.getGoalProgress
             }), [consumptions, reflections, wellbeingLogs, cycles, goals, metrics.getGoalProgress]);
 
-            // ===== INTELLIGENT INSIGHTS & SENTIMENT ANALYSIS =====
-            // Analyze sentiment in text using keyword matching
-            const analyzeSentiment = (text) => {
-                if (!text || text.trim().length === 0) return { score: 0, label: 'neutro' };
-
-                const lowerText = text.toLowerCase();
-
-                let positiveCount = 0;
-                let negativeCount = 0;
-
-               const sentimentResult = analyzeMultipleNotes([lowerText]);
-return { 
-    score: sentimentResult.score, 
-    positiveCount: sentimentResult.distribution.positive + sentimentResult.distribution.very_positive,
-    negativeCount: sentimentResult.distribution.negative + sentimentResult.distribution.very_negative, 
-    label: sentimentResult.overall 
-};
-            };
-
-            // Analyze emotional patterns (which emotions correlate with consumption)
             const todayCount = metrics.todayConsumptions.length;
-            // Use the FIRST cycle (most recent, since sorted by timestamp desc)
             const currentCycle = cycles.length > 0 ? cycles[0] : null;
-
-            // Calculate cycle start time based on bedtime, not cycle creation timestamp
-            const getCycleStartTime = (cycle) => {
-                if (!cycle || !cycle.bedtime) return cycle.timestamp;
-
-                // Parse the bedtime (format "HH:MM") and create a timestamp
-                const cycleDate = new Date(cycle.timestamp);
-                const [hours, minutes] = cycle.bedtime.split(':').map(Number);
-
-                // Create a date with the bedtime
-                const bedtimeDate = new Date(cycleDate);
-                bedtimeDate.setHours(hours, minutes, 0, 0);
-
-                // If bedtime is after the cycle creation time (e.g., bedtime was yesterday)
-                // subtract one day
-                if (bedtimeDate > cycleDate) {
-                    const adjustedDate = subtractDays(bedtimeDate, 1);
-                    bedtimeDate.setTime(adjustedDate.getTime());
-                }
-
-                return bedtimeDate.toISOString();
-            };
-
-            const cycleStartTime = currentCycle ? getCycleStartTime(currentCycle) : null;
             const today = getTodayKey();
             const currentCycleCount = consumptions.filter(c => getDateKeyFromItem(c) === today).length;
             // ===== PRE-RENDER DATA PREPARATION =====

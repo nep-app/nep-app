@@ -380,6 +380,36 @@
       "HALT check: am I Hungry? Angry? Lonely? Tired? Resolve the real need first",
       "Surf the urge: imagine it as a wave - rises, peaks (3-15min), falls. I don't have to act at the peak",
       "If I'm going to use: plan harm reduction (smaller dose, safe context, someone knows where I am, water/food ready)"
+    ],
+    "Tédio": [
+      "Change your environment: step outside for 10min, go to a café, park or library. Different place = different state",
+      "Activate your body: 10min of loud music, dancing, brisk walk. Boredom is energy without direction — give it direction",
+      "List 5 things you've been putting off (message to send, laundry to fold, show to watch). Boredom is opportunity in disguise"
+    ],
+    "Cansaço": [
+      "Active rest: 20min with eyes closed (you don't have to sleep). Set an alarm and lie down — it resets the system",
+      "Micro-recovery: cold water on your face, fruit/protein, 5 slow breaths. Physical tiredness needs a physical response",
+      "Reduce stimulation for 30min: no social media, dim light, silence. Mental fatigue gets worse with more input"
+    ],
+    "Dor física": [
+      "Distinguish acute from chronic pain: if new or intense, prioritize medical attention — using masks but doesn't solve it",
+      "Localized heat (warm pad), comfortable position, painkiller if indicated. Physical management first",
+      "Persistent pain + use creates a vicious cycle — log where/when it hurts to identify patterns and talk to a doctor"
+    ],
+    "Insónia": [
+      "Don't force it: get out of bed if you can't sleep in 20min, do something calm (reading, puzzle), return when sleepy",
+      "Wind-down routine: cool room, no screens 30min before bed, chamomile tea or magnesium",
+      "Using worsens sleep quality — even if you fall asleep, sleep is less restorative. Track it to see the pattern"
+    ],
+    "Conflito": [
+      "Strategic pause: 'I need 10min to gather my thoughts' — that's assertiveness, not avoidance",
+      "Separate the person from the problem: what do I want to resolve? Attack the behavior, not the person. Write before speaking",
+      "After an intense conflict, don't decide alone — emotional state distorts judgment. Wait 2h before acting"
+    ],
+    "Celebração": [
+      "Plan ahead: decide max number of uses, who you're honest with about limits, how you get home safely",
+      "Alternate with non-use: celebrate with sparkling water, a special drink, good food. The celebration is in the people, not the substance",
+      "Mid-point check-in: how am I feeling? Did I stick to my plan? You always have permission to leave early if you need to"
     ]
   },
   "patterns": {
