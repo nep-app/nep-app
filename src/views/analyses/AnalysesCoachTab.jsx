@@ -1,7 +1,10 @@
 import React from 'react';
+import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
+
+const { getDateRangeForPeriod, filterByDateRange, getGoalAchievementCount } = analyticsService;
 
 export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisConsumptions,
@@ -11,7 +14,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisReflections,
     analysisThoughts,
     goals,
+    consumptions,
     patternsPeriod,
+    patternsPeriodOffset,
 }) {
     return (
         (() => {
