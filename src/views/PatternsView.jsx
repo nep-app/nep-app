@@ -54,8 +54,8 @@ export function PatternsView({
                                     <h2 className="text-2xl font-bold text-white">{t('patterns.title')}</h2>
 
                                     {/* Temporal Filters */}
-                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
-                                        <div className="flex items-center justify-between mb-3">
+                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border overflow-hidden">
+                                        <div className="flex flex-col gap-2 mb-1">
                                             <div className="flex gap-2 flex-wrap">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
                                                     <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
@@ -64,11 +64,11 @@ export function PatternsView({
                                                 ))}
                                             </div>
                                             {patternsPeriod !== 'tudo' && (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className="text-purple-600 p-2 rounded-lg transition-colors hover:bg-gray-700">
                                                         <Icons.ChevronLeft className="w-5 h-5" />
                                                     </button>
-                                                    <span className="text-sm font-medium min-w-[120px] text-center text-gray-300">{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
+                                                    <span className="text-sm font-medium text-center text-gray-300">{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
                                                     <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-purple-600 hover:bg-gray-700')}>
                                                         <Icons.ChevronRight className="w-5 h-5" />
                                                     </button>

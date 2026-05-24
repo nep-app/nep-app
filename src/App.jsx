@@ -926,7 +926,7 @@ const submitCycle = async () => {
             // AuthenticatedApp only renders when BOTH Firebase AND PIN are authenticated
 
             return (
-                <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24'>
+                <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24 overflow-x-hidden'>
                     <div className="max-w-2xl mx-auto">
                         <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>
                             <div className="flex justify-between items-center gap-8">
@@ -1182,7 +1182,7 @@ const submitCycle = async () => {
                             />
                         </Suspense>
 
-                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl pt-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50' style={{transform:'translateZ(0)'}}>
+                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl pt-3 px-3 z-50' style={{paddingBottom:'max(12px, env(safe-area-inset-bottom))'}}>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
