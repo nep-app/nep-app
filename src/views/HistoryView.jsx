@@ -176,6 +176,13 @@ export function HistoryView({
         ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }, [filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeing, filteredReflections, filteredThoughts]);
 
+    // Lista consumos+dailyLogs ordenada — memoizada para não re-ordenar a cada render
+    const consumptionLogsSorted = useMemo(() => (
+        [...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
+         ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date }))]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    ), [filteredConsumptions, filteredDailyLogs]);
+
     const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
 
     return (
@@ -922,10 +929,7 @@ export function HistoryView({
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
                                                         <div className="space-y-3">
-                                                            {[...filteredConsumptions.map(c => ({ type: 'consumption', data: c, timestamp: c.timestamp })),
-                                                              ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date }))]
-                                                                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                                                                .map(item => {
+                                                            {consumptionLogsSorted.map(item => {
                                                                     if (item.type === 'consumption') {
                                                                         const c = item.data;
                                                                         return (
@@ -995,7 +999,7 @@ export function HistoryView({
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.sectionCycles')} ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
-                                                            {filteredCycles.map(cycle => (
+                                                            {filteredCycles.slice(0, cyclesHistoryToShow).map(cycle => (
                                                                 <div key={cycle.id} className="bg-indigo-900/30 border-indigo-700/50 p-3 rounded-lg border">
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className="text-sm font-medium text-white">
@@ -1043,6 +1047,14 @@ export function HistoryView({
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        {filteredCycles.length > cyclesHistoryToShow && (
+                                                            <button
+                                                                onClick={() => setCyclesHistoryToShow(prev => prev + 10)}
+                                                                className="mt-3 w-full py-2 text-sm text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                                                            >
+                                                                Mostrar mais ({filteredCycles.length - cyclesHistoryToShow} restantes)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
 
