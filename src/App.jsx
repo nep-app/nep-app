@@ -1182,7 +1182,7 @@ const submitCycle = async () => {
                             />
                         </Suspense>
 
-                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl p-4'>
+                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl pt-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] z-50' style={{transform:'translateZ(0)'}}>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
                                     <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
