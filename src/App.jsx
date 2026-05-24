@@ -208,6 +208,25 @@ function AuthenticatedApp() {
                 return questions[cycleIndex % questions.length];
             }, [cycles.length, i18n.language]);
 
+            // Pergunta da reflexão baseada na data seleccionada (não apenas na de hoje)
+            const reflectionQuestion = useMemo(() => {
+                if (editingReflection) return editingReflection.question;
+                const questions = i18n.t('dbtQuestions', { returnObjects: true });
+                let cycleIdx;
+                if (reflectionDatetime) {
+                    // Contar quantos ciclos existiam até à data seleccionada
+                    const selectedDate = new Date(reflectionDatetime);
+                    const cyclesAtDate = cycles.filter(c => {
+                        const cDate = new Date(c.timestamp || c.createdAt || c.date + 'T23:59:59');
+                        return cDate <= selectedDate;
+                    }).length;
+                    cycleIdx = cyclesAtDate > 0 ? cyclesAtDate - 1 : 0;
+                } else {
+                    cycleIdx = getCurrentCycleIndex();
+                }
+                return questions[cycleIdx % questions.length];
+            }, [editingReflection, reflectionDatetime, cycles, i18n.language]);
+
             // Global error handler
             useEffect(() => {
                 const handleError = (event) => {
@@ -644,7 +663,7 @@ function AuthenticatedApp() {
                         await updateItem('reflections', editingReflection.id, { date: dateKey, timestamp, answer: reflectionAnswer });
                         setEditingReflection(null);
                     } else {
-                        const item = { id: genId(), date: dateKey, timestamp, question: currentDbtQuestion, answer: reflectionAnswer };
+                        const item = { id: genId(), date: dateKey, timestamp, question: reflectionQuestion, answer: reflectionAnswer };
                         await addReflection(item);
                     }
                     setReflectionAnswer('');
@@ -1114,7 +1133,7 @@ const submitCycle = async () => {
                             <ReflectionModal
                                 isOpen={showReflectionModal}
                                 onClose={() => { setShowReflectionModal(false); setEditingReflection(null); }}
-                                currentDbtQuestion={editingReflection ? editingReflection.question : currentDbtQuestion}
+                                currentDbtQuestion={reflectionQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
                                 reflectionDatetime={reflectionDatetime}
