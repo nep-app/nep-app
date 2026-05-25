@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
+import { useAuth } from '../contexts/AuthContext';
 const APP_VERSION = '1.7.7';
 
 export const SettingsView = ({
@@ -53,6 +54,17 @@ export const SettingsView = ({
         }
     };
 
+    const { lockMode, setLockMode } = useAuth();
+
+    const LOCK_OPTIONS = [
+        { value: 'never',   label: '🔓 Nunca',            desc: 'A app fica sempre aberta (até o browser fechar)' },
+        { value: 'on_hide', label: '📱 Ao minimizar',     desc: 'Bloqueia quando sais da app ou mudas de tab' },
+        { value: '5',       label: '⏱️ 5 minutos',        desc: 'Bloqueia após 5 min sem atividade' },
+        { value: '15',      label: '⏱️ 15 minutos',       desc: 'Bloqueia após 15 min sem atividade (padrão)' },
+        { value: '30',      label: '⏱️ 30 minutos',       desc: 'Bloqueia após 30 min sem atividade' },
+        { value: '60',      label: '⏱️ 1 hora',           desc: 'Bloqueia após 1 hora sem atividade' },
+    ];
+
     const handleChangeLang = (lang) => {
         i18n.changeLanguage(lang);
         localStorage.setItem('nep_lang', lang);
@@ -94,6 +106,37 @@ export const SettingsView = ({
                         ENG
                     </button>
                 </div>
+            </div>
+
+            {/* Bloqueio automático */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
+                    <Icons.Shield className="w-5 h-5" />
+                    Bloqueio automático
+                </h3>
+                <p className="text-xs text-gray-400 mb-4">Quando a app pede o PIN novamente</p>
+                <div className="space-y-2">
+                    {LOCK_OPTIONS.map(opt => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setLockMode(opt.value)}
+                            className={
+                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all ' +
+                                (lockMode === opt.value
+                                    ? 'bg-purple-900/40 border-purple-500 text-white'
+                                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
+                            }
+                        >
+                            <div className="font-medium text-sm">{opt.label}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                        </button>
+                    ))}
+                </div>
+                {lockMode === 'never' && (
+                    <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-xs text-yellow-400">
+                        ⚠️ Sem bloqueio automático. Qualquer pessoa com acesso ao dispositivo pode ver a app.
+                    </div>
+                )}
             </div>
 
             {/* User Info */}

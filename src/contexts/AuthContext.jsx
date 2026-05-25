@@ -61,9 +61,21 @@ export const AuthProvider = ({ children }) => {
     };
   });
 
+  // ── Lock mode ──────────────────────────────────────────────────────────────
+  // 'never'    → nunca bloquear automaticamente (só na próxima abertura do browser)
+  // 'on_hide'  → bloquear quando a app vai para segundo plano (tab escondida)
+  // '5'/'15'/'30'/'60' → minutos de inatividade
+  const [lockMode, setLockModeState] = useState(
+    () => localStorage.getItem('nep_lock_mode') || '15'
+  );
+
+  const setLockMode = useCallback((mode) => {
+    localStorage.setItem('nep_lock_mode', mode);
+    setLockModeState(mode);
+  }, []);
+
   // Auto-lock state
   const [lastActivity, setLastActivity] = useState(Date.now());
-  const AUTO_LOCK_TIMEOUT = 15 * 60 * 1000; // 15 minutos
 
   /**
    * Logout (limpa chave de encriptação da memória + dados do utilizador)
@@ -103,19 +115,31 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
-  // Auto-lock após inatividade
+  // Auto-lock por inatividade (modos '5', '15', '30', '60')
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (lockMode === 'never' || lockMode === 'on_hide') return;
 
+    const timeoutMs = parseInt(lockMode, 10) * 60 * 1000;
     const checkInactivity = setInterval(() => {
-      const now = Date.now();
-      if (now - lastActivity > AUTO_LOCK_TIMEOUT) {
+      if (Date.now() - lastActivity > timeoutMs) {
         logout();
       }
     }, 10000); // verificar a cada 10s
 
     return () => clearInterval(checkInactivity);
-  }, [isAuthenticated, lastActivity, logout]);
+  }, [isAuthenticated, lastActivity, lockMode, logout]);
+
+  // Auto-lock ao esconder a app (modo 'on_hide')
+  useEffect(() => {
+    if (!isAuthenticated || lockMode !== 'on_hide') return;
+
+    const handleVisibility = () => {
+      if (document.hidden) logout();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isAuthenticated, lockMode, logout]);
 
   // Atualizar lastActivity em qualquer interação
   useEffect(() => {
@@ -631,6 +655,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     userEmail,
     encryptionKey, // PIN do utilizador (só disponível quando autenticado)
+    lockMode,      // modo de bloqueio automático
 
     // Métodos
     createAccount,
@@ -638,6 +663,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     changePin,
     getUserSalt,
+    setLockMode,
     hasAccount,
     checkRemoteAccount, // Verificar conta no Firebase (auto-detecção)
     resetApp
