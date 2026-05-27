@@ -25,6 +25,7 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const AuthContext = createContext();
+const SESSION_KEY = 'nep_auth_session'; // módulo-level, não recria a cada render
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -73,10 +74,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('nep_lock_mode', mode);
     setLockModeState(mode);
     if (mode === 'on_hide') {
-      clearSession(); // "ao minimizar" nunca usa sessão persistida
+      localStorage.removeItem(SESSION_KEY); // "ao minimizar" nunca persiste sessão
     } else {
-      // Re-guardar sessão com o novo modo (se estiver autenticado, o saveSession
-      // será chamado na próxima interação via updateSessionTs)
+      // Guardar sessão imediatamente com o novo modo
+      // (o encryptionKey está disponível se o utilizador estiver autenticado)
+      setEncryptionKey(prev => {
+        if (prev) {
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(prev), ts: Date.now() }));
+        }
+        return prev;
+      });
     }
   }, []);
 
@@ -111,10 +118,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ── Sessão persistida ────────────────────────────────────────────────────
-  // Guarda { pin: btoa(pin), ts: timestamp } em localStorage
-  // Usado para auto-login ao reabrir a app conforme o lockMode
-  const SESSION_KEY = 'nep_auth_session';
-
   const saveSession = (pin) => {
     const mode = localStorage.getItem('nep_lock_mode') || '15';
     if (mode === 'on_hide') return; // "ao minimizar" nunca guarda sessão
