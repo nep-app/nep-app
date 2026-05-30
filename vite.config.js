@@ -51,6 +51,15 @@ export default defineConfig({
           { src: '/nep-app/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: '/nep-app/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        shortcuts: [
+          {
+            name: 'Consumi agora',
+            short_name: 'Consumo',
+            description: 'Registar um consumo rapidamente',
+            url: '/nep-app/?action=consume',
+            icons: [{ src: '/nep-app/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
       },
     }),
   ],

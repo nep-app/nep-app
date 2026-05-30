@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -249,6 +249,19 @@ function AuthenticatedApp() {
             useEffect(() => {
                 document.body.classList.add('dark');
             }, []);
+
+            // Handle PWA shortcut actions (?action=consume)
+            const pendingActionRef = useRef(new URLSearchParams(window.location.search).get('action'));
+            useEffect(() => {
+                if (pinAuthenticated && pendingActionRef.current === 'consume') {
+                    pendingActionRef.current = null;
+                    setShowDailyLogModal(true);
+                    // Clean URL without reload
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('action');
+                    window.history.replaceState(null, '', url.toString());
+                }
+            }, [pinAuthenticated, setShowDailyLogModal]);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
