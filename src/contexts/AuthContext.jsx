@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
 import { getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
 import {
@@ -87,6 +87,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Auto-lock state
+  const [lastActivity, setLastActivity] = useState(Date.now());
 
   /**
    * Logout EXPLÍCITO — limpa sessão guardada + dados em memória.
@@ -107,9 +109,6 @@ export const AuthProvider = ({ children }) => {
    * Na próxima abertura, se dentro do timeout, auto-login funciona.
    */
   const autoLock = useCallback(async () => {
-    // Safety net: never lock if mode is 'never' (even if called by mistake)
-    const currentMode = localStorage.getItem('nep_lock_mode') || '15';
-    if (currentMode === 'never') return;
     updateSessionTs(); // Atualizar timestamp antes de bloquear
     await clearUserDataOnly();
     logger.log('[Auth] 🔒 Auto-lock — sessão mantida');
@@ -178,6 +177,7 @@ export const AuthProvider = ({ children }) => {
             // ✅ Auto-login bem-sucedido
             setEncryptionKey(pin);
             setIsAuthenticated(true);
+            setLastActivity(Date.now());
             // Renovar timestamp da sessão
             localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
             logger.log('[Auth] ✅ Auto-login silencioso (lockMode:', mode, ')');
@@ -200,56 +200,58 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
-  // Ref para lastActivity — evita re-criar o efeito em cada interação
-  const lastActivityRef = useRef(Date.now());
-
-  // Único efeito para toda a lógica de lock + actividade
+  // Auto-lock por inatividade (modos '5', '15', '30', '60')
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (lockMode === 'never' || lockMode === 'on_hide') return;
 
-    const updateActivity = () => { lastActivityRef.current = Date.now(); };
-
-    // Visibilidade: bloquear (on_hide) ou só actualizar timestamp
-    const handleVisibilityChange = () => {
-      if (!document.hidden) return;
-      const mode = localStorage.getItem('nep_lock_mode') || '15';
-      if (mode === 'on_hide') {
-        autoLock();
-      } else {
-        updateSessionTs();
+    const timeoutMs = parseInt(lockMode, 10) * 60 * 1000;
+    const checkInactivity = setInterval(() => {
+      if (Date.now() - lastActivity > timeoutMs) {
+        autoLock(); // mantém sessão → pode auto-login se reabrir dentro do timeout
       }
+    }, 10000);
+
+    return () => clearInterval(checkInactivity);
+  }, [isAuthenticated, lastActivity, lockMode, autoLock]);
+
+  // Auto-lock ao esconder a app (modo 'on_hide')
+  useEffect(() => {
+    if (!isAuthenticated || lockMode !== 'on_hide') return;
+
+    const handleVisibility = () => {
+      if (document.hidden) autoLock();
     };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isAuthenticated, lockMode, autoLock]);
 
-    // Verificar inactividade a cada minuto + actualizar timestamp da sessão
-    const interval = setInterval(() => {
-      const mode = localStorage.getItem('nep_lock_mode') || '15';
-      if (mode === 'never' || mode === 'on_hide') {
-        updateSessionTs();
-        return;
-      }
-      const timeoutMs = parseInt(mode, 10) * 60 * 1000;
-      if (Date.now() - lastActivityRef.current > timeoutMs) {
-        autoLock();
-      } else {
-        updateSessionTs();
-      }
-    }, 60_000);
+  // Atualizar lastActivity em qualquer interação + gravar timestamp na sessão
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const updateActivity = () => setLastActivity(Date.now());
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Actualizar timestamp guardado periodicamente (a cada 60s)
+    const tsInterval = setInterval(updateSessionTs, 60_000);
+
+    // Guardar ao esconder a página (reload, fechar tab, etc.)
+    const handleHide = () => { if (document.hidden) updateSessionTs(); };
+    document.addEventListener('visibilitychange', handleHide);
     window.addEventListener('pagehide', updateSessionTs);
+
     window.addEventListener('mousedown', updateActivity);
     window.addEventListener('keydown', updateActivity);
     window.addEventListener('touchstart', updateActivity);
 
     return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(tsInterval);
+      document.removeEventListener('visibilitychange', handleHide);
       window.removeEventListener('pagehide', updateSessionTs);
       window.removeEventListener('mousedown', updateActivity);
       window.removeEventListener('keydown', updateActivity);
       window.removeEventListener('touchstart', updateActivity);
     };
-  }, [isAuthenticated, autoLock]);
+  }, [isAuthenticated]);
 
   /**
    * Criar nova conta (primeiro uso)
@@ -328,6 +330,7 @@ export const AuthProvider = ({ children }) => {
       setEncryptionKey(pin);
       setIsInitialized(true);
       setIsAuthenticated(true);
+      setLastActivity(Date.now());
       saveSession(pin);
 
       logger.log('[AuthContext] ✅ Conta criada com sucesso');
@@ -579,6 +582,7 @@ export const AuthProvider = ({ children }) => {
       // Login bem-sucedido
       setEncryptionKey(pin);
       setIsAuthenticated(true);
+      setLastActivity(Date.now());
       saveSession(pin); // guardar para auto-login futuro (se lockMode permitir)
 
       // MIGRAÇÃO/SYNC: Garantir que pinVerification está no Firebase
