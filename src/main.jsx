@@ -11,7 +11,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.0'; // v4.5.0: Fix service worker cache clear
+const APP_VERSION = '4.5.1'; // v4.5.1: Lock fix + shortcut modal
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
