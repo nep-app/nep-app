@@ -49,6 +49,14 @@ const ThoughtsModal = lazy(() => import('./components/modals/ThoughtsModal').the
 const LegalModal = lazy(() => import('./components/modals/LegalModal').then(module => ({ default: module.LegalModal })));
 const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
+// PWA shortcut: read ?action= once at module load (outside component, avoids closure/mangling issues)
+const _pwaAction = new URLSearchParams(window.location.search).get('action');
+if (_pwaAction) {
+  const _u = new URL(window.location.href);
+  _u.searchParams.delete('action');
+  window.history.replaceState(null, '', _u.toString());
+}
+
 function HarmReductionTracker() {
             const APP_VERSION = '1.7.7';
             const { t } = useTranslation();
@@ -250,6 +258,11 @@ function AuthenticatedApp() {
                 document.body.classList.add('dark');
             }, []);
 
+            // PWA shortcut: open daily log modal when ?action=consume was in URL
+            useEffect(() => {
+                if (_pwaAction === 'consume') setShowDailyLogModal(true);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, []);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
