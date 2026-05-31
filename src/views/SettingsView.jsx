@@ -153,7 +153,6 @@ export const SettingsView = ({
         { value: 'on_hide', label: '📱 Ao minimizar',     desc: 'Bloqueia quando sais da app ou mudas de tab' },
         { value: '5',       label: '⏱️ 5 minutos',        desc: 'Bloqueia após 5 min sem atividade' },
         { value: '15',      label: '⏱️ 15 minutos',       desc: 'Bloqueia após 15 min sem atividade (padrão)' },
-        { value: '30',      label: '⏱️ 30 minutos',       desc: 'Bloqueia após 30 min sem atividade' },
         { value: '60',      label: '⏱️ 1 hora',           desc: 'Bloqueia após 1 hora sem atividade' },
     ];
 

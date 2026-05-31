@@ -109,6 +109,7 @@ export const AuthProvider = ({ children }) => {
    * Na próxima abertura, se dentro do timeout, auto-login funciona.
    */
   const autoLock = useCallback(async () => {
+    if ((localStorage.getItem('nep_lock_mode') || '15') === 'never') return;
     updateSessionTs(); // Atualizar timestamp antes de bloquear
     await clearUserDataOnly();
     logger.log('[Auth] 🔒 Auto-lock — sessão mantida');
