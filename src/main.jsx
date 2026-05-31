@@ -11,7 +11,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.6'; // v4.5.6: fix never-mode auto-login sem email no IndexedDB
+const APP_VERSION = '4.5.7'; // v4.5.7: fix PWA shortcut "Consumi agora" registar consumo em vez de abrir modal errado
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {

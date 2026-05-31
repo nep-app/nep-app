@@ -58,7 +58,7 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.5.6';
+            const APP_VERSION = '4.5.7';
             const { t } = useTranslation();
 
             // Initialize Firebase
@@ -258,9 +258,9 @@ function AuthenticatedApp() {
                 document.body.classList.add('dark');
             }, []);
 
-            // PWA shortcut: open daily log modal when ?action=consume was in URL
+            // PWA shortcut: register quick consumption when ?action=consume was in URL
             useEffect(() => {
-                if (_pwaAction === 'consume') setShowDailyLogModal(true);
+                if (_pwaAction === 'consume') markConsumption();
             // eslint-disable-next-line react-hooks/exhaustive-deps
             }, []);
 
