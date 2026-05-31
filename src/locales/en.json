@@ -604,7 +604,11 @@
     "errWrongPassword": "Incorrect password.",
     "errEmailInUse": "This email is already registered. Log in instead.",
     "errWeakPassword": "Weak password (minimum 6 characters).",
-    "errInvalidCred": "Incorrect email or password."
+    "errInvalidCred": "Incorrect email or password.",
+    "forgotPassword": "Forgot password",
+    "resetSending": "Sending...",
+    "resetEmailSent": "Recovery email sent! Check your inbox.",
+    "resetErrNoEmail": "Please enter your email first."
   },
   "history": {
     "title": "History",

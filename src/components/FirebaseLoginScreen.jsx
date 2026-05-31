@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import * as Icons from './Icons';
 
 /**
@@ -25,6 +25,24 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!email) { setError(t('firebase.resetErrNoEmail')); return; }
+    setError('');
+    setResetLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') setError(t('firebase.errUserNotFound'));
+      else if (err.code === 'auth/invalid-email') setError(t('auth.emailInvalid'));
+      else setError(t('common.error') + ': ' + err.message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -113,6 +131,25 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
               minLength={6}
             />
           </div>
+
+          {isLogin && (
+            <div className="text-right -mt-2">
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={resetLoading || loading}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+              >
+                {resetLoading ? t('firebase.resetSending') : t('firebase.forgotPassword')}
+              </button>
+            </div>
+          )}
+
+          {resetSent && (
+            <div className="p-3 bg-green-900/30 border border-green-700/50 rounded-lg text-green-300 text-sm">
+              {t('firebase.resetEmailSent')}
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-900/30 border border-red-700/50 rounded-lg text-red-300 text-sm">

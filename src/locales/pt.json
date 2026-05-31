@@ -454,7 +454,11 @@
     "errWrongPassword": "Password incorreta.",
     "errEmailInUse": "Este email já está registado. Faz login.",
     "errWeakPassword": "Password fraca (mínimo 6 caracteres).",
-    "errInvalidCred": "Email ou password incorretos."
+    "errInvalidCred": "Email ou password incorretos.",
+    "forgotPassword": "Esqueci a password",
+    "resetSending": "A enviar...",
+    "resetEmailSent": "Email de recuperação enviado! Verifica a tua caixa de entrada.",
+    "resetErrNoEmail": "Introduz o teu email primeiro."
   },
   "patterns": {
     "title": "Padrões",
