@@ -201,6 +201,13 @@ export const AuthProvider = ({ children }) => {
     checkInitialization();
   }, [checkInitialization]);
 
+  // Garantir que a sessão é sempre guardada enquanto autenticado (exceto on_hide)
+  useEffect(() => {
+    if (isAuthenticated && encryptionKey) {
+      saveSession(encryptionKey);
+    }
+  }, [isAuthenticated, encryptionKey]);
+
   // Auto-lock por inatividade (modos '5', '15', '30', '60')
   useEffect(() => {
     if (!isAuthenticated) return;

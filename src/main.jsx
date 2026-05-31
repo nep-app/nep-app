@@ -11,7 +11,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.1'; // v4.5.1: Lock fix + shortcut modal
+const APP_VERSION = '4.5.2'; // v4.5.2: Fix session not persisting for shortcut
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
