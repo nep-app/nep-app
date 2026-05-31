@@ -164,28 +164,19 @@ export const AuthProvider = ({ children }) => {
         mode, hasSession: !!sessionRaw, hasEmail: !!email, hasNeverPin: !!localStorage.getItem(NEVER_PIN_KEY), v: '4.5.5'
       }));
 
-      if (mode === 'never' && email) {
-        // 'never' mode: tentar com nep_never_pin (mais persistente) ou sessão normal
+      const neverPinEncoded = localStorage.getItem(NEVER_PIN_KEY);
+
+      if (mode === 'never' && (neverPinEncoded || (email && sessionRaw))) {
+        // 'never' mode: neverPin é a fonte primária (não depende de IndexedDB)
         try {
-          const neverPinEncoded = localStorage.getItem(NEVER_PIN_KEY);
-          let encodedPin = null;
-
-          if (neverPinEncoded) {
-            encodedPin = neverPinEncoded; // já é btoa(pin)
-          } else if (sessionRaw) {
-            encodedPin = JSON.parse(sessionRaw).pin;
-          }
-
-          if (encodedPin) {
-            const pin = atob(encodedPin);
-            setEncryptionKey(pin);
-            setIsAuthenticated(true);
-            setLastActivity(Date.now());
-            // Garantir que ambas as chaves estão guardadas
-            localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
-            localStorage.setItem(NEVER_PIN_KEY, encodedPin);
-            logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
-          }
+          let encodedPin = neverPinEncoded || JSON.parse(sessionRaw).pin;
+          const pin = atob(encodedPin);
+          setEncryptionKey(pin);
+          setIsAuthenticated(true);
+          setLastActivity(Date.now());
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+          localStorage.setItem(NEVER_PIN_KEY, encodedPin);
+          logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
         } catch (e) {
           logger.warn('[Auth] ⚠️ Auto-login falhou (never mode):', e);
         }
