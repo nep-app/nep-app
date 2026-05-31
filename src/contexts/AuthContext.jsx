@@ -150,43 +150,51 @@ export const AuthProvider = ({ children }) => {
       setIsInitialized(!!email);
 
       // ── Tentar auto-login silencioso ──────────────────────────────────
-      if (email && saltBase64 && pinVerificationJSON) {
-        const mode = localStorage.getItem('nep_lock_mode') || '15';
-        const sessionRaw = localStorage.getItem(SESSION_KEY);
+      const mode = localStorage.getItem('nep_lock_mode') || '15';
+      const sessionRaw = localStorage.getItem(SESSION_KEY);
 
-        if (mode !== 'on_hide' && sessionRaw) {
-          try {
-            const { pin: encodedPin, ts } = JSON.parse(sessionRaw);
+      if (mode === 'never' && email && sessionRaw) {
+        // 'never' mode: user chose no locking → trust stored session directly,
+        // no decrypt needed (if PIN is wrong, data decryption will surface errors later)
+        try {
+          const { pin: encodedPin } = JSON.parse(sessionRaw);
+          const pin = atob(encodedPin);
+          setEncryptionKey(pin);
+          setIsAuthenticated(true);
+          setLastActivity(Date.now());
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+          logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
+        } catch (e) {
+          clearSession();
+          logger.warn('[Auth] ⚠️ Auto-login falhou (never mode), a pedir PIN');
+        }
+      } else if (email && saltBase64 && pinVerificationJSON && mode !== 'on_hide' && sessionRaw) {
+        try {
+          const { pin: encodedPin, ts } = JSON.parse(sessionRaw);
 
-            // Verificar se a sessão ainda é válida (para modos de timeout)
-            if (mode !== 'never') {
-              const timeoutMs = parseInt(mode, 10) * 60 * 1000;
-              if (Date.now() - ts > timeoutMs) {
-                // Sessão expirou
-                clearSession();
-                return;
-              }
-            }
-
-            const pin = atob(encodedPin);
-            const salt = base64ToSalt(saltBase64);
-            const verification = JSON.parse(pinVerificationJSON);
-
-            // Verificar PIN localmente (sem Firebase) — rápido e silencioso
-            await decrypt(verification.data, verification.iv, pin, salt);
-
-            // ✅ Auto-login bem-sucedido
-            setEncryptionKey(pin);
-            setIsAuthenticated(true);
-            setLastActivity(Date.now());
-            // Renovar timestamp da sessão
-            localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
-            logger.log('[Auth] ✅ Auto-login silencioso (lockMode:', mode, ')');
-          } catch (e) {
-            // PIN guardado já não é válido — limpar
+          // Verificar se a sessão ainda é válida (para modos de timeout)
+          const timeoutMs = parseInt(mode, 10) * 60 * 1000;
+          if (Date.now() - ts > timeoutMs) {
             clearSession();
-            logger.warn('[Auth] ⚠️ Auto-login falhou, a pedir PIN manualmente');
+            return;
           }
+
+          const pin = atob(encodedPin);
+          const salt = base64ToSalt(saltBase64);
+          const verification = JSON.parse(pinVerificationJSON);
+
+          // Verificar PIN localmente (sem Firebase) — rápido e silencioso
+          await decrypt(verification.data, verification.iv, pin, salt);
+
+          // ✅ Auto-login bem-sucedido
+          setEncryptionKey(pin);
+          setIsAuthenticated(true);
+          setLastActivity(Date.now());
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+          logger.log('[Auth] ✅ Auto-login silencioso (lockMode:', mode, ')');
+        } catch (e) {
+          clearSession();
+          logger.warn('[Auth] ⚠️ Auto-login falhou, a pedir PIN manualmente');
         }
       }
     } catch (error) {
