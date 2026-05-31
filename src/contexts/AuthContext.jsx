@@ -25,7 +25,8 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../utils/firebase';
 
 const AuthContext = createContext();
-const SESSION_KEY = 'nep_auth_session'; // módulo-level, não recria a cada render
+const SESSION_KEY = 'nep_auth_session';
+const NEVER_PIN_KEY = 'nep_never_pin'; // PIN dedicado para modo 'nunca' — sobrevive a limpezas de cache
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -74,13 +75,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('nep_lock_mode', mode);
     setLockModeState(mode);
     if (mode === 'on_hide') {
-      localStorage.removeItem(SESSION_KEY); // "ao minimizar" nunca persiste sessão
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(NEVER_PIN_KEY);
     } else {
-      // Guardar sessão imediatamente com o novo modo
-      // (o encryptionKey está disponível se o utilizador estiver autenticado)
       setEncryptionKey(prev => {
         if (prev) {
           localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(prev), ts: Date.now() }));
+          if (mode === 'never') {
+            localStorage.setItem(NEVER_PIN_KEY, btoa(prev));
+          } else {
+            localStorage.removeItem(NEVER_PIN_KEY);
+          }
         }
         return prev;
       });
@@ -95,7 +100,8 @@ export const AuthProvider = ({ children }) => {
    * Usar quando o utilizador carrega em "Terminar sessão".
    */
   const logout = useCallback(async () => {
-    clearSession(); // ← apaga sessão persistida (próxima abertura pede PIN)
+    clearSession();
+    localStorage.removeItem(NEVER_PIN_KEY);
     await clearUserDataOnly();
     logger.log('[Auth] 🗑️ Logout explícito — sessão apagada');
     setEncryptionKey(null);
@@ -153,20 +159,35 @@ export const AuthProvider = ({ children }) => {
       const mode = localStorage.getItem('nep_lock_mode') || '15';
       const sessionRaw = localStorage.getItem(SESSION_KEY);
 
-      if (mode === 'never' && email && sessionRaw) {
-        // 'never' mode: user chose no locking → trust stored session directly,
-        // no decrypt needed (if PIN is wrong, data decryption will surface errors later)
+      // Escrever debug info para diagnóstico (visível nas Definições)
+      localStorage.setItem('_nep_dbg', JSON.stringify({
+        mode, hasSession: !!sessionRaw, hasEmail: !!email, hasNeverPin: !!localStorage.getItem(NEVER_PIN_KEY), v: '4.5.5'
+      }));
+
+      if (mode === 'never' && email) {
+        // 'never' mode: tentar com nep_never_pin (mais persistente) ou sessão normal
         try {
-          const { pin: encodedPin } = JSON.parse(sessionRaw);
-          const pin = atob(encodedPin);
-          setEncryptionKey(pin);
-          setIsAuthenticated(true);
-          setLastActivity(Date.now());
-          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
-          logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
+          const neverPinEncoded = localStorage.getItem(NEVER_PIN_KEY);
+          let encodedPin = null;
+
+          if (neverPinEncoded) {
+            encodedPin = neverPinEncoded; // já é btoa(pin)
+          } else if (sessionRaw) {
+            encodedPin = JSON.parse(sessionRaw).pin;
+          }
+
+          if (encodedPin) {
+            const pin = atob(encodedPin);
+            setEncryptionKey(pin);
+            setIsAuthenticated(true);
+            setLastActivity(Date.now());
+            // Garantir que ambas as chaves estão guardadas
+            localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+            localStorage.setItem(NEVER_PIN_KEY, encodedPin);
+            logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
+          }
         } catch (e) {
-          clearSession();
-          logger.warn('[Auth] ⚠️ Auto-login falhou (never mode), a pedir PIN');
+          logger.warn('[Auth] ⚠️ Auto-login falhou (never mode):', e);
         }
       } else if (email && saltBase64 && pinVerificationJSON && mode !== 'on_hide' && sessionRaw) {
         try {
@@ -213,8 +234,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (isAuthenticated && encryptionKey) {
       saveSession(encryptionKey);
+      if (lockMode === 'never') {
+        localStorage.setItem(NEVER_PIN_KEY, btoa(encryptionKey));
+      }
     }
-  }, [isAuthenticated, encryptionKey]);
+  }, [isAuthenticated, encryptionKey, lockMode]);
 
   // Auto-lock por inatividade (modos '5', '15', '30', '60')
   useEffect(() => {
@@ -599,7 +623,11 @@ export const AuthProvider = ({ children }) => {
       setEncryptionKey(pin);
       setIsAuthenticated(true);
       setLastActivity(Date.now());
-      saveSession(pin); // guardar para auto-login futuro (se lockMode permitir)
+      saveSession(pin);
+      // Guardar PIN dedicado se modo 'nunca'
+      if ((localStorage.getItem('nep_lock_mode') || '15') === 'never') {
+        localStorage.setItem(NEVER_PIN_KEY, btoa(pin));
+      }
 
       // MIGRAÇÃO/SYNC: Garantir que pinVerification está no Firebase
       // (importante para contas antigas criadas antes do sync existir)

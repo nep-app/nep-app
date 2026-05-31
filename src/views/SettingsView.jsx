@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
-const APP_VERSION = '1.7.7';
+const APP_VERSION = '4.5.5';
 
 // ── Guia de utilização ────────────────────────────────────────────────────
 
@@ -458,6 +458,17 @@ export const SettingsView = ({
                         <p>{t('settings.version', { version: APP_VERSION })}</p>
                         <p className="mt-1">{t('settings.copyright')}</p>
                         <p className="mt-1">{t('settings.privacyNote')}</p>
+                        {(() => {
+                            try {
+                                const dbg = JSON.parse(localStorage.getItem('_nep_dbg') || '{}');
+                                if (!dbg.v) return null;
+                                return (
+                                    <p className="mt-2 text-gray-600 font-mono">
+                                        dbg: modo={dbg.mode} sessão={dbg.hasSession?'✓':'✗'} neverPin={dbg.hasNeverPin?'✓':'✗'} email={dbg.hasEmail?'✓':'✗'}
+                                    </p>
+                                );
+                            } catch { return null; }
+                        })()}
                     </div>
                 </div>
             </div>

@@ -58,7 +58,7 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.5.3';
+            const APP_VERSION = '4.5.5';
             const { t } = useTranslation();
 
             // Initialize Firebase
