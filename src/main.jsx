@@ -11,7 +11,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.7'; // v4.5.7: fix PWA shortcut "Consumi agora" registar consumo em vez de abrir modal errado
+const APP_VERSION = '4.5.8'; // v4.5.8: fix PWA shortcut aguardar dataLoading antes de markConsumption
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {

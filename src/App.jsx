@@ -58,7 +58,7 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.5.7';
+            const APP_VERSION = '4.5.8';
             const { t } = useTranslation();
 
             // Initialize Firebase
@@ -155,6 +155,9 @@ function AuthenticatedApp() {
 
             // App error state
             const [appError, setAppError] = useState(null);
+
+            // PWA shortcut: flag to trigger markConsumption after data loads
+            const [pendingPwaConsume] = useState(_pwaAction === 'consume');
 
             // UI Navigation State
             const [currentView, setCurrentView] = useState('home');
@@ -258,11 +261,11 @@ function AuthenticatedApp() {
                 document.body.classList.add('dark');
             }, []);
 
-            // PWA shortcut: register quick consumption when ?action=consume was in URL
+            // PWA shortcut: wait for data to load before calling markConsumption
             useEffect(() => {
-                if (_pwaAction === 'consume') markConsumption();
+                if (pendingPwaConsume && !dataLoading) markConsumption();
             // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, []);
+            }, [pendingPwaConsume, dataLoading]);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
