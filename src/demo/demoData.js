@@ -4,6 +4,10 @@ function ts(daysAgo, hour = 12, min = 0) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
   d.setHours(hour, min, 0, 0);
+  // Nunca no futuro (ex: entrada das 21h quando são 11h)
+  if (d.getTime() > Date.now() - 60000) {
+    return new Date(Date.now() - 60000).toISOString();
+  }
   return d.toISOString();
 }
 
