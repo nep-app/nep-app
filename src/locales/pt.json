@@ -458,7 +458,11 @@
     "forgotPassword": "Esqueci a password",
     "resetSending": "A enviar...",
     "resetEmailSent": "Email de recuperação enviado! Verifica a tua caixa de entrada.",
-    "resetErrNoEmail": "Introduz o teu email primeiro."
+    "resetErrNoEmail": "Introduz o teu email primeiro.",
+    "demoButton": "🎭 Experimentar em modo demo",
+    "demoHint": "Sem registo — dados de exemplo, nada é guardado",
+    "demoBanner": "🎭 Modo Demo — os dados não são guardados",
+    "demoExit": "Sair do demo"
   },
   "patterns": {
     "title": "Padrões",

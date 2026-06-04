@@ -205,9 +205,9 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
             onClick={() => { localStorage.setItem('nep_demo', '1'); window.location.reload(); }}
             className="w-full py-3 rounded-lg border border-purple-700/50 text-purple-300 hover:bg-purple-900/20 transition-all font-medium text-sm flex items-center justify-center gap-2"
           >
-            🎭 Experimentar em modo demo
+            {t('firebase.demoButton')}
           </button>
-          <p className="text-xs text-gray-500 text-center mt-2">Sem registo — dados de exemplo, nada é guardado</p>
+          <p className="text-xs text-gray-500 text-center mt-2">{t('firebase.demoHint')}</p>
         </div>
 
         {/* Info */}

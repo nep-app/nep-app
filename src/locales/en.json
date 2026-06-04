@@ -608,7 +608,11 @@
     "forgotPassword": "Forgot password",
     "resetSending": "Sending...",
     "resetEmailSent": "Recovery email sent! Check your inbox.",
-    "resetErrNoEmail": "Please enter your email first."
+    "resetErrNoEmail": "Please enter your email first.",
+    "demoButton": "🎭 Try demo mode",
+    "demoHint": "No sign-up needed — sample data, nothing is saved",
+    "demoBanner": "🎭 Demo Mode — nothing is saved",
+    "demoExit": "Exit demo"
   },
   "history": {
     "title": "History",

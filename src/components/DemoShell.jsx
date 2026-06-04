@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuthenticatedApp } from '../App';
 
 export function DemoShell() {
+  const { t } = useTranslation();
   const exit = () => {
     localStorage.removeItem('nep_demo');
     window.location.reload();
@@ -19,7 +21,7 @@ export function DemoShell() {
           alignItems: 'center', justifyContent: 'center', gap: '12px',
         }}
       >
-        <span>🎭 Modo Demo — os dados não são guardados</span>
+        <span>{t('firebase.demoBanner')}</span>
         <button
           onClick={exit}
           style={{
@@ -28,7 +30,7 @@ export function DemoShell() {
             cursor: 'pointer', fontSize: '12px', fontWeight: 600,
           }}
         >
-          Sair do demo
+          {t('firebase.demoExit')}
         </button>
       </div>
 
