@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
-const APP_VERSION = '4.5.8';
+const APP_VERSION = '4.5.9';
 
 // ── Guia de utilização ────────────────────────────────────────────────────
 

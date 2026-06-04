@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
 import { useAuth } from './AuthContext';
 import { db } from '../db/localDB';
@@ -95,6 +95,14 @@ export const useLocalData = () => {
 export const LocalDataProvider = ({ children }) => {
   const { encryptionKey, getUserSalt } = useAuth();
 
+  // Cache do salt para evitar 8+ chamadas IndexedDB desnecessárias por boot
+  const saltCache = useRef(null);
+  useEffect(() => { saltCache.current = null; }, [encryptionKey]);
+  const getCachedSalt = useCallback(async () => {
+    if (!saltCache.current) saltCache.current = await getUserSalt();
+    return saltCache.current;
+  }, [getUserSalt]);
+
   // Estado para cada coleção
   const [consumptions, setConsumptions] = useState([]);
   const [dailyLogs, setDailyLogs] = useState([]);
@@ -106,7 +114,8 @@ export const LocalDataProvider = ({ children }) => {
   const [healthLogs, setHealthLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
-  const [allDataLoaded, setAllDataLoaded] = useState(false); // True quando FASE 3 completa
+  const [allDataLoaded, setAllDataLoaded] = useState(false);
+  const [fullDataLoaded, setFullDataLoaded] = useState(false); // True quando FASE 3 completa
 
   /**
    * Carregar dados de uma coleção (com desencriptação)
@@ -123,7 +132,7 @@ export const LocalDataProvider = ({ children }) => {
     }
 
     try {
-      const salt = await getUserSalt();
+      const salt = await getCachedSalt();
       const allItems = await getAllItems(collectionName);
 
       // 🚀 OTIMIZAÇÃO: Filtrar items recentes ANTES de desencriptar
@@ -176,7 +185,7 @@ export const LocalDataProvider = ({ children }) => {
     }
 
     try {
-      const salt = await getUserSalt();
+      const salt = await getCachedSalt();
       const allItems = await getAllItems(collectionName);
 
       if (allItems.length === 0) {
@@ -298,78 +307,12 @@ export const LocalDataProvider = ({ children }) => {
           setHealthLogs(healthLogsData);
 
           logger.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
+          setAllDataLoaded(true); // FASE 2 chega para o auto-pull check
+          setBackgroundLoading(false);
 
-          // 🔄 FASE 3: Carregar TUDO em background (dados antigos + actualizar stats)
-          setTimeout(async () => {
-            try {
-              // Verificar se FASE 2 já carregou TUDO (todas as coleções, não apenas consumptions)
-              const [allConsumptions, allDailyLogs, allReflections, allWellbeing, allCycles, allGoals, allThoughts, allHealthLogs] = await Promise.all([
-                getAllItems('consumptions'),
-                getAllItems('dailyLogs'),
-                getAllItems('reflections'),
-                getAllItems('wellbeingLogs'),
-                getAllItems('cycles'),
-                getAllItems('goals'),
-                getAllItems('thoughts'),
-                getAllItems('healthLogs')
-              ]);
-              const totalInDB = allConsumptions.length + allDailyLogs.length + allReflections.length + allWellbeing.length + allCycles.length + allGoals.length + allThoughts.length + allHealthLogs.length;
-              const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length + healthLogsData.length;
-
-              if (totalLoaded >= totalInDB) {
-                logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - skip FASE 3');
-
-                logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-                await updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData);
-                setAllDataLoaded(true);
-
-                setBackgroundLoading(false);
-                return;
-              }
-
-              logger.log('[LocalData] 🔄 FASE 3: Carregando dados antigos...');
-
-              const [
-                consumptionsFullData,
-                dailyLogsFullData,
-                reflectionsFullData,
-                wellbeingLogsFullData,
-                cyclesFullData,
-                goalsFullData,
-                thoughtsFullData,
-                healthLogsFullData
-              ] = await Promise.all([
-                loadCollection('consumptions', 999999),
-                loadCollection('dailyLogs', 999999),
-                loadCollection('reflections', 999999),
-                loadCollection('wellbeingLogs', 999999),
-                loadCollection('cycles', 999999),
-                loadCollection('goals', 999999),
-                loadCollection('thoughts', 999999),
-                loadCollection('healthLogs', 999999)
-              ]);
-
-              setConsumptions(consumptionsFullData);
-              setDailyLogs(dailyLogsFullData);
-              setReflections(reflectionsFullData);
-              setWellbeingLogs(wellbeingLogsFullData);
-              setCycles(cyclesFullData);
-              setGoals(goalsFullData);
-              setThoughts(thoughtsFullData);
-              setHealthLogs(healthLogsFullData);
-
-              // Atualizar stats pré-calculadas (para próximo boot)
-              logger.log('[LocalData] 📊 Atualizando stats pré-calculadas...');
-              await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
-
-              setAllDataLoaded(true); // Sinalizar que FASE 3 está completa
-              logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
-            } catch (error) {
-              logger.error('[LocalData] Erro na FASE 3:', error);
-            } finally {
-              setBackgroundLoading(false);
-            }
-          }, 0); // FASE 3 começa assim que o UI renderizar
+          // Actualizar stats pré-calculadas com dados da FASE 2
+          updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData)
+            .catch(err => logger.error('[LocalData] Erro ao actualizar stats FASE 2:', err));
 
         } catch (error) {
           logger.error('[LocalData] Erro na FASE 2:', error);
@@ -381,12 +324,63 @@ export const LocalDataProvider = ({ children }) => {
       logger.error('[LocalData] Erro ao carregar dados (FASE 1):', error);
       setLoading(false);
     }
-  }, [encryptionKey, loadCollection]);
+  }, [encryptionKey, loadCollectionWithFirst]);
+
+  /**
+   * FASE 3 (sob-demanda): Carregar TODOS os dados históricos
+   * Chamado apenas quando o utilizador navega para Padrões/Análises/Histórico
+   */
+  const loadFullData = useCallback(async () => {
+    if (fullDataLoaded || !encryptionKey) return;
+
+    logger.log('[LocalData] 🔄 FASE 3 (demanda): Carregando dados históricos...');
+    setBackgroundLoading(true);
+
+    try {
+      const [
+        consumptionsFullData,
+        dailyLogsFullData,
+        reflectionsFullData,
+        wellbeingLogsFullData,
+        cyclesFullData,
+        goalsFullData,
+        thoughtsFullData,
+        healthLogsFullData
+      ] = await Promise.all([
+        loadCollection('consumptions', 999999),
+        loadCollection('dailyLogs', 999999),
+        loadCollection('reflections', 999999),
+        loadCollection('wellbeingLogs', 999999),
+        loadCollection('cycles', 999999),
+        loadCollection('goals', 999999),
+        loadCollection('thoughts', 999999),
+        loadCollection('healthLogs', 999999)
+      ]);
+
+      setConsumptions(consumptionsFullData);
+      setDailyLogs(dailyLogsFullData);
+      setReflections(reflectionsFullData);
+      setWellbeingLogs(wellbeingLogsFullData);
+      setCycles(cyclesFullData);
+      setGoals(goalsFullData);
+      setThoughts(thoughtsFullData);
+      setHealthLogs(healthLogsFullData);
+
+      await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
+      setFullDataLoaded(true);
+      logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
+    } catch (error) {
+      logger.error('[LocalData] Erro na FASE 3:', error);
+    } finally {
+      setBackgroundLoading(false);
+    }
+  }, [encryptionKey, fullDataLoaded, loadCollection]);
 
   // Carregar dados quando encryptionKey estiver disponível
   useEffect(() => {
     if (encryptionKey) {
       loadAllCollections();
+      setFullDataLoaded(false); // Reset Phase 3 quando chave muda
     }
   }, [encryptionKey, loadAllCollections]);
 
@@ -408,7 +402,7 @@ export const LocalDataProvider = ({ children }) => {
       throw new Error('PIN não disponível - faça login primeiro');
     }
 
-    const salt = await getUserSalt();
+    const salt = await getCachedSalt();
 
     // Encriptar campos sensíveis
     const encrypted = await encryptItem(collectionName, item, encryptionKey, salt);
@@ -450,7 +444,7 @@ export const LocalDataProvider = ({ children }) => {
 
 
     return decrypted;
-  }, [encryptionKey, getUserSalt, recalculateStats]);
+  }, [encryptionKey, getCachedSalt, recalculateStats]);
 
   /**
    * CRUD: Atualizar item
@@ -460,7 +454,7 @@ export const LocalDataProvider = ({ children }) => {
       throw new Error('PIN não disponível');
     }
 
-    const salt = await getUserSalt();
+    const salt = await getCachedSalt();
 
     // Encriptar campos sensíveis nos updates
     const encryptedUpdates = await encryptItem(collectionName, updates, encryptionKey, salt);
@@ -496,7 +490,7 @@ export const LocalDataProvider = ({ children }) => {
 
 
     return decrypted;
-  }, [encryptionKey, getUserSalt, recalculateStats]);
+  }, [encryptionKey, getCachedSalt, recalculateStats]);
 
   /**
    * CRUD: Deletar item (soft delete)
@@ -559,6 +553,7 @@ export const LocalDataProvider = ({ children }) => {
     loading,
     backgroundLoading,
     allDataLoaded,
+    fullDataLoaded,
     consumptions,
     dailyLogs,
     reflections,
@@ -578,7 +573,8 @@ export const LocalDataProvider = ({ children }) => {
     markItemAsSynced,
 
     // Reload
-    loadAllCollections
+    loadAllCollections,
+    loadFullData
   };
 
   return <LocalDataContext.Provider value={value}>{children}</LocalDataContext.Provider>;

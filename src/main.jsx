@@ -11,7 +11,7 @@ import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.8'; // v4.5.8: fix PWA shortcut aguardar dataLoading antes de markConsumption
+const APP_VERSION = '4.5.9'; // v4.5.9: Phase 3 sob-demanda - app abre rápido, histórico carrega ao navegar
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {

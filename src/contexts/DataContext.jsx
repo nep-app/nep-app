@@ -59,8 +59,10 @@ export const DataProvider = ({ children }) => {
     updateItem,
     deleteItem,
     loadAllCollections,
+    loadFullData,
     getPendingSyncItems,
     allDataLoaded,
+    fullDataLoaded,
   } = useLocalData();
 
   // Coping strategies (legacy - vazio por agora)
@@ -389,7 +391,11 @@ export const DataProvider = ({ children }) => {
     lastSyncTime,
     manualSync,
     forcePushAll,
-    countPendingItems
+    countPendingItems,
+
+    // Carregamento histórico sob-demanda
+    loadFullData,
+    fullDataLoaded,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
