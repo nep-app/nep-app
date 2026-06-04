@@ -31,7 +31,24 @@ const NEVER_PIN_KEY = 'nep_never_pin'; // PIN dedicado para modo 'nunca' — sob
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    // Demo mode: no AuthProvider in tree — return safe no-op defaults
+    return {
+      isAuthenticated: true,
+      isInitialized: true,
+      loading: false,
+      userEmail: null,
+      encryptionKey: null,
+      lockMode: 'never',
+      setLockMode: () => {},
+      hasAccount: async () => true,
+      logout: () => {},
+      createAccount: async () => {},
+      login: async () => {},
+      changePin: async () => {},
+      getUserSalt: async () => null,
+      checkRemoteAccount: async () => false,
+      resetApp: async () => {},
+    };
   }
   return context;
 };
