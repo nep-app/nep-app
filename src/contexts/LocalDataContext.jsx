@@ -306,13 +306,28 @@ export const LocalDataProvider = ({ children }) => {
           setThoughts(thoughtsData);
           setHealthLogs(healthLogsData);
 
+          // Verificar se FASE 2 já carregou TUDO (poucos registos)
+          const [allC, allD, allR, allW, allCy, allG, allT, allH] = await Promise.all([
+            getAllItems('consumptions'), getAllItems('dailyLogs'), getAllItems('reflections'),
+            getAllItems('wellbeingLogs'), getAllItems('cycles'), getAllItems('goals'),
+            getAllItems('thoughts'), getAllItems('healthLogs')
+          ]);
+          const totalInDB = allC.length + allD.length + allR.length + allW.length + allCy.length + allG.length + allT.length + allH.length;
+          const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length + healthLogsData.length;
+
           logger.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
           setAllDataLoaded(true); // FASE 2 chega para o auto-pull check
           setBackgroundLoading(false);
 
-          // Actualizar stats pré-calculadas com dados da FASE 2
-          updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData)
-            .catch(err => logger.error('[LocalData] Erro ao actualizar stats FASE 2:', err));
+          if (totalLoaded >= totalInDB) {
+            // FASE 2 carregou tudo — actualizar stats e marcar Phase 3 como feita
+            logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - stats actualizadas, skip FASE 3');
+            updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData)
+              .catch(err => logger.error('[LocalData] Erro ao actualizar stats FASE 2:', err));
+            setFullDataLoaded(true);
+          }
+          // Se há dados históricos, NÃO actualizar stats agora — o cache anterior tem o valor completo correcto.
+          // Phase 3 (sob-demanda) actualizará quando o utilizador abrir Padrões/Análises/Histórico.
 
         } catch (error) {
           logger.error('[LocalData] Erro na FASE 2:', error);
