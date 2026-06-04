@@ -6,12 +6,14 @@ import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { LocalDataProvider } from './contexts/LocalDataContext'
 import { DataProvider } from './contexts/DataContext'
+import { DemoDataProvider } from './contexts/DemoDataContext'
 import { MetricsProvider } from './contexts/MetricsContext'
 import { UIProvider } from './contexts/UIContext'
+import { DemoShell } from './components/DemoShell'
 import './index.css'
 
 // App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.5.9'; // v4.5.9: Phase 3 sob-demanda - app abre rápido, histórico carrega ao navegar
+const APP_VERSION = '4.6.0'; // v4.6.0: modo demo com dados falsos realistas, sem registo necessário
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {
@@ -44,20 +46,34 @@ const checkForUpdates = () => {
 
 // Verificar updates antes de renderizar
 if (!checkForUpdates()) {
+  const isDemoMode = localStorage.getItem('nep_demo') === '1';
+
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <AuthProvider>
-          <LocalDataProvider>
-            <DataProvider>
-              <MetricsProvider>
-                <UIProvider>
-                  <App />
-                </UIProvider>
-              </MetricsProvider>
-            </DataProvider>
-          </LocalDataProvider>
-        </AuthProvider>
+        {isDemoMode ? (
+          // Demo tree: sem auth, sem IndexedDB, dados falsos
+          <DemoDataProvider>
+            <MetricsProvider>
+              <UIProvider>
+                <DemoShell />
+              </UIProvider>
+            </MetricsProvider>
+          </DemoDataProvider>
+        ) : (
+          // Árvore normal com auth completa
+          <AuthProvider>
+            <LocalDataProvider>
+              <DataProvider>
+                <MetricsProvider>
+                  <UIProvider>
+                    <App />
+                  </UIProvider>
+                </MetricsProvider>
+              </DataProvider>
+            </LocalDataProvider>
+          </AuthProvider>
+        )}
       </ErrorBoundary>
     </React.StrictMode>
   );

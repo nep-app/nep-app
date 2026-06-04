@@ -58,7 +58,7 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.5.9';
+            const APP_VERSION = '4.6.0';
             const { t } = useTranslation();
 
             // Initialize Firebase
@@ -137,7 +137,7 @@ function HarmReductionTracker() {
  * AuthenticatedApp - Only renders when user is authenticated with PIN
  * This prevents Firebase/data hooks from running before authentication
  */
-function AuthenticatedApp() {
+export function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();

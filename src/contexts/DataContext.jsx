@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 import { syncService } from '../services/syncService';
 import { getMetadata, setMetadata } from '../db/localDB';
 
-const DataContext = createContext();
+export const DataContext = createContext();
 
 export const useData = () => {
   const context = useContext(DataContext);

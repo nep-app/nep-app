@@ -38,6 +38,12 @@ export const useAuth = (auth) => {
   };
 
   const handleLogout = () => {
+    if (!auth) {
+      // Demo mode — clear flag and reload to normal login
+      localStorage.removeItem('nep_demo');
+      window.location.reload();
+      return;
+    }
     signOut(auth);
   };
 

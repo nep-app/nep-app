@@ -193,8 +193,25 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
           </button>
         </form>
 
+        {/* Demo mode */}
+        <div className="mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-gray-700" />
+            <span className="text-xs text-gray-500">ou</span>
+            <div className="flex-1 h-px bg-gray-700" />
+          </div>
+          <button
+            type="button"
+            onClick={() => { localStorage.setItem('nep_demo', '1'); window.location.reload(); }}
+            className="w-full py-3 rounded-lg border border-purple-700/50 text-purple-300 hover:bg-purple-900/20 transition-all font-medium text-sm flex items-center justify-center gap-2"
+          >
+            🎭 Experimentar em modo demo
+          </button>
+          <p className="text-xs text-gray-500 text-center mt-2">Sem registo — dados de exemplo, nada é guardado</p>
+        </div>
+
         {/* Info */}
-        <div className="mt-8">
+        <div className="mt-6">
           <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-4">
             <div className="flex items-start gap-2">
               <Icons.Info className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
