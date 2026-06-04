@@ -109,11 +109,11 @@ export const SettingsView = ({
     const { lockMode, setLockMode } = useAuth();
 
     const LOCK_OPTIONS = [
-        { value: 'never',   label: t('settings.lockNever'),   desc: 'A app fica sempre aberta (até o browser fechar)' },
-        { value: 'on_hide', label: t('settings.lockOnHide'),  desc: 'Bloqueia quando sais da app ou mudas de tab' },
-        { value: '5',       label: t('settings.lock5min'),    desc: 'Bloqueia após 5 min sem atividade' },
-        { value: '15',      label: t('settings.lock15min'),   desc: 'Bloqueia após 15 min sem atividade (padrão)' },
-        { value: '60',      label: t('settings.lock60min'),   desc: 'Bloqueia após 1 hora sem atividade' },
+        { value: 'never',   label: t('settings.lockNever'),   desc: t('settings.lockNeverDesc') },
+        { value: 'on_hide', label: t('settings.lockOnHide'),  desc: t('settings.lockOnHideDesc') },
+        { value: '5',       label: t('settings.lock5min'),    desc: t('settings.lock5minDesc') },
+        { value: '15',      label: t('settings.lock15min'),   desc: t('settings.lock15minDesc') },
+        { value: '60',      label: t('settings.lock60min'),   desc: t('settings.lock60minDesc') },
     ];
 
     const handleChangeLang = (lang) => {
@@ -159,13 +159,13 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* Bloqueio automático */}
+            {/* Auto-lock */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
                     <Icons.Shield className="w-5 h-5" />
-                    Bloqueio automático
+                    {t('settings.autoLock')}
                 </h3>
-                <p className="text-xs text-gray-400 mb-4">Quando a app pede o PIN novamente</p>
+                <p className="text-xs text-gray-400 mb-4">{t('settings.autoLockSubtitle')}</p>
                 <div className="space-y-2">
                     {LOCK_OPTIONS.map(opt => (
                         <button
@@ -185,7 +185,7 @@ export const SettingsView = ({
                 </div>
                 {lockMode === 'never' && (
                     <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-xs text-yellow-400">
-                        ⚠️ Sem bloqueio automático. Qualquer pessoa com acesso ao dispositivo pode ver a app.
+                        {t('settings.autoLockWarning')}
                     </div>
                 )}
             </div>
@@ -298,11 +298,11 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* Alarmes e Notificações */}
+            {/* Reminders */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                 <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <Icons.Bell className="w-5 h-5" />
-                    Alarmes
+                    {t('settings.alarmsTitle')}
                 </h3>
                 <div className="space-y-5">
 
@@ -310,8 +310,8 @@ export const SettingsView = ({
                     <div>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-200">Bem-estar diário</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Lembrete às 9h e às 18h</p>
+                                <p className="text-sm font-medium text-gray-200">{t('settings.alarmWellbeing')}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{t('settings.alarmWellbeingDesc')}</p>
                             </div>
                             <button
                                 onClick={() => handleWellbeingAlarmToggle(!wellbeingAlarmOn)}
@@ -321,7 +321,7 @@ export const SettingsView = ({
                             </button>
                         </div>
                         {wellbeingAlarmOn && (
-                            <p className="text-xs text-blue-400 mt-1.5">✓ Ativo — aparece às 9h e 18h se não registaste</p>
+                            <p className="text-xs text-blue-400 mt-1.5">{t('settings.alarmWellbeingActive')}</p>
                         )}
                     </div>
 
@@ -331,8 +331,8 @@ export const SettingsView = ({
                     <div>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-200">Dose diária</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Lembrete para registar a dose do dia</p>
+                                <p className="text-sm font-medium text-gray-200">{t('settings.alarmDose')}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{t('settings.alarmDoseDesc')}</p>
                             </div>
                             <button
                                 onClick={() => handleDoseAlarmToggle(!doseAlarmOn)}
@@ -349,13 +349,13 @@ export const SettingsView = ({
                                     onChange={e => handleDoseAlarmTimeChange(e.target.value)}
                                     className="bg-gray-700 border-gray-600 text-white px-3 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-rose-500"
                                 />
-                                <p className="text-xs text-rose-400">✓ Ativo às {doseAlarmTime.slice(0,5)}</p>
+                                <p className="text-xs text-rose-400">{t('settings.alarmDoseActive')} {doseAlarmTime.slice(0,5)}</p>
                             </div>
                         )}
                     </div>
 
                 </div>
-                <p className="text-xs text-gray-600 mt-4">Os lembretes só aparecem ao abrir a app.</p>
+                <p className="text-xs text-gray-600 mt-4">{t('settings.alarmNote')}</p>
             </div>
 
             {/* Legal & Ethics */}
