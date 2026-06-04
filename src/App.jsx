@@ -159,14 +159,6 @@ function AuthenticatedApp() {
             // PWA shortcut: flag to trigger markConsumption after data loads
             const [pendingPwaConsume] = useState(_pwaAction === 'consume');
 
-            // Carregar dados históricos quando o utilizador navega para views pesadas
-            useEffect(() => {
-                if (['patterns', 'analyses', 'history'].includes(currentView)) {
-                    loadFullData();
-                }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [currentView]);
-
             // UI Navigation State
             const [currentView, setCurrentView] = useState('home');
             const [timeFilter, setTimeFilter] = useState('all');
@@ -178,6 +170,14 @@ function AuthenticatedApp() {
             const [patternView, setPatternView] = useState('dashboard');
             const [patternsSubView, setPatternsSubView] = useState('temporal'); // For patterns tab: temporal, structural, correlations
             const [analysisSubView, setAnalysisSubView] = useState('correlacoes'); // For analyses tab: correlacoes, emocoes, gatilhos, coach
+
+            // Carregar dados históricos quando o utilizador navega para views pesadas
+            useEffect(() => {
+                if (['patterns', 'analyses', 'history'].includes(currentView)) {
+                    loadFullData();
+                }
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [currentView]);
 
             // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
