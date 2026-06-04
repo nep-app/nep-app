@@ -7,52 +7,12 @@ const APP_VERSION = '4.6.0';
 
 // ── Guia de utilização ────────────────────────────────────────────────────
 
-const GUIDE_SECTIONS = [
-    {
-        emoji: '💊',
-        title: 'Registar um consumo',
-        content: 'Carrega no botão + na página Início para registar um consumo. Podes adicionar notas, a hora exata, e depois editar ou apagar se necessário. Cada registo é encriptado e guardado só no teu dispositivo.'
-    },
-    {
-        emoji: '🌡️',
-        title: 'Registo diário (ciclo)',
-        content: 'No Início, o botão "Registo do dia" abre um formulário onde podes registar como dormiste, o teu humor, energia, sintomas e outras notas. Estes dados alimentam as análises e correlações.'
-    },
-    {
-        emoji: '🎭',
-        title: 'Bem-estar e emoções',
-        content: 'Podes registar o teu estado emocional, o que estás a sentir e possíveis gatilhos. Com o tempo, a app identifica padrões entre o teu bem-estar e os consumos.'
-    },
-    {
-        emoji: '📅',
-        title: 'Dias atípicos',
-        content: 'Se um dia foi fora do normal (ex: festa, viagem, situação de stress extremo), podes marcá-lo como "atípico" no registo de bem-estar. Esses dias são excluídos das análises e metas para não distorcerem os teus padrões reais.'
-    },
-    {
-        emoji: '🎯',
-        title: 'Metas',
-        content: 'Define metas de redução no Início (ex: máximo de X consumos por dia, hora de dormir antes das Xh). A app acompanha quantos dias cumpriste cada meta e mostra o progresso nos Padrões.'
-    },
-    {
-        emoji: '📊',
-        title: 'Padrões e Análises',
-        content: 'A tab Padrões mostra gráficos e tendências dos teus dados. A tab Análises vai mais fundo: correlações entre consumo e sono/humor/energia, impacto por hora do dia, e uma reflexão geral gerada com base nos teus dados.'
-    },
-    {
-        emoji: '💬',
-        title: 'Reflexões',
-        content: 'Podes responder a uma pergunta reflexiva diária (baseada em DBT) para explorar a tua relação com os consumos. As respostas ficam guardadas no Histórico e são analisadas ao longo do tempo.'
-    },
-    {
-        emoji: '🔒',
-        title: 'Privacidade e segurança',
-        content: 'Todos os dados são encriptados com o teu PIN. Nem a equipa do NEP tem acesso. Os dados ficam guardados no teu dispositivo e sincronizados na tua conta Firebase (encriptados). Se perderes o PIN não é possível recuperar os dados.'
-    },
-];
-
 function HowToUse() {
+    const { t, i18n } = useTranslation();
     const [open, setOpen] = useState(false);
     const [openIdx, setOpenIdx] = useState(null);
+
+    const guideSections = i18n.t('settings.guide', { returnObjects: true });
 
     return (
         <div className="bg-gray-800 border-gray-700 rounded-xl border overflow-hidden">
@@ -62,7 +22,7 @@ function HowToUse() {
             >
                 <h3 className="font-semibold text-white flex items-center gap-2">
                     <Icons.Info className="w-5 h-5 text-purple-400" />
-                    Como usar a app
+                    {t('settings.guideHeader')}
                 </h3>
                 <Icons.ChevronRight className={'w-5 h-5 text-gray-400 transition-transform ' + (open ? 'rotate-90' : '')} />
             </button>
@@ -70,9 +30,9 @@ function HowToUse() {
             {open && (
                 <div className="px-6 pb-6 space-y-2">
                     <p className="text-xs text-gray-400 mb-3">
-                        Toca em cada secção para saber mais.
+                        {t('settings.guideTapToLearn')}
                     </p>
-                    {GUIDE_SECTIONS.map((s, i) => (
+                    {guideSections.map((s, i) => (
                         <div key={i} className="rounded-lg overflow-hidden border border-gray-700">
                             <button
                                 onClick={() => setOpenIdx(openIdx === i ? null : i)}
@@ -149,11 +109,11 @@ export const SettingsView = ({
     const { lockMode, setLockMode } = useAuth();
 
     const LOCK_OPTIONS = [
-        { value: 'never',   label: '🔓 Nunca',            desc: 'A app fica sempre aberta (até o browser fechar)' },
-        { value: 'on_hide', label: '📱 Ao minimizar',     desc: 'Bloqueia quando sais da app ou mudas de tab' },
-        { value: '5',       label: '⏱️ 5 minutos',        desc: 'Bloqueia após 5 min sem atividade' },
-        { value: '15',      label: '⏱️ 15 minutos',       desc: 'Bloqueia após 15 min sem atividade (padrão)' },
-        { value: '60',      label: '⏱️ 1 hora',           desc: 'Bloqueia após 1 hora sem atividade' },
+        { value: 'never',   label: t('settings.lockNever'),   desc: 'A app fica sempre aberta (até o browser fechar)' },
+        { value: 'on_hide', label: t('settings.lockOnHide'),  desc: 'Bloqueia quando sais da app ou mudas de tab' },
+        { value: '5',       label: t('settings.lock5min'),    desc: 'Bloqueia após 5 min sem atividade' },
+        { value: '15',      label: t('settings.lock15min'),   desc: 'Bloqueia após 15 min sem atividade (padrão)' },
+        { value: '60',      label: t('settings.lock60min'),   desc: 'Bloqueia após 1 hora sem atividade' },
     ];
 
     const handleChangeLang = (lang) => {

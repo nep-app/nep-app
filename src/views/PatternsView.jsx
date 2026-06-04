@@ -2062,14 +2062,14 @@ export function PatternsView({
 
                                                     // Agrupar horas em blocos de 3h para melhor visualização
                                                     const hourBlocks = [
-                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: 'Madrugada' },
-                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: 'Madrugada' },
-                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: 'Manhã' },
-                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: 'Manhã' },
-                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: 'Tarde' },
-                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: 'Tarde' },
-                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: 'Noite' },
-                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: 'Noite' }
+                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: t('patterns.timePeriods.dawn') },
+                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: t('patterns.timePeriods.dawn') },
+                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: t('patterns.timePeriods.morning') },
+                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: t('patterns.timePeriods.morning') },
+                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: t('patterns.timePeriods.afternoon') },
+                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: t('patterns.timePeriods.afternoon') },
+                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: t('patterns.timePeriods.night') },
+                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: t('patterns.timePeriods.night') }
                                                     ];
 
                                                     // Calcular máximo dos BLOCOS (não das horas individuais)

@@ -162,7 +162,7 @@ export const WellbeingModal = ({
             {/* Today's accumulated context */}
             {hasTodayContext && (
               <div className="bg-gray-700/40 border border-gray-600/30 rounded-lg p-2.5 mb-3 space-y-1">
-                <div className="text-xs text-gray-400 font-medium">Hoje já registaste:</div>
+                <div className="text-xs text-gray-400 font-medium">{t('wellbeing.todayAlreadyLogged')}</div>
                 {todayWater > 0 && (
                   <div className="text-xs text-blue-300">💧 {todayWater}ml de água</div>
                 )}
@@ -217,7 +217,7 @@ export const WellbeingModal = ({
                     value={wellbeingForm.exerciseType || ''}
                     onChange={(e) => setWellbeingForm({...wellbeingForm, exerciseType: e.target.value})}
                     className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-400 text-sm"
-                    placeholder="O quê? ex: caminhar"
+                    placeholder={t('wellbeing.exercisePlaceholder')}
                   />
                   <datalist id="exercise-suggestions">
                     {allPastExerciseTypes.map(t => <option key={t} value={t} />)}
@@ -240,7 +240,7 @@ export const WellbeingModal = ({
               {/* Nap */}
               <div>
                 <label className="text-sm text-gray-300 block mb-1.5">
-                  🛌 Sesta <span className="text-gray-500 text-xs">(opcional)</span>
+                  {t('wellbeing.napLabel')} <span className="text-gray-500 text-xs">(opcional)</span>
                   {(wellbeingForm.napDuration > 0) && <span className="ml-2 text-xs text-teal-400 font-medium">✓ {wellbeingForm.napDuration}min</span>}
                 </label>
                 <div className="flex items-center gap-2">
@@ -281,7 +281,7 @@ export const WellbeingModal = ({
               {/* Symptoms — free text with autocomplete */}
               <div>
                 <label className="text-sm text-gray-300 block mb-1.5">
-                  🩺 Sintomas de saúde <span className="text-gray-500 text-xs">(opcional)</span>
+                  {t('wellbeing.symptomsLabel')} <span className="text-gray-500 text-xs">(opcional)</span>
                   {(wellbeingForm.symptoms || []).length > 0 && (
                     <span className="ml-2 text-xs text-teal-400 font-medium">✓ {(wellbeingForm.symptoms || []).length}</span>
                   )}
@@ -336,7 +336,7 @@ export const WellbeingModal = ({
                 value={wellbeingForm.atypicalReason || ''}
                 onChange={(e) => setWellbeingForm({...wellbeingForm, atypicalReason: e.target.value})}
                 className="mt-2 bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-yellow-400"
-                placeholder="Razão (opcional) — ex: festa, viagem, doença..."
+                placeholder={t('wellbeing.atypicalReasonPlaceholder')}
                 maxLength={100}
               />
             )}

@@ -133,7 +133,56 @@
     "privacyNote": "Your data is private and secure.",
     "privacy": "🔒 Privacy & Security",
     "privacyText": "All your data is encrypted and only you have access. No information is shared with third parties.",
-    "language": "Idioma / Language"
+    "language": "Idioma / Language",
+    "lockNever": "🔓 Never",
+    "lockOnHide": "📱 On minimize",
+    "lock5min": "⏱️ 5 minutes",
+    "lock15min": "⏱️ 15 minutes",
+    "lock60min": "⏱️ 1 hour",
+    "guideHeader": "How to use the app",
+    "guideTapToLearn": "Tap each section to learn more.",
+    "guide": [
+      {
+        "emoji": "💊",
+        "title": "Log a consumption",
+        "content": "Tap the + button on the Home page to log a consumption. You can add notes, the exact time, and edit or delete it later. Each entry is encrypted and stored only on your device."
+      },
+      {
+        "emoji": "🌡️",
+        "title": "Daily log (cycle)",
+        "content": "On Home, the \"Daily log\" button opens a form where you can record how you slept, your mood, energy, symptoms and other notes. This data feeds the analyses and correlations."
+      },
+      {
+        "emoji": "🎭",
+        "title": "Wellbeing & emotions",
+        "content": "You can log your emotional state, what you're feeling and possible triggers. Over time, the app identifies patterns between your wellbeing and consumption."
+      },
+      {
+        "emoji": "📅",
+        "title": "Atypical days",
+        "content": "If a day was out of the ordinary (e.g. party, travel, extreme stress), you can mark it as \"atypical\" in the wellbeing log. Those days are excluded from analyses and goals so they don't skew your real patterns."
+      },
+      {
+        "emoji": "🎯",
+        "title": "Goals",
+        "content": "Set reduction goals on Home (e.g. max X consumptions per day, bedtime before Xh). The app tracks how many days you met each goal and shows progress in Patterns."
+      },
+      {
+        "emoji": "📊",
+        "title": "Patterns & Analyses",
+        "content": "The Patterns tab shows charts and trends from your data. The Analyses tab goes deeper: correlations between consumption and sleep/mood/energy, impact by time of day, and an overall reflection generated from your data."
+      },
+      {
+        "emoji": "💬",
+        "title": "Reflections",
+        "content": "You can answer a daily reflective question (DBT-based) to explore your relationship with consumption. Answers are saved in History and analysed over time."
+      },
+      {
+        "emoji": "🔒",
+        "title": "Privacy & security",
+        "content": "All data is encrypted with your PIN. Not even the NEP team has access. Data is stored on your device and synced to your Firebase account (encrypted). If you lose your PIN, data cannot be recovered."
+      }
+    ]
   },
   "modals": {
     "dailyLog": {
@@ -264,7 +313,16 @@
     "goalActionCreate": "creating",
     "csvExported": "CSV exported successfully! Includes ALL collections.",
     "backupCreated": "Full backup created! {{count}} records exported.",
-    "loadingView": "Loading..."
+    "loadingView": "Loading...",
+    "deleteConfirm": "Are you sure you want to delete {{item}}? This action cannot be undone.",
+    "deleteConsumption": "this consumption",
+    "deleteReflection": "this reflection",
+    "deleteWellbeing": "this wellbeing log",
+    "deleteDailyLog": "this daily log",
+    "deleteCycle": "this cycle",
+    "deleteGoal": "this goal",
+    "deleteThought": "this thought",
+    "deleteItem": "this item"
   },
   "feedback": {
     "streakHigh": "🔥 Amazing! {{count}} consecutive days of logging!",
@@ -274,7 +332,9 @@
     "progressVisible": "📉 Visible progress! {{count}} fewer use(s) than before",
     "reloadPage": "Reload Page",
     "loadingError": "If the problem persists, open the browser in a private window or clear the cache.",
-    "loading": "Loading... 🔄"
+    "loading": "Loading... 🔄",
+    "errorTitle": "⚠️ Error",
+    "errorLoading": "An error occurred while loading the app."
   },
   "dbtQuestions": [
     "What worked well for you today in terms of self-care?",
@@ -588,6 +648,12 @@
       "multiUse": "{{count}} uses",
       "identifyGood": "Identify what worked! ⭐",
       "keepImproving": "Keep improving! 💪"
+    },
+    "timePeriods": {
+      "dawn": "Dawn",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "night": "Night"
     }
   },
   "firebase": {
@@ -647,6 +713,13 @@
     "Hydration + snack: brain functions better, decisions are better, urges more manageable",
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
   ],
+  "wellbeing": {
+    "exercisePlaceholder": "What? e.g. walking",
+    "todayAlreadyLogged": "Already logged today:",
+    "napLabel": "🛌 Nap",
+    "symptomsLabel": "🩺 Health symptoms",
+    "atypicalReasonPlaceholder": "Reason (optional) — e.g. party, travel, illness..."
+  },
   "analyses": {
     "dayNames": [
       "Sun",

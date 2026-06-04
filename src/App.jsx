@@ -58,7 +58,7 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.6.0';
+            const APP_VERSION = '4.6.1';
             const { t } = useTranslation();
 
             // Initialize Firebase
@@ -294,17 +294,17 @@ export function AuthenticatedApp() {
             const deleteItem = async (collectionName, id) => {
                 // Confirm before deleting
                 const itemNames = {
-                    'consumptions': 'este consumo',
-                    'reflections': 'esta reflexão',
-                    'wellbeingLogs': 'este registo de bem-estar',
-                    'dailyLogs': 'este registo diário',
-                    'cycles': 'este ciclo',
-                    'goals': 'esta meta',
-                    'thoughts': 'este pensamento'
+                    'consumptions': t('messages.deleteConsumption'),
+                    'reflections': t('messages.deleteReflection'),
+                    'wellbeingLogs': t('messages.deleteWellbeing'),
+                    'dailyLogs': t('messages.deleteDailyLog'),
+                    'cycles': t('messages.deleteCycle'),
+                    'goals': t('messages.deleteGoal'),
+                    'thoughts': t('messages.deleteThought')
                 };
-                const itemName = itemNames[collectionName] || 'este item';
+                const itemName = itemNames[collectionName] || t('messages.deleteItem');
 
-                if (!window.confirm(`Tens a certeza que queres apagar ${itemName}? Esta ação não pode ser desfeita.`)) {
+                if (!window.confirm(t('messages.deleteConfirm', { item: itemName }))) {
                     return;
                 }
 
@@ -950,8 +950,8 @@ const submitCycle = async () => {
             if (appError) return (
                 <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
-                        <h1 className="text-3xl font-bold text-red-600 mb-4">⚠️ Erro</h1>
-                        <p className="text-gray-700 mb-4">Ocorreu um erro ao carregar a aplicação.</p>
+                        <h1 className="text-3xl font-bold text-red-600 mb-4">{t('feedback.errorTitle')}</h1>
+                        <p className="text-gray-700 mb-4">{t('feedback.errorLoading')}</p>
                         <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4 font-mono">{appError}</div>
                         <button
                             onClick={() => {window.location.reload();}}

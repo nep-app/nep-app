@@ -133,7 +133,56 @@
     "privacyNote": "Os teus dados são privados e seguros.",
     "privacy": "🔒 Privacidade & Segurança",
     "privacyText": "Todos os teus dados são encriptados e só tu tens acesso. Nenhuma informação é partilhada com terceiros.",
-    "language": "Idioma / Language"
+    "language": "Idioma / Language",
+    "lockNever": "🔓 Nunca",
+    "lockOnHide": "📱 Ao minimizar",
+    "lock5min": "⏱️ 5 minutos",
+    "lock15min": "⏱️ 15 minutos",
+    "lock60min": "⏱️ 1 hora",
+    "guideHeader": "Como usar a app",
+    "guideTapToLearn": "Toca em cada secção para saber mais.",
+    "guide": [
+      {
+        "emoji": "💊",
+        "title": "Registar um consumo",
+        "content": "Carrega no botão + na página Início para registar um consumo. Podes adicionar notas, a hora exata, e depois editar ou apagar se necessário. Cada registo é encriptado e guardado só no teu dispositivo."
+      },
+      {
+        "emoji": "🌡️",
+        "title": "Registo diário (ciclo)",
+        "content": "No Início, o botão \"Registo do dia\" abre um formulário onde podes registar como dormiste, o teu humor, energia, sintomas e outras notas. Estes dados alimentam as análises e correlações."
+      },
+      {
+        "emoji": "🎭",
+        "title": "Bem-estar e emoções",
+        "content": "Podes registar o teu estado emocional, o que estás a sentir e possíveis gatilhos. Com o tempo, a app identifica padrões entre o teu bem-estar e os consumos."
+      },
+      {
+        "emoji": "📅",
+        "title": "Dias atípicos",
+        "content": "Se um dia foi fora do normal (ex: festa, viagem, situação de stress extremo), podes marcá-lo como \"atípico\" no registo de bem-estar. Esses dias são excluídos das análises e metas para não distorcerem os teus padrões reais."
+      },
+      {
+        "emoji": "🎯",
+        "title": "Metas",
+        "content": "Define metas de redução no Início (ex: máximo de X consumos por dia, hora de dormir antes das Xh). A app acompanha quantos dias cumpriste cada meta e mostra o progresso nos Padrões."
+      },
+      {
+        "emoji": "📊",
+        "title": "Padrões e Análises",
+        "content": "A tab Padrões mostra gráficos e tendências dos teus dados. A tab Análises vai mais fundo: correlações entre consumo e sono/humor/energia, impacto por hora do dia, e uma reflexão geral gerada com base nos teus dados."
+      },
+      {
+        "emoji": "💬",
+        "title": "Reflexões",
+        "content": "Podes responder a uma pergunta reflexiva diária (baseada em DBT) para explorar a tua relação com os consumos. As respostas ficam guardadas no Histórico e são analisadas ao longo do tempo."
+      },
+      {
+        "emoji": "🔒",
+        "title": "Privacidade e segurança",
+        "content": "Todos os dados são encriptados com o teu PIN. Nem a equipa do NEP tem acesso. Os dados ficam guardados no teu dispositivo e sincronizados na tua conta Firebase (encriptados). Se perderes o PIN não é possível recuperar os dados."
+      }
+    ]
   },
   "modals": {
     "dailyLog": {
@@ -264,7 +313,16 @@
     "goalActionCreate": "criar",
     "csvExported": "CSV exportado com sucesso! Inclui TODAS as coleções.",
     "backupCreated": "Backup completo criado! {{count}} registos exportados.",
-    "loadingView": "Carregando..."
+    "loadingView": "Carregando...",
+    "deleteConfirm": "Tens a certeza que queres apagar {{item}}? Esta ação não pode ser desfeita.",
+    "deleteConsumption": "este consumo",
+    "deleteReflection": "esta reflexão",
+    "deleteWellbeing": "este registo de bem-estar",
+    "deleteDailyLog": "este registo diário",
+    "deleteCycle": "este ciclo",
+    "deleteGoal": "esta meta",
+    "deleteThought": "este pensamento",
+    "deleteItem": "este item"
   },
   "feedback": {
     "streakHigh": "🔥 Incrível! {{count}} dias consecutivos de registo!",
@@ -274,7 +332,9 @@
     "progressVisible": "📉 Progresso visível! Menos {{count}} consumo(s) que antes",
     "reloadPage": "Recarregar Página",
     "loadingError": "Se o problema persistir, abre o browser numa janela privada ou limpa o cache.",
-    "loading": "A carregar... 🔄"
+    "loading": "A carregar... 🔄",
+    "errorTitle": "⚠️ Erro",
+    "errorLoading": "Ocorreu um erro ao carregar a aplicação."
   },
   "dbtQuestions": [
     "O que funcionou bem para ti hoje em termos de autocuidado?",
@@ -640,6 +700,12 @@
       "multiUse": "{{count}} consumos",
       "identifyGood": "Identifica o que funcionou! ⭐",
       "keepImproving": "Continua a melhorar! 💪"
+    },
+    "timePeriods": {
+      "dawn": "Madrugada",
+      "morning": "Manhã",
+      "afternoon": "Tarde",
+      "night": "Noite"
     }
   },
   "defaultStrategies": [
@@ -647,6 +713,13 @@
     "Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis",
     "Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional"
   ],
+  "wellbeing": {
+    "exercisePlaceholder": "O quê? ex: caminhar",
+    "todayAlreadyLogged": "Hoje já registaste:",
+    "napLabel": "🛌 Sesta",
+    "symptomsLabel": "🩺 Sintomas de saúde",
+    "atypicalReasonPlaceholder": "Razão (opcional) — ex: festa, viagem, doença..."
+  },
   "analyses": {
     "dayNames": [
       "Dom",
