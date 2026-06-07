@@ -181,7 +181,7 @@ export const LocalDataProvider = ({ children }) => {
    */
   const loadCollectionWithFirst = useCallback(async (collectionName, maxAgeDays = 7) => {
     if (!encryptionKey) {
-      return [];
+      return { items: [], total: 0 };
     }
 
     try {
@@ -189,7 +189,7 @@ export const LocalDataProvider = ({ children }) => {
       const allItems = await getAllItems(collectionName);
 
       if (allItems.length === 0) {
-        return [];
+        return { items: [], total: 0 };
       }
 
       // Filtrar items recentes
@@ -238,10 +238,10 @@ export const LocalDataProvider = ({ children }) => {
         return timeB - timeA;
       });
 
-      return sorted;
+      return { items: sorted, total: allItems.length };
     } catch (error) {
       logger.error(`[LocalData] Erro ao carregar ${collectionName}:`, error);
-      return [];
+      return { items: [], total: 0 };
     }
   }, [encryptionKey, getUserSalt]);
 
@@ -278,14 +278,14 @@ export const LocalDataProvider = ({ children }) => {
           logger.log('[LocalData] 🔄 FASE 2: Carregando últimos 7 dias (lista aparece)...');
 
           const [
-            consumptionsData,
-            dailyLogsData,
-            reflectionsData,
-            wellbeingLogsData,
-            cyclesData,
-            goalsData,
-            thoughtsData,
-            healthLogsData
+            { items: consumptionsData, total: totalC },
+            { items: dailyLogsData,    total: totalD },
+            { items: reflectionsData,  total: totalR },
+            { items: wellbeingLogsData,total: totalW },
+            { items: cyclesData,       total: totalCy },
+            { items: goalsData,        total: totalG },
+            { items: thoughtsData,     total: totalT },
+            { items: healthLogsData,   total: totalH }
           ] = await Promise.all([
             loadCollectionWithFirst('consumptions', 7),
             loadCollectionWithFirst('dailyLogs', 7),
@@ -306,13 +306,8 @@ export const LocalDataProvider = ({ children }) => {
           setThoughts(thoughtsData);
           setHealthLogs(healthLogsData);
 
-          // Verificar se FASE 2 já carregou TUDO (poucos registos)
-          const [allC, allD, allR, allW, allCy, allG, allT, allH] = await Promise.all([
-            getAllItems('consumptions'), getAllItems('dailyLogs'), getAllItems('reflections'),
-            getAllItems('wellbeingLogs'), getAllItems('cycles'), getAllItems('goals'),
-            getAllItems('thoughts'), getAllItems('healthLogs')
-          ]);
-          const totalInDB = allC.length + allD.length + allR.length + allW.length + allCy.length + allG.length + allT.length + allH.length;
+          // Totais já vêm da loadCollectionWithFirst — sem queries extra à DB
+          const totalInDB = totalC + totalD + totalR + totalW + totalCy + totalG + totalT + totalH;
           const totalLoaded = consumptionsData.length + dailyLogsData.length + reflectionsData.length + wellbeingLogsData.length + cyclesData.length + goalsData.length + thoughtsData.length + healthLogsData.length;
 
           logger.log('[LocalData] ✅ FASE 2 completa - Lista apareceu!');
