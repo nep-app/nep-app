@@ -139,7 +139,7 @@ function HarmReductionTracker() {
  */
 export function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
+            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -172,12 +172,13 @@ export function AuthenticatedApp() {
             const [analysisSubView, setAnalysisSubView] = useState('correlacoes'); // For analyses tab: correlacoes, emocoes, gatilhos, coach
 
             // Carregar dados históricos quando o utilizador navega para views pesadas
+            // loadFullData muda de identidade quando encryptionKey muda (re-login),
+            // garantindo que Phase 3 re-corre mesmo que currentView não mude
             useEffect(() => {
                 if (['patterns', 'analyses', 'history'].includes(currentView)) {
                     loadFullData();
                 }
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [currentView]);
+            }, [currentView, loadFullData]);
 
             // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);
@@ -269,11 +270,12 @@ export function AuthenticatedApp() {
                 document.body.classList.add('dark');
             }, []);
 
-            // PWA shortcut: wait for data to load before calling markConsumption
+            // PWA shortcut: wait for Phase 2 data before calling markConsumption
+            // allDataLoaded = true only after Phase 2 finishes (not Phase 1)
             useEffect(() => {
-                if (pendingPwaConsume && !dataLoading) markConsumption();
+                if (pendingPwaConsume && allDataLoaded) markConsumption();
             // eslint-disable-next-line react-hooks/exhaustive-deps
-            }, [pendingPwaConsume, dataLoading]);
+            }, [pendingPwaConsume, allDataLoaded]);
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
@@ -337,6 +339,7 @@ export function AuthenticatedApp() {
                     waterGlasses: w.waterGlasses || 0,
                     exerciseType: w.exerciseType || '',
                     exerciseDuration: w.exerciseDuration || '',
+                    napDuration: w.napDuration || '',
                     social: w.social || false,
                     food: w.food || false,
                     emotions: w.emotions || [],

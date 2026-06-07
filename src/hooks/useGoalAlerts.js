@@ -3,7 +3,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useData } from '../contexts/DataContext';
 
 export const useGoalAlerts = () => {
-    const { goals, cycles, dailyLogs } = useData();
+    const { goals, cycles, dailyLogs, consumptions } = useData();
     const metrics = useMetrics();
 
     const alerts = useMemo(() => {
@@ -139,12 +139,20 @@ export const useGoalAlerts = () => {
 
         // 5. META: Último consumo antes da 00h (limit_last)
         const limitLastGoal = goals.find(g => g.type === 'limit_last');
-        if (limitLastGoal && cycles.length > 0) {
+        if (limitLastGoal && cycles.length > 0 && consumptions.length > 0) {
             const lastCycle = [...cycles]
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-            if (lastCycle && lastCycle.lastBefore00 !== undefined) {
-                if (lastCycle.lastBefore00 === true) {
+            if (lastCycle) {
+                // Calcular dinamicamente: há consumos após meia-noite do dia do ciclo?
+                const nextDay = new Date(lastCycle.date + 'T00:00:00');
+                nextDay.setDate(nextDay.getDate() + 1);
+                const nextDayStr = nextDay.toISOString().split('T')[0];
+                const afterMidnight = consumptions.some(c => {
+                    if (c.date !== nextDayStr) return false;
+                    return new Date(c.timestamp).getHours() < 6; // 00h-05h59 = após meia-noite
+                });
+                if (!afterMidnight) {
                     generatedAlerts.push({
                         text: `Boa! Último consumo antes da 00h`,
                         emoji: '🌙',

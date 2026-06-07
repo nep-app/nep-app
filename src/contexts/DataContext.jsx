@@ -304,6 +304,8 @@ export const DataProvider = ({ children }) => {
       const result = await syncService.fullSync({ skipZombies: true, incremental: true });
       if (result && (result.pulled > 0 || result.pushed > 0)) {
         await loadAllCollections();
+        // Se vieram novos registos, garantir que stats ficam actualizadas
+        if (result.pulled > 0) loadFullData();
       }
 
       setLastSyncTime(new Date());

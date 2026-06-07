@@ -5,15 +5,17 @@ import { genId, getTodayKey } from '../utils/helpers';
 
 const DEMO_USER = { uid: 'demo-user', email: 'demo@nep.app', displayName: 'Demo' };
 
+// Calculado uma vez quando o módulo é importado (só em modo demo)
+const _demoSeed = getAllDemoData();
+
 export const DemoDataProvider = ({ children }) => {
-  const initial = getAllDemoData();
-  const [consumptions,  setConsumptions]  = useState(initial.consumptions);
-  const [dailyLogs,     setDailyLogs]     = useState(initial.dailyLogs);
-  const [reflections,   setReflections]   = useState(initial.reflections);
-  const [wellbeingLogs, setWellbeingLogs] = useState(initial.wellbeingLogs);
-  const [cycles,        setCycles]        = useState(initial.cycles);
-  const [goals,         setGoals]         = useState(initial.goals);
-  const [thoughts,      setThoughts]      = useState(initial.thoughts);
+  const [consumptions,  setConsumptions]  = useState(_demoSeed.consumptions);
+  const [dailyLogs,     setDailyLogs]     = useState(_demoSeed.dailyLogs);
+  const [reflections,   setReflections]   = useState(_demoSeed.reflections);
+  const [wellbeingLogs, setWellbeingLogs] = useState(_demoSeed.wellbeingLogs);
+  const [cycles,        setCycles]        = useState(_demoSeed.cycles);
+  const [goals,         setGoals]         = useState(_demoSeed.goals);
+  const [thoughts,      setThoughts]      = useState(_demoSeed.thoughts);
 
   // Generic add/update/delete helpers
   const addTo   = (setter, item) => setter(prev => [item, ...prev]);
