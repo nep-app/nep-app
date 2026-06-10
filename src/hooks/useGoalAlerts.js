@@ -3,11 +3,21 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useData } from '../contexts/DataContext';
 
 export const useGoalAlerts = () => {
-    const { goals, cycles, dailyLogs, consumptions } = useData();
+    const { goals, cycles, dailyLogs, consumptions, wellbeingLogs } = useData();
     const metrics = useMetrics();
 
     const alerts = useMemo(() => {
         const generatedAlerts = [];
+
+        const atypicalDates = new Set(
+            wellbeingLogs
+                .filter(w => w.isAtypical)
+                .map(w => w.date)
+                .filter(Boolean)
+        );
+        const filteredCycles = cycles.filter(c => !atypicalDates.has(c.date));
+        const filteredDailyLogs = dailyLogs.filter(l => !atypicalDates.has(l.date));
+        const filteredConsumptions = consumptions.filter(c => !atypicalDates.has(c.date));
 
         // 1. META: Intervalo entre consumos (increase_interval)
         const intervalGoal = goals.find(g => g.type === 'increase_interval');
@@ -33,11 +43,11 @@ export const useGoalAlerts = () => {
         // 2. META: Quantidade/Dosagem (reduce_quantity)
         const quantityGoal = goals.find(g => g.type === 'reduce_quantity');
         if (quantityGoal) {
-            const cyclesWithMg = cycles
+            const cyclesWithMg = filteredCycles
                 .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
                 .map(c => ({ source: 'cycle', mg: c.mg, timestamp: c.timestamp, date: c.date }));
 
-            const dailyLogsWithMg = dailyLogs
+            const dailyLogsWithMg = filteredDailyLogs
                 .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
                 .map(l => ({ source: 'dailyLog', mg: l.mg, timestamp: l.timestamp, date: l.date }));
 
@@ -71,8 +81,8 @@ export const useGoalAlerts = () => {
 
         // 3. META: Horas de sono (sleep_hours)
         const sleepGoal = goals.find(g => g.type === 'sleep_hours');
-        if (sleepGoal && cycles.length > 0) {
-            const lastCycleWithSleep = cycles
+        if (sleepGoal && filteredCycles.length > 0) {
+            const lastCycleWithSleep = filteredCycles
                 .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -100,8 +110,8 @@ export const useGoalAlerts = () => {
 
         // 4. META: Hora de deitar (bedtime_before)
         const bedtimeGoal = goals.find(g => g.type === 'bedtime_before');
-        if (bedtimeGoal && cycles.length > 0) {
-            const lastCycle = cycles
+        if (bedtimeGoal && filteredCycles.length > 0) {
+            const lastCycle = filteredCycles
                 .filter(c => c.bedtime)
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -139,8 +149,8 @@ export const useGoalAlerts = () => {
 
         // 5. META: Último consumo antes da 00h (limit_last)
         const limitLastGoal = goals.find(g => g.type === 'limit_last');
-        if (limitLastGoal && cycles.length > 0 && consumptions.length > 0) {
-            const lastCycle = [...cycles]
+        if (limitLastGoal && filteredCycles.length > 0 && filteredConsumptions.length > 0) {
+            const lastCycle = [...filteredCycles]
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
             if (lastCycle) {
@@ -148,7 +158,7 @@ export const useGoalAlerts = () => {
                 const nextDay = new Date(lastCycle.date + 'T00:00:00');
                 nextDay.setDate(nextDay.getDate() + 1);
                 const nextDayStr = nextDay.toISOString().split('T')[0];
-                const afterMidnight = consumptions.some(c => {
+                const afterMidnight = filteredConsumptions.some(c => {
                     if (c.date !== nextDayStr) return false;
                     return new Date(c.timestamp).getHours() < 6; // 00h-05h59 = após meia-noite
                 });
@@ -194,7 +204,7 @@ export const useGoalAlerts = () => {
         }
 
         return generatedAlerts;
-    }, [metrics.lastInterval, metrics.todayConsumptions.length, goals, cycles, dailyLogs]);
+    }, [metrics.lastInterval, metrics.todayConsumptions.length, goals, cycles, dailyLogs, consumptions, wellbeingLogs]);
 
     return alerts;
 };

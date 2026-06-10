@@ -17,25 +17,48 @@ export const useMetrics = () => {
 export const MetricsProvider = ({ children }) => {
   const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts } = useData();
 
+  const atypicalDates = useMemo(() => {
+    const s = new Set();
+    wellbeingLogs.forEach(w => {
+      if (w.isAtypical) {
+        const d = w.date || getDateKeyFromItem(w);
+        if (d) s.add(d);
+      }
+    });
+    return s;
+  }, [wellbeingLogs]);
+
+  const filteredConsumptions = useMemo(() =>
+    consumptions.filter(c => !atypicalDates.has(c.date || getDateKeyFromItem(c))),
+  [consumptions, atypicalDates]);
+
+  const filteredCycles = useMemo(() =>
+    cycles.filter(c => !atypicalDates.has(c.date || getDateKeyFromItem(c))),
+  [cycles, atypicalDates]);
+
+  const filteredDailyLogs = useMemo(() =>
+    dailyLogs.filter(l => !atypicalDates.has(l.date || getDateKeyFromItem(l))),
+  [dailyLogs, atypicalDates]);
+
   // Use analysis hook for core analytics
-  const analysis = useAnalysis(consumptions, wellbeingLogs, reflections, cycles, goals, thoughts, dailyLogs);
+  const analysis = useAnalysis(filteredConsumptions, wellbeingLogs, reflections, filteredCycles, goals, thoughts, filteredDailyLogs);
 
   // OTIMIZAÇÃO: Criar índices por data para acesso O(1) em vez de O(n)
   const cyclesByDate = useMemo(() => {
     const index = {};
-    cycles.forEach(c => {
+    filteredCycles.forEach(c => {
       const dateKey = getDateKeyFromItem(c);
       if (!index[dateKey]) {
         index[dateKey] = c;
       }
     });
     return index;
-  }, [cycles]);
+  }, [filteredCycles]);
 
   const dailyLogsByDate = useMemo(() => {
     // Accumulate total mg per date (multiple entries per day are summed)
     const mgByDate = {};
-    dailyLogs.forEach(log => {
+    filteredDailyLogs.forEach(log => {
       const dateKey = log.date || getDateKeyFromItem(log);
       if (log.mg == null) return;
       const mgValue = typeof log.mg === 'number' ? log.mg : parseFloat(log.mg);
@@ -48,11 +71,11 @@ export const MetricsProvider = ({ children }) => {
       index[date] = { mg };
     });
     return index;
-  }, [dailyLogs]);
+  }, [filteredDailyLogs]);
 
   const wellbeingByDate = useMemo(() => {
     const index = {};
-    wellbeingLogs.forEach(w => {
+    wellbeingLogs.filter(w => !w.isAtypical).forEach(w => {
       const dateKey = getDateKeyFromItem(w);
       if (!index[dateKey]) {
         index[dateKey] = w;
@@ -65,8 +88,8 @@ export const MetricsProvider = ({ children }) => {
 
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
-    return analyticsService.calculateTimeSinceLastConsumption(consumptions);
-  }, [consumptions]);
+    return analyticsService.calculateTimeSinceLastConsumption(filteredConsumptions);
+  }, [filteredConsumptions]);
 
   // Last 7 days with averages (times and mg)
   const last7Days = useMemo(() => {
@@ -77,7 +100,7 @@ export const MetricsProvider = ({ children }) => {
     });
 
     const totalConsumptions = last7Dates.reduce((sum, date) => {
-      return sum + consumptions.filter(c => getDateKeyFromItem(c) === date).length;
+      return sum + filteredConsumptions.filter(c => getDateKeyFromItem(c) === date).length;
     }, 0);
 
     const avgTimes = (totalConsumptions / 7).toFixed(1);
@@ -109,7 +132,7 @@ export const MetricsProvider = ({ children }) => {
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [consumptions, cyclesByDate, dailyLogsByDate]);
+  }, [filteredConsumptions, cyclesByDate, dailyLogsByDate]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
@@ -123,7 +146,7 @@ export const MetricsProvider = ({ children }) => {
     let totalConsumptions = 0;
 
     last7Dates.forEach(date => {
-      const dayConsumptions = consumptions.filter(c => getDateKeyFromItem(c) === date);
+      const dayConsumptions = filteredConsumptions.filter(c => getDateKeyFromItem(c) === date);
       if (dayConsumptions.length === 0) return;
 
       // Check interval rule if more than 1 consumption
@@ -148,7 +171,7 @@ export const MetricsProvider = ({ children }) => {
     });
 
     return validDaysCount > 0 ? (totalConsumptions / validDaysCount) : 0;
-  }, [consumptions]);
+  }, [filteredConsumptions]);
 
   // ===== GOAL PROGRESS =====
 
@@ -192,7 +215,7 @@ export const MetricsProvider = ({ children }) => {
         };
 
         const byDay = {};
-        consumptions.forEach(c => {
+        filteredConsumptions.forEach(c => {
           const key = localDateKey(c.timestamp || c.createdAt);
           if (!byDay[key]) byDay[key] = [];
           byDay[key].push(c);
@@ -248,7 +271,7 @@ export const MetricsProvider = ({ children }) => {
       }
 
       if (goal.type === 'bedtime_before') {
-        const recentCycles = cycles.slice(0, 7);
+        const recentCycles = filteredCycles.slice(0, 7);
         if (recentCycles.length === 0) return 0;
         const cyclesWithBedtime = recentCycles.filter(c => c.bedtime);
         if (cyclesWithBedtime.length === 0) return 0;
@@ -273,7 +296,7 @@ export const MetricsProvider = ({ children }) => {
 
       return 0;
     };
-  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, cycles, cyclesByDate, wellbeingByDate, consumptions]);
+  }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, filteredCycles, cyclesByDate, wellbeingByDate, filteredConsumptions]);
 
   const value = {
     // From useAnalysis hook
