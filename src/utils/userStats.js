@@ -103,32 +103,50 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     if (dailyLogs === null) dailyLogs = [];
     if (goals === null) goals = previousStats.goals || [];
 
-    // Último consumo + intervalo
-    const sorted = [...consumptions].sort((a, b) => {
+    // Filtrar dias atípicos — não contam para metas nem alertas
+    const atypicalDates = new Set(
+      (wellbeingLogs || [])
+        .filter(w => w.isAtypical)
+        .map(w => w.date)
+        .filter(Boolean)
+    );
+    const isAtypicalDate = d => atypicalDates.has(d);
+    const filteredConsumptions = consumptions.filter(c => !isAtypicalDate(c.date));
+    const filteredCycles = cycles.filter(c => !isAtypicalDate(c.date));
+    const filteredDailyLogs = dailyLogs.filter(l => !isAtypicalDate(l.date));
+    const filteredWellbeingLogs = (wellbeingLogs || []).filter(w => !w.isAtypical);
+
+    // Último consumo real (para badge "Tempo desde último consumo" — inclui dias atípicos)
+    const rawSorted = [...consumptions].sort((a, b) => {
       const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
       const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
-    const lastConsumption = sorted[0];
+    const lastConsumption = rawSorted[0];
     const lastConsumptionTime = lastConsumption ? (lastConsumption.timestamp || lastConsumption.createdAt) : null;
 
-    // Calcular último intervalo (horas entre últimos 2 consumos)
+    // Calcular último intervalo usando consumos filtrados (dias atípicos excluídos)
     let lastInterval = null;
-    if (sorted.length >= 2) {
-      const last = new Date(sorted[0].timestamp || sorted[0].createdAt);
-      const secondLast = new Date(sorted[1].timestamp || sorted[1].createdAt);
+    const filteredSorted = [...filteredConsumptions].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
+      const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+    if (filteredSorted.length >= 2) {
+      const last = new Date(filteredSorted[0].timestamp || filteredSorted[0].createdAt);
+      const secondLast = new Date(filteredSorted[1].timestamp || filteredSorted[1].createdAt);
       const diffMs = last - secondLast;
       const hours = (diffMs / (1000 * 60 * 60)).toFixed(1);
       lastInterval = parseFloat(hours);
     }
 
-    // Último mg (de cycles ou dailyLogs)
+    // Último mg (de cycles ou dailyLogs filtrados)
     let lastMg = null;
-    const cyclesWithMg = (cycles || [])
+    const cyclesWithMg = filteredCycles
       .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
       .map(c => ({ mg: c.mg, timestamp: c.timestamp }));
 
-    const dailyLogsWithMg = (dailyLogs || [])
+    const dailyLogsWithMg = filteredDailyLogs
       .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
       .map(l => ({ mg: l.mg, timestamp: l.timestamp }));
 
@@ -140,10 +158,10 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       lastMg = typeof mgValue === 'number' ? mgValue : parseFloat(mgValue);
     }
 
-    // Consumos últimos 7 dias
+    // Consumos últimos 7 dias (excluindo dias atípicos)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const last7DaysCount = consumptions.filter(c => {
+    const last7DaysCount = filteredConsumptions.filter(c => {
       const time = new Date(c.timestamp || c.createdAt).getTime();
       return time >= sevenDaysAgo.getTime();
     }).length;
@@ -227,8 +245,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Aviso 3: Horas de sono (se existe meta sleep_hours)
     const sleepGoal = (goals || []).find(g => g.type === 'sleep_hours');
-    if (sleepGoal && cycles && cycles.length > 0) {
-      const lastCycleWithSleep = cycles
+    if (sleepGoal && filteredCycles.length > 0) {
+      const lastCycleWithSleep = filteredCycles
         .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -263,12 +281,12 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     }
 
     // Aviso 4: Risco preditivo (sono <6h E humor <5)
-    if (cycles && cycles.length > 0 && wellbeingLogs && wellbeingLogs.length > 0) {
-      const lastCycleWithSleep = cycles
+    if (filteredCycles.length > 0 && filteredWellbeingLogs.length > 0) {
+      const lastCycleWithSleep = filteredCycles
         .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-      const lastWellbeingWithMood = wellbeingLogs
+      const lastWellbeingWithMood = filteredWellbeingLogs
         .filter(l => l.mood && !isNaN(parseInt(l.mood)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -300,8 +318,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Aviso 5: Hora de deitar (se existe meta bedtime_before)
     const bedtimeGoal = (goals || []).find(g => g.type === 'bedtime_before');
-    if (bedtimeGoal && cycles && cycles.length > 0) {
-      const lastCycle = cycles
+    if (bedtimeGoal && filteredCycles.length > 0) {
+      const lastCycle = filteredCycles
         .filter(c => c.bedtime)
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
@@ -339,7 +357,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Aviso 6: Último consumo (meta limit_last — automático por timestamp)
     const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
-    if (limitLastGoal && consumptions && consumptions.length > 0) {
+    if (limitLastGoal && filteredConsumptions.length > 0) {
       const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
       const [th, tm] = targetStr.split(':').map(Number);
       // 00:00 significa meia-noite = fim do dia = 1440 minutos
@@ -354,7 +372,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const todayKey = localDateKey(now);
 
       const allByDay = {};
-      consumptions.forEach(c => {
+      filteredConsumptions.forEach(c => {
         const key = localDateKey(c.timestamp || c.createdAt);
         if (!allByDay[key]) allByDay[key] = [];
         allByDay[key].push(c);
@@ -408,11 +426,11 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Aviso 7: Frequência diária (se existe meta reduce_frequency)
     const frequencyGoal = (goals || []).find(g => g.type === 'reduce_frequency');
-    if (frequencyGoal && consumptions && consumptions.length > 0) {
-      // Calcular consumos de hoje
+    if (frequencyGoal && filteredConsumptions.length > 0) {
+      // Calcular consumos de hoje (excluindo dias atípicos)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayConsumptions = consumptions.filter(c => {
+      const todayConsumptions = filteredConsumptions.filter(c => {
         const cDate = new Date(c.timestamp || c.createdAt);
         cDate.setHours(0, 0, 0, 0);
         return cDate.getTime() === today.getTime();
@@ -440,15 +458,15 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Aviso 8: Primeiro consumo após acordar (meta first_not_before)
     const firstNotBeforeGoal = (goals || []).find(g => g.type === 'first_not_before');
-    if (firstNotBeforeGoal && consumptions && consumptions.length > 0 && cycles && cycles.length > 0) {
+    if (firstNotBeforeGoal && filteredConsumptions.length > 0 && filteredCycles.length > 0) {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const todayConsumptions = consumptions
+      const todayConsumptions = filteredConsumptions
         .filter(c => { const d = new Date(c.timestamp || c.createdAt); d.setHours(0,0,0,0); return d.getTime() === todayStart.getTime(); })
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       // Ciclo mais recente com bedtime + sleep para calcular hora de acordar
-      const lastCycleWithSleep = [...cycles]
+      const lastCycleWithSleep = [...filteredCycles]
         .filter(c => c.bedtime && c.sleep)
         .sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt))[0];
 

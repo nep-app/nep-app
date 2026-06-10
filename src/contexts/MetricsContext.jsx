@@ -88,8 +88,8 @@ export const MetricsProvider = ({ children }) => {
 
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
-    return analyticsService.calculateTimeSinceLastConsumption(filteredConsumptions);
-  }, [filteredConsumptions]);
+    return analyticsService.calculateTimeSinceLastConsumption(consumptions);
+  }, [consumptions]);
 
   // Last 7 days with averages (times and mg)
   const last7Days = useMemo(() => {
@@ -99,11 +99,15 @@ export const MetricsProvider = ({ children }) => {
       return safeToISODate(d);
     });
 
-    const totalConsumptions = last7Dates.reduce((sum, date) => {
-      return sum + filteredConsumptions.filter(c => getDateKeyFromItem(c) === date).length;
-    }, 0);
+    let totalConsumptions = 0;
+    let nonAtypicalDayCount = 0;
+    last7Dates.forEach(date => {
+      if (atypicalDates.has(date)) return;
+      nonAtypicalDayCount++;
+      totalConsumptions += filteredConsumptions.filter(c => getDateKeyFromItem(c) === date).length;
+    });
 
-    const avgTimes = (totalConsumptions / 7).toFixed(1);
+    const avgTimes = nonAtypicalDayCount > 0 ? (totalConsumptions / nonAtypicalDayCount).toFixed(1) : '0.0';
 
     // Calculate avgMg from cycles (novo) ou dailyLogs (compatibilidade)
     const mgValues = [];
@@ -132,7 +136,7 @@ export const MetricsProvider = ({ children }) => {
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [filteredConsumptions, cyclesByDate, dailyLogsByDate]);
+  }, [filteredConsumptions, cyclesByDate, dailyLogsByDate, atypicalDates]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
