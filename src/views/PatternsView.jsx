@@ -94,7 +94,7 @@ export function PatternsView({
                                         const atypicalBanner = atypicalCount > 0 ? (
                                             <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2 mb-2">
                                                 <span>📌</span>
-                                                <span>{atypicalCount} dia{atypicalCount > 1 ? 's' : ''} atípico{atypicalCount > 1 ? 's' : ''} excluído{atypicalCount > 1 ? 's' : ''} das análises e metas.</span>
+                                                <span>{t('wellbeing.atypicalBanner', { count: atypicalCount })}</span>
                                             </div>
                                         ) : null;
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useData } from '../contexts/DataContext';
+import { getTodayKey, safeToISODate, getDateDaysAgo } from '../utils/helpers';
 
 export const useGoalAlerts = () => {
     const { goals, cycles, dailyLogs, consumptions, wellbeingLogs } = useData();
@@ -59,7 +60,12 @@ export const useGoalAlerts = () => {
             if (lastCycleWithMg && lastCycleWithMg.mg) {
                 const targetMg = parseFloat(quantityGoal.target);
                 const mgValue = typeof lastCycleWithMg.mg === 'number' ? lastCycleWithMg.mg : parseFloat(lastCycleWithMg.mg);
-                const dateLabel = 'de ontem';
+                const entryDate = lastCycleWithMg.date || safeToISODate(lastCycleWithMg.timestamp);
+                const todayKey = getTodayKey();
+                const yesterdayKey = safeToISODate(getDateDaysAgo(1));
+                const dateLabel = entryDate === todayKey ? 'de hoje'
+                    : entryDate === yesterdayKey ? 'de ontem'
+                    : `de ${entryDate}`;
 
                 if (mgValue >= targetMg) {
                     generatedAlerts.push({

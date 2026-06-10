@@ -741,7 +741,7 @@ export function AuthenticatedApp() {
                 }
             };
 
-const submitCycle = async () => {
+            const submitCycle = async () => {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente

@@ -734,7 +734,14 @@
     "todayAlreadyLogged": "Already logged today:",
     "napLabel": "🛌 Nap",
     "symptomsLabel": "🩺 Health symptoms",
-    "atypicalReasonPlaceholder": "Reason (optional) — e.g. party, travel, illness..."
+    "atypicalReasonPlaceholder": "Reason (optional) — e.g. party, travel, illness...",
+    "atypicalLabel": "📌 Atypical day",
+    "atypicalDesc": "Atypical days are excluded from goal and analysis calculations.",
+    "atypicalBanner_one": "1 atypical day excluded from analyses and goals.",
+    "atypicalBanner_other": "{{count}} atypical days excluded from analyses and goals.",
+    "atypicalTag": "Atypical",
+    "dateLabelToday": "today",
+    "dateLabelYesterday": "yesterday"
   },
   "analyses": {
     "dayNames": [

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -21,6 +22,7 @@ export function AnalysesView({
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { selectedCycle } = useUI();
+    const { t } = useTranslation();
 
     const analysisData = useMemo(() => {
         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
@@ -126,7 +128,7 @@ export function AnalysesView({
                 {atypicalCount > 0 && (
                     <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2">
                         <span>📌</span>
-                        <span>{atypicalCount} dia{atypicalCount > 1 ? 's' : ''} atípico{atypicalCount > 1 ? 's' : ''} excluído{atypicalCount > 1 ? 's' : ''} das análises e metas.</span>
+                        <span>{t('wellbeing.atypicalBanner', { count: atypicalCount })}</span>
                     </div>
                 )}
 
