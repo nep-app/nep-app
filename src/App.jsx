@@ -449,7 +449,7 @@ export function AuthenticatedApp() {
                     if (editingDailyLog) {
                         await updateItem('dailyLogs', editingDailyLog.id, {
                             mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
-                            notes: dailyForm.notes,
+                            notes: sanitizeText(dailyForm.notes),
                             date: dailyForm.date
                         });
                         setEditingDailyLog(null);
@@ -475,7 +475,7 @@ export function AuthenticatedApp() {
                         timestamp: timestamp,
                         times: timesCount,
                         mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
-                        notes: dailyForm.notes
+                        notes: sanitizeText(dailyForm.notes)
                     };
                     await addDailyLog(item);
                     setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
@@ -688,10 +688,10 @@ export function AuthenticatedApp() {
                     }
 
                     if (editingReflection) {
-                        await updateItem('reflections', editingReflection.id, { date: dateKey, timestamp, answer: reflectionAnswer });
+                        await updateItem('reflections', editingReflection.id, { date: dateKey, timestamp, answer: sanitizeText(reflectionAnswer) });
                         setEditingReflection(null);
                     } else {
-                        const item = { id: genId(), date: dateKey, timestamp, question: reflectionQuestion, answer: reflectionAnswer };
+                        const item = { id: genId(), date: dateKey, timestamp, question: reflectionQuestion, answer: sanitizeText(reflectionAnswer) };
                         await addReflection(item);
                     }
                     setReflectionAnswer('');
@@ -750,7 +750,7 @@ export function AuthenticatedApp() {
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
-                            notes: cycleForm.notes,
+                            notes: sanitizeText(cycleForm.notes),
                             ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
                         };
                         await updateCycle(editingCycle.id, updatedData);
@@ -771,7 +771,7 @@ export function AuthenticatedApp() {
                             date: dateKey,
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
-                            notes: cycleForm.notes,
+                            notes: sanitizeText(cycleForm.notes),
                             // Converter sleep para número (se tiver valor)
                             ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };

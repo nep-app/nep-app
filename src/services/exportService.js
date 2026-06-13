@@ -135,7 +135,7 @@ export function exportToCSV(data) {
   // Wraps text in quotes, escapes internal quotes, and neutralises formula injection
   const csvCell = (val) => {
     const s = String(val == null ? '' : val).replace(/"/g, '""');
-    return /^[=+\-@]/.test(s) ? `"'${s}"` : `"${s}"`;
+    return /^[=+\-@\t\n]/.test(s) ? `"'${s}"` : `"${s}"`;
   };
 
   // CSV para consumptions
@@ -144,7 +144,7 @@ export function exportToCSV(data) {
   consumptions.forEach(c => {
     const date = c.date || '';
     const time = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('pt-PT') : '';
-    csv += `${date},${time},${csvCell(c.substance)},${c.amount || ''},${c.unit || ''},${csvCell(c.notes)}\n`;
+    csv += `${date},${time},${csvCell(c.substance)},${c.amount || ''},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
   });
 
   // CSV para cycles (SONO)

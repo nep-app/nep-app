@@ -398,6 +398,14 @@ export const AuthProvider = ({ children }) => {
     try {
       logger.log('[AuthContext] 🔓 Fazendo login...');
 
+      // Bloquear após demasiadas tentativas falhadas
+      const _failData = JSON.parse(localStorage.getItem('nep_login_fails') || '{"count":0}');
+      if (_failData.lockedUntil && Date.now() < _failData.lockedUntil) {
+        const secsLeft = Math.ceil((_failData.lockedUntil - Date.now()) / 1000);
+        const msg = secsLeft < 60 ? `Demasiadas tentativas. Aguarda ${secsLeft}s.` : `Demasiadas tentativas. Aguarda ${Math.ceil(secsLeft / 60)} min.`;
+        throw new Error(msg);
+      }
+
       // Obter Firebase user atual
       const firebaseUser = firebaseInstances.auth.currentUser;
 
@@ -603,6 +611,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!isValid) {
+        const _fd = JSON.parse(localStorage.getItem('nep_login_fails') || '{"count":0}');
+        const _newCount = (_fd.count || 0) + 1;
+        // 5 falhas→30s, 6→2min, 7→10min, 8+→1h
+        const _lockMs = [0, 0, 0, 0, 30000, 120000, 600000, 3600000][Math.min(_newCount - 1, 7)];
+        localStorage.setItem('nep_login_fails', JSON.stringify({
+          count: _newCount,
+          lockedUntil: _lockMs > 0 ? Date.now() + _lockMs : null
+        }));
         throw new Error('PIN incorreto');
       }
 
@@ -627,7 +643,8 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Login bem-sucedido
+      // Login bem-sucedido — limpar contador de tentativas falhadas
+      localStorage.removeItem('nep_login_fails');
       setEncryptionKey(pin);
       setIsAuthenticated(true);
       setLastActivity(Date.now());
