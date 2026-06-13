@@ -378,6 +378,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
+      // Guardar data de criação de conta (primeira vez)
+      await setMetadata('firstUseDate', new Date().toISOString());
+
       // Atualizar estado
       setUserEmail(email || 'sem-email');
       setEncryptionKey(pin);
@@ -650,6 +653,10 @@ export const AuthProvider = ({ children }) => {
 
       // Login bem-sucedido — limpar contador de tentativas falhadas
       localStorage.removeItem('nep_login_fails');
+      // Guardar data de primeiro uso (só na primeira vez)
+      if (!(await getMetadata('firstUseDate'))) {
+        await setMetadata('firstUseDate', new Date().toISOString());
+      }
       setEncryptionKey(pin);
       setIsAuthenticated(true);
       setLastActivity(Date.now());
