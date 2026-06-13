@@ -92,12 +92,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('nep_lock_mode', mode);
     setLockModeState(mode);
     if (mode === 'on_hide') {
-      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(NEVER_PIN_KEY);
     } else {
       setEncryptionKey(prev => {
         if (prev) {
-          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(prev), ts: Date.now() }));
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(prev), ts: Date.now() }));
           if (mode === 'never') {
             localStorage.setItem(NEVER_PIN_KEY, btoa(prev));
           } else {
@@ -145,17 +145,17 @@ export const AuthProvider = ({ children }) => {
   const saveSession = (pin) => {
     const mode = localStorage.getItem('nep_lock_mode') || '15';
     if (mode === 'on_hide') return; // "ao minimizar" nunca guarda sessão
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(pin), ts: Date.now() }));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ pin: btoa(pin), ts: Date.now() }));
   };
 
-  const clearSession = () => localStorage.removeItem(SESSION_KEY);
+  const clearSession = () => sessionStorage.removeItem(SESSION_KEY);
 
   const updateSessionTs = () => {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return;
     try {
       const data = JSON.parse(raw);
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ ...data, ts: Date.now() }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...data, ts: Date.now() }));
     } catch (e) { /* ignorar */ }
   };
 
@@ -173,8 +173,10 @@ export const AuthProvider = ({ children }) => {
       setIsInitialized(!!email);
 
       // ── Tentar auto-login silencioso ──────────────────────────────────
+      // Migração: remover SESSION_KEY antigo do localStorage (versões anteriores)
+      localStorage.removeItem(SESSION_KEY);
       const mode = localStorage.getItem('nep_lock_mode') || '15';
-      const sessionRaw = localStorage.getItem(SESSION_KEY);
+      const sessionRaw = sessionStorage.getItem(SESSION_KEY);
 
       // Escrever debug info para diagnóstico (visível nas Definições)
       localStorage.setItem('_nep_dbg', JSON.stringify({
@@ -191,7 +193,7 @@ export const AuthProvider = ({ children }) => {
           setEncryptionKey(pin);
           setIsAuthenticated(true);
           setLastActivity(Date.now());
-          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
           localStorage.setItem(NEVER_PIN_KEY, encodedPin);
           logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
         } catch (e) {
@@ -219,7 +221,7 @@ export const AuthProvider = ({ children }) => {
           setEncryptionKey(pin);
           setIsAuthenticated(true);
           setLastActivity(Date.now());
-          localStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ pin: encodedPin, ts: Date.now() }));
           logger.log('[Auth] ✅ Auto-login silencioso (lockMode:', mode, ')');
         } catch (e) {
           clearSession();
