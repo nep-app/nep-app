@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Claude Code Insights</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #334155; line-height: 1.65; padding: 48px 24px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 32px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    h2 { font-size: 20px; font-weight: 600; color: #0f172a; margin-top: 48px; margin-bottom: 16px; }
+    .subtitle { color: #64748b; font-size: 15px; margin-bottom: 32px; }
+    .nav-toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 32px 0; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .nav-toc a { font-size: 12px; color: #64748b; text-decoration: none; padding: 6px 12px; border-radius: 6px; background: #f1f5f9; transition: all 0.15s; }
+    .nav-toc a:hover { background: #e2e8f0; color: #334155; }
+    .stats-row { display: flex; gap: 24px; margin-bottom: 40px; padding: 20px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #0f172a; }
+    .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; }
+    .at-a-glance { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; }
+    .glance-title { font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 16px; }
+    .glance-sections { display: flex; flex-direction: column; gap: 12px; }
+    .glance-section { font-size: 14px; color: #78350f; line-height: 1.6; }
+    .glance-section strong { color: #92400e; }
+    .see-more { color: #b45309; text-decoration: none; font-size: 13px; white-space: nowrap; }
+    .see-more:hover { text-decoration: underline; }
+    .project-areas { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    .project-area { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .area-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .area-name { font-weight: 600; font-size: 15px; color: #0f172a; }
+    .area-count { font-size: 12px; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; }
+    .area-desc { font-size: 14px; color: #475569; line-height: 1.5; }
+    .narrative { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .narrative p { margin-bottom: 12px; font-size: 14px; color: #475569; line-height: 1.7; }
+    .key-insight { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 14px; color: #166534; }
+    .section-intro { font-size: 14px; color: #64748b; margin-bottom: 16px; }
+    .big-wins { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .big-win { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; }
+    .big-win-title { font-weight: 600; font-size: 15px; color: #166534; margin-bottom: 8px; }
+    .big-win-desc { font-size: 14px; color: #15803d; line-height: 1.5; }
+    .friction-categories { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+    .friction-category { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 16px; }
+    .friction-title { font-weight: 600; font-size: 15px; color: #991b1b; margin-bottom: 6px; }
+    .friction-desc { font-size: 13px; color: #7f1d1d; margin-bottom: 10px; }
+    .friction-examples { margin: 0 0 0 20px; font-size: 13px; color: #334155; }
+    .friction-examples li { margin-bottom: 4px; }
+    .claude-md-section { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    .claude-md-section h3 { font-size: 14px; font-weight: 600; color: #1e40af; margin: 0 0 12px 0; }
+    .claude-md-actions { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #dbeafe; }
+    .copy-all-btn { background: #2563eb; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+    .copy-all-btn:hover { background: #1d4ed8; }
+    .copy-all-btn.copied { background: #16a34a; }
+    .claude-md-item { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid #dbeafe; }
+    .claude-md-item:last-child { border-bottom: none; }
+    .cmd-checkbox { margin-top: 2px; }
+    .cmd-code { background: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; color: #1e40af; border: 1px solid #bfdbfe; font-family: monospace; display: block; white-space: pre-wrap; word-break: break-word; flex: 1; }
+    .cmd-why { font-size: 12px; color: #64748b; width: 100%; padding-left: 24px; margin-top: 4px; }
+    .features-section, .patterns-section { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+    .feature-card { background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 16px; }
+    .pattern-card { background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 8px; padding: 16px; }
+    .feature-title, .pattern-title { font-weight: 600; font-size: 15px; color: #0f172a; margin-bottom: 6px; }
+    .feature-oneliner { font-size: 14px; color: #475569; margin-bottom: 8px; }
+    .pattern-summary { font-size: 14px; color: #475569; margin-bottom: 8px; }
+    .feature-why, .pattern-detail { font-size: 13px; color: #334155; line-height: 1.5; }
+    .feature-examples { margin-top: 12px; }
+    .feature-example { padding: 8px 0; border-top: 1px solid #d1fae5; }
+    .feature-example:first-child { border-top: none; }
+    .example-desc { font-size: 13px; color: #334155; margin-bottom: 6px; }
+    .example-code-row { display: flex; align-items: flex-start; gap: 8px; }
+    .example-code { flex: 1; background: #f1f5f9; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #334155; overflow-x: auto; white-space: pre-wrap; }
+    .copyable-prompt-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
+    .copyable-prompt-row { display: flex; align-items: flex-start; gap: 8px; }
+    .copyable-prompt { flex: 1; background: #f8fafc; padding: 10px 12px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #334155; border: 1px solid #e2e8f0; white-space: pre-wrap; line-height: 1.5; }
+    .feature-code { background: #f8fafc; padding: 12px; border-radius: 6px; margin-top: 12px; border: 1px solid #e2e8f0; display: flex; align-items: flex-start; gap: 8px; }
+    .feature-code code { flex: 1; font-family: monospace; font-size: 12px; color: #334155; white-space: pre-wrap; }
+    .pattern-prompt { background: #f8fafc; padding: 12px; border-radius: 6px; margin-top: 12px; border: 1px solid #e2e8f0; }
+    .pattern-prompt code { font-family: monospace; font-size: 12px; color: #334155; display: block; white-space: pre-wrap; margin-bottom: 8px; }
+    .prompt-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .copy-btn { background: #e2e8f0; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; color: #475569; flex-shrink: 0; }
+    .copy-btn:hover { background: #cbd5e1; }
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+    .chart-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .chart-title { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 12px; }
+    .bar-row { display: flex; align-items: center; margin-bottom: 6px; }
+    .bar-label { width: 100px; font-size: 11px; color: #475569; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; margin: 0 8px; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+    .bar-value { width: 28px; font-size: 11px; font-weight: 500; color: #64748b; text-align: right; }
+    .empty { color: #94a3b8; font-size: 13px; }
+    .horizon-section { display: flex; flex-direction: column; gap: 16px; }
+    .horizon-card { background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%); border: 1px solid #c4b5fd; border-radius: 8px; padding: 16px; }
+    .horizon-title { font-weight: 600; font-size: 15px; color: #5b21b6; margin-bottom: 8px; }
+    .horizon-possible { font-size: 14px; color: #334155; margin-bottom: 10px; line-height: 1.5; }
+    .horizon-tip { font-size: 13px; color: #6b21a8; background: rgba(255,255,255,0.6); padding: 8px 12px; border-radius: 4px; }
+    .feedback-header { margin-top: 48px; color: #64748b; font-size: 16px; }
+    .feedback-intro { font-size: 13px; color: #94a3b8; margin-bottom: 16px; }
+    .feedback-section { margin-top: 16px; }
+    .feedback-section h3 { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 12px; }
+    .feedback-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .feedback-card.team-card { background: #eff6ff; border-color: #bfdbfe; }
+    .feedback-card.model-card { background: #faf5ff; border-color: #e9d5ff; }
+    .feedback-title { font-weight: 600; font-size: 14px; color: #0f172a; margin-bottom: 6px; }
+    .feedback-detail { font-size: 13px; color: #475569; line-height: 1.5; }
+    .feedback-evidence { font-size: 12px; color: #64748b; margin-top: 8px; }
+    .fun-ending { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #fbbf24; border-radius: 12px; padding: 24px; margin-top: 40px; text-align: center; }
+    .fun-headline { font-size: 18px; font-weight: 600; color: #78350f; margin-bottom: 8px; }
+    .fun-detail { font-size: 14px; color: #92400e; }
+    .collapsible-section { margin-top: 16px; }
+    .collapsible-header { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+    .collapsible-header h3 { margin: 0; font-size: 14px; font-weight: 600; color: #475569; }
+    .collapsible-arrow { font-size: 12px; color: #94a3b8; transition: transform 0.2s; }
+    .collapsible-content { display: none; padding-top: 16px; }
+    .collapsible-content.open { display: block; }
+    .collapsible-header.open .collapsible-arrow { transform: rotate(90deg); }
+    @media (max-width: 640px) { .charts-row { grid-template-columns: 1fr; } .stats-row { justify-content: center; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Claude Code Insights</h1>
+    <p class="subtitle">287 messages across 27 sessions (42 total) | 2026-05-02 to 2026-06-10</p>
+
+    
+    <div class="at-a-glance">
+      <div class="glance-title">At a Glance</div>
+      <div class="glance-sections">
+        <div class="glance-section"><strong>What's working:</strong> You drive Claude through complete units of shipped work, taking fixes from diagnosis all the way to verified build, commit, and deploy rather than stopping at a code change. You&apos;re persistent in iterative debugging, pushing past the first fix that compiles until the real root cause is gone, as you did untangling the consumption-goal alerts across cycle-boundary, midnight, and timezone bugs. You also verify on real conditions using Playwright and device testing, which surfaces timing and reload issues that pure code review would miss. <a href="#section-wins" class="see-more">Impressive Things You Did →</a></div>
+        <div class="glance-section"><strong>What's hindering you:</strong> On Claude&apos;s side, fixes too often introduced fresh regressions, like a performance optimization that triggered a TDZ crash or a lock refactor that broke PIN authentication and required a full revert. On your side, subtle logic bugs around dates and edge cases stayed broken across iterations partly because the failing conditions weren&apos;t pinned down up front, and explanations sometimes landed too technical to be useful. Several sessions also hit their usage limit mid-task, leaving performance and cleanup work unfinished. <a href="#section-friction" class="see-more">Where Things Go Wrong →</a></div>
+        <div class="glance-section"><strong>Quick wins to try:</strong> Try a Hook that auto-runs your build (and key Playwright checks) after every edit, so regressions like the TDZ crash get caught before a fix is declared done. Custom Skills could capture your recurring patterns, like an auth-refactor checklist that always validates PIN entry and reload persistence. And ask for plain-language summaries up front to avoid the rework you hit when explanations came back too dense. <a href="#section-features" class="see-more">Features to Try →</a></div>
+        <div class="glance-section"><strong>Ambitious workflows:</strong> As models improve, you&apos;ll be able to hand off a whole auth refactor to an agent that validates PIN entry, reload persistence, and PWA shortcut access against a hostile test matrix, shipping only changes that survive every refresh and minified build. Similarly, performance work could run as an autonomous &apos;green tests + faster&apos; loop that auto-reverts anything breaking a counter or login. For your recurring date bugs, expect parallel agents to stress timezone, midnight, and cycle-boundary cases simultaneously and hand you one comprehensive failing-case report instead of many painful iterations. <a href="#section-horizon" class="see-more">On the Horizon →</a></div>
+      </div>
+    </div>
+    
+
+    <nav class="nav-toc">
+      <a href="#section-work">What You Work On</a>
+      <a href="#section-usage">How You Use CC</a>
+      <a href="#section-wins">Impressive Things</a>
+      <a href="#section-friction">Where Things Go Wrong</a>
+      <a href="#section-features">Features to Try</a>
+      <a href="#section-patterns">New Usage Patterns</a>
+      <a href="#section-horizon">On the Horizon</a>
+      <a href="#section-feedback">Team Feedback</a>
+    </nav>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-value">287</div><div class="stat-label">Messages</div></div>
+      <div class="stat"><div class="stat-value">+5,970/-1,393</div><div class="stat-label">Lines</div></div>
+      <div class="stat"><div class="stat-value">135</div><div class="stat-label">Files</div></div>
+      <div class="stat"><div class="stat-value">7</div><div class="stat-label">Days</div></div>
+      <div class="stat"><div class="stat-value">41</div><div class="stat-label">Msgs/Day</div></div>
+    </div>
+
+    
+    <h2 id="section-work">What You Work On</h2>
+    <div class="project-areas">
+      
+        <div class="project-area">
+          <div class="area-header">
+            <span class="area-name">PWA Shortcut &amp; Consumption Tracking</span>
+            <span class="area-count">~7 sessions</span>
+          </div>
+          <div class="area-desc">Significant work centered on fixing the &apos;Consumi agora&apos; PWA shortcut so it would register consumption directly without opening a modal. Claude diagnosed timing issues with dataLoading and iterated through multiple fixes, eventually deploying a working solution with version bumps. Several early attempts only opened the app without registering, requiring follow-up corrections.</div>
+        </div>
+      
+        <div class="project-area">
+          <div class="area-header">
+            <span class="area-name">Authentication &amp; Lock Mode Features</span>
+            <span class="area-count">~5 sessions</span>
+          </div>
+          <div class="area-desc">User requested configurable auto-lock modes, PIN access fixes, and session persistence across reloads. This was friction-heavy work where lock refactors broke PIN authentication and login entirely, requiring reverts and multiple painful iterations. Claude eventually delivered working session-persistence after initial implementations only handled in-session inactivity.</div>
+        </div>
+      
+        <div class="project-area">
+          <div class="area-header">
+            <span class="area-name">Goal Alerts &amp; Date/Timezone Bug Fixing</span>
+            <span class="area-count">~4 sessions</span>
+          </div>
+          <div class="area-desc">Claude debugged persistent incorrect consumption-goal alerts caused by subtle date-handling bugs including UTC timezone grouping, cycle boundaries, and 00:00=0 minutes edge cases. This required several rounds of correction before alerts displayed correctly. Atypical-day tagging and symptom/exercise grouping normalization were also implemented and shipped.</div>
+        </div>
+      
+        <div class="project-area">
+          <div class="area-header">
+            <span class="area-name">i18n, UI &amp; Demo Mode Fixes</span>
+            <span class="area-count">~3 sessions</span>
+          </div>
+          <div class="area-desc">User reported crashes when opening Settings and config in demo mode and requested English translations of untranslated labels. Claude diagnosed a missing AuthProvider in the demo tree, made useAuth return safe defaults, and completed Settings internationalization with Playwright verification. UI color fixes were partially addressed across sessions.</div>
+        </div>
+      
+        <div class="project-area">
+          <div class="area-header">
+            <span class="area-name">Performance Optimization &amp; Startup Speed</span>
+            <span class="area-count">~3 sessions</span>
+          </div>
+          <div class="area-desc">User wanted faster app startup with many records, which Claude addressed through lazy-loading and decryption optimizations. These changes introduced regressions including a TDZ crash and a broken usage-day counter that required follow-up fixes. Claude also provided plain-language operational reviews, though some explanations were too technical for the user.</div>
+        </div>
+      
+    </div>
+    
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">What You Wanted</div>
+        <div class="bar-row">
+        <div class="bar-label">Bug Fixing</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#2563eb"></div></div>
+        <div class="bar-value">31</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Bug Fix</div>
+        <div class="bar-track"><div class="bar-fill" style="width:45.16129032258064%;background:#2563eb"></div></div>
+        <div class="bar-value">14</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Feature Implementation</div>
+        <div class="bar-track"><div class="bar-fill" style="width:32.25806451612903%;background:#2563eb"></div></div>
+        <div class="bar-value">10</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Performance Optimization</div>
+        <div class="bar-track"><div class="bar-fill" style="width:16.129032258064516%;background:#2563eb"></div></div>
+        <div class="bar-value">5</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Explanation</div>
+        <div class="bar-track"><div class="bar-fill" style="width:16.129032258064516%;background:#2563eb"></div></div>
+        <div class="bar-value">5</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Ui Styling</div>
+        <div class="bar-track"><div class="bar-fill" style="width:12.903225806451612%;background:#2563eb"></div></div>
+        <div class="bar-value">4</div>
+      </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top Tools Used</div>
+        <div class="bar-row">
+        <div class="bar-label">Bash</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#0891b2"></div></div>
+        <div class="bar-value">849</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Read</div>
+        <div class="bar-track"><div class="bar-fill" style="width:90.34157832744405%;background:#0891b2"></div></div>
+        <div class="bar-value">767</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Edit</div>
+        <div class="bar-track"><div class="bar-fill" style="width:60.89517078916372%;background:#0891b2"></div></div>
+        <div class="bar-value">517</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Agent</div>
+        <div class="bar-track"><div class="bar-fill" style="width:2.4734982332155475%;background:#0891b2"></div></div>
+        <div class="bar-value">21</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Grep</div>
+        <div class="bar-track"><div class="bar-fill" style="width:1.884570082449941%;background:#0891b2"></div></div>
+        <div class="bar-value">16</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Write</div>
+        <div class="bar-track"><div class="bar-fill" style="width:1.4134275618374559%;background:#0891b2"></div></div>
+        <div class="bar-value">12</div>
+      </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Languages</div>
+        <div class="bar-row">
+        <div class="bar-label">JavaScript</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#10b981"></div></div>
+        <div class="bar-value">1244</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">JSON</div>
+        <div class="bar-track"><div class="bar-fill" style="width:1.8488745980707395%;background:#10b981"></div></div>
+        <div class="bar-value">23</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">HTML</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0.964630225080386%;background:#10b981"></div></div>
+        <div class="bar-value">12</div>
+      </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Session Types</div>
+        <div class="bar-row">
+        <div class="bar-label">Iterative Refinement</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#8b5cf6"></div></div>
+        <div class="bar-value">11</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Multi Task</div>
+        <div class="bar-track"><div class="bar-fill" style="width:90.9090909090909%;background:#8b5cf6"></div></div>
+        <div class="bar-value">10</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Single Task</div>
+        <div class="bar-track"><div class="bar-fill" style="width:9.090909090909092%;background:#8b5cf6"></div></div>
+        <div class="bar-value">1</div>
+      </div>
+      </div>
+    </div>
+
+    
+    <h2 id="section-usage">How You Use Claude Code</h2>
+    <div class="narrative">
+      <p>You work in a bug-driven, iterative loop centered on a single PWA project (overwhelmingly JavaScript), reporting concrete real-world symptoms rather than writing detailed specs upfront. Your prompts read like field reports: &apos;the demo Settings page crashed,&apos; &apos;the Consumi agora shortcut only opens the app instead of registering consumption,&apos; &apos;the goal alert keeps showing red incorrectly.&apos; You <strong>let Claude run to diagnose and ship</strong>, then immediately come back with the next observed failure — many sessions show the same feature (the PWA shortcut, the auto-lock/PIN system, the goal-alert timezone bugs) cycling through three, four, or more rounds of fixes. Your heavy reliance on Bash (849 calls) and frequent commits (121) confirms you treat Claude as a hands-on build-test-deploy partner, not just an advisor.</p>
+      <div class="key-insight"><strong>Key pattern:</strong> You report concrete bugs from a live app and iterate in tight loops, accepting regressions but pushing back hard when explanations are too technical.</div>
+    </div>
+    
+
+    <!-- Response Time Distribution -->
+    <div class="chart-card" style="margin: 24px 0;">
+      <div class="chart-title">User Response Time Distribution</div>
+      <div class="bar-row">
+        <div class="bar-label">2-10s</div>
+        <div class="bar-track"><div class="bar-fill" style="width:46.34146341463415%;background:#6366f1"></div></div>
+        <div class="bar-value">19</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">10-30s</div>
+        <div class="bar-track"><div class="bar-fill" style="width:24.390243902439025%;background:#6366f1"></div></div>
+        <div class="bar-value">10</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">30s-1m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div></div>
+        <div class="bar-value">41</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">1-2m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:58.536585365853654%;background:#6366f1"></div></div>
+        <div class="bar-value">24</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">2-5m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:95.1219512195122%;background:#6366f1"></div></div>
+        <div class="bar-value">39</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">5-15m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:29.268292682926827%;background:#6366f1"></div></div>
+        <div class="bar-value">12</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">>15m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:24.390243902439025%;background:#6366f1"></div></div>
+        <div class="bar-value">10</div>
+      </div>
+      <div style="font-size: 12px; color: #64748b; margin-top: 8px;">
+        Median: 84.4s &bull; Average: 235.1s
+      </div>
+    </div>
+
+    <!-- Multi-clauding Section (matching Python reference) -->
+    <div class="chart-card" style="margin: 24px 0;">
+      <div class="chart-title">Multi-Clauding (Parallel Sessions)</div>
+      
+        <div style="display: flex; gap: 24px; margin: 12px 0;">
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">31</div>
+            <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Overlap Events</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">24</div>
+            <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Sessions Involved</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 24px; font-weight: 700; color: #7c3aed;">72%</div>
+            <div style="font-size: 11px; color: #64748b; text-transform: uppercase;">Of Messages</div>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: #475569; margin-top: 12px;">
+          You run multiple Claude Code sessions simultaneously. Multi-clauding is detected when sessions
+          overlap in time, suggesting parallel workflows.
+        </p>
+      
+    </div>
+
+    <!-- Time of Day & Tool Errors -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title" style="display: flex; align-items: center; gap: 12px;">
+          User Messages by Time of Day
+          <select id="timezone-select" style="font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
+            <option value="0">PT (UTC-8)</option>
+            <option value="3">ET (UTC-5)</option>
+            <option value="8">London (UTC)</option>
+            <option value="9">CET (UTC+1)</option>
+            <option value="17">Tokyo (UTC+9)</option>
+            <option value="custom">Custom offset...</option>
+          </select>
+          <input type="number" id="custom-offset" placeholder="UTC offset" style="display: none; width: 80px; font-size: 12px; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        </div>
+        <div id="hour-histogram">
+      <div class="bar-row">
+        <div class="bar-label">Morning (6-12)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:8.609271523178808%;background:#8b5cf6"></div></div>
+        <div class="bar-value">13</div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-label">Afternoon (12-18)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:54.3046357615894%;background:#8b5cf6"></div></div>
+        <div class="bar-value">82</div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-label">Evening (18-24)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#8b5cf6"></div></div>
+        <div class="bar-value">151</div>
+      </div>
+
+      <div class="bar-row">
+        <div class="bar-label">Night (0-6)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:27.1523178807947%;background:#8b5cf6"></div></div>
+        <div class="bar-value">41</div>
+      </div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tool Errors Encountered</div>
+        <div class="bar-row">
+        <div class="bar-label">File Too Large</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#dc2626"></div></div>
+        <div class="bar-value">7</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Other</div>
+        <div class="bar-track"><div class="bar-fill" style="width:85.71428571428571%;background:#dc2626"></div></div>
+        <div class="bar-value">6</div>
+      </div>
+      </div>
+    </div>
+
+    
+    <h2 id="section-wins">Impressive Things You Did</h2>
+    <p class="section-intro">Over five weeks you used Claude Code to iteratively build and harden a Portuguese-language PWA, leaning heavily on debugging, deployment, and real-device verification.</p>
+    <div class="big-wins">
+      
+        <div class="big-win">
+          <div class="big-win-title">Iterative debugging to root cause</div>
+          <div class="big-win-desc">You don&apos;t settle for the first fix that compiles, you push Claude through multiple rounds until the actual bug is gone. Your consumption-goal alerts work shows this well: you worked through a cycle-boundary bug, a 00:00=0 minutes edge case, and a UTC timezone grouping bug across iterations until the red warnings finally behaved correctly.</div>
+        </div>
+      
+        <div class="big-win">
+          <div class="big-win-title">Ship-to-deploy bug fix loop</div>
+          <div class="big-win-desc">You consistently take fixes all the way through to a verified build, commit, and deploy rather than stopping at a code change. With 121 commits across your sessions, you treat each session as a complete unit of shipped work, including version bumps like the 4.5.7 release for the PWA shortcut fix.</div>
+        </div>
+      
+        <div class="big-win">
+          <div class="big-win-title">Real-device and Playwright verification</div>
+          <div class="big-win-desc">You verify behavior on actual conditions instead of trusting that code looks right, which caught regressions early. You used Playwright to confirm the Settings i18n was complete and tested PWA shortcut behavior on the home screen, surfacing timing and reload issues that pure code review would have missed.</div>
+        </div>
+      
+    </div>
+    
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">What Helped Most (Claude's Capabilities)</div>
+        <div class="bar-row">
+        <div class="bar-label">Good Debugging</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#16a34a"></div></div>
+        <div class="bar-value">13</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Correct Code Edits</div>
+        <div class="bar-track"><div class="bar-fill" style="width:53.84615384615385%;background:#16a34a"></div></div>
+        <div class="bar-value">7</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Multi-file Changes</div>
+        <div class="bar-track"><div class="bar-fill" style="width:7.6923076923076925%;background:#16a34a"></div></div>
+        <div class="bar-value">1</div>
+      </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Outcomes</div>
+        <div class="bar-row">
+        <div class="bar-label">Partially Achieved</div>
+        <div class="bar-track"><div class="bar-fill" style="width:38.46153846153847%;background:#8b5cf6"></div></div>
+        <div class="bar-value">5</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Mostly Achieved</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#8b5cf6"></div></div>
+        <div class="bar-value">13</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Fully Achieved</div>
+        <div class="bar-track"><div class="bar-fill" style="width:23.076923076923077%;background:#8b5cf6"></div></div>
+        <div class="bar-value">3</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Unclear</div>
+        <div class="bar-track"><div class="bar-fill" style="width:7.6923076923076925%;background:#8b5cf6"></div></div>
+        <div class="bar-value">1</div>
+      </div>
+      </div>
+    </div>
+
+    
+    <h2 id="section-friction">Where Things Go Wrong</h2>
+    <p class="section-intro">Your sessions repeatedly stall when Claude&apos;s fixes introduce new regressions, when explanations exceed your technical comfort, and when long debugging loops exhaust usage limits before work is finished.</p>
+    <div class="friction-categories">
+      
+        <div class="friction-category">
+          <div class="friction-title">Fixes That Introduce New Bugs</div>
+          <div class="friction-desc">Many of your fixes succeeded only after introducing fresh regressions, forcing extra debugging rounds. You could ask Claude to verify edge cases and run the build before declaring a fix done to catch these earlier.</div>
+          <ul class="friction-examples"><li>A performance/lazy-loading optimization caused a TDZ crash (&apos;Cannot access ve before initialization&apos;) and broke the usage-day counter, requiring multiple follow-up fixes.</li><li>An auto-lock refactor broke PIN authentication entirely, locking you out and requiring a revert plus several attempts to fix a Terser minification issue.</li></ul>
+        </div>
+      
+        <div class="friction-category">
+          <div class="friction-title">Subtle Logic Bugs Needing Many Iterations</div>
+          <div class="friction-desc">Date, timezone, and boundary conditions caused the same alert to stay broken across repeated attempts. You could provide concrete failing examples (specific times and expected outcomes) upfront so Claude reasons about edge cases before coding.</div>
+          <ul class="friction-examples"><li>The limit_last alert kept showing incorrect red warnings due to a 00:00=0 minutes bug, a UTC timezone grouping bug, and a cycle-boundary bug, taking several rounds to resolve.</li><li>The PWA &apos;Consumi agora&apos; shortcut repeatedly opened the app without registering consumption because of a dataLoading timing issue, needing a second fix each time.</li></ul>
+        </div>
+      
+        <div class="friction-category">
+          <div class="friction-title">Explanations and Sessions Hitting Limits</div>
+          <div class="friction-desc">Explanations were often too dense to understand, and several sessions hit their usage limit mid-task, leaving work unfinished. You could ask for plain-language summaries up front and break large debugging efforts into smaller, scoped sessions.</div>
+          <ul class="friction-examples"><li>Claude used dense technical language you explicitly could not understand, requiring you to twice request simpler explanations and still finding them incomprehensible.</li><li>A session hit its usage limit after only reading two files, leaving the version unification and PWA fix entirely uncompleted.</li></ul>
+        </div>
+      
+    </div>
+    
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Primary Friction Types</div>
+        <div class="bar-row">
+        <div class="bar-label">Buggy Code</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#dc2626"></div></div>
+        <div class="bar-value">16</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Wrong Approach</div>
+        <div class="bar-track"><div class="bar-fill" style="width:62.5%;background:#dc2626"></div></div>
+        <div class="bar-value">10</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Misunderstood Request</div>
+        <div class="bar-track"><div class="bar-fill" style="width:12.5%;background:#dc2626"></div></div>
+        <div class="bar-value">2</div>
+      </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Inferred Satisfaction (model-estimated)</div>
+        <div class="bar-row">
+        <div class="bar-label">Frustrated</div>
+        <div class="bar-track"><div class="bar-fill" style="width:12.121212121212121%;background:#eab308"></div></div>
+        <div class="bar-value">4</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Dissatisfied</div>
+        <div class="bar-track"><div class="bar-fill" style="width:60.60606060606061%;background:#eab308"></div></div>
+        <div class="bar-value">20</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Likely Satisfied</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:#eab308"></div></div>
+        <div class="bar-value">33</div>
+      </div>
+<div class="bar-row">
+        <div class="bar-label">Satisfied</div>
+        <div class="bar-track"><div class="bar-fill" style="width:18.181818181818183%;background:#eab308"></div></div>
+        <div class="bar-value">6</div>
+      </div>
+      </div>
+    </div>
+
+    
+    
+    <h2 id="section-features">Existing CC Features to Try</h2>
+    <div class="claude-md-section">
+      <h3>Suggested CLAUDE.md Additions</h3>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Just copy this into Claude Code to add it to your CLAUDE.md.</p>
+      <div class="claude-md-actions">
+        <button class="copy-all-btn" onclick="copyAllCheckedClaudeMd()">Copy All Checked</button>
+      </div>
+      
+        <div class="claude-md-item">
+          <input type="checkbox" id="cmd-0" class="cmd-checkbox" checked data-text="Add under a ## Performance / Optimization section\n\nAfter any performance optimization or lazy-loading change, verify the app still boots without TDZ (&apos;Cannot access X before initialization&apos;) errors and re-test the usage-day counter before committing.">
+          <label for="cmd-0">
+            <code class="cmd-code">After any performance optimization or lazy-loading change, verify the app still boots without TDZ (&apos;Cannot access X before initialization&apos;) errors and re-test the usage-day counter before committing.</code>
+            <button class="copy-btn" onclick="copyCmdItem(0)">Copy</button>
+          </label>
+          <div class="cmd-why">Multiple sessions show performance/lazy-loading fixes introduced TDZ crashes and counter regressions that required painful follow-up fixes.</div>
+        </div>
+      
+        <div class="claude-md-item">
+          <input type="checkbox" id="cmd-1" class="cmd-checkbox" checked data-text="Add under a ## Communication Style section\n\nExplain changes in plain, non-technical Portuguese. Avoid dense jargon — the user is not a developer and needs simple language.">
+          <label for="cmd-1">
+            <code class="cmd-code">Explain changes in plain, non-technical Portuguese. Avoid dense jargon — the user is not a developer and needs simple language.</code>
+            <button class="copy-btn" onclick="copyCmdItem(1)">Copy</button>
+          </label>
+          <div class="cmd-why">Across several sessions the user repeatedly complained that explanations were incomprehensible and asked twice for simpler language.</div>
+        </div>
+      
+        <div class="claude-md-item">
+          <input type="checkbox" id="cmd-2" class="cmd-checkbox" checked data-text="Add under a ## Auth &amp; Lock section\n\nAny auth/lock/PIN refactor must be tested across full page reloads (not just in-session) and verified that PIN login still works before committing; never assume reinstalling the PWA is unnecessary.">
+          <label for="cmd-2">
+            <code class="cmd-code">Any auth/lock/PIN refactor must be tested across full page reloads (not just in-session) and verified that PIN login still works before committing; never assume reinstalling the PWA is unnecessary.</code>
+            <button class="copy-btn" onclick="copyCmdItem(2)">Copy</button>
+          </label>
+          <div class="cmd-why">Lock-mode and auth refactors repeatedly broke PIN login and failed to persist across reloads, locking the user out and requiring reverts.</div>
+        </div>
+      
+        <div class="claude-md-item">
+          <input type="checkbox" id="cmd-3" class="cmd-checkbox" checked data-text="Add under a ## Date &amp; Time Handling section\n\nWhen grouping or comparing consumption events by date/time, account for UTC vs local timezone and the 00:00 = 0 minutes edge case so goal alerts aren&apos;t falsely triggered.">
+          <label for="cmd-3">
+            <code class="cmd-code">When grouping or comparing consumption events by date/time, account for UTC vs local timezone and the 00:00 = 0 minutes edge case so goal alerts aren&apos;t falsely triggered.</code>
+            <button class="copy-btn" onclick="copyCmdItem(3)">Copy</button>
+          </label>
+          <div class="cmd-why">The limit_last/goal-alert bug recurred across multiple sessions due to timezone and 00:00 edge-case mistakes.</div>
+        </div>
+      
+        <div class="claude-md-item">
+          <input type="checkbox" id="cmd-4" class="cmd-checkbox" checked data-text="Add under a ## Data Migration / Field Changes section\n\nWhen asked to remove a field (e.g., lastBefore00), confirm legacy records still count correctly in ALL analyses and state explicitly what was changed.">
+          <label for="cmd-4">
+            <code class="cmd-code">When asked to remove a field (e.g., lastBefore00), confirm legacy records still count correctly in ALL analyses and state explicitly what was changed.</code>
+            <button class="copy-btn" onclick="copyCmdItem(4)">Copy</button>
+          </label>
+          <div class="cmd-why">The user was confused about whether a field removal preserved old-record behavior and emphasized legacy records must keep counting.</div>
+        </div>
+      
+    </div>
+    
+    
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Just copy this into Claude Code and it'll set it up for you.</p>
+    <div class="features-section">
+      
+        <div class="feature-card">
+          <div class="feature-title">Hooks</div>
+          <div class="feature-oneliner">Auto-run shell commands at lifecycle events like after edits.</div>
+          <div class="feature-why"><strong>Why for you:</strong> Your performance/lazy-loading edits repeatedly introduced TDZ crashes that slipped through — an auto-build hook would catch them before commit.</div>
+          
+          <div class="feature-examples">
+            <div class="feature-example">
+              <div class="example-code-row">
+                <code class="example-code">// .claude/settings.json
+{
+  &quot;hooks&quot;: {
+    &quot;PostToolUse&quot;: [{
+      &quot;matcher&quot;: &quot;Edit|Write&quot;,
+      &quot;hooks&quot;: [{&quot;type&quot;: &quot;command&quot;, &quot;command&quot;: &quot;npm run build 2&gt;&amp;1 | tail -20&quot;}]
+    }]
+  }
+}</code>
+                <button class="copy-btn" onclick="copyText(this)">Copy</button>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      
+        <div class="feature-card">
+          <div class="feature-title">Custom Skills</div>
+          <div class="feature-oneliner">Reusable /commands defined as markdown for repeat workflows.</div>
+          <div class="feature-why"><strong>Why for you:</strong> You bump versions, build, commit, and deploy constantly — a /ship skill would standardize this and prevent forgotten version bumps.</div>
+          
+          <div class="feature-examples">
+            <div class="feature-example">
+              <div class="example-code-row">
+                <code class="example-code"># .claude/skills/ship/SKILL.md
+Run npm run build, verify no TDZ/console errors, bump version in package.json and PWA manifest, commit with a clear message, then git push.</code>
+                <button class="copy-btn" onclick="copyText(this)">Copy</button>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      
+        <div class="feature-card">
+          <div class="feature-title">Task Agents</div>
+          <div class="feature-oneliner">Spawn focused subagents for exploration or parallel work.</div>
+          <div class="feature-why"><strong>Why for you:</strong> Your recurring auth and goal-alert bugs span multiple files; an agent can map the full data/timezone flow before editing to avoid the repeated partial fixes.</div>
+          
+          <div class="feature-examples">
+            <div class="feature-example">
+              <div class="example-code-row">
+                <code class="example-code">use an agent to trace how consumption events flow from storage through date-grouping to the goal-alert logic, listing every timezone and 00:00 edge case</code>
+                <button class="copy-btn" onclick="copyText(this)">Copy</button>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      
+    </div>
+    
+    
+    <h2 id="section-patterns">New Ways to Use Claude Code</h2>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Just copy this into Claude Code and it'll walk you through it.</p>
+    <div class="patterns-section">
+      
+        <div class="pattern-card">
+          <div class="pattern-title">Iterative bug fixes that regress</div>
+          <div class="pattern-summary">Your fixes often work but introduce a second bug requiring follow-up rounds.</div>
+          <div class="pattern-detail">Many sessions show a first fix that breaks something else (TDZ crash, broken PIN, counter regression). This is most common in auth and performance work. Asking Claude to write a quick verification step or test before committing would cut these cycles. A build/smoke-test gate after each edit catches most of these.</div>
+          
+          <div class="copyable-prompt-section">
+            <div class="prompt-label">Paste into Claude Code:</div>
+            <div class="copyable-prompt-row">
+              <code class="copyable-prompt">Before committing, build the app and verify there are no initialization errors, the usage-day counter is correct, and PIN login still works. List what you checked.</code>
+              <button class="copy-btn" onclick="copyText(this)">Copy</button>
+            </div>
+          </div>
+          
+        </div>
+      
+        <div class="pattern-card">
+          <div class="pattern-title">Lock down recurring timezone/edge-case bugs</div>
+          <div class="pattern-summary">The goal-alert bug came back across multiple sessions for the same reasons.</div>
+          <div class="pattern-detail">Timezone (UTC vs local) and the 00:00 = 0 minutes edge case caused false red alerts repeatedly. Instead of patching reactively, have Claude write a small set of test cases covering midnight, cycle boundaries, and timezone offsets. This converts a recurring debugging session into a one-time fix.</div>
+          
+          <div class="copyable-prompt-section">
+            <div class="prompt-label">Paste into Claude Code:</div>
+            <div class="copyable-prompt-row">
+              <code class="copyable-prompt">Write unit tests for the goal-alert logic covering 00:00 (midnight), cycle boundary crossings, and UTC-vs-local timezone differences, then fix any cases that fail.</code>
+              <button class="copy-btn" onclick="copyText(this)">Copy</button>
+            </div>
+          </div>
+          
+        </div>
+      
+        <div class="pattern-card">
+          <div class="pattern-title">Match explanations to the audience</div>
+          <div class="pattern-summary">Ask for plain-language summaries upfront to avoid rework.</div>
+          <div class="pattern-detail">You repeatedly had to ask Claude to simplify dense technical explanations. Setting this expectation at the start of each session (or in CLAUDE.md) saves the back-and-forth. Request analogies and avoid code-level jargon for operational reviews.</div>
+          
+          <div class="copyable-prompt-section">
+            <div class="prompt-label">Paste into Claude Code:</div>
+            <div class="copyable-prompt-row">
+              <code class="copyable-prompt">Explain what you changed in simple Portuguese as if to someone who doesn&apos;t code — no technical jargon, use everyday analogies.</code>
+              <button class="copy-btn" onclick="copyText(this)">Copy</button>
+            </div>
+          </div>
+          
+        </div>
+      
+    </div>
+    
+    
+
+    
+    <h2 id="section-horizon">On the Horizon</h2>
+    <p class="section-intro">AI-assisted development is shifting from single-fix interactions toward autonomous, test-verified workflows where agents catch their own regressions before a human ever sees them.</p>
+    <div class="horizon-section">
+      
+        <div class="horizon-card">
+          <div class="horizon-title">Regression-Proof Performance Optimization Loop</div>
+          <div class="horizon-possible">Your performance fixes repeatedly introduced regressions like TDZ crashes and broken usage-day counters that needed painful follow-ups. Imagine an autonomous agent that optimizes startup time while continuously running your full Playwright suite, automatically reverting any change that breaks a counter, login, or render. It could iterate dozens of times against a &apos;green tests + faster&apos; target until both conditions hold, shipping only verified wins.</div>
+          <div class="horizon-tip"><strong>Getting started:</strong> Use a subagent with Playwright MCP and a performance budget, instructing Claude to gate every edit behind passing tests before committing.</div>
+          <div class="pattern-prompt"><div class="prompt-label">Paste into Claude Code:</div><code>Optimize app startup performance for large record counts. Before AND after each change, run the full Playwright test suite plus a smoke test covering login, the usage-day counter, and lazy-loaded modules. If any test regresses or you hit a TDZ/initialization error, automatically revert that change and try a different approach. Only commit changes that are both faster (measure startup ms) and fully green. Report a before/after timing table at the end.</code><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+        </div>
+      
+        <div class="horizon-card">
+          <div class="horizon-title">Auth-Safety Test Harness Before Refactors</div>
+          <div class="horizon-possible">Lock-mode and PIN refactors locked users out and required full reverts multiple times. A dedicated authentication regression harness could let an agent refactor auth flows fearlessly, validating PIN entry, page-reload persistence, auto-lock timing, and PWA shortcut access across every commit. The agent would only ship auth changes that survive a hostile test matrix including refreshes and minified builds.</div>
+          <div class="horizon-tip"><strong>Getting started:</strong> Have Claude first generate Playwright tests for all auth states, then run them in a Terser-minified production build on every iteration.</div>
+          <div class="pattern-prompt"><div class="prompt-label">Paste into Claude Code:</div><code>First, write Playwright tests covering: PIN login, authentication persistence across full page reloads, auto-lock after inactivity, and PWA shortcut access without re-auth. Run them against a production (Terser-minified) build. Only THEN refactor the lock-mode/auto-lock feature. After every edit, rebuild and rerun the full auth suite; if PIN or session persistence breaks, revert immediately. Do not commit until all auth states pass in the minified build.</code><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+        </div>
+      
+        <div class="horizon-card">
+          <div class="horizon-title">Parallel Date/Timezone Edge-Case Hunting</div>
+          <div class="horizon-possible">Goal-alert bugs cost many debugging rounds over 00:00=0 minutes, cycle boundaries, and UTC date grouping. Parallel agents could each stress one dimension—timezone offsets, midnight edges, cycle wraps, legacy records—generating property-based tests that expose every edge at once. Instead of discovering bugs one painful iteration at a time, you&apos;d get a comprehensive failing-case report and fixes validated against all date scenarios simultaneously.</div>
+          <div class="horizon-tip"><strong>Getting started:</strong> Launch multiple Agent tool subtasks in parallel, each owning one edge-case category, then merge their generated tests into one suite.</div>
+          <div class="pattern-prompt"><div class="prompt-label">Paste into Claude Code:</div><code>Spawn parallel subagents to harden the consumption-goal alert logic. Agent 1: timezone bugs (test UTC vs local across multiple offsets). Agent 2: midnight/00:00=0-minutes edge cases. Agent 3: cycle-boundary transitions. Agent 4: legacy records that must still count after field removal. Each agent writes property-based/parameterized tests exposing failures, then fixes the underlying logic. Merge all tests into one suite, ensure it passes globally, and give me a summary of every edge case now covered.</code><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+        </div>
+      
+    </div>
+    
+
+    
+    <div class="fun-ending">
+      <div class="fun-headline">"A frustrated user SHOUTED IN CAPS when Claude fired off a /simplify skill in the middle of 10 already-running background tasks"</div>
+      <div class="fun-detail">During a session juggling multiple stuck UI tasks, Claude&apos;s well-meaning skill invocation collided with the chaos and the user&apos;s patience snapped — caps lock and all.</div>
+    </div>
+    
+
+    
+  </div>
+  <script>
+    function toggleCollapsible(header) {
+      header.classList.toggle('open');
+      const content = header.nextElementSibling;
+      content.classList.toggle('open');
+    }
+    function copyText(btn) {
+      const code = btn.previousElementSibling;
+      navigator.clipboard.writeText(code.textContent).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+    function copyCmdItem(idx) {
+      const checkbox = document.getElementById('cmd-' + idx);
+      if (checkbox) {
+        const text = checkbox.dataset.text;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = checkbox.nextElementSibling.querySelector('.copy-btn');
+          if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); }
+        });
+      }
+    }
+    function copyAllCheckedClaudeMd() {
+      const checkboxes = document.querySelectorAll('.cmd-checkbox:checked');
+      const texts = [];
+      checkboxes.forEach(cb => {
+        if (cb.dataset.text) { texts.push(cb.dataset.text); }
+      });
+      const combined = texts.join('\n');
+      const btn = document.querySelector('.copy-all-btn');
+      if (btn) {
+        navigator.clipboard.writeText(combined).then(() => {
+          btn.textContent = 'Copied ' + texts.length + ' items!';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = 'Copy All Checked'; btn.classList.remove('copied'); }, 2000);
+        });
+      }
+    }
+    // Timezone selector for time of day chart (data is from our own analytics, not user input)
+    const rawHourCounts = {"0":24,"1":13,"3":2,"4":2,"10":13,"13":18,"14":20,"15":3,"16":16,"17":25,"18":22,"19":19,"20":40,"21":54,"22":16};
+    function updateHourHistogram(offsetFromPT) {
+      const periods = [
+        { label: "Morning (6-12)", range: [6,7,8,9,10,11] },
+        { label: "Afternoon (12-18)", range: [12,13,14,15,16,17] },
+        { label: "Evening (18-24)", range: [18,19,20,21,22,23] },
+        { label: "Night (0-6)", range: [0,1,2,3,4,5] }
+      ];
+      const adjustedCounts = {};
+      for (const [hour, count] of Object.entries(rawHourCounts)) {
+        const newHour = (parseInt(hour) + offsetFromPT + 24) % 24;
+        adjustedCounts[newHour] = (adjustedCounts[newHour] || 0) + count;
+      }
+      const periodCounts = periods.map(p => ({
+        label: p.label,
+        count: p.range.reduce((sum, h) => sum + (adjustedCounts[h] || 0), 0)
+      }));
+      const maxCount = Math.max(...periodCounts.map(p => p.count)) || 1;
+      const container = document.getElementById('hour-histogram');
+      container.textContent = '';
+      periodCounts.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = p.label;
+        const track = document.createElement('div');
+        track.className = 'bar-track';
+        const fill = document.createElement('div');
+        fill.className = 'bar-fill';
+        fill.style.width = (p.count / maxCount) * 100 + '%';
+        fill.style.background = '#8b5cf6';
+        track.appendChild(fill);
+        const value = document.createElement('div');
+        value.className = 'bar-value';
+        value.textContent = p.count;
+        row.appendChild(label);
+        row.appendChild(track);
+        row.appendChild(value);
+        container.appendChild(row);
+      });
+    }
+    document.getElementById('timezone-select').addEventListener('change', function() {
+      const customInput = document.getElementById('custom-offset');
+      if (this.value === 'custom') {
+        customInput.style.display = 'inline-block';
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';
+        updateHourHistogram(parseInt(this.value));
+      }
+    });
+    document.getElementById('custom-offset').addEventListener('change', function() {
+      const parsed = parseInt(this.value, 10);
+      if (isNaN(parsed)) return;
+      updateHourHistogram(parsed + 8);
+    });
+  </script>
+</body>
+</html>
