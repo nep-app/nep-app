@@ -144,7 +144,7 @@ export function exportToCSV(data) {
   consumptions.forEach(c => {
     const date = c.date || '';
     const time = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('pt-PT') : '';
-    csv += `${date},${time},${csvCell(c.substance)},${c.amount || ''},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
+    csv += `${date},${time},${csvCell(c.substance)},${csvCell(c.amount)},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
   });
 
   // CSV para cycles (SONO)

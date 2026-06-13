@@ -82,7 +82,7 @@ export const MetricsProvider = ({ children }) => {
       }
     });
     return index;
-  }, [wellbeingLogs]);
+  }, [wellbeingLogs, atypicalDates]);
 
   // ===== CONSUMPTION METRICS =====
 

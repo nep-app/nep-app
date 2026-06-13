@@ -197,6 +197,9 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem(NEVER_PIN_KEY, encodedPin);
           logger.log('[Auth] ✅ Auto-login instantâneo (modo nunca bloquear)');
         } catch (e) {
+          // Limpar entrada corrompida para não bloquear arranques futuros
+          sessionStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(NEVER_PIN_KEY);
           logger.warn('[Auth] ⚠️ Auto-login falhou (never mode):', e);
         }
       } else if (email && saltBase64 && pinVerificationJSON && mode !== 'on_hide' && sessionRaw) {
@@ -694,10 +697,14 @@ export const AuthProvider = ({ children }) => {
    */
   const changePin = useCallback(async (currentPin, newPin) => {
     try {
-      // Verificar PIN atual
+      // Verificar PIN atual — guardar e restaurar o contador de falhas para que
+      // tentativas erradas no ecrã de alterar PIN não bloqueiem o login normal
+      const savedFails = localStorage.getItem('nep_login_fails');
       const loginResult = await login(currentPin);
       if (!loginResult.success) {
-        throw new Error('PIN atual incorreto');
+        if (savedFails !== null) localStorage.setItem('nep_login_fails', savedFails);
+        else localStorage.removeItem('nep_login_fails');
+        throw new Error(loginResult.error || 'PIN atual incorreto');
       }
 
       // Validar novo PIN

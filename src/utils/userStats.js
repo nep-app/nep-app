@@ -126,10 +126,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Calcular último intervalo usando consumos filtrados (subconjunto de rawSorted)
     let lastInterval = null;
-    const filteredSorted = rawSorted.filter(c => !atypicalDates.has(c.date));
-    if (filteredSorted.length >= 2) {
-      const last = new Date(filteredSorted[0].timestamp || filteredSorted[0].createdAt);
-      const secondLast = new Date(filteredSorted[1].timestamp || filteredSorted[1].createdAt);
+    // Recolher só os 2 primeiros consumos não-atípicos — evita copiar a lista inteira
+    const twoFiltered = [];
+    for (const c of rawSorted) {
+      if (!atypicalDates.has(c.date)) { twoFiltered.push(c); if (twoFiltered.length === 2) break; }
+    }
+    if (twoFiltered.length >= 2) {
+      const last = new Date(twoFiltered[0].timestamp || twoFiltered[0].createdAt);
+      const secondLast = new Date(twoFiltered[1].timestamp || twoFiltered[1].createdAt);
       const diffMs = last - secondLast;
       const hours = (diffMs / (1000 * 60 * 60)).toFixed(1);
       lastInterval = parseFloat(hours);
