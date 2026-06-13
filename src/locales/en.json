@@ -739,9 +739,7 @@
     "atypicalDesc": "Atypical days are excluded from goal and analysis calculations.",
     "atypicalBanner_one": "1 atypical day excluded from analyses and goals.",
     "atypicalBanner_other": "{{count}} atypical days excluded from analyses and goals.",
-    "atypicalTag": "Atypical",
-    "dateLabelToday": "today",
-    "dateLabelYesterday": "yesterday"
+    "atypicalTag": "Atypical"
   },
   "analyses": {
     "dayNames": [

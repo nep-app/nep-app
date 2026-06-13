@@ -110,10 +110,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         .map(w => w.date)
         .filter(Boolean)
     );
-    const isAtypicalDate = d => atypicalDates.has(d);
-    const filteredConsumptions = consumptions.filter(c => !isAtypicalDate(c.date));
-    const filteredCycles = cycles.filter(c => !isAtypicalDate(c.date));
-    const filteredDailyLogs = dailyLogs.filter(l => !isAtypicalDate(l.date));
+    const filteredConsumptions = consumptions.filter(c => !atypicalDates.has(c.date));
+    const filteredCycles = cycles.filter(c => !atypicalDates.has(c.date));
+    const filteredDailyLogs = dailyLogs.filter(l => !atypicalDates.has(l.date));
     const filteredWellbeingLogs = (wellbeingLogs || []).filter(w => !w.isAtypical);
 
     // Último consumo real (para badge "Tempo desde último consumo" — inclui dias atípicos)
@@ -125,13 +124,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const lastConsumption = rawSorted[0];
     const lastConsumptionTime = lastConsumption ? (lastConsumption.timestamp || lastConsumption.createdAt) : null;
 
-    // Calcular último intervalo usando consumos filtrados (dias atípicos excluídos)
+    // Calcular último intervalo usando consumos filtrados (subconjunto de rawSorted)
     let lastInterval = null;
-    const filteredSorted = [...filteredConsumptions].sort((a, b) => {
-      const timeA = new Date(a.timestamp || a.createdAt || 0).getTime();
-      const timeB = new Date(b.timestamp || b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
+    const filteredSorted = rawSorted.filter(c => !atypicalDates.has(c.date));
     if (filteredSorted.length >= 2) {
       const last = new Date(filteredSorted[0].timestamp || filteredSorted[0].createdAt);
       const secondLast = new Date(filteredSorted[1].timestamp || filteredSorted[1].createdAt);

@@ -739,9 +739,7 @@
     "atypicalDesc": "Dias atípicos são excluídos dos cálculos de metas e análises.",
     "atypicalBanner_one": "1 dia atípico excluído das análises e metas.",
     "atypicalBanner_other": "{{count}} dias atípicos excluídos das análises e metas.",
-    "atypicalTag": "Atípico",
-    "dateLabelToday": "de hoje",
-    "dateLabelYesterday": "de ontem"
+    "atypicalTag": "Atípico"
   },
   "analyses": {
     "dayNames": [

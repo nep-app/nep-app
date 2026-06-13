@@ -86,6 +86,15 @@ export const MetricsProvider = ({ children }) => {
 
   // ===== CONSUMPTION METRICS =====
 
+  const consumptionsByDate = useMemo(() => {
+    const index = {};
+    filteredConsumptions.forEach(c => {
+      const dateKey = getDateKeyFromItem(c);
+      index[dateKey] = (index[dateKey] || 0) + 1;
+    });
+    return index;
+  }, [filteredConsumptions]);
+
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
     return analyticsService.calculateTimeSinceLastConsumption(consumptions);
@@ -93,7 +102,6 @@ export const MetricsProvider = ({ children }) => {
 
   // Last 7 days with averages (times and mg)
   const last7Days = useMemo(() => {
-    // Calculate avgTimes from actual consumptions in last 7 complete days
     const last7Dates = [...Array(7)].map((_, i) => {
       const d = getDateDaysAgo(i + 1); // Start from yesterday (exclude today)
       return safeToISODate(d);
@@ -104,7 +112,7 @@ export const MetricsProvider = ({ children }) => {
     last7Dates.forEach(date => {
       if (atypicalDates.has(date)) return;
       nonAtypicalDayCount++;
-      totalConsumptions += filteredConsumptions.filter(c => getDateKeyFromItem(c) === date).length;
+      totalConsumptions += consumptionsByDate[date] || 0;
     });
 
     const avgTimes = nonAtypicalDayCount > 0 ? (totalConsumptions / nonAtypicalDayCount).toFixed(1) : '0.0';
@@ -136,7 +144,7 @@ export const MetricsProvider = ({ children }) => {
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [filteredConsumptions, cyclesByDate, dailyLogsByDate, atypicalDates]);
+  }, [consumptionsByDate, cyclesByDate, dailyLogsByDate, atypicalDates]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
