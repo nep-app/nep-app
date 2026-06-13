@@ -584,7 +584,7 @@ export function AuthenticatedApp() {
                         mood: wellbeingForm.mood !== '' ? parseInt(wellbeingForm.mood) : null,
                         energy: wellbeingForm.energy !== '' ? parseInt(wellbeingForm.energy) : null,
                         waterGlasses: wellbeingForm.waterGlasses,
-                        exerciseType: (wellbeingForm.exerciseType || '').trim().toLowerCase() || null,
+                        exerciseType: sanitizeText((wellbeingForm.exerciseType || '').trim().toLowerCase()) || null,
                         exerciseDuration: wellbeingForm.exerciseDuration !== '' ? parseInt(wellbeingForm.exerciseDuration) : null,
                         napDuration: wellbeingForm.napDuration !== '' ? parseInt(wellbeingForm.napDuration) : null,
                         social: wellbeingForm.social,

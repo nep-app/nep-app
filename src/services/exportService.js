@@ -132,13 +132,19 @@ export function exportToCSV(data) {
     goals = []
   } = data;
 
+  // Wraps text in quotes, escapes internal quotes, and neutralises formula injection
+  const csvCell = (val) => {
+    const s = String(val == null ? '' : val).replace(/"/g, '""');
+    return /^[=+\-@]/.test(s) ? `"'${s}"` : `"${s}"`;
+  };
+
   // CSV para consumptions
   let csv = 'CONSUMPTIONS\n';
   csv += 'Date,Time,Substance,Amount,Unit,Notes\n';
   consumptions.forEach(c => {
     const date = c.date || '';
     const time = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('pt-PT') : '';
-    csv += `${date},${time},${c.substance || ''},${c.amount || ''},${c.unit || ''},"${(c.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${date},${time},${csvCell(c.substance)},${c.amount || ''},${c.unit || ''},${csvCell(c.notes)}\n`;
   });
 
   // CSV para cycles (SONO)
@@ -146,7 +152,7 @@ export function exportToCSV(data) {
   csv += 'Date,Bedtime,Sleep Hours,Triggers,Notes\n';
   cycles.forEach(c => {
     const triggers = (c.triggers || []).join('; ');
-    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep || ''},"${triggers}","${(c.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep || ''},${csvCell(triggers)},${csvCell(c.notes)}\n`;
   });
 
   // CSV para wellbeingLogs
@@ -157,35 +163,35 @@ export function exportToCSV(data) {
     const symptoms = (w.symptoms || []).join('; ');
     const waterVal = w.waterGlasses != null ? w.waterGlasses : (w.water ? 'Sim' : 'Não');
     const restVal = w.exerciseType || (w.exerciseDuration > 0 ? `${w.exerciseDuration}min` : (w.rest ? 'Sim' : 'Não'));
-    csv += `${w.date || ''},${w.mood || ''},${w.energy || ''},${waterVal},"${w.exerciseType || restVal}",${w.exerciseDuration || ''},${w.napDuration || ''},${w.social ? 'Sim' : 'Não'},${w.food ? 'Sim' : 'Não'},"${symptoms}","${emotions}",${w.isAtypical ? 'Sim' : 'Não'},"${(w.atypicalReason || '').replace(/"/g, '""')}","${(w.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${w.date || ''},${w.mood || ''},${w.energy || ''},${waterVal},${csvCell(w.exerciseType || restVal)},${w.exerciseDuration || ''},${w.napDuration || ''},${w.social ? 'Sim' : 'Não'},${w.food ? 'Sim' : 'Não'},${csvCell(symptoms)},${csvCell(emotions)},${w.isAtypical ? 'Sim' : 'Não'},${csvCell(w.atypicalReason)},${csvCell(w.notes)}\n`;
   });
 
   // CSV para dailyLogs
   csv += '\n\nDAILY LOGS (DOSAGEM)\n';
   csv += 'Date,Total MG,Notes\n';
   dailyLogs.forEach(d => {
-    csv += `${d.date || ''},${d.mg || ''},"${(d.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${d.date || ''},${d.mg || ''},${csvCell(d.notes)}\n`;
   });
 
   // CSV para reflections
   csv += '\n\nREFLECTIONS\n';
   csv += 'Date,Text,Sentiment\n';
   reflections.forEach(r => {
-    csv += `${r.date || ''},"${(r.text || '').replace(/"/g, '""')}",${r.sentiment || ''}\n`;
+    csv += `${r.date || ''},${csvCell(r.text)},${r.sentiment || ''}\n`;
   });
 
   // CSV para thoughts
   csv += '\n\nTHOUGHTS\n';
   csv += 'Date,Thought,Notes\n';
   thoughts.forEach(t => {
-    csv += `${t.date || ''},"${(t.thought || '').replace(/"/g, '""')}","${(t.notes || '').replace(/"/g, '""')}"\n`;
+    csv += `${t.date || ''},${csvCell(t.thought)},${csvCell(t.notes)}\n`;
   });
 
   // CSV para goals
   csv += '\n\nGOALS\n';
   csv += 'Title,Description,Created At,Completed,Progress\n';
   goals.forEach(g => {
-    csv += `"${(g.title || '').replace(/"/g, '""')}","${(g.description || '').replace(/"/g, '""')}",${g.createdAt || ''},${g.completed ? 'Sim' : 'Não'},${g.progress || 0}%\n`;
+    csv += `${csvCell(g.title)},${csvCell(g.description)},${g.createdAt || ''},${g.completed ? 'Sim' : 'Não'},${g.progress || 0}%\n`;
   });
 
   return csv;
