@@ -109,6 +109,11 @@ export const SettingsView = ({
 
     const { lockMode, setLockMode } = useAuth();
 
+    const [editingFirstUse, setEditingFirstUse] = useState(false);
+    const [firstUseDateInput, setFirstUseDateInput] = useState(() =>
+        firstUseDate ? firstUseDate.toISOString().slice(0, 10) : ''
+    );
+
     const LOCK_OPTIONS = [
         { value: 'never',   label: t('settings.lockNever'),   desc: t('settings.lockNeverDesc') },
         { value: 'on_hide', label: t('settings.lockOnHide'),  desc: t('settings.lockOnHideDesc') },
@@ -202,12 +207,51 @@ export const SettingsView = ({
                         <span className="text-sm font-medium">{t('settings.emailLabel')}</span>
                         <span className="text-sm">{user?.email || t('settings.emailNotAvailable')}</span>
                     </div>
-                    {firstUseDate && (
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">📅 {t('settings.firstUseLabel')}</span>
-                            <span className="text-sm">{firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">📅 {t('settings.firstUseLabel')}</span>
+                        {editingFirstUse ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    value={firstUseDateInput}
+                                    onChange={e => setFirstUseDateInput(e.target.value)}
+                                    className="bg-gray-700 text-white text-sm rounded px-2 py-1 border border-gray-600"
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (firstUseDateInput) {
+                                            import('../db/localDB').then(({ setMetadata }) => {
+                                                setMetadata('firstUseDate', new Date(firstUseDateInput).toISOString());
+                                            });
+                                            if (typeof window !== 'undefined') window.dispatchEvent(new Event('firstUseDateChanged'));
+                                        }
+                                        setEditingFirstUse(false);
+                                    }}
+                                    className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded"
+                                >✓</button>
+                                <button
+                                    onClick={() => setEditingFirstUse(false)}
+                                    className="text-xs text-gray-400 hover:text-white px-1"
+                                >✕</button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm">
+                                    {firstUseDate
+                                        ? firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                        : '—'}
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setFirstUseDateInput(firstUseDate ? firstUseDate.toISOString().slice(0, 10) : '');
+                                        setEditingFirstUse(true);
+                                    }}
+                                    className="text-xs text-gray-500 hover:text-gray-300"
+                                    title={t('settings.firstUseEdit')}
+                                >✏️</button>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleLogout}
                         className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border-red-700/50 w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2"

@@ -108,6 +108,7 @@
     "emailLabel": "Email:",
     "emailNotAvailable": "Not available",
     "firstUseLabel": "Member since:",
+    "firstUseEdit": "Edit date",
     "logout": "Log Out",
     "sync": "Device Synchronization",
     "syncDescription": "Sync data between PC, phone, and other devices via cloud (Firebase).",

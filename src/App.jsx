@@ -880,14 +880,19 @@ export function AuthenticatedApp() {
             const last7 = metrics.last7Days;
             const streaks = metrics.streaks;
 
-            // First day the user ever used the app (stored in metadata on login/create)
+            // First day the user ever used the app (stored in metadata, editable in settings)
             const [firstUseDate, setFirstUseDate] = useState(null);
             useEffect(() => {
-                import('./db/localDB').then(({ getMetadata }) => {
-                    getMetadata('firstUseDate').then(val => {
-                        if (val) setFirstUseDate(new Date(val));
+                const load = () => {
+                    import('./db/localDB').then(({ getMetadata }) => {
+                        getMetadata('firstUseDate').then(val => {
+                            setFirstUseDate(val ? new Date(val) : null);
+                        });
                     });
-                });
+                };
+                load();
+                window.addEventListener('firstUseDateChanged', load);
+                return () => window.removeEventListener('firstUseDateChanged', load);
             }, []);
 
             // Memoized coping strategies based on triggers

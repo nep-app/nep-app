@@ -108,6 +108,7 @@
     "emailLabel": "Email:",
     "emailNotAvailable": "Não disponível",
     "firstUseLabel": "Membro desde:",
+    "firstUseEdit": "Editar data",
     "logout": "Terminar Sessão",
     "sync": "Sincronização entre Dispositivos",
     "syncDescription": "Sincroniza dados entre PC, telemóvel e outros dispositivos via cloud (Firebase).",
