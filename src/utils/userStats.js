@@ -107,7 +107,13 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const atypicalDates = new Set(
       (wellbeingLogs || [])
         .filter(w => w.isAtypical)
-        .map(w => w.date)
+        .map(w => {
+          if (w.date) return w.date;
+          const ts = w.timestamp || w.createdAt;
+          if (!ts) return null;
+          const d = new Date(ts);
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })
         .filter(Boolean)
     );
     const filteredConsumptions = consumptions.filter(c => !atypicalDates.has(c.date));
@@ -279,13 +285,13 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
-    // Aviso 4: Risco preditivo (sono <6h E humor <5)
-    if (filteredCycles.length > 0 && filteredWellbeingLogs.length > 0) {
+    // Aviso 4: Risco preditivo (sono <6h E humor <5) — usa wellbeingLogs bruto (estado actual, não meta)
+    if (filteredCycles.length > 0 && (wellbeingLogs || []).length > 0) {
       const lastCycleWithSleep = filteredCycles
         .filter(c => c.sleep && !isNaN(parseFloat(c.sleep)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-      const lastWellbeingWithMood = filteredWellbeingLogs
+      const lastWellbeingWithMood = (wellbeingLogs || [])
         .filter(l => l.mood && !isNaN(parseInt(l.mood)))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 

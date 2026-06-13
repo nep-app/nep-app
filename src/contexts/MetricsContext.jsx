@@ -40,8 +40,18 @@ export const MetricsProvider = ({ children }) => {
     dailyLogs.filter(l => !atypicalDates.has(l.date || getDateKeyFromItem(l))),
   [dailyLogs, atypicalDates]);
 
+  const filteredWellbeingLogs = useMemo(() =>
+    wellbeingLogs.filter(w => !w.isAtypical),
+  [wellbeingLogs]);
+
   // Use analysis hook for core analytics
-  const analysis = useAnalysis(filteredConsumptions, wellbeingLogs, reflections, filteredCycles, goals, thoughts, filteredDailyLogs);
+  const analysis = useAnalysis(filteredConsumptions, filteredWellbeingLogs, reflections, filteredCycles, goals, thoughts, filteredDailyLogs);
+
+  // todayConsumptions from raw data (factual — not excluded on atypical days)
+  const todayConsumptions = useMemo(() => {
+    const today = getTodayKey();
+    return consumptions.filter(c => getDateKeyFromItem(c) === today);
+  }, [consumptions]);
 
   // OTIMIZAÇÃO: Criar índices por data para acesso O(1) em vez de O(n)
   const cyclesByDate = useMemo(() => {
@@ -314,7 +324,7 @@ export const MetricsProvider = ({ children }) => {
     // From useAnalysis hook
     intervalStats: analysis.intervalStats,
     lastInterval: analysis.lastInterval,
-    todayConsumptions: analysis.todayConsumptions,
+    todayConsumptions, // raw consumptions — factual, not excluded on atypical days
     temporalCorrelations: analysis.temporalCorrelations,
     bidirectionalAnalysis: analysis.bidirectionalAnalysis,
     streaks: analysis.streaks,
