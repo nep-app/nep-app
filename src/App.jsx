@@ -1009,9 +1009,16 @@ export function AuthenticatedApp() {
                                     </div>
 
                                     {streaks.current > 0 ? (
-                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
-                                            <span>🔥</span>
-                                            <span>{streaks.current} {t('common.day', {count: streaks.current})}</span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold shadow-sm">
+                                                <span>🔥</span>
+                                                <span>{streaks.current} {t('common.day', {count: streaks.current})}</span>
+                                            </div>
+                                            {streaks.max > streaks.current && (
+                                                <span className="text-xs text-white/60">
+                                                    🏆 {t('home.record')}: {streaks.max} {t('common.day', {count: streaks.max})}
+                                                </span>
+                                            )}
                                         </div>
                                     ) : streaks.max > 0 && (
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
