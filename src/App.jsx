@@ -880,6 +880,27 @@ export function AuthenticatedApp() {
             const last7 = metrics.last7Days;
             const streaks = metrics.streaks;
 
+            // First day the user ever used the app
+            const firstUseDate = useMemo(() => {
+                const allItems = [
+                    ...consumptions,
+                    ...wellbeingLogs,
+                    ...cycles,
+                    ...thoughts,
+                    ...reflections,
+                    ...dailyLogs,
+                ];
+                let earliest = null;
+                allItems.forEach(item => {
+                    const raw = item.date || item.timestamp || item.createdAt;
+                    if (!raw) return;
+                    const d = new Date(raw);
+                    if (isNaN(d)) return;
+                    if (!earliest || d < earliest) earliest = d;
+                });
+                return earliest;
+            }, [consumptions, wellbeingLogs, cycles, thoughts, reflections, dailyLogs]);
+
             // Memoized coping strategies based on triggers
             const copingStrategies = useMemo(() => {
                 const allTriggers = cycles.flatMap(c => c.triggers || []);
@@ -1121,6 +1142,7 @@ export function AuthenticatedApp() {
                                         lastSyncTime={lastSyncTime}
                                         onOpenExport={() => setShowExportModal(true)}
                                         onExportJSON={exportToJSON}
+                                        firstUseDate={firstUseDate}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);

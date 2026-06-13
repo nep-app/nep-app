@@ -107,6 +107,7 @@
     "account": "Conta",
     "emailLabel": "Email:",
     "emailNotAvailable": "Não disponível",
+    "firstUseLabel": "Membro desde:",
     "logout": "Terminar Sessão",
     "sync": "Sincronização entre Dispositivos",
     "syncDescription": "Sincroniza dados entre PC, telemóvel e outros dispositivos via cloud (Firebase).",

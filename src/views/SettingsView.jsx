@@ -67,7 +67,8 @@ export const SettingsView = ({
     onExportJSON,
     onForceSync,
     isSyncing,
-    lastSyncTime
+    lastSyncTime,
+    firstUseDate
 }) => {
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
@@ -201,6 +202,12 @@ export const SettingsView = ({
                         <span className="text-sm font-medium">{t('settings.emailLabel')}</span>
                         <span className="text-sm">{user?.email || t('settings.emailNotAvailable')}</span>
                     </div>
+                    {firstUseDate && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">📅 {t('settings.firstUseLabel')}</span>
+                            <span className="text-sm">{firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </div>
+                    )}
                     <button
                         onClick={handleLogout}
                         className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border-red-700/50 w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2"
