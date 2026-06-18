@@ -33,6 +33,21 @@ export function HomeViewRefactored({
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
   const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
+  const [pendingConsumption, setPendingConsumption] = useState(false);
+
+  const urgeExerciseEnabled = typeof window !== 'undefined'
+    ? localStorage.getItem('nep_urge_exercise') !== 'false'
+    : true;
+
+  const handleMarkConsumption = () => {
+    const hasWarning = cachedAlerts.some(a => a.type !== 'positive');
+    if (hasWarning && urgeExerciseEnabled) {
+      setPendingConsumption(true);
+      setShowUrgeSurfing(true);
+    } else {
+      markConsumption();
+    }
+  };
 
   useEffect(() => {
     getUserStats().then(stats => {
@@ -116,7 +131,7 @@ export function HomeViewRefactored({
 
       <div className="grid grid-cols-2 gap-4">
         <GradientButton
-          onClick={markConsumption}
+          onClick={handleMarkConsumption}
           icon={Icons.Clock}
           variant="purple"
           size="large"
@@ -141,15 +156,6 @@ export function HomeViewRefactored({
             <AlertCard key={i} alert={alert} darkMode={darkMode} />
           ))}
         </div>
-      )}
-
-      {cachedAlerts.some(a => a.type !== 'positive') && (
-        <button
-          onClick={() => setShowUrgeSurfing(true)}
-          className="w-full mt-2 py-2.5 rounded-xl border border-purple-700/60 bg-purple-900/20 hover:bg-purple-900/40 text-purple-300 text-sm font-medium transition-all flex items-center justify-center gap-2"
-        >
-          💪 {t('urge.openButton')}
-        </button>
       )}
 
       {/* Linha 1: Bem-estar, Emoções, Reflexão Diária */}
@@ -269,8 +275,9 @@ export function HomeViewRefactored({
     {showUrgeSurfing && (
       <Suspense fallback={null}>
         <UrgeSurfingModal
-          onClose={() => setShowUrgeSurfing(false)}
+          onClose={() => { setShowUrgeSurfing(false); setPendingConsumption(false); }}
           onOpenThoughts={() => setShowThoughtsModal(true)}
+          onProceed={pendingConsumption ? () => markConsumption() : null}
         />
       </Suspense>
     )}

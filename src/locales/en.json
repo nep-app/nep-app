@@ -157,6 +157,8 @@
     "alarmDoseDesc": "Reminder to log today's dose",
     "alarmDoseActive": "✓ Active at",
     "alarmNote": "Reminders only appear when opening the app.",
+    "urgeExercise": "Exercises when logging use",
+    "urgeExerciseDesc": "When outside your goals, suggests an exercise before registering.",
     "guideHeader": "How to use the app",
     "guideTapToLearn": "Tap each section to learn more.",
     "guide": [
@@ -819,7 +821,8 @@
     "haltTiredTip": "Tiredness lowers resistance to urges. 20 minutes with eyes closed, even without sleeping, makes a difference.",
     "haltPrompt": "Tap what best describes how you feel",
     "thoughtsTitle": "Write what you feel",
-    "thoughtsShortDesc": "Naming the emotion reduces its intensity — opens the journal"
+    "thoughtsShortDesc": "Naming the emotion reduces its intensity — opens the journal",
+    "proceedAnyway": "Register use anyway →"
   },
   "defaultStrategies": [
     "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",

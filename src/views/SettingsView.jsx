@@ -78,6 +78,13 @@ export const SettingsView = ({
     const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
         safeLocalStorage.get('wellbeingAlarmEnabled', false)
     );
+    const [urgeExerciseOn, setUrgeExerciseOn] = useState(() =>
+        localStorage.getItem('nep_urge_exercise') !== 'false'
+    );
+    const handleUrgeExerciseToggle = (on) => {
+        setUrgeExerciseOn(on);
+        localStorage.setItem('nep_urge_exercise', on ? 'true' : 'false');
+    };
     const [doseAlarmOn, setDoseAlarmOn] = useState(() => {
         const raw = localStorage.getItem('bagWeighAlarmHour');
         return raw !== null && raw !== 'null';
@@ -409,6 +416,19 @@ export const SettingsView = ({
                     </div>
 
                 </div>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-gray-200">{t('settings.urgeExercise')}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t('settings.urgeExerciseDesc')}</p>
+                        </div>
+                        <button
+                            onClick={() => handleUrgeExerciseToggle(!urgeExerciseOn)}
+                            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${urgeExerciseOn ? 'bg-purple-500' : 'bg-gray-600'}`}
+                        >
+                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${urgeExerciseOn ? 'translate-x-7' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+
                 <p className="text-xs text-gray-600 mt-4">{t('settings.alarmNote')}</p>
             </div>
 

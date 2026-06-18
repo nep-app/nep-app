@@ -157,6 +157,8 @@
     "alarmDoseDesc": "Lembrete para registar a dose do dia",
     "alarmDoseActive": "✓ Ativo às",
     "alarmNote": "Os lembretes só aparecem ao abrir a app.",
+    "urgeExercise": "Exercícios ao registar consumo",
+    "urgeExerciseDesc": "Quando estás fora das metas, propõe um exercício antes de registar.",
     "guideHeader": "Como usar a app",
     "guideTapToLearn": "Toca em cada secção para saber mais.",
     "guide": [
@@ -819,7 +821,8 @@
     "haltTiredTip": "O cansaço baixa a resistência ao impulso. 20 minutos de olhos fechados, mesmo sem dormir, faz diferença.",
     "haltPrompt": "Toca no que melhor descreve como te sentes",
     "thoughtsTitle": "Escreve o que sentes",
-    "thoughtsShortDesc": "Nomear a emoção reduz a sua intensidade — abre o diário"
+    "thoughtsShortDesc": "Nomear a emoção reduz a sua intensidade — abre o diário",
+    "proceedAnyway": "Registar consumo mesmo assim →"
   },
   "defaultStrategies": [
     "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",
