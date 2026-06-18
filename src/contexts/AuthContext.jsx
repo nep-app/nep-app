@@ -378,8 +378,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Guardar data de criação de conta (primeira vez)
+      // Guardar data de criação de conta (nova conta — não editável)
       await setMetadata('firstUseDate', new Date().toISOString());
+      await setMetadata('firstUseDateLocked', true);
 
       // Atualizar estado
       setUserEmail(email || 'sem-email');

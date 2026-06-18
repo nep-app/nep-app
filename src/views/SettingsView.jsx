@@ -68,7 +68,8 @@ export const SettingsView = ({
     onForceSync,
     isSyncing,
     lastSyncTime,
-    firstUseDate
+    firstUseDate,
+    firstUseDateLocked
 }) => {
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
@@ -241,14 +242,16 @@ export const SettingsView = ({
                                         ? firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                                         : '—'}
                                 </span>
-                                <button
-                                    onClick={() => {
-                                        setFirstUseDateInput(firstUseDate ? firstUseDate.toISOString().slice(0, 10) : '');
-                                        setEditingFirstUse(true);
-                                    }}
-                                    className="text-xs text-gray-500 hover:text-gray-300"
-                                    title={t('settings.firstUseEdit')}
-                                >✏️</button>
+                                {!firstUseDateLocked && (
+                                    <button
+                                        onClick={() => {
+                                            setFirstUseDateInput(firstUseDate ? firstUseDate.toISOString().slice(0, 10) : '');
+                                            setEditingFirstUse(true);
+                                        }}
+                                        className="text-xs text-gray-500 hover:text-gray-300"
+                                        title={t('settings.firstUseEdit')}
+                                    >✏️</button>
+                                )}
                             </div>
                         )}
                     </div>

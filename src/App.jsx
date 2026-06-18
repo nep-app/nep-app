@@ -218,34 +218,25 @@ export function AuthenticatedApp() {
 
             const currentDbtQuestion = useMemo(() => {
                 const questions = i18n.t('dbtQuestions', { returnObjects: true });
-                const cycleIndex = getCurrentCycleIndex();
-                return questions[cycleIndex % questions.length];
-            }, [cycles.length, i18n.language]);
+                // Rotate by day so the question changes daily (not per cycle)
+                const dayNumber = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                return questions[dayNumber % questions.length];
+            }, [i18n.language]);
 
             const currentReflection = useMemo(() => {
                 const questions = i18n.t('reflectiveQuestions', { returnObjects: true });
-                const cycleIndex = getCurrentCycleIndex();
-                return questions[cycleIndex % questions.length];
-            }, [cycles.length, i18n.language]);
+                const dayNumber = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                return questions[dayNumber % questions.length];
+            }, [i18n.language]);
 
-            // Pergunta da reflexão baseada na data seleccionada (não apenas na de hoje)
+            // Pergunta da reflexão baseada na data seleccionada (rotação diária)
             const reflectionQuestion = useMemo(() => {
                 if (editingReflection) return editingReflection.question;
                 const questions = i18n.t('dbtQuestions', { returnObjects: true });
-                let cycleIdx;
-                if (reflectionDatetime) {
-                    // Contar quantos ciclos existiam até à data seleccionada
-                    const selectedDate = new Date(reflectionDatetime);
-                    const cyclesAtDate = cycles.filter(c => {
-                        const cDate = new Date(c.timestamp || c.createdAt || c.date + 'T23:59:59');
-                        return cDate <= selectedDate;
-                    }).length;
-                    cycleIdx = cyclesAtDate > 0 ? cyclesAtDate - 1 : 0;
-                } else {
-                    cycleIdx = getCurrentCycleIndex();
-                }
-                return questions[cycleIdx % questions.length];
-            }, [editingReflection, reflectionDatetime, cycles, i18n.language]);
+                const baseDate = reflectionDatetime ? new Date(reflectionDatetime) : new Date();
+                const dayNumber = Math.floor(baseDate.getTime() / (1000 * 60 * 60 * 24));
+                return questions[dayNumber % questions.length];
+            }, [editingReflection, reflectionDatetime, i18n.language]);
 
             // Global error handler
             useEffect(() => {
@@ -880,13 +871,15 @@ export function AuthenticatedApp() {
             const last7 = metrics.last7Days;
             const streaks = metrics.streaks;
 
-            // First day the user ever used the app (stored in metadata, editable in settings)
+            // First day the user ever used the app (stored in metadata, editable for legacy users)
             const [firstUseDate, setFirstUseDate] = useState(null);
+            const [firstUseDateLocked, setFirstUseDateLocked] = useState(false);
             useEffect(() => {
                 const load = () => {
                     import('./db/localDB').then(({ getMetadata }) => {
-                        getMetadata('firstUseDate').then(val => {
+                        Promise.all([getMetadata('firstUseDate'), getMetadata('firstUseDateLocked')]).then(([val, locked]) => {
                             setFirstUseDate(val ? new Date(val) : null);
+                            setFirstUseDateLocked(!!locked);
                         });
                     });
                 };
@@ -1137,6 +1130,7 @@ export function AuthenticatedApp() {
                                         onOpenExport={() => setShowExportModal(true)}
                                         onExportJSON={exportToJSON}
                                         firstUseDate={firstUseDate}
+                                        firstUseDateLocked={firstUseDateLocked}
                                         onOpenLegalDoc={(docType) => {
                                             setLegalDocType(docType);
                                             setShowLegalModal(true);
