@@ -199,6 +199,36 @@
         "emoji": "🔒",
         "title": "Privacy & security",
         "content": "All data is encrypted with your PIN. Not even the NEP team has access. Data is stored on your device and synced to your Firebase account (encrypted). If you lose your PIN, data cannot be recovered."
+      },
+      {
+        "emoji": "❤️",
+        "title": "What is Harm Reduction?",
+        "content": "Harm reduction is a set of practical strategies to minimise the risks of substance use, without requiring abstinence. The core idea is that people deserve support and safety regardless of their choices. Small changes — spacing out use, staying hydrated, resting — make a real difference."
+      },
+      {
+        "emoji": "💧",
+        "title": "Hydration & Rest",
+        "content": "Stimulants dehydrate the body and raise temperature. Drink water regularly during and after use — one glass per hour is a good guide. Sleep is essential for recovery: the body repairs itself during sleep, and sleep deprivation increases the risk of impulsive use."
+      },
+      {
+        "emoji": "⏱️",
+        "title": "Spacing Out Use",
+        "content": "Spacing out use reduces tolerance and gives the body time to recover. The ideal interval is at least 2 hours between doses. Shorter intervals increase the risk of accidental overdose because the effect of the previous dose is still active."
+      },
+      {
+        "emoji": "🧪",
+        "title": "Substance Testing",
+        "content": "Whenever possible, test the substance before using. In Portugal, free and confidential testing services exist: CheckIn (Lisbon) and MAPS (Porto). Adulterated substances are one of the main causes of emergencies — testing can save your life."
+      },
+      {
+        "emoji": "🚨",
+        "title": "Warning Signs",
+        "content": "Seek immediate help (112) if you feel: chest pain or pressure, very fast or irregular heartbeat, very high body temperature, intense confusion or loss of consciousness, seizures. Don't wait to see if it passes — call immediately."
+      },
+      {
+        "emoji": "📉",
+        "title": "Tolerance & Breaks",
+        "content": "The body adapts to substances over time — you need more to feel the same effect. Regular breaks (even a few days) help reduce tolerance and the risks associated with high doses. After a break, the body is more sensitive: start with smaller doses than usual."
       }
     ]
   },

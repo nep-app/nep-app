@@ -199,6 +199,36 @@
         "emoji": "🔒",
         "title": "Privacidade e segurança",
         "content": "Todos os dados são encriptados com o teu PIN. Nem a equipa do NEP tem acesso. Os dados ficam guardados no teu dispositivo e sincronizados na tua conta Firebase (encriptados). Se perderes o PIN não é possível recuperar os dados."
+      },
+      {
+        "emoji": "❤️",
+        "title": "O que é Redução de Danos?",
+        "content": "Redução de danos é um conjunto de estratégias práticas para minimizar os riscos do uso de substâncias, sem exigir abstinência. A ideia central é que as pessoas merecem apoio e segurança independentemente das suas escolhas. Pequenas mudanças — espaçar consumos, hidratar, descansar — fazem uma diferença real."
+      },
+      {
+        "emoji": "💧",
+        "title": "Hidratação & Descanso",
+        "content": "Estimulantes desidratam o corpo e elevam a temperatura. Bebe água regularmente durante e após o consumo — um copo a cada hora é um bom guia. O sono é essencial para a recuperação: o corpo repara-se a dormir, e a privação de sono aumenta o risco de consumo impulsivo."
+      },
+      {
+        "emoji": "⏱️",
+        "title": "Intervalo entre Consumos",
+        "content": "Espaçar os consumos reduz a tolerância e dá ao corpo tempo para recuperar. O intervalo ideal é de pelo menos 2 horas entre doses. Intervalos mais curtos aumentam o risco de sobredosagem acidental porque o efeito da dose anterior ainda está activo."
+      },
+      {
+        "emoji": "🧪",
+        "title": "Testagem de Substâncias",
+        "content": "Sempre que possível, testa a substância antes de consumir. Em Portugal existem serviços de testagem gratuitos e confidenciais: CheckIn (Lisboa) e MAPS (Porto). Substâncias adulteradas são uma das principais causas de emergências — testar pode salvar a tua vida."
+      },
+      {
+        "emoji": "🚨",
+        "title": "Sinais de Alerta",
+        "content": "Procura ajuda imediata (112) se sentires: dor ou pressão no peito, batimento cardíaco muito acelerado ou irregular, temperatura corporal muito alta, confusão intensa ou perda de consciência, convulsões. Não esperes para ver se passa — liga já."
+      },
+      {
+        "emoji": "📉",
+        "title": "Tolerância & Pausas",
+        "content": "O corpo adapta-se às substâncias com o tempo — precisas de mais para sentir o mesmo efeito. Pausas regulares (mesmo de alguns dias) ajudam a reduzir a tolerância e os riscos associados a doses altas. Após uma pausa, o corpo é mais sensível: começa com doses menores do que habitual."
       }
     ]
   },
