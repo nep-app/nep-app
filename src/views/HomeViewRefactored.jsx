@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
@@ -10,6 +10,8 @@ import { useUI } from '../contexts/UIContext';
 import { formatDateTime } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats } from '../utils/userStats';
+
+const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
 export function HomeViewRefactored({
   currentReflection,
@@ -30,6 +32,7 @@ export function HomeViewRefactored({
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
+  const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
 
   useEffect(() => {
     getUserStats().then(stats => {
@@ -76,6 +79,7 @@ export function HomeViewRefactored({
   };
 
   return (
+    <>
     <div className="space-y-6">
       {/* Botão sync */}
       <div className="flex justify-end">
@@ -137,6 +141,15 @@ export function HomeViewRefactored({
             <AlertCard key={i} alert={alert} darkMode={darkMode} />
           ))}
         </div>
+      )}
+
+      {cachedAlerts.some(a => a.type !== 'positive') && (
+        <button
+          onClick={() => setShowUrgeSurfing(true)}
+          className="w-full mt-2 py-2.5 rounded-xl border border-purple-700/60 bg-purple-900/20 hover:bg-purple-900/40 text-purple-300 text-sm font-medium transition-all flex items-center justify-center gap-2"
+        >
+          💪 {t('urge.openButton')}
+        </button>
       )}
 
       {/* Linha 1: Bem-estar, Emoções, Reflexão Diária */}
@@ -252,5 +265,15 @@ export function HomeViewRefactored({
         </div>
       )}
     </div>
+
+    {showUrgeSurfing && (
+      <Suspense fallback={null}>
+        <UrgeSurfingModal
+          onClose={() => setShowUrgeSurfing(false)}
+          onOpenThoughts={() => setShowThoughtsModal(true)}
+        />
+      </Suspense>
+    )}
+    </>
   );
 }
