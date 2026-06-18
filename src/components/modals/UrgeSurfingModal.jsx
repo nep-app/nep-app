@@ -190,21 +190,22 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed }) {
   const [active, setActive] = useState(null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl pb-8 max-h-[85vh] overflow-y-auto">
-        <div className="max-w-md mx-auto px-5 pt-5">
+      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[80vh] overflow-y-auto"
+        style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
 
-          {/* Handle bar */}
-          <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-5" />
+        {/* Handle bar */}
+        <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mt-3 mb-4" />
 
+        <div className="px-4">
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="text-lg font-bold text-white">💪 {t('urge.title')}</h2>
               <p className="text-xs text-gray-400 mt-0.5">{t('urge.subtitle')}</p>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none ml-4 mt-0.5">✕</button>
+            <button onClick={onClose} className="text-gray-500 hover:text-white text-2xl leading-none ml-4">✕</button>
           </div>
 
           {/* Exercise area */}
@@ -214,33 +215,32 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed }) {
 
           {/* Menu */}
           {!active && (
-            <div className="space-y-3">
+            <div className="space-y-3 pb-2">
               {EXERCISES.map(ex => (
                 <button key={ex.key} onClick={() => setActive(ex.key)}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-purple-700/50 text-left transition-all">
+                  className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
                   <span className="text-2xl w-8 text-center flex-shrink-0">{ex.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-white text-sm">{t(ex.titleKey)}</div>
                     <div className="text-xs text-gray-400 mt-0.5">{t(ex.descKey)}</div>
                   </div>
-                  <span className="text-gray-600 flex-shrink-0">›</span>
+                  <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
                 </button>
               ))}
 
               <button onClick={() => { onClose(); onOpenThoughts(); }}
-                className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-purple-700/50 text-left transition-all">
+                className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
                 <span className="text-2xl w-8 text-center flex-shrink-0">✍️</span>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-white text-sm">{t('urge.thoughtsTitle')}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{t('urge.thoughtsShortDesc')}</div>
                 </div>
-                <span className="text-gray-600 flex-shrink-0">›</span>
+                <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
               </button>
 
-              {/* Proceed anyway */}
               {onProceed && (
                 <button onClick={() => { onClose(); onProceed(); }}
-                  className="w-full mt-1 py-3 rounded-xl text-sm text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-700 transition-all text-center">
+                  className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-700 transition-all text-center">
                   {t('urge.proceedAnyway')}
                 </button>
               )}
