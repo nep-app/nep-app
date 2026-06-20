@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useData } from '../../contexts/DataContext';
 
@@ -10,6 +11,7 @@ const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
  * Memoizado para evitar re-renders desnecessárias
  */
 export const GapsReport = React.memo(({ onFillGap }) => {
+  const { t } = useTranslation();
   const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts } = useData();
 
   // Estado para gaps confirmados (que o user marcou como "OK/correto")
@@ -167,25 +169,23 @@ export const GapsReport = React.memo(({ onFillGap }) => {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Icons.AlertCircle className="w-5 h-5 text-yellow-400" />
-          Preencher Gaps (Últimos 7 dias)
+          {t('gaps.title')}
         </h3>
         {totalGaps === 0 ? (
-          <span className="text-sm font-medium text-green-400">✓ Tudo preenchido</span>
+          <span className="text-sm font-medium text-green-400">{t('gaps.allFilled')}</span>
         ) : (
-          <span className="text-sm font-medium text-yellow-400">{totalGaps} {totalGaps === 1 ? 'gap' : 'gaps'}</span>
+          <span className="text-sm font-medium text-yellow-400">{totalGaps === 1 ? t('gaps.gapCount', { count: totalGaps }) : t('gaps.gapsCount', { count: totalGaps })}</span>
         )}
       </div>
 
       {totalGaps === 0 ? (
-        <p className="text-sm text-gray-300">
-          🎉 Parabéns! Tens todos os registos completos nos últimos 7 dias.
-        </p>
+        <p className="text-sm text-gray-300">{t('gaps.allComplete')}</p>
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-gray-400 mb-3">
-            <Icons.Plus className="w-3 h-3 inline mr-1" /> Preencher dados em falta
+            <Icons.Plus className="w-3 h-3 inline mr-1" /> {t('gaps.fillInstruction')}
             {' • '}
-            <Icons.Check className="w-3 h-3 inline mr-1 text-green-400" /> Marcar como correto (ex: não dormiste, não há ciclo)
+            <Icons.Check className="w-3 h-3 inline mr-1 text-green-400" /> {t('gaps.markOkInstruction')}
           </p>
 
           {daysWithGaps.map(day => {
@@ -210,41 +210,13 @@ export const GapsReport = React.memo(({ onFillGap }) => {
                   {activeGaps.map(gap => {
                     // Configuração de cada tipo de gap
                     const gapConfig = {
-                      consumption: {
-                        icon: '💊',
-                        label: 'Consumo',
-                        style: 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      },
-                      dailyLog: {
-                        icon: '💊',
-                        label: 'mg diários',
-                        style: 'bg-pink-900/50 text-pink-300 hover:bg-pink-900'
-                      },
-                      cycle: {
-                        icon: '🌙',
-                        label: 'Ciclo',
-                        style: 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-900'
-                      },
-                      wellbeing: {
-                        icon: '💚',
-                        label: 'Estado',
-                        style: 'bg-blue-900/50 text-blue-300 hover:bg-blue-900'
-                      },
-                      emotions: {
-                        icon: '😊',
-                        label: 'Emoções',
-                        style: 'bg-purple-800/50 text-purple-300 hover:bg-purple-800'
-                      },
-                      reflection: {
-                        icon: '📝',
-                        label: 'Reflexão',
-                        style: 'bg-purple-900/50 text-purple-300 hover:bg-purple-900'
-                      },
-                      thought: {
-                        icon: '📝',
-                        label: 'Pensamento',
-                        style: 'bg-pink-900/50 text-pink-300 hover:bg-pink-900'
-                      }
+                      consumption: { icon: '💊', label: t('gaps.consumption'), style: 'bg-gray-700 text-gray-300 hover:bg-gray-600' },
+                      dailyLog: { icon: '💊', label: t('gaps.dailyLog'), style: 'bg-pink-900/50 text-pink-300 hover:bg-pink-900' },
+                      cycle: { icon: '🌙', label: t('gaps.cycle'), style: 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-900' },
+                      wellbeing: { icon: '💚', label: t('gaps.wellbeing'), style: 'bg-blue-900/50 text-blue-300 hover:bg-blue-900' },
+                      emotions: { icon: '😊', label: t('gaps.emotions'), style: 'bg-purple-800/50 text-purple-300 hover:bg-purple-800' },
+                      reflection: { icon: '📝', label: t('gaps.reflection'), style: 'bg-purple-900/50 text-purple-300 hover:bg-purple-900' },
+                      thought: { icon: '📝', label: t('gaps.thought'), style: 'bg-pink-900/50 text-pink-300 hover:bg-pink-900' }
                     };
 
                     const config = gapConfig[gap.type];

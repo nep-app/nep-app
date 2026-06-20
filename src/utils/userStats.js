@@ -393,7 +393,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         if (lastMinutes >= targetMinutes) {
           const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
           alerts.push({
-            text: `Último consumo ${lastTimeStr} — meta: até ${targetStr}`,
+            text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
@@ -413,14 +413,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (lastMinutes < targetMinutes) {
           alerts.push({
-            text: `antes das ${targetStr} ✓`,
+            text: i18n.t('alerts.limitLastSuccess', { target: targetStr }),
             emoji: '🌙',
             color: 'green',
             type: 'positive'
           });
         } else {
           alerts.push({
-            text: `Último consumo ${lastTimeStr} — meta: até ${targetStr}`,
+            text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
             color: 'orange',
             type: 'negative'
@@ -501,14 +501,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
           if (firstMinutes < targetMinutes) {
             alerts.push({
-              text: `1º consumo ${firstTimeStr} — meta: ${firstNotBeforeGoal.target}h após acordar`,
+              text: i18n.t('alerts.firstNotBeforeFail', { time: firstTimeStr, hours: firstNotBeforeGoal.target }),
               emoji: '⏰',
               color: 'orange',
               type: 'negative'
             });
           } else {
             alerts.push({
-              text: `${firstNotBeforeGoal.target}h após acordar ✓`,
+              text: i18n.t('alerts.firstNotBeforeSuccess', { hours: firstNotBeforeGoal.target }),
               emoji: '☀️',
               color: 'green',
               type: 'positive'

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { getEmotionCategory } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
@@ -9,6 +10,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
     analysisCycles,
     analysisDailyLogs,
 }) {
+    const { t } = useTranslation();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const [expandedSections, setExpandedSections] = useState({
         wellbeingConsumption: !isMobile,
@@ -1518,38 +1520,15 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
     return (
         <div className="space-y-4">
             {/* Introdução às Correlações */}
-            <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
-                <h3 className={'font-semibold mb-3 flex items-center gap-2 ' + ('text-blue-300')}>
-                    💡 Como interpretar correlações
+            <div className="bg-blue-900/20 border-blue-700/50 rounded-lg p-4 border">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-blue-300">
+                    {t('correlations.title')}
                 </h3>
-                <div className={'text-sm space-y-2 ' + ('text-gray-400')}>
-                    <p>
-                        <strong>O que são correlações?</strong> Medem se duas coisas variam juntas. Por exemplo: "quando consumo mais, durmo menos?" ou "quando durmo bem, consumo menos no dia seguinte?"
-                    </p>
-                    <p>
-                        <strong>Como ler:</strong> A seta → indica direção temporal. "Sono ontem → Consumo hoje" significa: como o sono de ontem <u>influencia</u> o consumo de hoje.
-                    </p>
-                    <div className={'grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 p-3 rounded ' + ('bg-gray-800/50')}>
-                        <div>
-                            <p className={'font-semibold mb-1 ' + ('text-green-400')}>✅ Correlações "boas":</p>
-                            <p className={'text-xs ' + ('text-gray-400')}>
-                                • Mais autocuidado → Menos consumo<br/>
-                                • Melhor humor → Menos consumo<br/>
-                                • Bom sono → Menos consumo no dia seguinte
-                            </p>
-                        </div>
-                        <div>
-                            <p className={'font-semibold mb-1 ' + ('text-red-400')}>⚠️ Correlações "atenção":</p>
-                            <p className={'text-xs ' + ('text-gray-400')}>
-                                • Humor baixo → Mais consumo<br/>
-                                • Consumo alto → Pior humor no dia seguinte<br/>
-                                • Menos autocuidado → Mais consumo
-                            </p>
-                        </div>
-                    </div>
-                    <p className={'text-xs italic pt-2 ' + ('text-gray-400')}>
-                        ⚡ Importante: Correlação não é causalidade. Estas análises mostram padrões, mas não provam causa-efeito. Usa-as como pistas para autoconhecimento.
-                    </p>
+                <div className="text-sm space-y-1 text-gray-400">
+                    <p>{t('correlations.desc')}</p>
+                    <p><span className="text-green-400">{t('correlations.good')}</span> {t('correlations.goodList')}</p>
+                    <p><span className="text-red-400">{t('correlations.attention')}</span> {t('correlations.attentionList')}</p>
+                    <p className="text-xs italic pt-1">{t('correlations.note')}</p>
                 </div>
             </div>
 

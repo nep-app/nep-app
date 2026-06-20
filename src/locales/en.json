@@ -95,7 +95,11 @@
     "goodLastUse": "Good! Last use before midnight",
     "lateLastUse": "Heads up: last log after midnight",
     "goodFrequency": "Way to go! Only {{count}} use(s) today",
-    "highFrequency": "Heads up! {{count}} uses today"
+    "highFrequency": "Heads up! {{count}} uses today",
+    "limitLastFail": "Last use at {{time}} — target: before {{target}}",
+    "limitLastSuccess": "before {{target}} ✓",
+    "firstNotBeforeFail": "1st use at {{time}} — target: {{hours}}h after waking",
+    "firstNotBeforeSuccess": "{{hours}}h after waking ✓"
   },
   "nav": {
     "home": "Home",
@@ -603,7 +607,33 @@
       "minSelfCare": "Minimal self-care: {{items}}",
       "goodSelfCare": "Good self-care yesterday ({{score}}/4): {{items}}",
       "highDayOfWeek": "{{day}} tends to be a high-use day",
-      "trendIncreasing": "Increasing trend over last 7 days"
+      "trendIncreasing": "Increasing trend over last 7 days",
+      "sleepVeryLow": "Very low sleep {{lbl}}: {{value}}h",
+      "sleepLow": "Low sleep {{lbl}}: {{value}}h",
+      "sleepGood": "Good sleep {{lbl}}: {{value}}h",
+      "moodVeryLow": "Very low mood {{lbl}}: {{value}}/10",
+      "moodModerate": "Moderate mood {{lbl}}: {{value}}/10",
+      "moodGood": "Good mood {{lbl}}: {{value}}/10",
+      "energyVeryLow": "Very low energy {{lbl}}: {{value}}/10",
+      "energyModerate": "Moderate energy {{lbl}}: {{value}}/10",
+      "energyGood": "Good energy {{lbl}}: {{value}}/10",
+      "selfCarePartial": "Partial self-care {{lbl}}: {{value}}/4",
+      "selfCareAvg2d": "(avg 2d)",
+      "selfCareYesterday": "(yesterday)",
+      "trendDeclining": "{{which}} declining over last 7 days",
+      "trendImproving": "Mood and energy improving over last 7 days",
+      "trendDecreasing": "Use decreasing over last 7 days",
+      "mgWayAbove": "Yesterday's dose ({{yesterday}}mg) well above your average ({{avg}}mg)",
+      "mgAbove": "Yesterday's dose ({{yesterday}}mg) above your average ({{avg}}mg)",
+      "mgBelow": "Yesterday's dose ({{yesterday}}mg) below your average ({{avg}}mg)",
+      "cravingYesterday": "Craving logged yesterday",
+      "emotionsMajorityNeg": "Majority of emotions negative ({{pct}}%)",
+      "emotionsHalfNeg": "More than half emotions negative ({{pct}}%)",
+      "emotionsMostlyPos": "Mostly positive emotions in recent days",
+      "emotionsUnstable": "Emotional instability in recent days",
+      "moodEnergyDeclining": "mood and energy",
+      "moodDeclining": "mood",
+      "energyDeclining": "energy"
     },
     "freq": {
       "title": "📈 Frequency Evolution",
@@ -853,5 +883,47 @@
       "Fri",
       "Sat"
     ]
+  },
+  "triggers": {
+    "Stress": "Stress",
+    "Ansiedade": "Anxiety",
+    "Solidão": "Loneliness",
+    "Festa": "Party",
+    "Trabalho": "Work",
+    "Família": "Family",
+    "Hábito": "Habit",
+    "Tristeza": "Sadness",
+    "Dependência": "Addiction",
+    "Tédio": "Boredom",
+    "Cansaço": "Fatigue",
+    "Dor física": "Physical pain",
+    "Insónia": "Insomnia",
+    "Conflito": "Conflict",
+    "Celebração": "Celebration"
+  },
+  "gaps": {
+    "title": "Fill Gaps (Last 7 days)",
+    "allFilled": "✓ All filled",
+    "gapCount": "{{count}} gap",
+    "gapsCount": "{{count}} gaps",
+    "fillInstruction": "Fill missing data",
+    "markOkInstruction": "Mark as correct (e.g. didn't sleep, no cycle)",
+    "allComplete": "🎉 Great! All records complete for the last 7 days.",
+    "consumption": "Use",
+    "dailyLog": "Daily mg",
+    "cycle": "Cycle",
+    "wellbeing": "Wellbeing",
+    "emotions": "Emotions",
+    "reflection": "Reflection",
+    "thought": "Thought"
+  },
+  "correlations": {
+    "title": "💡 How to read correlations",
+    "desc": "The arrow → shows time direction. \"Sleep → Use\" means: does yesterday's sleep affect today's use? Values near ±1 = strong pattern; near 0 = no clear link.",
+    "good": "✅ Good patterns:",
+    "goodList": "More sleep / self-care / mood → less use",
+    "attention": "⚠️ Patterns to watch:",
+    "attentionList": "Low mood / less self-care → more use",
+    "note": "⚡ Correlation ≠ causation. Use as clues for self-knowledge."
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
-import { EMOTION_CATEGORIES } from '../../constants/emotions';
+import { EMOTION_CATEGORIES, EMOTION_EN } from '../../constants/emotions';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const EmotionsModal = ({
@@ -11,7 +11,8 @@ export const EmotionsModal = ({
   setEmotionsForm,
   onSubmit
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const displayEmotion = (e) => (i18n.language === 'en' && EMOTION_EN[e]) ? EMOTION_EN[e] : e;
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   if (!isOpen) return null;
@@ -66,7 +67,7 @@ export const EmotionsModal = ({
                       onChange={() => toggleEmotion(emotion)}
                       className="rounded text-red-600 focus:ring-red-500"
                     />
-                    <span className="text-sm text-gray-300">{emotion}</span>
+                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
                   </label>
                 ))}
               </div>
@@ -83,7 +84,7 @@ export const EmotionsModal = ({
                       onChange={() => toggleEmotion(emotion)}
                       className="rounded text-green-600 focus:ring-green-500"
                     />
-                    <span className="text-sm text-gray-300">{emotion}</span>
+                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
                   </label>
                 ))}
               </div>
@@ -102,7 +103,7 @@ export const EmotionsModal = ({
                       onChange={() => toggleEmotion(emotion)}
                       className="rounded text-gray-600 focus:ring-gray-500"
                     />
-                    <span className="text-sm text-gray-300">{emotion}</span>
+                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
                   </label>
                 ))}
               </div>

@@ -95,7 +95,11 @@
     "goodLastUse": "Boa! Último consumo antes da 00h",
     "lateLastUse": "Cuidado! Último após 00h",
     "goodFrequency": "Boa! Só {{count}} consumo(s) hoje",
-    "highFrequency": "Atenção! Já {{count}} consumos hoje"
+    "highFrequency": "Atenção! Já {{count}} consumos hoje",
+    "limitLastFail": "Último consumo {{time}} — meta: até {{target}}",
+    "limitLastSuccess": "antes das {{target}} ✓",
+    "firstNotBeforeFail": "1º consumo {{time}} — meta: {{hours}}h após acordar",
+    "firstNotBeforeSuccess": "{{hours}}h após acordar ✓"
   },
   "nav": {
     "home": "Início",
@@ -655,7 +659,33 @@
       "minSelfCare": "Autocuidado mínimo: {{items}}",
       "goodSelfCare": "Bom autocuidado ontem ({{score}}/4): {{items}}",
       "highDayOfWeek": "{{day}} costuma ser dia de mais consumo",
-      "trendIncreasing": "Tendência crescente últimos 7 dias"
+      "trendIncreasing": "Tendência crescente últimos 7 dias",
+      "sleepVeryLow": "Sono muito baixo {{lbl}}: {{value}}h",
+      "sleepLow": "Sono baixo {{lbl}}: {{value}}h",
+      "sleepGood": "Sono bom {{lbl}}: {{value}}h",
+      "moodVeryLow": "Humor muito baixo {{lbl}}: {{value}}/10",
+      "moodModerate": "Humor moderado {{lbl}}: {{value}}/10",
+      "moodGood": "Humor bom {{lbl}}: {{value}}/10",
+      "energyVeryLow": "Energia muito baixa {{lbl}}: {{value}}/10",
+      "energyModerate": "Energia moderada {{lbl}}: {{value}}/10",
+      "energyGood": "Energia boa {{lbl}}: {{value}}/10",
+      "selfCarePartial": "Autocuidado parcial {{lbl}}: {{value}}/4",
+      "selfCareAvg2d": "(média 2d)",
+      "selfCareYesterday": "(ontem)",
+      "trendDeclining": "{{which}} em queda nos últimos 7 dias",
+      "trendImproving": "Humor e energia a melhorar nos últimos 7 dias",
+      "trendDecreasing": "Consumos a diminuir nos últimos 7 dias",
+      "mgWayAbove": "Dose de ontem ({{yesterday}}mg) bem acima da tua média ({{avg}}mg)",
+      "mgAbove": "Dose de ontem ({{yesterday}}mg) acima da tua média ({{avg}}mg)",
+      "mgBelow": "Dose de ontem ({{yesterday}}mg) abaixo da tua média ({{avg}}mg)",
+      "cravingYesterday": "Craving registado ontem",
+      "emotionsMajorityNeg": "Maioria das emoções negativas ({{pct}}%)",
+      "emotionsHalfNeg": "Mais de metade das emoções negativas ({{pct}}%)",
+      "emotionsMostlyPos": "Emoções maioritariamente positivas nos últimos dias",
+      "emotionsUnstable": "Instabilidade emocional nos últimos dias",
+      "moodEnergyDeclining": "humor e energia",
+      "moodDeclining": "humor",
+      "energyDeclining": "energia"
     },
     "freq": {
       "title": "📈 Evolução da Frequência",
@@ -853,5 +883,47 @@
       "Sex",
       "Sáb"
     ]
+  },
+  "triggers": {
+    "Stress": "Stress",
+    "Ansiedade": "Ansiedade",
+    "Solidão": "Solidão",
+    "Festa": "Festa",
+    "Trabalho": "Trabalho",
+    "Família": "Família",
+    "Hábito": "Hábito",
+    "Tristeza": "Tristeza",
+    "Dependência": "Dependência",
+    "Tédio": "Tédio",
+    "Cansaço": "Cansaço",
+    "Dor física": "Dor física",
+    "Insónia": "Insónia",
+    "Conflito": "Conflito",
+    "Celebração": "Celebração"
+  },
+  "gaps": {
+    "title": "Preencher Gaps (Últimos 7 dias)",
+    "allFilled": "✓ Tudo preenchido",
+    "gapCount": "{{count}} gap",
+    "gapsCount": "{{count}} gaps",
+    "fillInstruction": "Preencher dados em falta",
+    "markOkInstruction": "Marcar como correto (ex: não dormiste, não há ciclo)",
+    "allComplete": "🎉 Parabéns! Tens todos os registos completos nos últimos 7 dias.",
+    "consumption": "Consumo",
+    "dailyLog": "mg diários",
+    "cycle": "Ciclo",
+    "wellbeing": "Estado",
+    "emotions": "Emoções",
+    "reflection": "Reflexão",
+    "thought": "Pensamento"
+  },
+  "correlations": {
+    "title": "💡 Como ler correlações",
+    "desc": "A seta → indica direção temporal. \"Sono → Consumo\" = o sono de ontem influencia o consumo de hoje? Valores próximos de ±1 = padrão forte; perto de 0 = sem relação clara.",
+    "good": "✅ Padrões positivos:",
+    "goodList": "Mais sono / autocuidado / humor → menos consumo",
+    "attention": "⚠️ Padrões a vigiar:",
+    "attentionList": "Humor baixo / menos autocuidado → mais consumo",
+    "note": "⚡ Correlação ≠ causalidade. Usa como pistas para autoconhecimento."
   }
 }
