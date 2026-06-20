@@ -421,35 +421,18 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'bedtime_before') {
-        // REGRA: Conta TODOS OS DIAS com consumptions
-        // Dias COM consumptions mas SEM bedtime = falha
-        // Dias SEM consumptions = não relevantes (não contam)
-        const allDays = getAllDaysSinceFirstRecord(consumptions);
+        // REGRA: Conta todos os dias em que há hora de deitar registada (cycles com bedtime)
+        // Dias sem bedtime = não avaliados (não entram no total)
+        const today = getTodayKey();
         const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
         const targetParts = targetStr.split(':');
         const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
 
-        // Mapear consumptions por dia (usar ISO format)
-        const consumptionsByDate = {};
-        consumptions.forEach(c => {
-            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
-            consumptionsByDate[dateKey] = true;
-        });
+        cycles.forEach(c => {
+            const dateKey = getDateKeyFromItem(c);
+            if (!dateKey || dateKey === today || !c.bedtime) return;
 
-        // Verificar cada dia
-        allDays.forEach(date => {
-            // Só conta dias com consumptions
-            if (!consumptionsByDate[date]) return;
-
-            // Buscar cycle para este dia
-            const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.bedtime);
-
-            if (!cycle || !cycle.bedtime) {
-                // Sem dados de bedtime = falha
-                return;
-            }
-
-            const bedtimeParts = cycle.bedtime.split(':');
+            const bedtimeParts = c.bedtime.split(':');
             let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
             const bedtimeOriginalMinutes = bedtimeMinutes;
 

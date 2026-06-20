@@ -263,6 +263,16 @@ export function PatternsView({
                                                 });
                                                 const totalDaysWithSleep = daysWithSleep.size;
 
+                                                // Dias com hora de deitar registada (para bedtime_before)
+                                                const daysWithBedtime = new Set();
+                                                filteredCycles.forEach(c => {
+                                                    const dateKey = c.date || safeToISODate(c.timestamp);
+                                                    if (dateKey && dateKey !== today && c.bedtime) {
+                                                        daysWithBedtime.add(dateKey);
+                                                    }
+                                                });
+                                                const totalDaysWithBedtime = daysWithBedtime.size;
+
                                                 // Para reduce_frequency, o denominador é TODOS os dias desde o primeiro registo
                                                 // (dias sem consumos também contam como sucesso na meta de frequência)
                                                 const allDaysCount = getAllDaysSinceFirstRecord(filteredConsumptions).length;
@@ -274,6 +284,8 @@ export function PatternsView({
 
                                                     if (g.type === 'sleep_hours') {
                                                         totalPossible = totalDaysWithSleep;
+                                                    } else if (g.type === 'bedtime_before') {
+                                                        totalPossible = totalDaysWithBedtime;
                                                     } else if (g.type === 'reduce_frequency') {
                                                         totalPossible = allDaysCount;
                                                     } else {
