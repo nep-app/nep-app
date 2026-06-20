@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
+  const { t } = useTranslation();
   const [view, setView] = useState('consumptions'); // 'consumptions' or 'wellbeing'
   const [hoveredDay, setHoveredDay] = useState(null);
 
@@ -135,10 +137,10 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <h3 className="text-lg font-bold text-gray-200">
-              📊 Heatmap - {view === 'consumptions' ? 'Consumos' : 'Bem-estar'}
+              {view === 'consumptions' ? t('patterns.heatmap.titleConsumptions') : t('patterns.heatmap.titleWellbeing')}
             </h3>
             <p className="text-xs mt-1 text-gray-400">
-              Visão geral dos últimos {days} dias. Passa o rato sobre os quadrados para ver detalhes.
+              {t('patterns.heatmap.desc', { days })}
             </p>
           </div>
           <div className="flex gap-2">
@@ -150,7 +152,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
-              💊 Consumos
+              {t('patterns.heatmap.btnConsumptions')}
             </button>
             <button
               onClick={() => setView('wellbeing')}
@@ -160,7 +162,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
-              😊 Bem-estar
+              {t('patterns.heatmap.btnWellbeing')}
             </button>
           </div>
         </div>
@@ -300,7 +302,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
       <div className="mt-4 pt-3 border-t" style={{ borderColor: '#374151' }}>
         <div className="flex items-center justify-between">
           <div className="text-xs text-gray-400">
-            {view === 'consumptions' ? 'Menos consumos' : 'Bem-estar baixo'}
+            {view === 'consumptions' ? t('patterns.heatmap.lessConsumptions') : t('patterns.heatmap.lowWellbeing')}
           </div>
           <div className="flex gap-1">
             {[0, 2, 5, 8, 10].map(level => (
@@ -318,7 +320,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
             ))}
           </div>
           <div className="text-xs text-gray-400">
-            {view === 'consumptions' ? 'Mais consumos' : 'Bem-estar alto'}
+            {view === 'consumptions' ? t('patterns.heatmap.moreConsumptions') : t('patterns.heatmap.highWellbeing')}
           </div>
         </div>
       </div>

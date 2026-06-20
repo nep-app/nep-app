@@ -11,7 +11,7 @@ const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
  * Memoizado para evitar re-renders desnecessárias
  */
 export const GapsReport = React.memo(({ onFillGap }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts } = useData();
 
   // Estado para gaps confirmados (que o user marcou como "OK/correto")
@@ -106,9 +106,9 @@ export const GapsReport = React.memo(({ onFillGap }) => {
       date.setDate(date.getDate() - i);
 
       const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-      const dayName = date.toLocaleDateString('pt-PT', { weekday: 'short' });
+      const dayName = date.toLocaleDateString(i18n.language, { weekday: 'short' });
       const dayNumber = date.getDate();
-      const monthName = date.toLocaleDateString('pt-PT', { month: 'short' });
+      const monthName = date.toLocaleDateString(i18n.language, { month: 'short' });
 
       // Verificar o que existe para este dia (lookup O(1) - instantâneo!)
       const hasConsumptions = consumptionDates.has(dateKey);

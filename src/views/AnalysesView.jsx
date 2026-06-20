@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
@@ -22,7 +22,7 @@ export function AnalysesView({
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
     const { selectedCycle } = useUI();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     const analysisData = useMemo(() => {
         const dateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
@@ -62,12 +62,12 @@ export function AnalysesView({
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Análises</h2>
+            <h2 className="text-2xl font-bold text-white">{t('nav.analyses')}</h2>
 
             {/* Selector de período */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
                 <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-semibold text-white">Período de análise</div>
+                    <div className="text-sm font-semibold text-white">{t('analyses.periodLabel')}</div>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setPatternsPeriodOffset(prev => prev + 1)}
@@ -92,18 +92,18 @@ export function AnalysesView({
                             onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }}
                             className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
                         >
-                            {period === 'hoje' && 'Hoje'}
-                            {period === 'semana' && 'Semana'}
-                            {period === 'mes' && 'Mês'}
-                            {period === 'tudo' && 'Tudo'}
+                            {period === 'hoje' && t('analyses.periodHoje')}
+                            {period === 'semana' && t('analyses.periodSemana')}
+                            {period === 'mes' && t('analyses.periodMes')}
+                            {period === 'tudo' && t('analyses.periodTudo')}
                         </button>
                     ))}
                 </div>
                 {patternsPeriod !== 'tudo' && (
                     <div className="text-xs mt-2 text-center text-gray-400">
-                        {new Date(dateRange.start).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                        {new Date(dateRange.start).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                         {' - '}
-                        {new Date(dateRange.end).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(dateRange.end).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                 )}
             </div>
@@ -117,10 +117,10 @@ export function AnalysesView({
                             onClick={() => setAnalysisSubView(subView)}
                             className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
                         >
-                            {subView === 'correlacoes' && '🔗 Correlações'}
-                            {subView === 'estado' && '🎭 Estado'}
-                            {subView === 'impacto' && '⏱️ Impacto'}
-                            {subView === 'coach' && '💬 Reflexão Geral'}
+                            {subView === 'correlacoes' && t('analyses.tabCorrelacoes')}
+                            {subView === 'estado' && t('analyses.tabEstado')}
+                            {subView === 'impacto' && t('analyses.tabImpacto')}
+                            {subView === 'coach' && t('analyses.tabCoach')}
                         </button>
                     ))}
                 </div>

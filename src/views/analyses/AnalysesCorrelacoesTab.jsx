@@ -1858,9 +1858,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingConsumption')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>💊 Consumo → Bem-estar (mesmo dia)</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>💊 {t('analyses.corrConsumptionWellbeing')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Como o consumo afeta o bem-estar no mesmo dia
+                                {t('analyses.corrWellbeingConsumptionDesc')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -1888,9 +1888,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalImpact')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>🔄 Impacto Temporal (entre dias)</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>{t('analyses.corrTemporalImpactTitle')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Como o consumo e bem-estar de um dia afetam o dia seguinte
+                                {t('analyses.corrTemporalImpactDesc')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -1999,9 +1999,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                             <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('sleepMood')}>
                                 <div>
-                                    <h3 className={'font-semibold ' + ('text-white')}>😴💭 Sono → Humor</h3>
+                                    <h3 className={'font-semibold ' + ('text-white')}>😴💭 {t('analyses.corrSleepMood')}</h3>
                                     <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                        Como o sono da última noite influencia o humor do dia
+                                        {t('analyses.corrSleepMoodDesc')}
                                     </p>
                                 </div>
                                 <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -2054,9 +2054,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeConsumption')}>
                             <div>
-                                <h3 className={'font-semibold ' + ('text-white')}>🔄 Hora de Deitar ⇄ Consumo</h3>
+                                <h3 className={'font-semibold ' + ('text-white')}>🔄 {t('analyses.corrBedtimeConsumption')}</h3>
                                 <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                    Relação bidirecional entre hora de deitar e consumo
+                                    {t('analyses.corrBedtimeConsumptionDesc')}
                                 </p>
                             </div>
                             <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -2082,9 +2082,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('bedtimeWellbeing')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>🌙 Hora de Deitar → Bem-estar Amanhã</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>🌙 {t('analyses.corrBedtimeWellbeing')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Como a hora de deitar afeta o humor e energia do dia seguinte
+                                {t('analyses.corrBedtimeWellbeingDesc')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -2109,9 +2109,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('wellbeingDosage')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>💊 Dosagem ⇄ Contexto</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>💊 {t('analyses.corrDosageContext')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Como o contexto afeta a dosagem e vice-versa
+                                {t('analyses.corrDosageContextDesc')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -2147,9 +2147,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('temporalPatterns')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>⏰ Padrões Temporais</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>⏰ {t('analyses.corrTemporalPatterns')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Regularidade e timing dos consumos
+                                {t('analyses.corrTemporalPatternsDesc')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>

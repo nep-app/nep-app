@@ -781,7 +781,7 @@ export function PatternsView({
                                                                                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative" style={{ minWidth: '2px' }}>
                                                                                         {/* Tooltip */}
                                                                                         <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + 'bg-gray-700 text-gray-200'}>
-                                                                                            {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}: {count}x
+                                                                                            {new Date(date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}: {count}x
                                                                                         </div>
 
                                                                                         {/* Barra */}
@@ -814,7 +814,7 @@ export function PatternsView({
                                                                                 return idx % 7 === 0 || idx === recentDates.length - 1;
                                                                             }).map(date => (
                                                                                 <div key={date} className={'text-xs flex-1 text-center ' + ('text-gray-400')}>
-                                                                                    {new Date(date).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })}
+                                                                                    {new Date(date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
@@ -2310,12 +2310,12 @@ export function PatternsView({
 
                                                 return (
                                                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 border mt-4'}>
-                                                        <h3 className={'font-semibold mb-3 ' + ('text-white')}>📆 Ciclo Mensual</h3>
+                                                        <h3 className={'font-semibold mb-3 ' + ('text-white')}>{t('patterns.structural.monthlyCycle')}</h3>
 
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                             {/* Top 5 dias com MAIS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-red-400'}>🔴 Mais consumo:</div>
+                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-red-400'}>🔴 {t('patterns.structural.moreConsumption')}</div>
                                                                 {sortedDays.slice(0, 5).map(([day, avg]) => {
                                                                     const dayNum = parseInt(day);
                                                                     const maxAvg = parseFloat(sortedDays[0][1]);
@@ -2323,7 +2323,7 @@ export function PatternsView({
                                                                     const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>Dia {day}</div>
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
                                                                             <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
                                                                                 <div
                                                                                     className={'h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all ' + (isPeak ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-red-500 to-pink-500')}
@@ -2340,14 +2340,14 @@ export function PatternsView({
 
                                                             {/* Top 5 dias com MENOS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-green-400'}>🟢 Menos consumo:</div>
+                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-green-400'}>🟢 {t('patterns.structural.lessConsumption')}</div>
                                                                 {sortedDays.slice(-5).reverse().map(([day, avg]) => {
                                                                     const minAvg = parseFloat(sortedDays[sortedDays.length - 1][1]);
                                                                     const maxAvg = parseFloat(sortedDays[0][1]);
                                                                     const widthPercent = (avg / maxAvg) * 100;
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>Dia {day}</div>
+                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
                                                                             <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
                                                                                 <div
                                                                                     className="h-full flex items-center justify-between px-2 text-white text-xs font-medium transition-all bg-gradient-to-r from-green-500 to-emerald-500"
@@ -2427,16 +2427,16 @@ export function PatternsView({
                                                         return (
                                                             <div className={('bg-gray-800 border-gray-700') + ' rounded-xl p-4 border'}>
                                                                 <div className="flex items-center justify-between mb-3">
-                                                                    <h3 className={'font-semibold ' + ('text-purple-300')}>📊 Dosagem Semanal</h3>
-                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + ('bg-purple-900/50 text-purple-300')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? 'semana' : 'semanas'}</div>
+                                                                    <h3 className={'font-semibold ' + ('text-purple-300')}>{t('patterns.structural.weeklyDosage')}</h3>
+                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + ('bg-purple-900/50 text-purple-300')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? t('patterns.structural.week') : t('patterns.structural.weeks')}</div>
                                                                 </div>
                                                                 <div className="grid grid-cols-2 gap-3 mb-4">
                                                                     <div className={'text-center p-3 rounded-lg ' + ('bg-gray-700/50')}>
-                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>Média Semanal</div>
+                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>{t('patterns.structural.weeklyAvg')}</div>
                                                                         <div className={'text-2xl font-bold ' + 'text-purple-400'}>{avgWeekly}mg</div>
                                                                     </div>
                                                                     <div className={'text-center p-3 rounded-lg ' + (trendLabel === 'A Reduzir' ? ('bg-green-900/30 border border-green-700') : trendLabel === 'A Aumentar' ? ('bg-red-900/30 border border-red-700') : ('bg-gray-700/50'))}>
-                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>Tendência (4 sem)</div>
+                                                                        <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>{t('patterns.structural.trend4weeks')}</div>
                                                                         <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (trendLabel === 'A Reduzir' ? 'text-green-400' : trendLabel === 'A Aumentar' ? 'text-red-400' : 'text-gray-400')}>
                                                                             <span>{trendIcon}</span><span className="text-sm">{trendPct.toFixed(0)}%</span>
                                                                         </div>
@@ -2474,7 +2474,7 @@ export function PatternsView({
 
                                                     {/* Análise de Intervalos */}
                                                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'font-semibold mb-4 ' + ('text-white')}>⏱️ Intervalos Entre Consumos</h3>
+                                                        <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.intervals')}</h3>
                                                         {intervals.length === 0 ? (
                                                             <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
                                                                 Sem intervalos (necessário ≥2 consumos)
@@ -2510,7 +2510,7 @@ export function PatternsView({
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium flex items-center gap-2 ${'text-green-400'}`}>
                                                                                     <span>✅</span>
-                                                                                    <span>Intervalos Bons (≥2h)</span>
+                                                                                    <span>{t('patterns.structural.goodIntervals')}</span>
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${'text-green-400'}`}>
                                                                                     {goodIntervals.length} ({goodPercent}%)
@@ -2526,7 +2526,7 @@ export function PatternsView({
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium flex items-center gap-2 ${'text-orange-400'}`}>
                                                                                     <span>⚠️</span>
-                                                                                    <span>Intervalos Curtos (&lt;2h)</span>
+                                                                                    <span>{t('patterns.structural.shortIntervals')}</span>
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${'text-orange-400'}`}>
                                                                                     {shortIntervals.length} ({shortPercent}%)
@@ -2559,9 +2559,9 @@ export function PatternsView({
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (
                                                                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                                    <h3 className={'font-semibold mb-4 ' + ('text-white')}>💊 Análise de Dosagens</h3>
+                                                                    <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.dosageAnalysis')}</h3>
                                                                     <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
-                                                                        Sem dosagens diárias registadas neste período
+                                                                        {t('patterns.structural.noDosageData')}
                                                                     </div>
                                                                 </div>
                                                             );
@@ -2594,12 +2594,12 @@ export function PatternsView({
 
                                                             if (change > 5) {
                                                                 trendIcon = '📈';
-                                                                trendText = `Aumentaram ${trendPercent.toFixed(0)}%`;
+                                                                trendText = t('patterns.structural.increasedByPct', { pct: trendPercent.toFixed(0) });
                                                                 trendColor = 'text-red-400';
                                                                 trendBg = 'bg-red-900/20 border-red-700/50';
                                                             } else if (change < -5) {
                                                                 trendIcon = '📉';
-                                                                trendText = `Diminuíram ${trendPercent.toFixed(0)}%`;
+                                                                trendText = t('patterns.structural.decreasedByPct', { pct: Math.abs(trendPercent).toFixed(0) });
                                                                 trendColor = 'text-green-400';
                                                                 trendBg = 'bg-green-900/20 border-green-700/50';
                                                             }
@@ -2664,14 +2664,14 @@ export function PatternsView({
                                                                 <div className={`${trendBg} rounded-lg p-4 border mb-4`}>
                                                                     <div className="flex items-center justify-between">
                                                                         <div>
-                                                                            <div className={`text-sm font-medium mb-1 ${'text-gray-300'}`}>Tendência no período</div>
+                                                                            <div className={`text-sm font-medium mb-1 ${'text-gray-300'}`}>{t('patterns.structural.periodTrend')}</div>
                                                                             <div className={`text-2xl font-bold ${trendColor}`}>
                                                                                 {trendIcon} {trendText}
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                     <p className={`text-xs mt-2 ${'text-gray-400'}`}>
-                                                                        Comparação entre primeira e segunda metade do período
+                                                                        {t('patterns.structural.firstVsSecondHalf')}
                                                                     </p>
                                                                 </div>
 
@@ -2690,7 +2690,7 @@ export function PatternsView({
                                                                         <div className={`${'bg-green-900/20 border border-green-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-green-400'}`}>
-                                                                                    🟢 Baixa (&lt;{Math.round(lowThreshold)}mg)
+                                                                                    🟢 {t('patterns.structural.dosageLow', { threshold: Math.round(lowThreshold) })}
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${'text-green-400'}`}>
                                                                                     {ranges.baixa} ({((ranges.baixa / dosages.length) * 100).toFixed(0)}%)
@@ -2706,7 +2706,7 @@ export function PatternsView({
                                                                         <div className={`${'bg-yellow-900/20 border border-yellow-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-yellow-400'}`}>
-                                                                                    🟡 Média ({Math.round(lowThreshold)}-{Math.round(highThreshold)}mg)
+                                                                                    🟡 {t('patterns.structural.dosageMed', { low: Math.round(lowThreshold), high: Math.round(highThreshold) })}
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${'text-yellow-400'}`}>
                                                                                     {ranges.media} ({((ranges.media / dosages.length) * 100).toFixed(0)}%)
@@ -2722,7 +2722,7 @@ export function PatternsView({
                                                                         <div className={`${'bg-red-900/20 border border-red-700/50'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-red-400'}`}>
-                                                                                    🔴 Alta (≥{Math.round(highThreshold)}mg)
+                                                                                    🔴 {t('patterns.structural.dosageHigh', { threshold: Math.round(highThreshold) })}
                                                                                 </div>
                                                                                 <div className={`text-sm font-bold ${'text-red-400'}`}>
                                                                                     {ranges.alta} ({((ranges.alta / dosages.length) * 100).toFixed(0)}%)

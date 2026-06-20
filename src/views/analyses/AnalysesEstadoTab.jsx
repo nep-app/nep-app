@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { getEmotionCategory } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 
@@ -7,6 +9,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     analysisWellbeing,
     analysisCycles,
 }) {
+    const { t } = useTranslation();
+
     const emotionStats = useMemo(() => {
         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
 
@@ -57,7 +61,6 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             };
         }).filter(s => s.total > 0);
 
-        const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         const bestDay = weekdayStats.reduce((best, curr) =>
             curr.positivePercent > best.positivePercent ? curr : best,
             weekdayStats[0] || { day: 0, positivePercent: 0 }
@@ -77,11 +80,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             negativePercent,
             topEmotions,
             weekdayStats,
-            weekdayNames,
             bestDay,
             worstDay,
         };
-    }, [analysisWellbeing, analysisConsumptions]);
+    }, [analysisWellbeing, analysisConsumptions, i18n.language]);
 
     const triggerStats = useMemo(() => {
         const allTriggers = analysisCycles.flatMap(c => c.triggers || []);
@@ -111,7 +113,6 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             }
         });
 
-        const weekdayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         const mostTriggersDay = Object.entries(triggersByWeekday)
             .reduce((max, [day, count]) => count > max.count ? { day: parseInt(day), count } : max, { day: 0, count: 0 });
 
@@ -123,12 +124,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             allTriggers,
             topTriggers,
             triggersByWeekday,
-            weekdayNames,
             mostTriggersDay,
             cyclesWithTriggers,
             cyclesWithoutTriggers,
         };
-    }, [analysisCycles]);
+    }, [analysisCycles, i18n.language]);
 
     const exerciseStats = useMemo(() => {
         const exerciseLogs = analysisWellbeing.filter(w => w.exerciseType || (w.exerciseDuration > 0) || w.exercise);
@@ -294,16 +294,19 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
         };
     }, [analysisWellbeing, analysisConsumptions]);
 
+    const getWeekdayName = (dayIndex) =>
+        new Date(2024, 0, 7 + dayIndex).toLocaleDateString(i18n.language, { weekday: 'long' });
+
     return (
         <>
             {!emotionStats ? (
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                     <div className="text-4xl mb-3">🌈</div>
                     <p className={'text-lg font-medium mb-2 ' + ('text-white')}>
-                        Sem dados emocionais
+                        {t('analyses.noEmotions')}
                     </p>
                     <p className={'text-sm ' + ('text-gray-400')}>
-                        Regista as tuas emoções no Bem-estar para veres análises detalhadas aqui.
+                        {t('analyses.noEmotionsDesc')}
                     </p>
                 </div>
             ) : (
@@ -311,7 +314,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Overview */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            🌈 Panorama Emocional
+                            {t('analyses.emotionalOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -319,10 +322,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.positivePercent.toFixed(0)}%
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-green-300/70')}>
-                                    Positivas
+                                    {t('analyses.positive')}
                                 </div>
                                 <div className={'text-xs mt-1 ' + ('text-green-400/60')}>
-                                    {emotionStats.positiveEmotions.length} emoções
+                                    {emotionStats.positiveEmotions.length}
                                 </div>
                             </div>
                             <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -330,10 +333,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.negativePercent.toFixed(0)}%
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-purple-300/70')}>
-                                    Negativas
+                                    {t('analyses.negative')}
                                 </div>
                                 <div className={'text-xs mt-1 ' + ('text-purple-400/60')}>
-                                    {emotionStats.negativeEmotions.length} emoções
+                                    {emotionStats.negativeEmotions.length}
                                 </div>
                             </div>
                             <div className={('bg-gray-800/50 border-gray-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -341,10 +344,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.allEmotions.length}
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-gray-400/70')}>
-                                    Total
-                                </div>
-                                <div className={'text-xs mt-1 ' + ('text-gray-400/60')}>
-                                    registadas
+                                    {t('analyses.totalLogged')}
                                 </div>
                             </div>
                         </div>
@@ -363,12 +363,12 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Top Emoções + Padrões por Dia (compacto) */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            📊 Emoções Mais Frequentes & Padrões Semanais
+                            {t('analyses.topEmotionsPatterns')}
                         </h3>
                         <div className="grid md:grid-cols-2 gap-4">
                             {/* Top 10 Emoções */}
                             <div>
-                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>⭐ Top 10 Emoções</div>
+                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.topEmotions')}</div>
                                 <div className="space-y-2">
                                     {emotionStats.topEmotions.slice(0, 10).map((item, idx) => (
                                         <div key={idx} className="flex items-center justify-between">
@@ -391,13 +391,13 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {/* Padrões por Dia da Semana */}
                             {emotionStats.weekdayStats.length > 0 && (
                                 <div>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>📅 Por Dia da Semana</div>
+                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.byWeekday')}</div>
                                     <div className="space-y-2">
                                         {emotionStats.weekdayStats
                                             .sort((a, b) => b.positivePercent - a.positivePercent)
                                             .map((stat) => (
                                             <div key={stat.day} className="flex items-center justify-between">
-                                                <span className={'text-sm w-16 ' + ('text-white')}>{emotionStats.weekdayNames[stat.day]}</span>
+                                                <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
                                                 <div className="flex-1 mx-2">
                                                     <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                                                         <div
@@ -423,7 +423,12 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.weekdayStats.length >= 2 && (
                                         <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
                                             <p className={'text-xs ' + ('text-blue-300')}>
-                                                💡 Melhor dia: <strong>{emotionStats.weekdayNames[emotionStats.bestDay.day]}s</strong> ({emotionStats.bestDay.positivePercent.toFixed(0)}%). Mais desafiante: <strong>{emotionStats.weekdayNames[emotionStats.worstDay.day]}s</strong> ({emotionStats.worstDay.positivePercent.toFixed(0)}%).
+                                                {t('analyses.bestWorstDay', {
+                                                    best: getWeekdayName(emotionStats.bestDay.day),
+                                                    bestPct: emotionStats.bestDay.positivePercent.toFixed(0),
+                                                    worst: getWeekdayName(emotionStats.worstDay.day),
+                                                    worstPct: emotionStats.worstDay.positivePercent.toFixed(0),
+                                                })}
                                             </p>
                                         </div>
                                     )}
@@ -435,7 +440,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Correlação Emoções vs Consumo */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            🔍 Emoções vs Consumo
+                            {t('analyses.emotionsVsConsumption')}
                         </h3>
                         {(() => {
                             // Análise de emoções correlacionadas com consumo
@@ -483,7 +488,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             if (highRiskEmotions.length === 0 && lowRiskEmotions.length === 0) {
                                 return (
                                     <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
-                                        Sem dados suficientes para correlação (necessário ≥2 ocorrências por emoção)
+                                        {t('analyses.insufficientCorrelation')}
                                     </div>
                                 );
                             }
@@ -494,7 +499,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {highRiskEmotions.length > 0 && (
                                         <div>
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
-                                                🔴 Alto Risco (mais consumo)
+                                                {t('analyses.highRisk')}
                                             </div>
                                             {highRiskEmotions.map(e => (
                                                 <div key={e.emotion} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
@@ -503,7 +508,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                         <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-red-400/70')}>
-                                                        ⚠️ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Esta emoção é um momento crítico - prepara estratégias DBT para quando surgir.
+                                                        {t('analyses.highRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -514,7 +519,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {lowRiskEmotions.length > 0 && (
                                         <div>
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
-                                                🟢 Baixo Risco (menos consumo)
+                                                {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskEmotions.map(e => (
                                                 <div key={e.emotion} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
@@ -523,7 +528,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                         <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-green-400/70')}>
-                                                        ✓ Quando sentes isto: média de <span className="font-bold">{e.avgConsumptions.toFixed(1)} consumos</span>. Este é um estado emocional mais seguro para ti!
+                                                        {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -539,10 +544,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                     <div className="text-4xl mb-3">⚡</div>
                     <p className={'text-lg font-medium mb-2 ' + ('text-white')}>
-                        Sem gatilhos registados
+                        {t('analyses.noTriggers')}
                     </p>
                     <p className={'text-sm ' + ('text-gray-400')}>
-                        Identifica e regista os teus gatilhos ao criar novos ciclos para veres análises detalhadas aqui.
+                        {t('analyses.noTriggersDesc')}
                     </p>
                 </div>
             ) : (
@@ -550,7 +555,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Overview */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            ⚡ Panorama de Gatilhos
+                            {t('analyses.triggerOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -558,10 +563,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {triggerStats.allTriggers.length}
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-red-300/70')}>
-                                    Total de gatilhos
+                                    {t('analyses.totalTriggers')}
                                 </div>
                                 <div className={'text-xs mt-1 ' + ('text-red-400/60')}>
-                                    identificados
+                                    {t('analyses.identified')}
                                 </div>
                             </div>
                             <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -569,10 +574,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {triggerStats.topTriggers.length}
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-orange-300/70')}>
-                                    Tipos diferentes
+                                    {t('analyses.differentTypes')}
                                 </div>
                                 <div className={'text-xs mt-1 ' + ('text-orange-400/60')}>
-                                    de gatilhos
+                                    {t('analyses.ofTriggers')}
                                 </div>
                             </div>
                             <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border text-center'}>
@@ -580,10 +585,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {(triggerStats.allTriggers.length / analysisCycles.length).toFixed(1)}
                                 </div>
                                 <div className={'text-xs font-medium ' + ('text-yellow-300/70')}>
-                                    Média
+                                    {t('analyses.avgPerCycle')}
                                 </div>
                                 <div className={'text-xs mt-1 ' + ('text-yellow-400/60')}>
-                                    por ciclo
+                                    {t('analyses.perCycle')}
                                 </div>
                             </div>
                         </div>
@@ -592,12 +597,12 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Top Gatilhos + Padrões por Dia (compacto) */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            📊 Gatilhos Mais Frequentes & Padrões Semanais
+                            {t('analyses.topTriggersPatterns')}
                         </h3>
                         <div className="grid md:grid-cols-2 gap-4">
                             {/* Top 10 Gatilhos */}
                             <div>
-                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>🎯 Top 10 Gatilhos</div>
+                                <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.topTriggers')}</div>
                                 <div className="space-y-2">
                                     {triggerStats.topTriggers.slice(0, 10).map((item, idx) => (
                                         <div key={idx} className="flex items-center justify-between">
@@ -616,7 +621,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {/* Padrões por Dia da Semana */}
                             {Object.values(triggerStats.triggersByWeekday).some(count => count > 0) && (
                                 <div>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>📅 Por Dia da Semana</div>
+                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.byWeekday')}</div>
                                     <div className="space-y-2">
                                         {Object.entries(triggerStats.triggersByWeekday)
                                             .map(([day, count]) => ({
@@ -628,7 +633,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             .sort((a, b) => b.count - a.count)
                                             .map((stat) => (
                                             <div key={stat.day} className="flex items-center justify-between">
-                                                <span className={'text-sm w-16 ' + ('text-white')}>{triggerStats.weekdayNames[stat.day]}</span>
+                                                <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
                                                 <div className="flex-1 mx-2">
                                                     <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                                                         <div
@@ -646,7 +651,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {triggerStats.mostTriggersDay.count > 0 && (
                                         <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
                                             <p className={'text-xs ' + ('text-blue-300')}>
-                                                💡 Dia com mais gatilhos: <strong>{triggerStats.weekdayNames[triggerStats.mostTriggersDay.day]}s</strong> ({triggerStats.mostTriggersDay.count}).
+                                                {t('analyses.mostTriggersDay', {
+                                                    day: getWeekdayName(triggerStats.mostTriggersDay.day),
+                                                    count: triggerStats.mostTriggersDay.count,
+                                                })}
                                             </p>
                                         </div>
                                     )}
@@ -658,7 +666,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Correlação Gatilhos vs Consumo */}
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                            🔍 Gatilhos vs Consumo
+                            {t('analyses.triggersVsConsumption')}
                         </h3>
                         {(() => {
                             // Calcular gatilhos e média de consumos por gatilho
@@ -693,20 +701,20 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 
                             // Gatilhos com MAIOR consumo (top 3)
                             const highRiskTriggers = triggersWithAvg
-                                .filter(t => t.count >= 2)
+                                .filter(tr => tr.count >= 2)
                                 .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
                                 .slice(0, 3);
 
                             // Gatilhos com MENOR consumo (bottom 2)
                             const lowRiskTriggers = triggersWithAvg
-                                .filter(t => t.count >= 2 && t.avgConsumptions < 10)
+                                .filter(tr => tr.count >= 2 && tr.avgConsumptions < 10)
                                 .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
                                 .slice(0, 2);
 
                             if (highRiskTriggers.length === 0 && lowRiskTriggers.length === 0) {
                                 return (
                                     <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
-                                        Sem dados suficientes para correlação (necessário ≥2 ocorrências por gatilho)
+                                        {t('analyses.insufficientCorrelation')}
                                     </div>
                                 );
                             }
@@ -717,7 +725,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {highRiskTriggers.length > 0 && (
                                         <div>
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
-                                                🔴 Alto Risco (mais consumo)
+                                                {t('analyses.highRisk')}
                                             </div>
                                             {highRiskTriggers.map(t => (
                                                 <div key={t.trigger} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
@@ -726,7 +734,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                         <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-red-400/70')}>
-                                                        ⚠️ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é um fator de risco - prepara um plano de ação para quando surgir.
+                                                        {t('analyses.highRiskDesc', { avg: t.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -737,7 +745,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {lowRiskTriggers.length > 0 && (
                                         <div>
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
-                                                🟢 Baixo Risco (menos consumo)
+                                                {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskTriggers.map(t => (
                                                 <div key={t.trigger} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
@@ -746,7 +754,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                         <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-green-400/70')}>
-                                                        ✓ Nos dias com este gatilho: média de <span className="font-bold">{t.avgConsumptions.toFixed(1)} consumos</span>. Esta situação é mais segura para ti!
+                                                        {t('analyses.lowRiskDesc', { avg: t.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -760,14 +768,13 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     {/* Consciencialização */}
                     <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-purple-400')}>
-                            🧠 Consciencialização
+                            {t('analyses.awarenessSection')}
                         </h3>
                         <p className={'text-sm mb-3 ' + ('text-purple-300')}>
-                            Identificaste gatilhos em <strong>{triggerStats.cyclesWithTriggers}</strong> de {analysisCycles.length} ciclos ({((triggerStats.cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%).
+                            <strong>{triggerStats.cyclesWithTriggers}</strong> / {analysisCycles.length} ({((triggerStats.cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%)
                         </p>
                         <p className={'text-sm ' + ('text-purple-300/80')}>
-                            Reconhecer os teus gatilhos é um passo fundamental para desenvolver estratégias de prevenção eficazes.
-                            Cada gatilho identificado é uma oportunidade de aprendizagem e crescimento.
+                            {t('analyses.awarenessText')}
                         </p>
                     </div>
                 </div>
@@ -775,31 +782,31 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             {!exerciseStats ? (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-8 border text-center'}>
                     <div className="text-4xl mb-3">🏃</div>
-                    <p className={'text-lg font-medium mb-2 text-white'}>Sem dados de exercício</p>
-                    <p className={'text-sm text-gray-400'}>Regista o exercício no Bem-estar para veres análises aqui.</p>
+                    <p className={'text-lg font-medium mb-2 text-white'}>{t('analyses.noExerciseData')}</p>
+                    <p className={'text-sm text-gray-400'}>{t('analyses.exerciseSection')}</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
-                        <h3 className={'text-lg font-semibold mb-4 text-white'}>🏃 Exercício</h3>
+                        <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.exerciseSection')}</h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
                                 <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.daysWithExercise}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>dias c/ exercício</div>
+                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseDays')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
                                 <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.exercisePercent.toFixed(0)}%</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>dos dias registados</div>
+                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseOfLoggedDays')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
                                 <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.avgDuration != null ? `${Math.round(exerciseStats.avgDuration)}min` : '—'}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>duração média</div>
+                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.avgDuration')}</div>
                             </div>
                         </div>
 
                         {exerciseStats.topTypes.length > 0 && (
                             <div className="mb-4">
-                                <p className={'text-sm font-medium text-gray-300 mb-2'}>Tipos de exercício</p>
+                                <p className={'text-sm font-medium text-gray-300 mb-2'}>{t('analyses.exerciseTypesLabel')}</p>
                                 <div className="space-y-1">
                                     {exerciseStats.topTypes.map(([type, count]) => (
                                         <div key={type} className="flex items-center gap-2">
@@ -819,7 +826,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 
                         {(exerciseStats.consWithExercise.length >= 3 || exerciseStats.moodWithExercise.length >= 3 || exerciseStats.energyWithExercise.length >= 3) && (
                             <div className="border-t border-gray-700 pt-4">
-                                <p className={'text-sm font-medium text-gray-300 mb-3'}>Impacto do exercício</p>
+                                <p className={'text-sm font-medium text-gray-300 mb-3'}>{t('analyses.exerciseImpact')}</p>
                                 <div className="grid grid-cols-1 gap-2">
                                     {exerciseStats.consWithExercise.length >= 3 && exerciseStats.consWithoutExercise.length >= 3 && (() => {
                                         const withEx = exerciseStats.avg(exerciseStats.consWithExercise);
@@ -827,10 +834,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                         const diff = withEx - withoutEx;
                                         const pct = withoutEx > 0 ? ((diff / withoutEx) * 100).toFixed(0) : 0;
                                         if (Math.abs(pct) < 5) return null;
+                                        const diffStr = diff < 0 ? `−${Math.abs(pct)}%` : `+${pct}%`;
                                         return (
                                             <p className={'text-xs text-gray-300'}>
-                                                🔢 Dias com exercício: média de <strong>{withEx.toFixed(1)}</strong> consumos vs <strong>{withoutEx.toFixed(1)}</strong> sem exercício
-                                                {' '}({diff < 0 ? <span className="text-green-400">−{Math.abs(pct)}%</span> : <span className="text-orange-400">+{pct}%</span>}).
+                                                {t('analyses.exerciseConsImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1), diff: diffStr })}
                                             </p>
                                         );
                                     })()}
@@ -841,8 +848,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                         if (Math.abs(diff) < 0.3) return null;
                                         return (
                                             <p className={'text-xs text-gray-300'}>
-                                                😊 Humor com exercício: <strong>{withEx.toFixed(1)}/10</strong> vs <strong>{withoutEx.toFixed(1)}/10</strong> sem exercício
-                                                {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
+                                                {t('analyses.exerciseMoodImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1) })}
                                             </p>
                                         );
                                     })()}
@@ -853,8 +859,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                         if (Math.abs(diff) < 0.3) return null;
                                         return (
                                             <p className={'text-xs text-gray-300'}>
-                                                ⚡ Energia com exercício: <strong>{withEx.toFixed(1)}/10</strong> vs <strong>{withoutEx.toFixed(1)}/10</strong> sem exercício
-                                                {' '}({diff > 0 ? <span className="text-green-400">+{diff}</span> : <span className="text-orange-400">{diff}</span>}).
+                                                {t('analyses.exerciseEnergyImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1) })}
                                             </p>
                                         );
                                     })()}
@@ -867,25 +872,25 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             {!symptomStats ? (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-8 border text-center'}>
                     <div className="text-4xl mb-3">🤒</div>
-                    <p className={'text-lg font-medium mb-2 text-white'}>Sem sintomas registados</p>
-                    <p className={'text-sm text-gray-400'}>Regista sintomas de saúde no Bem-estar para veres análises aqui.</p>
+                    <p className={'text-lg font-medium mb-2 text-white'}>{t('analyses.noSymptomData')}</p>
+                    <p className={'text-sm text-gray-400'}>{t('analyses.symptomsSection')}</p>
                 </div>
             ) : (
                 <div className="space-y-4">
                     <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
-                        <h3 className={'text-lg font-semibold mb-4 text-white'}>🤒 Sintomas de Saúde</h3>
+                        <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.symptomsSection')}</h3>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
                                 <div className={'text-2xl font-bold text-orange-400'}>{symptomStats.allSymptoms.length}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>registos de sintomas</div>
+                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.symptomRecords')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
                                 <div className={'text-2xl font-bold text-orange-400'}>{symptomStats.totalDays > 0 ? ((symptomStats.daysWithAnySymptom / symptomStats.totalDays) * 100).toFixed(0) : 0}%</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>dias c/ sintomas</div>
+                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.symptomDaysLabel')}</div>
                             </div>
                         </div>
 
-                        <p className={'text-sm font-medium text-gray-300 mb-2'}>Sintomas mais frequentes</p>
+                        <p className={'text-sm font-medium text-gray-300 mb-2'}>{t('analyses.mostFrequentSymptoms')}</p>
                         <div className="space-y-1 mb-4">
                             {symptomStats.topSymptoms.map(([symptom, count]) => (
                                 <div key={symptom} className="flex items-center gap-2">
@@ -903,18 +908,18 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 
                         {(symptomStats.consWithSymptom.length >= 3 || symptomStats.moodWithSymptom.length >= 3) && (
                             <div className="border-t border-gray-700 pt-4">
-                                <p className={'text-sm font-medium text-gray-300 mb-2'}>Sintomas vs padrão de consumo</p>
+                                <p className={'text-sm font-medium text-gray-300 mb-2'}>{t('analyses.symptomsVsPattern')}</p>
                                 <div className="space-y-2">
                                     {symptomStats.consWithSymptom.length >= 3 && symptomStats.consWithoutSymptom.length >= 3 && (() => {
                                         const withS = symptomStats.avg(symptomStats.consWithSymptom);
                                         const withoutS = symptomStats.avg(symptomStats.consWithoutSymptom);
                                         const diff = withS - withoutS;
                                         const pct = withoutS > 0 ? ((diff / withoutS) * 100).toFixed(0) : 0;
-                                        if (Math.abs(pct) < 5) return <p className={'text-xs text-gray-400'}>Sem diferença significativa no consumo em dias com sintomas.</p>;
+                                        if (Math.abs(pct) < 5) return <p className={'text-xs text-gray-400'}>{t('analyses.insufficientData')}</p>;
+                                        const diffStr = diff > 0 ? `+${pct}%` : `−${Math.abs(pct)}%`;
                                         return (
                                             <p className={'text-xs text-gray-300'}>
-                                                🔢 Dias com sintomas: média de <strong>{withS.toFixed(1)}</strong> consumos vs <strong>{withoutS.toFixed(1)}</strong> sem sintomas
-                                                {' '}({diff > 0 ? <span className="text-orange-400">+{pct}%</span> : <span className="text-green-400">−{Math.abs(pct)}%</span>}).
+                                                {t('analyses.symptomConsImpact', { withS: withS.toFixed(1), withoutS: withoutS.toFixed(1), diff: diffStr })}
                                             </p>
                                         );
                                     })()}
@@ -925,7 +930,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                         if (Math.abs(diff) < 0.3) return null;
                                         return (
                                             <p className={'text-xs text-gray-300'}>
-                                                😊 Humor em dias com sintomas: <strong>{withS.toFixed(1)}/10</strong> vs <strong>{withoutS.toFixed(1)}/10</strong> sem sintomas.
+                                                {t('analyses.symptomMoodImpact', { withS: withS.toFixed(1), withoutS: withoutS.toFixed(1) })}
                                             </p>
                                         );
                                     })()}

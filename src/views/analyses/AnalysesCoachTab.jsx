@@ -240,7 +240,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Calcular médias
                         const calcAvgSleep = (days) => {
-                            const sleepData = days.flatMap(([_, d]) => d.cycles.filter(c => c.sleep).map(c => parseFloat(c.sleep)));
+                            const sleepData = days.flatMap(([_, d]) => d.cycles.filter(c => c.sleep && !isNaN(parseFloat(c.sleep))).map(c => parseFloat(c.sleep)));
                             return sleepData.length > 0 ? (sleepData.reduce((a, b) => a + b, 0) / sleepData.length).toFixed(1) : null;
                         };
 

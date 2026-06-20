@@ -1,4 +1,5 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { safeToISODate } from '../../utils/helpers';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -11,6 +12,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     analysisDailyLogs,
     selectedCycle,
 }) {
+    const { t } = useTranslation();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const [expandedSections, setExpandedSections] = useState({
         intraDayAnalysis: !isMobile,
@@ -510,9 +512,9 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                     <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                         <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('intraDayAnalysis')}>
                             <div>
-                                <h3 className={'font-semibold ' + ('text-white')}>📊 Impacto Médio do Consumo (Agregado)</h3>
+                                <h3 className={'font-semibold ' + ('text-white')}>{t('analyses.impactTitle')}</h3>
                                 <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                    Evolução média do humor/energia antes e depois de TODOS os consumos
+                                    {t('analyses.impactAvgDesc')}
                                 </p>
                             </div>
                             <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -527,13 +529,13 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                         {/* Impacto Imediato do Consumo (Evolução + Eficácia juntos) */}
                                         {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
                                             <div className={('bg-gradient-to-br from-purple-900/20 to-green-900/20 border-purple-700/50') + ' rounded-lg p-4 border'}>
-                                                <div className={'text-sm font-semibold mb-4 ' + ('text-purple-300')}>📊 Impacto do Consumo no Humor</div>
+                                                <div className={'text-sm font-semibold mb-4 ' + ('text-purple-300')}>{t('analyses.impactMoodTitle')}</div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {/* Evolução Temporal (0h → 30min/1h/2h) */}
                                                     {latency.length > 0 && (
                                                         <div>
-                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>⏱️ Mudança após consumir (vs 0h)</div>
+                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>{t('analyses.impactMoodChangeSince')}</div>
                                                             <div className="grid grid-cols-3 gap-2">
                                                                 {latency.map(lat => (
                                                                     <div key={lat.window} className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
@@ -578,7 +580,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                                 {/* Gráfico Agregado */}
                                 <div className={('bg-gray-800/50') + ' rounded-lg p-4'}>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-300')}>📈 Evolução Temporal</div>
+                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-300')}>{t('analyses.impactTemporalEvolution')}</div>
                                     <div style={{ width: '100%', height: 200 }}>
                                         <ResponsiveContainer>
                                             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
@@ -601,7 +603,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                         </ResponsiveContainer>
                                     </div>
                                     <p className={'text-xs italic mt-2 ' + ('text-gray-400')}>
-                                        Eixo X: Tempo relativo ao consumo | Eixo Y: Humor/Energia (0-10)
+                                        {t('analyses.impactXAxisLabel')}
                                     </p>
                                 </div>
                             </div>
@@ -615,9 +617,9 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border border-dashed'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('experimental')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>⚗️ Features Experimentais</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>⚗️ {t('analyses.experimentalFeatures')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                Análises avançadas: gatilhos compostos, antecedentes e eficácia
+                                {t('analyses.impactExperimental')}
                             </p>
                         </div>
                         <button className={'p-2 rounded-lg transition-colors ' + ('hover:bg-gray-700')}>
@@ -630,10 +632,10 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                             {experimentalFeatures.compositeTriggers.length > 0 && (
                                 <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border'}>
                                     <div className={'text-sm font-semibold mb-3 ' + ('text-orange-300')}>
-                                        🧩 Gatilhos Compostos
+                                        {t('analyses.impactCompositeTriggers')}
                                     </div>
                                     <p className={'text-xs mb-3 ' + ('text-gray-400')}>
-                                        Combinações de fatores que precedem consumo elevado
+                                        {t('analyses.impactCompositeTriggersDesc')}
                                     </p>
                                     <div className="space-y-2">
                                         {experimentalFeatures.compositeTriggers.map((trigger, idx) => (
@@ -669,7 +671,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                             {experimentalFeatures.antecedents.length > 0 && (
                                 <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
                                     <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>
-                                        🔍 O que acontecia ANTES de consumir
+                                        {t('analyses.impactAntecedents')}
                                     </div>
                                     <div className="space-y-1">
                                         {/* Agrupar por padrão */}
@@ -698,7 +700,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                             )}
 
                             <p className={'text-xs italic ' + ('text-gray-400')}>
-                                ⚠️ Estas análises são experimentais e requerem dados detalhados de bem-estar
+                                {t('analyses.impactExperimental')}
                             </p>
                         </div>
                     )}
@@ -708,21 +710,21 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             {/* Análise Intra-dia */}
             {intraDayStats ? (
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>🔄 Análise Intra-dia Detalhada</h3>
+                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>{t('analyses.intradayTitle')}</h3>
                     <p className={'text-xs mb-4 ' + ('text-gray-400')}>
-                        Como evoluem humor, energia e consumo durante o mesmo dia (00:00-23:59)
+                        {t('analyses.impactIntraDayDesc')}
                     </p>
                     <div className="space-y-4">
                         {/* Evolução de Humor e Energia */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {/* Evolução de Humor */}
                             <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
-                                <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>📊 Evolução de Humor no Dia</div>
+                                <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>{t('analyses.moodEvolution')}</div>
 
                                 {intraDayStats.avgMoodStart && intraDayStats.avgMoodEnd && (() => {
                                     const diff = parseFloat(intraDayStats.avgMoodEnd) - parseFloat(intraDayStats.avgMoodStart);
                                     const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                    const trendText = diff > 0.5 ? 'O teu humor melhora durante o dia!' : diff < -0.5 ? 'O teu humor piora durante o dia.' : 'O teu humor mantém-se estável no dia.';
+                                    const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.energyStable');
 
                                     return (
                                         <>
@@ -748,11 +750,11 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                             {intraDayStats.avgEnergyStart && intraDayStats.avgEnergyEnd && (() => {
                                 const diff = parseFloat(intraDayStats.avgEnergyEnd) - parseFloat(intraDayStats.avgEnergyStart);
                                 const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                const trendText = diff > 0.5 ? 'A tua energia aumenta durante o dia!' : diff < -0.5 ? 'A tua energia diminui durante o dia.' : 'A tua energia mantém-se estável no dia.';
+                                const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.energyStable');
 
                                 return (
                                     <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border'}>
-                                        <div className={'text-sm font-semibold mb-3 ' + ('text-yellow-300')}>⚡ Evolução de Energia no Dia</div>
+                                        <div className={'text-sm font-semibold mb-3 ' + ('text-yellow-300')}>{t('analyses.energyEvolution')}</div>
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
                                                 <span className={'text-lg font-bold ' + ('text-yellow-400')}>{intraDayStats.avgEnergyStart}</span>
@@ -792,7 +794,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                 </div>
             ) : (
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>🔄 Análise Intra-dia Detalhada</h3>
+                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>{t('analyses.intradayTitle')}</h3>
                     <p className={'text-xs mb-4 ' + ('text-gray-400')}>
                         Como evoluem humor, energia e consumo durante o mesmo dia
                     </p>
