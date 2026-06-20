@@ -208,23 +208,68 @@ export function HomeViewRefactored({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-purple-800/10' : 'bg-gradient-to-br from-purple-50 to-purple-100/50') + ' rounded-xl p-3'}>
-          <div className={(darkMode ? 'text-purple-400' : 'text-purple-600') + ' text-xs font-medium mb-1'}>{t('home.today')}</div>
-          <div className="flex items-baseline gap-1">
-            <span className={'text-2xl font-black ' + (darkMode ? 'text-purple-300' : 'text-purple-600')}>{currentCycleCount}</span>
-            <span className={(darkMode ? 'text-purple-400' : 'text-purple-500') + ' text-sm font-medium'}>x</span>
+      {(() => {
+        const freqGoal = goals.find(g => g.type === 'reduce_frequency');
+        const target = freqGoal ? parseInt(freqGoal.target) : null;
+        const weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        const countByDate = {};
+        consumptions.forEach(c => {
+          const ts = c.timestamp || c.createdAt;
+          if (!ts) return;
+          const cd = new Date(ts);
+          const k = `${cd.getFullYear()}-${String(cd.getMonth()+1).padStart(2,'0')}-${String(cd.getDate()).padStart(2,'0')}`;
+          countByDate[k] = (countByDate[k] || 0) + 1;
+        });
+
+        const days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          return {
+            k,
+            count: countByDate[k] || 0,
+            label: i === 6 ? t('home.today') : weekLabels[d.getDay()],
+            isToday: i === 6,
+          };
+        });
+
+        const totalWeek = days.reduce((s, d) => s + d.count, 0);
+
+        const dotClass = (count) => {
+          if (count === 0) return 'bg-gray-700/60 text-gray-500';
+          if (target !== null) return count <= target
+            ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
+            : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
+          return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';
+        };
+
+        return (
+          <div className="bg-gray-800/40 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs font-medium text-gray-400">{t('home.thisWeek')}</span>
+              <span className="text-xs text-gray-500">{totalWeek}x</span>
+            </div>
+            <div className="flex justify-between">
+              {days.map((day) => (
+                <div key={day.k} className="flex flex-col items-center gap-1">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
+                    {day.count}
+                  </div>
+                  <span className={`${day.isToday ? 'text-white font-semibold' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>
+                    {day.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-3 pt-2 border-t border-gray-700/50 flex-wrap">
+              <span className="text-xs text-gray-500">{t('home.avg7days')}: <span className="text-gray-300">{last7.avgTimes}x</span></span>
+              {parseFloat(last7.avgMg) > 0 && <span className="text-xs text-gray-500">{last7.avgMg}{t('home.mgPerDay')}</span>}
+              {target !== null && <span className="text-xs text-gray-500 ml-auto">{t('home.goalTarget')}: ≤{target}x/dia</span>}
+            </div>
           </div>
-        </div>
-        <div className={(darkMode ? 'bg-gradient-to-br from-pink-900/20 to-pink-800/10' : 'bg-gradient-to-br from-pink-50 to-pink-100/50') + ' rounded-xl p-3'}>
-          <div className={(darkMode ? 'text-pink-400' : 'text-pink-600') + ' text-xs font-medium mb-1'}>{t('home.avg7days')}</div>
-          <div className="flex items-baseline gap-1">
-            <span className={'text-2xl font-black ' + (darkMode ? 'text-pink-300' : 'text-pink-600')}>{last7.avgTimes}</span>
-            <span className={(darkMode ? 'text-pink-400' : 'text-pink-500') + ' text-sm font-medium'}>x</span>
-          </div>
-          <div className={(darkMode ? 'text-pink-500' : 'text-pink-400') + ' text-xs font-medium mt-0.5'}>{last7.avgMg}{t('home.mgPerDay')}</div>
-        </div>
-      </div>
+        );
+      })()}
 
       <div className={(darkMode ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20' : 'bg-gradient-to-r from-blue-50 to-cyan-50') + ' rounded-xl p-4'}>
         <div className="flex items-center gap-2 mb-3">

@@ -63,6 +63,8 @@
     "today": "Today",
     "avg7days": "7-day avg",
     "mgPerDay": "mg/day",
+    "thisWeek": "This week",
+    "goalTarget": "Goal",
     "strategiesTitle": "💡 Strategies for Today",
     "strategiesBasedOnTriggers": "Based on your identified triggers",
     "recentConsumptions": "Recent Logs",
