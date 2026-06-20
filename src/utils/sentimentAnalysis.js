@@ -140,6 +140,9 @@ function _calculateRawSentiment(text) {
   // }
 
   for (let i = 0; i < words.length; i++) {
+    // Helper: verifica se a palavra anterior é uma negação
+    const prevNeg = (idx) => { const p = words[idx - 1] || ''; return p === 'nao' || p === 'n' || p === 'nunca' || p === 'nem'; };
+
     // Frases positivas
     if (words[i] === 'consegui' && words[i+1] === 'nao' && words[i+2] === 'conseguir') {
       totalScore += 1.5; positiveCount++;
@@ -147,27 +150,34 @@ function _calculateRawSentiment(text) {
       i += 2; continue;
     }
     if (words[i] === 'correu' && words[i+1] === 'bem') {
-      totalScore += 2; positiveCount++;
-      details.push({ word: 'correu bem', score: 2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      const neg = prevNeg(i);
+      const sc = neg ? -2 : 2;
+      totalScore += sc; if (sc > 0) positiveCount++; else negativeCount++;
+      details.push({ word: neg ? 'nao correu bem' : 'correu bem', score: sc, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
       i += 1; continue;
     }
     if (words[i] === 'valeu' && words[i+1] === 'a' && words[i+2] === 'pena') {
-      totalScore += 2; positiveCount++;
-      details.push({ word: 'valeu a pena', score: 2, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
+      const neg = prevNeg(i);
+      const sc = neg ? -2 : 2;
+      totalScore += sc; if (sc > 0) positiveCount++; else negativeCount++;
+      details.push({ word: neg ? 'nao valeu a pena' : 'valeu a pena', score: sc, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
       i += 2; continue;
     }
     if ((words[i] === 'tou' || words[i] === 'estou' || words[i] === 'to') && words[i+1] === 'fixe') {
-      totalScore += 2.5; positiveCount++;
-      details.push({ word: 'tou fixe', score: 2.5, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+      const neg = prevNeg(i);
+      const sc = neg ? -2.5 : 2.5;
+      totalScore += sc; if (sc > 0) positiveCount++; else negativeCount++;
+      details.push({ word: neg ? 'nao tou fixe' : 'tou fixe', score: sc, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
       i += 1; continue;
     }
-    if ((words[i] === 'tou' || words[i] === 'estou') && words[i+1] === 'bem') {
-      totalScore += 2; positiveCount++;
-      details.push({ word: 'tou bem', score: 2, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
+    if ((words[i] === 'tou' || words[i] === 'estou' || words[i] === 'to') && words[i+1] === 'bem') {
+      const neg = prevNeg(i);
+      const sc = neg ? -2 : 2;
+      totalScore += sc; if (sc > 0) positiveCount++; else negativeCount++;
+      details.push({ word: neg ? 'nao tou bem' : 'tou bem', score: sc, context: words.slice(Math.max(0, i-2), i+3).join(' ') });
       i += 1; continue;
     }
     if (words[i] === 'tendo' && words[i+1] === 'em' && words[i+2] === 'conta') {
-      // Contexto de superação - ligeiramente positivo
       totalScore += 1; positiveCount++;
       details.push({ word: 'tendo em conta', score: 1, context: words.slice(Math.max(0, i-2), i+4).join(' ') });
       i += 2; continue;

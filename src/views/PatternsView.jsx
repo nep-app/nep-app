@@ -273,6 +273,14 @@ export function PatternsView({
                                                 });
                                                 const totalDaysWithBedtime = daysWithBedtime.size;
 
+                                                // Dias com ≥2 consumos (para increase_interval — precisas de pelo menos 2 para calcular intervalo)
+                                                const countByDatePT = {};
+                                                filteredConsumptions.forEach(c => {
+                                                    const dateKey = timestampToPT(c.timestamp);
+                                                    if (dateKey && dateKey !== today) countByDatePT[dateKey] = (countByDatePT[dateKey] || 0) + 1;
+                                                });
+                                                const totalDaysWithMultipleConsumptions = Object.values(countByDatePT).filter(n => n >= 2).length;
+
                                                 // Para reduce_frequency, o denominador é TODOS os dias desde o primeiro registo
                                                 // (dias sem consumos também contam como sucesso na meta de frequência)
                                                 const allDaysCount = getAllDaysSinceFirstRecord(filteredConsumptions).length;
@@ -288,6 +296,8 @@ export function PatternsView({
                                                         totalPossible = totalDaysWithBedtime;
                                                     } else if (g.type === 'reduce_frequency') {
                                                         totalPossible = allDaysCount;
+                                                    } else if (g.type === 'increase_interval') {
+                                                        totalPossible = totalDaysWithMultipleConsumptions;
                                                     } else {
                                                         totalPossible = totalDaysWithConsumptions;
                                                     }
