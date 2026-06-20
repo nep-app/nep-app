@@ -25,7 +25,7 @@ export function HomeViewRefactored({
   setConsumptionsToShow,
   showToast
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
@@ -210,26 +210,24 @@ export function HomeViewRefactored({
 
       {(() => {
         const freqGoal = goals.find(g => g.type === 'reduce_frequency');
-        const target = freqGoal ? parseInt(freqGoal.target) : null;
-        const weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const target = freqGoal ? parseFloat(freqGoal.target) : null;
 
         const countByDate = {};
         consumptions.forEach(c => {
-          const ts = c.timestamp || c.createdAt;
-          if (!ts) return;
-          const cd = new Date(ts);
-          const k = `${cd.getFullYear()}-${String(cd.getMonth()+1).padStart(2,'0')}-${String(cd.getDate()).padStart(2,'0')}`;
+          const k = getDateKeyFromItem(c);
+          if (!k) return;
           countByDate[k] = (countByDate[k] || 0) + 1;
         });
 
         const days = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - (6 - i));
-          const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const d = getDateDaysAgo(6 - i);
+          const k = safeToISODate(d);
           return {
             k,
             count: countByDate[k] || 0,
-            label: i === 6 ? t('home.today') : weekLabels[d.getDay()],
+            label: i === 6
+              ? t('home.today')
+              : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d).replace(/\.$/, ''),
             isToday: i === 6,
           };
         });
@@ -238,7 +236,7 @@ export function HomeViewRefactored({
 
         const dotClass = (count) => {
           if (count === 0) return 'bg-gray-700/60 text-gray-500';
-          if (target !== null) return count <= target
+          if (Number.isFinite(target)) return count <= target
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
           return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';
@@ -265,7 +263,7 @@ export function HomeViewRefactored({
             <div className="flex gap-3 mt-3 pt-2 border-t border-gray-700/50 flex-wrap">
               <span className="text-xs text-gray-500">{t('home.avg7days')}: <span className="text-gray-300">{last7.avgTimes}x</span></span>
               {parseFloat(last7.avgMg) > 0 && <span className="text-xs text-gray-500">{last7.avgMg}{t('home.mgPerDay')}</span>}
-              {target !== null && <span className="text-xs text-gray-500 ml-auto">{t('home.goalTarget')}: ≤{target}x/dia</span>}
+              {Number.isFinite(target) && <span className="text-xs text-gray-500 ml-auto">{t('home.goalTarget')}: ≤{target}x</span>}
             </div>
           </div>
         );
