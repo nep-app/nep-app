@@ -1,143 +1,171 @@
-# NEP App - N-Ethylpentedrone Harm Reduction Tracker
+# Harm Reduction Tracker
 
-> **Aplicação web para acompanhamento de redução de danos no consumo de N-Ethylpentedrone (catinona sintética)**
+> **Aplicação web de acompanhamento e redução de danos no consumo de substâncias psicoativas**
 
-Versão atual: **v1.3.0**
+Versão atual: **v1.5.3**
 
-## 🔒 Segurança e Privacidade
+A app é agnóstica à substância — funciona para qualquer substância que o utilizador queira monitorizar (estimulantes, dissociativos, empatogénios, etc.). O objetivo é ajudar a consumir de forma mais consciente e reduzir gradualmente, ao ritmo de cada pessoa.
 
-- **🔐 Encriptação AES-256-GCM** - Todos os dados são encriptados client-side
-- **🔑 PIN pessoal** - Cada utilizador tem um PIN único (4-6 dígitos)
-- **🧂 Salt único** - Derivação de chave com salt individual por utilizador
-- **📱 Local-First** - Dados guardados localmente (IndexedDB) e sincronizados com Firebase
-- **🚀 Sync Incremental** - Sincronização ultra-rápida (~500ms sem mudanças)
+---
+
+## 🛡️ O que a app faz
+
+### Registo diário
+- Consumos com dosagem (mg), hora e notas
+- Ciclos: hora de deitar, horas de sono, gatilhos (triggers)
+- Bem-estar: humor, energia, água, alimentação, descanso, vida social
+- Emoções (categorizadas como positivas/negativas)
+- Reflexões e pensamentos livres
+
+### Análises e padrões
+- Correlações entre sono/bem-estar e consumo
+- Fatores de risco identificados automaticamente
+- Análise de sentimento das reflexões e pensamentos
+- Impacto do consumo no bem-estar ao longo do tempo
+- Estatísticas: streak, intervalos, dosagens, primeiro/último consumo
+
+### Metas de redução de danos
+- Limitar frequência semanal
+- Reduzir dosagem total
+- Aumentar intervalo entre consumos
+- Definir hora máxima para último consumo
+- Definir hora mínima para primeiro consumo
+- Metas de sono (horas e hora de deitar)
+
+### Avisos inteligentes
+- Intervalo curto entre consumos
+- Dosagem acima da meta
+- Sono insuficiente
+- Bedtime tardio
+- Último consumo após meia-noite
+
+### Outras funcionalidades
+- Exercícios guiados para gerir impulso de consumo (urge surfing)
+- Fichas educativas de harm reduction
+- Badges de conquistas
+- Relatório de gaps (dias com dados em falta)
+- Suporte a português e inglês
+
+---
+
+## 🔒 Privacidade e Segurança
+
+- **Encriptação AES-256-GCM** — todos os dados encriptados no dispositivo
+- **PIN pessoal** — 4–6 dígitos, só o utilizador conhece
+- **Local-First** — dados guardados em IndexedDB, sincronizados com Firebase
+- **Zero-knowledge** — o Firebase guarda apenas blobs encriptados; ninguém consegue ler sem o PIN
+- **Proteção anti-brute-force** — bloqueio após tentativas falhadas
+- **PIN em sessionStorage** — não persiste entre sessões do browser
+
+---
 
 ## 🚀 Como Usar
 
-### Desenvolvimento Local
+### Desenvolvimento local
 
 ```bash
-# 1. Instalar dependências (primeira vez)
 npm install
-
-# 2. Iniciar servidor de desenvolvimento
 npm run dev
-
-# 3. Abrir no browser
 # http://localhost:5173
 ```
 
-### Build para Produção
+### Build para produção
 
 ```bash
-# Criar build otimizado
 npm run build
-
-# Preview do build
 npm run preview
 ```
 
 ### Deploy
 
-A app está configurada para deploy automático via GitHub Actions:
-- Push para branches `claude/**` → build e deploy automático
-- Requer Firebase configurado (`.env` ou secrets do GitHub)
+Deploy automático via GitHub Actions em push para branches `claude/**`. Requer Firebase configurado.
 
-## 📁 Estrutura do Projeto
-
-```
-nep-app/
-├── src/
-│   ├── components/          # Componentes React
-│   │   ├── modals/         # Modais (Cycle, Consumption, etc)
-│   │   └── ui/             # Componentes UI reutilizáveis
-│   ├── contexts/           # React Contexts
-│   │   ├── AuthContext.jsx        # Autenticação e PIN
-│   │   ├── DataContext.jsx        # Gestão de dados
-│   │   └── LocalDataContext.jsx   # IndexedDB + Encryption
-│   ├── services/           # Serviços
-│   │   ├── syncService.js         # Sync com Firebase
-│   │   └── analyticsService.js    # Análises e estatísticas
-│   ├── utils/              # Utilitários
-│   │   ├── encryption.js          # AES-256-GCM
-│   │   ├── userStats.js           # Stats pré-calculadas
-│   │   └── firebase.js            # Config Firebase
-│   ├── db/                 # IndexedDB
-│   │   └── localDB.js
-│   ├── views/              # Views principais
-│   │   ├── HomeViewRefactored.jsx
-│   │   ├── HistoryView.jsx
-│   │   ├── PatternsView.jsx
-│   │   └── AnalysesView.jsx
-│   └── App.jsx             # Componente principal
-├── public/                 # Assets estáticos
-├── .github/workflows/      # CI/CD
-└── package.json
-```
+---
 
 ## 🔧 Tecnologias
 
-### Core
-- **React 18** - UI framework
-- **Vite 5** - Build tool e dev server
-- **TailwindCSS** - Styling
+- **React 18** + **Vite 5** + **TailwindCSS**
+- **Firebase 10** (Firestore) — sync na cloud
+- **IndexedDB via Dexie.js** — storage local
+- **Web Crypto API** — encriptação AES-256-GCM + PBKDF2
+- **i18next** — internacionalização (PT/EN)
+- **Recharts** — gráficos
+- **PWA** — instalável no telemóvel, funciona offline
 
-### Backend & Storage
-- **Firebase 10** - Authentication, Firestore
-- **IndexedDB (Dexie.js)** - Storage local
-- **Web Crypto API** - Encriptação AES-256-GCM
+---
 
-### Features Principais
-- Local-First Architecture
-- End-to-End Encryption
-- Sync incremental com timestamps exatos
-- PWA (Progressive Web App)
-- Dark mode permanente
+## 📁 Estrutura
 
-## 📊 Funcionalidades
+```
+src/
+├── components/
+│   ├── modals/       # Modais (consumo, ciclo, emoções, etc.)
+│   └── ui/           # Componentes reutilizáveis
+├── contexts/
+│   ├── AuthContext.jsx        # PIN e autenticação
+│   ├── DataContext.jsx        # Dados da app
+│   └── LocalDataContext.jsx   # IndexedDB + encriptação
+├── services/
+│   ├── analyticsService.js    # Análises e metas
+│   └── syncService.js         # Sync Firebase
+├── utils/
+│   ├── encryption.js          # AES-256-GCM
+│   ├── userStats.js           # Stats e avisos pré-calculados
+│   └── sentimentAnalysis.js   # Análise de sentimento PT
+├── views/
+│   ├── HomeViewRefactored.jsx
+│   ├── HistoryView.jsx
+│   ├── PatternsView.jsx
+│   └── AnalysesView.jsx (+ tabs)
+└── locales/
+    ├── pt.json
+    └── en.json
+```
 
-### Tracking
-- ✅ Consumos (mg, timestamp, notas)
-- ✅ Ciclos (sono, bedtime, triggers)
-- ✅ Daily Logs (consumo diário total)
-- ✅ Wellbeing (humor, energia, sono)
-- ✅ Reflexões e pensamentos
-- ✅ Metas de redução de danos
+---
 
-### Análises
-- 📈 Padrões de consumo
-- 🔄 Correlações (consumo vs wellbeing)
-- 📊 Estatísticas (streak, intervalos, dosagens)
-- 🎯 Progresso de metas
-- 🏆 Badges de conquistas
+## 🔐 Encriptação
 
-### Avisos Inteligentes
-- ⚠️ Intervalo curto entre consumos
-- 😴 Sono insuficiente
-- 📊 Dosagem acima da meta
-- 🌃 Bedtime tardio
-- ⏰ Último consumo após meia-noite
+1. PIN → chave AES-256 derivada com PBKDF2 (100k iterações) + salt único por utilizador
+2. Dados encriptados client-side antes de sair do dispositivo
+3. Firebase guarda apenas `{ data: blob, iv: vector }` — ilegível sem o PIN
+4. Desencriptação só acontece localmente
 
-## 🔐 Sistema de Encriptação
+---
 
-1. **PIN** → deriva chave AES-256 com PBKDF2 (100k iterações)
-2. **Salt único** por utilizador (guardado no Firebase)
-3. **Dados encriptados** client-side antes de enviar para Firebase
-4. **Firestore** guarda apenas blobs encriptados (campo `data` + `iv`)
-5. **Desencriptação** apenas local, com PIN do utilizador
+## 🔄 Changelog
 
-**Ninguém pode ler os teus dados sem o teu PIN!** (nem o admin do Firebase)
+### v1.5.3 (Atual)
+- Tradução completa para inglês (emoções, gaps, fatores de risco, alertas, correlações)
+- Correção dos denominadores de todas as metas no dashboard
+- Correção da análise de sentimento (negação em frases positivas)
+- Simplificação da explicação de correlações
 
-## 🚀 Performance
+### v1.5.x
+- Exercícios guiados para gerir impulso de consumo
+- Fichas educativas de harm reduction
+- Mais perguntas de reflexão DBT + rotação diária
+- Recorde de streak
+- Data de primeiro uso editável nas definições
+- Cartão semanal com círculos de progresso das metas
 
-- **Boot inicial:** <500ms (stats do cache)
-- **Sync sem mudanças:** ~500ms (84x mais rápido que antes)
-- **Sync com 5 mudanças:** ~800ms
-- **App pronta:** 3 fases progressivas (instantânea → lista → todos os dados)
+### v1.4.x
+- Segurança: brute-force lockout, PIN em sessionStorage, sanitização de inputs
+- Exportação CSV melhorada
+- Filtragem de dias atípicos em alertas e métricas
+
+### v1.3.0
+- Sync incremental com timestamps exatos (84x mais rápido)
+- Stats pré-calculadas para boot ultra-rápido
+- PWA com suporte offline
+
+### v1.2.0
+- Arquitetura Local-First
+- Encriptação AES-256-GCM
+
+---
 
 ## 📝 Variáveis de Ambiente
-
-Cria `.env` na raiz:
 
 ```env
 VITE_FIREBASE_API_KEY=xxx
@@ -148,39 +176,6 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=xxx
 VITE_FIREBASE_APP_ID=xxx
 ```
 
-## 🔄 Changelog
-
-### v1.3.0 (Atual)
-- ✅ Sync incremental com timestamps exatos
-- ✅ Stats pré-calculadas para boot ultra-rápido
-- ✅ Avisos atualizam automaticamente
-- ✅ Editar ciclos no histórico
-- ✅ Auto-fill data/hora atual em novos ciclos
-- ✅ Fix: Sleep input aceita qualquer decimal (step="any")
-- ✅ Fix: DailyLogs mostram data correta
-
-### v1.2.0
-- Salt utilities consolidation
-- Re-encrypt data when PIN changes
-
-### v1.1.0
-- Local-First architecture
-- AES-256-GCM encryption
-- PWA support
-
-## 📜 Licença
-
-Ver [LICENSE.md](LICENSE.md)
-
-## 🛡️ Segurança
-
-Ver [SECURITY.md](SECURITY.md) para política de segurança e como reportar vulnerabilidades.
-
-## ⚖️ Ética e Governança
-
-Ver [ETHICAL_GOVERNANCE.md](ETHICAL_GOVERNANCE.md) para princípios de redução de danos.
-
 ---
 
-**⚠️ NOTA IMPORTANTE:**
-Esta aplicação é uma ferramenta de **redução de danos**, não promove o consumo de substâncias. O objetivo é ajudar utilizadores a monitorizar e reduzir o consumo de forma consciente e segura.
+**Esta aplicação é uma ferramenta de redução de danos. Não promove o consumo de substâncias.**
