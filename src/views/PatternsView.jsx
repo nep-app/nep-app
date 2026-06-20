@@ -11,7 +11,7 @@ import { getEmotionCategory, EMOTION_CATEGORIES } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount, getAllDaysSinceFirstRecord } = analyticsService;
 
 export function PatternsView({
     patternsPeriod,
@@ -247,7 +247,7 @@ export function PatternsView({
                                                 });
                                                 const totalDaysWithConsumptions = daysWithConsumptions.size;
 
-                                                // Calcular dias únicos com sono (para sleep_hours e bedtime_before)
+                                                // Calcular dias únicos com sono (para sleep_hours)
                                                 const daysWithSleep = new Set();
                                                 filteredCycles.forEach(c => {
                                                     const dateKey = c.date || safeToISODate(c.timestamp);
@@ -263,17 +263,20 @@ export function PatternsView({
                                                 });
                                                 const totalDaysWithSleep = daysWithSleep.size;
 
+                                                // Para reduce_frequency, o denominador é TODOS os dias desde o primeiro registo
+                                                // (dias sem consumos também contam como sucesso na meta de frequência)
+                                                const allDaysCount = getAllDaysSinceFirstRecord(filteredConsumptions).length;
+
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
 
-                                                    // TODAS as metas usam o mesmo total baseado no tipo
                                                     let totalPossible = 0;
 
-                                                    if (g.type === 'sleep_hours' || g.type === 'bedtime_before') {
-                                                        // Metas de sono: usar dias com sono no período
+                                                    if (g.type === 'sleep_hours') {
                                                         totalPossible = totalDaysWithSleep;
+                                                    } else if (g.type === 'reduce_frequency') {
+                                                        totalPossible = allDaysCount;
                                                     } else {
-                                                        // Todas as outras: usar dias com consumos no período
                                                         totalPossible = totalDaysWithConsumptions;
                                                     }
 
