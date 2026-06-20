@@ -286,7 +286,7 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Verificar cada dia
         allDays.forEach(date => {
             const count = consumptionsByDate[date] || 0; // Dias sem consumptions = 0
-            const isAchieved = count < goal.target;
+            const isAchieved = count <= goal.target; // <=: exatamente no target = sucesso
             if (isAchieved) achievedCount++;
         });
     }
@@ -318,10 +318,10 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             if (!isNaN(mgValue)) mgByDate[dateKey] += mgValue;
         });
 
-        // Contar dias abaixo do target (excluindo hoje)
+        // Contar dias no target ou abaixo (excluindo hoje)
         Object.entries(mgByDate).forEach(([date, totalMg]) => {
             if (date === today) return; // Excluir dia atual
-            const isAchieved = totalMg < parseFloat(goal.target);
+            const isAchieved = totalMg <= parseFloat(goal.target); // <=: exatamente no target = sucesso
             if (isAchieved) achievedCount++;
         });
     }

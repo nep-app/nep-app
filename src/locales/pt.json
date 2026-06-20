@@ -925,5 +925,15 @@
     "attention": "⚠️ Padrões a vigiar:",
     "attentionList": "Humor baixo / menos autocuidado → mais consumo",
     "note": "⚡ Correlação ≠ causalidade. Usa como pistas para autoconhecimento."
+  },
+  "sentiment": {
+    "very_positive": "muito positivo",
+    "positive": "positivo",
+    "neutral": "neutro",
+    "negative": "negativo",
+    "very_negative": "muito negativo",
+    "improving": "a melhorar",
+    "stable": "estável",
+    "worsening": "a piorar"
   }
 }

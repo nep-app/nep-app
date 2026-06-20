@@ -925,5 +925,15 @@
     "attention": "⚠️ Patterns to watch:",
     "attentionList": "Low mood / less self-care → more use",
     "note": "⚡ Correlation ≠ causation. Use as clues for self-knowledge."
+  },
+  "sentiment": {
+    "very_positive": "very positive",
+    "positive": "positive",
+    "neutral": "neutral",
+    "negative": "negative",
+    "very_negative": "very negative",
+    "improving": "improving",
+    "stable": "stable",
+    "worsening": "worsening"
   }
 }

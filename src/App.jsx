@@ -1145,7 +1145,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); }}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey() }); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
@@ -1155,7 +1155,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <WellbeingModal
                                 isOpen={showWellbeingModal}
-                                onClose={() => { setShowWellbeingModal(false); setEditingWellbeingLog(null); }}
+                                onClose={() => { setShowWellbeingModal(false); setEditingWellbeingLog(null); setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '', isAtypical: false, atypicalReason: '' }); }}
                                 wellbeingForm={wellbeingForm}
                                 setWellbeingForm={setWellbeingForm}
                                 onSubmit={submitWellbeing}
@@ -1167,7 +1167,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <EmotionsModal
                                 isOpen={showEmotionsModal}
-                                onClose={() => setShowEmotionsModal(false)}
+                                onClose={() => { setShowEmotionsModal(false); setEmotionsForm({ datetime: '', emotions: [], notes: '' }); }}
                                 emotionsForm={emotionsForm}
                                 setEmotionsForm={setEmotionsForm}
                                 onSubmit={submitEmotions}
@@ -1177,7 +1177,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <ReflectionModal
                                 isOpen={showReflectionModal}
-                                onClose={() => { setShowReflectionModal(false); setEditingReflection(null); }}
+                                onClose={() => { setShowReflectionModal(false); setEditingReflection(null); setReflectionAnswer(''); setReflectionDatetime(''); }}
                                 currentDbtQuestion={reflectionQuestion}
                                 reflectionAnswer={reflectionAnswer}
                                 setReflectionAnswer={setReflectionAnswer}
@@ -1190,7 +1190,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <CycleModal
                                 isOpen={showCycleModal}
-                                onClose={() => { setShowCycleModal(false); setEditingCycle(null); }}
+                                onClose={() => { setShowCycleModal(false); setEditingCycle(null); setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', createdAt: '' }); }}
                                 editingCycle={editingCycle}
                                 cycleForm={cycleForm}
                                 setCycleForm={setCycleForm}
@@ -1201,7 +1201,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <GoalModal
                                 isOpen={showGoalModal}
-                                onClose={() => { setShowGoalModal(false); setEditingGoal(null); }}
+                                onClose={() => { setShowGoalModal(false); setEditingGoal(null); setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' }); }}
                                 editingGoal={editingGoal}
                                 goalForm={goalForm}
                                 setGoalForm={setGoalForm}
@@ -1223,7 +1223,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <ThoughtsModal
                                 isOpen={showThoughtsModal}
-                                onClose={() => { setShowThoughtsModal(false); setEditingThought(null); setThoughtInitialContent(''); }}
+                                onClose={() => { setShowThoughtsModal(false); setEditingThought(null); setThoughtInitialContent(''); setThoughtDatetime(''); }}
                                 thoughtDatetime={thoughtDatetime}
                                 setThoughtDatetime={setThoughtDatetime}
                                 onSubmit={submitThoughts}

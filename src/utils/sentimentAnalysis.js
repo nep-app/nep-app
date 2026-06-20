@@ -1,6 +1,7 @@
 // ==========================================
 // CÓDIGO DE SENTIMENT ANALYSIS V3.0
 // ==========================================
+import i18n from '../i18n';
 
 // Versão V3.0 - com emojis, frases coloquiais PT-PT, "tou", e deteção de contraste
 function _calculateRawSentiment(text) {
@@ -359,11 +360,11 @@ export function identifyThemes(notes) {
 }
 
 export function getSentimentDescription(classification) {
-  const descriptions = { very_positive: 'muito positivo', positive: 'positivo', neutral: 'neutro', negative: 'negativo', very_negative: 'muito negativo' };
-  return descriptions[classification] || 'neutro';
+  const key = `sentiment.${classification}`;
+  return i18n.t(key, { defaultValue: classification });
 }
 
 export function getTrendDescription(trend) {
-  const descriptions = { improving: 'a melhorar', stable: 'estável', worsening: 'a piorar' };
-  return descriptions[trend] || 'estável';
+  const key = `sentiment.${trend}`;
+  return i18n.t(key, { defaultValue: trend });
 }

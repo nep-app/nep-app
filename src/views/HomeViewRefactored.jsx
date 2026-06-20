@@ -76,7 +76,7 @@ export function HomeViewRefactored({
         setCachedTimeSince(stats.timeSinceLastConsumption);
       }
     });
-  }, [consumptions, cycles, dailyLogs, goals]);
+  }, [consumptions, cycles, dailyLogs, goals, i18n.language]);
 
   const handleSync = async () => {
     try {
