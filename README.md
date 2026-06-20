@@ -1,8 +1,8 @@
-# Harm Reduction Tracker
+# NEP.app — Harm Reduction Tracker
 
 > **Aplicação web de acompanhamento e redução de danos no consumo de substâncias psicoativas**
 
-Versão atual: **v1.5.3**
+Versão atual: **v4.6.0**
 
 A app é agnóstica à substância — funciona para qualquer substância que o utilizador queira monitorizar (estimulantes, dissociativos, empatogénios, etc.). O objetivo é ajudar a consumir de forma mais consciente e reduzir gradualmente, ao ritmo de cada pessoa.
 
@@ -135,33 +135,25 @@ src/
 
 ## 🔄 Changelog
 
-### v1.5.3 (Atual)
+### v4.6.0 (Atual)
 - Tradução completa para inglês (emoções, gaps, fatores de risco, alertas, correlações)
 - Correção dos denominadores de todas as metas no dashboard
 - Correção da análise de sentimento (negação em frases positivas)
 - Simplificação da explicação de correlações
+- Modo demo com dados realistas (sem registo necessário)
 
-### v1.5.x
+### v4.x
 - Exercícios guiados para gerir impulso de consumo
 - Fichas educativas de harm reduction
 - Mais perguntas de reflexão DBT + rotação diária
 - Recorde de streak
 - Data de primeiro uso editável nas definições
 - Cartão semanal com círculos de progresso das metas
-
-### v1.4.x
 - Segurança: brute-force lockout, PIN em sessionStorage, sanitização de inputs
-- Exportação CSV melhorada
-- Filtragem de dias atípicos em alertas e métricas
-
-### v1.3.0
 - Sync incremental com timestamps exatos (84x mais rápido)
 - Stats pré-calculadas para boot ultra-rápido
 - PWA com suporte offline
-
-### v1.2.0
-- Arquitetura Local-First
-- Encriptação AES-256-GCM
+- Arquitetura Local-First + encriptação AES-256-GCM
 
 ---
 
