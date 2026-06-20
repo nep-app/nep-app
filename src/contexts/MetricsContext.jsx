@@ -334,6 +334,7 @@ export const MetricsProvider = ({ children }) => {
     last7Days,
     avgFrequencyLast7Days,
     getGoalProgress,
+    consumptionsByDate, // memoized, atypical days filtered
   };
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

@@ -7,7 +7,7 @@ import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { formatDateTime, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { formatDateTime, safeToISODate, getDateDaysAgo } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats } from '../utils/userStats';
 
@@ -28,6 +28,7 @@ export function HomeViewRefactored({
   const { t, i18n } = useTranslation();
   const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
+  const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
@@ -212,19 +213,12 @@ export function HomeViewRefactored({
         const freqGoal = goals.find(g => g.type === 'reduce_frequency');
         const target = freqGoal ? parseFloat(freqGoal.target) : null;
 
-        const countByDate = {};
-        consumptions.forEach(c => {
-          const k = getDateKeyFromItem(c);
-          if (!k) return;
-          countByDate[k] = (countByDate[k] || 0) + 1;
-        });
-
         const days = Array.from({ length: 7 }, (_, i) => {
           const d = getDateDaysAgo(6 - i);
           const k = safeToISODate(d);
           return {
             k,
-            count: countByDate[k] || 0,
+            count: consumptionsByDate[k] || 0,
             label: i === 6
               ? t('home.today')
               : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d).replace(/\.$/, ''),
@@ -236,7 +230,7 @@ export function HomeViewRefactored({
 
         const dotClass = (count) => {
           if (count === 0) return 'bg-gray-700/60 text-gray-500';
-          if (Number.isFinite(target)) return count <= target
+          if (Number.isFinite(target)) return count < target
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
           return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';
