@@ -389,7 +389,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       let shownLimitLastAlert = false;
       if (todayConsumptions.length > 0) {
         const ld = new Date(todayConsumptions[0].timestamp);
-        const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+        let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+        if (lastMinutes < 360) lastMinutes += 1440;
         if (lastMinutes >= targetMinutes) {
           const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
           alerts.push({
@@ -408,7 +409,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         const prevConsumptions = allByDay[previousKeys[0]].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         const prevLast = prevConsumptions[0];
         const ld = new Date(prevLast.timestamp);
-        const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+        let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+        if (lastMinutes < 360) lastMinutes += 1440;
         const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
 
         if (lastMinutes < targetMinutes) {
