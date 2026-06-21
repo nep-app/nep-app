@@ -386,12 +386,16 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const todayConsumptions = (allByDay[todayKey] || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       // Só avisar hoje se já consumiste DEPOIS do alvo (ciclo em aberto violado)
+      // Excepção: consumo de madrugada (antes das 6h) já passou de meio-dia → pertence ao ciclo anterior
+      const nowHour = now.getHours();
       let shownLimitLastAlert = false;
       if (todayConsumptions.length > 0) {
         const ld = new Date(todayConsumptions[0].timestamp);
         let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
-        if (lastMinutes < 360) lastMinutes += 1440;
-        if (lastMinutes >= targetMinutes) {
+        const isEarlyMorning = lastMinutes < 360; // antes das 6h
+        if (isEarlyMorning) lastMinutes += 1440;
+        // Se foi de madrugada e já é passado o meio-dia, ignorar como "hoje" (faz parte do ciclo anterior)
+        if (lastMinutes >= targetMinutes && !(isEarlyMorning && nowHour >= 12)) {
           const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
           alerts.push({
             text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
