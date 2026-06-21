@@ -761,16 +761,17 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisConsumptions.length < 14) return null;
 
-                        const now = new Date();
+                        // Usar o fim do período seleccionado como referência, não a data real de hoje
+                        const periodEnd = new Date(getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset).end || new Date());
                         const last7Days = analysisConsumptions.filter(c => {
                             const cDate = new Date(c.timestamp);
-                            const diffDays = (now - cDate) / (1000 * 60 * 60 * 24);
+                            const diffDays = (periodEnd - cDate) / (1000 * 60 * 60 * 24);
                             return diffDays <= 7;
                         });
 
                         const previous21Days = analysisConsumptions.filter(c => {
                             const cDate = new Date(c.timestamp);
-                            const diffDays = (now - cDate) / (1000 * 60 * 60 * 24);
+                            const diffDays = (periodEnd - cDate) / (1000 * 60 * 60 * 24);
                             return diffDays > 7 && diffDays <= 28;
                         });
 
