@@ -349,8 +349,28 @@ export function PatternsView({
                                                         gLogs.forEach(l => { if (l.date && l.mg != null && l.date !== today) s.add(l.date); });
                                                         gCycles.forEach(c => { if (c.mg) { const d = getDateKeyFromItem(c); if (d && d !== today) s.add(d); } });
                                                         totalPossible = s.size;
+                                                    } else if (g.type === 'limit_last') {
+                                                        // Denominador = ciclos fechados onde a meia-noite ocorreu
+                                                        const sortedC = [...gCycles]
+                                                            .filter(c => c.timestamp || c.date)
+                                                            .map(c => new Date(c.timestamp || c.date))
+                                                            .sort((a, b) => a - b);
+                                                        const now = new Date();
+                                                        const bounds = [...sortedC, now];
+                                                        let cyclesTotalPossible = 0;
+                                                        for (let i = 0; i < bounds.length - 1; i++) {
+                                                            const cStart = bounds[i];
+                                                            const cEnd = bounds[i + 1];
+                                                            const midnight = new Date(cStart);
+                                                            midnight.setDate(midnight.getDate() + 1);
+                                                            midnight.setHours(0, 0, 0, 0);
+                                                            if (midnight >= cEnd) continue;
+                                                            const hasCons = gCons.some(c => { const t = new Date(c.timestamp); return t > cStart && t <= cEnd; });
+                                                            if (hasCons) cyclesTotalPossible++;
+                                                        }
+                                                        totalPossible = cyclesTotalPossible;
                                                     } else {
-                                                        // first_not_before, limit_last, default: days with consumptions
+                                                        // first_not_before, default: days with consumptions
                                                         const s = new Set();
                                                         gCons.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today) s.add(d); });
                                                         totalPossible = s.size;

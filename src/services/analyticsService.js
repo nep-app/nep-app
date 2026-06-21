@@ -321,29 +321,41 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'limit_last') {
-        const today = getTodayPT();
-        const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
-        const [th, tm] = targetStr.split(':').map(Number);
-        // 00:00 significa meia-noite = fim do dia = 1440 minutos
-        const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+        // O "dia" é definido pelo ciclo de sono, não pelo calendário.
+        // Para cada ciclo FECHADO: houve algum consumo depois da meia-noite desse ciclo? → falhou.
+        const sortedCycles = [...(cycles || [])]
+            .filter(c => c.timestamp || c.date)
+            .map(c => new Date(c.timestamp || c.date))
+            .sort((a, b) => a - b);
 
-        const consumptionsByDate = {};
-        consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
-            if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
-            consumptionsByDate[dateKey].push(c);
-        });
-        delete consumptionsByDate[today];
+        const now = new Date();
+        // Adicionar "agora" como fim do ciclo atual (ciclo aberto)
+        const boundaries = [...sortedCycles, now];
 
-        Object.values(consumptionsByDate).forEach(dayConsumptions => {
-            if (dayConsumptions.length === 0) return;
-            const last = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-            const d = new Date(last.timestamp);
-            let lastMinutes = d.getHours() * 60 + d.getMinutes();
-            // Early morning (before 6am) counts as "after midnight" for last-use goals
-            if (lastMinutes < 360) lastMinutes += 1440;
-            if (lastMinutes < targetMinutes) achievedCount++;
-        });
+        // Para cada ciclo fechado (entre boundary[i] e boundary[i+1])
+        for (let i = 0; i < boundaries.length - 1; i++) {
+            const cycleStart = boundaries[i];
+            const cycleEnd = boundaries[i + 1];
+
+            // Consumos deste ciclo
+            const cycleCons = consumptions.filter(c => {
+                const t = new Date(c.timestamp);
+                return t > cycleStart && t <= cycleEnd;
+            });
+            if (cycleCons.length === 0) continue;
+
+            // Meia-noite que cai dentro deste ciclo
+            // Procurar a primeira 00:00 depois de cycleStart
+            const midnight = new Date(cycleStart);
+            midnight.setDate(midnight.getDate() + 1);
+            midnight.setHours(0, 0, 0, 0);
+            // Se a meia-noite ainda não ocorreu dentro do ciclo, ignorar (ciclo ainda em aberto sem meia-noite)
+            if (midnight >= cycleEnd) continue;
+
+            // Houve consumo depois dessa meia-noite?
+            const violated = cycleCons.some(c => new Date(c.timestamp) >= midnight);
+            if (!violated) achievedCount++;
+        }
     }
 
     if (goal.type === 'increase_interval') {
