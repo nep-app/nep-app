@@ -121,6 +121,26 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
     };
 };
 
+export const generateResearchData = ({ consumptions, cycles, wellbeingLogs, reflections, thoughts, goals }) => {
+    const allTs = [
+        ...consumptions.map(c => c.timestamp),
+        ...cycles.map(c => c.timestamp || c.date),
+        ...wellbeingLogs.map(w => w.timestamp),
+        ...reflections.map(r => r.timestamp),
+        ...thoughts.map(t => t.timestamp),
+    ].filter(Boolean);
+
+    const weekKeys = [...new Set(allTs.map(getWeekKey))].sort().slice(-52);
+    const weeks = {};
+    for (const weekKey of weekKeys) {
+        const weekData = aggregateWeek(weekKey, consumptions, cycles, wellbeingLogs, reflections, thoughts, goals);
+        if (weekData.consumption || weekData.sleep || weekData.wellbeing) {
+            weeks[weekKey] = weekData;
+        }
+    }
+    return { anonId: getOrCreateResearchId(), exportedAt: new Date().toISOString(), weeks };
+};
+
 export const syncResearchData = async (firebaseDB, { consumptions, cycles, wellbeingLogs, reflections, thoughts, goals }) => {
     try {
         const anonId = getOrCreateResearchId();

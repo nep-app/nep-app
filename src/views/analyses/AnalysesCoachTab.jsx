@@ -1368,6 +1368,100 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         );
                     })()}
 
+                    {/* Paragraph 8a-extra: Análise comparativa dos dias sem dormir */}
+                    {(() => {
+                        if (analysisConsumptions.length === 0) return null;
+
+                        // Separar datas em "sem sono" e "com sono"
+                        const uniqueConsDates = new Set();
+                        analysisConsumptions.forEach(c => { if (c.date) uniqueConsDates.add(c.date); });
+
+                        const noSleepDates = new Set();
+                        const withSleepDates = new Set();
+
+                        uniqueConsDates.forEach(date => {
+                            const hasSleepC = analysisCycles.some(c => {
+                                const d = c.date || (c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : null);
+                                return d === date && c.sleep != null && c.sleep !== '';
+                            });
+                            const hasSleepW = analysisWellbeing.some(w => {
+                                const d = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+                                return d === date && w.sleep != null && w.sleep !== '';
+                            });
+                            if (!hasSleepC && !hasSleepW) noSleepDates.add(date);
+                            else withSleepDates.add(date);
+                        });
+
+                        if (noSleepDates.size < 3 || withSleepDates.size < 3) return null;
+
+                        // Consumos médios por dia: sem sono vs com sono
+                        const consPerDayNoSleep = {};
+                        const consPerDayWithSleep = {};
+                        analysisConsumptions.forEach(c => {
+                            if (!c.date) return;
+                            if (noSleepDates.has(c.date)) consPerDayNoSleep[c.date] = (consPerDayNoSleep[c.date] || 0) + 1;
+                            else if (withSleepDates.has(c.date)) consPerDayWithSleep[c.date] = (consPerDayWithSleep[c.date] || 0) + 1;
+                        });
+
+                        const avgArr = (obj) => {
+                            const vals = Object.values(obj);
+                            return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+                        };
+                        const avgConsNoSleep = avgArr(consPerDayNoSleep);
+                        const avgConsWithSleep = avgArr(consPerDayWithSleep);
+
+                        // Humor e energia: sem sono vs com sono
+                        const moodNoSleep = [], energyNoSleep = [];
+                        const moodWithSleep = [], energyWithSleep = [];
+
+                        analysisWellbeing.forEach(w => {
+                            const d = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+                            if (!d) return;
+                            if (noSleepDates.has(d)) {
+                                if (w.mood != null) moodNoSleep.push(parseFloat(w.mood));
+                                if (w.energy != null) energyNoSleep.push(parseFloat(w.energy));
+                            } else if (withSleepDates.has(d)) {
+                                if (w.mood != null) moodWithSleep.push(parseFloat(w.mood));
+                                if (w.energy != null) energyWithSleep.push(parseFloat(w.energy));
+                            }
+                        });
+
+                        const avg = arr => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+                        const avgMoodNS = avg(moodNoSleep);
+                        const avgMoodWS = avg(moodWithSleep);
+                        const avgEnergyNS = avg(energyNoSleep);
+                        const avgEnergyWS = avg(energyWithSleep);
+
+                        const hasMoodData = avgMoodNS !== null && avgMoodWS !== null;
+                        const hasEnergyData = avgEnergyNS !== null && avgEnergyWS !== null;
+                        const consHigher = avgConsNoSleep > avgConsWithSleep * 1.15;
+                        const moodLower = hasMoodData && avgMoodNS < avgMoodWS - 0.4;
+                        const energyLower = hasEnergyData && avgEnergyNS < avgEnergyWS - 0.4;
+
+                        return (
+                            <p>
+                                😴 <strong className={('text-orange-400')}>{t('coach.noSleepAnalysisLabel')}</strong>{' '}
+                                {t('coach.noSleepCompare', {
+                                    n: noSleepDates.size,
+                                    avgCons: avgConsNoSleep.toFixed(1),
+                                    avgConsS: avgConsWithSleep.toFixed(1)
+                                })}
+                                {hasMoodData && (
+                                    <> {t('coach.noSleepMoodEnergy', {
+                                        mood: avgMoodNS.toFixed(1),
+                                        energy: hasEnergyData ? avgEnergyNS.toFixed(1) : '–',
+                                        moodS: avgMoodWS.toFixed(1),
+                                        energyS: hasEnergyData ? avgEnergyWS.toFixed(1) : '–'
+                                    })}</>
+                                )}
+                                {!hasMoodData && <> {t('coach.noSleepNoWellbeing')}</>}
+                                {consHigher && <> <span className={('text-orange-300')}>{t('coach.noSleepMoreCons')}</span></>}
+                                {!consHigher && <> <span className={('text-gray-400')}>{t('coach.noSleepSameCons')}</span></>}
+                                {(moodLower || energyLower) && <> <span className={('text-orange-300')}>{t('coach.noSleepWorseMoodEnergy')}</span></>}
+                            </p>
+                        );
+                    })()}
+
                     {/* Paragraph 8b: Score de Sono */}
                     {(() => {
                         // Combinar dados de sono de cycles e wellbeing
