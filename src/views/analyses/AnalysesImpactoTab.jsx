@@ -105,7 +105,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                     if (Math.abs(increasePct) > 10) {
                         experimentalFeatures.compositeTriggers.push({
-                            name: 'Humor Baixo + Sono Mau',
+                            name: t('analyses.impactCompositeLowMoodSleep'),
                             icon: '😔💤',
                             avgCons: avgConsWhenBoth.toFixed(1),
                             normalCons: avgConsNormal.toFixed(1),
@@ -128,7 +128,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                         if (Math.abs(increasePct) > 10) {
                             experimentalFeatures.compositeTriggers.push({
-                                name: 'Humor Baixo + Energia Baixa',
+                                name: t('analyses.impactCompositeLowMoodEnergy'),
                                 icon: '😔⚡',
                                 avgCons: avgConsWhenBoth.toFixed(1),
                                 normalCons: avgConsNormal.toFixed(1),
@@ -159,7 +159,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                         if (moodDecline) {
                             experimentalFeatures.antecedents.push({
                                 date,
-                                pattern: 'Humor estava a descer antes de consumir',
+                                pattern: t('analyses.impactAntecedentMoodFalling'),
                                 icon: '📉',
                                 cons: todayCons
                             });
@@ -168,7 +168,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                         if (poorSleepStreak) {
                             experimentalFeatures.antecedents.push({
                                 date,
-                                pattern: 'Sono mau em dias consecutivos',
+                                pattern: t('analyses.impactAntecedentSleepPoor'),
                                 icon: '💤',
                                 cons: todayCons
                             });
@@ -294,21 +294,21 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                 if (baseline && post30min) {
                     latency.push({
-                        window: '30min pós',
+                        window: t('analyses.impactLatency30min'),
                         delta: (parseFloat(post30min.humor) - parseFloat(baseline.humor)).toFixed(1),
                         isPeak: false
                     });
                 }
                 if (baseline && post1h) {
                     latency.push({
-                        window: '1h pós',
+                        window: t('analyses.impactLatency1h'),
                         delta: (parseFloat(post1h.humor) - parseFloat(baseline.humor)).toFixed(1),
                         isPeak: false
                     });
                 }
                 if (baseline && post2h) {
                     latency.push({
-                        window: '2h pós',
+                        window: t('analyses.impactLatency2h'),
                         delta: (parseFloat(post2h.humor) - parseFloat(baseline.humor)).toFixed(1),
                         isPeak: false
                     });
@@ -553,17 +553,17 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                     {/* Eficácia (Antes → Depois) */}
                                                     {experimentalFeatures.satisfaction.length > 0 && experimentalFeatures.satisfaction.map((sat, idx) => (
                                                         <div key={idx}>
-                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>✅ Eficácia (antes → 1-3h depois)</div>
+                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>{t('analyses.impactEfficacyLabel')}</div>
                                                             <div className="grid grid-cols-2 gap-2">
                                                                 <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
-                                                                    <div className={'text-xs opacity-60'}>Melhoria</div>
+                                                                    <div className={'text-xs opacity-60'}>{t('analyses.impactImprovementLabel')}</div>
                                                                     <div className={'text-lg font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? ('text-green-400') : parseFloat(sat.avgImprovement) < 0 ? ('text-red-400') : ('text-gray-400'))}>
                                                                         {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
                                                                     </div>
                                                                     <div className={'text-xs opacity-60'}>pts</div>
                                                                 </div>
                                                                 <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
-                                                                    <div className={'text-xs opacity-60'}>Taxa</div>
+                                                                    <div className={'text-xs opacity-60'}>{t('analyses.impactRateLabel')}</div>
                                                                     <div className={'text-lg font-bold ' + ('text-green-400')}>
                                                                         {sat.effectiveRate}%
                                                                     </div>
@@ -595,9 +595,9 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                         fontSize: '12px'
                                                     }}
                                                 />
-                                                <Line type="monotone" dataKey="humor" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name="Humor" />
+                                                <Line type="monotone" dataKey="humor" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} name={t('analyses.impactChartMood')} />
                                                 {chartData.some(d => d.energia) && (
-                                                    <Line type="monotone" dataKey="energia" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} name="Energia" />
+                                                    <Line type="monotone" dataKey="energia" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} name={t('analyses.impactChartEnergy')} />
                                                 )}
                                             </LineChart>
                                         </ResponsiveContainer>
@@ -649,7 +649,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                             </span>
                                                         </div>
                                                         <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {trigger.occurrences} {trigger.occurrences === 1 ? 'ocorrência' : 'ocorrências'} registadas
+                                                            {t('analyses.impactOccurrencesRegistered', { n: trigger.occurrences })}
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
@@ -780,7 +780,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                     <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mx-auto mb-4"></div>
                                     <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">A carregar gráfico...</p>
+                                <p className="text-xs text-gray-500 mt-2">{t('analyses.loadingChart')}</p>
                             </div>
                         }>
                             <WellbeingChart
@@ -796,10 +796,10 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                     <h3 className={'font-semibold mb-2 ' + ('text-white')}>{t('analyses.intradayTitle')}</h3>
                     <p className={'text-xs mb-4 ' + ('text-gray-400')}>
-                        Como evoluem humor, energia e consumo durante o mesmo dia
+                        {t('analyses.impactIntraDayDesc')}
                     </p>
                     <div className={'text-center py-6 text-sm ' + ('text-gray-400')}>
-                        Sem dados de ciclos com consumo e bem-estar registados
+                        {t('analyses.impactNoData')}
                     </div>
                 </div>
             )}

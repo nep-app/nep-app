@@ -10,7 +10,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
     analysisCycles,
     analysisDailyLogs,
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const [expandedSections, setExpandedSections] = useState({
         wellbeingConsumption: !isMobile,
@@ -88,6 +88,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
             correlations.push({
                 name: 'Consumo → Sono',
+                displayName: t('correlations.nameConsSleep'),
                 icon: '💊',
                 correlation: correlation,
                 average: avgSleep.toFixed(1),
@@ -103,6 +104,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
             correlations.push({
                 name: 'Consumo → Humor',
+                displayName: t('correlations.nameConsMood'),
                 icon: '💊',
                 correlation: correlation,
                 average: avgMood.toFixed(1),
@@ -118,6 +120,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
             correlations.push({
                 name: 'Consumo → Energia',
+                displayName: t('correlations.nameConsEnergy'),
                 icon: '💊',
                 correlation: correlation,
                 average: avgEnergy.toFixed(1),
@@ -150,6 +153,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgSleep = sleepToConsNextData.reduce((sum, d) => sum + d.sleep, 0) / sleepToConsNextData.length;
             sleepToConsumptionNext.push({
                 name: 'Sono ontem → Consumo hoje',
+                displayName: t('correlations.nameSleepYestCons'),
                 icon: '😴',
                 correlation: corr,
                 average: avgSleep.toFixed(1),
@@ -179,6 +183,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgMood = moodToConsNextData.reduce((sum, d) => sum + d.mood, 0) / moodToConsNextData.length;
             moodToConsumptionNext.push({
                 name: 'Humor ontem → Consumo hoje',
+                displayName: t('correlations.nameMoodYestCons'),
                 icon: '😊',
                 correlation: corr,
                 average: avgMood.toFixed(1),
@@ -208,6 +213,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgEnergy = energyToConsNextData.reduce((sum, d) => sum + d.energy, 0) / energyToConsNextData.length;
             energyToConsumptionNext.push({
                 name: 'Energia ontem → Consumo hoje',
+                displayName: t('correlations.nameEnergyYestCons'),
                 icon: '⚡',
                 correlation: corr,
                 average: avgEnergy.toFixed(1),
@@ -275,6 +281,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             consumptionAutocorrelation.push({
                 name: 'Consumo Ontem → Hoje',
+                displayName: t('correlations.nameConsAutocorr'),
                 icon: '💊',
                 correlation: corr,
                 average: avgYesterday.toFixed(1),
@@ -298,6 +305,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             consumptionToEmotions.push({
                 name: 'Consumo → Emoções Negativas',
+                displayName: t('correlations.nameConsNegEmotions'),
                 icon: '💊',
                 correlation: corr,
                 average: avgConsumptions.toFixed(1),
@@ -315,6 +323,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             consumptionToSelfCare.push({
                 name: 'Consumo → Autocuidado',
+                displayName: t('correlations.nameConsSelfCare'),
                 icon: '💊',
                 correlation: corr,
                 average: avgCons.toFixed(1),
@@ -350,6 +359,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             dosageToWellbeing.push({
                 name: 'Dosagem → Sono',
+                displayName: t('correlations.nameDosageSleep'),
                 icon: '💊',
                 correlation: corr,
                 average: avgDosage.toFixed(0),
@@ -367,6 +377,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             dosageToWellbeing.push({
                 name: 'Dosagem → Humor',
+                displayName: t('correlations.nameDosageMood'),
                 icon: '💊',
                 correlation: corr,
                 average: avgDosage.toFixed(0),
@@ -384,6 +395,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             dosageToWellbeing.push({
                 name: 'Dosagem → Energia',
+                displayName: t('correlations.nameDosageEnergy'),
                 icon: '💊',
                 correlation: corr,
                 average: avgDosage.toFixed(0),
@@ -433,19 +445,21 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgOld = oldWeeks.length > 0 ? oldWeeks.reduce((s, w) => s + w.totalMg, 0) / oldWeeks.length : avgRecent;
                 const trendPct = oldWeeks.length > 0 ? ((avgRecent - avgOld) / avgOld * 100) : 0;
 
-                let trendLabel = 'Estável';
+                let trendKey = 'stable';
                 let trendIcon = '➡️';
                 if (trendPct > 15) {
-                    trendLabel = 'A Aumentar';
+                    trendKey = 'increasing';
                     trendIcon = '📈';
                 } else if (trendPct < -15) {
-                    trendLabel = 'A Reduzir';
+                    trendKey = 'decreasing';
                     trendIcon = '📉';
                 }
+                const trendLabel = t('correlations.' + (trendKey === 'increasing' ? 'trendIncreasing' : trendKey === 'decreasing' ? 'trendDecreasing' : 'trendStable'));
+                const weekPrefix = i18n.language === 'pt' ? 'S' : 'W';
 
                 // Preparar dados para gráfico (últimas 12 semanas máximo)
                 const chartData = sortedWeeks.slice(-12).map(w => ({
-                    week: w.week.replace(/^\d{4}-W/, 'S'),
+                    week: w.week.replace(/^\d{4}-W/, weekPrefix),
                     dosagem: w.totalMg,
                     days: w.days
                 }));
@@ -515,6 +529,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             firstConsToTotal.push({
                 name: 'Primeiro Consumo → Total do Dia',
+                displayName: t('correlations.nameFirstConsDay'),
                 icon: '🌅',
                 correlation: corr,
                 average: Math.floor(avgFirstHour) + ':' + String(Math.round((avgFirstHour % 1) * 60)).padStart(2, '0'),
@@ -543,29 +558,36 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             // Classificação
             let pattern = '';
+            let patternLabel = '';
             let emoji = '';
             if (stdDev < 2) {
                 pattern = 'Muito Regular';
+                patternLabel = t('correlations.labelVeryRegular');
                 emoji = '🎯';
             } else if (stdDev < 4) {
                 pattern = 'Regular';
+                patternLabel = t('correlations.labelRegular');
                 emoji = '📍';
             } else if (stdDev < 6) {
                 pattern = 'Moderado';
+                patternLabel = t('correlations.labelModerate');
                 emoji = '🔀';
             } else {
                 pattern = 'Caótico';
+                patternLabel = t('correlations.labelChaotic');
                 emoji = '🌪️';
             }
 
             temporalDispersion.push({
                 name: 'Dispersão Temporal',
+                displayName: t('correlations.nameTemporalDisp'),
                 icon: emoji,
                 correlation: stdDev / 12, // Normalizar para [-1, 1], assumindo máximo 12h de desvio
                 average: stdDev.toFixed(1),
                 unit: 'h',
                 dataPoints: consumptionHours.length,
                 pattern: pattern,
+                patternLabel: patternLabel,
                 type: 'dispersion'
             });
         }
@@ -626,6 +648,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
                 safeIntervals.push({
                     name: 'Intervalos "Seguros" (>3h)',
+                    displayName: t('correlations.nameSafeIntervals'),
                     icon: '⏱️',
                     correlation: corr,
                     average: avgInterval.toFixed(1),
@@ -688,6 +711,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
                 strategyEffectiveness.push({
                     name: 'Eficácia de Estratégias',
+                    displayName: t('correlations.nameStrategyEff'),
                     icon: '🛡️',
                     correlation: -(avgFull / avgNone), // Negativo = bom (menos consumo com autocuidado)
                     average: reduction.toFixed(0),
@@ -743,6 +767,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgCons = periodWellbeingData.morning.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.morning.length;
                 consumptionByPeriod.push({
                     name: 'Consumo Manhã → Humor',
+                    displayName: t('correlations.nameConsMorningMood'),
                     icon: '🌅',
                     period: '6h-12h',
                     correlation: corr,
@@ -756,6 +781,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgCons = periodWellbeingData.afternoon.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.afternoon.length;
                 consumptionByPeriod.push({
                     name: 'Consumo Tarde → Humor',
+                    displayName: t('correlations.nameConsAfternoonMood'),
                     icon: '☀️',
                     period: '12h-18h',
                     correlation: corr,
@@ -769,6 +795,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgCons = periodWellbeingData.evening.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.evening.length;
                 consumptionByPeriod.push({
                     name: 'Consumo Noite → Humor',
+                    displayName: t('correlations.nameConsEveningMood'),
                     icon: '🌙',
                     period: '18h-00h',
                     correlation: corr,
@@ -818,6 +845,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                     if (Math.abs(increasePct) > 10) {
                         experimentalFeatures.compositeTriggers.push({
                             name: 'Humor Baixo + Sono Mau',
+                            displayName: t('correlations.nameCompositeLowMoodSleep'),
                             icon: '😔💤',
                             avgCons: avgConsWhenBoth.toFixed(1),
                             normalCons: avgConsNormal.toFixed(1),
@@ -841,6 +869,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         if (Math.abs(increasePct) > 10) {
                             experimentalFeatures.compositeTriggers.push({
                                 name: 'Humor Baixo + Energia Baixa',
+                                displayName: t('correlations.nameCompositeLowMoodEnergy'),
                                 icon: '😔⚡',
                                 avgCons: avgConsWhenBoth.toFixed(1),
                                 normalCons: avgConsNormal.toFixed(1),
@@ -872,6 +901,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             experimentalFeatures.antecedents.push({
                                 date,
                                 pattern: 'Humor estava a descer antes de consumir',
+                                displayName: t('correlations.nameAntecedentMoodFalling'),
                                 icon: '📉',
                                 cons: todayCons
                             });
@@ -881,6 +911,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             experimentalFeatures.antecedents.push({
                                 date,
                                 pattern: 'Sono mau em dias consecutivos',
+                                displayName: t('correlations.nameAntecedentSleepPoor'),
                                 icon: '💤',
                                 cons: todayCons
                             });
@@ -977,6 +1008,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             intervalToDosage.push({
                 name: 'Intervalo → Dosagem',
+                displayName: t('correlations.nameIntervalDosage'),
                 icon: '⏱️',
                 correlation: corr,
                 average: avgInterval.toFixed(1),
@@ -1018,6 +1050,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             consumptionToBedtime.push({
                 name: 'Consumo → Bedtime Amanhã',
+                displayName: t('correlations.nameConsBedtime'),
                 icon: '💊',
                 correlation: corr,
                 average: avgCons.toFixed(1),
@@ -1062,6 +1095,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             bedtimeToNextDayWellbeing.push({
                 name: 'Bedtime → Humor Amanhã',
+                displayName: t('correlations.nameBedtimeMood'),
                 icon: '🌙',
                 correlation: corr,
                 average: (() => {
@@ -1109,6 +1143,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             bedtimeToNextDayWellbeing.push({
                 name: 'Bedtime → Energia Amanhã',
+                displayName: t('correlations.nameBedtimeEnergy'),
                 icon: '🌙',
                 correlation: corr,
                 average: (() => {
@@ -1146,6 +1181,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
                 wellbeingToDosage.push({
                     name: 'Emoções Negativas → Dosagem',
+                    displayName: t('correlations.nameNegEmotionsDosage'),
                     icon: '😩',
                     correlation: corr,
                     average: avgNegative.toFixed(0),
@@ -1177,6 +1213,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             wellbeingToDosage.push({
                 name: 'Gatilhos → Dosagem',
+                displayName: t('correlations.nameTriggersDosage'),
                 icon: '⚠️',
                 correlation: corr,
                 average: avgTriggers.toFixed(1),
@@ -1211,6 +1248,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             dosageToWellbeing.push({
                 name: 'Dosagem → Autocuidado',
+                displayName: t('correlations.nameDosageSelfCare'),
                 icon: '💊',
                 correlation: corr,
                 average: avgDosage.toFixed(0),
@@ -1240,6 +1278,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
                 dosageToWellbeing.push({
                     name: 'Dosagem → Emoções Negativas',
+                    displayName: t('correlations.nameDosageNegEmotions'),
                     icon: '💊',
                     correlation: corr,
                     average: avgDosage.toFixed(0),
@@ -1277,6 +1316,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgNextSleep = nextSleepData.reduce((sum, d) => sum + d.nextSleep, 0) / nextSleepData.length;
             consumptionToNextDayWellbeing.push({
                 name: 'Consumo → Sono Amanhã',
+                displayName: t('correlations.nameConsNextSleep'),
                 icon: '💊',
                 correlation: sleepCorr,
                 average: avgNextSleep.toFixed(1),
@@ -1293,6 +1333,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgNextMood = nextMoodData.reduce((sum, d) => sum + d.nextMood, 0) / nextMoodData.length;
             consumptionToNextDayWellbeing.push({
                 name: 'Consumo → Humor Amanhã',
+                displayName: t('correlations.nameConsNextMood'),
                 icon: '💊',
                 correlation: moodCorr,
                 average: avgNextMood.toFixed(1),
@@ -1309,6 +1350,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const avgNextEnergy = nextEnergyData.reduce((sum, d) => sum + d.nextEnergy, 0) / nextEnergyData.length;
             consumptionToNextDayWellbeing.push({
                 name: 'Consumo → Energia Amanhã',
+                displayName: t('correlations.nameConsNextEnergy'),
                 icon: '💊',
                 correlation: energyCorr,
                 average: avgNextEnergy.toFixed(1),
@@ -1347,6 +1389,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
                 sleepMoodCorrelations.push({
                     name: 'Sono (última noite) → Humor hoje',
+                    displayName: t('correlations.nameSleepMoodSameDay'),
                     icon: '😴➡️😊',
                     correlation: corr,
                     avgSleep: avgSleep.toFixed(1),
@@ -1361,6 +1404,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
                 sleepMoodCorrelations.push({
                     name: 'Sono → Humor amanhã',
+                    displayName: t('correlations.nameSleepMoodNextDay'),
                     icon: '😴💤😊',
                     correlation: corr,
                     avgSleep: avgSleep.toFixed(1),
@@ -1401,6 +1445,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         const bedtimeToConsCard = bedtimeConsumptionData.length >= 1 ? {
             name: 'Bedtime → Consumo',
+            displayName: t('correlations.nameBedtimeCons'),
             icon: '🕐',
             correlation: bedtimeConsCorrelation,
             average: (() => {
@@ -1458,9 +1503,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         return (
             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                 <div className="text-6xl mb-4">🔗</div>
-                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>{t('correlations.titleCard')}</h3>
                 <p className={'text-sm ' + ('text-gray-400')}>
-                    Sem consumos registados para análise.
+                    {t('correlations.noConsumptions')}
                 </p>
             </div>
         );
@@ -1470,9 +1515,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         return (
             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                 <div className="text-6xl mb-4">🔗</div>
-                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>{t('correlations.titleCard')}</h3>
                 <p className={'text-sm ' + ('text-gray-400')}>
-                    Sem dados suficientes para análise de correlações neste momento.
+                    {t('correlations.noWellbeingData')}
                 </p>
             </div>
         );
@@ -1482,9 +1527,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         return (
             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-8 border text-center'}>
                 <div className="text-6xl mb-4">🔗</div>
-                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>Correlações</h3>
+                <h3 className={'text-xl font-bold mb-2 ' + ('text-white')}>{t('correlations.titleCard')}</h3>
                 <p className={'text-sm ' + ('text-gray-400')}>
-                    Regista bem-estar (sono, humor, energia) para ver correlações com consumo.
+                    {t('correlations.noCorrelations')}
                 </p>
             </div>
         );
@@ -1537,7 +1582,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 // Define a função aqui para ser usada em todas as seções abaixo
                 window.renderCorrelationCard = (corr, isInverse = false) => {
                     const getLabel = (r, name) => {
-                        if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
+                        if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
 
                         const isSleep = name.toLowerCase().includes('sono');
                         const isNegativeEmotion = name.toLowerCase().includes('emoções negativas') || name.toLowerCase().includes('emoções') && name.includes('→ Consumo');
@@ -1551,20 +1596,20 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         if (isInverse) {
                             // Bedtime → Consumo (deitar cedo = menos consumo = bom)
                             if (isBedtime && name.includes('→ Consumo')) {
-                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Deitar tarde → Mais consumo' };
-                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Deitar tarde → Ligeiramente mais consumo' };
-                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo → Menos consumo' };
-                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Deitar cedo → Ligeiramente menos consumo' };
-                                return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não afeta consumo' };
+                                if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Deitar tarde → Mais consumo' };
+                                if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Deitar tarde → Ligeiramente mais consumo' };
+                                if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Deitar cedo → Menos consumo' };
+                                if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Deitar cedo → Ligeiramente menos consumo' };
+                                return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Hora de deitar não afeta consumo' };
                             }
 
                             // Autocuidado alto → menos consumo = bom (negativa é boa)
                             if (isSelfCare) {
-                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais autocuidado → Menos consumo' };
-                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais autocuidado → Ligeiramente menos consumo' };
-                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais autocuidado → Mais consumo' };
-                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais autocuidado → Ligeiramente mais consumo' };
-                                return { text: 'Sem Correlação', color: 'gray', desc: 'Autocuidado não afeta consumo' };
+                                if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Mais autocuidado → Menos consumo' };
+                                if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Mais autocuidado → Ligeiramente menos consumo' };
+                                if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Mais autocuidado → Mais consumo' };
+                                if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Mais autocuidado → Ligeiramente mais consumo' };
+                                return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Autocuidado não afeta consumo' };
                             }
 
                             // Humor/energia altos → menos consumo (negativa é boa) e → dosagem
@@ -1577,20 +1622,20 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 if (target.includes('Consumo')) {
                                     const suffix = isYesterday ? ' no dia seguinte' : '';
                                     if (r < -0.4) {
-                                        return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
+                                        return { text: t('correlations.labelProtective'), color: 'green', desc: `${metricName} alto → Menos consumo${suffix}` };
                                     }
                                     if (r < -0.2) {
-                                        return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
+                                        return { text: t('correlations.labelSlightlyProtective'), color: 'green', desc: `${metricName} alto → Ligeiramente menos consumo${suffix}` };
                                     }
-                                    if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
-                                    if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
+                                    if (r > 0.4) return { text: t('correlations.labelRisk'), color: 'red', desc: `${metricName} alto → Mais consumo${suffix}` };
+                                    if (r > 0.2) return { text: t('correlations.labelSlightlyRisk'), color: 'orange', desc: `${metricName} alto → Ligeiramente mais consumo${suffix}` };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `${metricName} não afeta consumo${suffix}` };
                                 } else if (target.includes('Dosagem')) {
-                                    if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metricName} alto → Menos dosagem` };
-                                    if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
-                                    if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metricName} alto → Mais dosagem` };
-                                    if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metricName} alto → Ligeiramente mais dosagem` };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: `${metricName} não afeta dosagem` };
+                                    if (r < -0.4) return { text: t('correlations.labelProtective'), color: 'green', desc: `${metricName} alto → Menos dosagem` };
+                                    if (r < -0.2) return { text: t('correlations.labelSlightlyProtective'), color: 'green', desc: `${metricName} alto → Ligeiramente menos dosagem` };
+                                    if (r > 0.4) return { text: t('correlations.labelRisk'), color: 'red', desc: `${metricName} alto → Mais dosagem` };
+                                    if (r > 0.2) return { text: t('correlations.labelSlightlyRisk'), color: 'orange', desc: `${metricName} alto → Ligeiramente mais dosagem` };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `${metricName} não afeta dosagem` };
                                 }
                             }
 
@@ -1601,17 +1646,17 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 const timeContext = name.includes('ontem') ? ' (ontem → hoje)' : '';
 
                                 if (target === 'Consumo' || target.includes('Consumo')) {
-                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Menos sono → Mais consumo${timeContext}` };
-                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Menos sono → Ligeiramente mais consumo${timeContext}` };
-                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: `Mais sono → Mais consumo${timeContext}` };
-                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: `Mais sono → Ligeiramente mais consumo${timeContext}` };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: `Sono não afeta consumo${timeContext}` };
+                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Menos sono → Mais consumo${timeContext}` };
+                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Menos sono → Ligeiramente mais consumo${timeContext}` };
+                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'gray', desc: `Mais sono → Mais consumo${timeContext}` };
+                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'gray', desc: `Mais sono → Ligeiramente mais consumo${timeContext}` };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Sono não afeta consumo${timeContext}` };
                                 } else if (target === 'Dosagem') {
-                                    if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Menos sono → Mais dosagem' };
-                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Menos sono → Ligeiramente mais dosagem' };
-                                    if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: 'Mais sono → Mais dosagem' };
-                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: 'Mais sono → Ligeiramente mais dosagem' };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Sono não afeta dosagem' };
+                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: 'Menos sono → Mais dosagem' };
+                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: 'Menos sono → Ligeiramente mais dosagem' };
+                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'gray', desc: 'Mais sono → Mais dosagem' };
+                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'gray', desc: 'Mais sono → Ligeiramente mais dosagem' };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sono não afeta dosagem' };
                                 }
                             }
 
@@ -1620,17 +1665,17 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 const target = name.split(' →')[1].trim();
 
                                 if (target === 'Consumo') {
-                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais consumo' };
-                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais consumo' };
-                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos consumo' };
-                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos consumo' };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam consumo' };
+                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Mais emoções negativas → Mais consumo' };
+                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais consumo' };
+                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Mais emoções negativas → Menos consumo' };
+                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos consumo' };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Emoções não afetam consumo' };
                                 } else if (target === 'Dosagem') {
-                                    if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais emoções negativas → Mais dosagem' };
-                                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais dosagem' };
-                                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais emoções negativas → Menos dosagem' };
-                                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos dosagem' };
-                                    return { text: 'Sem Correlação', color: 'gray', desc: 'Emoções não afetam dosagem' };
+                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Mais emoções negativas → Mais dosagem' };
+                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Mais emoções negativas → Ligeiramente mais dosagem' };
+                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Mais emoções negativas → Menos dosagem' };
+                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Mais emoções negativas → Ligeiramente menos dosagem' };
+                                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Emoções não afetam dosagem' };
                                 }
                             }
                         }
@@ -1641,38 +1686,38 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         if (name.includes('Bedtime →') && (name.includes('Humor') || name.includes('Energia'))) {
                             const metricLower = name.includes('Humor') ? 'humor' : 'energia';
                             // Correlação positiva = deitar tarde → pior métrica = mau
-                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Deitar cedo → Melhor ${metricLower} amanhã` };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Deitar cedo → Ligeiramente melhor ${metricLower} amanhã` };
-                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Deitar tarde → Pior ${metricLower} amanhã` };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Deitar tarde → Ligeiramente pior ${metricLower} amanhã` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `Hora de deitar não afeta ${metricLower} amanhã` };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: `Deitar cedo → Melhor ${metricLower} amanhã` };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: `Deitar cedo → Ligeiramente melhor ${metricLower} amanhã` };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Deitar tarde → Pior ${metricLower} amanhã` };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Deitar tarde → Ligeiramente pior ${metricLower} amanhã` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Hora de deitar não afeta ${metricLower} amanhã` };
                         }
 
                         // Dosagem → Autocuidado (mais dosagem → menos autocuidado = mau)
                         if (name.includes('Dosagem →') && name.includes('Autocuidado')) {
-                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: 'Mais dosagem → Menos autocuidado' };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: 'Mais dosagem → Ligeiramente menos autocuidado' };
-                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais dosagem → Mais autocuidado' };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Mais dosagem → Ligeiramente mais autocuidado' };
-                            return { text: 'Sem Correlação', color: 'gray', desc: 'Dosagem não afeta autocuidado' };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: 'Mais dosagem → Menos autocuidado' };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: 'Mais dosagem → Ligeiramente menos autocuidado' };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: 'Mais dosagem → Mais autocuidado' };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: 'Mais dosagem → Ligeiramente mais autocuidado' };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Dosagem não afeta autocuidado' };
                         }
 
                         // Dosagem → Emoções (mais dosagem → mais emoções negativas = mau)
                         if (name.includes('Dosagem →') && name.includes('Emoções')) {
-                            if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais dosagem → Mais emoções negativas' };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais dosagem → Ligeiramente mais emoções negativas' };
-                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais dosagem → Menos emoções negativas' };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais dosagem → Ligeiramente menos emoções negativas' };
-                            return { text: 'Sem Correlação', color: 'gray', desc: 'Dosagem não afeta emoções' };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Mais dosagem → Mais emoções negativas' };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Mais dosagem → Ligeiramente mais emoções negativas' };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Mais dosagem → Menos emoções negativas' };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Mais dosagem → Ligeiramente menos emoções negativas' };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Dosagem não afeta emoções' };
                         }
 
                         // Consumo → Bedtime (mais consumo → deitar tarde = mau)
                         if (name.includes('Consumo →') && name.includes('Bedtime')) {
-                            if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Mais consumo → Deitar mais tarde' };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Mais consumo → Ligeiramente deitar mais tarde' };
-                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Mais consumo → Deitar mais cedo' };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Mais consumo → Ligeiramente deitar mais cedo' };
-                            return { text: 'Sem Correlação', color: 'gray', desc: 'Consumo não afeta hora de deitar' };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Mais consumo → Deitar mais tarde' };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Mais consumo → Ligeiramente deitar mais tarde' };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Mais consumo → Deitar mais cedo' };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Mais consumo → Ligeiramente deitar mais cedo' };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Consumo não afeta hora de deitar' };
                         }
 
                         // Consumo → Sono/Humor/Energia (mais consumo → menos/pior = mau)
@@ -1682,11 +1727,11 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             const metricLower = name.includes('Sono') ? 'sono' : name.includes('Humor') ? 'humor' : 'energia';
                             const timeContext = isNextDay ? ' amanhã' : '';
 
-                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Mais consumo → ${isSleep ? 'Menos' : 'Pior'} ${metricLower}${timeContext}` };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Mais consumo → Ligeiramente ${isSleep ? 'menos' : 'pior'} ${metricLower}${timeContext}` };
-                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais consumo → ${isSleep ? 'Mais' : 'Melhor'} ${metricLower}${timeContext}` };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais consumo → Ligeiramente ${isSleep ? 'mais' : 'melhor'} ${metricLower}${timeContext}` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `Consumo não afeta ${metricLower}${timeContext}` };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Mais consumo → ${isSleep ? 'Menos' : 'Pior'} ${metricLower}${timeContext}` };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Mais consumo → Ligeiramente ${isSleep ? 'menos' : 'pior'} ${metricLower}${timeContext}` };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: `Mais consumo → ${isSleep ? 'Mais' : 'Melhor'} ${metricLower}${timeContext}` };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: `Mais consumo → Ligeiramente ${isSleep ? 'mais' : 'melhor'} ${metricLower}${timeContext}` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Consumo não afeta ${metricLower}${timeContext}` };
                         }
 
                         // Casos adicionais com explicações específicas
@@ -1694,11 +1739,11 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         // Autocorrelação (X ontem → X hoje) - mas não X ontem → Consumo/Dosagem hoje
                         if (name.includes('ontem') && name.includes('hoje') && !name.includes('→ Consumo') && !name.includes('→ Dosagem')) {
                             const metric = name.split(' ontem')[0];
-                            if (r > 0.4) return { text: 'Positiva', color: 'gray', desc: `${metric} ontem tende a repetir-se hoje` };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'gray', desc: `${metric} ontem influencia ligeiramente hoje` };
-                            if (r < -0.4) return { text: 'Negativa', color: 'gray', desc: `${metric} ontem inverte-se hoje` };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'gray', desc: `${metric} ontem tende a inverter ligeiramente hoje` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `${metric} de ontem não afeta hoje` };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'gray', desc: `${metric} ontem tende a repetir-se hoje` };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'gray', desc: `${metric} ontem influencia ligeiramente hoje` };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'gray', desc: `${metric} ontem inverte-se hoje` };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'gray', desc: `${metric} ontem tende a inverter ligeiramente hoje` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `${metric} de ontem não afeta hoje` };
                         }
 
                         // Intervalo médio → Total/Dosagem
@@ -1706,29 +1751,29 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             const isDosage = name.includes('→ Dosagem');
                             if (isDosage) {
                                 // Dosagem em MG - pode subir mesmo com menos consumos se cada um tiver mais mg
-                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Intervalos maiores → Menos dosagem total (mg/dia)' };
-                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Intervalos maiores → Ligeiramente menos mg/dia' };
-                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Intervalos maiores → Mais mg/dia (doses individuais maiores?)' };
-                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Espaçar mais pode significar doses maiores por consumo' };
-                                return { text: 'Sem Correlação', color: 'gray', desc: 'Intervalo não afeta dosagem total' };
+                                if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Intervalos maiores → Menos dosagem total (mg/dia)' };
+                                if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Intervalos maiores → Ligeiramente menos mg/dia' };
+                                if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Intervalos maiores → Mais mg/dia (doses individuais maiores?)' };
+                                if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Espaçar mais pode significar doses maiores por consumo' };
+                                return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Intervalo não afeta dosagem total' };
                             } else {
                                 // Total de consumos
-                                if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Intervalos maiores → Menos consumos/dia' };
-                                if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Intervalos maiores → Ligeiramente menos consumos/dia' };
-                                if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Intervalos maiores → Mais consumos/dia' };
-                                if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Intervalos maiores → Ligeiramente mais consumos/dia' };
-                                return { text: 'Sem Correlação', color: 'gray', desc: 'Intervalo não afeta total de consumos' };
+                                if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Intervalos maiores → Menos consumos/dia' };
+                                if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Intervalos maiores → Ligeiramente menos consumos/dia' };
+                                if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Intervalos maiores → Mais consumos/dia' };
+                                if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Intervalos maiores → Ligeiramente mais consumos/dia' };
+                                return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Intervalo não afeta total de consumos' };
                             }
                         }
 
                         // Dosagem → Bem-estar/Humor/Energia
                         if (name.includes('Dosagem →') && (name.includes('Bem-estar') || name.includes('Humor') || name.includes('Energia'))) {
                             const metric = name.includes('Bem-estar') ? 'bem-estar' : name.includes('Humor') ? 'humor' : 'energia';
-                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais dosagem → Melhor ${metric}` };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais dosagem → Ligeiramente melhor ${metric}` };
-                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Mais dosagem → Pior ${metric}` };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Mais dosagem → Ligeiramente pior ${metric}` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `Dosagem não afeta ${metric}` };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: `Mais dosagem → Melhor ${metric}` };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: `Mais dosagem → Ligeiramente melhor ${metric}` };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Mais dosagem → Pior ${metric}` };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Mais dosagem → Ligeiramente pior ${metric}` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Dosagem não afeta ${metric}` };
                         }
 
                         // Bem-estar/Humor/Energia → Dosagem/Consumo (negativa é boa! mais humor → menos consumo)
@@ -1742,42 +1787,42 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             const suffix = isYesterday ? ' no dia seguinte' : '';
 
                             // Correlação negativa = bom (mais humor/energia → menos consumo)
-                            if (r < -0.4) return { text: 'Protetora', color: 'green', desc: `${metric} alto → Menos ${target}${suffix}` };
-                            if (r < -0.2) return { text: 'Ligeiramente Protetora', color: 'green', desc: `${metric} alto → Ligeiramente menos ${target}${suffix}` };
+                            if (r < -0.4) return { text: t('correlations.labelProtective'), color: 'green', desc: `${metric} alto → Menos ${target}${suffix}` };
+                            if (r < -0.2) return { text: t('correlations.labelSlightlyProtective'), color: 'green', desc: `${metric} alto → Ligeiramente menos ${target}${suffix}` };
                             // Correlação positiva = mau (mais humor/energia → mais consumo)
-                            if (r > 0.4) return { text: 'De Risco', color: 'red', desc: `${metric} alto → Mais ${target}${suffix}` };
-                            if (r > 0.2) return { text: 'Ligeiramente de Risco', color: 'orange', desc: `${metric} alto → Ligeiramente mais ${target}${suffix}` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `${metric} não afeta ${target}${suffix}` };
+                            if (r > 0.4) return { text: t('correlations.labelRisk'), color: 'red', desc: `${metric} alto → Mais ${target}${suffix}` };
+                            if (r > 0.2) return { text: t('correlations.labelSlightlyRisk'), color: 'orange', desc: `${metric} alto → Ligeiramente mais ${target}${suffix}` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `${metric} não afeta ${target}${suffix}` };
                         }
 
                         // Primeiro Consumo → Total
                         if (name.includes('Primeiro Consumo')) {
-                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Primeiro consumo tarde → Menos total no dia' };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Primeiro consumo tarde → Ligeiramente menos total' };
-                            if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Primeiro consumo cedo → Mais total no dia' };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Primeiro consumo cedo → Ligeiramente mais total' };
-                            return { text: 'Sem Correlação', color: 'gray', desc: 'Hora do 1º consumo não afeta total' };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Primeiro consumo tarde → Menos total no dia' };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Primeiro consumo tarde → Ligeiramente menos total' };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Primeiro consumo cedo → Mais total no dia' };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Primeiro consumo cedo → Ligeiramente mais total' };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Hora do 1º consumo não afeta total' };
                         }
 
                         // Consumo Manhã/Tarde/Noite → Humor (períodos do dia)
                         if (name.includes('Consumo Manhã') || name.includes('Consumo Tarde') || name.includes('Consumo Noite')) {
                             const period = name.includes('Manhã') ? 'manhã' : name.includes('Tarde') ? 'tarde' : 'noite';
                             const periodTime = name.includes('Manhã') ? '6h-12h' : name.includes('Tarde') ? '12h-18h' : '18h-24h';
-                            if (r < -0.4) return { text: 'Negativa', color: 'red', desc: `Mais consumos de ${period} (${periodTime}) → Humor mais baixo no dia` };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: `Mais consumos de ${period} → Ligeira tendência para humor baixo` };
-                            if (r > 0.4) return { text: 'Positiva', color: 'green', desc: `Mais consumos de ${period} → Humor melhor no dia` };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: `Mais consumos de ${period} → Ligeira tendência para humor alto` };
-                            return { text: 'Sem Correlação', color: 'gray', desc: `Consumos de ${period} não afetam humor` };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Mais consumos de ${period} (${periodTime}) → Humor mais baixo no dia` };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Mais consumos de ${period} → Ligeira tendência para humor baixo` };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: `Mais consumos de ${period} → Humor melhor no dia` };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: `Mais consumos de ${period} → Ligeira tendência para humor alto` };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Consumos de ${period} não afetam humor` };
                         }
 
                         // Autocorrelação de Consumo (Consumo Ontem → Hoje) - positivo é MAU
                         // IMPORTANTE: só fazer match se COMEÇA com "Consumo", não se contém "Consumo" no final
                         if (name.toLowerCase().startsWith('consumo') && name.toLowerCase().includes('ontem') && name.toLowerCase().includes('hoje')) {
-                            if (r > 0.4) return { text: 'Positiva', color: 'red', desc: 'Alto consumo ontem → Alto consumo hoje (padrão de repetição)' };
-                            if (r > 0.2) return { text: 'Fraca Positiva', color: 'orange', desc: 'Consumo ontem tende a repetir-se hoje' };
-                            if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Alto consumo ontem → Baixo consumo hoje (quebra de padrão!)' };
-                            if (r < -0.2) return { text: 'Fraca Negativa', color: 'green', desc: 'Consumo de ontem não se repete hoje' };
-                            return { text: 'Sem Correlação', color: 'gray', desc: 'Consumo de ontem não afeta hoje' };
+                            if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'red', desc: 'Alto consumo ontem → Alto consumo hoje (padrão de repetição)' };
+                            if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'orange', desc: 'Consumo ontem tende a repetir-se hoje' };
+                            if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Alto consumo ontem → Baixo consumo hoje (quebra de padrão!)' };
+                            if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'green', desc: 'Consumo de ontem não se repete hoje' };
+                            return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Consumo de ontem não afeta hoje' };
                         }
 
                         // Lógica genérica (fallback com descrição baseada no nome)
@@ -1802,13 +1847,13 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         }
 
                         // Regra simples: Negativo = Vermelho (forte -> escuro), Positivo = Verde (forte -> escuro)
-                        if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: genericDesc };
-                        if (r < -0.4) return { text: 'Negativa', color: 'red', desc: genericDesc };
-                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'orange', desc: genericDesc };
-                        if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: genericDesc };
-                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: genericDesc };
-                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: genericDesc };
-                        return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara entre variáveis' };
+                        if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'red', desc: genericDesc };
+                        if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: genericDesc };
+                        if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: genericDesc };
+                        if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'green', desc: genericDesc };
+                        if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: genericDesc };
+                        if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: genericDesc };
+                        return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sem relação clara entre variáveis' };
                     };
 
                     const label = getLabel(corr.correlation, corr.name);
@@ -1827,8 +1872,8 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 <div className="flex items-center gap-2">
                                     <span className="text-2xl">{corr.icon}</span>
                                     <div>
-                                        <div className={'font-semibold ' + ('text-white')}>{corr.name}</div>
-                                        <div className={'text-xs ' + ('text-gray-400')}>Média: {corr.average}{corr.unit}</div>
+                                        <div className={'font-semibold ' + ('text-white')}>{corr.displayName || corr.name}</div>
+                                        <div className={'text-xs ' + ('text-gray-400')}>{t('correlations.avg')} {corr.average}{corr.unit}</div>
                                     </div>
                                 </div>
                                 <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (
@@ -1844,7 +1889,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             <div className={'text-xs ' + ('text-gray-400')}>
                                 {label.desc && <span>💡 {label.desc}</span>}
                                 {corr.correlation !== null && <span className="ml-2">• r = {corr.correlation.toFixed(2)}</span>}
-                                <span className="ml-2">• {corr.dataPoints} dias</span>
+                                <span className="ml-2">• {corr.dataPoints} {t('correlations.days')}</span>
                             </div>
                         </div>
                     );
@@ -1947,14 +1992,14 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             {(() => {
                 if (sleepMoodCorrelations.length > 0) {
                     const getCorrelationLabel = (r) => {
-                        if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
-                        if (r > 0.7) return { text: 'Forte Positiva', color: 'green', desc: 'Mais sono → Muito melhor humor' };
-                        if (r > 0.4) return { text: 'Positiva', color: 'green', desc: 'Mais sono → Melhor humor' };
-                        if (r > 0.2) return { text: 'Fraca Positiva', color: 'green', desc: 'Sono ajuda o humor' };
-                        if (r < -0.7) return { text: 'Forte Negativa', color: 'red', desc: 'Mais sono → Muito pior humor (incomum)' };
-                        if (r < -0.4) return { text: 'Negativa', color: 'orange', desc: 'Mais sono → Pior humor (incomum)' };
-                        if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Possível correlação negativa' };
-                        return { text: 'Sem Correlação', color: 'gray', desc: 'Sem relação clara' };
+                        if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
+                        if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'green', desc: 'Mais sono → Muito melhor humor' };
+                        if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: 'Mais sono → Melhor humor' };
+                        if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: 'Sono ajuda o humor' };
+                        if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'red', desc: 'Mais sono → Muito pior humor (incomum)' };
+                        if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'orange', desc: 'Mais sono → Pior humor (incomum)' };
+                        if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: 'Possível correlação negativa' };
+                        return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sem relação clara' };
                     };
 
                     const renderSleepMoodCard = (corr) => {
@@ -2029,14 +2074,14 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             {(() => {
                 // Correlação entre hora de deitar e consumo
                 const getCorrelationLabel = (r) => {
-                    if (r === null) return { text: 'Sem dados', color: 'gray', desc: '' };
-                    if (r < -0.7) return { text: 'Forte Negativa', color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
-                    if (r < -0.4) return { text: 'Negativa', color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
-                    if (r < -0.2) return { text: 'Fraca Negativa', color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
-                    if (r > 0.7) return { text: 'Forte Positiva', color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
-                    if (r > 0.4) return { text: 'Positiva', color: 'orange', desc: 'Deitar tarde → Mais consumo' };
-                    if (r > 0.2) return { text: 'Fraca Positiva', color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
-                    return { text: 'Sem Correlação', color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
+                    if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
+                    if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
+                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
+                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
+                    if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
+                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'orange', desc: 'Deitar tarde → Mais consumo' };
+                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
+                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
                 };
 
                 const correlation = bedtimeConsCorrelation;
@@ -2171,7 +2216,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-2xl">{disp.icon}</span>
-                                        <div className="font-semibold text-sm">{disp.name}</div>
+                                        <div className="font-semibold text-sm">{disp.displayName || disp.name}</div>
                                     </div>
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-1">
@@ -2179,7 +2224,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     <span className="text-sm opacity-75">{disp.unit}</span>
                                 </div>
                                 <div className={'text-xs opacity-75 mb-2'}>
-                                    Padrão: <strong>{disp.pattern}</strong>
+                                    Padrão: <strong>{disp.patternLabel || disp.pattern}</strong>
                                 </div>
                                 <div className={'text-xs leading-relaxed opacity-90'}>
                                     {disp.pattern === 'Muito Regular' && 'Consumos ocorrem em horários muito consistentes - padrão previsível.'}

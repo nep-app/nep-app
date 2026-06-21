@@ -456,12 +456,12 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'first_not_before') {
-        const today = getTodayPT();
+        const today = getTodayKey(); // ISO format to match getDateKeyFromItem
         const targetHours = parseFloat(goal.target) || 1;
 
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = timestampToPT(c.timestamp);
+            const dateKey = c.date || safeToISODate(c.timestamp); // ISO format
             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
             consumptionsByDate[dateKey].push(c);
         });
@@ -470,13 +470,14 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
             if (dayConsumptions.length === 0) return;
 
-            // Calcular hora de acordar: bedtime + sleep do ciclo desse dia
+            // Calcular hora de acordar: bedtime + sleep do ciclo desse dia, ou fallback 8:00
             const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.bedtime && c.sleep);
-            if (!cycle) return; // sem dados de sono = não avaliável
-
-            const [bh, bm] = cycle.bedtime.split(':').map(Number);
-            let wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
-            if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+            let wakeupMinutes = 480; // default 8:00am se não há dados de sono
+            if (cycle) {
+                const [bh, bm] = cycle.bedtime.split(':').map(Number);
+                wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
+                if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+            }
 
             const targetMinutes = (wakeupMinutes + targetHours * 60) % 1440;
 

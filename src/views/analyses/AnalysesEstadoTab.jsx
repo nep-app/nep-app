@@ -727,14 +727,14 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
                                                 {t('analyses.highRisk')}
                                             </div>
-                                            {highRiskTriggers.map(t => (
-                                                <div key={t.trigger} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                            {highRiskTriggers.map(tr => (
+                                                <div key={tr.trigger} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{t.trigger}</span>
-                                                        <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{tr.trigger}</span>
+                                                        <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-red-400/70')}>
-                                                        {t('analyses.highRiskDesc', { avg: t.avgConsumptions.toFixed(1) })}
+                                                        {t('analyses.highRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -747,14 +747,14 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
-                                            {lowRiskTriggers.map(t => (
-                                                <div key={t.trigger} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                            {lowRiskTriggers.map(tr => (
+                                                <div key={tr.trigger} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{t.trigger}</span>
-                                                        <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{t.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{tr.trigger}</span>
+                                                        <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-green-400/70')}>
-                                                        {t('analyses.lowRiskDesc', { avg: t.avgConsumptions.toFixed(1) })}
+                                                        {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
                                             ))}

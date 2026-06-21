@@ -239,7 +239,7 @@ export function PatternsView({
                                                 const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
 
                                                 // Calcular dias únicos com consumos (base para TODAS as metas exceto sleep_hours/bedtime_before)
-                                                const today = getTodayPT();
+                                                const today = getTodayKey(); // ISO format for consistent date comparisons
                                                 const daysWithConsumptions = new Set();
                                                 filteredConsumptions.forEach(c => {
                                                     const dateKey = c.date || safeToISODate(c.timestamp);
@@ -299,7 +299,7 @@ export function PatternsView({
                                                 });
                                                 const daysWithConsumptionsAndCycle = new Set();
                                                 filteredConsumptions.forEach(c => {
-                                                    const dateKey = timestampToPT(c.timestamp);
+                                                    const dateKey = c.date || safeToISODate(c.timestamp); // ISO format to match datesWithCycleData
                                                     if (dateKey && dateKey !== today && datesWithCycleData.has(dateKey)) daysWithConsumptionsAndCycle.add(dateKey);
                                                 });
                                                 const totalDaysWithConsumptionsAndCycle = daysWithConsumptionsAndCycle.size;
@@ -324,7 +324,7 @@ export function PatternsView({
                                                     } else if (g.type === 'reduce_quantity') {
                                                         totalPossible = totalDaysWithMg;
                                                     } else if (g.type === 'first_not_before') {
-                                                        totalPossible = totalDaysWithConsumptionsAndCycle;
+                                                        totalPossible = totalDaysWithConsumptions;
                                                     } else {
                                                         totalPossible = totalDaysWithConsumptions;
                                                     }
@@ -2116,14 +2116,14 @@ export function PatternsView({
 
                                                     // Agrupar horas em blocos de 3h para melhor visualização
                                                     const hourBlocks = [
-                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: t('patterns.timePeriods.dawn') },
-                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: t('patterns.timePeriods.dawn') },
-                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: t('patterns.timePeriods.morning') },
-                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: t('patterns.timePeriods.morning') },
-                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: t('patterns.timePeriods.afternoon') },
-                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: t('patterns.timePeriods.afternoon') },
-                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: t('patterns.timePeriods.night') },
-                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: t('patterns.timePeriods.night') }
+                                                        { range: '00-02', hours: [0,1,2], icon: '🌙', label: t('patterns.timePeriods.dawn'), period: 'dawn' },
+                                                        { range: '03-05', hours: [3,4,5], icon: '🌙', label: t('patterns.timePeriods.dawn'), period: 'dawn' },
+                                                        { range: '06-08', hours: [6,7,8], icon: '🌅', label: t('patterns.timePeriods.morning'), period: 'morning' },
+                                                        { range: '09-11', hours: [9,10,11], icon: '☀️', label: t('patterns.timePeriods.morning'), period: 'morning' },
+                                                        { range: '12-14', hours: [12,13,14], icon: '🌤️', label: t('patterns.timePeriods.afternoon'), period: 'afternoon' },
+                                                        { range: '15-17', hours: [15,16,17], icon: '🌤️', label: t('patterns.timePeriods.afternoon'), period: 'afternoon' },
+                                                        { range: '18-20', hours: [18,19,20], icon: '🌆', label: t('patterns.timePeriods.night'), period: 'night' },
+                                                        { range: '21-23', hours: [21,22,23], icon: '🌃', label: t('patterns.timePeriods.night'), period: 'night' }
                                                     ];
 
                                                     // Calcular máximo dos BLOCOS (não das horas individuais)
@@ -2141,11 +2141,11 @@ export function PatternsView({
 
                                                                 // Cores por período
                                                                 let colorClass = '';
-                                                                if (block.label === 'Madrugada') {
+                                                                if (block.period === 'dawn') {
                                                                     colorClass = intensity > 0.7 ? 'bg-purple-600' : intensity > 0.4 ? 'bg-purple-500' : intensity > 0.1 ? 'bg-purple-400' : ('bg-gray-700');
-                                                                } else if (block.label === 'Manhã') {
+                                                                } else if (block.period === 'morning') {
                                                                     colorClass = intensity > 0.7 ? 'bg-orange-600' : intensity > 0.4 ? 'bg-orange-500' : intensity > 0.1 ? 'bg-orange-400' : ('bg-gray-700');
-                                                                } else if (block.label === 'Tarde') {
+                                                                } else if (block.period === 'afternoon') {
                                                                     colorClass = intensity > 0.7 ? 'bg-yellow-600' : intensity > 0.4 ? 'bg-yellow-500' : intensity > 0.1 ? 'bg-yellow-400' : ('bg-gray-700');
                                                                 } else {
                                                                     colorClass = intensity > 0.7 ? 'bg-blue-600' : intensity > 0.4 ? 'bg-blue-500' : intensity > 0.1 ? 'bg-blue-400' : ('bg-gray-700');
@@ -2419,10 +2419,12 @@ export function PatternsView({
                                                         const avgRecent = recentWeeks.reduce((s, w) => s + w.totalMg, 0) / recentWeeks.length;
                                                         const avgOld = oldWeeks.length > 0 ? oldWeeks.reduce((s, w) => s + w.totalMg, 0) / oldWeeks.length : avgRecent;
                                                         const trendPct = oldWeeks.length > 0 ? ((avgRecent - avgOld) / avgOld * 100) : 0;
-                                                        let trendLabel = 'Estável', trendIcon = '➡️';
-                                                        if (trendPct > 15) { trendLabel = 'A Aumentar'; trendIcon = '📈'; }
-                                                        else if (trendPct < -15) { trendLabel = 'A Reduzir'; trendIcon = '📉'; }
-                                                        const chartData = sortedWeeks.slice(-12).map(w => ({ week: w.week.replace(/^\d{4}-W/, 'S'), dosagem: w.totalMg, days: w.days }));
+                                                        let trendKey = 'stable', trendIcon = '➡️';
+                                                        if (trendPct > 15) { trendKey = 'increasing'; trendIcon = '📈'; }
+                                                        else if (trendPct < -15) { trendKey = 'decreasing'; trendIcon = '📉'; }
+                                                        const trendLabel = t('patterns.structural.' + (trendKey === 'increasing' ? 'increasingTrend' : trendKey === 'decreasing' ? 'decreasingTrend' : 'stableTrend'));
+                                                        const weekPrefix = i18n.language === 'pt' ? 'S' : 'W';
+                                                        const chartData = sortedWeeks.slice(-12).map(w => ({ week: w.week.replace(/^\d{4}-W/, weekPrefix), dosagem: w.totalMg, days: w.days }));
                                                         const avgWeekly = (sortedWeeks.reduce((s, w) => s + w.totalMg, 0) / sortedWeeks.length).toFixed(0);
                                                         return (
                                                             <div className={('bg-gray-800 border-gray-700') + ' rounded-xl p-4 border'}>
@@ -2435,9 +2437,9 @@ export function PatternsView({
                                                                         <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>{t('patterns.structural.weeklyAvg')}</div>
                                                                         <div className={'text-2xl font-bold ' + 'text-purple-400'}>{avgWeekly}mg</div>
                                                                     </div>
-                                                                    <div className={'text-center p-3 rounded-lg ' + (trendLabel === 'A Reduzir' ? ('bg-green-900/30 border border-green-700') : trendLabel === 'A Aumentar' ? ('bg-red-900/30 border border-red-700') : ('bg-gray-700/50'))}>
+                                                                    <div className={'text-center p-3 rounded-lg ' + (trendKey === 'decreasing' ? ('bg-green-900/30 border border-green-700') : trendKey === 'increasing' ? ('bg-red-900/30 border border-red-700') : ('bg-gray-700/50'))}>
                                                                         <div className={'text-xs opacity-75 mb-1 ' + ('text-gray-400')}>{t('patterns.structural.trend4weeks')}</div>
-                                                                        <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (trendLabel === 'A Reduzir' ? 'text-green-400' : trendLabel === 'A Aumentar' ? 'text-red-400' : 'text-gray-400')}>
+                                                                        <div className={'text-xl font-bold flex items-center justify-center gap-1 ' + (trendKey === 'decreasing' ? 'text-green-400' : trendKey === 'increasing' ? 'text-red-400' : 'text-gray-400')}>
                                                                             <span>{trendIcon}</span><span className="text-sm">{trendPct.toFixed(0)}%</span>
                                                                         </div>
                                                                     </div>
@@ -2448,12 +2450,12 @@ export function PatternsView({
                                                                             <CartesianGrid strokeDasharray="3 3" stroke={'#374151'} />
                                                                             <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#9ca3af' }} />
                                                                             <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} label={{ value: 'mg', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#9ca3af' }} />
-                                                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: `1px solid ${'#374151'}`, borderRadius: '6px', fontSize: '12px' }} formatter={(value, name, props) => [`${value}mg (${props.payload.days} ${props.payload.days === 1 ? 'dia' : 'dias'})`, 'Dosagem Total']} />
+                                                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: `1px solid ${'#374151'}`, borderRadius: '6px', fontSize: '12px' }} formatter={(value, name, props) => [`${value}mg (${props.payload.days} ${props.payload.days === 1 ? t('coach.day_singular') : t('coach.day_plural')})`, t('patterns.structural.dosageTotalTooltip')]} />
                                                                             <Bar dataKey="dosagem" fill={'#a78bfa'} radius={[4, 4, 0, 0]} />
                                                                         </BarChart>
                                                                     </ResponsiveContainer>
                                                                 </div>
-                                                                <p className={'text-xs italic mt-2 text-center ' + ('text-gray-400')}>Últimas {Math.min(12, sortedWeeks.length)} semanas</p>
+                                                                <p className={'text-xs italic mt-2 text-center ' + ('text-gray-400')}>{t('patterns.structural.lastNWeeks', { n: Math.min(12, sortedWeeks.length) })}</p>
                                                                 {sortedWeeks.length >= 2 && (() => {
                                                                     const firstWeek = sortedWeeks[0];
                                                                     const lastWeek = sortedWeeks[sortedWeeks.length - 1];
@@ -2463,7 +2465,11 @@ export function PatternsView({
                                                                     return (
                                                                         <div className={'mt-3 pt-3 border-t text-sm ' + ('border-gray-700')}>
                                                                             <p className={'text-gray-300'}>
-                                                                                {change > 0 ? (<>Dosagem média <span className={'font-semibold ' + 'text-red-400'}>subiu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% aumento.{changePct > 30 && <span className={'ml-1 font-semibold ' + 'text-yellow-400'}>Possível tolerância?</span>}</>) : (<>Dosagem média <span className={'font-semibold ' + 'text-green-400'}>reduziu</span> de {firstWeek.totalMg.toFixed(0)}mg (1ª semana) para {lastWeek.totalMg.toFixed(0)}mg (última semana) - {Math.abs(changePct).toFixed(0)}% redução. Bom progresso!</>)}
+                                                                                {change > 0 ? (
+                                                                                <>{t('patterns.structural.dosageRose', { first: firstWeek.totalMg.toFixed(0), last: lastWeek.totalMg.toFixed(0), pct: Math.abs(changePct).toFixed(0) })}{changePct > 30 && <span className={'ml-1 font-semibold ' + 'text-yellow-400'}>{t('patterns.structural.possibleTolerance')}</span>}</>
+                                                                            ) : (
+                                                                                <>{t('patterns.structural.dosageDropped', { first: firstWeek.totalMg.toFixed(0), last: lastWeek.totalMg.toFixed(0), pct: Math.abs(changePct).toFixed(0) })}</>
+                                                                            )}
                                                                             </p>
                                                                         </div>
                                                                     );
@@ -2496,11 +2502,11 @@ export function PatternsView({
                                                                         </div>
                                                                         <div className={`${'bg-blue-900/30 border border-blue-700/50'} rounded-lg p-3 text-center border`}>
                                                                             <div className={`text-2xl font-bold ${'text-blue-400'}`}>{avgInterval.toFixed(1)}h</div>
-                                                                            <div className={`text-xs ${'text-gray-300'}`}>Média</div>
+                                                                            <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.average')}</div>
                                                                         </div>
                                                                         <div className={`${'bg-green-900/30 border border-green-700/50'} rounded-lg p-3 text-center border`}>
                                                                             <div className={`text-2xl font-bold ${'text-green-400'}`}>{maxInterval.toFixed(1)}h</div>
-                                                                            <div className={`text-xs ${'text-gray-300'}`}>Máximo</div>
+                                                                            <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.maximum')}</div>
                                                                         </div>
                                                                     </div>
 
@@ -2541,8 +2547,8 @@ export function PatternsView({
                                                                     <div className={`${'bg-indigo-900/20 border-indigo-700/50'} rounded-lg p-3 mt-4 border`}>
                                                                         <p className={`text-xs leading-relaxed ${'text-gray-300'}`}>
                                                                             {goodPercent >= 50
-                                                                                ? '🌟 Ótimo! Mais de metade dos intervalos são ≥2h. Continua assim!'
-                                                                                : '💪 Foca-te em aumentar o tempo entre consumos. Cada melhoria conta!'}
+                                                                                ? t('patterns.structural.intervalTipGood')
+                                                                                : t('patterns.structural.intervalTipBad')}
                                                                         </p>
                                                                     </div>
                                                                 </>
@@ -2581,7 +2587,7 @@ export function PatternsView({
                                                         const secondHalf = sortedByDate.slice(midpoint);
 
                                                         let trendIcon = '➡️';
-                                                        let trendText = 'Estáveis';
+                                                        let trendText = t('patterns.structural.trendStable');
                                                         let trendPercent = 0;
                                                         let trendColor = 'text-blue-400';
                                                         let trendBg = 'bg-blue-900/20 border-blue-700/50';
@@ -2638,25 +2644,25 @@ export function PatternsView({
 
                                                         return (
                                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>💊 Análise de Dosagens</h3>
+                                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.dosageAnalysis')}</h3>
 
                                                                 {/* Estatísticas Gerais */}
                                                                 <div className="grid grid-cols-4 gap-3 mb-4">
                                                                     <div className={`${'bg-purple-900/30 border border-purple-700/50'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold ${'text-purple-400'}`}>{dailyDosageRecords.length}</div>
-                                                                        <div className={`text-xs ${'text-gray-300'}`}>Registos</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.records')}</div>
                                                                     </div>
                                                                     <div className={`${'bg-blue-900/30 border border-blue-700/50'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold ${'text-blue-400'}`}>{avgDosage.toFixed(1)}mg</div>
-                                                                        <div className={`text-xs ${'text-gray-300'}`}>Média</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.average')}</div>
                                                                     </div>
                                                                     <div className={`${'bg-orange-900/30 border border-orange-700/50'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold ${'text-orange-400'}`}>{maxDosage}mg</div>
-                                                                        <div className={`text-xs ${'text-gray-300'}`}>Máximo</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.maximum')}</div>
                                                                     </div>
                                                                     <div className={`${'bg-green-900/30 border border-green-700/50'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold ${'text-green-400'}`}>{minDosage}mg</div>
-                                                                        <div className={`text-xs ${'text-gray-300'}`}>Mínimo</div>
+                                                                        <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.minimum')}</div>
                                                                     </div>
                                                                 </div>
 
@@ -2681,7 +2687,7 @@ export function PatternsView({
                                                                         {t('patterns.doseDistribution')}
                                                                         {rangeMethod === 'meta' && (
                                                                             <span className={`text-xs ml-2 ${'text-gray-400'}`}>
-                                                                                (baseado na tua meta de {reduceQuantityGoal.target}mg)
+                                                                                {t('patterns.structural.basedOnGoal', { mg: reduceQuantityGoal.target })}
                                                                             </span>
                                                                         )}
                                                                     </div>
