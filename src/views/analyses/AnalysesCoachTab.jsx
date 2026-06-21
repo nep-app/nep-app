@@ -1654,13 +1654,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             let totalPossible = 0;
 
                             if (g.type === 'reduce_frequency') {
-                                // DIAS com consumos (usar .date se existir, senão extrair de timestamp)
-                                const allDates = new Set();
-                                analysisConsumptions.forEach(c => {
-                                    const dateKey = c.date || safeToISODate(c.timestamp);
-                                    if (dateKey) allDates.add(dateKey);
-                                });
-                                totalPossible = allDates.size;
+                                // TODOS os dias desde o primeiro registo (igual ao PatternsView)
+                                totalPossible = analyticsService.getAllDaysSinceFirstRecord(analysisConsumptions).length;
                             } else if (g.type === 'increase_interval') {
                                 // DIAS com ≥2 consumos
                                 const consumptionsByDate = {};
@@ -1693,17 +1688,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                                 totalPossible = allDates.size;
                             } else if (g.type === 'bedtime_before') {
-                                // DIAS com sono registado (NÃO consumos!)
+                                // DIAS com bedtime registado (igual ao PatternsView)
                                 const allDates = new Set();
                                 analysisCycles.forEach(c => {
-                                    if (c.sleep && !isNaN(parseFloat(c.sleep))) {
+                                    if (c.bedtime) {
                                         const dateKey = c.date || safeToISODate(c.timestamp);
-                                        if (dateKey) allDates.add(dateKey);
-                                    }
-                                });
-                                analysisWellbeing.forEach(w => {
-                                    if (w.sleep && !isNaN(parseFloat(w.sleep))) {
-                                        const dateKey = w.date || safeToISODate(w.timestamp);
                                         if (dateKey) allDates.add(dateKey);
                                     }
                                 });
