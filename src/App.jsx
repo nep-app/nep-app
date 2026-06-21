@@ -16,6 +16,8 @@ import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
+import { DataModeSelector } from './components/DataModeSelector';
+import { getDataMode } from './services/researchService';
 
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { themeClasses, cn, cx } from './utils/classNames';
@@ -71,6 +73,7 @@ function HarmReductionTracker() {
             const [firebaseLoading, setFirebaseLoading] = useState(true);
             const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
             const [hasPinAccount, setHasPinAccount] = useState(null);
+            const [dataModeSet, setDataModeSet] = useState(() => getDataMode() !== null);
 
             // 1. Listen to Firebase auth state
             useEffect(() => {
@@ -125,7 +128,11 @@ function HarmReductionTracker() {
             else if (!pinAuthenticated) {
                 content = <AuthScreen onFirebaseLogout={() => firebaseAuth.signOut()} />;
             }
-            // STEP 4: Both Firebase AND PIN authenticated → Show app
+            // STEP 3.5: PIN authenticated but data mode not chosen yet → Show selector
+            else if (!dataModeSet) {
+                content = <DataModeSelector onSelected={() => setDataModeSet(true)} />;
+            }
+            // STEP 4: Both Firebase AND PIN authenticated + mode chosen → Show app
             else {
                 content = <AuthenticatedApp />;
             }

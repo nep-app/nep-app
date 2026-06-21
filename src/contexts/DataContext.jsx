@@ -6,6 +6,7 @@ import { firebaseConfig } from '../utils/firebase';
 import { useLocalData } from './LocalDataContext';
 import { useAuth } from './AuthContext';
 import { syncService } from '../services/syncService';
+import { getDataMode, syncResearchData } from '../services/researchService';
 import { getMetadata, setMetadata } from '../db/localDB';
 
 export const DataContext = createContext();
@@ -76,6 +77,24 @@ export const DataProvider = ({ children }) => {
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [syncReady, setSyncReady] = useState(false);
 
+  // Ref para dados actuais (usado no research sync sem stale closures)
+  const currentDataRef = useRef({});
+  useEffect(() => {
+    currentDataRef.current = { consumptions, cycles, wellbeingLogs, reflections, thoughts, goals };
+  }, [consumptions, cycles, wellbeingLogs, reflections, thoughts, goals]);
+
+  // Research sync automático: uma vez por dia quando os dados estão carregados
+  const researchSyncAttempted = useRef(false);
+  useEffect(() => {
+    if (getDataMode() !== 'research' || !allDataLoaded || !db) return;
+    if (researchSyncAttempted.current) return;
+    const last = localStorage.getItem('nep_research_last_sync');
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    if (last && new Date(last).getTime() > oneDayAgo) return;
+    researchSyncAttempted.current = true;
+    syncResearchData(db, currentDataRef.current);
+  }, [allDataLoaded, db]);
+
   // Firebase auth listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -93,6 +112,12 @@ export const DataProvider = ({ children }) => {
     const initSync = async () => {
       // Se não tem PIN, não faz nada
       if (!pin) {
+        return;
+      }
+
+      // Modo local-only: sem sync com Firebase
+      if (getDataMode() === 'local') {
+        setSyncReady(false);
         return;
       }
 
@@ -299,13 +324,28 @@ export const DataProvider = ({ children }) => {
 
     setIsSyncing(true);
 
+    // Modo local-only: apenas recarrega dados locais
+    if (getDataMode() === 'local') {
+      try {
+        await loadAllCollections();
+        setLastSyncTime(new Date());
+        return { pulled: 0, pushed: 0 };
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+
     try {
       await syncService.pushToFirebase();
       const result = await syncService.fullSync({ skipZombies: true, incremental: true });
       if (result && (result.pulled > 0 || result.pushed > 0)) {
         await loadAllCollections();
-        // Se vieram novos registos, garantir que stats ficam actualizadas
         if (result.pulled > 0) loadFullData();
+      }
+
+      // Modo investigação: sincronizar dados anónimos
+      if (getDataMode() === 'research') {
+        syncResearchData(db, currentDataRef.current);
       }
 
       setLastSyncTime(new Date());
@@ -316,7 +356,7 @@ export const DataProvider = ({ children }) => {
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, loadAllCollections]);
+  }, [isSyncing, loadAllCollections, loadFullData, db]);
 
   /**
    * Force full sync: limpa lastSyncTimestamp, marca tudo pending, push + pull completo
