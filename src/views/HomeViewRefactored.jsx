@@ -9,7 +9,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { formatDateTime, safeToISODate, getDateDaysAgo } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
-import { getUserStats } from '../utils/userStats';
+import { getUserStats, updateUserStats } from '../utils/userStats';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
@@ -70,12 +70,17 @@ export function HomeViewRefactored({
   }, []);
 
   useEffect(() => {
-    getUserStats().then(stats => {
-      setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
-      if (stats.timeSinceLastConsumption) {
-        setCachedTimeSince(stats.timeSinceLastConsumption);
-      }
-    });
+    // Quando a linguagem muda, regenerar alertas no idioma correcto antes de ler
+    updateUserStats(consumptions, cycles, dailyLogs, goals)
+      .catch(() => {})
+      .finally(() => {
+        getUserStats().then(stats => {
+          setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
+          if (stats.timeSinceLastConsumption) {
+            setCachedTimeSince(stats.timeSinceLastConsumption);
+          }
+        });
+      });
   }, [consumptions, cycles, dailyLogs, goals, i18n.language]);
 
   const handleSync = async () => {
