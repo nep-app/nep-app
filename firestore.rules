@@ -84,5 +84,13 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+
+    // Dados de investigação anónimos
+    // - Qualquer utilizador autenticado pode escrever (não verifica o anonId — é intencional)
+    // - Leitura bloqueada para toda a gente (só acessível pela consola Firebase/admin SDK)
+    match /research/{anonId}/{document=**} {
+      allow write: if isAuthenticated();
+      allow read: if false;
+    }
   }
 }
