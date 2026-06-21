@@ -797,7 +797,7 @@ export function PatternsView({
                                                                 return (
                                                                     <div className="space-y-4">
                                                                         {/* Gráfico de barras */}
-                                                                        <div className="flex items-end justify-between gap-1 h-48 relative">
+                                                                        <div className="flex items-end justify-between gap-1 h-48 relative overflow-hidden">
                                                                             {recentDates.map((date, idx) => {
                                                                                 const count = byDate[date];
                                                                                 const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
