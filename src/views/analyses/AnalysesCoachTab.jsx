@@ -1068,11 +1068,17 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
                         const dominantType = sortedTypes[0];
 
+                        const EMOTION_TYPE_EN = {
+                            ansiedade: 'anxiety', frustração: 'frustration', tristeza: 'sadness',
+                            apatia: 'apathy', energia: 'energy', positivas: 'positive emotions'
+                        };
+                        const translateEmotionTypeName = (type) => i18n.language === 'en' ? (EMOTION_TYPE_EN[type] || type) : type;
+
                         return (
                             <p>
                                 🧠 <strong className={('text-purple-400')}>{t('coach.emotionalProfileLabel')}</strong>{' '}
                                 {t('coach.emotionalProfileText', { level: emotionalDiversity, n: numTypes })}{' '}
-                                {dominantType && <>{t('coach.emotionalProfileDominant', { type: dominantType[0], n: dominantType[1] })}{' '}</>}
+                                {dominantType && <>{t('coach.emotionalProfileDominant', { type: translateEmotionTypeName(dominantType[0]), n: dominantType[1] })}{' '}</>}
                                 {oscillationLevel === t('coach.emotionalOscillationHigh') ? t('coach.emotionalProfileOscillationHigh') : oscillationLevel === t('coach.emotionalOscillationModerate') ? t('coach.emotionalProfileOscillationMod') : t('coach.emotionalProfileOscillationLow')}
                             </p>
                         );
@@ -1670,7 +1676,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             let totalPossible = 0;
 
                             if (g.type === 'reduce_frequency') {
-                                totalPossible = analyticsService.getAllDaysSinceFirstRecord(gCons).length;
+                                const daysWithCons = new Set();
+                                gCons.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) daysWithCons.add(dk); });
+                                totalPossible = daysWithCons.size;
                             } else if (g.type === 'increase_interval') {
                                 const consumptionsByDate = {};
                                 gCons.forEach(c => {

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
-const APP_VERSION = '4.6.0';
+import { getDataMode, setDataMode } from '../services/researchService';
+const APP_VERSION = '4.7.0';
 
 // ── Guia de utilização ────────────────────────────────────────────────────
 
@@ -117,6 +118,12 @@ export const SettingsView = ({
 
     const { lockMode, setLockMode } = useAuth();
 
+    const [dataMode, setDataModeState] = useState(() => getDataMode() || 'cloud');
+    const handleDataModeChange = (mode) => {
+        setDataMode(mode);
+        setDataModeState(mode);
+    };
+
     const [editingFirstUse, setEditingFirstUse] = useState(false);
     const [firstUseDateInput, setFirstUseDateInput] = useState(() =>
         firstUseDate ? firstUseDate.toISOString().slice(0, 10) : ''
@@ -170,6 +177,44 @@ export const SettingsView = ({
                     >
                         ENG
                     </button>
+                </div>
+            </div>
+
+            {/* Data Mode */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
+                    🛡️
+                    {i18n.language === 'pt' ? 'Modo de Dados' : 'Data Mode'}
+                </h3>
+                <p className="text-xs text-gray-400 mb-4">
+                    {i18n.language === 'pt'
+                        ? 'Como os teus dados são guardados e partilhados.'
+                        : 'How your data is stored and shared.'}
+                </p>
+                <div className="space-y-2">
+                    {[
+                        { id: 'local', icon: '📱', label: i18n.language === 'pt' ? 'Só local' : 'Local only', desc: i18n.language === 'pt' ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
+                        { id: 'cloud', icon: '🔒', label: i18n.language === 'pt' ? 'Cloud encriptado' : 'Cloud encrypted', desc: i18n.language === 'pt' ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
+                        { id: 'research', icon: '🔬', label: i18n.language === 'pt' ? 'Partilhar investigação' : 'Share research', desc: i18n.language === 'pt' ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            onClick={() => handleDataModeChange(opt.id)}
+                            className={
+                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all flex items-start gap-3 ' +
+                                (dataMode === opt.id
+                                    ? 'bg-purple-900/40 border-purple-500'
+                                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600')
+                            }
+                        >
+                            <span className="text-xl mt-0.5">{opt.icon}</span>
+                            <div>
+                                <div className="font-medium text-sm text-white">{opt.label}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                            </div>
+                            {dataMode === opt.id && <span className="ml-auto text-purple-400 text-lg">✓</span>}
+                        </button>
+                    ))}
                 </div>
             </div>
 

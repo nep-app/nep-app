@@ -1,55 +1,47 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
-  const [selectedDate, setSelectedDate] = useState(null); // Data selecionada
+  const { t } = useTranslation();
+  const [selectedDate, setSelectedDate] = useState(null);
 
-  // Encontra todas as datas únicas com bem-estar registado
   const availableDates = useMemo(() => {
     if (wellbeingLogs.length === 0) return [];
-
     const dates = [...new Set(wellbeingLogs.map(log => log.date))].sort().reverse();
     return dates;
   }, [wellbeingLogs]);
 
-  // Define a data selecionada (padrão: hoje)
   const currentDate = useMemo(() => {
     if (selectedDate) return selectedDate;
     if (availableDates.length > 0) return availableDates[0];
     return null;
   }, [selectedDate, availableDates]);
 
-  // Calcula label do dia (Hoje, Ontem, Há 2 dias, etc.)
   const getDayLabel = (date) => {
     if (!date || availableDates.length === 0) return '';
-
     const index = availableDates.indexOf(date);
-    if (index === 0) return 'Hoje';
-    if (index === 1) return 'Ontem';
-    return `Há ${index} dias`;
+    if (index === 0) return t('analyses.wbcToday');
+    if (index === 1) return t('analyses.wbcYesterday');
+    return t('analyses.wbcDaysAgo', { n: index });
   };
 
-  // Prepara dados do gráfico para o dia selecionado
   const chartData = useMemo(() => {
     if (!currentDate) return [];
 
-    // Cria mapa de dados por minuto desde meia-noite
     const dataByMinute = {};
 
-    // Função auxiliar para converter tempo em minutos desde meia-noite
     const getMinutesFromMidnight = (timestamp) => {
       const date = new Date(timestamp);
       return date.getHours() * 60 + date.getMinutes();
     };
 
-    // Função auxiliar para converter minutos para string HH:MM
     const minutesToTimeStr = (minutes) => {
       const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
       const mins = (minutes % 60).toString().padStart(2, '0');
       return `${hours}:${mins}`;
     };
 
-    // Adiciona registos de wellbeing
     const selectedLogs = wellbeingLogs
       .filter(log => log.date === currentDate)
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -73,7 +65,6 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
       dataByMinute[minutesSinceMidnight].energy = log.energy;
     });
 
-    // Adiciona TODOS os consumos ao gráfico
     const selectedConsumptions = consumptions.filter(c => c.date === currentDate);
     selectedConsumptions.forEach(cons => {
       const minutesSinceMidnight = getMinutesFromMidnight(cons.timestamp);
@@ -94,16 +85,88 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
       dataByMinute[minutesSinceMidnight].hasConsumption = true;
     });
 
-    // Converte mapa em array ordenado
-    const data = Object.values(dataByMinute).sort((a, b) => a.minutesSinceMidnight - b.minutesSinceMidnight);
-
-    return data;
+    return Object.values(dataByMinute).sort((a, b) => a.minutesSinceMidnight - b.minutesSinceMidnight);
   }, [wellbeingLogs, consumptions, currentDate]);
 
   const minutesToTimeStr = (minutes) => {
     const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
     const mins = (minutes % 60).toString().padStart(2, '0');
     return `${hours}:${mins}`;
+  };
+
+  // Analysis returns a structured result, text generated in JSX
+  const analysisResult = useMemo(() => {
+    if (chartData.length === 0) return null;
+
+    const moodData = chartData.filter(d => d.mood !== null);
+    const energyData = chartData.filter(d => d.energy !== null);
+    const consumptionData = chartData.filter(d => d.hasConsumption);
+
+    if (moodData.length === 0 && energyData.length === 0) return null;
+
+    if (consumptionData.length === 0) return { state: 'noConsumptions', type: 'neutral' };
+
+    const allData = chartData.filter(d => d.mood !== null || d.energy !== null);
+    if (allData.length < 2) return { state: 'insufficient', type: 'neutral' };
+
+    const comparisons = [];
+    consumptionData.forEach(cons => {
+      const consTime = cons.minutesSinceMidnight;
+      const beforeMood = moodData.filter(d => d.minutesSinceMidnight < consTime);
+      const beforeEnergy = energyData.filter(d => d.minutesSinceMidnight < consTime);
+      const afterMood = moodData.filter(d => d.minutesSinceMidnight > consTime);
+      const afterEnergy = energyData.filter(d => d.minutesSinceMidnight > consTime);
+
+      if (beforeMood.length > 0 && afterMood.length > 0) {
+        const avgBefore = beforeMood.reduce((sum, d) => sum + d.mood, 0) / beforeMood.length;
+        const avgAfter = afterMood.reduce((sum, d) => sum + d.mood, 0) / afterMood.length;
+        comparisons.push({ type: 'mood', change: avgAfter - avgBefore });
+      }
+      if (beforeEnergy.length > 0 && afterEnergy.length > 0) {
+        const avgBefore = beforeEnergy.reduce((sum, d) => sum + d.energy, 0) / beforeEnergy.length;
+        const avgAfter = afterEnergy.reduce((sum, d) => sum + d.energy, 0) / afterEnergy.length;
+        comparisons.push({ type: 'energy', change: avgAfter - avgBefore });
+      }
+    });
+
+    if (comparisons.length === 0) {
+      return { state: 'consumptionsLogged', count: consumptionData.length, type: 'neutral' };
+    }
+
+    const moodChanges = comparisons.filter(c => c.type === 'mood').map(c => c.change);
+    const energyChanges = comparisons.filter(c => c.type === 'energy').map(c => c.change);
+
+    const avgMoodChange = moodChanges.length > 0 ? moodChanges.reduce((s, v) => s + v, 0) / moodChanges.length : null;
+    const avgEnergyChange = energyChanges.length > 0 ? energyChanges.reduce((s, v) => s + v, 0) / energyChanges.length : null;
+
+    const moodDir = avgMoodChange === null ? null : avgMoodChange > 0.5 ? 'improves' : avgMoodChange < -0.5 ? 'worsens' : 'stable';
+    const energyDir = avgEnergyChange === null ? null : avgEnergyChange > 0.5 ? 'increases' : avgEnergyChange < -0.5 ? 'decreases' : 'stable';
+
+    if (!moodDir && !energyDir) return { state: 'insufficientAnalysis', type: 'neutral' };
+
+    const type = (avgMoodChange && avgMoodChange < -0.5) || (avgEnergyChange && avgEnergyChange < -0.5) ? 'negative' :
+                 (avgMoodChange && avgMoodChange > 0.5) || (avgEnergyChange && avgEnergyChange > 0.5) ? 'positive' : 'neutral';
+
+    return { state: 'analysis', moodDir, energyDir, type };
+  }, [chartData]);
+
+  const getAnalysisText = () => {
+    if (!analysisResult) return null;
+    if (analysisResult.state === 'noConsumptions') return t('analyses.wbcNoConsumptions');
+    if (analysisResult.state === 'insufficient') return t('analyses.wbcInsufficient');
+    if (analysisResult.state === 'consumptionsLogged') return t('analyses.wbcLogged', { count: analysisResult.count });
+    if (analysisResult.state === 'insufficientAnalysis') return t('analyses.wbcInsuffAnalysis');
+    if (analysisResult.state === 'analysis') {
+      const parts = [];
+      if (analysisResult.moodDir === 'improves') parts.push(t('analyses.wbcMoodImproves'));
+      else if (analysisResult.moodDir === 'worsens') parts.push(t('analyses.wbcMoodWorsens'));
+      else if (analysisResult.moodDir === 'stable') parts.push(t('analyses.wbcMoodStable'));
+      if (analysisResult.energyDir === 'increases') parts.push(t('analyses.wbcEnergyIncreases'));
+      else if (analysisResult.energyDir === 'decreases') parts.push(t('analyses.wbcEnergyDecreases'));
+      else if (analysisResult.energyDir === 'stable') parts.push(t('analyses.wbcEnergyStable'));
+      return parts.join(', ') + '.';
+    }
+    return null;
   };
 
   const CustomTooltip = ({ active, payload }) => {
@@ -116,7 +179,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
           </p>
           <div className="space-y-2 mt-2">
             {payload.map((entry, idx) => (
-              entry.value !== null && entry.name !== 'Consumos' && (
+              entry.value !== null && entry.dataKey !== 'consumptionCount' && (
                 <div key={idx} className="flex items-center justify-between gap-4">
                   <span className="font-medium text-sm">{entry.name}:</span>
                   <span className="font-bold text-lg px-2 py-1 rounded" style={{
@@ -132,7 +195,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
           {data?.hasConsumption && (
             <div className="mt-3 pt-2 border-t" style={{ borderColor: '#444' }}>
               <p className="text-red-500 font-bold text-sm flex items-center gap-2">
-                💊 <span className="text-base">{data.consumptionCount}</span> consumo{data.consumptionCount !== 1 ? 's' : ''}
+                💊 <span className="text-base">{t('analyses.wbcUse', { count: data.consumptionCount })}</span>
               </p>
             </div>
           )}
@@ -145,134 +208,31 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
   if (availableDates.length === 0 || chartData.length === 0) {
     return (
       <div className="p-4 rounded-lg bg-gray-700 text-gray-300">
-        <p className="text-sm">Sem dados de bem-estar registados</p>
+        <p className="text-sm">{t('analyses.wbcNoData')}</p>
       </div>
     );
   }
 
-  // Análise do impacto do consumo no humor/energia
-  const analysis = useMemo(() => {
-    if (chartData.length === 0) return null;
-
-    const moodData = chartData.filter(d => d.mood !== null);
-    const energyData = chartData.filter(d => d.energy !== null);
-    const consumptionData = chartData.filter(d => d.hasConsumption);
-
-    if (moodData.length === 0 && energyData.length === 0) return null;
-    if (consumptionData.length === 0) {
-      return {
-        text: 'Sem consumos registados neste dia para analisar impacto.',
-        type: 'neutral'
-      };
-    }
-
-    // Análise SIMPLIFICADA: para cada consumo, comparar TODOS os dados antes vs depois
-    const allData = chartData.filter(d => d.mood !== null || d.energy !== null);
-    if (allData.length < 2) {
-      return {
-        text: 'Dados insuficientes para analisar impacto (pelo menos 2 registos necessários).',
-        type: 'neutral'
-      };
-    }
-
-    const comparisons = [];
-
-    consumptionData.forEach(cons => {
-      const consTime = cons.minutesSinceMidnight;
-
-      // TODOS os dados ANTES do consumo
-      const beforeMood = moodData.filter(d => d.minutesSinceMidnight < consTime);
-      const beforeEnergy = energyData.filter(d => d.minutesSinceMidnight < consTime);
-
-      // TODOS os dados DEPOIS do consumo
-      const afterMood = moodData.filter(d => d.minutesSinceMidnight > consTime);
-      const afterEnergy = energyData.filter(d => d.minutesSinceMidnight > consTime);
-
-      // Calcular médias se houver dados
-      if (beforeMood.length > 0 && afterMood.length > 0) {
-        const avgBefore = beforeMood.reduce((sum, d) => sum + d.mood, 0) / beforeMood.length;
-        const avgAfter = afterMood.reduce((sum, d) => sum + d.mood, 0) / afterMood.length;
-        comparisons.push({ type: 'mood', change: avgAfter - avgBefore });
-      }
-
-      if (beforeEnergy.length > 0 && afterEnergy.length > 0) {
-        const avgBefore = beforeEnergy.reduce((sum, d) => sum + d.energy, 0) / beforeEnergy.length;
-        const avgAfter = afterEnergy.reduce((sum, d) => sum + d.energy, 0) / afterEnergy.length;
-        comparisons.push({ type: 'energy', change: avgAfter - avgBefore });
-      }
-    });
-
-    // Se não há comparações possíveis
-    if (comparisons.length === 0) {
-      return {
-        text: `${consumptionData.length} consumo${consumptionData.length !== 1 ? 's' : ''} registado${consumptionData.length !== 1 ? 's' : ''}. Registe bem-estar antes e depois para análise.`,
-        type: 'neutral'
-      };
-    }
-
-    // Agregar mudanças por tipo
-    const moodChanges = comparisons.filter(c => c.type === 'mood').map(c => c.change);
-    const energyChanges = comparisons.filter(c => c.type === 'energy').map(c => c.change);
-
-    const avgMoodChange = moodChanges.length > 0
-      ? moodChanges.reduce((sum, v) => sum + v, 0) / moodChanges.length
-      : null;
-    const avgEnergyChange = energyChanges.length > 0
-      ? energyChanges.reduce((sum, v) => sum + v, 0) / energyChanges.length
-      : null;
-
-    // Gerar texto explicativo
-    const parts = [];
-
-    if (avgMoodChange !== null) {
-      if (avgMoodChange > 0.5) parts.push('humor tende a melhorar após consumo');
-      else if (avgMoodChange < -0.5) parts.push('humor tende a piorar após consumo');
-      else parts.push('humor mantém-se estável após consumo');
-    }
-
-    if (avgEnergyChange !== null) {
-      if (avgEnergyChange > 0.5) parts.push('energia tende a aumentar após consumo');
-      else if (avgEnergyChange < -0.5) parts.push('energia tende a diminuir após consumo');
-      else parts.push('energia mantém-se estável após consumo');
-    }
-
-    if (parts.length === 0) {
-      return {
-        text: 'Dados insuficientes para análise.',
-        type: 'neutral'
-      };
-    }
-
-    const type = (avgMoodChange && avgMoodChange < -0.5) || (avgEnergyChange && avgEnergyChange < -0.5) ? 'negative' :
-                 (avgMoodChange && avgMoodChange > 0.5) || (avgEnergyChange && avgEnergyChange > 0.5) ? 'positive' : 'neutral';
-
-    return {
-      text: parts.join(', ') + '.',
-      type
-    };
-  }, [chartData]);
+  const analysisText = getAnalysisText();
 
   return (
     <div className="rounded-lg p-3 border bg-gray-700/50 border-gray-600">
-      {/* Header compacto */}
       <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
         <div className="text-xs font-medium text-gray-400">
-          📈 Impacto do Consumo no Humor/Energia
+          {t('analyses.wbcTitle')}
         </div>
       </div>
 
-      {/* Análise */}
-      {analysis && (
+      {analysisResult && analysisText && (
         <div className={`text-xs p-2 rounded-lg mb-2 ${
-          analysis.type === 'negative' ? 'bg-red-900/20 text-red-400 border border-red-800' :
-          analysis.type === 'positive' ? 'bg-green-900/20 text-green-400 border border-green-800' :
+          analysisResult.type === 'negative' ? 'bg-red-900/20 text-red-400 border border-red-800' :
+          analysisResult.type === 'positive' ? 'bg-green-900/20 text-green-400 border border-green-800' :
           'bg-gray-600/20 text-gray-300 border border-gray-600'
         }`}>
-          <span className="font-medium">💡 Análise:</span> {analysis.text}
+          <span className="font-medium">{t('analyses.wbcAnalysis')}</span> {analysisText}
         </div>
       )}
 
-      {/* SCATTER CHART */}
       <div className="w-full">
         <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData} margin={{ top: 20, right: 5, bottom: 5, left: -5 }}>
@@ -295,19 +255,11 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend
-              wrapperStyle={{
-                paddingTop: '10px',
-                paddingBottom: '5px'
-              }}
+              wrapperStyle={{ paddingTop: '10px', paddingBottom: '5px' }}
               iconSize={16}
               iconType="line"
-              formatter={(value, entry) => (
-                <span style={{
-                  color: '#ddd',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  marginLeft: '8px'
-                }}>
+              formatter={(value) => (
+                <span style={{ color: '#ddd', fontSize: '14px', fontWeight: 600, marginLeft: '8px' }}>
                   {value}
                 </span>
               )}
@@ -317,7 +269,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
               type="linear"
               dataKey="mood"
               stroke="#3b82f6"
-              name="Humor"
+              name={t('analyses.wbcMoodLabel')}
               dot={(props) => {
                 const { cx, cy, payload } = props;
                 if (payload.hasConsumption && !payload.mood) return null;
@@ -332,7 +284,7 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
               type="linear"
               dataKey="energy"
               stroke="#f59e0b"
-              name="Energia"
+              name={t('analyses.wbcEnergyLabel')}
               strokeDasharray="5 5"
               dot={(props) => {
                 const { cx, cy, payload } = props;
@@ -344,18 +296,16 @@ const WellbeingChart = ({ wellbeingLogs, consumptions, selectedCycle }) => {
               isAnimationActive={false}
             />
 
-            {/* Linha invisível só para mostrar consumos na legenda */}
             <Line
               dataKey="consumptionCount"
               stroke="rgba(239, 68, 68, 0)"
               strokeWidth={0}
-              name="💊 Consumos"
+              name={t('analyses.wbcConsLabel')}
               dot={false}
               legendType="circle"
               isAnimationActive={false}
             />
 
-            {/* Marcas de consumo no eixo X */}
             {chartData
               .filter(d => d.hasConsumption)
               .map((d, idx) => (

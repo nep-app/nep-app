@@ -10,7 +10,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     analysisCycles,
 }) {
     const { t, i18n } = useTranslation();
-    const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || emotion) : emotion;
+    // TRIGGER_EN covers old-format emotions stored without emoji prefix
+    const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || TRIGGER_EN[emotion] || emotion) : emotion;
 
     const TRIGGER_EN = {
         'Stress': 'Stress', 'Ansiedade': 'Anxiety', 'Solidão': 'Loneliness',

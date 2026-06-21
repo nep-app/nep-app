@@ -271,11 +271,8 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     let achievedCount = 0;
 
     if (goal.type === 'reduce_frequency') {
-        // REGRA: Conta TODOS OS DIAS desde primeiro registo com consumos <target
-        // Dias sem consumptions (0 consumos) contam como alcançados (se target > 0)
-        const allDays = getAllDaysSinceFirstRecord(consumptions);
-
-        // Contar consumptions por dia (usar ISO format para consistência)
+        // REGRA: Conta DIAS COM CONSUMOS onde count <= target
+        // Dias sem consumos NÃO são contados (dias sem uso não são relevantes para a meta de frequência)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
             const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
@@ -283,11 +280,8 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             consumptionsByDate[dateKey]++;
         });
 
-        // Verificar cada dia
-        allDays.forEach(date => {
-            const count = consumptionsByDate[date] || 0; // Dias sem consumptions = 0
-            const isAchieved = count <= goal.target; // <=: exatamente no target = sucesso
-            if (isAchieved) achievedCount++;
+        Object.values(consumptionsByDate).forEach(count => {
+            if (count <= goal.target) achievedCount++;
         });
     }
 
