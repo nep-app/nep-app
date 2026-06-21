@@ -1865,12 +1865,22 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         const dailyData = {};
 
+                        // Mood from wellbeing logs
                         analysisWellbeing.forEach(w => {
                             const wDate = w.date || safeToISODate(w.timestamp);
                             if (!wDate) return;
                             if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
-                            if (w.sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
                             if (w.mood) dailyData[wDate].mood = parseInt(w.mood);
+                            // Legacy: some old wellbeing records have sleep field
+                            if (w.sleep && !dailyData[wDate].sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
+                        });
+
+                        // Sleep from cycles (primary source — wellbeing rarely has sleep)
+                        analysisCycles.forEach(c => {
+                            const cDate = c.date || safeToISODate(c.timestamp);
+                            if (!cDate || !c.sleep) return;
+                            if (!dailyData[cDate]) dailyData[cDate] = { sleep: null, mood: null };
+                            dailyData[cDate].sleep = parseFloat(c.sleep);
                         });
 
                         const sortedDates = Object.keys(dailyData).sort();
@@ -1879,6 +1889,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         for (let i = 0; i < sortedDates.length - 1; i++) {
                             const today = dailyData[sortedDates[i]];
                             const tomorrow = dailyData[sortedDates[i + 1]];
+                            // Only use if dates are truly consecutive (≤2 days apart to avoid gaps)
+                            const dayGap = (new Date(sortedDates[i + 1]) - new Date(sortedDates[i])) / 86400000;
+                            if (dayGap > 2) continue;
                             if (today.sleep !== null && tomorrow.mood !== null) {
                                 nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
                             }
@@ -2100,25 +2113,21 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             const consDate = cons.date;
                             const consTime = new Date(cons.timestamp);
 
-                            // Encontrar check-ins de bem-estar do mesmo dia
-                            const sameDayWellbeing = analysisWellbeing.filter(w => {
+                            // Encontrar check-ins de bem-estar do mesmo dia ANTES do consumo
+                            const priorWellbeing = analysisWellbeing.filter(w => {
                                 const wDate = w.date || safeToISODate(w.timestamp);
-                                return wDate === consDate && w.energy != null;
+                                return wDate === consDate && w.energy != null && new Date(w.timestamp) <= consTime;
                             });
 
-                            if (sameDayWellbeing.length === 0) return;
+                            if (priorWellbeing.length === 0) return;
 
-                            // Encontrar o check-in mais próximo (antes ou depois do consumo)
-                            const closestWellbeing = sameDayWellbeing.reduce((closest, current) => {
-                                const currentTime = new Date(current.timestamp);
-                                const closestTime = new Date(closest.timestamp);
-                                const currentDiff = Math.abs(currentTime - consTime);
-                                const closestDiff = Math.abs(closestTime - consTime);
-                                return currentDiff < closestDiff ? current : closest;
-                            });
+                            // Usar o check-in mais recente antes do consumo
+                            const latestPrior = priorWellbeing.reduce((latest, current) =>
+                                new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
+                            );
 
                             countWithData++;
-                            if (parseInt(closestWellbeing.energy) < 4) {
+                            if (parseInt(latestPrior.energy) < 4) {
                                 countWithLowEnergy++;
                             }
                         });
