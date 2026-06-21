@@ -360,38 +360,51 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
-    // Aviso 6: Último consumo (meta limit_last — automático por timestamp)
+    // Aviso 6: Último consumo (meta limit_last — baseado no ciclo de sono, não no dia de calendário)
     const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
     if (limitLastGoal && filteredConsumptions.length > 0) {
       const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
       const [th, tm] = targetStr.split(':').map(Number);
-      // 00:00 significa meia-noite = fim do dia = 1440 minutos
       const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
 
-      // Usar data LOCAL (não UTC) para evitar bugs de timezone
-      const localDateKey = (ts) => {
-        const d = new Date(ts);
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      };
       const now = new Date();
-      const todayKey = localDateKey(now);
 
-      const allByDay = {};
-      filteredConsumptions.forEach(c => {
-        const key = localDateKey(c.timestamp || c.createdAt);
-        if (!allByDay[key]) allByDay[key] = [];
-        allByDay[key].push(c);
-      });
+      // O "dia" é definido pelo ciclo de sono: começa quando o utilizador acordou (último ciclo registado)
+      // Se não há ciclo, usar meia-noite do dia de calendário como fallback
+      const sortedCycles = (cycles || [])
+        .filter(c => c.timestamp || c.date)
+        .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));
 
-      const todayConsumptions = (allByDay[todayKey] || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const lastCycleTime = sortedCycles.length > 0
+        ? new Date(sortedCycles[0].timestamp || sortedCycles[0].date)
+        : null;
 
-      // Mostrar estado do dia de hoje se há consumos, senão mostrar resultado de ontem
-      if (todayConsumptions.length > 0) {
-        const ld = new Date(todayConsumptions[0].timestamp);
-        let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
-        if (lastMinutes < 360) lastMinutes += 1440;
-        const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
-        if (lastMinutes >= targetMinutes) {
+      // Consumos do ciclo atual: desde o último ciclo registado (ou todos se não há ciclo)
+      const cycleConsumptions = filteredConsumptions
+        .filter(c => !lastCycleTime || new Date(c.timestamp) > lastCycleTime)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      if (cycleConsumptions.length > 0) {
+        const lastCons = new Date(cycleConsumptions[0].timestamp);
+        const lastConsMinutes = lastCons.getHours() * 60 + lastCons.getMinutes();
+        const lastTimeStr = `${String(lastCons.getHours()).padStart(2,'0')}:${String(lastCons.getMinutes()).padStart(2,'0')}`;
+
+        // A meia-noite relevante é a primeira 00:00 que ocorreu DENTRO deste ciclo
+        const cycleStart = lastCycleTime || new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        // Se a meia-noite já passou E ocorreu depois do início do ciclo → é a meia-noite relevante
+        const midnightIsWithinCycle = midnight > cycleStart && midnight <= now;
+
+        let afterMidnight = false;
+        if (midnightIsWithinCycle) {
+          // Há consumos depois da meia-noite deste ciclo?
+          afterMidnight = cycleConsumptions.some(c => new Date(c.timestamp) >= midnight);
+        } else {
+          // A meia-noite ainda não aconteceu neste ciclo → avaliar pela hora (< targetMinutes)
+          afterMidnight = (lastConsMinutes + (lastConsMinutes < 360 ? 1440 : 0)) >= targetMinutes;
+        }
+
+        if (afterMidnight) {
           alerts.push({
             text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
@@ -406,29 +419,38 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
             type: 'positive'
           });
         }
-      } else {
-        // Sem consumos hoje — mostrar resultado do dia anterior (ciclo fechado)
-        const previousKeys = Object.keys(allByDay).filter(k => k !== todayKey).sort().reverse();
-        if (previousKeys.length > 0) {
-          const prevConsumptions = allByDay[previousKeys[0]].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          const prevLast = prevConsumptions[0];
-          const ld = new Date(prevLast.timestamp);
-          let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
-          if (lastMinutes < 360) lastMinutes += 1440;
-          const lastTimeStr = `${String(ld.getHours()).padStart(2,'0')}:${String(ld.getMinutes()).padStart(2,'0')}`;
-          if (lastMinutes < targetMinutes) {
+      } else if (sortedCycles.length > 0) {
+        // Ciclo fechado (há novo ciclo, sem consumos desde então) — mostrar resultado do ciclo anterior
+        const prevCycleStart = sortedCycles.length > 1
+          ? new Date(sortedCycles[1].timestamp || sortedCycles[1].date)
+          : null;
+        const prevCycleCons = filteredConsumptions
+          .filter(c => {
+            const t = new Date(c.timestamp);
+            return t <= lastCycleTime && (!prevCycleStart || t > prevCycleStart);
+          })
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        if (prevCycleCons.length > 0) {
+          const prevLast = new Date(prevCycleCons[0].timestamp);
+          // Meia-noite dentro do ciclo anterior
+          const prevMidnight = new Date(lastCycleTime.getFullYear(), lastCycleTime.getMonth(), lastCycleTime.getDate(), 0, 0, 0);
+          const prevCycleStartTs = prevCycleStart || new Date(0);
+          const prevMidnightInCycle = prevMidnight > prevCycleStartTs && prevMidnight <= lastCycleTime;
+          const hadAfterMidnight = prevMidnightInCycle
+            ? prevCycleCons.some(c => new Date(c.timestamp) >= prevMidnight)
+            : false;
+
+          if (hadAfterMidnight) {
+            const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
             alerts.push({
-              text: i18n.t('alerts.limitLastSuccess', { target: targetStr }),
-              emoji: '🌙',
-              color: 'green',
-              type: 'positive'
+              text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
+              emoji: '⏰', color: 'orange', type: 'negative'
             });
           } else {
             alerts.push({
-              text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
-              emoji: '⏰',
-              color: 'orange',
-              type: 'negative'
+              text: i18n.t('alerts.limitLastSuccess', { target: targetStr }),
+              emoji: '🌙', color: 'green', type: 'positive'
             });
           }
         }
