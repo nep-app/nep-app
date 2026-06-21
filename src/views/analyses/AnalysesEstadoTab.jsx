@@ -12,6 +12,15 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     const { t, i18n } = useTranslation();
     const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || emotion) : emotion;
 
+    const TRIGGER_EN = {
+        'Stress': 'Stress', 'Ansiedade': 'Anxiety', 'Solidão': 'Loneliness',
+        'Festa': 'Party', 'Trabalho': 'Work', 'Família': 'Family',
+        'Hábito': 'Habit', 'Tristeza': 'Sadness', 'Dependência': 'Dependency',
+        'Tédio': 'Boredom', 'Cansaço': 'Fatigue', 'Dor física': 'Physical pain',
+        'Insónia': 'Insomnia', 'Conflito': 'Conflict', 'Celebração': 'Celebration',
+    };
+    const translateTrigger = (trigger) => i18n.language === 'en' ? (TRIGGER_EN[trigger] || trigger) : trigger;
+
     const emotionStats = useMemo(() => {
         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
 
@@ -609,7 +618,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                         <div key={idx} className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 flex-1">
                                                 <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
-                                                <span className={'text-sm truncate ' + ('text-red-400')}>{item.trigger}</span>
+                                                <span className={'text-sm truncate ' + ('text-red-400')}>{translateTrigger(item.trigger)}</span>
                                             </div>
                                             <span className={'text-xs ' + ('text-gray-500')}>
                                                 {item.count}× ({item.percent.toFixed(0)}%)
@@ -729,9 +738,9 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 {t('analyses.highRisk')}
                                             </div>
                                             {highRiskTriggers.map(tr => (
-                                                <div key={tr.trigger} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{tr.trigger}</span>
+                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{translateTrigger(tr.trigger)}</span>
                                                         <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-red-400/70')}>
@@ -749,9 +758,9 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskTriggers.map(tr => (
-                                                <div key={tr.trigger} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{tr.trigger}</span>
+                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{translateTrigger(tr.trigger)}</span>
                                                         <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-green-400/70')}>

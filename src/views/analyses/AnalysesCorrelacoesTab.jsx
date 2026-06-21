@@ -1497,7 +1497,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             bedtimeConsCorrelation,
             bedtimeToConsCard,
         };
-    }, [analysisConsumptions, analysisWellbeing, analysisCycles, analysisDailyLogs]);
+    }, [analysisConsumptions, analysisWellbeing, analysisCycles, analysisDailyLogs, i18n.language]);
 
     if (!correlacaoData) {
         return (
