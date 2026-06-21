@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
-import { getEmotionCategory } from '../../constants/emotions';
+import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 
 const { getDateRangeForPeriod, filterByDateRange, getGoalAchievementCount } = analyticsService;
@@ -309,7 +309,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         return (
                             <p>
                                 🌈 <strong className={('text-cyan-400')}>{t('coach.emotionalStateLabel')}</strong>{' '}{t('coach.emotionalBalance')} <strong className={(isPositive ? 'text-green-400' : 'text-orange-400')}>{t(balanceLabelKey)}</strong> {t('coach.pctPositiveEmotions', { pct: positivePercent })}
-                                {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.join(', ')}</strong>.</>}
+                                {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.map(e => i18n.language === 'en' ? (EMOTION_EN[e] || e) : e).join(', ')}</strong>.</>}
                                 {positivePercent >= 60 ? (
                                     <> <span className={('text-green-400')}>{t('coach.emotionalPositiveTip')}</span></>
                                 ) : positivePercent < 40 ? (
@@ -1648,18 +1648,31 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Calcular detalhes para cada meta
                         const goalDetails = uniqueGoals.map(g => {
-                            const achievements = getGoalAchievementCount(g, analysisConsumptions, analysisDailyLogs, analysisCycles, analysisWellbeing);
+                            // Filter data by goal.createdAt to avoid inflating denominators
+                            const goalCreatedAt = g.createdAt ? g.createdAt.split('T')[0] : null;
+                            const gCons = goalCreatedAt
+                                ? analysisConsumptions.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
+                                : analysisConsumptions;
+                            const gLogs = goalCreatedAt
+                                ? analysisDailyLogs.filter(l => !l.date || l.date >= goalCreatedAt)
+                                : analysisDailyLogs;
+                            const gCycles = goalCreatedAt
+                                ? analysisCycles.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
+                                : analysisCycles;
+                            const gWellbeing = goalCreatedAt
+                                ? analysisWellbeing.filter(w => { const d = w.date || safeToISODate(w.timestamp); return !d || d >= goalCreatedAt; })
+                                : analysisWellbeing;
+
+                            const achievements = getGoalAchievementCount(g, gCons, gLogs, gCycles, gWellbeing);
 
                             // Calcular total possível baseado no tipo de meta
                             let totalPossible = 0;
 
                             if (g.type === 'reduce_frequency') {
-                                // TODOS os dias desde o primeiro registo (igual ao PatternsView)
-                                totalPossible = analyticsService.getAllDaysSinceFirstRecord(analysisConsumptions).length;
+                                totalPossible = analyticsService.getAllDaysSinceFirstRecord(gCons).length;
                             } else if (g.type === 'increase_interval') {
-                                // DIAS com ≥2 consumos
                                 const consumptionsByDate = {};
-                                analysisConsumptions.forEach(c => {
+                                gCons.forEach(c => {
                                     const dateKey = c.date || safeToISODate(c.timestamp);
                                     if (!dateKey) return;
                                     if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = [];
@@ -1667,40 +1680,33 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 });
                                 totalPossible = Object.values(consumptionsByDate).filter(arr => arr.length >= 2).length;
                             } else if (g.type === 'sleep_hours') {
-                                // DIAS com sono registado (cycles ou wellbeing)
                                 const allDates = new Set();
-
-                                // Adicionar dias de cycles com sono
-                                analysisCycles.forEach(c => {
+                                gCycles.forEach(c => {
                                     if (c.sleep && !isNaN(parseFloat(c.sleep))) {
                                         const dateKey = c.date || safeToISODate(c.timestamp);
                                         if (dateKey) allDates.add(dateKey);
                                     }
                                 });
-
-                                // Adicionar dias de wellbeing com sono (Set elimina duplicados automaticamente)
-                                analysisWellbeing.forEach(w => {
+                                gWellbeing.forEach(w => {
                                     if (w.sleep && !isNaN(parseFloat(w.sleep))) {
                                         const dateKey = w.date || safeToISODate(w.timestamp);
                                         if (dateKey) allDates.add(dateKey);
                                     }
                                 });
-
                                 totalPossible = allDates.size;
                             } else if (g.type === 'bedtime_before') {
-                                // DIAS com bedtime registado (igual ao PatternsView)
                                 const allDates = new Set();
-                                analysisCycles.forEach(c => {
+                                gCycles.forEach(c => {
                                     if (c.bedtime) {
                                         const dateKey = c.date || safeToISODate(c.timestamp);
                                         if (dateKey) allDates.add(dateKey);
                                     }
                                 });
                                 totalPossible = allDates.size;
-                            } else if (g.type === 'limit_last' || g.type === 'reduce_quantity' || g.type === 'first_not_before') {
-                                // DIAS com consumos
+                            } else {
+                                // limit_last, reduce_quantity, first_not_before, default: days with consumptions
                                 const allDates = new Set();
-                                analysisConsumptions.forEach(c => {
+                                gCons.forEach(c => {
                                     const dateKey = c.date || safeToISODate(c.timestamp);
                                     if (dateKey) allDates.add(dateKey);
                                 });

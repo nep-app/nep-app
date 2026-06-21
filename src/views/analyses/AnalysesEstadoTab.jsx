@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { getEmotionCategory } from '../../constants/emotions';
+import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 
 export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
@@ -9,7 +9,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     analysisWellbeing,
     analysisCycles,
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || emotion) : emotion;
 
     const emotionStats = useMemo(() => {
         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
@@ -378,7 +379,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                     item.category === 'positive' ? ('text-green-400') :
                                                     item.category === 'negative' ? ('text-purple-400') :
                                                     ('text-gray-400')
-                                                )}>{item.emotion}</span>
+                                                )}>{translateEmotion(item.emotion)}</span>
                                             </div>
                                             <span className={'text-xs ' + ('text-gray-500')}>
                                                 {item.count}× ({item.percent.toFixed(0)}%)
@@ -504,7 +505,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             {highRiskEmotions.map(e => (
                                                 <div key={e.emotion} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{e.emotion}</span>
+                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{translateEmotion(e.emotion)}</span>
                                                         <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-red-400/70')}>
@@ -524,7 +525,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             {lowRiskEmotions.map(e => (
                                                 <div key={e.emotion} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{e.emotion}</span>
+                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{translateEmotion(e.emotion)}</span>
                                                         <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-green-400/70')}>

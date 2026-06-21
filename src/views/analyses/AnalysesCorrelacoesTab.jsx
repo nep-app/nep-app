@@ -1580,6 +1580,114 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             {/* Helper function para renderizar correlações */}
             {(() => {
                 // Define a função aqui para ser usada em todas as seções abaixo
+                const localizeDesc = (desc) => {
+                    if (i18n.language !== 'en' || !desc) return desc;
+                    return desc
+                        // Multi-word specific phrases first
+                        .replace(/Sem relação clara entre variáveis/g, 'No clear relationship between variables')
+                        .replace(/Relação detectada entre variáveis/g, 'Relationship detected between variables')
+                        .replace(/quebra de padrão/g, 'pattern break')
+                        .replace(/padrão de repetição/g, 'repetition pattern')
+                        .replace(/total de consumos/g, 'total uses')
+                        .replace(/Hora do 1º consumo não afeta total/g, "Time of 1st use doesn't affect total")
+                        .replace(/Espaçar mais pode significar doses maiores por consumo/g, 'Longer spacing may mean larger doses per use')
+                        // Deitar (bedtime) phrases
+                        .replace(/Deitar mais tarde/g, 'Going to bed later')
+                        .replace(/Deitar mais cedo/g, 'Going to bed earlier')
+                        .replace(/Deitar tarde/g, 'Going to bed late')
+                        .replace(/Deitar cedo/g, 'Going to bed early')
+                        .replace(/Hora de deitar/g, 'Bedtime')
+                        .replace(/hora de deitar/g, 'bedtime')
+                        // Temporal phrases
+                        .replace(/no dia seguinte/g, 'the next day')
+                        .replace(/ \(ontem → hoje\)/g, ' (yesterday → today)')
+                        .replace(/amanhã/g, 'tomorrow')
+                        .replace(/ontem/g, 'yesterday')
+                        .replace(/hoje/g, 'today')
+                        .replace(/no dia/g, 'that day')
+                        // Emotion and self-care compound phrases
+                        .replace(/Emoções Negativas/g, 'Negative emotions')
+                        .replace(/emoções negativas/g, 'negative emotions')
+                        .replace(/Emoções não afetam/g, "Emotions don't affect")
+                        .replace(/Emoções/g, 'Emotions')
+                        .replace(/emoções/g, 'emotions')
+                        .replace(/Primeiro consumo cedo/g, 'First use early')
+                        .replace(/Primeiro consumo tarde/g, 'First use late')
+                        .replace(/Primeiro consumo/g, 'First use')
+                        .replace(/primeiro consumo/g, 'first use')
+                        // Compound metric phrases (before individual words)
+                        .replace(/Mais consumos de manhã/g, 'More morning uses')
+                        .replace(/Mais consumos de tarde/g, 'More afternoon uses')
+                        .replace(/Mais consumos de noite/g, 'More evening uses')
+                        .replace(/Consumos de manhã/g, 'Morning uses')
+                        .replace(/Consumos de tarde/g, 'Afternoon uses')
+                        .replace(/Consumos de noite/g, 'Evening uses')
+                        .replace(/consumos de manhã/g, 'morning uses')
+                        .replace(/consumos de tarde/g, 'afternoon uses')
+                        .replace(/consumos de noite/g, 'evening uses')
+                        .replace(/consumos\/dia/g, 'uses/day')
+                        .replace(/mg\/dia/g, 'mg/day')
+                        .replace(/total no dia/g, 'total per day')
+                        .replace(/Intervalos maiores/g, 'Longer intervals')
+                        .replace(/Ligeira tendência para/g, 'Slight tendency toward')
+                        // Autocorrelation phrases
+                        .replace(/tende a repetir-se hoje/g, 'tends to repeat today')
+                        .replace(/inverte-se hoje/g, 'reverses today')
+                        .replace(/influencia ligeiramente hoje/g, 'slightly influences today')
+                        .replace(/não se repete hoje/g, "doesn't repeat today")
+                        .replace(/tende a inverter ligeiramente hoje/g, 'tends to slightly reverse today')
+                        .replace(/de ontem não afeta hoje/g, "from yesterday doesn't affect today")
+                        .replace(/não afetam/g, "don't affect")
+                        .replace(/não afeta/g, "doesn't affect")
+                        // Adjectives/adverbs
+                        .replace(/Ligeiramente/g, 'Slightly')
+                        .replace(/ligeiramente/g, 'slightly')
+                        .replace(/Mais baixo/g, 'Lower')
+                        .replace(/mais baixo/g, 'lower')
+                        // Directional words
+                        .replace(/Mais/g, 'More')
+                        .replace(/Menos/g, 'Less')
+                        .replace(/mais/g, 'more')
+                        .replace(/menos/g, 'less')
+                        // Quality words
+                        .replace(/Pior/g, 'Worse')
+                        .replace(/pior/g, 'worse')
+                        .replace(/Melhor/g, 'Better')
+                        .replace(/melhor/g, 'better')
+                        // High/Low
+                        .replace(/\balto\b/g, 'high')
+                        .replace(/\bAlto\b/g, 'High')
+                        .replace(/\bbaixo\b/g, 'low')
+                        .replace(/\bBaixo\b/g, 'Low')
+                        // Metrics (capitalized first)
+                        .replace(/Autocuidado/g, 'Self-care')
+                        .replace(/autocuidado/g, 'self-care')
+                        .replace(/Bem-estar/g, 'Wellbeing')
+                        .replace(/bem-estar/g, 'wellbeing')
+                        .replace(/Dosagem/g, 'Dosage')
+                        .replace(/dosagem/g, 'dosage')
+                        .replace(/Consumos/g, 'Uses')
+                        .replace(/consumos/g, 'uses')
+                        .replace(/Consumo/g, 'Consumption')
+                        .replace(/consumo/g, 'consumption')
+                        .replace(/Sono/g, 'Sleep')
+                        .replace(/sono/g, 'sleep')
+                        .replace(/Humor/g, 'Mood')
+                        .replace(/humor/g, 'mood')
+                        .replace(/Energia/g, 'Energy')
+                        .replace(/energia/g, 'energy')
+                        .replace(/Intervalos/g, 'Intervals')
+                        .replace(/intervalos/g, 'intervals')
+                        .replace(/Intervalo/g, 'Interval')
+                        .replace(/intervalo/g, 'interval')
+                        // Time of day
+                        .replace(/\bmanhã\b/g, 'morning')
+                        .replace(/\btarde\b/g, 'afternoon')
+                        .replace(/\bnoite\b/g, 'evening')
+                        .replace(/doses individuais maiores/g, 'larger individual doses')
+                        .replace(/doses maiores por consumo/g, 'larger doses per use');
+                };
+                const localizeUnit = (u) => i18n.language === 'en' && u === '/dia' ? '/day' : u;
                 window.renderCorrelationCard = (corr, isInverse = false) => {
                     const getLabel = (r, name) => {
                         if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
@@ -1856,7 +1964,8 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                         return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sem relação clara entre variáveis' };
                     };
 
-                    const label = getLabel(corr.correlation, corr.name);
+                    const rawLabel = getLabel(corr.correlation, corr.name);
+                    const label = { ...rawLabel, desc: localizeDesc(rawLabel.desc) };
 
                     const colorClasses = {
                         red: 'bg-red-900/30 text-red-400 border-red-800',
@@ -1873,7 +1982,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     <span className="text-2xl">{corr.icon}</span>
                                     <div>
                                         <div className={'font-semibold ' + ('text-white')}>{corr.displayName || corr.name}</div>
-                                        <div className={'text-xs ' + ('text-gray-400')}>{t('correlations.avg')} {corr.average}{corr.unit}</div>
+                                        <div className={'text-xs ' + ('text-gray-400')}>{t('correlations.avg')} {corr.average}{localizeUnit(corr.unit)}</div>
                                     </div>
                                 </div>
                                 <div className={'text-xs px-2 py-1 rounded-full font-medium ' + (
@@ -1993,17 +2102,18 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 if (sleepMoodCorrelations.length > 0) {
                     const getCorrelationLabel = (r) => {
                         if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
-                        if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'green', desc: 'Mais sono → Muito melhor humor' };
-                        if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: 'Mais sono → Melhor humor' };
-                        if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: 'Sono ajuda o humor' };
-                        if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'red', desc: 'Mais sono → Muito pior humor (incomum)' };
-                        if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'orange', desc: 'Mais sono → Pior humor (incomum)' };
-                        if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: 'Possível correlação negativa' };
-                        return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sem relação clara' };
+                        if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'green', desc: i18n.language === 'en' ? 'More sleep → Much better mood' : 'Mais sono → Muito melhor humor' };
+                        if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'green', desc: i18n.language === 'en' ? 'More sleep → Better mood' : 'Mais sono → Melhor humor' };
+                        if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'green', desc: i18n.language === 'en' ? 'Sleep helps mood' : 'Sono ajuda o humor' };
+                        if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'red', desc: i18n.language === 'en' ? 'More sleep → Much worse mood (unusual)' : 'Mais sono → Muito pior humor (incomum)' };
+                        if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'orange', desc: i18n.language === 'en' ? 'More sleep → Worse mood (unusual)' : 'Mais sono → Pior humor (incomum)' };
+                        if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: i18n.language === 'en' ? 'Possible negative correlation' : 'Possível correlação negativa' };
+                        return { text: t('correlations.labelNoCorr'), color: 'gray', desc: i18n.language === 'en' ? 'No clear relationship' : 'Sem relação clara' };
                     };
 
                     const renderSleepMoodCard = (corr) => {
-                        const label = getCorrelationLabel(corr.correlation);
+                        const rawLabel = getCorrelationLabel(corr.correlation);
+                        const label = { ...rawLabel, desc: localizeDesc(rawLabel.desc) };
                         const colorClasses = {
                             red: 'bg-red-900/30 text-red-400 border-red-800',
                             orange: 'bg-orange-900/30 text-orange-400 border-orange-800',
@@ -2016,7 +2126,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xl">{corr.icon}</span>
-                                        <span className="font-semibold">{corr.name}</span>
+                                        <span className="font-semibold">{corr.displayName || corr.name}</span>
                                     </div>
                                     <div className="text-sm px-2 py-1 rounded-full font-medium bg-black/10">
                                         {label.text}
@@ -2024,13 +2134,13 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
                                     <div>
-                                        <span className="opacity-75">Sono: </span>
+                                        <span className="opacity-75">{i18n.language === 'en' ? 'Sleep: ' : 'Sono: '}</span>
                                         <span className="font-bold">{corr.avgSleep}h</span>
-                                        <span className="opacity-75"> • Humor: </span>
+                                        <span className="opacity-75"> • {i18n.language === 'en' ? 'Mood: ' : 'Humor: '}</span>
                                         <span className="font-bold">{corr.avgMood}/10</span>
                                     </div>
                                     <div className="opacity-75">
-                                        r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} dias)
+                                        r = {corr.correlation !== null ? corr.correlation.toFixed(2) : 'N/A'} ({corr.dataPoints} {t('correlations.days')})
                                     </div>
                                 </div>
                                 {label.desc && (
@@ -2075,17 +2185,19 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 // Correlação entre hora de deitar e consumo
                 const getCorrelationLabel = (r) => {
                     if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
-                    if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'green', desc: 'Deitar mais cedo → Menos consumo' };
-                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: 'Deitar cedo pode ajudar a reduzir consumo' };
-                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: 'Leve tendência: deitar cedo → menos consumo' };
-                    if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'red', desc: 'Deitar tarde → Muito mais consumo' };
-                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'orange', desc: 'Deitar tarde → Mais consumo' };
-                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'yellow', desc: 'Leve tendência: deitar tarde → mais consumo' };
-                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Hora de deitar não parece afetar consumo' };
+                    const en = i18n.language === 'en';
+                    if (r < -0.7) return { text: t('correlations.labelStrongNegative'), color: 'green', desc: en ? 'Going to bed earlier → Less use' : 'Deitar mais cedo → Menos consumo' };
+                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'green', desc: en ? 'Going to bed early can help reduce use' : 'Deitar cedo pode ajudar a reduzir consumo' };
+                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'yellow', desc: en ? 'Slight tendency: earlier bedtime → less use' : 'Leve tendência: deitar cedo → menos consumo' };
+                    if (r > 0.7) return { text: t('correlations.labelStrongPositive'), color: 'red', desc: en ? 'Going to bed late → Much more use' : 'Deitar tarde → Muito mais consumo' };
+                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'orange', desc: en ? 'Going to bed late → More use' : 'Deitar tarde → Mais consumo' };
+                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'yellow', desc: en ? 'Slight tendency: later bedtime → more use' : 'Leve tendência: deitar tarde → mais consumo' };
+                    return { text: t('correlations.labelNoCorr'), color: 'gray', desc: en ? "Bedtime doesn't seem to affect use" : 'Hora de deitar não parece afetar consumo' };
                 };
 
                 const correlation = bedtimeConsCorrelation;
-                const label = getCorrelationLabel(correlation);
+                const rawBedtimeLabel = getCorrelationLabel(correlation);
+                const label = { ...rawBedtimeLabel, desc: localizeDesc(rawBedtimeLabel.desc) };
 
                 const colorClasses = {
                     red: 'bg-red-900/30 text-red-400 border-red-800',
@@ -2115,7 +2227,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                             </div>
                         ) : (
                             <div className={'text-center py-6 text-sm ' + ('text-gray-400')}>
-                                Sem dados de hora de deitar registados
+                                {i18n.language === 'en' ? 'No bedtime data recorded' : 'Sem dados de hora de deitar registados'}
                             </div>
                         ))}
                     </div>
@@ -2166,10 +2278,15 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                     {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
                         {/* Explicação introdutória */}
                         <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-3 border'}>
-                            <p className={'text-xs font-semibold mb-2 ' + ('text-purple-300')}>💡 Sobre dosagem vs frequência:</p>
+                            <p className={'text-xs font-semibold mb-2 ' + ('text-purple-300')}>
+                                💡 {i18n.language === 'en' ? 'About dosage vs frequency:' : 'Sobre dosagem vs frequência:'}
+                            </p>
                             <p className={'text-xs ' + ('text-gray-400')}>
-                                <strong>Dosagem</strong> = quantidade total de mg por dia. <strong>Frequência</strong> = número de consumos por dia.
-                                Esta secção analisa se o teu estado emocional (gatilhos, emoções) influencia a <u>quantidade</u> que consomes, não apenas quantas vezes consomes.
+                                {i18n.language === 'en' ? (
+                                    <><strong>Dosage</strong> = total mg per day. <strong>Frequency</strong> = number of uses per day. This section analyses whether your emotional state (triggers, emotions) influences the <u>quantity</u> you use, not just how often.</>
+                                ) : (
+                                    <><strong>Dosagem</strong> = quantidade total de mg por dia. <strong>Frequência</strong> = número de consumos por dia. Esta secção analisa se o teu estado emocional (gatilhos, emoções) influencia a <u>quantidade</u> que consomes, não apenas quantas vezes consomes.</>
+                                )}
                             </p>
                         </div>
 
@@ -2224,16 +2341,16 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     <span className="text-sm opacity-75">{disp.unit}</span>
                                 </div>
                                 <div className={'text-xs opacity-75 mb-2'}>
-                                    Padrão: <strong>{disp.patternLabel || disp.pattern}</strong>
+                                    {i18n.language === 'en' ? 'Pattern: ' : 'Padrão: '}<strong>{disp.patternLabel || disp.pattern}</strong>
                                 </div>
                                 <div className={'text-xs leading-relaxed opacity-90'}>
-                                    {disp.pattern === 'Muito Regular' && 'Consumos ocorrem em horários muito consistentes - padrão previsível.'}
-                                    {disp.pattern === 'Regular' && 'Consumos ocorrem em horários relativamente consistentes.'}
-                                    {disp.pattern === 'Moderado' && 'Consumos variam moderadamente ao longo do dia.'}
-                                    {disp.pattern === 'Caótico' && 'Consumos ocorrem em horários muito variados - padrão imprevisível.'}
+                                    {disp.pattern === 'Muito Regular' && (i18n.language === 'en' ? 'Uses occur at very consistent times — predictable pattern.' : 'Consumos ocorrem em horários muito consistentes - padrão previsível.')}
+                                    {disp.pattern === 'Regular' && (i18n.language === 'en' ? 'Uses occur at relatively consistent times.' : 'Consumos ocorrem em horários relativamente consistentes.')}
+                                    {disp.pattern === 'Moderado' && (i18n.language === 'en' ? 'Uses vary moderately throughout the day.' : 'Consumos variam moderadamente ao longo do dia.')}
+                                    {disp.pattern === 'Caótico' && (i18n.language === 'en' ? 'Uses occur at very varied times — unpredictable pattern.' : 'Consumos ocorrem em horários muito variados - padrão imprevisível.')}
                                 </div>
                                 <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
-                                    {disp.dataPoints} consumos analisados
+                                    {disp.dataPoints} {i18n.language === 'en' ? 'uses analysed' : 'consumos analisados'}
                                 </div>
                             </div>
                         ))}
@@ -2255,11 +2372,14 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-2">
                                     <span className="text-3xl font-black">{safe.average}</span>
-                                    <span className="text-sm opacity-75">{safe.unit} média</span>
+                                    <span className="text-sm opacity-75">{safe.unit} {i18n.language === 'en' ? 'avg' : 'média'}</span>
                                 </div>
                                 <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>
-                                    💡 Quando espaças <span className="font-semibold">&gt;3h</span> entre consumos: <span className="font-semibold">{safe.avgTotalGood}/dia</span> ({safe.goodDays} dias)<br/>
-                                    Intervalos &lt;3h: <span className="font-semibold">{safe.avgTotalBad}/dia</span> ({safe.badDays} dias)
+                                    {i18n.language === 'en' ? (
+                                        <>💡 When you space <span className="font-semibold">&gt;3h</span> between uses: <span className="font-semibold">{safe.avgTotalGood}/day</span> ({safe.goodDays} days)<br/>Intervals &lt;3h: <span className="font-semibold">{safe.avgTotalBad}/day</span> ({safe.badDays} days)</>
+                                    ) : (
+                                        <>💡 Quando espaças <span className="font-semibold">&gt;3h</span> entre consumos: <span className="font-semibold">{safe.avgTotalGood}/dia</span> ({safe.goodDays} dias)<br/>Intervalos &lt;3h: <span className="font-semibold">{safe.avgTotalBad}/dia</span> ({safe.badDays} dias)</>
+                                    )}
                                 </div>
                                 <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
                                     • r = {safe.correlation.toFixed(2)} • {safe.dataPoints} dias
@@ -2284,11 +2404,14 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-2">
                                     <span className="text-3xl font-black">{strat.average}</span>
-                                    <span className="text-sm opacity-75">{strat.unit} redução</span>
+                                    <span className="text-sm opacity-75">{strat.unit} {i18n.language === 'en' ? 'reduction' : 'redução'}</span>
                                 </div>
                                 <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>
-                                    💡 Dias com autocuidado completo (4/4 áreas): <span className="font-semibold">{strat.avgFull}/dia</span> ({strat.fullDays} dias)<br/>
-                                    Dias sem autocuidado: <span className="font-semibold">{strat.avgNone}/dia</span> ({strat.noneDays} dias)
+                                    {i18n.language === 'en' ? (
+                                        <>💡 Days with full self-care (4/4 areas): <span className="font-semibold">{strat.avgFull}/day</span> ({strat.fullDays} days)<br/>Days without self-care: <span className="font-semibold">{strat.avgNone}/day</span> ({strat.noneDays} days)</>
+                                    ) : (
+                                        <>💡 Dias com autocuidado completo (4/4 áreas): <span className="font-semibold">{strat.avgFull}/dia</span> ({strat.fullDays} dias)<br/>Dias sem autocuidado: <span className="font-semibold">{strat.avgNone}/dia</span> ({strat.noneDays} dias)</>
+                                    )}
                                 </div>
                                 <div className={'text-xs mt-2 pt-2 border-t opacity-50 ' + ('border-gray-600')}>
                                     • r = {strat.correlation.toFixed(2)} • {strat.dataPoints} dias

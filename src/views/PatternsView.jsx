@@ -309,24 +309,51 @@ export function PatternsView({
                                                 const allDaysCount = getAllDaysSinceFirstRecord(filteredConsumptions).length;
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
-                                                    const achievementCount = getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs);
+                                                    // Filter data by goal.createdAt to avoid inflating denominators
+                                                    // with history that predates the goal being set
+                                                    const goalCreatedAt = g.createdAt ? g.createdAt.split('T')[0] : null;
+                                                    const gCons = goalCreatedAt
+                                                        ? filteredConsumptions.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
+                                                        : filteredConsumptions;
+                                                    const gLogs = goalCreatedAt
+                                                        ? filteredDailyLogs.filter(l => !l.date || l.date >= goalCreatedAt)
+                                                        : filteredDailyLogs;
+                                                    const gCycles = goalCreatedAt
+                                                        ? filteredCycles.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
+                                                        : filteredCycles;
+                                                    const gWellbeing = goalCreatedAt
+                                                        ? filteredWellbeingLogs.filter(w => { const d = w.date || safeToISODate(w.timestamp); return !d || d >= goalCreatedAt; })
+                                                        : filteredWellbeingLogs;
+
+                                                    const achievementCount = getGoalAchievementCount(g, gCons, gLogs, gCycles, gWellbeing);
 
                                                     let totalPossible = 0;
 
                                                     if (g.type === 'sleep_hours') {
-                                                        totalPossible = totalDaysWithSleep;
+                                                        const s = new Set();
+                                                        gCycles.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today && c.sleep != null && c.sleep !== '') s.add(d); });
+                                                        gWellbeing.forEach(w => { const d = w.date || safeToISODate(w.timestamp); if (d && d !== today && w.sleep != null && w.sleep !== '') s.add(d); });
+                                                        totalPossible = s.size;
                                                     } else if (g.type === 'bedtime_before') {
-                                                        totalPossible = totalDaysWithBedtime;
+                                                        const s = new Set();
+                                                        gCycles.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today && c.bedtime) s.add(d); });
+                                                        totalPossible = s.size;
                                                     } else if (g.type === 'reduce_frequency') {
-                                                        totalPossible = allDaysCount;
+                                                        totalPossible = getAllDaysSinceFirstRecord(gCons).length;
                                                     } else if (g.type === 'increase_interval') {
-                                                        totalPossible = totalDaysWithMultipleConsumptions;
+                                                        const cnt = {};
+                                                        gCons.forEach(c => { const d = timestampToPT(c.timestamp); if (d && d !== today) cnt[d] = (cnt[d] || 0) + 1; });
+                                                        totalPossible = Object.values(cnt).filter(n => n >= 2).length;
                                                     } else if (g.type === 'reduce_quantity') {
-                                                        totalPossible = totalDaysWithMg;
-                                                    } else if (g.type === 'first_not_before') {
-                                                        totalPossible = totalDaysWithConsumptions;
+                                                        const s = new Set();
+                                                        gLogs.forEach(l => { if (l.date && l.mg != null && l.date !== today) s.add(l.date); });
+                                                        gCycles.forEach(c => { if (c.mg) { const d = getDateKeyFromItem(c); if (d && d !== today) s.add(d); } });
+                                                        totalPossible = s.size;
                                                     } else {
-                                                        totalPossible = totalDaysWithConsumptions;
+                                                        // first_not_before, limit_last, default: days with consumptions
+                                                        const s = new Set();
+                                                        gCons.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today) s.add(d); });
+                                                        totalPossible = s.size;
                                                     }
 
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;
@@ -2483,7 +2510,7 @@ export function PatternsView({
                                                         <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.intervals')}</h3>
                                                         {intervals.length === 0 ? (
                                                             <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
-                                                                Sem intervalos (necessário ≥2 consumos)
+                                                                {i18n.language === 'en' ? 'No intervals (requires ≥2 uses)' : 'Sem intervalos (necessário ≥2 consumos)'}
                                                             </div>
                                                         ) : (() => {
                                                             const goodIntervals = intervals.filter(i => i.hours >= 2);
@@ -2647,7 +2674,7 @@ export function PatternsView({
                                                                 <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.dosageAnalysis')}</h3>
 
                                                                 {/* Estatísticas Gerais */}
-                                                                <div className="grid grid-cols-4 gap-3 mb-4">
+                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                                                                     <div className={`${'bg-purple-900/30 border border-purple-700/50'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold ${'text-purple-400'}`}>{dailyDosageRecords.length}</div>
                                                                         <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.records')}</div>

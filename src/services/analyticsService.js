@@ -345,7 +345,9 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             if (dayConsumptions.length === 0) return;
             const last = dayConsumptions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
             const d = new Date(last.timestamp);
-            const lastMinutes = d.getHours() * 60 + d.getMinutes();
+            let lastMinutes = d.getHours() * 60 + d.getMinutes();
+            // Early morning (before 6am) counts as "after midnight" for last-use goals
+            if (lastMinutes < 360) lastMinutes += 1440;
             if (lastMinutes < targetMinutes) achievedCount++;
         });
     }
