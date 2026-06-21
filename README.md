@@ -1,122 +1,151 @@
 # NEP.app — Harm Reduction Tracker
 
-> **Aplicação web de acompanhamento e redução de danos no consumo de substâncias psicoativas**
+> Aplicação web de redução de danos para consumo de substâncias psicoativas
 
-Versão atual: **v4.6.0**
+**Versão actual: v5.0**
 
-A app é agnóstica à substância — funciona para qualquer substância que o utilizador queira monitorizar (estimulantes, dissociativos, empatogénios, etc.). O objetivo é ajudar a consumir de forma mais consciente e reduzir gradualmente, ao ritmo de cada pessoa.
+A app começou como um tracker simples para NEP (N-Ethylpentedrone) e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
+
+O objectivo não é julgar. É ajudar a consumir de forma mais consciente, identificar padrões, perceber o impacto no bem-estar e reduzir gradualmente ao ritmo de cada pessoa.
 
 ---
 
-## 🛡️ O que a app faz
+## O que a app faz hoje
 
 ### Registo diário
-- Consumos com dosagem (mg), hora e notas
-- Ciclos: hora de deitar, horas de sono, gatilhos (triggers)
-- Bem-estar: humor, energia, água, alimentação, descanso, vida social
-- Emoções (categorizadas como positivas/negativas)
-- Reflexões e pensamentos livres
+- Consumos individuais com dosagem (mg), hora e notas
+- Ciclos de sono: hora de deitar, horas dormidas, gatilhos (triggers)
+- Bem-estar diário: humor, energia, água, alimentação, descanso, vida social
+- Emoções (lista curada com categorização positiva/negativa)
+- Reflexões livres e pensamentos (análise de sentimento automática)
+- Registo diário agregado (mg total do dia)
 
 ### Análises e padrões
-- Correlações entre sono/bem-estar e consumo
-- Fatores de risco identificados automaticamente
-- Análise de sentimento das reflexões e pensamentos
-- Impacto do consumo no bem-estar ao longo do tempo
-- Estatísticas: streak, intervalos, dosagens, primeiro/último consumo
+Quatro tabs de análise distintas:
+
+**Correlações** — Descobre automaticamente relações entre variáveis: como o sono afecta o consumo, se deitar tarde aumenta o uso, como as emoções se correlacionam com a dosagem, padrões temporais ao longo do dia, etc.
+
+**Estado** — Análise de bem-estar, gatilhos de risco (emoções que precedem mais consumo), impacto do exercício, sintomas físicos, análise do dia da semana.
+
+**Impacto** — Como o consumo afecta o bem-estar ao longo do tempo. Comparação antes/depois de eventos marcantes.
+
+**General Reflections (Coach)** — Análise narrativa que junta tudo: tendências de frequência e dosagem, padrões de autocuidado, análise de sentimento das reflexões, progresso nas metas, correlações sono-humor, clusters de dias difíceis vs. fáceis.
+
+### Padrões
+- Gráfico de frequência ao longo do tempo
+- Evolução semanal da dosagem
+- Análise de intervalos entre consumos
+- Ciclo mensal
+- Previsão do dia de hoje (baseada nos últimos 3 dias)
+- Comparação entre períodos (esta semana vs. semana passada, etc.)
+- Análise estrutural: dosagem, intervalos, distribuição por hora do dia
 
 ### Metas de redução de danos
-- Limitar frequência semanal
-- Reduzir dosagem total
-- Aumentar intervalo entre consumos
-- Definir hora máxima para último consumo
-- Definir hora mínima para primeiro consumo
-- Metas de sono (horas e hora de deitar)
+- Reduzir frequência (máx. X usos/dia)
+- Reduzir dosagem total (máx. X mg/dia)
+- Aumentar intervalo mínimo entre consumos
+- Limitar hora do último consumo (antes da meia-noite)
+- Adiar o primeiro consumo após acordar
+- Horas de sono mínimas
+- Hora de deitar máxima
+
+Cada meta é avaliada só desde o dia em que foi criada — não contra todo o histórico.
 
 ### Avisos inteligentes
-- Intervalo curto entre consumos
+- Intervalo demasiado curto entre consumos
 - Dosagem acima da meta
 - Sono insuficiente
-- Bedtime tardio
+- Hora de deitar muito tarde
 - Último consumo após meia-noite
 
 ### Outras funcionalidades
-- Exercícios guiados para gerir impulso de consumo (urge surfing)
+- Urge Surfing — exercícios guiados para gerir impulso de consumo (baseados em DBT)
 - Fichas educativas de harm reduction
-- Badges de conquistas
+- Badges de conquistas (streak, metas cumpridas, etc.)
 - Relatório de gaps (dias com dados em falta)
-- Suporte a português e inglês
+- Histórico pesquisável e filtrável
+- Modo demo com dados realistas (sem registo necessário)
+- Português e inglês
 
 ---
 
-## 🔒 Privacidade e Segurança
+## Como a app evoluiu
 
-- **Encriptação AES-256-GCM** — todos os dados encriptados no dispositivo
-- **PIN pessoal** — 4–6 dígitos, só o utilizador conhece
-- **Local-First** — dados guardados em IndexedDB, sincronizados com Firebase
-- **Zero-knowledge** — o Firebase guarda apenas blobs encriptados; ninguém consegue ler sem o PIN
-- **Proteção anti-brute-force** — bloqueio após tentativas falhadas
+**Fase 1 — Tracker simples**
+Nascia como um diário de consumos de NEP: registo de mg, hora, notas. Local, sem cloud.
+
+**Fase 2 — Local-First + Encriptação**
+Migração para arquitectura local-first com IndexedDB. Encriptação AES-256-GCM client-side. Firebase só guarda blobs encriptados — zero-knowledge.
+
+**Fase 3 — Bem-estar e contexto**
+Adição de ciclos de sono, bem-estar diário, emoções, reflexões. A ideia era perceber o contexto de cada consumo, não só o consumo em si.
+
+**Fase 4 — Análises e correlações**
+Motor de correlações de Pearson para detectar automaticamente padrões. Análise de sentimento das reflexões (em português). Coach tab com narrativa gerada a partir dos dados.
+
+**Fase 5 — Metas, PWA e internacionalização**
+Sistema de metas com acompanhamento diário. PWA instalável. Tradução completa para inglês (incluindo correlações, emoções, análises).
+
+---
+
+## Privacidade e Segurança
+
+- **Encriptação AES-256-GCM** — todos os dados encriptados no dispositivo antes de saírem
+- **PIN pessoal** — 4–6 dígitos, só o utilizador conhece; nunca enviado para nenhum servidor
+- **PBKDF2** — derivação de chave com 100 000 iterações e salt único por utilizador
+- **Local-First** — dados em IndexedDB, sincronizados com Firebase como backup encriptado
+- **Zero-knowledge** — o Firebase guarda apenas `{ data: blob, iv: vector }`; ilegível sem o PIN
+- **Anti-brute-force** — bloqueio progressivo após tentativas falhadas
 - **PIN em sessionStorage** — não persiste entre sessões do browser
+- **Sem tracking** — sem analytics, sem telemetria
 
 ---
 
-## 🚀 Como Usar
-
-### Desenvolvimento local
-
-```bash
-npm install
-npm run dev
-# http://localhost:5173
-```
-
-### Build para produção
-
-```bash
-npm run build
-npm run preview
-```
-
-### Deploy
-
-Deploy automático via GitHub Actions em push para branches `claude/**`. Requer Firebase configurado.
-
----
-
-## 🔧 Tecnologias
+## Tecnologias
 
 - **React 18** + **Vite 5** + **TailwindCSS**
 - **Firebase 10** (Firestore) — sync na cloud
 - **IndexedDB via Dexie.js** — storage local
 - **Web Crypto API** — encriptação AES-256-GCM + PBKDF2
-- **i18next** — internacionalização (PT/EN)
+- **i18next** — internacionalização PT/EN
 - **Recharts** — gráficos
 - **PWA** — instalável no telemóvel, funciona offline
 
 ---
 
-## 📁 Estrutura
+## Estrutura do código
 
 ```
 src/
 ├── components/
-│   ├── modals/       # Modais (consumo, ciclo, emoções, etc.)
-│   └── ui/           # Componentes reutilizáveis
+│   ├── modals/          # Modais (consumo, ciclo, emoções, reflexão, urge surfing…)
+│   └── ui/              # Componentes reutilizáveis
+├── constants/
+│   └── emotions.js      # Lista de emoções (PT/EN)
 ├── contexts/
-│   ├── AuthContext.jsx        # PIN e autenticação
+│   ├── AuthContext.jsx        # PIN, autenticação, bloqueio
 │   ├── DataContext.jsx        # Dados da app
 │   └── LocalDataContext.jsx   # IndexedDB + encriptação
+├── db/
+│   └── localDB.js             # Schema Dexie
 ├── services/
-│   ├── analyticsService.js    # Análises e metas
-│   └── syncService.js         # Sync Firebase
+│   ├── analyticsService.js    # Correlações, metas, estatísticas
+│   └── syncService.js         # Sync incremental Firebase
 ├── utils/
 │   ├── encryption.js          # AES-256-GCM
-│   ├── userStats.js           # Stats e avisos pré-calculados
-│   └── sentimentAnalysis.js   # Análise de sentimento PT
+│   ├── helpers.js             # Datas, fusos horários
+│   ├── sentimentAnalysis.js   # Análise de sentimento em PT
+│   └── userStats.js           # Stats pré-calculadas (boot rápido)
 ├── views/
 │   ├── HomeViewRefactored.jsx
 │   ├── HistoryView.jsx
 │   ├── PatternsView.jsx
-│   └── AnalysesView.jsx (+ tabs)
+│   └── AnalysesView.jsx
+│       analyses/
+│       ├── AnalysesCoachTab.jsx       # General Reflections
+│       ├── AnalysesCorrelacoesTab.jsx # Correlações
+│       ├── AnalysesEstadoTab.jsx      # Bem-estar e gatilhos
+│       └── AnalysesImpactoTab.jsx     # Impacto no bem-estar
 └── locales/
     ├── pt.json
     └── en.json
@@ -124,50 +153,29 @@ src/
 
 ---
 
-## 🔐 Encriptação
+## Desenvolvimento local
 
-1. PIN → chave AES-256 derivada com PBKDF2 (100k iterações) + salt único por utilizador
-2. Dados encriptados client-side antes de sair do dispositivo
-3. Firebase guarda apenas `{ data: blob, iv: vector }` — ilegível sem o PIN
-4. Desencriptação só acontece localmente
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # build para produção → docs/
+```
 
----
-
-## 🔄 Changelog
-
-### v4.6.0 (Atual)
-- Tradução completa para inglês (emoções, gaps, fatores de risco, alertas, correlações)
-- Correção dos denominadores de todas as metas no dashboard
-- Correção da análise de sentimento (negação em frases positivas)
-- Simplificação da explicação de correlações
-- Modo demo com dados realistas (sem registo necessário)
-
-### v4.x
-- Exercícios guiados para gerir impulso de consumo
-- Fichas educativas de harm reduction
-- Mais perguntas de reflexão DBT + rotação diária
-- Recorde de streak
-- Data de primeiro uso editável nas definições
-- Cartão semanal com círculos de progresso das metas
-- Segurança: brute-force lockout, PIN em sessionStorage, sanitização de inputs
-- Sync incremental com timestamps exatos (84x mais rápido)
-- Stats pré-calculadas para boot ultra-rápido
-- PWA com suporte offline
-- Arquitetura Local-First + encriptação AES-256-GCM
+Deploy automático via GitHub Actions em push para branches `claude/**`.
 
 ---
 
-## 📝 Variáveis de Ambiente
+## Variáveis de ambiente
 
 ```env
-VITE_FIREBASE_API_KEY=xxx
-VITE_FIREBASE_AUTH_DOMAIN=xxx
-VITE_FIREBASE_PROJECT_ID=xxx
-VITE_FIREBASE_STORAGE_BUCKET=xxx
-VITE_FIREBASE_MESSAGING_SENDER_ID=xxx
-VITE_FIREBASE_APP_ID=xxx
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
 ---
 
-**Esta aplicação é uma ferramenta de redução de danos. Não promove o consumo de substâncias.**
+*Esta aplicação é uma ferramenta de redução de danos. Não promove o consumo de substâncias.*
