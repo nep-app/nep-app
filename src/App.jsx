@@ -953,16 +953,16 @@ export function AuthenticatedApp() {
                 // Default positive messages
                 if (messages.length === 0) {
                     const defaults = [
-                        '🌟 Cada registo é um passo importante',
-                        '💜 Estás a cuidar de ti. Isso é o que importa',
-                        '🌱 O progresso não é linear, e está tudo bem',
-                        '✨ A tua presença aqui já é uma vitória'
+                        t('feedback.default1'),
+                        t('feedback.default2'),
+                        t('feedback.default3'),
+                        t('feedback.default4')
                     ];
                     messages.push(defaults[Math.floor(Math.random() * defaults.length)]);
                 }
 
                 return messages[0];
-            }, [streaks, consumptions, metrics.lastInterval, wellbeingLogs, dailyLogs]);
+            }, [streaks, consumptions, metrics.lastInterval, wellbeingLogs, dailyLogs, i18n.language]);
 
             // Render
             if (appError) return (

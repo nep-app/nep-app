@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
 
 export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast) => {
+  const { t } = useTranslation();
   const [reminderDismissed, setReminderDismissed] = useState(() => {
     return safeLocalStorage.get('reminderDismissed', {});
   });
@@ -30,19 +32,19 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
 
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
-      showToast('✗ Notificações não suportadas no teu browser', 'error');
+      showToast(t('reminders.notifNotSupported'), 'error');
       return;
     }
 
     if (Notification.permission === 'denied') {
-      showToast('✗ Notificações bloqueadas. Vai às definições do browser para permitir', 'error');
+      showToast(t('reminders.notifBlocked'), 'error');
       return;
     }
 
     if (Notification.permission === 'granted') {
       setNotificationsEnabled(true);
       safeLocalStorage.set('notificationsEnabled', true);
-      showToast('✓ Notificações já estavam ativadas', 'success');
+      showToast(t('reminders.notifAlreadyEnabled'), 'success');
       return;
     }
 
@@ -51,15 +53,15 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
       if (permission === 'granted') {
         setNotificationsEnabled(true);
         safeLocalStorage.set('notificationsEnabled', true);
-        showToast('✓ Notificações ativadas com sucesso', 'success');
+        showToast(t('reminders.notifEnabled'), 'success');
       } else if (permission === 'denied') {
-        showToast('✗ Negaste a permissão. Vai às definições do browser para ativar', 'error');
+        showToast(t('reminders.notifDenied'), 'error');
       } else {
-        showToast('✗ Permissão não concedida', 'error');
+        showToast(t('reminders.notifNotGranted'), 'error');
       }
     } catch (error) {
       logger.error('Error requesting notification permission:', error);
-      showToast('✗ Erro ao pedir permissão de notificações', 'error');
+      showToast(t('reminders.notifError'), 'error');
     }
   };
 
@@ -96,13 +98,13 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
           const missing = [];
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
-          if (!hasWellbeingToday) missing.push('bem-estar');
+          if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
           const hasReflectionToday = reflections.some(r => r.date === today);
-          if (!hasReflectionToday) missing.push('reflexão');
+          if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
           if (missing.length > 0) {
-            const message = '🌅 Bom dia! Falta registar: ' + missing.join(', ');
-            showToast(message, 'info');
-            showBrowserNotification('Bom dia - NEP', 'Falta registar: ' + missing.join(', '));
+            const items = missing.join(', ');
+            showToast(t('reminders.morningToast', { items }), 'info');
+            showBrowserNotification(t('reminders.morningTitle'), t('reminders.morningBody', { items }));
           }
           dismissReminder('morning-check');
         }
@@ -112,19 +114,19 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           const missing = [];
 
           const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
-          if (!hasWellbeingToday) missing.push('bem-estar');
+          if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
 
           const hasReflectionToday = reflections.some(r => r.date === today);
-          if (!hasReflectionToday) missing.push('reflexão');
+          if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
 
           const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
           const hasMgYesterday = dailyLogs.some(d => d.date === yesterday);
-          if (!hasMgYesterday) missing.push('mg de ontem');
+          if (!hasMgYesterday) missing.push(t('reminders.itemMgYesterday'));
 
           if (missing.length > 0) {
-            const message = '💭 Lembrete: Falta registar: ' + missing.join(', ');
-            showToast(message, 'info');
-            showBrowserNotification('Lembrete - NEP', 'Falta registar: ' + missing.join(', '));
+            const items = missing.join(', ');
+            showToast(t('reminders.eveningToast', { items }), 'info');
+            showBrowserNotification(t('reminders.reminderTitle'), t('reminders.eveningBody', { items }));
           }
           dismissReminder('daily-check');
         }
@@ -137,8 +139,8 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           if (dismissed['bag-alarm'] !== today) {
             const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
             if (!hasDailyLogToday) {
-              showToast('📊 Lembrete: Regista a tua dose diária!', 'info');
-              showBrowserNotification('Lembrete - NEP', 'Regista a tua dose diária!');
+              showToast(t('reminders.doseToast'), 'info');
+              showBrowserNotification(t('reminders.reminderTitle'), t('reminders.doseBody'));
             }
             dismissReminder('bag-alarm');
           }
@@ -201,8 +203,8 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
       const shouldNotify = consumptionsSinceLastWellbeing >= 2 && isMultipleOf2;
 
       if (shouldNotify && shouldShowReminder('wellbeing-consumption')) {
-        showToast('💚 Lembrete: Já tens ' + consumptionsSinceLastWellbeing + ' consumos! Regista o teu bem-estar', 'info');
-        showBrowserNotification('Lembrete - NEP', 'Já tens ' + consumptionsSinceLastWellbeing + ' consumos! Regista o teu bem-estar');
+        showToast(t('reminders.wellbeingToast', { n: consumptionsSinceLastWellbeing }), 'info');
+        showBrowserNotification(t('reminders.reminderTitle'), t('reminders.wellbeingBody', { n: consumptionsSinceLastWellbeing }));
         dismissReminder('wellbeing-consumption');
       }
     } catch (e) {
