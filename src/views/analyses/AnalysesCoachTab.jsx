@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory } from '../../constants/emotions';
@@ -135,8 +136,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         patternsPeriod,
     ]);
 
+    const { t, i18n } = useTranslation();
+
     if (!coachData) {
-        return (<div className={('bg-gray-800 border-gray-700 text-gray-400') + ' rounded-xl p-6 border text-center'}>Sem dados para este período</div>);
+        return (<div className={('bg-gray-800 border-gray-700 text-gray-400') + ' rounded-xl p-6 border text-center'}>{t('coach.noData')}</div>);
     }
 
     const {
@@ -177,11 +180,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                 <div className="flex items-center gap-3 mb-2">
                     <span className="text-4xl">💬</span>
                     <h3 className={'text-2xl font-bold ' + ('text-white')}>
-                        Reflexão Geral
+                        {t('coach.title')}
                     </h3>
                 </div>
                 <p className={'text-xs ' + ('text-gray-400')}>
-                    Resumo personalizado do período selecionado
+                    {t('coach.subtitle')}
                 </p>
             </div>
 
@@ -191,9 +194,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Paragraph 1: Overview */}
                     <p>
                         {totalConsumptions > 0 ? (
-                            <>📊 <strong className={('text-purple-400')}>Visão Geral:</strong> {totalConsumptions} {totalConsumptions === 1 ? 'consumo' : 'consumos'} em {uniqueDays} {uniqueDays === 1 ? 'dia' : 'dias'} (média {avgPerDay}/dia). Vamos explorar os padrões:</>
+                            <>📊 <strong className={('text-purple-400')}>{t('coach.overviewLabel')}</strong>{' '}
+                            {t('coach.overviewText', {
+                                total: totalConsumptions,
+                                uses: t(totalConsumptions === 1 ? 'coach.use_singular' : 'coach.use_plural'),
+                                days: uniqueDays,
+                                daysLabel: t(uniqueDays === 1 ? 'coach.day_singular' : 'coach.day_plural'),
+                                avg: avgPerDay
+                            })}</>
                         ) : (
-                            <>🎉 Nenhum consumo registado neste período - excelente!</>
+                            <>{t('coach.noConsumptions')}</>
                         )}
                     </p>
 
@@ -230,8 +240,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Se não houver meta, não mostrar esta secção
                         if (!frequencyGoal) return null;
 
-                        const goodThreshold = Math.max(1, frequencyGoal.target - 1); // Meta - 1
-                        const difficultThreshold = frequencyGoal.target + 1; // Meta + 1
+                        const goodThreshold = Math.max(1, frequencyGoal.target - 1); // target - 1
+                        // Use the same global threshold (target + 2) so all sections agree
 
                         const goodDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= goodThreshold);
                         const difficultDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count >= difficultThreshold);
@@ -256,14 +266,14 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🏆 <strong className={('text-green-400')}>Dias Bons vs Difíceis:</strong>
-                                {goodDays.length > 0 && <> Tiveste <strong>{goodDays.length} {goodDays.length === 1 ? 'dia bom' : 'dias bons'}</strong> (≤{goodThreshold} consumos){goodSleep && <> com média de <strong>{goodSleep}h sono</strong></>}{goodMood && <> e humor de <strong>{goodMood}/10</strong></>}.</>}
-                                {difficultDays.length > 0 && <> {goodDays.length > 0 && 'Por outro lado,'} houve <strong className={('text-orange-400')}>{difficultDays.length} {difficultDays.length === 1 ? 'dia difícil' : 'dias difíceis'}</strong> (≥{difficultThreshold} consumos){difficultSleep && <> com média de <strong>{difficultSleep}h sono</strong></>}{difficultMood && <> e humor de <strong>{difficultMood}/10</strong></>}.</>}
+                                🏆 <strong className={('text-green-400')}>{t('coach.goodVsDifficultLabel')}</strong>
+                                {goodDays.length > 0 && <> {t('coach.youHad')} <strong>{goodDays.length} {t(goodDays.length === 1 ? 'coach.goodDaysSingular' : 'coach.goodDaysPlural')}</strong> {t('coach.atMostUses', { n: goodThreshold })}{goodSleep && <><strong>{t('coach.withAvgSleep', { h: goodSleep })}</strong></>}{goodMood && <><strong>{t('coach.withMood', { n: goodMood })}</strong></>}.</>}
+                                {difficultDays.length > 0 && <> {goodDays.length > 0 && t('coach.onTheOtherHand')} {t('coach.thereWere')} <strong className={('text-orange-400')}>{difficultDays.length} {t(difficultDays.length === 1 ? 'coach.difficultDaySingular' : 'coach.difficultDayPlural')}</strong> {t('coach.atLeastUses', { n: difficultThreshold })}{difficultSleep && <><strong>{t('coach.withAvgSleep', { h: difficultSleep })}</strong></>}{difficultMood && <><strong>{t('coach.withMood', { n: difficultMood })}</strong></>}.</>}
                                 {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
-                                    <> <span className={('text-cyan-400')}>💡 Padrão claro: dormir mais ({(parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1)}h a mais) correlaciona-se com dias bons!</span></>
+                                    <> <span className={('text-cyan-400')}>{t('coach.sleepPatternInsight', { diff: (parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1) })}</span></>
                                 )}
                                 {goodMood && difficultMood && parseFloat(goodMood) > parseFloat(difficultMood) + 1.5 && (
-                                    <> <span className={('text-purple-400')}>💡 Humor também é fator: dias bons têm +{(parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1)} pontos.</span></>
+                                    <> <span className={('text-purple-400')}>{t('coach.moodPatternInsight', { diff: (parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1) })}</span></>
                                 )}
                             </p>
                         );
@@ -294,16 +304,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Determinar se é maioritariamente positivo ou negativo
                         const isPositive = positivePercent >= 50;
-                        const balanceLabel = positivePercent >= 70 ? 'muito positivo' : positivePercent >= 50 ? 'positivo' : positivePercent >= 30 ? 'misto' : 'desafiante';
+                        const balanceLabelKey = positivePercent >= 70 ? 'coach.balanceVeryPositive' : positivePercent >= 50 ? 'coach.balancePositive' : positivePercent >= 30 ? 'coach.balanceMixed' : 'coach.balanceChallenging';
 
                         return (
                             <p>
-                                🌈 <strong className={('text-cyan-400')}>Estado Emocional:</strong> Balanço <strong className={(isPositive ? 'text-green-400' : 'text-orange-400')}>{balanceLabel}</strong> ({positivePercent}% emoções positivas).
-                                {topEmotions.length > 0 && <> As tuas emoções mais frequentes foram <strong>{topEmotions.join(', ')}</strong>.</>}
+                                🌈 <strong className={('text-cyan-400')}>{t('coach.emotionalStateLabel')}</strong>{' '}{t('coach.emotionalBalance')} <strong className={(isPositive ? 'text-green-400' : 'text-orange-400')}>{t(balanceLabelKey)}</strong> {t('coach.pctPositiveEmotions', { pct: positivePercent })}
+                                {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.join(', ')}</strong>.</>}
                                 {positivePercent >= 60 ? (
-                                    <> <span className={('text-green-400')}>✨ Ótimo! Mantém estas práticas que te fazem sentir bem.</span></>
+                                    <> <span className={('text-green-400')}>{t('coach.emotionalPositiveTip')}</span></>
                                 ) : positivePercent < 40 ? (
-                                    <> <span className={('text-purple-400')}>💜 Lembra-te: períodos difíceis passam. Procura apoio se precisares.</span></>
+                                    <> <span className={('text-purple-400')}>{t('coach.emotionalDifficultTip')}</span></>
                                 ) : null}
                             </p>
                         );
@@ -314,7 +324,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         if (analysisConsumptions.length < 7) return null;
 
                         // Agrupar por dia da semana
-                        const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                        const dayNames = Array.from({ length: 7 }, (_, i) =>
+                            new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: 'long' })
+                        );
                         const byDayOfWeek = {};
                         for (let i = 0; i < 7; i++) byDayOfWeek[i] = [];
 
@@ -345,11 +357,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📅 <strong className={('text-indigo-400')}>Padrão Semanal:</strong> <strong className={('text-orange-400')}>{dayNames[worstDay[0]]}s</strong> são os teus dias mais difíceis (média de <strong>{worstDay[1].toFixed(1)} consumos</strong>), enquanto <strong className={('text-green-400')}>{dayNames[bestDay[0]]}s</strong> são melhores (média {bestDay[1].toFixed(1)}).
+                                📅 <strong className={('text-indigo-400')}>{t('coach.weeklyPatternLabel')}</strong>{' '}
+                                {t('coach.weeklyHardDays', { day: dayNames[worstDay[0]], avg: worstDay[1].toFixed(1), bestDay: dayNames[bestDay[0]], bestAvg: bestDay[1].toFixed(1) })}
                                 {parseInt(worstDay[0]) >= 1 && parseInt(worstDay[0]) <= 5 ? (
-                                    <> <span className={('text-yellow-400')}>💡 Dia de semana difícil pode estar ligado a stress de trabalho/rotina. Planeia estratégias preventivas às {dayNames[worstDay[0]]}s.</span></>
+                                    <> <span className={('text-yellow-400')}>{t('coach.weeklyWeekdayTip', { day: dayNames[worstDay[0]] })}</span></>
                                 ) : (
-                                    <> <span className={('text-cyan-400')}>💡 Fins de semana tendem a ser mais desafiantes - talvez por mudança de rotina ou tédio. Estrutura atividades para esse dia.</span></>
+                                    <> <span className={('text-cyan-400')}>{t('coach.weeklyWeekendTip')}</span></>
                                 )}
                             </p>
                         );
@@ -400,11 +413,14 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🌅 <strong className={('text-amber-400')}>Primeiro Consumo → Escalada:</strong> Quando o primeiro consumo é <strong>antes das 10h</strong>, o total do dia é <strong className={(percentDiff > 0 ? ('text-orange-400') : ('text-green-400'))}>{Math.abs(percentDiff)}% {percentDiff > 0 ? 'maior' : 'menor'}</strong> (média {avgEarlyTotal.toFixed(1)} vs {avgLateTotal.toFixed(1)} quando começas mais tarde).
+                                🌅 <strong className={('text-amber-400')}>{t('coach.escalationLabel')}</strong>{' '}
+                                {percentDiff > 0
+                                    ? t('coach.escalationHigher', { pct: Math.abs(percentDiff), early: avgEarlyTotal.toFixed(1), late: avgLateTotal.toFixed(1) })
+                                    : t('coach.escalationLower', { pct: Math.abs(percentDiff), early: avgEarlyTotal.toFixed(1), late: avgLateTotal.toFixed(1) })}
                                 {percentDiff > 0 ? (
-                                    <> <span className={('text-yellow-400')}>⚠️ Começar cedo correlaciona-se com escalada. Atrasar o primeiro consumo pode ser estratégia de redução de danos.</span></>
+                                    <> <span className={('text-yellow-400')}>{t('coach.escalationWarning')}</span></>
                                 ) : (
-                                    <> <span className={('text-cyan-400')}>💡 Começar mais cedo não piora o dia - pode até ajudar a espaçar melhor.</span></>
+                                    <> <span className={('text-cyan-400')}>{t('coach.escalationPositive')}</span></>
                                 )}
                             </p>
                         );
@@ -446,11 +462,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔥 <strong className={('text-orange-400')}>Momentum:</strong> O teu recorde é <strong className={('text-green-400')}>{maxStreak} {maxStreak === 1 ? 'dia' : 'dias'} consecutivos</strong> com consumo controlado (≤{median} consumos/dia).
+                                🔥 <strong className={('text-orange-400')}>{t('coach.momentumLabel')}</strong>{' '}
+                                {t('coach.momentumRecord', { n: maxStreak, label: t(maxStreak === 1 ? 'coach.day_singular' : 'coach.day_plural'), median })}
                                 {isCurrentStreakActive && maxStreak === currentStreak ? (
-                                    <> <span className={'font-medium ' + ('text-green-400')}>🎉 E estás nessa streak AGORA! Continua - cada dia conta!</span></>
+                                    <> <span className={'font-medium ' + ('text-green-400')}>{t('coach.momentumActiveStreak')}</span></>
                                 ) : maxStreakEnd ? (
-                                    <> O último foi até {new Date(maxStreakEnd).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}. <span className={('text-cyan-400')}>Conseguiste uma vez, consegues de novo!</span></>
+                                    <> {t('coach.momentumPastStreak', { date: new Date(maxStreakEnd).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) })}</>
                                 ) : null}
                             </p>
                         );
@@ -493,19 +510,20 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         };
 
                         // Categorizar janela
-                        let windowType = '';
-                        if (maxWindowStart >= 22 || maxWindowStart <= 2) windowType = 'noite/madrugada';
-                        else if (maxWindowStart >= 6 && maxWindowStart <= 11) windowType = 'manhã';
-                        else if (maxWindowStart >= 12 && maxWindowStart <= 17) windowType = 'tarde';
-                        else windowType = 'fim de tarde/noite';
+                        let windowTypeKey = '';
+                        if (maxWindowStart >= 22 || maxWindowStart <= 2) windowTypeKey = 'coach.windowNight';
+                        else if (maxWindowStart >= 6 && maxWindowStart <= 11) windowTypeKey = 'coach.windowMorning';
+                        else if (maxWindowStart >= 12 && maxWindowStart <= 17) windowTypeKey = 'coach.windowAfternoon';
+                        else windowTypeKey = 'coach.windowEveningNight';
 
                         return (
                             <p>
-                                ⏰ <strong className={('text-red-400')}>Janela de Vulnerabilidade:</strong> <strong>{concentrationPercent}%</strong> dos teus consumos acontecem entre <strong className={('text-orange-400')}>{formatWindow(maxWindowStart)}</strong> ({windowType}).
+                                ⏰ <strong className={('text-red-400')}>{t('coach.vulnerabilityLabel')}</strong>{' '}
+                                {t('coach.vulnerabilityText', { pct: concentrationPercent, window: formatWindow(maxWindowStart), type: t(windowTypeKey) })}
                                 {concentrationPercent >= 70 ? (
-                                    <> <span className={('text-yellow-400')}>⚠️ Concentração muito alta! Esta é a tua janela crítica - planeia atividades alternativas ou estratégias de distração nesse horário.</span></>
+                                    <> <span className={('text-yellow-400')}>{t('coach.vulnerabilityHighWarning')}</span></>
                                 ) : (
-                                    <> <span className={('text-cyan-400')}>💡 Identificar este padrão é o primeiro passo. Que rotinas/gatilhos existem nesse período?</span></>
+                                    <> <span className={('text-cyan-400')}>{t('coach.vulnerabilityTip')}</span></>
                                 )}
                             </p>
                         );
@@ -542,16 +560,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🌊 <strong className={('text-purple-400')}>Efeito Cascata:</strong>
+                                🌊 <strong className={('text-purple-400')}>{t('coach.cascadeLabel')}</strong>
                                 {longestCascade >= 2 ? (
-                                    <> Detectei <strong className={('text-orange-400')}>{cascadeEvents} {cascadeEvents === 1 ? 'episódio' : 'episódios'} de cascata</strong> (dias difíceis consecutivos). O mais longo foi de <strong>{longestCascade} dias</strong>.
+                                    <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade })}
                                     {longestCascade >= 3 ? (
-                                        <> <span className={('text-red-400')}>⚠️ Cascatas longas são preocupantes - um dia mau leva a outro. Quando detetas o primeiro dia difícil, é crucial intervir logo no dia seguinte para quebrar o ciclo.</span></>
+                                        <> <span className={('text-red-400')}>{t('coach.cascadeLongWarning')}</span></>
                                     ) : (
-                                        <> <span className={('text-yellow-400')}>💡 Padrão: depois de um dia difícil, há risco de continuar. Quebra o ciclo no 2º dia!</span></>
+                                        <> <span className={('text-yellow-400')}>{t('coach.cascadeShortTip')}</span></>
                                     )}</>
                                 ) : (
-                                    <> Não deteto efeito cascata significativo - geralmente consegues recuperar após dias difíceis. <span className={('text-green-400')}>✓ Boa resiliência!</span></>
+                                    <> {t('coach.cascadeNone')}</>
                                 )}
                             </p>
                         );
@@ -601,19 +619,19 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔄 <strong className={('text-teal-400')}>Perfil de Recuperação:</strong>
+                                🔄 <strong className={('text-teal-400')}>{t('coach.recoveryLabel')}</strong>
                                 {avgRecovery ? (
-                                    <> Em média, levas <strong>{avgRecovery} {parseFloat(avgRecovery) === 1 ? 'dia' : 'dias'}</strong> para voltar ao normal após um dia difícil.
+                                    <> {t(parseFloat(avgRecovery) === 1 ? 'coach.recoveryAvgSingular' : 'coach.recoveryAvgPlural', { n: avgRecovery })}
                                     {parseFloat(avgRecovery) <= 1.5 ? (
-                                        <> <span className={('text-green-400')}>✓ Recuperação rápida! Tens boa capacidade de "reset" após deslizes.</span></>
+                                        <> <span className={('text-green-400')}>{t('coach.recoveryFast')}</span></>
                                     ) : parseFloat(avgRecovery) <= 3 ? (
-                                        <> <span className={('text-yellow-400')}>💡 Recuperação moderada. Tenta identificar o que te ajuda a voltar ao normal mais rápido.</span></>
+                                        <> <span className={('text-yellow-400')}>{t('coach.recoveryModerate')}</span></>
                                     ) : (
-                                        <> <span className={('text-orange-400')}>⚠️ Recuperação lenta - dias difíceis tendem a prolongar-se. Foca em estratégias de "reset" no dia seguinte (rotina, sono, atividade física).</span></>
+                                        <> <span className={('text-orange-400')}>{t('coach.recoverySlow')}</span></>
                                     )}</>
                                 ) : null}
                                 {stillRecoveringDays > 0 && (
-                                    <> <span className={('text-yellow-400')}>⏳ <strong>{stillRecoveringDays} {stillRecoveringDays === 1 ? 'dia difícil ainda em recuperação' : 'dias difíceis ainda em recuperação'}</strong> (não voltaram à média nos últimos dias).</span></>
+                                    <> <span className={('text-yellow-400')}>{t(stillRecoveringDays === 1 ? 'coach.recoveryStillSingular' : 'coach.recoveryStillPlural', { n: stillRecoveringDays })}</span></>
                                 )}
                             </p>
                         );
@@ -652,19 +670,22 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📍 <strong className={('text-orange-400')}>Outliers:</strong> {new Date(top1.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })} teve <strong>{top1.count} consumos</strong> — {diffFromAvg} acima da tua média de {avgDaily.toFixed(1)}. É {topDays.length === 1 ? 'o teu dia mais alto' : `um dos teus ${topDays.length} dias mais altos`}.
+                                📍 <strong className={('text-orange-400')}>{t('coach.outliersLabel')}</strong>{' '}
+                                {topDays.length === 1
+                                    ? t('coach.outliersTopDay', { date: new Date(top1.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1) })
+                                    : t('coach.outliersTopDayN', { date: new Date(top1.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1), k: topDays.length })}
                                 {top1Emotions.length > 0 && (
-                                    <> Emoções registadas: <strong className={('text-purple-400')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> (humor: {top1Mood}/10)</>}.</>
+                                    <> <strong className={('text-purple-400')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> ({top1Mood}/10)</>}.</>
                                 )}
                                 {topDays.length > 1 && (
-                                    <> Outros picos: {topDays.slice(1).map((d, i) => (
+                                    <> {t('coach.outliersOtherPeaks')} {topDays.slice(1).map((d, i) => (
                                         <span key={d.date}>
                                             {i > 0 && ', '}
-                                            {new Date(d.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'short' })} ({d.count})
+                                            {new Date(d.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} ({d.count})
                                         </span>
                                     ))}.</>
                                 )}
-                                <> <span className={('text-cyan-400')}>Outliers não são falhas — são dados. {top1Emotions.length > 0 ? `Repara no padrão emocional: ${top1Emotions[0]}.` : 'Que gap de necessidades foi preenchido nesses dias?'}</span></>
+                                <> <span className={('text-cyan-400')}>{top1Emotions.length > 0 ? t('coach.outliersNoteEmotion', { emotion: top1Emotions[0] }) : t('coach.outliersNoteQuestion')}</span></>
                             </p>
                         );
                     })()}
@@ -722,15 +743,15 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔬 <strong className={('text-indigo-400')}>Padrões de Comportamento:</strong>
+                                🔬 <strong className={('text-indigo-400')}>{t('coach.clustersLabel')}</strong>
                                 {clusters.altaPressao.length > 0 && (
-                                    <> <strong className={('text-red-400')}>Dias "Alta Pressão"</strong> ({clusters.altaPressao.length}): Muito consumo + pouco sono + humor estável. Estás a "pedalar no limiar" — funcionas, mas à custa de estimulação.</>
+                                    <> <strong className={('text-red-400')}>{t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</strong></>
                                 )}
                                 {clusters.paradoxo.length > 0 && (
-                                    <> <strong className={('text-yellow-400')}>Dias "Paradoxo"</strong> ({clusters.paradoxo.length}): Pouco consumo + muito sono + humor baixo. Sono não compensa humor baixo — possível depressão mascarada ou outro fator.</>
+                                    <> <strong className={('text-yellow-400')}>{t('coach.clustersParadox', { n: clusters.paradoxo.length })}</strong></>
                                 )}
                                 {clusters.equilibrio.length > 0 && (
-                                    <> <strong className={('text-green-400')}>Dias "Equilíbrio"</strong> ({clusters.equilibrio.length}): Consumo moderado + humor bom. Este é o teu sweet spot atual.</>
+                                    <> <strong className={('text-green-400')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
                                 )}
                             </p>
                         );
@@ -777,16 +798,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📈 <strong className={('text-blue-400')}>Micro-tendência:</strong> Últimos 7 dias: média de <strong>{avgLast7.toFixed(1)} consumos/dia</strong> vs {avgPrev21.toFixed(1)} nas 3 semanas anteriores
-                                ({percentChange > 0 ? '+' : ''}{percentChange}%).
+                                📈 <strong className={('text-blue-400')}>{t('coach.microTrendLabel')}</strong>{' '}
+                                {t('coach.microTrendText', { last7: avgLast7.toFixed(1), prev21: avgPrev21.toFixed(1), pct: `${percentChange > 0 ? '+' : ''}${percentChange}` })}
                                 {percentChange > 15 ? (
-                                    <> <span className={('text-orange-400')}>Aumento significativo. Sistema a desviar — identificar causa antes que normalize.</span></>
+                                    <> <span className={('text-orange-400')}>{t('coach.microTrendIncrease')}</span></>
                                 ) : percentChange < -15 ? (
-                                    <> <span className={('text-green-400')}>Redução clara. O que mudou? Replicar essas condições.</span></>
+                                    <> <span className={('text-green-400')}>{t('coach.microTrendDecrease')}</span></>
                                 ) : percentChange > 0 ? (
-                                    <> Ligeira subida — monitorizar.</>
+                                    <> {t('coach.microTrendSlightIncrease')}</>
                                 ) : (
-                                    <> Ligeira descida — bom sinal.</>
+                                    <> {t('coach.microTrendSlightDecrease')}</>
                                 )}
                             </p>
                         );
@@ -839,12 +860,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🎭 <strong className={('text-pink-400')}>Gatilhos Emocionais Validados:</strong>
+                                🎭 <strong className={('text-pink-400')}>{t('coach.emotionalTriggersLabel')}</strong>
                                 {topRisk && topRisk.diff > 0 && (
-                                    <> Emoção <strong className={('text-red-400')}>{topRisk.emotion}</strong> correlaciona com +{topRisk.diff.toFixed(1)} consumos acima da média ({topRisk.days} dias). É gatilho validado, não especulação.</>
+                                    <> {t('coach.emotionalTriggersRisk', { emotion: topRisk.emotion, diff: topRisk.diff.toFixed(1), n: topRisk.days })}</>
                                 )}
                                 {topProtector && topProtector.diff < 0 && (
-                                    <> Emoção <strong className={('text-green-400')}>{topProtector.emotion}</strong> correlaciona com {Math.abs(topProtector.diff).toFixed(1)} consumos ABAIXO da média. Factor protetor — cultivar.</>
+                                    <> {t('coach.emotionalTriggersProtector', { emotion: topProtector.emotion, diff: Math.abs(topProtector.diff).toFixed(1) })}</>
                                 )}
                             </p>
                         );
@@ -877,7 +898,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         });
 
                         const impacts = [];
-                        const areaNames = { water: 'água suficiente', food: 'refeições nutritivas', social: 'socialização' };
+                        const areaNames = { water: t('coach.selfCareContextWater'), food: t('coach.selfCareContextFood'), social: t('coach.selfCareContextSocial') };
 
                         Object.entries(areas).forEach(([area, values]) => {
                             if (values.length < 3) return;
@@ -898,16 +919,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                💧 <strong className={('text-teal-400')}>Contexto Autocuidado:</strong>
+                                💧 <strong className={('text-teal-400')}>{t('coach.selfCareContextLabel')}</strong>
                                 {topImpact.percentDiff < 0 ? (
-                                    <> Nos dias com <strong className={('text-green-400')}>{areaNames[topImpact.area]}</strong>, consumiste <strong>{Math.abs(topImpact.percentDiff)}% menos</strong> ({topImpact.days} dias). Forte associação com dias de menor consumo.</>
+                                    <> {t('coach.selfCareContextPositive', { area: areaNames[topImpact.area], pct: Math.abs(topImpact.percentDiff), n: topImpact.days })}</>
                                 ) : (
-                                    <> Nos dias com <strong>{areaNames[topImpact.area]}</strong>, consumiste <strong className={('text-orange-400')}>{topImpact.percentDiff}% mais</strong>. Correlação inesperada — explorar.</>
+                                    <> {t('coach.selfCareContextNegative', { area: areaNames[topImpact.area], pct: topImpact.percentDiff })}</>
                                 )}
                                 {impacts.length > 1 && impacts[1].percentDiff < 0 && (
-                                    <> Também: {areaNames[impacts[1].area]} associado com redução de {Math.abs(impacts[1].percentDiff)}%.</>
+                                    <> {t('coach.selfCareContextAlso', { area: areaNames[impacts[1].area], pct: Math.abs(impacts[1].percentDiff) })}</>
                                 )}
-                                <> <span className={('text-gray-400')}>⚠️ Nota: Dias bons podem naturalmente incluir mais autocuidado E menos consumo. A correlação não prova que um causa o outro.</span></>
+                                <> <span className={('text-gray-400')}>{t('coach.selfCareContextNote')}</span></>
                             </p>
                         );
                     })()}
@@ -936,8 +957,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             if (percentLowSleep >= 60) {
                                 return (
                                     <p>
-                                        🔗 <strong className={('text-red-400')}>Trigger Mapping:</strong> <strong>{percentLowSleep}%</strong> dos consumos tardios (00h-06h) aconteceram em dias com <strong>&lt;6h sono</strong>.
-                                        <> <span className={('text-orange-400')}>Padrão forte: privação de sono está consistentemente associada a consumo nocturno. Melhorar o sono pode ser uma alavanca útil.</span></>
+                                        🔗 <strong className={('text-red-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
+                                        {t('coach.triggerMappingLate', { pct: percentLowSleep })}
                                     </p>
                                 );
                             }
@@ -987,8 +1008,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 if (percent >= 50) {
                                     return (
                                         <p>
-                                            🔗 <strong className={('text-red-400')}>Trigger Mapping:</strong> Em <strong>{percent}%</strong> dos dias com alta frequência (≥{difficultThreshold} consumos), registaste emoção <strong className={('text-orange-400')}>{topEmotion[0]}</strong>.
-                                            <> Este é o teu trigger primário validado — não é especulação. Desenvolver estratégias para esta emoção específica tem ROI alto.</>
+                                            🔗 <strong className={('text-red-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
+                                            {t('coach.triggerMappingHighFreq', { pct: percent, threshold: difficultThreshold, emotion: topEmotion[0] })}
                                         </p>
                                     );
                                 }
@@ -1039,8 +1060,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Diversidade emocional (quantos tipos diferentes)
                         const numTypes = Object.keys(typeCounts).length;
 
-                        const oscillationLevel = parseFloat(stdDev) > 2.5 ? 'alta' : parseFloat(stdDev) > 1.5 ? 'moderada' : 'baixa';
-                        const emotionalDiversity = numTypes >= 4 ? 'alta' : numTypes >= 2 ? 'moderada' : 'baixa';
+                        const oscillationLevel = parseFloat(stdDev) > 2.5 ? t('coach.emotionalOscillationHigh') : parseFloat(stdDev) > 1.5 ? t('coach.emotionalOscillationModerate') : t('coach.emotionalOscillationLow');
+                        const emotionalDiversity = numTypes >= 4 ? t('coach.emotionalDiversityHigh') : numTypes >= 2 ? t('coach.emotionalDiversityModerate') : t('coach.emotionalDiversityLow');
 
                         // Tipo emocional dominante
                         const sortedTypes = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
@@ -1048,7 +1069,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🧠 <strong className={('text-purple-400')}>Perfil Emocional:</strong> <strong>Diversidade emocional {emotionalDiversity}</strong> — registaste <strong>{numTypes} tipos de emoções</strong> diferentes. {dominantType && <>A mais frequente foi <strong>{dominantType[0]}</strong> (<strong>{dominantType[1]} vezes</strong>). </>}<strong>Oscilação de humor {oscillationLevel}</strong> — {oscillationLevel === 'alta' ? 'há variações notáveis de intensidade' : oscillationLevel === 'moderada' ? 'oscilações moderadas' : 'sem grandes extremos'}.
+                                🧠 <strong className={('text-purple-400')}>{t('coach.emotionalProfileLabel')}</strong>{' '}
+                                {t('coach.emotionalProfileText', { level: emotionalDiversity, n: numTypes })}{' '}
+                                {dominantType && <>{t('coach.emotionalProfileDominant', { type: dominantType[0], n: dominantType[1] })}{' '}</>}
+                                {oscillationLevel === t('coach.emotionalOscillationHigh') ? t('coach.emotionalProfileOscillationHigh') : oscillationLevel === t('coach.emotionalOscillationModerate') ? t('coach.emotionalProfileOscillationMod') : t('coach.emotionalProfileOscillationLow')}
                             </p>
                         );
                     })()}
@@ -1057,7 +1081,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     <p>
                         {allNotes.length > 0 ? (
                             <>
-                                📝 <strong className={('text-purple-400')}>Análise das tuas Reflexões</strong> ({sentimentAnalysis.noteCount} notas):
+                                📝 <strong className={('text-purple-400')}>{t('coach.notesLabel', { n: sentimentAnalysis.noteCount })}</strong>
                                 {(() => {
                                     // Calcular sentimento com base na DISTRIBUIÇÃO em vez da média
                                     const dist = sentimentAnalysis.distribution;
@@ -1110,31 +1134,38 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     return (
                                         <>
                                             <br/>
-                                            🔍 <strong className={('text-indigo-300')}>Padrões emocionais:</strong>
+                                            🔍 <strong className={('text-indigo-300')}>{t('coach.notesPatternsLabel')}</strong>
                                             {realOverall === 'positive' ? (
-                                                <> Tom geral <strong className={('text-green-400')}>positivo</strong> ({positivePercent}% positivas vs {negativePercent}% negativas). Há consciência dos desafios, mas também esperança e resiliência. </>
+                                                <> {t('coach.notesPositiveTone', { positivePct: positivePercent, negativePct: negativePercent })}</>
                                             ) : realOverall === 'negative' ? (
-                                                <> Tom geral <strong className={('text-orange-400')}>negativo</strong> ({negativePercent}% negativas vs {positivePercent}% positivas). Reconheço que estás a enfrentar dificuldades. </>
+                                                <> {t('coach.notesNegativeTone', { negativePct: negativePercent, positivePct: positivePercent })}</>
                                             ) : (
-                                                <> Tom equilibrado entre positivo ({positivePercent}%) e negativo ({negativePercent}%), com {neutralPercent}% neutro - estás a navegar os altos e baixos. </>
+                                                <> {t('coach.notesBalancedTone', { positivePct: positivePercent, negativePct: negativePercent, neutralPct: neutralPercent })}</>
                                             )}
-                                            {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + ('text-green-400')}>📈 Tendência: a melhorar!</span>}
-                                            {sentimentAnalysis.trend === 'worsening' && <span className={('text-yellow-400')}>📉 Tendência: a piorar nos últimos dias.</span>}
+                                            {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + ('text-green-400')}>{t('coach.notesTrendImproving')}</span>}
+                                            {sentimentAnalysis.trend === 'worsening' && <span className={('text-yellow-400')}>{t('coach.notesTrendWorsening')}</span>}
                                             {highNegDays > 0 && highNegHighCons / highNegDays > 0.6 && (
-                                                <> <strong className={('text-orange-300')}>⚠️ Padrão: dias com reflexões muito negativas coincidem com mais consumo</strong> ({highNegHighCons} de {highNegDays} dias). Humor baixo pode ser gatilho.</>
+                                                <> <strong className={('text-orange-300')}>{t('coach.notesHighNegPattern', { n: highNegHighCons, total: highNegDays })}</strong></>
                                             )}
                                         </>
                                     );
                                 })()}
                                 <br/>
-                                💭 <strong className={('text-purple-300')}>Temas principais:</strong>
+                                💭 <strong className={('text-purple-300')}>{t('coach.notesThemesLabel')}</strong>
                                 {(() => {
-                                    // Mostrar 3 temas mais mencionados com sentimento médio
                                     const topThemes = Object.entries(sentimentThemes)
                                         .filter(([_, data]) => data.count > 2)
                                         .sort((a, b) => b[1].count - a[1].count)
                                         .slice(0, 3);
-                                    const themeNames = { sleep: 'sono', stress: 'stress/ansiedade', energy: 'energia', mood: 'humor', focus: 'foco/concentração', social: 'relações sociais', health: 'saúde física' };
+                                    const themeNames = {
+                                        sleep: t('coach.notesThemeSleep'),
+                                        stress: t('coach.notesThemeStress'),
+                                        energy: t('coach.notesThemeEnergy'),
+                                        mood: t('coach.notesThemeMood'),
+                                        focus: t('coach.notesThemeFocus'),
+                                        social: t('coach.notesThemeSocial'),
+                                        health: t('coach.notesThemeHealth')
+                                    };
                                     if (topThemes.length > 0) {
                                         return (
                                             <>
@@ -1149,16 +1180,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                                     );
                                                 })}
                                                 .
-                                                {sentimentThemes.stress && sentimentThemes.stress.avgSentiment < -0.3 && <> <strong className={('text-yellow-300')}>Nota:</strong> As tuas reflexões sobre stress/ansiedade tendem a ser negativas - este é um tema que merece atenção.</>}
-                                                {sentimentThemes.sleep && sentimentThemes.sleep.avgSentiment < -0.3 && <> <strong className={('text-cyan-300')}>Nota:</strong> O sono é fonte frequente de preocupação nas tuas notas - melhorar a qualidade do sono pode ter grande impacto.</>}
+                                                {sentimentThemes.stress && sentimentThemes.stress.avgSentiment < -0.3 && <> {t('coach.notesStressNote')}</>}
+                                                {sentimentThemes.sleep && sentimentThemes.sleep.avgSentiment < -0.3 && <> {t('coach.notesSleepNote')}</>}
                                             </>
                                         );
                                     }
-                                    return <> Escreve mais reflexões para identificar temas recorrentes.</>;
+                                    return <> {t('coach.notesNoThemes')}</>;
                                 })()}
                             </>
                         ) : (
-                            <> Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões. </>
+                            <> {t('coach.notesEncourage')} </>
                         )}
                     </p>
 
@@ -1193,20 +1224,20 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Áreas para optimizar
                         const optimizationAreas = [];
 
-                        if (difficultDays > 0) optimizationAreas.push(`frequência (reduzir dias ≥${difficultThreshold})`);
+                        if (difficultDays > 0) optimizationAreas.push(t('coach.optFrequency', { n: difficultThreshold }));
 
                         if (analysisCycles.length > 0) {
                             const avgSleep = analysisCycles
                                 .filter(c => c.sleep)
                                 .reduce((sum, c) => sum + parseFloat(c.sleep), 0) / analysisCycles.filter(c => c.sleep).length;
-                            if (avgSleep < 7) optimizationAreas.push('sono (aumentar para 7-8h)');
+                            if (avgSleep < 7) optimizationAreas.push(t('coach.optSleep'));
                         }
 
                         if (analysisWellbeing.length > 0) {
                             const avgMood = analysisWellbeing
                                 .filter(w => w.mood)
                                 .reduce((sum, w) => sum + parseInt(w.mood), 0) / analysisWellbeing.filter(w => w.mood).length;
-                            if (avgMood < 6) optimizationAreas.push('regulação emocional');
+                            if (avgMood < 6) optimizationAreas.push(t('coach.optEmotion'));
                         }
 
                         const lateConsumptions = analysisConsumptions.filter(c => {
@@ -1214,7 +1245,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             return hour >= 0 && hour < 6;
                         });
                         if (lateConsumptions.length / analysisConsumptions.length > 0.2) {
-                            optimizationAreas.push('timing (evitar consumo nocturno)');
+                            optimizationAreas.push(t('coach.optTiming'));
                         }
 
                         // Calcular intervalos
@@ -1232,36 +1263,32 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         if (intervals.length > 0) {
                             const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-                            if (avgInterval < 2.5) optimizationAreas.push('espaçamento (aumentar intervalo entre consumos)');
+                            if (avgInterval < 2.5) optimizationAreas.push(t('coach.optSpacing'));
                         }
 
                         return (
                             <p className={('bg-gray-800/50 border-gray-700') + ' p-4 rounded-lg border'}>
-                                💭 <strong className={('text-cyan-400')}>Síntese:</strong>
+                                💭 <strong className={('text-cyan-400')}>{t('coach.synthesisLabel')}</strong>
                                 {hasEffort && hasLimits ? (
-                                    <> Os teus dados mostram <strong>esforço consistente</strong>{goodDays > 0 && ` (${goodDays} dias bons)`}, mas também <strong>limites claros</strong>{difficultDays > 0 && ` (${difficultDays} dias difíceis)`}.</>
+                                    <> {t('coach.synthesisEffortAndLimits', { goodDays, difficultDays })}</>
                                 ) : hasEffort ? (
-                                    <> Os dados mostram controlo razoável — média de {avgPerDay} consumos/dia. Sistema estável mas há espaço para optimização.</>
+                                    <> {t('coach.synthesisEffort', { avg: avgPerDay })}</>
                                 ) : hasLimits ? (
-                                    <> Os dados revelam pressão significativa — média de {avgPerDay} consumos/dia com {difficultDays} dias ≥{difficultThreshold}. Sistema sob stress.</>
+                                    <> {t('coach.synthesisLimits', { avg: avgPerDay, difficultDays, threshold: difficultThreshold })}</>
                                 ) : (
-                                    <> Dados em construção — ainda a mapear o teu padrão baseline.</>
+                                    <> {t('coach.synthesisBuilding')}</>
                                 )}
                                 {optimizationAreas.length > 0 && (
-                                    <> <strong className={('text-orange-300')}>A questão agora: o que queres optimizar no próximo ciclo?</strong> {optimizationAreas.length === 1 ? (
-                                        <> Foca em <strong>{optimizationAreas[0]}</strong>.</>
+                                    <> <strong className={('text-orange-300')}>{t('coach.synthesisOptimiseQuestion')}</strong>{' '}
+                                    {optimizationAreas.length === 1 ? (
+                                        t('coach.synthesisFocusOne', { area: optimizationAreas[0] })
                                     ) : optimizationAreas.length === 2 ? (
-                                        <> Duas opções: <strong>{optimizationAreas[0]}</strong> ou <strong>{optimizationAreas[1]}</strong>. Escolhe um eixo.</>
+                                        t('coach.synthesisFocusTwo', { area1: optimizationAreas[0], area2: optimizationAreas[1] })
                                     ) : (
-                                        <> Opções: {optimizationAreas.slice(0, 3).map((area, i) => (
-                                            <span key={i}>
-                                                {i > 0 && ', '}
-                                                <strong>{area}</strong>
-                                            </span>
-                                        ))}. Escolhe <strong>um eixo</strong> — não tentes optimizar tudo em simultâneo.</>
+                                        t('coach.synthesisFocusMany', { areas: optimizationAreas.slice(0, 3).join(', ') })
                                     )}</>
                                 )}
-                                {!hasEffort && !hasLimits && <> Continua a registar dados — padrões emergem com o tempo.</>}
+                                {!hasEffort && !hasLimits && <> {t('coach.synthesisKeepRecording')}</>}
                             </p>
                         );
                     })()}
@@ -1317,18 +1344,18 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                Sobre a tua rotina de sono: estás a deitar-te em média às <strong className={('text-indigo-400')}>{avgBedtimeStr}</strong>.
+                                {t('coach.bedtimeText', { time: avgBedtimeStr })}
                                 {avgBedtimeHours >= 0 && avgBedtimeHours < 6 ? (
-                                    <> <span className={('text-orange-400')}>Deitar muito tarde (madrugada) pode afetar a qualidade do sono e a recuperação.</span> Considera criar uma rotina relaxante antes de dormir para adormecer mais cedo.</>
+                                    <> {t('coach.bedtimeLate')}</>
                                 ) : avgBedtimeHours >= 22 && avgBedtimeHours < 24 ? (
-                                    <> <span className={('text-green-400')}>Essa é uma boa janela para deitar!</span> Estás a manter uma rotina saudável de sono.</>
+                                    <> {t('coach.bedtimeGood')}</>
                                 ) : avgBedtimeHours >= 6 && avgBedtimeHours < 12 ? (
-                                    <> Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.</>
+                                    <> {t('coach.bedtimeMorning')}</>
                                 ) : (
-                                    <> Continua a observar como esta rotina afeta o teu bem-estar geral.</>
+                                    <> {t('coach.bedtimeObserve')}</>
                                 )}
                                 {daysWithoutSleep > 0 && (
-                                    <> <span className={('text-red-400')}>⚠️ Dias sem dormir: {daysWithoutSleep} {daysWithoutSleep === 1 ? 'dia' : 'dias'} ({pctDaysWithoutSleep}%).</span> Registar dados de sono ajuda a entender melhor o impacto no teu bem-estar.</>
+                                    <> <span className={('text-red-400')}>{t(daysWithoutSleep === 1 ? 'coach.bedtimeDaysWithoutSleepSingular' : 'coach.bedtimeDaysWithoutSleepPlural', { n: daysWithoutSleep, pct: pctDaysWithoutSleep })}</span></>
                                 )}
                             </p>
                         );
@@ -1459,24 +1486,24 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                💤 <strong>Score de Sono:</strong>{' '}
+                                💤 <strong>{t('coach.sleepScoreLabel')}</strong>{' '}
                                 <span className={'text-xl font-bold ' + scoreColor}>
                                     {finalScore.toFixed(1)}/10
                                 </span>
-                                {trend === 'improving' && <> <span className={('text-green-400')}>↗️ A melhorar</span></>}
-                                {trend === 'worsening' && <> <span className={('text-red-400')}>↘️ A piorar</span></>}
-                                {trend === 'stable' && <> <span className={('text-gray-400')}>→ Estável</span></>}
+                                {trend === 'improving' && <> <span className={('text-green-400')}>{t('coach.sleepScoreImproving')}</span></>}
+                                {trend === 'worsening' && <> <span className={('text-red-400')}>{t('coach.sleepScoreWorsening')}</span></>}
+                                {trend === 'stable' && <> <span className={('text-gray-400')}>{t('coach.sleepScoreStable')}</span></>}
                                 {' '}
                                 <span className={('text-gray-300')}>
-                                    (Horas: {hoursScore.toFixed(1)}/5, Regularidade: {regularityScore.toFixed(1)}/5)
+                                    {t('coach.sleepScoreDetails', { hours: hoursScore.toFixed(1), reg: regularityScore.toFixed(1) })}
                                 </span>
                                 .
                                 {finalScore >= 8 ? (
-                                    <> <span className={('text-green-400')}>Excelente! Estás a dormir {avgSleep.toFixed(1)}h em média — mantém esta rotina.</span></>
+                                    <> <span className={('text-green-400')}>{t('coach.sleepScoreExcellent', { avg: avgSleep.toFixed(1) })}</span></>
                                 ) : finalScore >= 6 ? (
-                                    <> <span className={('text-yellow-400')}>Razoável. Dormes {avgSleep.toFixed(1)}h em média{regularityScore < 3 ? ' mas a tua rotina é irregular — tenta deitar-te à mesma hora' : ''}.</span></>
+                                    <> <span className={('text-yellow-400')}>{t(regularityScore < 3 ? 'coach.sleepScoreReasonableIrregular' : 'coach.sleepScoreReasonable', { avg: avgSleep.toFixed(1) })}</span></>
                                 ) : (
-                                    <> <span className={('text-red-400')}>⚠️ Alerta: {avgSleep.toFixed(1)}h é insuficiente{regularityScore < 3 ? ' e irregular' : ''}. Prioriza dormir 7-8h e criar uma rotina consistente.</span></>
+                                    <> <span className={('text-red-400')}>{t(regularityScore < 3 ? 'coach.sleepScorePoorIrregular' : 'coach.sleepScorePoor', { avg: avgSleep.toFixed(1) })}</span></>
                                 )}
                             </p>
                         );
@@ -1531,17 +1558,18 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📊 <strong className={('text-cyan-400')}>Análise de Quantidade:</strong> Em média, consomes <strong className={('text-purple-400')}>{avgMgPerDay.toFixed(0)}mg por dia</strong> (dados de {uniqueDaysWithMg} {uniqueDaysWithMg === 1 ? 'dia' : 'dias'}).
+                                📊 <strong className={('text-cyan-400')}>{t('coach.quantityLabel')}</strong>{' '}
+                                {t('coach.quantityText', { mg: avgMgPerDay.toFixed(0), n: uniqueDaysWithMg, label: t(uniqueDaysWithMg === 1 ? 'coach.day_singular' : 'coach.day_plural') })}
                                 {avgMgPerDay > 300 ? (
-                                    <> <span className={('text-orange-400')}>Esta é uma quantidade elevada.</span> Considera estabelecer uma meta de redução gradual.</>
+                                    <> {t('coach.quantityHigh')}</>
                                 ) : avgMgPerDay > 200 ? (
-                                    <> Esta é uma quantidade moderada-alta. Há espaço para redução se esse for um objetivo teu.</>
+                                    <> {t('coach.quantityModHigh')}</>
                                 ) : avgMgPerDay > 100 ? (
-                                    <> <span className={('text-blue-400')}>Esta é uma quantidade moderada.</span> Se estás a trabalhar na redução, estás no caminho certo.</>
+                                    <> {t('coach.quantityMod')}</>
                                 ) : (
-                                    <> <span className={('text-green-400')}>Esta é uma quantidade relativamente baixa!</span> Bom trabalho na gestão de quantidade.</>
+                                    <> {t('coach.quantityLow')}</>
                                 )}
-                                {analysisCycles.length >= 3 && <> Em <strong className={(pctNoLate >= 50 ? ('text-green-400') : ('text-orange-400'))}>{pctNoLate}%</strong> dos dias não houve consumo após a meia-noite{pctNoLate >= 70 ? ' - excelente controlo!' : pctNoLate >= 50 ? ' - continua a melhorar este aspeto.' : '. Evitar consumo tardio pode melhorar a qualidade do sono.'}.</>}
+                                {analysisCycles.length >= 3 && <> {t(pctNoLate >= 70 ? 'coach.quantityNoLateHighPct' : pctNoLate >= 50 ? 'coach.quantityNoLateMedPct' : 'coach.quantityNoLateLowPct', { pct: pctNoLate })}</>}
                             </p>
                         );
                     })()}
@@ -1575,28 +1603,33 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             .filter(([_, pct]) => pct < 70)
                             .sort((a, b) => a[1] - b[1]);
 
-                        const areaNames = { water: 'hidratação', food: 'alimentação', rest: 'descanso', social: 'socialização' };
+                        const areaNames = {
+                            water: t('coach.selfCareAreaWater'),
+                            food: t('coach.selfCareAreaFood'),
+                            rest: t('coach.selfCareAreaRest'),
+                            social: t('coach.selfCareAreaSocial')
+                        };
                         const overall = (percentages.water + percentages.food + percentages.rest + percentages.social) / 4;
 
-                        // Sugestões específicas por área
                         const suggestions = {
-                            water: 'tenta manter uma garrafa de água visível ao teu lado',
-                            food: 'define 3 refeições básicas diárias, mesmo que pequenas',
-                            rest: 'agenda pausas de 5-10 minutos ao longo do dia',
-                            social: 'envia uma mensagem a alguém uma vez por dia'
+                            water: t('coach.selfCareSuggWater'),
+                            food: t('coach.selfCareSuggFood'),
+                            rest: t('coach.selfCareSuggRest'),
+                            social: t('coach.selfCareSuggSocial')
                         };
 
                         return (
                             <p>
-                                💧 <strong className={('text-teal-400')}>Autocuidado:</strong> A tua taxa geral está em <strong className={(overall >= 70 ? ('text-green-400') : ('text-orange-400'))}>{overall.toFixed(0)}%</strong>.
+                                💧 <strong className={('text-teal-400')}>{t('coach.selfCareLabel')}</strong>{' '}
+                                {t('coach.selfCareRate', { pct: overall.toFixed(0) })}
                                 {lowAreas.length >= 3 ? (
-                                    <> Reparei que estás abaixo dos 70% em várias áreas. <span className={('text-yellow-400')}>Foca primeiro em {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%): {suggestions[lowAreas[0][0]]}.</span> Depois expande para {areaNames[lowAreas[1][0]]}.</>
+                                    <> {t('coach.selfCareMultipleLow', { area: areaNames[lowAreas[0][0]], pct: lowAreas[0][1].toFixed(0), suggestion: suggestions[lowAreas[0][0]], next: areaNames[lowAreas[1][0]] })}</>
                                 ) : lowAreas.length === 2 ? (
-                                    <> Duas áreas precisam de atenção: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%) e {areaNames[lowAreas[1][0]]} ({lowAreas[1][1].toFixed(0)}%). <span className={('text-cyan-400')}>Para {areaNames[lowAreas[0][0]]}: {suggestions[lowAreas[0][0]]}.</span></>
+                                    <> {t('coach.selfCareTwoLow', { area1: areaNames[lowAreas[0][0]], pct1: lowAreas[0][1].toFixed(0), area2: areaNames[lowAreas[1][0]], pct2: lowAreas[1][1].toFixed(0), suggestion: suggestions[lowAreas[0][0]] })}</>
                                 ) : lowAreas.length === 1 ? (
-                                    <> Só uma área abaixo de 70%: {areaNames[lowAreas[0][0]]} ({lowAreas[0][1].toFixed(0)}%). <span className={('text-blue-400')}>Dica prática: {suggestions[lowAreas[0][0]]}.</span> Pequenos passos contam!</>
+                                    <> {t('coach.selfCareOneLow', { area: areaNames[lowAreas[0][0]], pct: lowAreas[0][1].toFixed(0), suggestion: suggestions[lowAreas[0][0]] })}</>
                                 ) : (
-                                    <> <span className={('text-green-400')}>Excelente! Estás a manter bons hábitos em todas as áreas (todas ≥70%).</span> Continua assim - o autocuidado é a base da recuperação.</>
+                                    <> {t('coach.selfCareAllGood')}</>
                                 )}
                             </p>
                         );
@@ -1700,29 +1733,30 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const bestGoal = goalDetails.length > 0 ? goalDetails.reduce((max, gd) => gd.percentage > max.percentage ? gd : max) : null;
 
                         const goalTypeNames = {
-                            reduce_frequency: 'Reduzir Frequência',
-                            reduce_quantity: 'Reduzir Quantidade (mg)',
-                            increase_interval: 'Aumentar Intervalo',
-                            limit_last: 'Limitar Último Consumo',
-                            bedtime_before: 'Deitar Antes de',
-                            sleep_hours: 'Horas de Sono',
-                            first_not_before: '☀️ 1º Consumo Após'
+                            reduce_frequency: t('coach.goalTypeReduceFrequency'),
+                            reduce_quantity: t('coach.goalTypeReduceQuantity'),
+                            increase_interval: t('coach.goalTypeIncreaseInterval'),
+                            limit_last: t('coach.goalTypeLimitLast'),
+                            bedtime_before: t('coach.goalTypeBedtimeBefore'),
+                            sleep_hours: t('coach.goalTypeSleepHours'),
+                            first_not_before: t('coach.goalTypeFirstNotBefore')
                         };
 
                         return (
                             <p>
-                                🎯 <strong className={('text-pink-400')}>Progresso de Metas:</strong> Cumpriste condições das tuas metas <strong>{totalAchievements} vezes</strong> neste período!
+                                🎯 <strong className={('text-pink-400')}>{t('coach.goalsLabel')}</strong>{' '}
+                                {t('coach.goalsAchievements', { n: totalAchievements })}
                                 {goalsWithAchievements.length === uniqueGoals.length ? (
-                                    <> <span className={('text-green-400')}>Todas as {uniqueGoals.length} metas ativas tiveram cumprimentos - isso é incrível!</span></>
+                                    <> <span className={('text-green-400')}>{t('coach.goalsAllAchieved', { n: uniqueGoals.length })}</span></>
                                 ) : goalsWithAchievements.length > 0 ? (
-                                    <> Progredir em {goalsWithAchievements.length} de {uniqueGoals.length} metas.</>
+                                    <> {t('coach.goalsSomeAchieved', { n: goalsWithAchievements.length, total: uniqueGoals.length })}</>
                                 ) : (
-                                    <> Ainda não atingiste nenhuma meta neste período - ajustar metas é parte do processo.</>
+                                    <> {t('coach.goalsNoneAchieved')}</>
                                 )}
                                 {bestGoal && bestGoal.percentage > 0 && (
                                     <>
-                                        {' '}A tua melhor meta é <strong className={('text-purple-400')}>{goalTypeNames[bestGoal.goal.type]}</strong>: alcançada <strong>{bestGoal.achievements} vezes</strong> em {bestGoal.totalPossible} dias possíveis (<strong className={(bestGoal.percentage >= 70 ? ('text-green-400') : bestGoal.percentage >= 40 ? ('text-yellow-400') : ('text-orange-400'))}>{bestGoal.percentage}%</strong>)
-                                        {bestGoal.percentage >= 70 ? ' - excelente!' : bestGoal.percentage >= 40 ? '. Continua a trabalhar nesta meta!' : '. Há espaço para melhorar - revê as tuas estratégias.'}
+                                        {' '}{t('coach.goalsBestGoal', { type: goalTypeNames[bestGoal.goal.type], n: bestGoal.achievements, total: bestGoal.totalPossible, pct: bestGoal.percentage })}
+                                        {bestGoal.percentage >= 70 ? t('coach.goalsBestExcellent') : bestGoal.percentage >= 40 ? t('coach.goalsBestKeepGoing') : t('coach.goalsBestImprove')}
                                     </>
                                 )}
                             </p>
@@ -1759,15 +1793,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                💤➡️😊 <strong className={('text-indigo-400')}>Sono e Humor:</strong> Analisei como o teu sono afeta o humor no dia seguinte.
+                                💤➡️😊 <strong className={('text-indigo-400')}>{t('coach.sleepMoodLabel')}</strong>{' '}
+                                {t('coach.sleepMoodText')}
                                 {correlation > 0.4 ? (
-                                    <> <span className={('text-green-400')}>Correlação forte (+{correlation.toFixed(2)}):</span> Dormir bem <strong>melhora claramente</strong> o teu humor no dia seguinte! Nos dados, mais sono = humor melhor. <strong className={('text-green-300')}>💡 Ação: Prioriza 7-8h de sono - é o teu melhor investimento emocional.</strong></>
+                                    <> {t('coach.sleepMoodStrongPos', { r: correlation.toFixed(2) })}</>
                                 ) : correlation > 0.2 ? (
-                                    <> <span className={('text-blue-400')}>Correlação moderada (+{correlation.toFixed(2)}):</span> Há uma ligação positiva entre sono e humor, mas outros fatores também influenciam. <strong className={('text-blue-300')}>💡 Ação: Melhora a qualidade do sono (ambiente escuro, horário regular).</strong></>
+                                    <> {t('coach.sleepMoodModPos', { r: correlation.toFixed(2) })}</>
                                 ) : correlation < -0.3 ? (
-                                    <> <span className={('text-red-400')}>Correlação negativa ({correlation.toFixed(2)}):</span> Curiosamente, mais sono associa-se com pior humor - isto pode indicar que dormir demasiado (possivelmente depressão) ou má qualidade de sono afeta negativamente. <strong className={('text-orange-300')}>💡 Ação: Foca na QUALIDADE do sono, não apenas quantidade. Considera consultar profissional de saúde.</strong></>
+                                    <> {t('coach.sleepMoodNeg', { r: correlation.toFixed(2) })}</>
                                 ) : (
-                                    <> <span className={('text-gray-400')}>Correlação fraca ({correlation.toFixed(2)}):</span> Não há uma relação linear clara nos teus dados. Isso não significa que o sono não importa - pode haver um padrão não-linear, ou outros fatores (consumo, stress, socialização) têm mais peso. <strong className={('text-yellow-300')}>💡 Ação: Observa padrões específicos - talvez haja um "sweet spot" de horas de sono para ti.</strong></>
+                                    <> {t('coach.sleepMoodWeak', { r: correlation.toFixed(2) })}</>
                                 )}
                             </p>
                         );
@@ -1822,26 +1857,27 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔍 <strong className={('text-indigo-400')}>Impacto do Consumo:</strong> Analisei como o consumo de hoje afeta o teu bem-estar amanhã.
+                                🔍 <strong className={('text-indigo-400')}>{t('coach.consumptionImpactLabel')}</strong>{' '}
+                                {t('coach.consumptionImpactText')}
                                 {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
                                     <>
                                         {moodCorr < -0.5 ? (
-                                            <> <span className={('text-red-400')}>Correlação forte ({moodCorr.toFixed(2)}):</span> Dias com mais consumo <strong>precedem claramente</strong> dias com humor mais baixo. <strong className={('text-red-300')}>💡 O ciclo é evidente nos teus dados - consumir hoje = sentir-te pior amanhã.</strong></>
+                                            <> {t('coach.consumptionImpactMoodStrong', { r: moodCorr.toFixed(2) })}</>
                                         ) : moodCorr < -0.3 ? (
-                                            <> <span className={('text-orange-400')}>Correlação moderada ({moodCorr.toFixed(2)}):</span> Há um padrão onde dias de mais consumo tendem a preceder humor mais baixo. O impacto emocional existe, embora outros fatores também influenciem. <strong className={('text-orange-300')}>💡 Reduzir consumo pode melhorar o teu estado emocional.</strong></>
+                                            <> {t('coach.consumptionImpactMoodMod', { r: moodCorr.toFixed(2) })}</>
                                         ) : moodCorr > 0.3 ? (
-                                            <> <span className={('text-yellow-400')}>Correlação positiva ({moodCorr.toFixed(2)}):</span> Curiosamente, mais consumo associa-se com melhor humor no dia seguinte - isto pode indicar alívio temporário, autocontrolo diferente em dias bons, ou outros fatores. <strong className={('text-yellow-300')}>💡 Observa se este padrão se mantém a longo prazo.</strong></>
+                                            <> {t('coach.consumptionImpactMoodPos', { r: moodCorr.toFixed(2) })}</>
                                         ) : null}
                                     </>
                                 )}
                                 {energyCorr !== null && Math.abs(energyCorr) >= 0.3 && (
                                     <>
                                         {energyCorr < -0.5 ? (
-                                            <> <span className={('text-red-400')}>Na energia: correlação forte ({energyCorr.toFixed(2)})</span> - mais consumo resulta em fadiga clara no dia seguinte. <strong className={('text-red-300')}>O teu corpo está a pedir descanso da substância.</strong></>
+                                            <> {t('coach.consumptionImpactEnergyStrong', { r: energyCorr.toFixed(2) })}</>
                                         ) : energyCorr < -0.3 ? (
-                                            <> <span className={('text-orange-400')}>Na energia: correlação moderada ({energyCorr.toFixed(2)})</span> - consumo afeta os teus níveis de energia no dia seguinte. O corpo está em recuperação. <strong className={('text-orange-300')}>💡 Mais descanso e hidratação nos dias seguintes pode ajudar.</strong></>
+                                            <> {t('coach.consumptionImpactEnergyMod', { r: energyCorr.toFixed(2) })}</>
                                         ) : energyCorr > 0.3 ? (
-                                            <> <span className={('text-blue-400')}>Na energia: correlação positiva ({energyCorr.toFixed(2)})</span> - mais consumo associa-se com mais energia no dia seguinte. Observa se isto é sustentável ou se há um efeito rebote posterior.</>
+                                            <> {t('coach.consumptionImpactEnergyPos', { r: energyCorr.toFixed(2) })}</>
                                         ) : null}
                                     </>
                                 )}
@@ -1907,11 +1943,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🎯 <strong className={('text-yellow-400')}>Perfil de Risco:</strong> Identifiquei um padrão importante:
+                                🎯 <strong className={('text-yellow-400')}>{t('coach.riskProfileLabel')}</strong>{' '}
+                                {t('coach.riskProfileText')}
                                 {moodDiff > 0 ? (
-                                    <> <span className={('text-orange-400')}>Dias com mais consumo tendem a ser precedidos por humor mais baixo no dia anterior</span> (diferença de {moodDiff.toFixed(1)} pontos). <strong>Isto sugere que humor baixo é um gatilho para ti.</strong> Quando te sentires em baixo, esse é o momento de usar estratégias de prevenção - contacta alguém, faz exercício, ou usa técnicas de mindfulness.</>
+                                    <> {t('coach.riskProfileLowMood', { diff: moodDiff.toFixed(1) })}</>
                                 ) : (
-                                    <> Dias com mais consumo são precedidos por humor mais alto (diferença de {Math.abs(moodDiff).toFixed(1)} pontos) - isto pode indicar que celebração ou euforia são gatilhos. Estar consciente disto ajuda-te a moderar.</>
+                                    <> {t('coach.riskProfileHighMood', { diff: Math.abs(moodDiff).toFixed(1) })}</>
                                 )}
                             </p>
                         );
@@ -1939,15 +1976,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         return (
                             <p>
                                 {percentChange > 0 ? (
-                                    <>
-                                        📈 <strong className={('text-orange-400')}>Tendência:</strong> O consumo aumentou <strong>{Math.abs(percentChange).toFixed(0)}%</strong> neste período comparado com o anterior (de {previousPeriod.length} para {currentPeriod.length} consumos).
-                                        <span className={('text-yellow-400')}> Sem julgamento - só dados. O que mudou? Stress? Menos sono? Menos apoio? Identifica o trigger e ajusta o plano.</span>
-                                    </>
+                                    <>{t('coach.trendIncrease', { pct: Math.abs(percentChange).toFixed(0), prev: previousPeriod.length, curr: currentPeriod.length })}</>
                                 ) : (
-                                    <>
-                                        📉 <strong className={('text-green-400')}>Tendência:</strong> O consumo diminuiu <strong>{Math.abs(percentChange).toFixed(0)}%</strong> neste período comparado com o anterior (de {previousPeriod.length} para {currentPeriod.length} consumos).
-                                        <span className={'font-medium ' + ('text-green-400')}> Parabéns! Isto é progresso real. O que fizeste diferente? Identifica essas estratégias para continuar este caminho!</span>
-                                    </>
+                                    <>{t('coach.trendDecrease', { pct: Math.abs(percentChange).toFixed(0), prev: previousPeriod.length, curr: currentPeriod.length })}</>
                                 )}
                             </p>
                         );
@@ -2004,11 +2035,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                ⚡ <strong className={('text-yellow-400')}>Energia e Consumo:</strong> Das últimas {countWithData} vezes que consumiste, <strong className={('text-yellow-300')}>{countWithLowEnergy} tinham check-in com energia baixa (&lt;4)</strong>.
+                                ⚡ <strong className={('text-yellow-400')}>{t('coach.energyLabel')}</strong>{' '}
+                                {t('coach.energyText', { total: countWithData, low: countWithLowEnergy })}
                                 {percentage >= 70 ? (
-                                    <> <span className={('text-red-400')}>Isto sugere uma forte correlação entre cansaço e consumo.</span> Considera estratégias de gestão de energia (pausas, descanso, nutrição) como parte do teu plano de redução de danos.</>
+                                    <> {t('coach.energyStrongCorrelation')}</>
                                 ) : (
-                                    <> Isto sugere que o cansaço pode ser um gatilho. Identifica formas de recarregar energia antes de recorrer ao consumo.</>
+                                    <> {t('coach.energyTrigger')}</>
                                 )}
                             </p>
                         );
@@ -2018,26 +2050,26 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Paragraph 12: Autoconhecimento */}
                     {(analysisWellbeing.length > 3 || analysisCycles.length > 2) && (
                         <p>
-                            ✨ <strong className={('text-cyan-400')}>Autoconhecimento:</strong> Estás a registar de forma consistente
-                            {analysisWellbeing.length > 0 && <> (bem-estar)</>}
-                            {analysisCycles.length > 0 && <>{analysisWellbeing.length > 0 && ','} ciclos de sono</>}.
-                            <span className={'font-medium ' + ('text-cyan-400')}> Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.</span>
+                            ✨ <strong className={('text-cyan-400')}>{t('coach.selfKnowledgeLabel')}</strong>{' '}{t('coach.selfKnowledgeText')}
+                            {analysisWellbeing.length > 0 && <> {t('coach.selfKnowledgeWellbeing')}</>}
+                            {analysisCycles.length > 0 && <>{analysisWellbeing.length > 0 && ','} {t('coach.selfKnowledgeSleepCycles')}</>}.
+                            <span className={'font-medium ' + ('text-cyan-400')}> {t('coach.selfKnowledgeTip')}</span>
                         </p>
                     )}
 
-                    {/* Paragraph 13: Tu Tens o Controlo */}
+                    {/* Paragraph 13: You Are in Control */}
                     <p className={'font-medium ' + ('text-purple-300')}>
-                        💪 <strong>Tu tens o controlo.</strong> Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.
-                        <span className={('text-purple-400')}> Cada decisão que tomas - registar, refletir, ajustar - é um ato de autonomia. Continua a usar esta app, continua a analisar, continua a crescer. 🚀</span>
+                        💪 <strong>{t('coach.controlLabel')}</strong> {t('coach.controlText')}
+                        <span className={('text-purple-400')}> {t('coach.controlTip')}</span>
                     </p>
 
                     {/* Paragraph 14: Closing & Next Steps */}
                     <p className={'font-medium pt-2 border-t ' + ('border-gray-700 text-purple-400')}>
-                        🤝 <strong>Compromisso:</strong> O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.
-                        <span> Redução de danos não é perfeição, é progresso. E tu estás a progredir, um dia de cada vez.</span>
+                        🤝 <strong>{t('coach.closingLabel')}</strong> {t('coach.closingText')}
+                        <span> {t('coach.closingHarmReduction')}</span>
                         <br/><br/>
-                        Lembra-te: a recuperação não é linear. Haverá dias melhores e piores, e isso é normal. O importante é continuares a aparecer.
-                        Estou orgulhoso/a do caminho que estás a percorrer. Vamos continuar juntos. 💜
+                        {t('coach.closingRemember')}
+                        {' '}{t('coach.closingProud')}
                     </p>
                 </div>
             </div>
