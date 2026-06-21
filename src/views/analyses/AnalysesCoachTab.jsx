@@ -467,7 +467,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 {isCurrentStreakActive && maxStreak === currentStreak ? (
                                     <> <span className={'font-medium ' + ('text-green-400')}>{t('coach.momentumActiveStreak')}</span></>
                                 ) : maxStreakEnd ? (
-                                    <> {t('coach.momentumPastStreak', { date: new Date(maxStreakEnd).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) })}</>
+                                    <> {t('coach.momentumPastStreak', { date: new Date(maxStreakEnd + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }) })}</>
                                 ) : null}
                             </p>
                         );
@@ -672,8 +672,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             <p>
                                 📍 <strong className={('text-orange-400')}>{t('coach.outliersLabel')}</strong>{' '}
                                 {topDays.length === 1
-                                    ? t('coach.outliersTopDay', { date: new Date(top1.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1) })
-                                    : t('coach.outliersTopDayN', { date: new Date(top1.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1), k: topDays.length })}
+                                    ? t('coach.outliersTopDay', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1) })
+                                    : t('coach.outliersTopDayN', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1), k: topDays.length })}
                                 {top1Emotions.length > 0 && (
                                     <> <strong className={('text-purple-400')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> ({top1Mood}/10)</>}.</>
                                 )}
@@ -681,7 +681,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     <> {t('coach.outliersOtherPeaks')} {topDays.slice(1).map((d, i) => (
                                         <span key={d.date}>
                                             {i > 0 && ', '}
-                                            {new Date(d.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} ({d.count})
+                                            {new Date(d.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} ({d.count})
                                         </span>
                                     ))}.</>
                                 )}

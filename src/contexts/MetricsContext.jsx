@@ -249,7 +249,9 @@ export const MetricsProvider = ({ children }) => {
         const successDays = sortedDays.filter(day => {
           const last = byDay[day].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
           const ld = new Date(last.timestamp);
-          const lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+          let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
+          // consumo antes das 6h da manhã conta como "após meia-noite" para esta meta
+          if (lastMinutes < 360) lastMinutes += 1440;
           return lastMinutes < targetMinutes;
         }).length;
 

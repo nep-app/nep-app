@@ -195,7 +195,7 @@ export function PatternsView({
                                                     const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
                                                     const bestDate = sortedDates[0];
                                                     const bestCount = byDate[bestDate];
-                                                    const bestDayName = new Date(bestDate).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
+                                                    const bestDayName = new Date(bestDate + 'T12:00:00').toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
                                                     const countStr = bestCount === 1 ? t('patterns.bestDay.oneUse') : t('patterns.bestDay.multiUse', { count: bestCount });
                                                     const suffixStr = bestCount <= 2 ? t('patterns.bestDay.identifyGood') : t('patterns.bestDay.keepImproving');
                                                     const prefix = completedDates.length === 1 ? t('patterns.bestDay.single', { date: bestDayName, count: countStr }) : t('patterns.bestDay.multi', { date: bestDayName, count: countStr });
@@ -808,7 +808,7 @@ export function PatternsView({
                                                                                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative" style={{ minWidth: '2px' }}>
                                                                                         {/* Tooltip */}
                                                                                         <div className={'absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 whitespace-nowrap px-2 py-1 rounded text-xs ' + 'bg-gray-700 text-gray-200'}>
-                                                                                            {new Date(date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}: {count}x
+                                                                                            {new Date(date + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}: {count}x
                                                                                         </div>
 
                                                                                         {/* Barra */}
@@ -841,7 +841,7 @@ export function PatternsView({
                                                                                 return idx % 7 === 0 || idx === recentDates.length - 1;
                                                                             }).map(date => (
                                                                                 <div key={date} className={'text-xs flex-1 text-center ' + ('text-gray-400')}>
-                                                                                    {new Date(date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
+                                                                                    {new Date(date + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                                                                 </div>
                                                                             ))}
                                                                         </div>

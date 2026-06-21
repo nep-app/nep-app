@@ -1,6 +1,9 @@
 // ===== FUNÇÕES HELPER =====
 
-export const getTodayKey = () => new Date().toISOString().split('T')[0];
+const localDateKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+export const getTodayKey = () => localDateKey(new Date());
 
 export const genId = () => crypto.randomUUID();
 
@@ -8,7 +11,7 @@ export const genId = () => crypto.randomUUID();
 export const safeToISODate = (dateValue) => {
   if (!dateValue) return null;
   const d = new Date(dateValue);
-  return (d instanceof Date && !isNaN(d)) ? d.toISOString().split('T')[0] : null;
+  return (d instanceof Date && !isNaN(d)) ? localDateKey(d) : null;
 };
 
 // Helper: Criar Date object seguro

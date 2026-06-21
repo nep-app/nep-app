@@ -194,7 +194,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   const now = new Date().toLocaleDateString('pt-PT', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const rangeLabel = period === 'custom'
-    ? `${customFrom ? new Date(customFrom).toLocaleDateString('pt-PT') : '…'} — ${customTo ? new Date(customTo).toLocaleDateString('pt-PT') : '…'}`
+    ? `${customFrom ? new Date(customFrom + 'T12:00:00').toLocaleDateString('pt-PT') : '…'} — ${customTo ? new Date(customTo + 'T12:00:00').toLocaleDateString('pt-PT') : '…'}`
     : periodLabel;
 
   // ── Summary stats ──────────────────────────────────────────────────────────

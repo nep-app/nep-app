@@ -24,7 +24,7 @@ export const getAllDaysSinceFirstRecord = (consumptions) => {
     current.setHours(0, 0, 0, 0);
 
     while (current < today) {
-        days.push(current.toISOString().split('T')[0]);
+        days.push(safeToISODate(current));
         current.setDate(current.getDate() + 1);
     }
 
@@ -275,7 +275,7 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Dias sem consumos NÃO são contados (dias sem uso não são relevantes para a meta de frequência)
         const consumptionsByDate = {};
         consumptions.forEach(c => {
-            const dateKey = new Date(c.timestamp).toISOString().split('T')[0];
+            const dateKey = safeToISODate(c.timestamp);
             if (!consumptionsByDate[dateKey]) consumptionsByDate[dateKey] = 0;
             consumptionsByDate[dateKey]++;
         });

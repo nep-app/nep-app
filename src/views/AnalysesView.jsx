@@ -101,9 +101,9 @@ export function AnalysesView({
                 </div>
                 {patternsPeriod !== 'tudo' && (
                     <div className="text-xs mt-2 text-center text-gray-400">
-                        {new Date(dateRange.start).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
+                        {new Date(dateRange.start + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                         {' - '}
-                        {new Date(dateRange.end).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(dateRange.end + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                 )}
             </div>
