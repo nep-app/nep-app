@@ -1,8 +1,8 @@
 # NEP App - N-Ethylpentedrone Harm Reduction Tracker
 
-> **Aplicação web para acompanhamento de redução de danos no consumo de N-Ethylpentedrone (catinona sintética)**
+> **Aplicação web para acompanhamento de redução de danos no consumo de substâncias**
 
-Versão atual: **v1.3.0**
+Versão atual: **v4.6.0**
 
 ## 🔒 Segurança e Privacidade
 
@@ -150,7 +150,7 @@ VITE_FIREBASE_APP_ID=xxx
 
 ## 🔄 Changelog
 
-### v1.3.0 (Atual)
+### v atual)
 - ✅ Sync incremental com timestamps exatos
 - ✅ Stats pré-calculadas para boot ultra-rápido
 - ✅ Avisos atualizam automaticamente
@@ -159,11 +159,11 @@ VITE_FIREBASE_APP_ID=xxx
 - ✅ Fix: Sleep input aceita qualquer decimal (step="any")
 - ✅ Fix: DailyLogs mostram data correta
 
-### v1.2.0
+### v anterior
 - Salt utilities consolidation
 - Re-encrypt data when PIN changes
 
-### v1.1.0
+### v ant ant
 - Local-First architecture
 - AES-256-GCM encryption
 - PWA support
