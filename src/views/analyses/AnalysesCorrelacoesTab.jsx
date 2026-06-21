@@ -1562,6 +1562,115 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         bedtimeToConsCard,
     } = correlacaoData;
 
+    const localizeDesc = (desc) => {
+        if (i18n.language !== 'en' || !desc) return desc;
+        return desc
+            // Multi-word specific phrases first
+            .replace(/Sem relação clara entre variáveis/g, 'No clear relationship between variables')
+            .replace(/Relação detectada entre variáveis/g, 'Relationship detected between variables')
+            .replace(/quebra de padrão/g, 'pattern break')
+            .replace(/padrão de repetição/g, 'repetition pattern')
+            .replace(/total de consumos/g, 'total uses')
+            .replace(/Hora do 1º consumo não afeta total/g, "Time of 1st use doesn't affect total")
+            .replace(/Espaçar mais pode significar doses maiores por consumo/g, 'Longer spacing may mean larger doses per use')
+            // Deitar (bedtime) phrases
+            .replace(/Deitar mais tarde/g, 'Going to bed later')
+            .replace(/Deitar mais cedo/g, 'Going to bed earlier')
+            .replace(/Deitar tarde/g, 'Going to bed late')
+            .replace(/Deitar cedo/g, 'Going to bed early')
+            .replace(/Hora de deitar/g, 'Bedtime')
+            .replace(/hora de deitar/g, 'bedtime')
+            // Temporal phrases
+            .replace(/no dia seguinte/g, 'the next day')
+            .replace(/ \(ontem → hoje\)/g, ' (yesterday → today)')
+            .replace(/amanhã/g, 'tomorrow')
+            .replace(/ontem/g, 'yesterday')
+            .replace(/hoje/g, 'today')
+            .replace(/no dia/g, 'that day')
+            // Emotion and self-care compound phrases
+            .replace(/Emoções Negativas/g, 'Negative emotions')
+            .replace(/emoções negativas/g, 'negative emotions')
+            .replace(/Emoções não afetam/g, "Emotions don't affect")
+            .replace(/Emoções/g, 'Emotions')
+            .replace(/emoções/g, 'emotions')
+            .replace(/Primeiro consumo cedo/g, 'First use early')
+            .replace(/Primeiro consumo tarde/g, 'First use late')
+            .replace(/Primeiro consumo/g, 'First use')
+            .replace(/primeiro consumo/g, 'first use')
+            // Compound metric phrases (before individual words)
+            .replace(/Mais consumos de manhã/g, 'More morning uses')
+            .replace(/Mais consumos de tarde/g, 'More afternoon uses')
+            .replace(/Mais consumos de noite/g, 'More evening uses')
+            .replace(/Consumos de manhã/g, 'Morning uses')
+            .replace(/Consumos de tarde/g, 'Afternoon uses')
+            .replace(/Consumos de noite/g, 'Evening uses')
+            .replace(/consumos de manhã/g, 'morning uses')
+            .replace(/consumos de tarde/g, 'afternoon uses')
+            .replace(/consumos de noite/g, 'evening uses')
+            .replace(/consumos\/dia/g, 'uses/day')
+            .replace(/mg\/dia/g, 'mg/day')
+            .replace(/total no dia/g, 'total per day')
+            .replace(/Intervalos maiores/g, 'Longer intervals')
+            .replace(/Ligeira tendência para/g, 'Slight tendency toward')
+            // Autocorrelation phrases
+            .replace(/tende a repetir-se hoje/g, 'tends to repeat today')
+            .replace(/inverte-se hoje/g, 'reverses today')
+            .replace(/influencia ligeiramente hoje/g, 'slightly influences today')
+            .replace(/não se repete hoje/g, "doesn't repeat today")
+            .replace(/tende a inverter ligeiramente hoje/g, 'tends to slightly reverse today')
+            .replace(/de ontem não afeta hoje/g, "from yesterday doesn't affect today")
+            .replace(/não afetam/g, "don't affect")
+            .replace(/não afeta/g, "doesn't affect")
+            // Adjectives/adverbs
+            .replace(/Ligeiramente/g, 'Slightly')
+            .replace(/ligeiramente/g, 'slightly')
+            .replace(/Mais baixo/g, 'Lower')
+            .replace(/mais baixo/g, 'lower')
+            // Directional words
+            .replace(/Mais/g, 'More')
+            .replace(/Menos/g, 'Less')
+            .replace(/mais/g, 'more')
+            .replace(/menos/g, 'less')
+            // Quality words
+            .replace(/Pior/g, 'Worse')
+            .replace(/pior/g, 'worse')
+            .replace(/Melhor/g, 'Better')
+            .replace(/melhor/g, 'better')
+            // High/Low
+            .replace(/\balto\b/g, 'high')
+            .replace(/\bAlto\b/g, 'High')
+            .replace(/\bbaixo\b/g, 'low')
+            .replace(/\bBaixo\b/g, 'Low')
+            // Metrics (capitalized first)
+            .replace(/Autocuidado/g, 'Self-care')
+            .replace(/autocuidado/g, 'self-care')
+            .replace(/Bem-estar/g, 'Wellbeing')
+            .replace(/bem-estar/g, 'wellbeing')
+            .replace(/Dosagem/g, 'Dosage')
+            .replace(/dosagem/g, 'dosage')
+            .replace(/Consumos/g, 'Uses')
+            .replace(/consumos/g, 'uses')
+            .replace(/Consumo/g, 'Consumption')
+            .replace(/consumo/g, 'consumption')
+            .replace(/Sono/g, 'Sleep')
+            .replace(/sono/g, 'sleep')
+            .replace(/Humor/g, 'Mood')
+            .replace(/humor/g, 'mood')
+            .replace(/Energia/g, 'Energy')
+            .replace(/energia/g, 'energy')
+            .replace(/Intervalos/g, 'Intervals')
+            .replace(/intervalos/g, 'intervals')
+            .replace(/Intervalo/g, 'Interval')
+            .replace(/intervalo/g, 'interval')
+            // Time of day
+            .replace(/\bmanhã\b/g, 'morning')
+            .replace(/\btarde\b/g, 'afternoon')
+            .replace(/\bnoite\b/g, 'evening')
+            .replace(/doses individuais maiores/g, 'larger individual doses')
+            .replace(/doses maiores por consumo/g, 'larger doses per use');
+    };
+    const localizeUnit = (u) => i18n.language === 'en' && u === '/dia' ? '/day' : u;
+
     return (
         <div className="space-y-4">
             {/* Introdução às Correlações */}
@@ -1579,115 +1688,6 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
             {/* Helper function para renderizar correlações */}
             {(() => {
-                // Define a função aqui para ser usada em todas as seções abaixo
-                const localizeDesc = (desc) => {
-                    if (i18n.language !== 'en' || !desc) return desc;
-                    return desc
-                        // Multi-word specific phrases first
-                        .replace(/Sem relação clara entre variáveis/g, 'No clear relationship between variables')
-                        .replace(/Relação detectada entre variáveis/g, 'Relationship detected between variables')
-                        .replace(/quebra de padrão/g, 'pattern break')
-                        .replace(/padrão de repetição/g, 'repetition pattern')
-                        .replace(/total de consumos/g, 'total uses')
-                        .replace(/Hora do 1º consumo não afeta total/g, "Time of 1st use doesn't affect total")
-                        .replace(/Espaçar mais pode significar doses maiores por consumo/g, 'Longer spacing may mean larger doses per use')
-                        // Deitar (bedtime) phrases
-                        .replace(/Deitar mais tarde/g, 'Going to bed later')
-                        .replace(/Deitar mais cedo/g, 'Going to bed earlier')
-                        .replace(/Deitar tarde/g, 'Going to bed late')
-                        .replace(/Deitar cedo/g, 'Going to bed early')
-                        .replace(/Hora de deitar/g, 'Bedtime')
-                        .replace(/hora de deitar/g, 'bedtime')
-                        // Temporal phrases
-                        .replace(/no dia seguinte/g, 'the next day')
-                        .replace(/ \(ontem → hoje\)/g, ' (yesterday → today)')
-                        .replace(/amanhã/g, 'tomorrow')
-                        .replace(/ontem/g, 'yesterday')
-                        .replace(/hoje/g, 'today')
-                        .replace(/no dia/g, 'that day')
-                        // Emotion and self-care compound phrases
-                        .replace(/Emoções Negativas/g, 'Negative emotions')
-                        .replace(/emoções negativas/g, 'negative emotions')
-                        .replace(/Emoções não afetam/g, "Emotions don't affect")
-                        .replace(/Emoções/g, 'Emotions')
-                        .replace(/emoções/g, 'emotions')
-                        .replace(/Primeiro consumo cedo/g, 'First use early')
-                        .replace(/Primeiro consumo tarde/g, 'First use late')
-                        .replace(/Primeiro consumo/g, 'First use')
-                        .replace(/primeiro consumo/g, 'first use')
-                        // Compound metric phrases (before individual words)
-                        .replace(/Mais consumos de manhã/g, 'More morning uses')
-                        .replace(/Mais consumos de tarde/g, 'More afternoon uses')
-                        .replace(/Mais consumos de noite/g, 'More evening uses')
-                        .replace(/Consumos de manhã/g, 'Morning uses')
-                        .replace(/Consumos de tarde/g, 'Afternoon uses')
-                        .replace(/Consumos de noite/g, 'Evening uses')
-                        .replace(/consumos de manhã/g, 'morning uses')
-                        .replace(/consumos de tarde/g, 'afternoon uses')
-                        .replace(/consumos de noite/g, 'evening uses')
-                        .replace(/consumos\/dia/g, 'uses/day')
-                        .replace(/mg\/dia/g, 'mg/day')
-                        .replace(/total no dia/g, 'total per day')
-                        .replace(/Intervalos maiores/g, 'Longer intervals')
-                        .replace(/Ligeira tendência para/g, 'Slight tendency toward')
-                        // Autocorrelation phrases
-                        .replace(/tende a repetir-se hoje/g, 'tends to repeat today')
-                        .replace(/inverte-se hoje/g, 'reverses today')
-                        .replace(/influencia ligeiramente hoje/g, 'slightly influences today')
-                        .replace(/não se repete hoje/g, "doesn't repeat today")
-                        .replace(/tende a inverter ligeiramente hoje/g, 'tends to slightly reverse today')
-                        .replace(/de ontem não afeta hoje/g, "from yesterday doesn't affect today")
-                        .replace(/não afetam/g, "don't affect")
-                        .replace(/não afeta/g, "doesn't affect")
-                        // Adjectives/adverbs
-                        .replace(/Ligeiramente/g, 'Slightly')
-                        .replace(/ligeiramente/g, 'slightly')
-                        .replace(/Mais baixo/g, 'Lower')
-                        .replace(/mais baixo/g, 'lower')
-                        // Directional words
-                        .replace(/Mais/g, 'More')
-                        .replace(/Menos/g, 'Less')
-                        .replace(/mais/g, 'more')
-                        .replace(/menos/g, 'less')
-                        // Quality words
-                        .replace(/Pior/g, 'Worse')
-                        .replace(/pior/g, 'worse')
-                        .replace(/Melhor/g, 'Better')
-                        .replace(/melhor/g, 'better')
-                        // High/Low
-                        .replace(/\balto\b/g, 'high')
-                        .replace(/\bAlto\b/g, 'High')
-                        .replace(/\bbaixo\b/g, 'low')
-                        .replace(/\bBaixo\b/g, 'Low')
-                        // Metrics (capitalized first)
-                        .replace(/Autocuidado/g, 'Self-care')
-                        .replace(/autocuidado/g, 'self-care')
-                        .replace(/Bem-estar/g, 'Wellbeing')
-                        .replace(/bem-estar/g, 'wellbeing')
-                        .replace(/Dosagem/g, 'Dosage')
-                        .replace(/dosagem/g, 'dosage')
-                        .replace(/Consumos/g, 'Uses')
-                        .replace(/consumos/g, 'uses')
-                        .replace(/Consumo/g, 'Consumption')
-                        .replace(/consumo/g, 'consumption')
-                        .replace(/Sono/g, 'Sleep')
-                        .replace(/sono/g, 'sleep')
-                        .replace(/Humor/g, 'Mood')
-                        .replace(/humor/g, 'mood')
-                        .replace(/Energia/g, 'Energy')
-                        .replace(/energia/g, 'energy')
-                        .replace(/Intervalos/g, 'Intervals')
-                        .replace(/intervalos/g, 'intervals')
-                        .replace(/Intervalo/g, 'Interval')
-                        .replace(/intervalo/g, 'interval')
-                        // Time of day
-                        .replace(/\bmanhã\b/g, 'morning')
-                        .replace(/\btarde\b/g, 'afternoon')
-                        .replace(/\bnoite\b/g, 'evening')
-                        .replace(/doses individuais maiores/g, 'larger individual doses')
-                        .replace(/doses maiores por consumo/g, 'larger doses per use');
-                };
-                const localizeUnit = (u) => i18n.language === 'en' && u === '/dia' ? '/day' : u;
                 window.renderCorrelationCard = (corr, isInverse = false) => {
                     const getLabel = (r, name) => {
                         if (r === null) return { text: t('correlations.noData'), color: 'gray', desc: '' };
