@@ -105,7 +105,7 @@ export function PatternsView({
                                             // Calculate metrics
                                             const totalConsumptions = filteredConsumptions.length;
                                             const byDate = {};
-                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            filteredConsumptions.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) byDate[dk] = (byDate[dk] || 0) + 1; });
                                             const uniqueDays = Object.keys(byDate).length;
                                             const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
 
@@ -2103,7 +2103,7 @@ export function PatternsView({
                                         if (patternView === 'temporal') {
                                             // Calculate byDate for temporal analyses
                                             const byDate = {};
-                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            filteredConsumptions.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) byDate[dk] = (byDate[dk] || 0) + 1; });
 
                                             // Calculate byHour
                                             const byHour = {};
@@ -2406,7 +2406,7 @@ export function PatternsView({
                                         if (patternView === 'estrutural') {
                                             // Calculate byDate for components that need it
                                             const byDate = {};
-                                            filteredConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
+                                            filteredConsumptions.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) byDate[dk] = (byDate[dk] || 0) + 1; });
 
                                             // Calcular intervalos entre consumos
                                             const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
