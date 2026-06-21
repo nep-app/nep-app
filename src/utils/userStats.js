@@ -503,7 +503,12 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         .filter(c => c.bedtime && c.sleep)
         .sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt))[0];
 
-      if (todayConsumptions.length > 0 && lastCycleWithSleep) {
+      // Só mostrar este alerta se o utilizador registou um novo ciclo hoje (após meia-noite)
+      // Se não registou ciclo hoje, ainda não "acordou" no sentido da app — não faz sentido mostrar
+      const lastCycleTs = lastCycleWithSleep ? new Date(lastCycleWithSleep.timestamp || lastCycleWithSleep.createdAt) : null;
+      const cycleLoggedToday = lastCycleTs !== null && lastCycleTs >= todayStart;
+
+      if (todayConsumptions.length > 0 && lastCycleWithSleep && cycleLoggedToday) {
         const [bh, bm] = lastCycleWithSleep.bedtime.split(':').map(Number);
         let wakeupMinutes = bh * 60 + bm + parseFloat(lastCycleWithSleep.sleep) * 60;
         if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
