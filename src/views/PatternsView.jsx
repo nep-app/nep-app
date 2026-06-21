@@ -342,7 +342,7 @@ export function PatternsView({
                                                         totalPossible = getAllDaysSinceFirstRecord(gCons).length;
                                                     } else if (g.type === 'increase_interval') {
                                                         const cnt = {};
-                                                        gCons.forEach(c => { const d = timestampToPT(c.timestamp); if (d && d !== today) cnt[d] = (cnt[d] || 0) + 1; });
+                                                        gCons.forEach(c => { const d = safeToISODate(c.timestamp); if (d && d !== today) cnt[d] = (cnt[d] || 0) + 1; });
                                                         totalPossible = Object.values(cnt).filter(n => n >= 2).length;
                                                     } else if (g.type === 'reduce_quantity') {
                                                         const s = new Set();
