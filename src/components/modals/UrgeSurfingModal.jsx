@@ -185,7 +185,7 @@ const EXERCISES = [
   { key: 'halt',      emoji: '🔍', titleKey: 'urge.haltTitle',      descKey: 'urge.haltShortDesc' },
 ];
 
-export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed }) {
+export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings = [] }) {
   const { t } = useTranslation();
   const [active, setActive] = useState(null);
 
@@ -200,13 +200,26 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed }) {
 
         <div className="px-4">
           {/* Header */}
-          <div className="flex items-start justify-between mb-5">
+          <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-white">💪 {t('urge.title')}</h2>
               <p className="text-xs text-gray-400 mt-0.5">{t('urge.subtitle')}</p>
             </div>
             <button onClick={onClose} className="text-gray-500 hover:text-white text-2xl leading-none ml-4">✕</button>
           </div>
+
+          {/* Why this modal appeared */}
+          {warnings.length > 0 && !active && (
+            <div className="mb-4 rounded-xl border border-orange-700/50 bg-orange-900/20 px-4 py-3 space-y-1">
+              <p className="text-xs font-semibold text-orange-400 mb-2">{t('urge.whyLabel', 'Por que apareceu este aviso:')}</p>
+              {warnings.map((w, i) => (
+                <p key={i} className="text-xs text-orange-200 flex items-start gap-2">
+                  <span className="flex-shrink-0">{w.emoji}</span>
+                  <span>{w.text}</span>
+                </p>
+              ))}
+            </div>
+          )}
 
           {/* Exercise area */}
           {active === 'timer'     && <TimerExercise     onBack={() => setActive(null)} />}

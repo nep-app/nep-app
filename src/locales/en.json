@@ -903,6 +903,7 @@
   "urge": {
     "title": "Urge Exercises",
     "subtitle": "Choose an exercise to do right now",
+    "whyLabel": "Why this reminder appeared:",
     "openButton": "💪 Do an exercise",
     "timerTitle": "Delay 15 minutes",
     "timerShortDesc": "Surf the urge — if you still want to after, it's a conscious choice",

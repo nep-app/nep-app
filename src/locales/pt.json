@@ -903,6 +903,7 @@
   "urge": {
     "title": "Exercícios para o Impulso",
     "subtitle": "Escolhe um exercício para fazer agora",
+    "whyLabel": "Por que apareceu este aviso:",
     "openButton": "💪 Fazer um exercício",
     "timerTitle": "Adia 15 minutos",
     "timerShortDesc": "Surfar o impulso — se ainda quiseres depois, é uma escolha consciente",
