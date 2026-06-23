@@ -183,21 +183,15 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         sintese: false,
     });
     const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-
-    const Section = ({ id, title, icon }) => {
-        const isOpen = openSections[id];
-        return (
-            <button
-                onClick={() => toggleSection(id)}
-                className={'w-full flex items-center justify-between px-5 py-3 rounded-xl border font-semibold text-left ' + (isOpen ? 'bg-gray-700/60 border-gray-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500')}
-            >
-                <span className="flex items-center gap-2">
-                    <span>{icon}</span> {title}
-                </span>
-                <span className={'text-xs transition-transform ' + (isOpen ? 'rotate-180' : '')} style={{display:'inline-block'}}>▼</span>
-            </button>
-        );
-    };
+    const sectionBtn = (id, icon, title) => (
+        <button
+            onClick={() => toggleSection(id)}
+            className={'w-full flex items-center justify-between px-5 py-3 rounded-xl border font-semibold text-left ' + (openSections[id] ? 'bg-gray-700/60 border-gray-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500')}
+        >
+            <span className="flex items-center gap-2"><span>{icon}</span> {title}</span>
+            <span className="text-xs" style={{ display: 'inline-block', transform: openSections[id] ? 'rotate(180deg)' : 'none' }}>▼</span>
+        </button>
+    );
 
     return (
         <div className="space-y-3">
@@ -211,7 +205,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             </div>
 
             {/* ── SECÇÃO 1: RESUMO ── */}
-            <Section id="resumo" title={i18n.language === 'en' ? 'Overview' : 'Resumo'} icon="📊" />
+            {sectionBtn('resumo', '📊', i18n.language === 'en' ? 'Overview' : 'Resumo')}
             {openSections.resumo && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Paragraph 1: Overview */}
@@ -385,7 +379,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 2: DIAS E PADRÕES ── */}
-            <Section id="dias" title={i18n.language === 'en' ? 'Days & Patterns' : 'Dias e Padrões'} icon="📅" />
+            {sectionBtn('dias', '📅', i18n.language === 'en' ? 'Days & Patterns' : 'Dias e Padrões')}
             {openSections.dias && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Good vs Difficult Days */}
@@ -720,7 +714,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 3: HORÁRIOS E RISCOS ── */}
-            <Section id="horarios" title={i18n.language === 'en' ? 'Timing & Risks' : 'Horários e Riscos'} icon="⏰" />
+            {sectionBtn('horarios', '⏰', i18n.language === 'en' ? 'Timing & Risks' : 'Horários e Riscos')}
             {openSections.horarios && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Vulnerability Windows */}
@@ -995,7 +989,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 4: SONO ── */}
-            <Section id="sono" title={i18n.language === 'en' ? 'Sleep' : 'Sono'} icon="💤" />
+            {sectionBtn('sono', '💤', i18n.language === 'en' ? 'Sleep' : 'Sono')}
             {openSections.sono && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Sleep Score */}
@@ -1301,7 +1295,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 5: EMOÇÕES E BEM-ESTAR ── */}
-            <Section id="emocoes" title={i18n.language === 'en' ? 'Emotions & Wellbeing' : 'Emoções e Bem-estar'} icon="🌈" />
+            {sectionBtn('emocoes', '🌈', i18n.language === 'en' ? 'Emotions & Wellbeing' : 'Emoções e Bem-estar')}
             {openSections.emocoes && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Emotional State */}
@@ -1647,7 +1641,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 6: ANÁLISE AVANÇADA ── */}
-            <Section id="avancado" title={i18n.language === 'en' ? 'Advanced Analysis' : 'Análise Avançada'} icon="🔬" />
+            {sectionBtn('avancado', '🔬', i18n.language === 'en' ? 'Advanced Analysis' : 'Análise Avançada')}
             {openSections.avancado && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Behavior Clusters */}
@@ -1855,7 +1849,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 7: SÍNTESE ── */}
-            <Section id="sintese" title={i18n.language === 'en' ? 'Summary & Reflection' : 'Síntese e Conclusão'} icon="💭" />
+            {sectionBtn('sintese', '💭', i18n.language === 'en' ? 'Summary & Reflection' : 'Síntese e Conclusão')}
             {openSections.sintese && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
                     {/* Final Reflection */}

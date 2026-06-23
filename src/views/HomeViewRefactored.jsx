@@ -69,29 +69,26 @@ export function HomeViewRefactored({
     return () => clearInterval(intervalId);
   }, []);
 
+  // Quando os dados mudam, ler alertas da cache (o contexto já recalculou)
   useEffect(() => {
-    if (!consumptions || consumptions.length === 0) {
-      // Dados ainda não carregados — ler da cache sem sobrescrever
-      getUserStats().then(stats => {
-        setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
-        if (stats.timeSinceLastConsumption) {
-          setCachedTimeSince(stats.timeSinceLastConsumption);
-        }
-      });
-      return;
-    }
-    // Dados carregados — regenerar alertas no idioma correcto e depois ler
+    getUserStats().then(stats => {
+      setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
+      if (stats.timeSinceLastConsumption) setCachedTimeSince(stats.timeSinceLastConsumption);
+    });
+  }, [consumptions, cycles, dailyLogs, goals]);
+
+  // Quando a língua muda, regenerar alertas no idioma correcto (só isso)
+  useEffect(() => {
+    if (!consumptions || consumptions.length === 0) return;
     updateUserStats(consumptions, cycles, dailyLogs, goals)
       .catch(() => {})
       .finally(() => {
         getUserStats().then(stats => {
           setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
-          if (stats.timeSinceLastConsumption) {
-            setCachedTimeSince(stats.timeSinceLastConsumption);
-          }
         });
       });
-  }, [consumptions, cycles, dailyLogs, goals, i18n.language]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   const handleSync = async () => {
     try {
