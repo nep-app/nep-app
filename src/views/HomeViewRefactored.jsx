@@ -70,7 +70,17 @@ export function HomeViewRefactored({
   }, []);
 
   useEffect(() => {
-    // Quando a linguagem muda, regenerar alertas no idioma correcto antes de ler
+    if (!consumptions || consumptions.length === 0) {
+      // Dados ainda não carregados — ler da cache sem sobrescrever
+      getUserStats().then(stats => {
+        setCachedAlerts(stats.alerts && stats.alerts.length > 0 ? stats.alerts : []);
+        if (stats.timeSinceLastConsumption) {
+          setCachedTimeSince(stats.timeSinceLastConsumption);
+        }
+      });
+      return;
+    }
+    // Dados carregados — regenerar alertas no idioma correcto e depois ler
     updateUserStats(consumptions, cycles, dailyLogs, goals)
       .catch(() => {})
       .finally(() => {
