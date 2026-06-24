@@ -8,7 +8,7 @@ const OPTIONS = [
         icon: '📱',
         title: { pt: 'Só no meu telemóvel', en: 'My device only' },
         desc: {
-            pt: 'Os dados ficam apenas no teu dispositivo. Sem cópia de segurança — se perderes o telemóvel ou desinstalares a app, perdes tudo. Accepts this risk.',
+            pt: 'Os dados ficam apenas no teu dispositivo. Sem cópia de segurança — se perderes o telemóvel ou desinstalares a app, perdes tudo.',
             en: 'Data stays only on your device. No backup — if you lose your phone or uninstall the app, all data is lost.',
         },
         desc2: {
@@ -122,7 +122,6 @@ export function DataModeSelector({ onSelected }) {
                             <li>✅ {lang === 'pt' ? 'Nº de consumos, mg médio, padrões por hora do dia' : 'Number of uses, average mg, patterns by time of day'}</li>
                             <li>✅ {lang === 'pt' ? 'Horas de sono, hora de deitar, gatilhos (da lista fixa)' : 'Sleep hours, bedtime, triggers (from fixed list)'}</li>
                             <li>✅ {lang === 'pt' ? 'Humor e energia médios, emoções registadas' : 'Average mood and energy, logged emotions'}</li>
-                            <li>✅ {lang === 'pt' ? 'Pontuação de sentimento das reflexões (positivo/negativo/neutro)' : 'Sentiment score of reflections (positive/negative/neutral)'}</li>
                             <li className="text-red-400">❌ {lang === 'pt' ? 'Nunca: notas, reflexões, pensamentos escritos, nome, email' : 'Never: notes, reflections, written thoughts, name, email'}</li>
                         </ul>
                         <p className="text-xs text-gray-500 italic">

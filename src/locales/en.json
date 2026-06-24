@@ -1,4 +1,14 @@
 {
+  "period": {
+    "today": "Today",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "allTime": "All time",
+    "weeksAgo_one": "{{count}} week ago",
+    "weeksAgo_other": "{{count}} weeks ago",
+    "monthsAgo_one": "{{count}} month ago",
+    "monthsAgo_other": "{{count}} months ago"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

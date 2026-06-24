@@ -1,4 +1,5 @@
 import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem } from '../utils/helpers';
+import i18n from '../i18n';
 
 // ===== HELPER FUNCTIONS =====
 
@@ -130,19 +131,19 @@ export const filterByDateRange = (items, dateRange, dateField = 'timestamp') => 
  */
 export const getPeriodLabel = (period, offset) => {
     if (offset === 0) {
-        if (period === 'hoje') return 'Hoje';
-        if (period === 'semana') return 'Últimos 7 dias';
-        if (period === 'mes') return 'Últimos 30 dias';
-        return 'Todo o período';
+        if (period === 'hoje') return i18n.t('period.today');
+        if (period === 'semana') return i18n.t('period.last7');
+        if (period === 'mes') return i18n.t('period.last30');
+        return i18n.t('period.allTime');
     }
 
     if (period === 'hoje') {
         const date = getDateDaysAgo(offset);
         return formatDateShort(date);
     }
-    if (period === 'semana') return `${offset} ${offset === 1 ? 'semana' : 'semanas'} atrás`;
-    if (period === 'mes') return `${offset} ${offset === 1 ? 'mês' : 'meses'} atrás`;
-    return 'Todo o período';
+    if (period === 'semana') return i18n.t('period.weeksAgo', { count: offset });
+    if (period === 'mes') return i18n.t('period.monthsAgo', { count: offset });
+    return i18n.t('period.allTime');
 };
 
 /**
