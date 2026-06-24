@@ -18,6 +18,12 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
   const dailyLogsRef = useRef(dailyLogs);
   useEffect(() => { dailyLogsRef.current = dailyLogs; }, [dailyLogs]);
 
+  const wellbeingLogsRef = useRef(wellbeingLogs);
+  useEffect(() => { wellbeingLogsRef.current = wellbeingLogs; }, [wellbeingLogs]);
+
+  const reflectionsRef = useRef(reflections);
+  useEffect(() => { reflectionsRef.current = reflections; }, [reflections]);
+
   const dismissReminder = (type) => {
     const today = getTodayKey();
     const updated = { ...reminderDismissed, [type]: today };
@@ -97,9 +103,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         // Morning check (9h–17h): wellbeing + reflection
         if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
           const missing = [];
-          const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+          const hasWellbeingToday = wellbeingLogsRef.current.some(w => w.date === today);
           if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
-          const hasReflectionToday = reflections.some(r => r.date === today);
+          const hasReflectionToday = reflectionsRef.current.some(r => r.date === today);
           if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
           if (missing.length > 0) {
             const items = missing.join(', ');
@@ -113,10 +119,10 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         if (wellbeingAlarmEnabled && hour >= 18 && shouldShowReminder('daily-check')) {
           const missing = [];
 
-          const hasWellbeingToday = wellbeingLogs.some(w => w.date === today);
+          const hasWellbeingToday = wellbeingLogsRef.current.some(w => w.date === today);
           if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
 
-          const hasReflectionToday = reflections.some(r => r.date === today);
+          const hasReflectionToday = reflectionsRef.current.some(r => r.date === today);
           if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
 
           const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -152,9 +158,10 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     };
 
     try {
-      checkReminders(); // Run immediately on mount / data change
+      // Delay initial check so IndexedDB data (Phase 2) has time to load
+      const initialTimer = setTimeout(checkReminders, 4000);
       const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
-      return () => clearInterval(interval);
+      return () => { clearTimeout(initialTimer); clearInterval(interval); };
     } catch (e) {
       logger.error('Error setting up reminders:', e);
     }

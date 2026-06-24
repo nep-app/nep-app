@@ -540,8 +540,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
               text: i18n.t('alerts.firstNotBeforeFail', { time: firstTimeStr, hours: firstNotBeforeGoal.target }),
               emoji: '⏰',
               color: 'orange',
-              type: 'negative',
-              urge: true
+              type: 'negative'
             });
           } else {
             alerts.push({
