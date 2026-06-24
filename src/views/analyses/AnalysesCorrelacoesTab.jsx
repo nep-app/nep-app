@@ -1747,23 +1747,22 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                 }
                             }
 
-                            // Sono baixo → mais consumo/dosagem (negativa é má)
+                            // Sono: correlação negativa (mais sono → menos consumo) é PROTETORA
                             if (name.includes('Sono →')) {
                                 const target = name.split(' →')[1].trim();
-                                const isSameDayOrYesterday = !name.includes('ontem') && !name.includes('hoje');
                                 const timeContext = name.includes('ontem') ? ' (ontem → hoje)' : '';
 
                                 if (target === 'Consumo' || target.includes('Consumo')) {
-                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: `Menos sono → Mais consumo${timeContext}` };
-                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: `Menos sono → Ligeiramente mais consumo${timeContext}` };
-                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'gray', desc: `Mais sono → Mais consumo${timeContext}` };
-                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'gray', desc: `Mais sono → Ligeiramente mais consumo${timeContext}` };
+                                    if (r < -0.4) return { text: t('correlations.labelProtective'), color: 'green', desc: `Mais sono → Menos consumo${timeContext}` };
+                                    if (r < -0.2) return { text: t('correlations.labelSlightlyProtective'), color: 'green', desc: `Mais sono → Ligeiramente menos consumo${timeContext}` };
+                                    if (r > 0.4) return { text: t('correlations.labelRisk'), color: 'red', desc: `Menos sono → Mais consumo${timeContext}` };
+                                    if (r > 0.2) return { text: t('correlations.labelSlightlyRisk'), color: 'orange', desc: `Menos sono → Ligeiramente mais consumo${timeContext}` };
                                     return { text: t('correlations.labelNoCorr'), color: 'gray', desc: `Sono não afeta consumo${timeContext}` };
                                 } else if (target === 'Dosagem') {
-                                    if (r < -0.4) return { text: t('correlations.labelNegative'), color: 'red', desc: 'Menos sono → Mais dosagem' };
-                                    if (r < -0.2) return { text: t('correlations.labelWeakNegative'), color: 'orange', desc: 'Menos sono → Ligeiramente mais dosagem' };
-                                    if (r > 0.4) return { text: t('correlations.labelPositive'), color: 'gray', desc: 'Mais sono → Mais dosagem' };
-                                    if (r > 0.2) return { text: t('correlations.labelWeakPositive'), color: 'gray', desc: 'Mais sono → Ligeiramente mais dosagem' };
+                                    if (r < -0.4) return { text: t('correlations.labelProtective'), color: 'green', desc: 'Mais sono → Menos dosagem' };
+                                    if (r < -0.2) return { text: t('correlations.labelSlightlyProtective'), color: 'green', desc: 'Mais sono → Ligeiramente menos dosagem' };
+                                    if (r > 0.4) return { text: t('correlations.labelRisk'), color: 'red', desc: 'Menos sono → Mais dosagem' };
+                                    if (r > 0.2) return { text: t('correlations.labelSlightlyRisk'), color: 'orange', desc: 'Menos sono → Ligeiramente mais dosagem' };
                                     return { text: t('correlations.labelNoCorr'), color: 'gray', desc: 'Sono não afeta dosagem' };
                                 }
                             }

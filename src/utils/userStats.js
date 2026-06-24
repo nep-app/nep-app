@@ -410,7 +410,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
             text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
             color: 'orange',
-            type: 'negative'
+            type: 'negative',
+            urge: true
           });
         } else {
           alerts.push({
@@ -446,7 +447,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
             const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
             alerts.push({
               text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
-              emoji: '⏰', color: 'orange', type: 'negative'
+              emoji: '⏰', color: 'orange', type: 'negative', urge: true
             });
           } else {
             alerts.push({

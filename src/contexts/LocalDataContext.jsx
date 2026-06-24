@@ -446,7 +446,7 @@ export const LocalDataProvider = ({ children }) => {
       });
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
@@ -492,7 +492,7 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => prev.map(item => item.id === id ? decrypted : item));
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
@@ -534,7 +534,7 @@ export const LocalDataProvider = ({ children }) => {
       });
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
