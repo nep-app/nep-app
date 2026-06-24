@@ -207,12 +207,16 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const alerts = [];
 
     // Aviso 1: Intervalo (se existe meta increase_interval)
+    // Usa o tempo REAL desde o último consumo (agora − último), não a distância
+    // entre os dois últimos registos guardados. É esse o número relevante para
+    // decidir "é cedo demais para consumir agora?" e evita o valor ficar congelado.
     const intervalGoal = (goals || []).find(g => g.type === 'increase_interval');
-    if (lastInterval !== null && intervalGoal) {
+    if (timeSinceLastConsumption && intervalGoal) {
       const targetInterval = parseFloat(intervalGoal.target);
-      if (lastInterval < targetInterval) {
+      const liveInterval = parseFloat(timeSinceLastConsumption.hours.toFixed(1));
+      if (liveInterval < targetInterval) {
         alerts.push({
-          text: i18n.t('alerts.shortInterval', { hours: lastInterval }),
+          text: i18n.t('alerts.shortInterval', { hours: liveInterval }),
           emoji: '⚠️',
           color: 'orange',
           type: 'negative',
@@ -220,7 +224,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         });
       } else {
         alerts.push({
-          text: i18n.t('alerts.goodInterval', { hours: lastInterval }),
+          text: i18n.t('alerts.goodInterval', { hours: liveInterval }),
           emoji: '✨',
           color: 'green',
           type: 'positive'
