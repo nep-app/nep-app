@@ -610,7 +610,7 @@
   "firebase": {
     "createNew": "Criar nova conta",
     "passwordLabel": "Password",
-    "passwordPlaceholder": "Mínimo 6 caracteres",
+    "passwordPlaceholder": "Mínimo 12 caracteres",
     "signingIn": "Entrando...",
     "creating": "Criando conta...",
     "signIn": "Entrar",
@@ -620,7 +620,7 @@
     "errUserNotFound": "Email não encontrado. Cria conta primeiro.",
     "errWrongPassword": "Password incorreta.",
     "errEmailInUse": "Este email já está registado. Faz login.",
-    "errWeakPassword": "Password fraca (mínimo 6 caracteres).",
+    "errWeakPassword": "Password fraca (mínimo 12 caracteres).",
     "errInvalidCred": "Email ou password incorretos.",
     "forgotPassword": "Esqueci a password",
     "resetSending": "A enviar...",

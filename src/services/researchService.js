@@ -159,7 +159,9 @@ export const syncResearchData = async (firebaseDB, { consumptions, cycles, wellb
         for (const weekKey of weekKeys) {
             const weekData = aggregateWeek(weekKey, consumptions, cycles, wellbeingLogs, reflections, thoughts, goals);
             if (!weekData.consumption && !weekData.sleep && !weekData.wellbeing) continue;
-            await setDoc(doc(firebaseDB, 'research', anonId, 'weeks', weekKey), weekData, { merge: true });
+            // Incluir anonId no documento para a regra Firestore poder validar que cada
+            // utilizador só escreve no SEU próprio anonId (ver firestore.rules).
+            await setDoc(doc(firebaseDB, 'research', anonId, 'weeks', weekKey), { ...weekData, anonId }, { merge: true });
         }
 
         localStorage.setItem('nep_research_last_sync', new Date().toISOString());
