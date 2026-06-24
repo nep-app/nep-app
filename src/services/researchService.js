@@ -80,16 +80,14 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
         emotionCounts[e] = (emotionCounts[e] || 0) + 1;
     }));
 
-    // Sentiment (computed, text not stored)
-    const sentimentCounts = { positive: 0, negative: 0, neutral: 0 };
-    [...wRef.map(r => r.answer), ...wTh.map(t => t.text)]
-        .filter(Boolean)
-        .forEach(text => { sentimentCounts[classifySentiment(text)]++; });
+    // NOTA: o sentimento das reflexões/pensamentos NÃO é enviado para investigação.
+    // O classificador é uma lista de palavras simples (só PT, sem negação/contexto) que
+    // classifica mal contexto de redução de danos (ex.: "consumo controlado", "euforia").
+    // Dados de investigação com classificação errada são piores do que sem dados.
 
     const hasConsumption = wCons.length > 0;
     const hasSleep = wCycles.length > 0;
     const hasWellbeing = wWb.length > 0;
-    const hasSentiment = (sentimentCounts.positive + sentimentCounts.negative + sentimentCounts.neutral) > 0;
 
     return {
         week: weekKey,
@@ -113,7 +111,6 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
             avgEnergy: avg(energies),
             emotionCounts: Object.keys(emotionCounts).length > 0 ? emotionCounts : null,
         } : null,
-        sentiment: hasSentiment ? sentimentCounts : null,
         goals: goals.filter(g => g.active !== false).length > 0 ? {
             types: goals.filter(g => g.active !== false).map(g => g.type),
             count: goals.filter(g => g.active !== false).length,
