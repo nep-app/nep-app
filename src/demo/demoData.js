@@ -4,7 +4,6 @@ function ts(daysAgo, hour = 12, min = 0) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
   d.setHours(hour, min, 0, 0);
-  // Nunca no futuro (ex: entrada das 21h quando são 11h)
   if (d.getTime() > Date.now() - 60000) {
     return new Date(Date.now() - 60000).toISOString();
   }
@@ -20,134 +19,140 @@ function dk(daysAgo) {
 let _n = 1;
 const uid = () => `demo_${_n++}`;
 
-// Consumption schedule: gradual reduction over 60 days
-// [daysAgo, hour]
+// Realistic use patterns spread through the day
+const p6  = [10, 12, 14, 16, 18, 21];
+const p7  = [9, 11, 13, 15, 17, 19, 22];
+const p7b = [10, 12, 13, 15, 17, 20, 22];
+const p8  = [9, 11, 12, 14, 16, 18, 20, 23];
+const p8b = [9, 10, 12, 14, 15, 17, 20, 22];
+const p9  = [9, 10, 12, 13, 15, 16, 18, 20, 22];
+const p10 = [9, 10, 11, 13, 14, 15, 17, 19, 21, 23];
+
+// Days 0-13 (recent 2 weeks): 6-7/day — showing improvement
+// Days 14-27 (weeks 3-4): 8/day — plateau
+// Days 28-45 (weeks 5-7): 9-10/day — where it started
 const schedule = [
-  // Last week: 1-2/day
-  [0, 10], [0, 21],
-  [1, 9],  [1, 20],
-  [2, 11], [2, 19],
-  [3, 10],
-  [4, 9],  [4, 22],
-  [5, 10], [5, 18],
-  [6, 11],
-  // Week 2: 2/day
-  [7, 10], [7, 20],
-  [8, 9],  [8, 21],
-  [9, 11], [9, 19],
-  [10, 10],[10, 21],
-  [11, 9], [11, 20],
-  [12, 10],[12, 22],
-  [13, 11],[13, 20],
-  // Weeks 3-4: 2-3/day
-  [14, 9], [14, 15],[14, 21],
-  [15, 10],[15, 20],
-  [16, 11],[16, 18],[16, 23],
-  [17, 9], [17, 21],
-  [18, 10],[18, 16],[18, 22],
-  [19, 9], [19, 20],
-  [20, 11],[20, 19],
-  [21, 10],[21, 15],[21, 22],
-  [22, 9], [22, 21],
-  [23, 10],[23, 20],
-  [24, 11],[24, 16],[24, 23],
-  [25, 9], [25, 20],
-  [26, 10],[26, 21],
-  [27, 9], [27, 14],[27, 22],
-  // Days 28-42: 3-4/day
-  [28, 8], [28, 14],[28, 20],
-  [29, 9], [29, 15],[29, 22],
-  [30, 8], [30, 13],[30, 20],
-  [31, 9], [31, 14],[31, 21],[31, 23],
-  [33, 8], [33, 15],[33, 21],
-  [34, 9], [34, 14],[34, 22],
-  [35, 8], [35, 13],[35, 20],[35, 23],
-  [36, 9], [36, 16],[36, 22],
-  [37, 8], [37, 14],[37, 21],
-  [38, 9], [38, 15],[38, 23],
-  [39, 8], [39, 14],[39, 20],
-  [40, 10],[40, 16],[40, 22],
-  [41, 9], [41, 15],[41, 23],
-  [42, 8], [42, 14],[42, 21],[42, 23],
-  // Days 43-60: 4-5/day
-  [43, 8], [43, 12],[43, 17],[43, 22],
-  [44, 9], [44, 13],[44, 18],[44, 23],
-  [45, 8], [45, 12],[45, 16],[45, 21],
-  [46, 9], [46, 13],[46, 18],[46, 22],
-  [47, 8], [47, 11],[47, 16],[47, 21],[47, 23],
-  [48, 9], [48, 14],[48, 19],[48, 23],
-  [49, 8], [49, 12],[49, 17],[49, 22],
-  [50, 9], [50, 13],[50, 16],[50, 21],[50, 23],
-  [52, 8], [52, 12],[52, 17],[52, 22],
-  [53, 9], [53, 14],[53, 19],[53, 23],
-  [55, 8], [55, 12],[55, 17],[55, 21],
-  [57, 9], [57, 13],[57, 18],[57, 22],
-  [59, 8], [59, 12],[59, 16],[59, 21],[59, 23],
+  // Recent: 6-7/day
+  ...p7.map(h  => [0,  h]),
+  ...p6.map(h  => [1,  h]),
+  ...p7.map(h  => [2,  h]),
+  ...p6.map(h  => [3,  h]),
+  ...p7b.map(h => [4,  h]),
+  ...p6.map(h  => [5,  h]),
+  ...p7.map(h  => [6,  h]),
+  ...p7b.map(h => [7,  h]),
+  ...p6.map(h  => [8,  h]),
+  ...p7.map(h  => [9,  h]),
+  ...p6.map(h  => [10, h]),
+  ...p7.map(h  => [11, h]),
+  ...p6.map(h  => [12, h]),
+  ...p7b.map(h => [13, h]),
+  // Plateau: 8/day
+  ...p8.map(h  => [14, h]),
+  ...p8b.map(h => [15, h]),
+  ...p8.map(h  => [16, h]),
+  ...p7b.map(h => [17, h]),
+  ...p8b.map(h => [18, h]),
+  ...p8.map(h  => [19, h]),
+  ...p8b.map(h => [20, h]),
+  ...p8.map(h  => [21, h]),
+  ...p7b.map(h => [22, h]),
+  ...p8.map(h  => [23, h]),
+  ...p8b.map(h => [24, h]),
+  ...p8.map(h  => [25, h]),
+  ...p8b.map(h => [26, h]),
+  ...p8.map(h  => [27, h]),
+  // Where it started: 9-10/day
+  ...p9.map(h  => [28, h]),
+  ...p10.map(h => [29, h]),
+  ...p9.map(h  => [30, h]),
+  ...p10.map(h => [31, h]),
+  ...p9.map(h  => [32, h]),
+  ...p10.map(h => [33, h]),
+  ...p9.map(h  => [34, h]),
+  ...p10.map(h => [35, h]),
+  ...p9.map(h  => [36, h]),
+  ...p10.map(h => [37, h]),
+  ...p9.map(h  => [38, h]),
+  ...p10.map(h => [39, h]),
+  ...p9.map(h  => [40, h]),
+  ...p10.map(h => [41, h]),
+  ...p9.map(h  => [42, h]),
+  ...p10.map(h => [43, h]),
+  ...p9.map(h  => [44, h]),
+  ...p10.map(h => [45, h]),
 ];
 
 export const consumptions = schedule.map(([day, hour]) => ({
   id: uid(), timestamp: ts(day, hour), date: dk(day), notes: '',
 }));
 
+// Daily logs — weekly snapshots tracking total daily mg
+// ~140mg/day recent (6-7 uses × ~20mg) → ~980mg/week
+// ~160mg/day mid → ~1120mg/week
+// ~185mg/day early → ~1295mg/week
 export const dailyLogs = [
-  { id: uid(), date: dk(0),  timestamp: ts(0, 23),  times: 2, mg: 20, notes: 'Dia tranquilo' },
-  { id: uid(), date: dk(3),  timestamp: ts(3, 22),  times: 1, mg: 20, notes: '' },
-  { id: uid(), date: dk(7),  timestamp: ts(7, 22),  times: 2, mg: 25, notes: 'Ansiedade alta hoje' },
-  { id: uid(), date: dk(10), timestamp: ts(10, 23), times: 2, mg: 25, notes: '' },
-  { id: uid(), date: dk(14), timestamp: ts(14, 22), times: 3, mg: 30, notes: 'Semana difícil' },
-  { id: uid(), date: dk(18), timestamp: ts(18, 23), times: 2, mg: 30, notes: '' },
-  { id: uid(), date: dk(21), timestamp: ts(21, 22), times: 3, mg: 30, notes: 'Saída com amigos' },
-  { id: uid(), date: dk(25), timestamp: ts(25, 23), times: 3, mg: 35, notes: '' },
-  { id: uid(), date: dk(30), timestamp: ts(30, 22), times: 3, mg: 35, notes: 'Período de mais stress' },
-  { id: uid(), date: dk(35), timestamp: ts(35, 23), times: 4, mg: 40, notes: '' },
-  { id: uid(), date: dk(40), timestamp: ts(40, 22), times: 4, mg: 40, notes: '' },
-  { id: uid(), date: dk(45), timestamp: ts(45, 23), times: 4, mg: 40, notes: 'Muita pressão no trabalho' },
-  { id: uid(), date: dk(50), timestamp: ts(50, 22), times: 5, mg: 45, notes: '' },
-  { id: uid(), date: dk(55), timestamp: ts(55, 23), times: 5, mg: 50, notes: '' },
+  { id: uid(), date: dk(0),  timestamp: ts(0, 23),  times: 7,  mg: 140, notes: 'Calmer day, managed to wait longer between sessions' },
+  { id: uid(), date: dk(4),  timestamp: ts(4, 22),  times: 6,  mg: 120, notes: '' },
+  { id: uid(), date: dk(7),  timestamp: ts(7, 22),  times: 7,  mg: 140, notes: 'Anxiety was high, craved more but held back' },
+  { id: uid(), date: dk(11), timestamp: ts(11, 23), times: 6,  mg: 130, notes: '' },
+  { id: uid(), date: dk(14), timestamp: ts(14, 22), times: 8,  mg: 160, notes: 'Stressful week, higher than usual' },
+  { id: uid(), date: dk(18), timestamp: ts(18, 23), times: 8,  mg: 155, notes: '' },
+  { id: uid(), date: dk(21), timestamp: ts(21, 22), times: 8,  mg: 160, notes: 'Social event, used more than planned' },
+  { id: uid(), date: dk(25), timestamp: ts(25, 23), times: 8,  mg: 165, notes: '' },
+  { id: uid(), date: dk(28), timestamp: ts(28, 22), times: 9,  mg: 185, notes: 'High-use period, stress at work' },
+  { id: uid(), date: dk(32), timestamp: ts(32, 23), times: 10, mg: 195, notes: '' },
+  { id: uid(), date: dk(36), timestamp: ts(36, 22), times: 9,  mg: 180, notes: '' },
+  { id: uid(), date: dk(40), timestamp: ts(40, 23), times: 10, mg: 200, notes: 'Very difficult period, using to cope' },
+  { id: uid(), date: dk(43), timestamp: ts(43, 22), times: 9,  mg: 185, notes: '' },
 ];
 
+// Weekly sleep cycles with realistic English data
 export const cycles = [
-  { id: uid(), timestamp: ts(2, 8),  date: dk(2),  bedtime: '23:30', sleep: 7,   triggers: ['ansiedade'], notes: 'Dormi razoavelmente' },
-  { id: uid(), timestamp: ts(9, 8),  date: dk(9),  bedtime: '00:30', sleep: 6.5, triggers: ['stress', 'trabalho'], notes: 'Semana pesada' },
-  { id: uid(), timestamp: ts(16, 8), date: dk(16), bedtime: '01:00', sleep: 6,   triggers: ['social'], notes: 'Saída na sexta' },
-  { id: uid(), timestamp: ts(23, 8), date: dk(23), bedtime: '00:00', sleep: 7,   triggers: ['ansiedade', 'solidão'], notes: '' },
-  { id: uid(), timestamp: ts(30, 8), date: dk(30), bedtime: '01:30', sleep: 5.5, triggers: ['stress'], notes: 'Período difícil no trabalho' },
-  { id: uid(), timestamp: ts(37, 8), date: dk(37), bedtime: '00:30', sleep: 6,   triggers: ['tédio'], notes: '' },
-  { id: uid(), timestamp: ts(44, 8), date: dk(44), bedtime: '01:00', sleep: 6,   triggers: ['stress', 'ansiedade'], notes: 'Muito stress este mês' },
-  { id: uid(), timestamp: ts(51, 8), date: dk(51), bedtime: '02:00', sleep: 5,   triggers: ['social', 'tédio'], notes: '' },
+  { id: uid(), timestamp: ts(2, 8),  date: dk(2),  bedtime: '23:30', sleep: 7.5, triggers: ['anxiety'], notes: 'Slept reasonably well' },
+  { id: uid(), timestamp: ts(9, 8),  date: dk(9),  bedtime: '00:30', sleep: 6.5, triggers: ['stress', 'work'], notes: 'Heavy week, late nights' },
+  { id: uid(), timestamp: ts(16, 8), date: dk(16), bedtime: '01:00', sleep: 6.0, triggers: ['social'], notes: 'Friday night out' },
+  { id: uid(), timestamp: ts(23, 8), date: dk(23), bedtime: '00:00', sleep: 7.0, triggers: ['anxiety', 'loneliness'], notes: '' },
+  { id: uid(), timestamp: ts(30, 8), date: dk(30), bedtime: '01:30', sleep: 5.5, triggers: ['stress'], notes: 'Difficult work period, poor sleep' },
+  { id: uid(), timestamp: ts(37, 8), date: dk(37), bedtime: '00:30', sleep: 6.0, triggers: ['boredom'], notes: '' },
+  { id: uid(), timestamp: ts(44, 8), date: dk(44), bedtime: '02:00', sleep: 5.0, triggers: ['stress', 'anxiety'], notes: 'Very stressed this month, staying up late' },
 ];
 
+// Wellbeing logs every few days — English emotions
 export const wellbeingLogs = [
-  { id: uid(), timestamp: ts(1, 20),  date: dk(1),  mood: 7, energy: 6, waterGlasses: 6, exerciseType: 'caminhada', exerciseDuration: 30, social: false, food: true,  emotions: ['calma', 'esperança'],       symptoms: [],                       notes: 'Bom dia, consegui caminhar' },
-  { id: uid(), timestamp: ts(4, 20),  date: dk(4),  mood: 5, energy: 5, waterGlasses: 4, exerciseType: '',          exerciseDuration: null, social: true, food: true,  emotions: ['ansiedade'],                 symptoms: ['insónia'],              notes: '' },
-  { id: uid(), timestamp: ts(8, 20),  date: dk(8),  mood: 6, energy: 6, waterGlasses: 5, exerciseType: 'gym',       exerciseDuration: 45,   social: false, food: false, emotions: ['determinação'],             symptoms: [],                       notes: 'Fui ao ginásio pela primeira vez em semanas' },
-  { id: uid(), timestamp: ts(12, 20), date: dk(12), mood: 4, energy: 4, waterGlasses: 3, exerciseType: '',          exerciseDuration: null, social: false, food: false, emotions: ['tristeza', 'apatia'],       symptoms: ['cansaço'],              notes: 'Dia difícil' },
-  { id: uid(), timestamp: ts(17, 20), date: dk(17), mood: 7, energy: 7, waterGlasses: 7, exerciseType: 'corrida',   exerciseDuration: 25,   social: true,  food: true,  emotions: ['alegria', 'conexão'],       symptoms: [],                       notes: 'Jantar com amigos, boa noite' },
-  { id: uid(), timestamp: ts(22, 20), date: dk(22), mood: 5, energy: 5, waterGlasses: 4, exerciseType: '',          exerciseDuration: null, social: false, food: true,  emotions: ['ansiedade', 'irritabilidade'], symptoms: ['tensão'],             notes: '' },
-  { id: uid(), timestamp: ts(28, 20), date: dk(28), mood: 4, energy: 3, waterGlasses: 3, exerciseType: '',          exerciseDuration: null, social: false, food: false, emotions: ['tristeza'],                  symptoms: ['cansaço', 'insónia'],   notes: 'Semana muito pesada' },
-  { id: uid(), timestamp: ts(33, 20), date: dk(33), mood: 6, energy: 5, waterGlasses: 5, exerciseType: 'caminhada', exerciseDuration: 20,   social: false, food: true,  emotions: ['calma'],                    symptoms: [],                       notes: '' },
-  { id: uid(), timestamp: ts(38, 20), date: dk(38), mood: 4, energy: 4, waterGlasses: 3, exerciseType: '',          exerciseDuration: null, social: true,  food: false, emotions: ['stressado', 'ansiedade'],   symptoms: ['tensão'],               notes: 'Prazo no trabalho esta semana' },
-  { id: uid(), timestamp: ts(43, 20), date: dk(43), mood: 3, energy: 3, waterGlasses: 3, exerciseType: '',          exerciseDuration: null, social: false, food: false, emotions: ['esgotamento', 'tristeza'],  symptoms: ['cansaço', 'dores de cabeça'], notes: 'Mês muito difícil' },
+  { id: uid(), timestamp: ts(1, 20),  date: dk(1),  mood: 7, energy: 6, waterGlasses: 6, exerciseType: 'walk', exerciseDuration: 30, social: false, food: true,  emotions: ['calm', 'hopeful'],             symptoms: [],                        notes: 'Good day, managed to go for a walk' },
+  { id: uid(), timestamp: ts(5, 20),  date: dk(5),  mood: 5, energy: 5, waterGlasses: 4, exerciseType: '',     exerciseDuration: null, social: true, food: true,  emotions: ['anxiety'],                     symptoms: ['insomnia'],              notes: '' },
+  { id: uid(), timestamp: ts(8, 20),  date: dk(8),  mood: 6, energy: 6, waterGlasses: 5, exerciseType: 'gym',  exerciseDuration: 45,   social: false, food: false, emotions: ['determination'],               symptoms: [],                        notes: 'First gym session in weeks — felt good' },
+  { id: uid(), timestamp: ts(12, 20), date: dk(12), mood: 4, energy: 4, waterGlasses: 3, exerciseType: '',     exerciseDuration: null, social: false, food: false, emotions: ['sadness', 'apathy'],           symptoms: ['fatigue'],               notes: 'Hard day' },
+  { id: uid(), timestamp: ts(17, 20), date: dk(17), mood: 7, energy: 7, waterGlasses: 7, exerciseType: 'run',  exerciseDuration: 25,   social: true,  food: true,  emotions: ['joy', 'connection'],           symptoms: [],                        notes: 'Dinner with friends, great evening' },
+  { id: uid(), timestamp: ts(22, 20), date: dk(22), mood: 5, energy: 5, waterGlasses: 4, exerciseType: '',     exerciseDuration: null, social: false, food: true,  emotions: ['anxiety', 'irritability'],     symptoms: ['tension'],               notes: '' },
+  { id: uid(), timestamp: ts(28, 20), date: dk(28), mood: 4, energy: 3, waterGlasses: 3, exerciseType: '',     exerciseDuration: null, social: false, food: false, emotions: ['sadness'],                     symptoms: ['fatigue', 'insomnia'],   notes: 'Very heavy week' },
+  { id: uid(), timestamp: ts(33, 20), date: dk(33), mood: 6, energy: 5, waterGlasses: 5, exerciseType: 'walk', exerciseDuration: 20,   social: false, food: true,  emotions: ['calm'],                        symptoms: [],                        notes: '' },
+  { id: uid(), timestamp: ts(38, 20), date: dk(38), mood: 4, energy: 4, waterGlasses: 3, exerciseType: '',     exerciseDuration: null, social: true,  food: false, emotions: ['stress', 'anxiety'],           symptoms: ['tension'],               notes: 'Work deadline this week' },
+  { id: uid(), timestamp: ts(43, 20), date: dk(43), mood: 3, energy: 3, waterGlasses: 3, exerciseType: '',     exerciseDuration: null, social: false, food: false, emotions: ['exhaustion', 'sadness'],       symptoms: ['fatigue', 'headaches'],  notes: 'Very difficult month' },
 ];
 
+// Daily reflections in English
 export const reflections = [
-  { id: uid(), timestamp: ts(2, 22),  date: dk(2),  question: 'O que me fez querer consumir hoje?',     answer: 'Ansiedade no trabalho, reunião complicada. Usei como forma de desligar à noite.' },
-  { id: uid(), timestamp: ts(9, 22),  date: dk(9),  question: 'Como me sinto depois de consumir?',      answer: 'Mais relaxado no momento mas depois sinto um bocado de culpa. Quero mudar isso.' },
-  { id: uid(), timestamp: ts(17, 22), date: dk(17), question: 'Que alternativas tenho ao consumo?',     answer: 'Hoje tentei a caminhada e ajudou. Preciso de usar mais isso.' },
-  { id: uid(), timestamp: ts(25, 22), date: dk(25), question: 'O que aprendi sobre os meus padrões?',   answer: 'Consumo muito mais quando estou sozinho à noite. Tenho de arranjar actividades para esses momentos.' },
-  { id: uid(), timestamp: ts(40, 22), date: dk(40), question: 'Como posso tratar-me melhor esta semana?', answer: 'Dormir antes da meia-noite, beber mais água, tentar não consumir antes das 20h.' },
+  { id: uid(), timestamp: ts(2, 22),  date: dk(2),  question: 'What made me want to use today?',         answer: 'Work anxiety, a difficult meeting. I used it to unwind in the evening — a habit I want to change.' },
+  { id: uid(), timestamp: ts(9, 22),  date: dk(9),  question: 'How do I feel after using?',              answer: 'More relaxed in the moment, but then some guilt creeps in. I want to build healthier wind-down routines.' },
+  { id: uid(), timestamp: ts(17, 22), date: dk(17), question: 'What alternatives do I have?',            answer: 'Today I tried a run first and it actually helped a lot. I need to use that more.' },
+  { id: uid(), timestamp: ts(25, 22), date: dk(25), question: 'What patterns have I noticed?',           answer: 'I use much more when I\'m home alone in the evenings. I need more activities during those moments.' },
+  { id: uid(), timestamp: ts(40, 22), date: dk(40), question: 'How can I take better care of myself?',   answer: 'Sleep before midnight, drink more water, try not to use before 6pm.' },
 ];
 
+// Personal journal thoughts in English
 export const thoughts = [
-  { id: uid(), timestamp: ts(3, 21),  date: dk(3),  content: 'Hoje percebi que uso muito mais quando estou ansioso. A cannabis acaba por ser uma fuga ao que estou a sentir, mas não resolve o problema.' },
-  { id: uid(), timestamp: ts(11, 21), date: dk(11), content: 'Consegui esperar mais 2 horas hoje antes de consumir. Parece pouco mas para mim é muito.' },
-  { id: uid(), timestamp: ts(19, 22), date: dk(19), content: 'Semana melhor. Menos stress, menos consumo. A correlação é clara.' },
-  { id: uid(), timestamp: ts(32, 21), date: dk(32), content: 'Preciso de ser mais gentil comigo. Esta jornada não é linear.' },
+  { id: uid(), timestamp: ts(3, 21),  date: dk(3),  content: 'I realised today I use a lot more when I\'m anxious. It ends up being an escape from what I\'m feeling rather than actually dealing with it.' },
+  { id: uid(), timestamp: ts(11, 21), date: dk(11), content: 'Managed to wait an extra hour and a half today before the second session. Feels like a small win, but I\'ll take it.' },
+  { id: uid(), timestamp: ts(19, 22), date: dk(19), content: 'Better week overall. Less stress, fewer sessions. The connection is clear.' },
+  { id: uid(), timestamp: ts(32, 21), date: dk(32), content: 'I need to be kinder to myself. This journey isn\'t linear.' },
 ];
 
+// Goals: reduce to 6/day (almost there from 9-10) + 2h minimum interval
 export const goals = [
-  { id: uid(), type: 'reduce_frequency', target: 1,  createdAt: ts(30, 10), completed: false },
-  { id: uid(), type: 'increase_interval', target: 8, createdAt: ts(30, 10), completed: false },
+  { id: uid(), type: 'reduce_frequency', target: 6,  createdAt: ts(30, 10), completed: false },
+  { id: uid(), type: 'increase_interval', target: 2, createdAt: ts(30, 10), completed: false },
 ];
 
 export function getAllDemoData() {
