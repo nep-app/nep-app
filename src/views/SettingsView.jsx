@@ -4,7 +4,9 @@ import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
-const APP_VERSION = '4.7.0';
+/* global __APP_VERSION__ */
+// Versão vinda do package.json (injetada pelo Vite). Fonte única.
+const APP_VERSION = __APP_VERSION__;
 
 // ── Guia de utilização ────────────────────────────────────────────────────
 

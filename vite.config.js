@@ -1,10 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
+
+// Fonte única da versão da app: o package.json. Mudar lá => muda em todo o lado.
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)))
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/nep-app/',
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     VitePWA({

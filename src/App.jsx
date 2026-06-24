@@ -60,7 +60,6 @@ if (_pwaAction) {
 }
 
 function HarmReductionTracker() {
-            const APP_VERSION = '4.6.1';
             const { t } = useTranslation();
 
             // Initialize Firebase
