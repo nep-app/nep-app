@@ -41,7 +41,7 @@ export function HomeViewRefactored({
     : true;
 
   const handleMarkConsumption = () => {
-    const hasWarning = cachedAlerts.some(a => a.type === 'negative');
+    const hasWarning = cachedAlerts.some(a => a.type === 'negative' && a.urge === true);
     if (hasWarning && urgeExerciseEnabled) {
       setPendingConsumption(true);
       setShowUrgeSurfing(true);
