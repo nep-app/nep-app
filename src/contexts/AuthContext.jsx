@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
+import { db, getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
 import {
   encrypt,
   decrypt,
@@ -724,44 +724,40 @@ export const AuthProvider = ({ children }) => {
       const saltBase64 = await getMetadata('salt');
       const salt = base64ToSalt(saltBase64);
 
-      // Criar novos dados de verificação com novo PIN
-      const verification = await createPasswordVerificationData(newPin, salt);
-      await setMetadata('pinVerification', JSON.stringify(verification));
+      // Todas as coleções com dados encriptados em repouso. Inclui copingStrategies e
+      // healthLogs (sintomas) — senão ficariam indecifráveis após a mudança de PIN.
+      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'copingStrategies', 'thoughts', 'healthLogs'];
 
-      // RE-ENCRIPTAR TODOS OS DADOS COM NOVO PIN (SECURITY FIX!)
+      // 1) Re-encriptar TUDO em memória primeiro. A criptografia tem yields assíncronos
+      //    (setTimeout) que fechariam uma transação Dexie — por isso fica FORA da transação.
       logger.log('[AuthContext] 🔐 Re-encriptando dados com novo PIN...');
-
-      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'thoughts'];
-
+      const reencryptedByCollection = {};
       for (const collectionName of collections) {
-        try {
-          // 1. Ler dados encriptados
-          const encryptedItems = await db[collectionName].toArray();
-
-          if (encryptedItems.length === 0) {
-            logger.log(`[AuthContext] ⏭️ ${collectionName}: sem dados, skip`);
-            continue;
-          }
-
-          // 2. Desencriptar com PIN ATUAL (ainda está em encryptionKey)
-          const decryptedItems = await decryptItems(collectionName, encryptedItems, currentPin, salt);
-
-          // 3. Encriptar com PIN NOVO
-          const reencryptedItems = await encryptItems(collectionName, decryptedItems, newPin, salt);
-
-          // 4. Guardar de volta (bulk update)
-          await db[collectionName].bulkPut(reencryptedItems);
-
-          logger.log(`[AuthContext] ✅ ${collectionName}: ${reencryptedItems.length} items re-encriptados`);
-        } catch (error) {
-          logger.error(`[AuthContext] ❌ Erro ao re-encriptar ${collectionName}:`, error);
-          throw new Error(`Falha ao re-encriptar ${collectionName}: ${error.message}`);
-        }
+        const encryptedItems = await db[collectionName].toArray();
+        if (encryptedItems.length === 0) continue;
+        const decryptedItems = await decryptItems(collectionName, encryptedItems, currentPin, salt);
+        reencryptedByCollection[collectionName] = await encryptItems(collectionName, decryptedItems, newPin, salt);
       }
 
-      logger.log('[AuthContext] ✅ Todos os dados re-encriptados com sucesso!');
+      // 2) Novos dados de verificação (também criptografia → fora da transação)
+      const verification = await createPasswordVerificationData(newPin, salt);
 
-      // Atualizar chave em memória (agora com novo PIN)
+      // 3) Escrever TUDO atomicamente: dados re-encriptados + pinVerification por ÚLTIMO.
+      //    Só operações Dexie aqui dentro (sem cripto) para a transação não fechar antes do tempo.
+      //    Se algo falhar, há rollback e o utilizador permanece no PIN antigo — nunca trancado.
+      await db.transaction('rw', [
+        db.consumptions, db.dailyLogs, db.reflections, db.wellbeingLogs,
+        db.cycles, db.goals, db.copingStrategies, db.thoughts, db.healthLogs, db.metadata
+      ], async () => {
+        for (const [collectionName, items] of Object.entries(reencryptedByCollection)) {
+          await db[collectionName].bulkPut(items);
+        }
+        await db.metadata.put({ key: 'pinVerification', value: JSON.stringify(verification) });
+      });
+
+      logger.log('[AuthContext] ✅ PIN alterado e dados re-encriptados atomicamente');
+
+      // 4) Só agora atualizar a chave em memória (com o novo PIN)
       setEncryptionKey(newPin);
 
       return { success: true };
