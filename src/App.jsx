@@ -155,7 +155,7 @@ export function AuthenticatedApp() {
             // Custom hooks
             const { toasts, showToast } = useToast();
             const { handleLogout } = useFirebaseAuth(auth); // Only need logout for settings
-            const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast);
+            const { notificationsEnabled, requestNotificationPermission, dismissReminder } = useReminders(user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast, allDataLoaded);
 
             // Use metrics context for centralized analytics and computations
             const metrics = useMetrics();

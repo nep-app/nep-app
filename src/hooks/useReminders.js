@@ -4,36 +4,41 @@ import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
 
-export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast) => {
+export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflections, dailyLogs, showToast, allDataLoaded) => {
   const { t } = useTranslation();
-  const [reminderDismissed, setReminderDismissed] = useState(() => {
-    return safeLocalStorage.get('reminderDismissed', {});
-  });
-
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     return safeLocalStorage.get('notificationsEnabled', false);
   });
 
-  // Ref to always have fresh dailyLogs in the interval callback (avoids stale closure)
+  // Always-fresh refs — updated every render so interval callbacks never use stale data
+  const wellbeingLogsRef = useRef(wellbeingLogs);
+  const reflectionsRef = useRef(reflections);
   const dailyLogsRef = useRef(dailyLogs);
+  useEffect(() => { wellbeingLogsRef.current = wellbeingLogs; }, [wellbeingLogs]);
+  useEffect(() => { reflectionsRef.current = reflections; }, [reflections]);
   useEffect(() => { dailyLogsRef.current = dailyLogs; }, [dailyLogs]);
 
-  const wellbeingLogsRef = useRef(wellbeingLogs);
-  useEffect(() => { wellbeingLogsRef.current = wellbeingLogs; }, [wellbeingLogs]);
-
-  const reflectionsRef = useRef(reflections);
-  useEffect(() => { reflectionsRef.current = reflections; }, [reflections]);
-
-  const dismissReminder = (type) => {
+  // Read/write dismissed state directly from localStorage to avoid stale closure bugs
+  const isDismissedToday = (type) => {
     const today = getTodayKey();
-    const updated = { ...reminderDismissed, [type]: today };
-    setReminderDismissed(updated);
-    safeLocalStorage.set('reminderDismissed', updated);
+    const dismissed = safeLocalStorage.get('reminderDismissed', {});
+    return dismissed[type] === today;
   };
 
-  const shouldShowReminder = (type) => {
+  const dismissToday = (type) => {
     const today = getTodayKey();
-    return reminderDismissed[type] !== today;
+    const dismissed = safeLocalStorage.get('reminderDismissed', {});
+    safeLocalStorage.set('reminderDismissed', { ...dismissed, [type]: today });
+  };
+
+  const showBrowserNotification = (title, body) => {
+    try {
+      if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico' });
+      }
+    } catch (e) {
+      logger.error('Error showing notification:', e);
+    }
   };
 
   const requestNotificationPermission = async () => {
@@ -41,19 +46,16 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
       showToast(t('reminders.notifNotSupported'), 'error');
       return;
     }
-
     if (Notification.permission === 'denied') {
       showToast(t('reminders.notifBlocked'), 'error');
       return;
     }
-
     if (Notification.permission === 'granted') {
       setNotificationsEnabled(true);
       safeLocalStorage.set('notificationsEnabled', true);
       showToast(t('reminders.notifAlreadyEnabled'), 'success');
       return;
     }
-
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
@@ -71,23 +73,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     }
   };
 
-  const showBrowserNotification = (title, body) => {
-    try {
-      if (notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, {
-          body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico'
-        });
-      }
-    } catch (e) {
-      logger.error('Error showing notification:', e);
-    }
-  };
-
-  // Check for reminders every hour
+  // Hourly reminder check — only runs after data has fully loaded (allDataLoaded)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !allDataLoaded) return;
 
     const checkReminders = () => {
       try {
@@ -95,61 +83,47 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         const hour = now.getHours();
         const today = getTodayKey();
 
-        // Only show reminders between 8h and 22h
         if (hour < 8 || hour > 22) return;
 
         const wellbeingAlarmEnabled = safeLocalStorage.get('wellbeingAlarmEnabled', false);
 
         // Morning check (9h–17h): wellbeing + reflection
-        if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && shouldShowReminder('morning-check')) {
+        if (wellbeingAlarmEnabled && hour >= 9 && hour < 18 && !isDismissedToday('morning-check')) {
           const missing = [];
-          const hasWellbeingToday = wellbeingLogsRef.current.some(w => w.date === today);
-          if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
-          const hasReflectionToday = reflectionsRef.current.some(r => r.date === today);
-          if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
+          if (!wellbeingLogsRef.current.some(w => w.date === today)) missing.push(t('reminders.itemWellbeing'));
+          if (!reflectionsRef.current.some(r => r.date === today)) missing.push(t('reminders.itemReflection'));
           if (missing.length > 0) {
             const items = missing.join(', ');
             showToast(t('reminders.morningToast', { items }), 'info');
             showBrowserNotification(t('reminders.morningTitle'), t('reminders.morningBody', { items }));
           }
-          dismissReminder('morning-check');
+          dismissToday('morning-check');
         }
 
-        // Evening check (18h): wellbeing, reflection, mg from yesterday
-        if (wellbeingAlarmEnabled && hour >= 18 && shouldShowReminder('daily-check')) {
+        // Evening check (18h+): wellbeing, reflection, mg from yesterday
+        if (wellbeingAlarmEnabled && hour >= 18 && !isDismissedToday('daily-check')) {
           const missing = [];
-
-          const hasWellbeingToday = wellbeingLogsRef.current.some(w => w.date === today);
-          if (!hasWellbeingToday) missing.push(t('reminders.itemWellbeing'));
-
-          const hasReflectionToday = reflectionsRef.current.some(r => r.date === today);
-          if (!hasReflectionToday) missing.push(t('reminders.itemReflection'));
-
+          if (!wellbeingLogsRef.current.some(w => w.date === today)) missing.push(t('reminders.itemWellbeing'));
+          if (!reflectionsRef.current.some(r => r.date === today)) missing.push(t('reminders.itemReflection'));
           const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          const hasMgYesterday = dailyLogs.some(d => d.date === yesterday);
-          if (!hasMgYesterday) missing.push(t('reminders.itemMgYesterday'));
-
+          if (!dailyLogsRef.current.some(d => d.date === yesterday)) missing.push(t('reminders.itemMgYesterday'));
           if (missing.length > 0) {
             const items = missing.join(', ');
             showToast(t('reminders.eveningToast', { items }), 'info');
             showBrowserNotification(t('reminders.reminderTitle'), t('reminders.eveningBody', { items }));
           }
-          dismissReminder('daily-check');
+          dismissToday('daily-check');
         }
 
-        // Dose alarm: fires once per day from configured hour
+        // Dose alarm
         const doseAlarmRaw = localStorage.getItem('bagWeighAlarmHour');
         const doseAlarmHour = (doseAlarmRaw !== null && doseAlarmRaw !== 'null') ? parseInt(doseAlarmRaw) : null;
-        if (doseAlarmHour !== null && !isNaN(doseAlarmHour) && hour >= doseAlarmHour) {
-          const dismissed = safeLocalStorage.get('reminderDismissed', {});
-          if (dismissed['bag-alarm'] !== today) {
-            const hasDailyLogToday = dailyLogsRef.current.some(d => d.date === today);
-            if (!hasDailyLogToday) {
-              showToast(t('reminders.doseToast'), 'info');
-              showBrowserNotification(t('reminders.reminderTitle'), t('reminders.doseBody'));
-            }
-            dismissReminder('bag-alarm');
+        if (doseAlarmHour !== null && !isNaN(doseAlarmHour) && hour >= doseAlarmHour && !isDismissedToday('bag-alarm')) {
+          if (!dailyLogsRef.current.some(d => d.date === today)) {
+            showToast(t('reminders.doseToast'), 'info');
+            showBrowserNotification(t('reminders.reminderTitle'), t('reminders.doseBody'));
           }
+          dismissToday('bag-alarm');
         }
 
       } catch (e) {
@@ -158,32 +132,25 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
     };
 
     try {
-      // Delay initial check so IndexedDB data (Phase 2) has time to load
-      const initialTimer = setTimeout(checkReminders, 4000);
-      const interval = setInterval(checkReminders, 60 * 60 * 1000); // Every hour
-      return () => { clearTimeout(initialTimer); clearInterval(interval); };
+      checkReminders();
+      const interval = setInterval(checkReminders, 60 * 60 * 1000);
+      return () => clearInterval(interval);
     } catch (e) {
       logger.error('Error setting up reminders:', e);
     }
-  }, [user, notificationsEnabled]);
+  }, [user, allDataLoaded, notificationsEnabled]);
 
   // Check for wellbeing reminder after every 2 consumptions
   useEffect(() => {
     if (!user || !cycles || cycles.length === 0) return;
 
     try {
-      // Get today's date
       const today = getTodayKey();
-
-      // Get consumptions today
       const currentCycleConsumptions = consumptions.filter(c => getDateKeyFromItem(c) === today);
-
-      // Get wellbeing logs today
       const currentCycleWellbeing = wellbeingLogs.filter(w => getDateKeyFromItem(w) === today);
 
       if (currentCycleConsumptions.length === 0) return;
 
-      // Sort by timestamp to get order
       const sortedConsumptions = [...currentCycleConsumptions].sort((a, b) =>
         new Date(a.timestamp) - new Date(b.timestamp)
       );
@@ -191,28 +158,23 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
         new Date(a.timestamp) - new Date(b.timestamp)
       );
 
-      // Count consumptions since last wellbeing
       let consumptionsSinceLastWellbeing = 0;
       if (sortedWellbeing.length === 0) {
-        // No wellbeing yet in this cycle
         consumptionsSinceLastWellbeing = sortedConsumptions.length;
       } else {
-        // Count consumptions after last wellbeing
         const lastWellbeingTime = new Date(sortedWellbeing[sortedWellbeing.length - 1].timestamp);
         consumptionsSinceLastWellbeing = sortedConsumptions.filter(c =>
           new Date(c.timestamp) > lastWellbeingTime
         ).length;
       }
 
-      // Show reminder ONLY at multiples of 2 (2, 4, 6, 8...)
-      // Isto evita mostrar aos 3, 5, 7... consumos
       const isMultipleOf2 = consumptionsSinceLastWellbeing % 2 === 0;
       const shouldNotify = consumptionsSinceLastWellbeing >= 2 && isMultipleOf2;
 
-      if (shouldNotify && shouldShowReminder('wellbeing-consumption')) {
+      if (shouldNotify && !isDismissedToday('wellbeing-consumption')) {
         showToast(t('reminders.wellbeingToast', { n: consumptionsSinceLastWellbeing }), 'info');
         showBrowserNotification(t('reminders.reminderTitle'), t('reminders.wellbeingBody', { n: consumptionsSinceLastWellbeing }));
-        dismissReminder('wellbeing-consumption');
+        dismissToday('wellbeing-consumption');
       }
     } catch (e) {
       logger.error('Error checking wellbeing consumption reminder:', e);
@@ -222,8 +184,6 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
   return {
     notificationsEnabled,
     requestNotificationPermission,
-    dismissReminder,
-    shouldShowReminder,
-    showBrowserNotification,
+    dismissReminder: dismissToday,
   };
 };
