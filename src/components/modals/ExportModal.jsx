@@ -179,6 +179,15 @@ const buildCSVs = (data, selected) => {
 
 // ─── PDF / printable HTML ────────────────────────────────────────────────────
 
+// Escapa texto controlado pelo utilizador antes de o inserir no HTML do PDF.
+// Sem isto, uma nota como `<img src=x onerror=...>` correria código na janela de impressão.
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   const periodLabel = PERIODS.find(p => p.id === period)?.label || period;
   const now = new Date().toLocaleDateString('pt-PT', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -390,8 +399,8 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   };
   const badge = (type, label) => { const c = TC[type]; return `<span class="badge" style="background:${c.bg};border-color:${c.border};color:${c.text}">${label}</span>`; };
   const fmt = (d) => d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-  const entryLine = (type, badgeLabel, detail) => `<div class="entry">${badge(type, badgeLabel)}<span class="detail">${detail}</span></div>`;
-  const gapLine = (text) => `<div class="entry"><span class="gap">⚠️ ${text}</span></div>`;
+  const entryLine = (type, badgeLabel, detail) => `<div class="entry">${badge(type, badgeLabel)}<span class="detail">${escapeHtml(detail)}</span></div>`;
+  const gapLine = (text) => `<div class="entry"><span class="gap">⚠️ ${escapeHtml(text)}</span></div>`;
 
   const sortedDates = Object.keys(rawByDate).sort((a, b) => b.localeCompare(a));
 

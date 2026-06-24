@@ -29,6 +29,14 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Ao criar conta, exigir uma palavra-passe forte (12+ caracteres).
+    // É esta conta que protege os dados na nuvem, por isso o mínimo do Firebase (6) é fraco.
+    if (!isLogin && password.length < 12) {
+      setError(t('firebase.errWeakPassword'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -110,7 +118,7 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
               className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               required
               disabled={loading}
-              minLength={6}
+              minLength={isLogin ? 6 : 12}
             />
           </div>
 

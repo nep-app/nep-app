@@ -26,7 +26,7 @@ export const useAuth = (auth) => {
       } else if (error.code === 'auth/email-already-in-use') {
         setAuthError('Email já existe. Faz login.');
       } else if (error.code === 'auth/weak-password') {
-        setAuthError('Password fraca (mínimo 6 caracteres).');
+        setAuthError('Password fraca (mínimo 12 caracteres).');
       } else if (error.code === 'auth/invalid-email') {
         setAuthError('Email inválido.');
       } else if (error.code === 'auth/invalid-credential') {

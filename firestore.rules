@@ -4,83 +4,64 @@ rules_version = '2';
 // Estas regras protegem os teus dados garantindo que:
 // 1. Utilizadores autenticados só acedem aos SEUS próprios dados
 // 2. Não há acesso sem autenticação
-// 3. Validações básicas de dados
+// 3. Os documentos de dados têm a forma cifrada esperada (validação real)
+//
+// NOTA IMPORTANTE sobre a forma dos documentos:
+// Os dados são cifrados no cliente (E2E) ANTES de subir. O que fica guardado é
+// um envelope cifrado — NÃO há campos em claro como `note`, `id`, `timestamp`.
+// Forma real escrita por src/services/syncService.js:
+//   { encrypted: true, data: <base64>, iv: <base64>, lastModified: <string>, deleted: <bool> }
+// Por isso validamos `data`/`iv`, e não campos de conteúdo (que não existem aqui).
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
+    // ---- Helpers ----
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    function validateString(value, maxLength) {
-      return value is string && value.size() <= maxLength;
+    // Valida o envelope cifrado dos documentos de dados.
+    // (Em delete não há request.resource, por isso a validação só se aplica a create/update.)
+    function isValidEncryptedDoc() {
+      return request.resource.data.keys().hasAll(['data', 'iv'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 1048576   // ~1 MB por item (margem ampla)
+        && request.resource.data.iv is string
+        && request.resource.data.iv.size() <= 256;
     }
 
-    function validateNumber(value, min, max) {
-      return value is number && value >= min && value <= max;
+    // Coleções de dados que o sync realmente usa (ver COLLECTIONS em syncService.js).
+    function isSyncedCollection(collectionId) {
+      return collectionId in [
+        'consumptions', 'dailyLogs', 'reflections',
+        'wellbeingLogs', 'cycles', 'goals', 'thoughts'
+      ];
     }
 
-    // User data - cada utilizador só acede aos seus dados
-    match /users/{userId}/{document=**} {
-      // Permitir leitura e escrita APENAS se o user autenticado é o dono dos dados
+    // ---- Coleções de dados (cifradas) ----
+    // Leitura/eliminação: apenas o dono. Criação/atualização: dono + coleção conhecida + forma válida.
+    match /users/{userId}/{collectionId}/{docId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && isSyncedCollection(collectionId)
+        && isValidEncryptedDoc();
+    }
+
+    // ---- Definições de encriptação (salt) — src/utils/saltManager.js ----
+    // users/{uid}/settings/encryption. Apenas o dono; sem validação de forma para
+    // não arriscar bloquear a recuperação do salt entre dispositivos.
+    match /users/{userId}/settings/{docId} {
       allow read, write: if isOwner(userId);
     }
 
-    // Validações específicas por coleção (opcional mas recomendado)
-    match /users/{userId}/consumptions/{consumptionId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && request.resource.data.keys().hasAll(['id', 'timestamp', 'date'])
-        && validateString(request.resource.data.note, 2000);
+    // ---- Item de controlo de integridade do sync — src/utils/syncValidation.js ----
+    // users/{uid}/_system/validation. Apenas o dono.
+    match /users/{userId}/_system/{docId} {
+      allow read, write: if isOwner(userId);
     }
 
-    match /users/{userId}/wellbeingLogs/{logId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && request.resource.data.keys().hasAll(['id', 'timestamp', 'date'])
-        && (request.resource.data.sleep == null || validateNumber(request.resource.data.sleep, 0, 24))
-        && (request.resource.data.mood == null || validateNumber(request.resource.data.mood, 1, 10))
-        && (request.resource.data.energy == null || validateNumber(request.resource.data.energy, 1, 10))
-        && validateString(request.resource.data.notes, 2000);
-    }
-
-    match /users/{userId}/thoughts/{thoughtId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && request.resource.data.keys().hasAll(['id', 'timestamp', 'content'])
-        && validateString(request.resource.data.content, 5000);
-    }
-
-    match /users/{userId}/reflections/{reflectionId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && validateString(request.resource.data.answer, 2000);
-    }
-
-    match /users/{userId}/dailyLogs/{logId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && validateString(request.resource.data.notes, 2000);
-    }
-
-    match /users/{userId}/cycles/{cycleId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
-        && validateString(request.resource.data.notes, 2000);
-    }
-
-    match /users/{userId}/goals/{goalId} {
-      allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId);
-    }
-
-    // Negar acesso a tudo o resto
+    // ---- Negar acesso a tudo o resto ----
     match /{document=**} {
       allow read, write: if false;
     }

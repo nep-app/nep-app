@@ -558,7 +558,7 @@
   "firebase": {
     "createNew": "Create new account",
     "passwordLabel": "Password",
-    "passwordPlaceholder": "Minimum 6 characters",
+    "passwordPlaceholder": "Minimum 12 characters",
     "signingIn": "Signing in...",
     "creating": "Creating account...",
     "signIn": "Sign In",
@@ -568,7 +568,7 @@
     "errUserNotFound": "Email not found. Create an account first.",
     "errWrongPassword": "Incorrect password.",
     "errEmailInUse": "This email is already registered. Log in instead.",
-    "errWeakPassword": "Weak password (minimum 6 characters).",
+    "errWeakPassword": "Weak password (minimum 12 characters).",
     "errInvalidCred": "Incorrect email or password."
   },
   "history": {

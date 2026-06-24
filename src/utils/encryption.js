@@ -6,9 +6,16 @@
  * - GCM: Modo autenticado que garante integridade dos dados
  *
  * Derivação de Chave: PBKDF2 (Password-Based Key Derivation Function 2)
- * - Converte PIN/password em chave criptográfica forte
- * - 100,000 iterações (proteção contra brute force)
+ * - Converte PIN/password em chave criptográfica
+ * - 100,000 iterações (abranda tentativas de brute force)
  * - Salt único por utilizador
+ *
+ * ⚠️ LIMITAÇÃO IMPORTANTE: a força real desta encriptação depende da ENTROPIA
+ * do segredo usado. Um PIN só de dígitos (4-6) tem um espaço pequeno (10^4 a 10^6),
+ * pelo que as 100k iterações NÃO o tornam resistente a brute force offline se alguém
+ * obtiver o blob cifrado + o salt. A proteção principal dos dados na nuvem é a
+ * conta Firebase (email + password forte). Para confidencialidade reforçada,
+ * usar uma passphrase alfanumérica em vez de um PIN numérico.
  */
 
 const ALGORITHM = 'AES-GCM';
