@@ -29,10 +29,13 @@ firebase deploy --only firestore:rules
 - Cada utilizador só vê os SEUS próprios dados
 - Ninguém pode aceder aos dados de outros utilizadores
 
-✅ **Validam inputs:**
-- Textos limitados a tamanhos máximos (previne abuse)
-- Números dentro de ranges válidos (0-24 para sono, 1-10 para humor)
-- Campos obrigatórios verificados
+✅ **Validam a forma dos documentos:**
+- Os dados são cifrados no cliente (E2E) antes de subir, por isso a nuvem só vê
+  um envelope cifrado (`data` + `iv`) — não há campos em claro como humor ou notas
+- As regras validam que esse envelope existe e tem um tamanho máximo (previne abuse)
+- Escritas só são aceites em coleções conhecidas
+- Nota: validações de conteúdo (ex: humor 1-10) acontecem no cliente, não no servidor,
+  porque o servidor não consegue (nem deve) ler o conteúdo cifrado
 
 ✅ **Negam acesso por defeito:**
 - Qualquer rota não explicitamente permitida é bloqueada
@@ -51,7 +54,12 @@ Antes destas regras:
 - 🔴 **ALTO RISCO** - Dados potencialmente acessíveis sem autenticação
 
 Depois destas regras:
-- 🟢 **BAIXO RISCO** - Dados protegidos por autenticação e validação
+- 🟢 **BAIXO RISCO** - Dados protegidos por autenticação e validação de forma
+
+⚠️ **A proteção depende da força da password da conta.** Como os dados são cifrados
+com uma chave derivada do PIN/password, a segurança real é tão forte quanto esse
+segredo: usa uma password de conta forte (12+ caracteres) e, idealmente, uma
+passphrase alfanumérica em vez de um PIN só de dígitos.
 
 ## Notas importantes
 
