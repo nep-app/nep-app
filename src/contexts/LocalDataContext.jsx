@@ -347,6 +347,35 @@ export const LocalDataProvider = ({ children }) => {
     setBackgroundLoading(true);
 
     try {
+      // ETAPA A: carregar primeiro os últimos ~40 dias (rápido) para a página
+      // ficar utilizável depressa — cobre as vistas "hoje/semana/mês" sem
+      // esperar por desencriptar os meses todos.
+      const RECENT_DAYS = 40;
+      const [
+        cR, dR, rR, wR, cyR, gR, tR, hR
+      ] = await Promise.all([
+        loadCollection('consumptions', RECENT_DAYS),
+        loadCollection('dailyLogs', RECENT_DAYS),
+        loadCollection('reflections', RECENT_DAYS),
+        loadCollection('wellbeingLogs', RECENT_DAYS),
+        loadCollection('cycles', RECENT_DAYS),
+        loadCollection('goals', RECENT_DAYS),
+        loadCollection('thoughts', RECENT_DAYS),
+        loadCollection('healthLogs', RECENT_DAYS)
+      ]);
+
+      setConsumptions(cR);
+      setDailyLogs(dR);
+      setReflections(rR);
+      setWellbeingLogs(wR);
+      setCycles(cyR);
+      setGoals(gR);
+      setThoughts(tR);
+      setHealthLogs(hR);
+      logger.log('[LocalData] ⚡ FASE 3A: últimos 40 dias prontos (página utilizável)');
+
+      // ETAPA B: carregar o histórico COMPLETO por trás — para o botão "Tudo"
+      // e para os resumos (stats) ficarem com tudo contado.
       const [
         consumptionsFullData,
         dailyLogsFullData,
