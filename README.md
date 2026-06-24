@@ -2,7 +2,8 @@
 
 > **Aplicação web para acompanhamento de redução de danos no consumo de substâncias**
 
-Versão atual: **v4.6.0**
+<!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
+Versão atual: **v1.7.3**
 
 ## 🔒 Segurança e Privacidade
 

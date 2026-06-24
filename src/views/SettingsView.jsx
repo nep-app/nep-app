@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { safeLocalStorage } from '../utils/storage';
-const APP_VERSION = '1.7.3';
+/* global __APP_VERSION__ */
+// Versão vinda do package.json (injetada pelo Vite). Fonte única.
+const APP_VERSION = __APP_VERSION__;
 
 export const SettingsView = ({
     user,

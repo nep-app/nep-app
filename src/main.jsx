@@ -10,8 +10,9 @@ import { MetricsProvider } from './contexts/MetricsContext'
 import { UIProvider } from './contexts/UIContext'
 import './index.css'
 
-// App version - atualizar quando houver mudanças importantes
-const APP_VERSION = '4.4.0'; // v4.4.0: Correção crítica de sync (isPushing flag separado)
+/* global __APP_VERSION__ */
+// App version — fonte única em package.json (injetada pelo Vite). Não editar aqui.
+const APP_VERSION = __APP_VERSION__;
 
 // Verificar se há update disponível (force cache refresh)
 const checkForUpdates = () => {

@@ -51,7 +51,6 @@ const LegalModal = lazy(() => import('./components/modals/LegalModal').then(modu
 const ExportModal = lazy(() => import('./components/modals/ExportModal').then(module => ({ default: module.ExportModal })));
 
 function HarmReductionTracker() {
-            const APP_VERSION = '1.5.3';
             const { t } = useTranslation();
 
             // Initialize Firebase
