@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
-import { getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
+import { db, getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
 import {
   encrypt,
   decrypt,
@@ -516,18 +516,18 @@ export const AuthProvider = ({ children }) => {
       const saltBase64 = await getMetadata('salt');
       const salt = base64ToSalt(saltBase64);
 
-      // Criar novos dados de verificação com novo PIN
-      const verification = await createPasswordVerificationData(newPin, salt);
-      await setMetadata('pinVerification', JSON.stringify(verification));
-
-      // RE-ENCRIPTAR TODOS OS DADOS COM NOVO PIN (SECURITY FIX!)
       logger.log('[AuthContext] 🔐 Re-encriptando dados com novo PIN...');
 
       const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'thoughts'];
 
+      // ── FASE 1: Re-encriptar TUDO em memória (operações de cripto, FORA da transação) ──
+      // Fazemos toda a cripto antes de escrever seja o que for. Se algo falhar aqui, ainda
+      // não tocámos na base de dados nem na verificação do PIN → o utilizador fica
+      // exatamente como estava (com o PIN antigo). Também evita awaits de Web Crypto
+      // dentro da transação Dexie (que a fariam fechar prematuramente).
+      const pendingWrites = [];
       for (const collectionName of collections) {
         try {
-          // 1. Ler dados encriptados
           const encryptedItems = await db[collectionName].toArray();
 
           if (encryptedItems.length === 0) {
@@ -535,23 +535,38 @@ export const AuthProvider = ({ children }) => {
             continue;
           }
 
-          // 2. Desencriptar com PIN ATUAL (ainda está em encryptionKey)
+          // Desencriptar com PIN ATUAL e re-encriptar com PIN NOVO
           const decryptedItems = await decryptItems(collectionName, encryptedItems, currentPin, salt);
-
-          // 3. Encriptar com PIN NOVO
           const reencryptedItems = await encryptItems(collectionName, decryptedItems, newPin, salt);
 
-          // 4. Guardar de volta (bulk update)
-          await db[collectionName].bulkPut(reencryptedItems);
-
-          logger.log(`[AuthContext] ✅ ${collectionName}: ${reencryptedItems.length} items re-encriptados`);
+          pendingWrites.push({ collectionName, items: reencryptedItems });
         } catch (error) {
           logger.error(`[AuthContext] ❌ Erro ao re-encriptar ${collectionName}:`, error);
           throw new Error(`Falha ao re-encriptar ${collectionName}: ${error.message}`);
         }
       }
 
-      logger.log('[AuthContext] ✅ Todos os dados re-encriptados com sucesso!');
+      // Criar os novos dados de verificação com o PIN NOVO (cripto, ainda fora da transação)
+      const verification = await createPasswordVerificationData(newPin, salt);
+
+      // ── FASE 2: Escrever TUDO atomicamente (só operações Dexie, sem awaits externos) ──
+      // Os dados re-encriptados e a nova verificação do PIN são gravados na MESMA transação.
+      // Se qualquer escrita falhar, o Dexie faz rollback de tudo — nunca ficamos com a
+      // verificação a apontar para o PIN novo enquanto os dados continuam no PIN antigo
+      // (que era o que trancava o utilizador fora dos próprios dados).
+      await db.transaction(
+        'rw',
+        [db.consumptions, db.dailyLogs, db.reflections, db.wellbeingLogs, db.cycles, db.goals, db.thoughts, db.metadata],
+        async () => {
+          for (const { collectionName, items } of pendingWrites) {
+            await db[collectionName].bulkPut(items);
+          }
+          // A verificação do PIN é a ÚLTIMA escrita (só "conta" se a transação fizer commit)
+          await db.metadata.put({ key: 'pinVerification', value: JSON.stringify(verification) });
+        }
+      );
+
+      logger.log('[AuthContext] ✅ Todos os dados re-encriptados e PIN atualizado com sucesso!');
 
       // Atualizar chave em memória (agora com novo PIN)
       setEncryptionKey(newPin);
