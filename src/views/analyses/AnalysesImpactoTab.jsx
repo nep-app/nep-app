@@ -275,13 +275,16 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             // Calcular médias por janela
             const computedChartData = timeWindows
                 .filter(w => w.data.length >= 2)
-                .map(w => ({
-                    time: w.label,
-                    humor: (w.data.reduce((s, d) => s + d.mood, 0) / w.data.length).toFixed(1),
-                    energia: w.data.filter(d => d.energy).length > 0 ?
-                        (w.data.filter(d => d.energy).reduce((s, d) => s + d.energy, 0) / w.data.filter(d => d.energy).length).toFixed(1) : null,
-                    count: w.data.length
-                }));
+                .map(w => {
+                    const energyData = w.data.filter(d => d.energy);
+                    return {
+                        time: w.label,
+                        humor: (w.data.reduce((s, d) => s + d.mood, 0) / w.data.length).toFixed(1),
+                        energia: energyData.length > 0 ?
+                            (energyData.reduce((s, d) => s + d.energy, 0) / energyData.length).toFixed(1) : null,
+                        count: w.data.length
+                    };
+                });
 
             if (computedChartData.length >= 3) {
                 chartData = computedChartData;
@@ -389,8 +392,10 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                     else if (endMood < startMood - 0.5) moodWorsens++;
 
                     // Energia
-                    const startEnergy = startSegment.filter(w => w.energy).reduce((s, w) => s + w.energy, 0) / startSegment.filter(w => w.energy).length;
-                    const endEnergy = endSegment.filter(w => w.energy).reduce((s, w) => s + w.energy, 0) / endSegment.filter(w => w.energy).length;
+                    const startEnergyData = startSegment.filter(w => w.energy);
+                    const endEnergyData = endSegment.filter(w => w.energy);
+                    const startEnergy = startEnergyData.reduce((s, w) => s + w.energy, 0) / startEnergyData.length;
+                    const endEnergy = endEnergyData.reduce((s, w) => s + w.energy, 0) / endEnergyData.length;
 
                     if (!isNaN(startEnergy) && !isNaN(endEnergy)) {
                         energyProgression.start.push(startEnergy);

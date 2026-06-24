@@ -85,14 +85,14 @@ export const MetricsProvider = ({ children }) => {
 
   const wellbeingByDate = useMemo(() => {
     const index = {};
-    wellbeingLogs.filter(w => !w.isAtypical).forEach(w => {
+    filteredWellbeingLogs.forEach(w => {
       const dateKey = getDateKeyFromItem(w);
       if (!index[dateKey]) {
         index[dateKey] = w;
       }
     });
     return index;
-  }, [wellbeingLogs, atypicalDates]);
+  }, [filteredWellbeingLogs]);
 
   // ===== CONSUMPTION METRICS =====
 
