@@ -168,7 +168,7 @@ export function AuthenticatedApp() {
             // UI Navigation State
             const [currentView, setCurrentView] = useState('home');
             const [timeFilter, setTimeFilter] = useState('all');
-            const [patternsPeriod, setPatternsPeriod] = useState('tudo'); // hoje, semana, mes, tudo
+            const [patternsPeriod, setPatternsPeriod] = useState('mes'); // hoje, semana, mes, tudo — abre no mês (rápido); "tudo" sob demanda
             const [patternsPeriodOffset, setPatternsPeriodOffset] = useState(0); // 0 = current, 1 = previous, etc
             const [historyPeriod, setHistoryPeriod] = useState('tudo');
             const [historyPeriodOffset, setHistoryPeriodOffset] = useState(0);
