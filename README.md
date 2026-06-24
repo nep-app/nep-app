@@ -150,7 +150,7 @@ VITE_FIREBASE_APP_ID=xxx
 
 ## 🔄 Changelog
 
-### v atual)
+### Versão atual
 - ✅ Sync incremental com timestamps exatos
 - ✅ Stats pré-calculadas para boot ultra-rápido
 - ✅ Avisos atualizam automaticamente
@@ -159,14 +159,14 @@ VITE_FIREBASE_APP_ID=xxx
 - ✅ Fix: Sleep input aceita qualquer decimal (step="any")
 - ✅ Fix: DailyLogs mostram data correta
 
-### v anterior
-- Salt utilities consolidation
-- Re-encrypt data when PIN changes
+### Versão anterior
+- Consolidação dos utilitários de salt
+- Re-encriptação dos dados ao mudar o PIN
 
-### v ant ant
-- Local-First architecture
-- AES-256-GCM encryption
-- PWA support
+### Versões anteriores
+- Arquitetura Local-First
+- Encriptação AES-256-GCM
+- Suporte a PWA
 
 ## 📜 Licença
 

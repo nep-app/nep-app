@@ -70,10 +70,10 @@
     "syncSuccess": "✓ Synced! {{count}} records updated.",
     "syncAlreadyDone": "✓ Everything is already in sync!",
     "record": "Record",
-    "acrosticN": "avigate",
-    "acrosticE": "very",
-    "acrosticP": "roblem",
-    "motto": "Navigate Every Problem."
+    "acrosticN": "otes of",
+    "acrosticE": "xperiences and",
+    "acrosticP": "atterns",
+    "motto": "You're Not Lost."
   },
   "alerts": {
     "shortInterval": "Short break! {{hours}}h",
@@ -123,9 +123,9 @@
     "terms": "Terms of Use",
     "governance": "Ethical Governance",
     "about": "About the App",
-    "appName": "NEP App - Navigate Every Problem",
+    "appName": "NEP App - Notes of Experiences and Patterns",
     "tagline": "Notice it. Explore it. Plan it.",
-    "motto": "Navigate Every Problem.",
+    "motto": "You're Not Lost.",
     "version": "Version {{version}}",
     "copyright": "Copyright © Teresa Castro",
     "privacyNote": "Your data is private and secure.",
