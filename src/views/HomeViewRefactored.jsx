@@ -327,7 +327,7 @@ export function HomeViewRefactored({
           onClose={() => { setShowUrgeSurfing(false); setPendingConsumption(false); }}
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
-          warnings={cachedAlerts.filter(a => a.type === 'negative')}
+          warnings={cachedAlerts.filter(a => a.type === 'negative' && a.urge === true)}
         />
       </Suspense>
     )}

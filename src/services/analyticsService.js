@@ -61,13 +61,14 @@ export const predictNextEpisode = (history) => {
  * Calculate Pearson correlation coefficient between two variables
  */
 export const calculatePearsonCorrelation = (data, xKey, yKey) => {
-    if (data.length < 3) return null;
-    const n = data.length;
-    const sumX = data.reduce((sum, d) => sum + d[xKey], 0);
-    const sumY = data.reduce((sum, d) => sum + d[yKey], 0);
-    const sumXY = data.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-    const sumX2 = data.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-    const sumY2 = data.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
+    const clean = data.filter(d => d[xKey] != null && d[yKey] != null && !isNaN(d[xKey]) && !isNaN(d[yKey]));
+    if (clean.length < 3) return null;
+    const n = clean.length;
+    const sumX = clean.reduce((sum, d) => sum + d[xKey], 0);
+    const sumY = clean.reduce((sum, d) => sum + d[yKey], 0);
+    const sumXY = clean.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
+    const sumX2 = clean.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
+    const sumY2 = clean.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
     return denominator === 0 ? null : numerator / denominator;

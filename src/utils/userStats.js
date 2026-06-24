@@ -215,7 +215,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
           text: i18n.t('alerts.shortInterval', { hours: lastInterval }),
           emoji: '⚠️',
           color: 'orange',
-          type: 'negative'
+          type: 'negative',
+          urge: true
         });
       } else {
         alerts.push({
@@ -484,7 +485,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
           text: i18n.t('alerts.highFrequency', { count: todayCount }),
           emoji: '⚠️',
           color: 'orange',
-          type: 'negative'
+          type: 'negative',
+          urge: true
         });
       }
     }
@@ -537,7 +539,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
               text: i18n.t('alerts.firstNotBeforeFail', { time: firstTimeStr, hours: firstNotBeforeGoal.target }),
               emoji: '⏰',
               color: 'orange',
-              type: 'negative'
+              type: 'negative',
+              urge: true
             });
           } else {
             alerts.push({

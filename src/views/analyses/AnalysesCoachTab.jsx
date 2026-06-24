@@ -717,8 +717,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {sectionBtn('horarios', '⏰', i18n.language === 'en' ? 'Timing & Risks' : 'Horários e Riscos')}
             {openSections.horarios && (
                 <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
-                    {/* Vulnerability Windows */}
                     {(() => {
+                    const _horarioBlocks = [
+
+                    /* Vulnerability Windows */
+                    (() => {
                         if (analysisConsumptions.length < 10) return null;
 
                         // Calcular consumos por hora
@@ -771,10 +774,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 )}
                             </p>
                         );
-                    })()}
+                    })(),
 
-                    {/* Escalation (First Use) */}
-                    {(() => {
+                    /* Escalation (First Use) */
+                    (() => {
                         if (analysisConsumptions.length < 10 || analysisCycles.length < 3) return null;
 
                         // Agrupar consumos por dia
@@ -829,10 +832,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 )}
                             </p>
                         );
-                    })()}
+                    })(),
 
-                    {/* Trigger Mapping */}
-                    {(() => {
+                    /* Trigger Mapping */
+                    (() => {
                         if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
 
                         // 1. Consumos tardios (00h-06h) vs sono
@@ -915,10 +918,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         }
 
                         return null;
-                    })()}
+                    })(),
 
-                    {/* Risk Profile */}
-                    {(() => {
+                    /* Risk Profile */
+                    (() => {
                         // Identificar condições que precedem dias com mais consumo
                         if (analysisConsumptions.length < 1 || analysisWellbeing.length < 1) return null;
 
@@ -984,6 +987,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 )}
                             </p>
                         );
+                    })(),
+
+                    ].filter(Boolean);
+                    if (_horarioBlocks.length === 0) {
+                        return <p className="text-gray-500 text-sm italic text-center py-2">{t('coach.noData')}</p>;
+                    }
+                    return _horarioBlocks;
                     })()}
                 </div>
             )}
@@ -1140,6 +1150,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         );
                     })()}
 
+                    <hr className="border-gray-700/50" />
+
                     {/* No Sleep Days */}
                     {(() => {
                         if (analysisConsumptions.length === 0) return null;
@@ -1234,6 +1246,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         );
                     })()}
 
+                    <hr className="border-gray-700/50" />
+
                     {/* Sleep-Mood Correlation */}
                     {(() => {
                         const dailyData = {};
@@ -1273,7 +1287,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         if (nextDaySleepMood.length < 2) return null;
 
                         const correlation = analyticsService.calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
-                        if (correlation === null) return null;
+                        if (correlation === null || isNaN(correlation)) return null;
 
                         return (
                             <p>
