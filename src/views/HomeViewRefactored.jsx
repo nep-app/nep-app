@@ -87,6 +87,35 @@ export function HomeViewRefactored({
       }
     }
 
+    // 4) Não consumir logo ao acordar (first_not_before): consumir agora seria
+    // o 1º consumo do dia e ainda é cedo demais desde que acordaste
+    const firstGoal = allGoals.find(g => g.type === 'first_not_before');
+    if (firstGoal && (cycles || []).length > 0) {
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const lastCycleWithSleep = [...cycles]
+        .filter(c => c.bedtime && c.sleep)
+        .sort((a, b) => new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt))[0];
+      const lastCycleTs = lastCycleWithSleep ? new Date(lastCycleWithSleep.timestamp || lastCycleWithSleep.createdAt) : null;
+      const cycleLoggedToday = lastCycleTs !== null && lastCycleTs >= todayStart;
+      if (lastCycleWithSleep && cycleLoggedToday) {
+        const [bh, bm] = lastCycleWithSleep.bedtime.split(':').map(Number);
+        let wakeupMinutes = bh * 60 + bm + parseFloat(lastCycleWithSleep.sleep) * 60;
+        if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+        const targetMinutes = (wakeupMinutes + parseFloat(firstGoal.target) * 60) % 1440;
+        // Já houve algum consumo depois de acordar hoje? Se sim, este já não é o 1º.
+        const consumedAfterWake = cons.some(c => {
+          const d = new Date(c.timestamp || c.createdAt);
+          if (d < todayStart) return false;
+          return (d.getHours() * 60 + d.getMinutes()) >= wakeupMinutes;
+        });
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        if (!consumedAfterWake && nowMinutes >= wakeupMinutes && nowMinutes < targetMinutes) {
+          const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+          reasons.push({ text: t('alerts.firstNotBeforeFail', { time: nowStr, hours: firstGoal.target }), emoji: '⏰', color: 'orange', type: 'negative', urge: true });
+        }
+      }
+    }
+
     return reasons;
   };
 
