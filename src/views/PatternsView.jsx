@@ -102,10 +102,28 @@ export function PatternsView({
                                         if (patternView === 'dashboard') {
                                             if (filteredConsumptions.length === 0 && filteredWellbeingLogs.length === 0) return (<div className={'bg-gray-800 border-gray-700 text-gray-400' + ' rounded-xl p-6 border text-center'}>{t('patterns.noData')}</div>);
 
-                                            // Calculate metrics
-                                            const totalConsumptions = filteredConsumptions.length;
+                                            // Calculate metrics — LER do resumo-por-dia (rollup) em vez de
+                                            // percorrer todos os consumos. Filtra os dias do período.
+                                            const rollup = metrics.consumptionDailyRollup || {};
+                                            const inRange = (dk) => {
+                                                if (!dateRange.start || !dateRange.end) return true; // "tudo"
+                                                const d = new Date(dk + 'T12:00:00');
+                                                return d >= dateRange.start && d <= dateRange.end;
+                                            };
                                             const byDate = {};
-                                            filteredConsumptions.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) byDate[dk] = (byDate[dk] || 0) + 1; });
+                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                            let totalConsumptions = 0;
+                                            for (const dk in rollup) {
+                                                if (!inRange(dk)) continue;
+                                                const v = rollup[dk];
+                                                if (!v.count) continue;
+                                                byDate[dk] = v.count;
+                                                totalConsumptions += v.count;
+                                                byPartOfDay.manha += v.manha;
+                                                byPartOfDay.tarde += v.tarde;
+                                                byPartOfDay.noite += v.noite;
+                                                byPartOfDay.madrugada += v.madrugada;
+                                            }
                                             const uniqueDays = Object.keys(byDate).length;
                                             const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
 
@@ -121,15 +139,7 @@ export function PatternsView({
                                             // Get dates for calendar
                                             const dates = Object.keys(byDate).sort();
 
-                                            // By part of day
-                                            const byPartOfDay = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
-                                            filteredConsumptions.forEach(c => {
-                                                const hour = new Date(c.timestamp).getHours();
-                                                if (hour >= 6 && hour < 12) byPartOfDay.manha++;
-                                                else if (hour >= 12 && hour < 18) byPartOfDay.tarde++;
-                                                else if (hour >= 18 && hour < 24) byPartOfDay.noite++;
-                                                else byPartOfDay.madrugada++;
-                                            });
+                                            // (parte-do-dia já calculada acima a partir do resumo)
 
                                             // Calculate consumption trend (last 30 days)
                                             const calculateTrend = () => {

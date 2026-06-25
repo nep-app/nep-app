@@ -105,6 +105,26 @@ export const MetricsProvider = ({ children }) => {
     return index;
   }, [filteredConsumptions]);
 
+  // RESUMO-POR-DIA (rollup): calculado UMA vez sobre todos os consumos.
+  // As páginas pesadas leem isto (≈240 dias) em vez de percorrer milhares de
+  // registos a cada visita. { [data]: { count, manha, tarde, noite, madrugada } }
+  const consumptionDailyRollup = useMemo(() => {
+    const r = {};
+    filteredConsumptions.forEach(c => {
+      const dk = c.date || getDateKeyFromItem(c);
+      if (!dk) return;
+      let day = r[dk];
+      if (!day) day = r[dk] = { count: 0, manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+      day.count++;
+      const hour = new Date(c.timestamp).getHours();
+      if (hour >= 6 && hour < 12) day.manha++;
+      else if (hour >= 12 && hour < 18) day.tarde++;
+      else if (hour >= 18 && hour < 24) day.noite++;
+      else day.madrugada++;
+    });
+    return r;
+  }, [filteredConsumptions]);
+
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
     return analyticsService.calculateTimeSinceLastConsumption(consumptions);
@@ -337,6 +357,7 @@ export const MetricsProvider = ({ children }) => {
     avgFrequencyLast7Days,
     getGoalProgress,
     consumptionsByDate, // memoized, atypical days filtered
+    consumptionDailyRollup, // resumo-por-dia (count + parte-do-dia) para páginas pesadas
   };
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;
