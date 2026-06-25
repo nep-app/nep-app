@@ -116,6 +116,9 @@ export const LocalDataProvider = ({ children }) => {
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [allDataLoaded, setAllDataLoaded] = useState(false);
   const [fullDataLoaded, setFullDataLoaded] = useState(false); // True quando FASE 3 completa
+  // Trava: fica true assim que a FASE 3 (40 dias/tudo) arranca, para a FASE 2
+  // (7 dias) não escrever os seus dados mais pequenos por cima dos da FASE 3.
+  const phase3StartedRef = useRef(false);
 
   /**
    * Carregar dados de uma coleção (com desencriptação)
@@ -297,6 +300,15 @@ export const LocalDataProvider = ({ children }) => {
             loadCollectionWithFirst('healthLogs', 7)
           ]);
 
+          // Se a FASE 3 (40 dias/tudo) já arrancou entretanto, NÃO escrever os
+          // 7 dias por cima — senão a página "encolhe" e volta a crescer (piscar).
+          if (phase3StartedRef.current) {
+            logger.log('[LocalData] ⏭️ FASE 2: dados ignorados (FASE 3 já em curso)');
+            setAllDataLoaded(true);
+            setBackgroundLoading(false);
+            return;
+          }
+
           setConsumptions(consumptionsData);
           setDailyLogs(dailyLogsData);
           setReflections(reflectionsData);
@@ -343,17 +355,16 @@ export const LocalDataProvider = ({ children }) => {
   const loadFullData = useCallback(async () => {
     if (fullDataLoaded || !encryptionKey) return;
 
+    // Trava: a partir daqui, a FASE 2 (7 dias) não deve escrever por cima.
+    phase3StartedRef.current = true;
     logger.log('[LocalData] 🔄 FASE 3 (demanda): Carregando dados históricos...');
     setBackgroundLoading(true);
 
     try {
       // ETAPA A: carregar primeiro os últimos ~40 dias (rápido) para a página
-      // ficar utilizável depressa — cobre as vistas "hoje/semana/mês" sem
-      // esperar por desencriptar os meses todos.
+      // ficar utilizável depressa — cobre as vistas "hoje/semana/mês".
       const RECENT_DAYS = 40;
-      const [
-        cR, dR, rR, wR, cyR, gR, tR, hR
-      ] = await Promise.all([
+      const [cR, dR, rR, wR, cyR, gR, tR, hR] = await Promise.all([
         loadCollection('consumptions', RECENT_DAYS),
         loadCollection('dailyLogs', RECENT_DAYS),
         loadCollection('reflections', RECENT_DAYS),
@@ -418,6 +429,7 @@ export const LocalDataProvider = ({ children }) => {
   // Carregar dados quando encryptionKey estiver disponível
   useEffect(() => {
     if (encryptionKey) {
+      phase3StartedRef.current = false; // nova chave: FASE 2 volta a poder escrever
       loadAllCollections();
       setFullDataLoaded(false); // Reset Phase 3 quando chave muda
     }
