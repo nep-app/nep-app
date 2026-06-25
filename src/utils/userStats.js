@@ -1,5 +1,41 @@
-import { db } from '../db/dexieDB';
+import Dexie from 'dexie';
+import { db } from '../db/localDB';
 import i18n from '../i18n';
+
+/**
+ * MIGRAÇÃO ÚNICA: as stats/streaks eram gravadas numa base de dados separada
+ * ('NEPDatabase_v2', ficheiro dexieDB.js já removido), órfã do resto da app.
+ * Esta função copia 'userStats' e 'appUsage' dessa base antiga para a base
+ * principal (localDB) UMA vez, para o contador de dias não recomeçar do zero.
+ * Corre no máximo uma vez por sessão e é tolerante a falhas (se a base antiga
+ * não existir, simplesmente não há nada a migrar).
+ */
+let _statsMigration = null;
+function ensureStatsMigrated() {
+  if (!_statsMigration) {
+    _statsMigration = (async () => {
+      try {
+        const haveStats = await db.metadata.get('userStats');
+        const haveUsage = await db.metadata.get('appUsage');
+        if (haveStats && haveUsage) return; // já há dados na base nova
+        const legacy = new Dexie('NEPDatabase_v2');
+        await legacy.open(); // abre o schema existente; lança se não existir
+        if (!haveStats) {
+          const lu = await legacy.table('metadata').get('userStats').catch(() => null);
+          if (lu) await db.metadata.put({ key: 'userStats', value: lu.value });
+        }
+        if (!haveUsage) {
+          const la = await legacy.table('metadata').get('appUsage').catch(() => null);
+          if (la) await db.metadata.put({ key: 'appUsage', value: la.value });
+        }
+        legacy.close();
+      } catch {
+        // Base antiga inexistente ou ilegível — utilizador novo, nada a migrar
+      }
+    })();
+  }
+  return _statsMigration;
+}
 
 /**
  * USER STATS - Sistema de estatísticas pré-calculadas
@@ -98,6 +134,7 @@ export const calculateMaxStreak = (allItems) => {
  */
 export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null) => {
   try {
+    await ensureStatsMigrated();
     // Calcular streak com todas as fontes de atividade (independente de consumptions)
     const allActivityItems = [
       ...(consumptions || []),
@@ -621,6 +658,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
  */
 export const updateAppUsageStreak = async () => {
   try {
+    await ensureStatsMigrated();
     const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
     const record = await db.metadata.get('appUsage');
     const data = record?.value || { lastOpenDate: null, appStreak: 0 };
@@ -651,6 +689,7 @@ export const updateAppUsageStreak = async () => {
  */
 export const getAppUsageStreak = async () => {
   try {
+    await ensureStatsMigrated();
     const record = await db.metadata.get('appUsage');
     return record?.value?.appStreak || 0;
   } catch {
@@ -663,6 +702,7 @@ export const getAppUsageStreak = async () => {
  */
 export const getUserStats = async () => {
   try {
+    await ensureStatsMigrated();
     const record = await db.metadata.get('userStats');
     if (!record) {
       return {

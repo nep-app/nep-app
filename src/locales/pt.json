@@ -1,4 +1,33 @@
 {
+  "dataMode": {
+    "heading": "Os teus dados, a tua escolha",
+    "subtitle": "Escolhe como queres guardar os teus dados. Podes mudar esta opção mais tarde nas definições.",
+    "confirm": "Confirmar escolha",
+    "footer": "Podes mudar esta opção em Definições a qualquer momento.",
+    "local": {
+      "title": "Só no meu telemóvel",
+      "desc": "Os dados ficam apenas no teu dispositivo. Sem cópia de segurança — se perderes o telemóvel ou desinstalares a app, perdes tudo.",
+      "desc2": "Confirmo que aceito o risco de perda de dados sem backup.",
+      "badge": "⚠️ Sem backup",
+      "warning": "⚠️ Sem cópia de segurança. Se perderes o telemóvel ou limpares os dados do browser, perdes todo o histórico. Não há forma de recuperar."
+    },
+    "cloud": {
+      "title": "Cloud encriptada",
+      "desc": "Cópia de segurança automática na cloud, completamente encriptada com o teu PIN. Nem nós temos acesso — zero-knowledge.",
+      "badge": "✅ Recomendado"
+    },
+    "research": {
+      "title": "Cloud + partilha para investigação",
+      "desc": "Igual à opção anterior, mas partilhas números e padrões anonimizados para investigação de redução de danos. Nunca partilhamos textos — apenas contagens, médias e pontuações de sentimento.",
+      "badge": "🔬 Ajudas a investigar",
+      "sharedTitle": "O que é partilhado (anónimo):",
+      "shared1": "Nº de consumos, mg médio, padrões por hora do dia",
+      "shared2": "Horas de sono, hora de deitar, gatilhos (da lista fixa)",
+      "shared3": "Humor e energia médios, emoções registadas",
+      "sharedNever": "Nunca: notas, reflexões, pensamentos escritos, nome, email",
+      "idNote": "O teu ID de investigação é aleatório e não tem ligação à tua conta."
+    }
+  },
   "period": {
     "today": "Hoje",
     "last7": "Últimos 7 dias",

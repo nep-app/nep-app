@@ -5,7 +5,7 @@
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
 **Versão actual: v5.0.0**
 
-A app começou como um tracker simples para NEP (N-Ethylpentedrone) e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
+A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
 O objectivo não é julgar. É ajudar a consumir de forma mais consciente, identificar padrões, perceber o impacto no bem-estar e reduzir gradualmente ao ritmo de cada pessoa.
 
@@ -93,18 +93,18 @@ Sistema de metas com acompanhamento diário. PWA instalável. Tradução complet
 
 - **Encriptação AES-256-GCM** — todos os dados encriptados no dispositivo antes de saírem
 - **PIN pessoal** — 4–6 dígitos, só o utilizador conhece; nunca enviado para nenhum servidor
-- **PBKDF2** — derivação de chave com 100 000 iterações e salt único por utilizador
+- **PBKDF2** — derivação de chave com 600 000 iterações e salt único por utilizador
 - **Local-First** — dados em IndexedDB, sincronizados com Firebase como backup encriptado
 - **Zero-knowledge** — o Firebase guarda apenas `{ data: blob, iv: vector }`; ilegível sem o PIN
 - **Anti-brute-force** — bloqueio progressivo após tentativas falhadas
-- **PIN em sessionStorage** — não persiste entre sessões do browser
+- **Bloqueio configurável** — por defeito o PIN não persiste entre sessões; no modo opcional "nunca bloquear" fica guardado localmente no próprio dispositivo (nunca num servidor) para conveniência
 - **Sem tracking** — sem analytics, sem telemetria
 
 ---
 
 ## Tecnologias
 
-- **React 18** + **Vite 5** + **TailwindCSS**
+- **React 19** + **Vite** + **TailwindCSS**
 - **Firebase 10** (Firestore) — sync na cloud
 - **IndexedDB via Dexie.js** — storage local
 - **Web Crypto API** — encriptação AES-256-GCM + PBKDF2

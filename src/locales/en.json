@@ -1,4 +1,33 @@
 {
+  "dataMode": {
+    "heading": "Your data, your choice",
+    "subtitle": "Choose how you want to store your data. You can change this later in settings.",
+    "confirm": "Confirm choice",
+    "footer": "You can change this in Settings at any time.",
+    "local": {
+      "title": "My device only",
+      "desc": "Data stays only on your device. No backup — if you lose your phone or uninstall the app, all data is lost.",
+      "desc2": "I accept the risk of losing all data with no backup.",
+      "badge": "⚠️ No backup",
+      "warning": "⚠️ No backup. If you lose your phone or clear browser data, all history is lost with no way to recover."
+    },
+    "cloud": {
+      "title": "Encrypted cloud",
+      "desc": "Automatic cloud backup, fully encrypted with your PIN. We have zero access — zero-knowledge.",
+      "badge": "✅ Recommended"
+    },
+    "research": {
+      "title": "Cloud + research sharing",
+      "desc": "Same as above, but you share anonymised numbers and patterns for harm reduction research. We never share any text — only counts, averages, and sentiment scores.",
+      "badge": "🔬 Help research",
+      "sharedTitle": "What is shared (anonymous):",
+      "shared1": "Number of uses, average mg, patterns by time of day",
+      "shared2": "Sleep hours, bedtime, triggers (from fixed list)",
+      "shared3": "Average mood and energy, logged emotions",
+      "sharedNever": "Never: notes, reflections, written thoughts, name, email",
+      "idNote": "Your research ID is random and has no link to your account."
+    }
+  },
   "period": {
     "today": "Today",
     "last7": "Last 7 days",
@@ -236,12 +265,12 @@
       {
         "emoji": "🧪",
         "title": "Substance Testing",
-        "content": "Whenever possible, test the substance before using. In Portugal, free and confidential testing services exist: CheckIn (Lisbon) and MAPS (Porto). Adulterated substances are one of the main causes of emergencies — testing can save your life."
+        "content": "Whenever possible, test the substance before using. In Portugal, free and confidential testing services exist: CheckIn (Lisbon) and MAPS (Porto). In other countries, look for a local drug-checking service. Adulterated substances are one of the main causes of emergencies — testing can save your life."
       },
       {
         "emoji": "🚨",
         "title": "Warning Signs",
-        "content": "Seek immediate help (112) if you feel: chest pain or pressure, very fast or irregular heartbeat, very high body temperature, intense confusion or loss of consciousness, seizures. Don't wait to see if it passes — call immediately."
+        "content": "Seek immediate help (112 in the EU; your local emergency number elsewhere) if you feel: chest pain or pressure, very fast or irregular heartbeat, very high body temperature, intense confusion or loss of consciousness, seizures. Don't wait to see if it passes — call immediately."
       },
       {
         "emoji": "📉",
