@@ -7,7 +7,7 @@ import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { formatDateTime, safeToISODate, getDateDaysAgo } from '../utils/helpers';
+import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 
@@ -35,14 +35,65 @@ export function HomeViewRefactored({
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
   const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
   const [pendingConsumption, setPendingConsumption] = useState(false);
+  const [urgeWarnings, setUrgeWarnings] = useState([]);
 
   const urgeExerciseEnabled = typeof window !== 'undefined'
     ? localStorage.getItem('nep_urge_exercise') !== 'false'
     : true;
 
+  // Verifica NA HORA se consumir agora te põe fora de uma meta de CONSUMO que
+  // definiste (intervalo, frequência, hora-limite). As metas de sono/deitar não
+  // entram aqui — não têm a ver com o ato de consumir.
+  const computeLiveGoalBreaches = () => {
+    const reasons = [];
+    const allGoals = goals || [];
+    const cons = consumptions || [];
+    const now = new Date();
+
+    // 1) Intervalo: consumir cedo demais desde o último consumo
+    const intervalGoal = allGoals.find(g => g.type === 'increase_interval');
+    if (intervalGoal && cons.length > 0) {
+      let lastTime = 0;
+      cons.forEach(c => { const tt = new Date(c.timestamp || c.createdAt).getTime(); if (tt > lastTime) lastTime = tt; });
+      if (lastTime > 0) {
+        const hoursSince = (now.getTime() - lastTime) / 3600000;
+        if (hoursSince < parseFloat(intervalGoal.target)) {
+          reasons.push({ text: t('alerts.shortInterval', { hours: parseFloat(hoursSince.toFixed(1)) }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
+        }
+      }
+    }
+
+    // 2) Frequência: já atingiste o limite de hoje
+    const freqGoal = allGoals.find(g => g.type === 'reduce_frequency');
+    if (freqGoal) {
+      const todayKey = getTodayKey();
+      const todayCount = cons.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
+      if (todayCount >= parseInt(freqGoal.target)) {
+        reasons.push({ text: t('alerts.highFrequency', { count: todayCount }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
+      }
+    }
+
+    // 3) Hora-limite: consumir agora é depois da hora que definiste
+    const limitGoal = allGoals.find(g => g.type === 'limit_last');
+    if (limitGoal) {
+      const targetStr = typeof limitGoal.target === 'string' ? limitGoal.target : '00:00';
+      const [th, tm] = targetStr.split(':').map(Number);
+      const targetMin = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+      let nowMin = now.getHours() * 60 + now.getMinutes();
+      if (nowMin < 360) nowMin += 1440; // madrugada conta como fim do dia
+      if (nowMin >= targetMin) {
+        const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        reasons.push({ text: t('alerts.limitLastFail', { time: nowStr, target: targetStr }), emoji: '⏰', color: 'orange', type: 'negative', urge: true });
+      }
+    }
+
+    return reasons;
+  };
+
   const handleMarkConsumption = () => {
-    const hasWarning = cachedAlerts.some(a => a.type === 'negative' && a.urge === true);
-    if (hasWarning && urgeExerciseEnabled) {
+    const reasons = computeLiveGoalBreaches();
+    if (reasons.length > 0 && urgeExerciseEnabled) {
+      setUrgeWarnings(reasons);
       setPendingConsumption(true);
       setShowUrgeSurfing(true);
     } else {
@@ -327,7 +378,7 @@ export function HomeViewRefactored({
           onClose={() => { setShowUrgeSurfing(false); setPendingConsumption(false); }}
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
-          warnings={cachedAlerts.filter(a => a.type === 'negative' && a.urge === true)}
+          warnings={urgeWarnings}
         />
       </Suspense>
     )}
