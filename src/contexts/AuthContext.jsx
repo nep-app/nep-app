@@ -8,7 +8,8 @@ import {
   saltToBase64,
   base64ToSalt,
   verifyPassword,
-  createPasswordVerificationData
+  createPasswordVerificationData,
+  clearKeyCache
 } from '../utils/encryption';
 import { decryptFromFirebase, decryptItems, encryptItems } from '../utils/dexieEncryption';
 import {
@@ -19,10 +20,9 @@ import {
   checkPinAccountExistsInFirebase
 } from '../utils/saltManager';
 import { createControlItem, recoverSaltFromControlItem } from '../utils/syncValidation';
-import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { firebaseConfig } from '../utils/firebase';
+import { getFirebaseApp } from '../utils/firebase';
 
 const AuthContext = createContext();
 const SESSION_KEY = 'nep_auth_session';
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
   // Inicializar Firebase (singleton - safe to call multiple times)
   const [firebaseInstances] = useState(() => {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const app = getFirebaseApp();
     return {
       auth: getAuth(app),
       firestore: getFirestore(app)
@@ -121,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(NEVER_PIN_KEY);
     await clearUserDataOnly();
     logger.log('[Auth] 🗑️ Logout explícito — sessão apagada');
+    clearKeyCache();
     setEncryptionKey(null);
     setIsAuthenticated(false);
     setUserEmail(null);
@@ -136,6 +137,7 @@ export const AuthProvider = ({ children }) => {
     updateSessionTs(); // Atualizar timestamp antes de bloquear
     await clearUserDataOnly();
     logger.log('[Auth] 🔒 Auto-lock — sessão mantida');
+    clearKeyCache();
     setEncryptionKey(null);
     setIsAuthenticated(false);
     setUserEmail(null);
@@ -783,6 +785,7 @@ export const AuthProvider = ({ children }) => {
    */
   const resetApp = useCallback(async () => {
     await clearAllData();
+    clearKeyCache();
     setUserEmail(null);
     setEncryptionKey(null);
     setIsInitialized(false);

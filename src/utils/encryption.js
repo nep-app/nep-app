@@ -78,6 +78,15 @@ async function deriveKey(password, salt) {
  *
  * @returns {Uint8Array} - Salt de 16 bytes
  */
+/**
+ * Limpa a chave derivada em cache (chamar no logout / bloqueio automático).
+ * Evita que a chave fique em memória depois de o utilizador sair.
+ */
+export function clearKeyCache() {
+  _cachedKey = null;
+  _cachedKeyId = null;
+}
+
 export function generateSalt() {
   return crypto.getRandomValues(new Uint8Array(16));
 }

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { firebaseConfig } from './utils/firebase';
+import { getFirebaseAuth } from './utils/firebase';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import * as analyticsService from './services/analyticsService';
 import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV } from './services/exportService';
@@ -62,11 +60,8 @@ if (_pwaAction) {
 function HarmReductionTracker() {
             const { t } = useTranslation();
 
-            // Initialize Firebase
-            const firebaseAuth = useMemo(() => {
-                const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-                return getAuth(app);
-            }, []);
+            // Initialize Firebase (instância única partilhada — ver utils/firebase.js)
+            const firebaseAuth = useMemo(() => getFirebaseAuth(), []);
 
             const [firebaseUser, setFirebaseUser] = useState(null);
             const [firebaseLoading, setFirebaseLoading] = useState(true);

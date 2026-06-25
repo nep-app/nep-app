@@ -1,18 +1,12 @@
 // ===== CONFIGURAÇÃO FIREBASE =====
 
 // NOTA DE SEGURANÇA: Estas chaves são públicas e devem estar aqui (é normal em apps client-side).
-// A PROTEÇÃO REAL vem das Firestore Security Rules no Firebase Console.
-//
-// ⚠️ IMPORTANTE: Verifica que tens estas regras no Firestore:
-// rules_version = '2';
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-//     match /users/{userId}/{document=**} {
-//       allow read, write: if request.auth != null && request.auth.uid == userId;
-//     }
-//   }
-// }
-// Isto garante que cada utilizador só acede aos SEUS dados.
+// A PROTEÇÃO REAL vem das Firestore Security Rules — ver o ficheiro `firestore.rules`
+// na raiz do projeto (valida o envelope cifrado, restringe ao dono e nega tudo o resto).
+
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDH8-OZZQPHzWOnkcABi0tWbeFpxSrnc0w",
@@ -22,3 +16,17 @@ export const firebaseConfig = {
   messagingSenderId: "732077932839",
   appId: "1:732077932839:web:894f098ab346d79e462902"
 };
+
+// Singleton: garante UMA única instância da app Firebase partilhada por toda a app.
+// (Antes, App/DataContext/AuthContext repetiam este guard cada um por si.)
+export function getFirebaseApp() {
+  return getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+}
+
+export function getFirebaseAuth() {
+  return getAuth(getFirebaseApp());
+}
+
+export function getFirebaseDb() {
+  return getFirestore(getFirebaseApp());
+}

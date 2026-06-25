@@ -93,7 +93,7 @@ Sistema de metas com acompanhamento diário. PWA instalável. Tradução complet
 
 - **Encriptação AES-256-GCM** — todos os dados encriptados no dispositivo antes de saírem
 - **PIN pessoal** — 4–6 dígitos, só o utilizador conhece; nunca enviado para nenhum servidor
-- **PBKDF2** — derivação de chave com 600 000 iterações e salt único por utilizador
+- **PBKDF2** — derivação de chave com 100 000 iterações e salt único por utilizador
 - **Local-First** — dados em IndexedDB, sincronizados com Firebase como backup encriptado
 - **Zero-knowledge** — o Firebase guarda apenas `{ data: blob, iv: vector }`; ilegível sem o PIN
 - **Anti-brute-force** — bloqueio progressivo após tentativas falhadas
