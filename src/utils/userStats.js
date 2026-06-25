@@ -479,9 +479,11 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
           if (hadAfterMidnight) {
             const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
+            // SEM urge: é o resultado de um ciclo JÁ FECHADO (retrospetivo). Não deve
+            // abrir a janela do impulso quando se vai consumir num ciclo novo.
             alerts.push({
               text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
-              emoji: '⏰', color: 'orange', type: 'negative', urge: true
+              emoji: '⏰', color: 'orange', type: 'negative'
             });
           } else {
             alerts.push({
