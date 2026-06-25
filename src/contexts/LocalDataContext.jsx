@@ -407,15 +407,6 @@ export const LocalDataProvider = ({ children }) => {
     }
   }, [encryptionKey, fullDataLoaded, loadCollection]);
 
-  // ⚡ PRÉ-AQUECIMENTO: assim que a app abre (FASE 2 pronta), começa a abrir o
-  // histórico COMPLETO em segundo plano. Assim, quando o utilizador entra em
-  // Padrões/Análises/Histórico, os dados já estão prontos — sem espera.
-  useEffect(() => {
-    if (!allDataLoaded || fullDataLoaded || !encryptionKey) return;
-    const id = setTimeout(() => { loadFullData(); }, 1200);
-    return () => clearTimeout(id);
-  }, [allDataLoaded, fullDataLoaded, encryptionKey, loadFullData]);
-
   // Carregar dados quando encryptionKey estiver disponível
   useEffect(() => {
     if (encryptionKey) {

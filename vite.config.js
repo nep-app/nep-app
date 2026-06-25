@@ -28,14 +28,13 @@ export default defineConfig({
           },
           {
             urlPattern: /\.js$/,
-            handler: 'NetworkFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'js-cache',
               expiration: {
                 maxEntries: 30,
                 maxAgeSeconds: 60 * 60 * 24 * 7,
               },
-              networkTimeoutSeconds: 3,
             },
           },
         ],
