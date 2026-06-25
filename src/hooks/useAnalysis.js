@@ -193,7 +193,8 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     // Isto garante streak correto mesmo durante FASE 1 (7 dias incompletos)
     if (cachedStats?.streak !== undefined && cachedStats.streak > 0) {
       console.log('[useAnalysis] ⚡ Usando streak do cache (completo):', cachedStats.streak);
-      return { current: cachedStats.streak, max: cachedStats.streak };
+      // Recorde também vem do cache → aparece JUNTO com o atual (sem esperar pelos dados todos)
+      return { current: cachedStats.streak, max: cachedStats.maxStreak ?? cachedStats.streak };
     }
 
     // PRIORIDADE 2: Calcular dos dados desencriptados (FASE 2 ou se cache vazio)

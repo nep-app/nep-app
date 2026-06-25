@@ -60,6 +60,36 @@ export const calculateStreak = (allItems) => {
 };
 
 /**
+ * Calcular o RECORDE de dias consecutivos de atividade (maior sequência de sempre).
+ * Recebe qualquer mistura de items (consumptions, wellbeingLogs, thoughts, etc.).
+ */
+export const calculateMaxStreak = (allItems) => {
+  if (!allItems || allItems.length === 0) return 0;
+
+  const uniqueDates = [...new Set(allItems.map(item => {
+    const raw = item.date || item.timestamp || item.createdAt;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d) ? null : d.toISOString().split('T')[0];
+  }).filter(Boolean))].sort();
+
+  if (uniqueDates.length === 0) return 0;
+
+  let maxStreak = 1;
+  let streak = 1;
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const diffDays = Math.round((new Date(uniqueDates[i]) - new Date(uniqueDates[i - 1])) / 86400000);
+    if (diffDays === 1) {
+      streak++;
+      if (streak > maxStreak) maxStreak = streak;
+    } else {
+      streak = 1;
+    }
+  }
+  return maxStreak;
+};
+
+/**
  * Atualizar stats do user (chamar após criar/editar/apagar consumo)
  * @param {Array} consumptions - Array de consumptions desencriptados
  * @param {Array} cycles - Array de cycles desencriptados (opcional - lê da DB se não passado)
@@ -77,11 +107,13 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       ...(reflections || []),
     ];
     const streak = calculateStreak(allActivityItems);
+    const maxStreak = calculateMaxStreak(allActivityItems);
 
     if (!consumptions || consumptions.length === 0) {
       // Sem consumptions: guardar apenas streak (preservar valor correto)
       await db.metadata.put({ key: 'userStats', value: {
         streak,
+        maxStreak,
         lastConsumptionTime: null,
         totalConsumptions: 0,
         last7DaysCount: 0,
@@ -559,6 +591,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     // Guardar em metadata
     const stats = {
       streak,
+      maxStreak,
       lastConsumptionTime,
       totalConsumptions: consumptions.length,
       last7DaysCount,
@@ -632,6 +665,7 @@ export const getUserStats = async () => {
     if (!record) {
       return {
         streak: 0,
+        maxStreak: 0,
         lastConsumptionTime: null,
         totalConsumptions: 0,
         last7DaysCount: 0,
