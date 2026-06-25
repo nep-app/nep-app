@@ -119,6 +119,8 @@ export const LocalDataProvider = ({ children }) => {
   // Trava: fica true assim que a FASE 3 (40 dias/tudo) arranca, para a FASE 2
   // (7 dias) não escrever os seus dados mais pequenos por cima dos da FASE 3.
   const phase3StartedRef = useRef(false);
+  // Trava: evita que a FASE 3 corra duas vezes ao mesmo tempo (pré-aquecimento + navegação).
+  const loadingFullRef = useRef(false);
 
   /**
    * Carregar dados de uma coleção (com desencriptação)
@@ -353,11 +355,13 @@ export const LocalDataProvider = ({ children }) => {
    * Chamado apenas quando o utilizador navega para Padrões/Análises/Histórico
    */
   const loadFullData = useCallback(async () => {
-    if (fullDataLoaded || !encryptionKey) return;
+    if (fullDataLoaded || loadingFullRef.current || !encryptionKey) return;
 
-    // Trava: a partir daqui, a FASE 2 (7 dias) não deve escrever por cima.
+    // Travas: não correr duas vezes em simultâneo; e a FASE 2 (7 dias) não deve
+    // escrever por cima a partir daqui.
+    loadingFullRef.current = true;
     phase3StartedRef.current = true;
-    logger.log('[LocalData] 🔄 FASE 3 (demanda): Carregando dados históricos...');
+    logger.log('[LocalData] 🔄 FASE 3: Carregando dados históricos...');
     setBackgroundLoading(true);
 
     try {
@@ -399,8 +403,18 @@ export const LocalDataProvider = ({ children }) => {
       logger.error('[LocalData] Erro na FASE 3:', error);
     } finally {
       setBackgroundLoading(false);
+      loadingFullRef.current = false;
     }
   }, [encryptionKey, fullDataLoaded, loadCollection]);
+
+  // ⚡ PRÉ-AQUECIMENTO: assim que a app abre (FASE 2 pronta), começa a abrir o
+  // histórico COMPLETO em segundo plano. Assim, quando o utilizador entra em
+  // Padrões/Análises/Histórico, os dados já estão prontos — sem espera.
+  useEffect(() => {
+    if (!allDataLoaded || fullDataLoaded || !encryptionKey) return;
+    const id = setTimeout(() => { loadFullData(); }, 1200);
+    return () => clearTimeout(id);
+  }, [allDataLoaded, fullDataLoaded, encryptionKey, loadFullData]);
 
   // Carregar dados quando encryptionKey estiver disponível
   useEffect(() => {
