@@ -698,6 +698,30 @@ export const getAppUsageStreak = async () => {
 };
 
 /**
+ * RESUMO-POR-DIA PERSISTENTE
+ * Grava/le o resumo-por-dia (count + parte-do-dia por data) em metadata, NÃO
+ * encriptado (são agregados, à semelhança das stats já guardadas). Permite que as
+ * páginas pesadas mostrem o resumo instantaneamente no arranque, sem desencriptar
+ * os milhares de registos do histórico todo.
+ */
+export const saveDailyRollup = async (rollup) => {
+  try {
+    await db.metadata.put({ key: 'consumptionDailyRollup', value: rollup });
+  } catch (e) {
+    console.error('[UserStats] Erro ao gravar resumo-por-dia:', e);
+  }
+};
+
+export const getDailyRollup = async () => {
+  try {
+    const record = await db.metadata.get('consumptionDailyRollup');
+    return record?.value || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Ler stats do user (RÁPIDO - sem desencriptar!)
  */
 export const getUserStats = async () => {

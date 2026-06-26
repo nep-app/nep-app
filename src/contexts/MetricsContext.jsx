@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { getDailyRollup, saveDailyRollup } from '../utils/userStats';
 
 const MetricsContext = createContext();
 
@@ -15,7 +16,7 @@ export const useMetrics = () => {
 };
 
 export const MetricsProvider = ({ children }) => {
-  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts } = useData();
+  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts, fullDataLoaded } = useData();
 
   const atypicalDates = useMemo(() => {
     const s = new Set();
@@ -124,6 +125,27 @@ export const MetricsProvider = ({ children }) => {
     });
     return r;
   }, [filteredConsumptions]);
+
+  // RESUMO PERSISTENTE: ler o resumo-por-dia gravado na sessão anterior (instantâneo,
+  // sem desencriptar nada) e gravá-lo de volta assim que o histórico COMPLETO estiver
+  // carregado. Enquanto os dados completos não chegam, as páginas pesadas leem este
+  // resumo gravado em vez de esperar pela desencriptação de 8 meses de registos.
+  const [persistedRollup, setPersistedRollup] = useState(null);
+  useEffect(() => {
+    getDailyRollup().then(r => { if (r) setPersistedRollup(r); });
+  }, []);
+  useEffect(() => {
+    if (fullDataLoaded && Object.keys(consumptionDailyRollup).length > 0) {
+      saveDailyRollup(consumptionDailyRollup);
+      setPersistedRollup(consumptionDailyRollup);
+    }
+  }, [fullDataLoaded, consumptionDailyRollup]);
+
+  // Com dados completos usa o cálculo ao vivo; antes disso usa o resumo gravado
+  // (e só se não houver gravado é que cai no parcial ao vivo — nunca dados errados).
+  const effectiveDailyRollup = fullDataLoaded
+    ? consumptionDailyRollup
+    : (persistedRollup || consumptionDailyRollup);
 
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
@@ -357,7 +379,7 @@ export const MetricsProvider = ({ children }) => {
     avgFrequencyLast7Days,
     getGoalProgress,
     consumptionsByDate, // memoized, atypical days filtered
-    consumptionDailyRollup, // resumo-por-dia (count + parte-do-dia) para páginas pesadas
+    consumptionDailyRollup: effectiveDailyRollup, // resumo-por-dia (persistente no arranque, ao vivo após carregar tudo)
   };
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;
