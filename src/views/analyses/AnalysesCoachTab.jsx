@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
-import { safeToISODate } from '../../utils/helpers';
+import { safeToISODate, getTodayKey } from '../../utils/helpers';
 
 const { getDateRangeForPeriod, filterByDateRange, getGoalAchievementCount } = analyticsService;
 
@@ -60,7 +60,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
         // Best/worst days (excluir o dia de hoje exceto quando filtrado por "dia")
         const dates = Object.keys(byDate).sort();
-        const today = new Date().toISOString().split('T')[0];
+        // Data LOCAL (não UTC) para excluir corretamente o dia de hoje, ainda a meio.
+        const today = getTodayKey();
         const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
         const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
         const bestDate = sortedDates.length > 0 ? sortedDates[0] : null;

@@ -198,8 +198,11 @@ export function PatternsView({
                                             const insights = [];
 
                                             // Best day insight (excluir o dia de hoje exceto quando filtrado por "dia")
+                                            // IMPORTANTE: usar a data LOCAL (getTodayKey), não toISOString() (UTC),
+                                            // senão de madrugada o "hoje" em UTC é o dia anterior e o dia de hoje
+                                            // (ainda a meio) acaba contado como "melhor dia".
                                             if (dates.length > 0) {
-                                                const today = new Date().toISOString().split('T')[0];
+                                                const today = getTodayKey();
                                                 const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
                                                 if (completedDates.length > 0) {
                                                     const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
