@@ -339,13 +339,21 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const uniqueDaysWithMg = datesWithMg.size;
                         const avgMgPerDay = totalMg / uniqueDaysWithMg;
 
+                        // Índice consumos-por-data (uma vez) para não varrer todos os
+                        // consumos por cada ciclo (O(N²)).
+                        const consumptionsByDate = {};
+                        analysisConsumptions.forEach(c => {
+                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = [];
+                            consumptionsByDate[c.date].push(c);
+                        });
+
                         // Ciclos sem consumo após 00h
                         const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
                             // Derivar data do ciclo
                             const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
 
-                            // Filtrar consumos deste dia
-                            const cycleConsumptions = analysisConsumptions.filter(c => c.date === cycleDate);
+                            // Consumos deste dia (consulta O(1))
+                            const cycleConsumptions = consumptionsByDate[cycleDate] || [];
 
                             // Verificar se algum consumo foi após 00h
                             const hasLateConsumption = cycleConsumptions.some(c => {

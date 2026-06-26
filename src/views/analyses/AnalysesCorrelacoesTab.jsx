@@ -42,6 +42,23 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             dailyData[c.date].consumptions++;
         });
 
+        // Índices por data construídos UMA vez. Evitam o padrão O(N²) de, dentro de
+        // loops, fazer analysisCycles.find / analysisWellbeing.filter por data (que
+        // varrem o array inteiro a cada iteração). Aqui passamos a consulta O(1).
+        const cycleByDate = {};
+        analysisCycles.forEach(c => {
+            const d = safeToISODate(c.timestamp);
+            if (d && !(d in cycleByDate)) cycleByDate[d] = c; // mantém o 1º (igual a .find)
+        });
+        const wellbeingByDate = {};
+        const napMinsByDate = {};
+        analysisWellbeing.forEach(w => {
+            const d = w.date || safeToISODate(w.timestamp);
+            if (!d) return;
+            if (!(d in wellbeingByDate)) wellbeingByDate[d] = w; // 1º registo do dia
+            napMinsByDate[d] = (napMinsByDate[d] || 0) + (w.napDuration || 0);
+        });
+
         // Adicionar sono dos ciclos (noturno + sesta)
         analysisCycles.forEach(c => {
             const cDate = c.date || safeToISODate(c.timestamp);
@@ -49,9 +66,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             if (!dailyData[cDate]) dailyData[cDate] = { consumptions: 0, sleep: null, mood: null, energy: null };
             const nightSleep = parseFloat(c.sleep);
             if (!isNaN(nightSleep)) {
-                const napMins = analysisWellbeing
-                    .filter(w => (w.date || safeToISODate(w.timestamp)) === cDate)
-                    .reduce((sum, w) => sum + (w.napDuration || 0), 0);
+                const napMins = napMinsByDate[cDate] || 0;
                 dailyData[cDate].sleep = nightSleep + napMins / 60;
             }
         });
@@ -490,7 +505,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         const firstConsData = {};
         Object.entries(consumptionsByDateForFirst).forEach(([date, cons]) => {
             // Encontrar o ciclo desse dia
-            const dayCycle = analysisCycles.find(cycle => safeToISODate(cycle.timestamp) === date);
+            const dayCycle = cycleByDate[date];
 
             if (!dayCycle) {
                 // Sem ciclo registrado, usar lógica antiga (primeiro por timestamp)
@@ -751,7 +766,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const periodWellbeingData = { morning: [], afternoon: [], evening: [] };
 
             Object.entries(periodData).forEach(([date, periods]) => {
-                const wellbeing = analysisWellbeing.find(w => (w.date || safeToISODate(w.timestamp)) === date);
+                const wellbeing = wellbeingByDate[date];
                 if (!wellbeing) return;
 
                 if (wellbeing.mood) {
@@ -1030,7 +1045,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             if (todayConsumptions === 0) continue;
 
             // Bedtime amanhã
-            const tomorrowCycle = analysisCycles.find(c => safeToISODate(c.timestamp) === tomorrow);
+            const tomorrowCycle = cycleByDate[tomorrow];
             if (!tomorrowCycle?.bedtime) continue;
 
             // Converter bedtime para minutos
@@ -1067,10 +1082,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         sortedDates.forEach((date, i) => {
             if (i >= sortedDates.length - 1) return;
 
-            const todayCycle = analysisCycles.find(c => {
-                const cycleDate = safeToISODate(c.timestamp);
-                return cycleDate === date;
-            });
+            const todayCycle = cycleByDate[date];
 
             if (!todayCycle?.bedtime) return;
 
@@ -1115,10 +1127,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         sortedDates.forEach((date, i) => {
             if (i >= sortedDates.length - 1) return;
 
-            const todayCycle = analysisCycles.find(c => {
-                const cycleDate = safeToISODate(c.timestamp);
-                return cycleDate === date;
-            });
+            const todayCycle = cycleByDate[date];
 
             if (!todayCycle?.bedtime) return;
 
@@ -1432,8 +1441,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             const cycleDate = safeToISODate(cycle.timestamp);
             if (!cycleDate) return;
 
-            // Contar consumos nesse dia
-            const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
+            // Contar consumos nesse dia — reutiliza o índice por dia (dailyData) já
+            // construído acima, em vez de varrer TODOS os consumos por cada ciclo (O(N²)).
+            const dayConsumptions = dailyData[cycleDate]?.consumptions || 0;
 
             bedtimeConsumptionData.push({
                 bedtime: bedtimeMinutes,
