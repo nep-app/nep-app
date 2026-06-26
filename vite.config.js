@@ -21,22 +21,19 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Aplicar a nova versão IMEDIATAMENTE (em vez de ficar uma versão atrás)
+        // e apagar caches de versões anteriores.
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/(firestore|identitytoolkit|securetoken)\.googleapis\.com\/.*/i,
             handler: 'NetworkOnly',
           },
-          {
-            urlPattern: /\.js$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'js-cache',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 7,
-              },
-            },
-          },
+          // NOTA: removido o StaleWhileRevalidate para .js. Os ficheiros .js têm
+          // hash no nome e já são pré-cacheados (versionados) pelo workbox; a regra
+          // antiga servia a versão antiga em cada carregamento ("uma versão atrás").
         ],
         navigateFallback: null,
       },
