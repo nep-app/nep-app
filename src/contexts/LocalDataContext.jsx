@@ -274,6 +274,18 @@ export const LocalDataProvider = ({ children }) => {
 
       setLoading(false); // App PRONTA já!
       updateAppUsageStreak(); // Registar abertura da app (streak de utilização)
+
+      // Carregar METAS (todas) e CICLOS recentes o mais cedo possível, em paralelo e
+      // sem esperar pela FASE 2. Assim o modal de aviso de consumo (intervalo,
+      // frequência, hora-limite e "não consumir ao acordar") já tem o que precisa
+      // logo no arranque, sem ser preciso ir aos Padrões para forçar o carregamento.
+      loadCollectionWithFirst('goals', 999999)
+        .then(({ items }) => setGoals(items))
+        .catch(err => logger.error('[LocalData] Erro ao carregar metas cedo:', err));
+      loadCollectionWithFirst('cycles', 7)
+        .then(({ items }) => { if (!phase3StartedRef.current) setCycles(items); })
+        .catch(err => logger.error('[LocalData] Erro ao carregar ciclos cedo:', err));
+
       logger.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
 
       // 🔄 FASE 2: Carregar últimos 7 dias em background (lista aparece)
@@ -297,7 +309,10 @@ export const LocalDataProvider = ({ children }) => {
             loadCollectionWithFirst('reflections', 7),
             loadCollectionWithFirst('wellbeingLogs', 7),
             loadCollectionWithFirst('cycles', 7),
-            loadCollectionWithFirst('goals', 7),
+            // Metas SEM filtro de data: uma meta criada há meses continua ativa e é
+            // precisa logo no arranque para o modal de aviso disparar. São poucas,
+            // logo carregá-las todas é instantâneo.
+            loadCollectionWithFirst('goals', 999999),
             loadCollectionWithFirst('thoughts', 7),
             loadCollectionWithFirst('healthLogs', 7)
           ]);
