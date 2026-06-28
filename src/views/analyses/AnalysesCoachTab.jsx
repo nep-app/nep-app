@@ -4,6 +4,7 @@ import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate, getTodayKey } from '../../utils/helpers';
+import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 
 const { getDateRangeForPeriod, filterByDateRange, getGoalAchievementCount } = analyticsService;
 
@@ -19,7 +20,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     patternsPeriod,
     patternsPeriodOffset,
 }) {
-    const coachData = useMemo(() => {
+    const _sigCoach = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${analysisReflections.length}|${analysisThoughts.length}|${(goals || []).length}|${patternsPeriod}|${patternsPeriodOffset}`;
+    const coachData = useCrossMountMemo('analises-coach', _sigCoach, () => {
         if (analysisConsumptions.length === 0 && analysisWellbeing.length === 0) {
             return null;
         }
@@ -126,16 +128,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             sentimentThemes,
             sentimentScore,
         };
-    }, [
-        analysisConsumptions,
-        analysisWellbeing,
-        analysisCycles,
-        analysisDailyLogs,
-        analysisReflections,
-        analysisThoughts,
-        goals,
-        patternsPeriod,
-    ]);
+    });
 
     const { t, i18n } = useTranslation();
 

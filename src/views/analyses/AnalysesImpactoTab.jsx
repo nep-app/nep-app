@@ -1,6 +1,7 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { safeToISODate } from '../../utils/helpers';
+import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const WellbeingChart = lazy(() => import('../../components/WellbeingChart'));
@@ -23,7 +24,8 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const impactoData = useMemo(() => {
+    const _sigImpacto = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${selectedCycle?.id || 'none'}`;
+    const impactoData = useCrossMountMemo('analises-impacto', _sigImpacto, () => {
         // Agrupar dados por dia para experimentalFeatures
         const dailyData = {};
 
@@ -505,7 +507,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             latency,
             intraDayStats,
         };
-    }, [analysisConsumptions, analysisWellbeing, analysisCycles, analysisDailyLogs, selectedCycle]);
+    });
 
     const { experimentalFeatures, chartData, latency, intraDayStats } = impactoData;
 

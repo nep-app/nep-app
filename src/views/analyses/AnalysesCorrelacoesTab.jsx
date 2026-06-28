@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { getEmotionCategory } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
+import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 
 export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab({
     analysisConsumptions,
@@ -26,7 +27,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const correlacaoData = useMemo(() => {
+    // Assinatura barata dos dados: muda quando há mais/menos registos ou muda o idioma.
+    const _sig = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${i18n.language}`;
+    const correlacaoData = useCrossMountMemo('analises-correlacoes', _sig, () => {
         if (analysisConsumptions.length < 1) {
             return null;
         }
@@ -1507,7 +1510,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             bedtimeConsCorrelation,
             bedtimeToConsCard,
         };
-    }, [analysisConsumptions, analysisWellbeing, analysisCycles, analysisDailyLogs, i18n.language]);
+    });
 
     if (!correlacaoData) {
         return (

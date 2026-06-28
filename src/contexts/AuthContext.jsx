@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
+import { clearCrossMountMemo } from '../hooks/useCrossMountMemo';
 import { db, getMetadata, setMetadata, clearUserDataOnly, clearAllData } from '../db/localDB';
 import {
   encrypt,
@@ -122,6 +123,7 @@ export const AuthProvider = ({ children }) => {
     await clearUserDataOnly();
     logger.log('[Auth] 🗑️ Logout explícito — sessão apagada');
     clearKeyCache();
+    clearCrossMountMemo();
     setEncryptionKey(null);
     setIsAuthenticated(false);
     setUserEmail(null);
@@ -138,6 +140,7 @@ export const AuthProvider = ({ children }) => {
     await clearUserDataOnly();
     logger.log('[Auth] 🔒 Auto-lock — sessão mantida');
     clearKeyCache();
+    clearCrossMountMemo();
     setEncryptionKey(null);
     setIsAuthenticated(false);
     setUserEmail(null);
@@ -786,6 +789,7 @@ export const AuthProvider = ({ children }) => {
   const resetApp = useCallback(async () => {
     await clearAllData();
     clearKeyCache();
+    clearCrossMountMemo();
     setUserEmail(null);
     setEncryptionKey(null);
     setIsInitialized(false);
