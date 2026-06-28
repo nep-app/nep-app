@@ -3,7 +3,7 @@ import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
-import { getDailyRollup, saveDailyRollup } from '../utils/userStats';
+import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
 
 const MetricsContext = createContext();
 
@@ -146,6 +146,45 @@ export const MetricsProvider = ({ children }) => {
   const effectiveDailyRollup = fullDataLoaded
     ? consumptionDailyRollup
     : (persistedRollup || consumptionDailyRollup);
+
+  // FICHA-RESUMO COMPLETA POR DIA: junta ao resumo de consumos (count + parte-do-dia)
+  // os dados de sono/hora-de-deitar/mg (dos ciclos) e humor/energia (do bem-estar).
+  // É a base para as páginas pesadas lerem tudo sem desencriptar o histórico inteiro.
+  const dailySummary = useMemo(() => {
+    const out = {};
+    const blank = () => ({ count: 0, manha: 0, tarde: 0, noite: 0, madrugada: 0 });
+    for (const dk in consumptionDailyRollup) out[dk] = { ...consumptionDailyRollup[dk] };
+    Object.entries(cyclesByDate).forEach(([dk, c]) => {
+      if (!out[dk]) out[dk] = blank();
+      if (c.sleep != null && !isNaN(parseFloat(c.sleep))) out[dk].sleep = parseFloat(c.sleep);
+      if (c.bedtime) out[dk].bedtime = c.bedtime;
+      if (c.mg != null && c.mg !== '' && !isNaN(parseFloat(c.mg))) out[dk].mg = parseFloat(c.mg);
+    });
+    Object.entries(wellbeingByDate).forEach(([dk, w]) => {
+      if (!out[dk]) out[dk] = blank();
+      if (w.mood != null && !isNaN(parseInt(w.mood))) out[dk].mood = parseInt(w.mood);
+      if (w.energy != null && !isNaN(parseInt(w.energy))) out[dk].energy = parseInt(w.energy);
+    });
+    Object.entries(dailyLogsByDate).forEach(([dk, dl]) => {
+      if (!out[dk]) out[dk] = blank();
+      if (out[dk].mg == null && dl.mg != null && !isNaN(parseFloat(dl.mg))) out[dk].mg = parseFloat(dl.mg);
+    });
+    return out;
+  }, [consumptionDailyRollup, cyclesByDate, wellbeingByDate, dailyLogsByDate]);
+
+  const [persistedSummary, setPersistedSummary] = useState(null);
+  useEffect(() => {
+    getDailySummary().then(s => { if (s) setPersistedSummary(s); });
+  }, []);
+  useEffect(() => {
+    if (fullDataLoaded && Object.keys(dailySummary).length > 0) {
+      saveDailySummary(dailySummary);
+      setPersistedSummary(dailySummary);
+    }
+  }, [fullDataLoaded, dailySummary]);
+  const effectiveDailySummary = fullDataLoaded
+    ? dailySummary
+    : (persistedSummary || dailySummary);
 
   // Time since last consumption
   const timeSinceLastConsumption = useMemo(() => {
@@ -380,6 +419,7 @@ export const MetricsProvider = ({ children }) => {
     getGoalProgress,
     consumptionsByDate, // memoized, atypical days filtered
     consumptionDailyRollup: effectiveDailyRollup, // resumo-por-dia (persistente no arranque, ao vivo após carregar tudo)
+    dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
   };
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

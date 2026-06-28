@@ -722,6 +722,29 @@ export const getDailyRollup = async () => {
 };
 
 /**
+ * FICHA-RESUMO COMPLETA POR DIA
+ * Como o resumo-por-dia, mas com mais campos por dia (sono, hora de deitar, mg,
+ * humor, energia) para as páginas de Análises/Histórico poderem ler tudo sem
+ * desencriptar o histórico inteiro. Também são agregados (não cifrado).
+ */
+export const saveDailySummary = async (summary) => {
+  try {
+    await db.metadata.put({ key: 'dailySummary', value: summary });
+  } catch (e) {
+    console.error('[UserStats] Erro ao gravar ficha-resumo por dia:', e);
+  }
+};
+
+export const getDailySummary = async () => {
+  try {
+    const record = await db.metadata.get('dailySummary');
+    return record?.value || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Ler stats do user (RÁPIDO - sem desencriptar!)
  */
 export const getUserStats = async () => {
