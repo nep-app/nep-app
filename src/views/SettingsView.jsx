@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
+import { PushRemindersSettings } from '../components/PushRemindersSettings';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
@@ -405,6 +406,9 @@ export const SettingsView = ({
                     </p>
                 </div>
             </div>
+
+            {/* Lembretes push (mesmo com a app fechada) */}
+            <PushRemindersSettings />
 
             {/* Reminders */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">

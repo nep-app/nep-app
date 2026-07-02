@@ -28,6 +28,11 @@ jobs:
         run: npm ci
       - name: Build do Vite
         run: npm run build
+        env:
+          # Chave de notificações push (VAPID) injetada no build. Definida como
+          # secret no repositório. Se estiver vazia, os lembretes push mostram
+          # um aviso claro em vez de partir a app.
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

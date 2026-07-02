@@ -1,0 +1,32 @@
+name: Enviar lembretes push
+
+on:
+  schedule:
+    # A cada 15 minutos. NOTA: o cron do GitHub é "best effort" e pode atrasar
+    # alguns minutos. Só corre a partir do branch PREDEFINIDO do repositório.
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}   # permite disparar à mão para testar
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar firebase-admin
+        run: npm install firebase-admin@12 --no-save
+      - name: Enviar lembretes
+        run: node scripts/send-reminders.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
