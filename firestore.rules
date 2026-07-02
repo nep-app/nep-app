@@ -55,6 +55,13 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // ---- Notificações push (token FCM + preferências de lembretes) ----
+    // users/{uid}/push/prefs. Escrita/leitura só do dono. A leitura pelo "carteiro"
+    // (GitHub Action) é feita com uma service account de admin, que ignora estas regras.
+    match /users/{userId}/push/{docId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // ---- Dados de investigação anónimos ----
     // Leitura bloqueada (só via consola/admin). Escrita: autenticado E só no SEU anonId
     // (o documento tem de conter `anonId` igual ao do caminho — ver researchService.js).
