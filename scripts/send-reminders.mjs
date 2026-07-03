@@ -68,11 +68,16 @@ async function run() {
 
       const msg = MESSAGES[r.id] || MESSAGES.custom;
       try {
+        // SÓ 'data' (sem 'notification') — evita a notificação duplicada no web push.
+        // O service worker (firebase-messaging-sw.js) mostra UMA a partir destes dados.
         await admin.messaging().send({
           token,
-          notification: { title: msg.title, body: msg.body },
-          data: { tag: `nep-${r.id}` },
-          webpush: { fcmOptions: { link: 'https://nep-app.github.io/nep-app/' } },
+          data: {
+            title: msg.title,
+            body: msg.body,
+            tag: `nep-${r.id}`,
+            url: 'https://nep-app.github.io/nep-app/',
+          },
         });
         sent[r.id] = date;
         changed = true;

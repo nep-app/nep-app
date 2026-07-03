@@ -20,15 +20,18 @@ const messaging = firebase.messaging();
 
 // Mensagem recebida com a app fechada/em segundo plano.
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'NEP';
-  const body = (payload.notification && payload.notification.body) || '';
+  // Mensagens são enviadas SÓ com 'data' (sem 'notification') de propósito: assim o
+  // Firebase NÃO mostra automaticamente e evitamos a notificação duplicada — só este
+  // handler mostra UMA. Texto discreto — nunca revela consumo/detalhes.
+  const d = payload.data || {};
+  const title = d.title || 'NEP';
+  const body = d.body || '';
   self.registration.showNotification(title, {
     body,
     icon: '/nep-app/icon-192.png',
     badge: '/nep-app/icon-192.png',
-    // Texto discreto de propósito — nunca revelar consumo/detalhes no ecrã bloqueado.
-    tag: (payload.data && payload.data.tag) || 'nep-reminder',
-    data: { url: '/nep-app/' },
+    tag: d.tag || 'nep-reminder',
+    data: { url: d.url || '/nep-app/' },
   });
 });
 
