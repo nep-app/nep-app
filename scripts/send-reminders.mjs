@@ -42,7 +42,10 @@ function nowInTz(tz) {
   return { date, minutes: hh * 60 + parseInt(g('minute'), 10) };
 }
 
-const WINDOW_MIN = 20; // margem para o atraso do cron do GitHub
+// Janela larga: o cron grátis do GitHub é estrangulado e corre ~de hora a hora, não
+// de 15 em 15 min. Com uma janela larga, um lembrete das 20h ainda dispara no primeiro
+// run que aconteça até 2h depois (uma vez só, por causa do dedup 'sent' diário).
+const WINDOW_MIN = 120;
 
 async function run() {
   const snap = await db.collectionGroup('push').get();
