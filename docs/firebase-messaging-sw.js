@@ -16,24 +16,11 @@ firebase.initializeApp({
   appId: '1:732077932839:web:894f098ab346d79e462902',
 });
 
-const messaging = firebase.messaging();
-
-// Mensagem recebida com a app fechada/em segundo plano.
-messaging.onBackgroundMessage((payload) => {
-  // Mensagens são enviadas SÓ com 'data' (sem 'notification') de propósito: assim o
-  // Firebase NÃO mostra automaticamente e evitamos a notificação duplicada — só este
-  // handler mostra UMA. Texto discreto — nunca revela consumo/detalhes.
-  const d = payload.data || {};
-  const title = d.title || 'NEP';
-  const body = d.body || '';
-  self.registration.showNotification(title, {
-    body,
-    icon: '/nep-app/icon-192.png',
-    badge: '/nep-app/icon-192.png',
-    tag: d.tag || 'nep-reminder',
-    data: { url: d.url || '/nep-app/' },
-  });
-});
+// IMPORTANTE: inicializar messaging regista o listener que faz o Android/Firebase
+// MOSTRAR a notificação sozinho (payload 'notification') — o caminho mais fiável com
+// a app fechada. NÃO usamos onBackgroundMessage: se o fizéssemos, mostrava DUAS
+// (a automática + a nossa). Assim aparece exatamente UMA.
+firebase.messaging();
 
 // Abrir a app ao tocar na notificação.
 self.addEventListener('notificationclick', (event) => {

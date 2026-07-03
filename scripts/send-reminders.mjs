@@ -71,15 +71,18 @@ async function run() {
 
       const msg = MESSAGES[r.id] || MESSAGES.custom;
       try {
-        // SÓ 'data' (sem 'notification') — evita a notificação duplicada no web push.
-        // O service worker (firebase-messaging-sw.js) mostra UMA a partir destes dados.
+        // Payload 'notification' → o sistema mostra sozinho (fiável com a app fechada).
+        // O service worker NÃO tem onBackgroundMessage, por isso NÃO há duplicado.
         await admin.messaging().send({
           token,
-          data: {
-            title: msg.title,
-            body: msg.body,
-            tag: `nep-${r.id}`,
-            url: 'https://nep-app.github.io/nep-app/',
+          notification: { title: msg.title, body: msg.body },
+          webpush: {
+            notification: {
+              icon: 'https://nep-app.github.io/nep-app/icon-192.png',
+              badge: 'https://nep-app.github.io/nep-app/icon-192.png',
+              tag: `nep-${r.id}`,
+            },
+            fcmOptions: { link: 'https://nep-app.github.io/nep-app/' },
           },
         });
         sent[r.id] = date;
