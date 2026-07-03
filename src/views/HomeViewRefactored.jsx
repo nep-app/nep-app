@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
+import { FeatureAnnouncement } from '../components/FeatureAnnouncement';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
@@ -189,6 +190,9 @@ export function HomeViewRefactored({
   return (
     <>
     <div className="space-y-6">
+      {/* Aviso de nova funcionalidade (lembretes push) — fecha-se e não volta */}
+      <FeatureAnnouncement />
+
       {/* Botão sync */}
       <div className="flex justify-end">
         <button
