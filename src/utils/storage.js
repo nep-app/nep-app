@@ -32,8 +32,11 @@ export const safeLocalStorage = {
         return defaultValue;
       }
 
-      // Extra protection against prototype pollution
-      if (parsed && typeof parsed === 'object' && '__proto__' in parsed) {
+      // Extra protection against prototype pollution.
+      // Usar hasOwnProperty: '__proto__' in parsed é SEMPRE verdadeiro (herdado de
+      // Object.prototype) e rejeitaria todos os objetos/arrays. Só é perigoso se o
+      // JSON tiver mesmo uma CHAVE PRÓPRIA "__proto__".
+      if (parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, '__proto__')) {
         console.error(`Potential prototype pollution detected in localStorage key "${key}"`);
         return defaultValue;
       }
@@ -53,8 +56,9 @@ export const safeLocalStorage = {
    */
   set(key, value) {
     try {
-      // Remove __proto__ if present (security)
-      if (value && typeof value === 'object') {
+      // Remove __proto__ if present (security). NÃO aplicar a arrays — o spread
+      // {...arr} transformaria a lista num objeto {0:…,1:…} e perdia-se o array.
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
         const { __proto__, ...safe } = value;
         value = safe;
       }
