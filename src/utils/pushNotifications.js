@@ -43,7 +43,17 @@ export async function enablePushReminders() {
   }
 
   const swReg = await registerMessagingSW();
+
+  // Limpar qualquer subscrição de push ANTIGA que tenha ficado "presa" (causa comum
+  // do 'push service error' ao reativar depois de reinstalar/atualizar). Best-effort:
+  // desprende a subscrição do browser e apaga o token FCM antigo antes de criar um novo.
   const messaging = getMessaging(getFirebaseApp());
+  try {
+    const existing = await swReg.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+  } catch (e) { logger.error('[Push] limpar subscrição antiga:', e); }
+  try { await deleteToken(messaging); } catch (e) { /* pode não haver token antigo */ }
+
   const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
   if (!token) throw new Error('Não foi possível obter o token de notificações.');
 
