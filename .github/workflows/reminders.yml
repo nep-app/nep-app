@@ -5,7 +5,12 @@ on:
     # A cada 15 minutos. NOTA: o cron do GitHub é "best effort" e pode atrasar
     # alguns minutos. Só corre a partir do branch PREDEFINIDO do repositório.
     - cron: '*/15 * * * *'
-  workflow_dispatch: {}   # permite disparar à mão para testar
+  workflow_dispatch:      # permite disparar à mão para testar
+    inputs:
+      force:
+        description: 'Forçar envio (ignora hora e o dedup diário) — só para testar'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,3 +35,4 @@ jobs:
         run: node scripts/send-reminders.mjs
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FORCE: ${{ inputs.force }}

@@ -47,7 +47,12 @@ function nowInTz(tz) {
 // run que aconteça até 2h depois (uma vez só, por causa do dedup 'sent' diário).
 const WINDOW_MIN = 120;
 
+// Modo de teste: FORCE=true ignora a hora e o dedup diário (envia todos os
+// lembretes ligados, uma vez). Ativado pelo input 'force' do workflow_dispatch.
+const FORCE = process.env.FORCE === 'true';
+
 async function run() {
+  if (FORCE) console.log('MODO FORÇADO: ignora hora e dedup (teste).');
   const snap = await db.collectionGroup('push').get();
   let sentCount = 0;
 
@@ -65,9 +70,9 @@ async function run() {
     for (const r of reminders) {
       if (!r || r.enabled === false) continue;
       const rMin = (parseInt(r.hour, 10) || 0) * 60 + (parseInt(r.minute, 10) || 0);
-      const due = nowMin >= rMin && (nowMin - rMin) < WINDOW_MIN;
+      const due = FORCE || (nowMin >= rMin && (nowMin - rMin) < WINDOW_MIN);
       if (!due) continue;
-      if (sent[r.id] === date) continue; // já enviado hoje
+      if (!FORCE && sent[r.id] === date) continue; // já enviado hoje (ignorado em teste)
 
       const msg = MESSAGES[r.id] || MESSAGES.custom;
       try {
@@ -85,8 +90,7 @@ async function run() {
             fcmOptions: { link: 'https://nep-app.github.io/nep-app/' },
           },
         });
-        sent[r.id] = date;
-        changed = true;
+        if (!FORCE) { sent[r.id] = date; changed = true; } // em teste não marca como enviado
         sentCount++;
         console.log(`Enviado '${r.id}' para ${docSnap.ref.path}`);
       } catch (e) {
