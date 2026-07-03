@@ -119,8 +119,7 @@ export function PushRemindersSettings({ showToast }) {
               type="time"
               value={hhmm(r)}
               onChange={(e) => setTime(r.id, e.target.value)}
-              disabled={!r.enabled}
-              className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-white disabled:opacity-40"
+              className="bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-white"
             />
           </div>
         ))}
