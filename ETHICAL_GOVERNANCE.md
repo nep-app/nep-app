@@ -56,7 +56,7 @@ Clear licensing, source code available on request, and open ethical rationale.
 
 ### 2.5 Non-exploitation
 
-No ads, no commercial data mining, no tracking, no "behavioural monetisation".
+No ads, no commercial data mining, no commercial tracking, no "behavioural monetisation". Anonymous research aggregates are strictly opt-in and consented — never free text, never sold.
 
 ## 3. Absolute Ethical Prohibitions
 
@@ -117,4 +117,4 @@ The NEP APP explicitly commits to:
 * rejecting prohibitionism;
 * defending the autonomy and dignity of people who use drugs;
 * refusing collaboration with repressive, commercial, or moralistic institutions;
-* **serving as a tool for empowerment — never control.**
+* **serving as a tool for real autonomy and self-determination — never control.**

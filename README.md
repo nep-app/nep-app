@@ -98,7 +98,7 @@ Sistema de metas com acompanhamento diário. PWA instalável. Tradução complet
 - **Zero-knowledge** — o Firebase guarda apenas `{ data: blob, iv: vector }`; ilegível sem o PIN
 - **Anti-brute-force** — bloqueio progressivo após tentativas falhadas
 - **Bloqueio configurável** — por defeito o PIN não persiste entre sessões; no modo opcional "nunca bloquear" fica guardado localmente no próprio dispositivo (nunca num servidor) para conveniência
-- **Sem tracking** — sem analytics, sem telemetria
+- **Sem tracking comercial** — sem analytics, sem telemetria, sem venda de dados. (Os agregados anónimos de investigação são opcionais, só com consentimento explícito, e nunca incluem texto — ver `researchService.js`.)
 
 ---
 
