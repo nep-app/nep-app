@@ -15,8 +15,17 @@ const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsSe
 // Cache global para análises de sentimento
 const sentimentCache = new Map();
 
+// Análise de sentimento DESATIVADA na vista de histórico.
+// O classificador é uma lista de palavras simples, só PT, sem contexto/negação:
+// em texto EN dava sempre "neutral (0.00)" e mesmo em PT etiquetava mal (ex.:
+// classificava mal linguagem de redução de danos). Mostrar isto às pessoas
+// confundia e não acrescentava valor — fica oculto até haver um classificador
+// fiável. (Basta remover esta linha para o reativar.)
+const SENTIMENT_UI_ENABLED = false;
+
 // Função com cache para análise de sentimento
 const getCachedSentimentAnalysis = (text) => {
+    if (!SENTIMENT_UI_ENABLED) return null;
     if (!text) return null;
 
     if (!sentimentCache.has(text)) {
