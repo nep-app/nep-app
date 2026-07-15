@@ -76,6 +76,67 @@ export function exportAllDataToJSON(data) {
   return JSON.stringify(exportData, null, 2);
 }
 
+// Coleções que sabemos importar (as mesmas que exportamos).
+const IMPORTABLE_COLLECTIONS = [
+  'consumptions', 'cycles', 'dailyLogs', 'wellbeingLogs',
+  'reflections', 'thoughts', 'goals',
+];
+
+/**
+ * Lê e valida um ficheiro de backup JSON (o mesmo formato que exportamos).
+ * Aceita o formato novo ({ collections: { nome: { data: [...] } } }) e um
+ * formato simples ({ nome: [...] }) por robustez.
+ * NÃO apaga nada: os registos são adicionados/atualizados por id (ver import
+ * no App). Devolve { collections: { nome: [itens] }, total }.
+ * Lança erro claro se o ficheiro não for um backup válido.
+ * @param {string} text - Conteúdo do ficheiro
+ */
+export function parseImportJSON(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('INVALID_JSON');
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('INVALID_JSON');
+  }
+
+  const source = parsed.collections && typeof parsed.collections === 'object'
+    ? parsed.collections
+    : parsed;
+
+  const collections = {};
+  let total = 0;
+
+  for (const name of IMPORTABLE_COLLECTIONS) {
+    const entry = source[name];
+    // Formato novo: { data: [...] }. Formato simples: [...]
+    const arr = Array.isArray(entry) ? entry
+      : (entry && Array.isArray(entry.data) ? entry.data : null);
+    if (!arr) continue;
+
+    // Só objetos; garante um id (gera se faltar, para não perder o registo).
+    const clean = arr
+      .filter(it => it && typeof it === 'object' && !Array.isArray(it))
+      .map((it, i) => ({
+        ...it,
+        id: it.id || `import_${name}_${Date.now()}_${i}`,
+      }));
+
+    if (clean.length > 0) {
+      collections[name] = clean;
+      total += clean.length;
+    }
+  }
+
+  if (total === 0) {
+    throw new Error('NO_RECORDS');
+  }
+
+  return { collections, total };
+}
+
 /**
  * Faz download de um ficheiro JSON
  * @param {string} jsonString - String JSON

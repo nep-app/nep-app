@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getFirebaseAuth } from './utils/firebase';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import * as analyticsService from './services/analyticsService';
-import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV } from './services/exportService';
+import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV, parseImportJSON } from './services/exportService';
 import * as Icons from './components/Icons';
 import { useData } from './contexts/DataContext';
 import { useMetrics } from './contexts/MetricsContext';
@@ -861,6 +861,42 @@ export function AuthenticatedApp() {
                 showToast(t('messages.backupCreated', { count: result.totalRecords }), 'success');
             };
 
+            // Importar (restaurar) um backup JSON. NÃO apaga nada: cada registo é
+            // adicionado ou atualizado por id (reimportar o mesmo ficheiro não
+            // duplica). Encripta e sincroniza pelos mesmos caminhos dos registos
+            // normais. Devolve o número de registos importados.
+            const importFromJSON = async (file) => {
+                const addByCollection = {
+                    consumptions: addConsumption,
+                    cycles: addCycle,
+                    dailyLogs: addDailyLog,
+                    wellbeingLogs: addWellbeingLog,
+                    reflections: addReflection,
+                    thoughts: addThought,
+                    goals: addGoal,
+                };
+                try {
+                    const text = await file.text();
+                    const { collections, total } = parseImportJSON(text);
+                    let imported = 0;
+                    for (const [name, items] of Object.entries(collections)) {
+                        const add = addByCollection[name];
+                        if (!add) continue;
+                        for (const item of items) {
+                            try { await add(item); imported++; }
+                            catch (e) { logger.error('[Import] Falha num registo:', e); }
+                        }
+                    }
+                    showToast(t('messages.importSuccess', { count: imported, total }), 'success');
+                } catch (e) {
+                    const key = e?.message === 'NO_RECORDS' ? 'messages.importEmpty'
+                        : e?.message === 'INVALID_JSON' ? 'messages.importInvalid'
+                        : 'messages.importError';
+                    showToast(t(key), 'error');
+                    logger.error('[Import] Erro ao importar:', e);
+                }
+            };
+
             // Streak calculation
             // getStreaks() removed - using metrics.streaks from useAnalysis hook
 
@@ -1130,6 +1166,7 @@ export function AuthenticatedApp() {
                                         lastSyncTime={lastSyncTime}
                                         onOpenExport={() => setShowExportModal(true)}
                                         onExportJSON={exportToJSON}
+                                        onImportJSON={importFromJSON}
                                         firstUseDate={firstUseDate}
                                         firstUseDateLocked={firstUseDateLocked}
                                         onOpenLegalDoc={(docType) => {

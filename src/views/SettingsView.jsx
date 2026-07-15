@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { PushRemindersSettings } from '../components/PushRemindersSettings';
@@ -69,6 +69,7 @@ export const SettingsView = ({
     onOpenLegalDoc,
     onOpenExport,
     onExportJSON,
+    onImportJSON,
     onForceSync,
     isSyncing,
     lastSyncTime,
@@ -77,6 +78,25 @@ export const SettingsView = ({
 }) => {
     const { t, i18n } = useTranslation();
     const [syncStatus, setSyncStatus] = useState(null);
+    const importInputRef = useRef(null);
+    const [pendingImportFile, setPendingImportFile] = useState(null);
+    const [importing, setImporting] = useState(false);
+
+    const handleImportPicked = (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = ''; // permite escolher o mesmo ficheiro outra vez
+        if (file) setPendingImportFile(file);
+    };
+    const confirmImport = async () => {
+        if (!pendingImportFile || !onImportJSON) return;
+        setImporting(true);
+        try {
+            await onImportJSON(pendingImportFile);
+        } finally {
+            setImporting(false);
+            setPendingImportFile(null);
+        }
+    };
     const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
 
     const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
@@ -404,8 +424,65 @@ export const SettingsView = ({
                     <p className="text-xs text-gray-500">
                         {t('settings.backupJSONDescription')}
                     </p>
+
+                    {onImportJSON && (
+                        <>
+                            <div className="border-t border-gray-700 my-1" />
+                            <button
+                                onClick={() => importInputRef.current && importInputRef.current.click()}
+                                className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 py-3 rounded-lg transition-all font-medium flex items-center justify-center gap-2"
+                            >
+                                <Icons.Upload className="w-4 h-4" />
+                                {t('settings.importJSONButton')}
+                            </button>
+                            <p className="text-xs text-gray-500">
+                                {t('settings.importJSONDescription')}
+                            </p>
+                            <input
+                                ref={importInputRef}
+                                type="file"
+                                accept="application/json,.json"
+                                onChange={handleImportPicked}
+                                className="hidden"
+                            />
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* Confirmação de importação */}
+            {pendingImportFile && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => !importing && setPendingImportFile(null)}>
+                    <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                            <Icons.Upload className="w-5 h-5" />
+                            {t('settings.importConfirmTitle')}
+                        </h3>
+                        <p className="text-sm text-gray-300 mb-1">
+                            {t('settings.importConfirmBody', { file: pendingImportFile.name })}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">
+                            {t('settings.importConfirmNote')}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setPendingImportFile(null)}
+                                disabled={importing}
+                                className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2.5 rounded-lg transition-all font-medium disabled:opacity-50"
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                onClick={confirmImport}
+                                disabled={importing}
+                                className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-2.5 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {importing ? t('settings.importing') : t('settings.importConfirmButton')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Lembretes push (mesmo com a app fechada) */}
             <PushRemindersSettings />
