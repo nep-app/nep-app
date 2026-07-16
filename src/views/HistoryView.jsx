@@ -9,6 +9,7 @@ import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 import { GapsReport } from '../components/ui/GapsReport';
+import { EMOTION_EN } from '../constants/emotions';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -69,7 +70,12 @@ export function HistoryView({
 }) {
     const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
     const metrics = useMetrics();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    // Em inglês, traduzir emoções (guardadas como '😌 Calmo/a') e gatilhos (guardados
+    // em PT, ex.: 'Ansiedade') para não mostrarem português na versão EN.
+    const isEN = i18n.language === 'en';
+    const trEmotion = (e) => (isEN ? (EMOTION_EN[e] || e) : e);
+    const trTrigger = (tr) => t('triggers.' + tr, tr);
 
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);
 
@@ -283,10 +289,10 @@ export function HistoryView({
                                                                                         💊 {(() => {
                                                                                             const d = safeDate(log.date || log.timestamp);
                                                                                             if (!d) return t('history.invalidDate');
-                                                                                            const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                            const dateStr = d.toLocaleDateString(i18n.language);
                                                                                             if (log.timestamp) {
                                                                                                 const ts = safeDate(log.timestamp);
-                                                                                                if (ts) return `${dateStr} - ${ts.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}`;
+                                                                                                if (ts) return `${dateStr} - ${ts.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}`;
                                                                                             }
                                                                                             return dateStr;
                                                                                         })()}
@@ -324,7 +330,7 @@ export function HistoryView({
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     🌙 {(() => {
                                                                                         const d = safeDate(cycle.timestamp);
-                                                                                        return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
+                                                                                        return d ? `${d.toLocaleDateString(i18n.language)} ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : t('history.invalidDate');
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
@@ -347,7 +353,7 @@ export function HistoryView({
                                                                             {cycle.triggers && cycle.triggers.length > 0 && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
                                                                                     <span className="text-gray-400">{t('history.triggers')} </span>
-                                                                                    <span className="font-medium">{cycle.triggers.join(', ')}</span>
+                                                                                    <span className="font-medium">{cycle.triggers.map(trTrigger).join(', ')}</span>
                                                                                 </div>
                                                                             )}
                                                                             {cycle.lastBefore00 && (
@@ -367,8 +373,8 @@ export function HistoryView({
                                                                                     💚 {(() => {
                                                                                         const d = safeDate(w.timestamp || w.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                        const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
@@ -381,13 +387,13 @@ export function HistoryView({
                                                                                 <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                                                                                     {w.mood && (
                                                                                         <div className="text-center">
-                                                                                            <div className="text-xs text-gray-300">Humor</div>
+                                                                                            <div className="text-xs text-gray-300">{t('history.moodLabel')}</div>
                                                                                             <div className="text-lg font-bold text-blue-400">{w.mood}/10</div>
                                                                                         </div>
                                                                                     )}
                                                                                     {w.energy && (
                                                                                         <div className="text-center">
-                                                                                            <div className="text-xs text-gray-300">Energia</div>
+                                                                                            <div className="text-xs text-gray-300">{t('history.energyLabel')}</div>
                                                                                             <div className="text-lg font-bold text-blue-400">{w.energy}/10</div>
                                                                                         </div>
                                                                                     )}
@@ -397,16 +403,16 @@ export function HistoryView({
                                                                                 {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 {t('wellbeing.atypicalTag')}{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                                 {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                                 {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
-                                                                                {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ Alimentação</span>}
-                                                                                {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 Social</span>}
+                                                                                {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
+                                                                                {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                             </div>
                                                                             {w.emotions && w.emotions.length > 0 && (
                                                                                 <div className="mb-2">
-                                                                                    <div className="text-xs mb-1 text-gray-400">Emoções:</div>
+                                                                                    <div className="text-xs mb-1 text-gray-400">{t('history.emotionsLabel')}</div>
                                                                                     <div className="flex flex-wrap gap-1">
                                                                                         {w.emotions.map((emotion, i) => (
                                                                                             <span key={i} className="bg-blue-800/50 text-blue-300 text-xs px-2 py-1 rounded">
-                                                                                                {emotion}
+                                                                                                {trEmotion(emotion)}
                                                                                             </span>
                                                                                         ))}
                                                                                     </div>
@@ -414,7 +420,7 @@ export function HistoryView({
                                                                             )}
                                                                             {(w.symptoms && w.symptoms.length > 0 || w.customSymptom) && (
                                                                                 <div className="mb-2">
-                                                                                    <div className="text-xs mb-1 text-teal-400">🩺 Sintomas:</div>
+                                                                                    <div className="text-xs mb-1 text-teal-400">{t('history.symptomsLabel')}</div>
                                                                                     <div className="flex flex-wrap gap-1">
                                                                                         {(w.symptoms || []).map(s => (
                                                                                             <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g,' ')}</span>
@@ -441,8 +447,8 @@ export function HistoryView({
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(r.timestamp || r.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
@@ -498,8 +504,8 @@ export function HistoryView({
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(thought.timestamp || thought.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
@@ -582,8 +588,8 @@ export function HistoryView({
                                                                                     {(() => {
                                                                                         const d = safeDate(r.timestamp || r.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
@@ -639,8 +645,8 @@ export function HistoryView({
                                                                                     {(() => {
                                                                                         const d = safeDate(thought.timestamp || thought.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                         return dateStr + timeStr;
                                                                                     })()}
                                                                                 </div>
@@ -707,8 +713,8 @@ export function HistoryView({
                                                                             {(() => {
                                                                                 const d = safeDate(r.timestamp || r.date);
                                                                                 if (!d) return t('history.invalidDate');
-                                                                                const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                const timeStr = r.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                const timeStr = r.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
@@ -788,8 +794,8 @@ export function HistoryView({
                                                                             {(() => {
                                                                                 const d = safeDate(thought.timestamp || thought.date);
                                                                                 if (!d) return t('history.invalidDate');
-                                                                                const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
@@ -864,8 +870,8 @@ export function HistoryView({
                                                                             {(() => {
                                                                                 const d = safeDate(w.timestamp || w.date);
                                                                                 if (!d) return t('history.invalidDate');
-                                                                                const dateStr = d.toLocaleDateString('pt-PT');
-                                                                                const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : '';
+                                                                                const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
@@ -875,13 +881,13 @@ export function HistoryView({
                                                                         <div className="grid grid-cols-2 gap-2 text-sm mb-2">
                                                                             {w.mood && (
                                                                                 <div className="text-center">
-                                                                                    <div className="text-xs text-gray-300">Humor</div>
+                                                                                    <div className="text-xs text-gray-300">{t('history.moodLabel')}</div>
                                                                                     <div className="text-lg font-bold text-blue-400">{w.mood}/10</div>
                                                                                 </div>
                                                                             )}
                                                                             {w.energy && (
                                                                                 <div className="text-center">
-                                                                                    <div className="text-xs text-gray-300">Energia</div>
+                                                                                    <div className="text-xs text-gray-300">{t('history.energyLabel')}</div>
                                                                                     <div className="text-lg font-bold text-blue-400">{w.energy}/10</div>
                                                                                 </div>
                                                                             )}
@@ -891,17 +897,17 @@ export function HistoryView({
                                                                         {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 {t('wellbeing.atypicalTag')}{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                         {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                         {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
-                                                                        {(w.napDuration > 0) && <span className="bg-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded-full">🛌 Sesta {w.napDuration}min</span>}
-                                                                        {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ Alimentação</span>}
-                                                                        {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 Social</span>}
+                                                                        {(w.napDuration > 0) && <span className="bg-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded-full">{t('wellbeing.napLabel')} {w.napDuration}min</span>}
+                                                                        {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
+                                                                        {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                     </div>
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
-                                                                            <div className="text-xs mb-1 text-gray-400">Emoções:</div>
+                                                                            <div className="text-xs mb-1 text-gray-400">{t('history.emotionsLabel')}</div>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {w.emotions.map((emotion, i) => (
                                                                                     <span key={i} className="bg-blue-800/50 text-blue-300 text-xs px-2 py-1 rounded">
-                                                                                        {emotion}
+                                                                                        {trEmotion(emotion)}
                                                                                     </span>
                                                                                 ))}
                                                                             </div>
@@ -909,7 +915,7 @@ export function HistoryView({
                                                                     )}
                                                                     {(w.symptoms && w.symptoms.length > 0 || w.customSymptom) && (
                                                                         <div className="mb-2">
-                                                                            <div className="text-xs mb-1 text-teal-400">🩺 Sintomas:</div>
+                                                                            <div className="text-xs mb-1 text-teal-400">{t('history.symptomsLabel')}</div>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {(w.symptoms || []).map(s => (
                                                                                     <span key={s} className="text-xs bg-teal-800/50 text-teal-300 px-2 py-0.5 rounded-full">{s.replace(/_/g,' ')}</span>
@@ -968,7 +974,7 @@ export function HistoryView({
                                                                                                 // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
                                                                                                 const d = safeDate(log.date || log.timestamp);
                                                                                                 if (!d) return t('history.invalidDate');
-                                                                                                const dateStr = d.toLocaleDateString('pt-PT');
+                                                                                                const dateStr = d.toLocaleDateString(i18n.language);
                                                                                                 return dateStr;
                                                                                             })()}
                                                                                         </div>
@@ -1014,7 +1020,7 @@ export function HistoryView({
                                                                         <div className="text-sm font-medium text-white">
                                                                             {(() => {
                                                                                 const d = safeDate(cycle.timestamp);
-                                                                                return d ? `${d.toLocaleDateString('pt-PT')} ${d.toLocaleTimeString('pt-PT', {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
+                                                                                return d ? `${d.toLocaleDateString(i18n.language)} ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : 'Data inválida';
                                                                             })()}
                                                                         </div>
                                                                         <div className="flex gap-2">

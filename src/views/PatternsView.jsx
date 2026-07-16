@@ -7,7 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
-import { getEmotionCategory, EMOTION_CATEGORIES } from '../constants/emotions';
+import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -1994,7 +1994,7 @@ export function PatternsView({
                                                                                 <div key={idx} className="flex items-center justify-between">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className={'text-xs font-bold ' + 'text-blue-400/50'}>#{idx + 1}</span>
-                                                                                        <span className={'text-sm ' + 'text-blue-300'}>{item.emotion}</span>
+                                                                                        <span className={'text-sm ' + 'text-blue-300'}>{i18n.language === 'en' ? (EMOTION_EN[item.emotion] || item.emotion) : item.emotion}</span>
                                                                                     </div>
                                                                                     <span className={'text-xs px-2 py-0.5 rounded ' + 'bg-gray-800/50 text-gray-400'}>
                                                                                         {item.count}×
@@ -2436,7 +2436,7 @@ export function PatternsView({
                                                         {/* Resumo interpretativo */}
                                                         {hasPeak2025 && (
                                                             <div className={'pt-3 border-t text-sm ' + ('border-gray-700 text-gray-300')}>
-                                                                🔍 <span className={'font-semibold ' + 'text-orange-400'}>Padrão detectado:</span> Pico entre dias <strong>20-25</strong> ({avgDays2025.toFixed(1)}/dia vs {overallAvg.toFixed(1)}/dia média)
+                                                                🔍 <span className={'font-semibold ' + 'text-orange-400'}>{t('patterns.structural.patternDetectedLabel')}</span> {t('patterns.structural.peakSummaryRest', { avg: avgDays2025.toFixed(1), overall: overallAvg.toFixed(1) })}
                                                             </div>
                                                         )}
                                                     </div>
