@@ -32,94 +32,73 @@ const pick = (arr, seed) => arr[Math.floor(rnd(seed) * arr.length)];
 // ---------------------------------------------------------------------------
 // CONSUMOS — padrão realista ao longo do dia, a reduzir suavemente com o tempo
 // ---------------------------------------------------------------------------
-const p6  = [10, 12, 14, 16, 18, 21];
-const p7  = [9, 11, 13, 15, 17, 19, 22];
-const p7b = [10, 12, 13, 15, 17, 20, 22];
-const p8  = [9, 11, 12, 14, 16, 18, 20, 23];
-const p8b = [9, 10, 12, 14, 15, 17, 20, 22];
-const p9  = [9, 10, 12, 13, 15, 16, 18, 20, 22];
-const p10 = [9, 10, 11, 13, 14, 15, 17, 19, 21, 23];
+// Os horários estão pensados para as METAS baterem certo com a lógica real da app:
+//  - meta de intervalo (>2h): dias "bons" espaçam ~3h; dias pesados ~2h.
+//  - meta de frequência (≤6): dias "bons" têm 5-6 usos; pesados 7-10.
+// A meta foi criada há 30 dias, por isso só os dias 0–30 contam para as metas;
+// os dias 31–45 mostram de ONDE se partiu nos gráficos de tendência.
+// Cada elemento é [dia, hora, minuto].
+const G6 = [[9, 0], [12, 0], [15, 0], [18, 0], [21, 0], [23, 0]];             // 6 usos, ~3h
+const G5 = [[10, 0], [13, 0], [16, 0], [19, 0], [22, 0]];                     // 5 usos, ~3h
+const M7 = [[10, 0], [12, 0], [14, 0], [16, 0], [18, 0], [20, 0], [22, 0]];   // 7 usos, ~2h
+const M8 = [[9, 0], [11, 0], [13, 0], [15, 0], [17, 0], [19, 0], [21, 0], [23, 0]]; // 8 usos, ~2h
+const E9 = [[9, 0], [10, 30], [12, 0], [13, 30], [15, 0], [16, 30], [18, 0], [20, 0], [22, 0]]; // 9, apertado
+const H9 = [[9, 0], [10, 0], [12, 0], [13, 0], [15, 0], [16, 0], [18, 0], [20, 0], [22, 0]];     // 9
+const H10 = [[9, 0], [10, 0], [11, 0], [13, 0], [14, 0], [15, 0], [17, 0], [19, 0], [21, 0], [23, 0]]; // 10
 
-const schedule = [
-  // Recente: 6-7/dia
-  ...p7.map(h  => [0,  h]),
-  ...p6.map(h  => [1,  h]),
-  ...p7.map(h  => [2,  h]),
-  ...p6.map(h  => [3,  h]),
-  ...p7b.map(h => [4,  h]),
-  ...p6.map(h  => [5,  h]),
-  ...p7.map(h  => [6,  h]),
-  ...p7b.map(h => [7,  h]),
-  ...p6.map(h  => [8,  h]),
-  ...p7.map(h  => [9,  h]),
-  ...p6.map(h  => [10, h]),
-  ...p7.map(h  => [11, h]),
-  ...p6.map(h  => [12, h]),
-  ...p7b.map(h => [13, h]),
-  // Planalto: 8/dia
-  ...p8.map(h  => [14, h]),
-  ...p8b.map(h => [15, h]),
-  ...p8.map(h  => [16, h]),
-  ...p7b.map(h => [17, h]),
-  ...p8b.map(h => [18, h]),
-  ...p8.map(h  => [19, h]),
-  ...p8b.map(h => [20, h]),
-  ...p8.map(h  => [21, h]),
-  ...p7b.map(h => [22, h]),
-  ...p8.map(h  => [23, h]),
-  ...p8b.map(h => [24, h]),
-  ...p8.map(h  => [25, h]),
-  ...p8b.map(h => [26, h]),
-  ...p8.map(h  => [27, h]),
-  // Onde começou: 9-10/dia
-  ...p9.map(h  => [28, h]),
-  ...p10.map(h => [29, h]),
-  ...p9.map(h  => [30, h]),
-  ...p10.map(h => [31, h]),
-  ...p9.map(h  => [32, h]),
-  ...p10.map(h => [33, h]),
-  ...p9.map(h  => [34, h]),
-  ...p10.map(h => [35, h]),
-  ...p9.map(h  => [36, h]),
-  ...p10.map(h => [37, h]),
-  ...p9.map(h  => [38, h]),
-  ...p10.map(h => [39, h]),
-  ...p9.map(h  => [40, h]),
-  ...p10.map(h => [41, h]),
-  ...p9.map(h  => [42, h]),
-  ...p10.map(h => [43, h]),
-  ...p9.map(h  => [44, h]),
-  ...p10.map(h => [45, h]),
-];
+// Plano por dia. Recente (0–13): sobretudo dias bons, com alguns dias "off".
+// Meio (14–27): planalto ~7-8/dia. 28–30: início da subida. 31–45: pré-meta, pesado.
+const dayPlan = {
+  0: G6, 1: G5, 2: G6, 3: G5, 4: M7, 5: G6, 6: G5, 7: G6, 8: M7, 9: G5, 10: G6, 11: G5, 12: G6, 13: M7,
+  14: M8, 15: M7, 16: M8, 17: M7, 18: M8, 19: M7, 20: M8, 21: M7, 22: M8, 23: M7, 24: M8, 25: M7, 26: M8, 27: M7,
+  28: E9, 29: H10, 30: E9,
+  31: H9, 32: H10, 33: H9, 34: H9, 35: H10, 36: H9, 37: H10, 38: H9, 39: H10, 40: H9, 41: H10, 42: H9, 43: H10, 44: H9, 45: H10,
+};
 
-export const consumptions = schedule.map(([day, hour]) => ({
-  id: uid(), timestamp: ts(day, hour), date: dk(day), notes: '',
+const schedule = [];
+for (let d = 0; d <= 45; d++) {
+  (dayPlan[d] || []).forEach(([h, m]) => schedule.push([d, h, m]));
+}
+// Duas madrugadas em que o consumo passou da meia-noite → a meta "não depois de
+// 00:00" não fica nos 100% (mostra que a app deteta mesmo estas noites).
+schedule.push([20, 0, 30]);
+schedule.push([26, 0, 30]);
+
+export const consumptions = schedule.map(([day, hour, min = 0]) => ({
+  id: uid(), timestamp: ts(day, hour, min), date: dk(day), notes: '',
 }));
 
+// Nº de usos por dia — para o registo de mg diário bater certo com os pontos.
+const dayCount = (d) => (dayPlan[d] || []).length;
+
 // ---------------------------------------------------------------------------
-// REGISTOS DE MG — snapshots do total diário (mg = média por consumo × usos)
+// REGISTOS DE MG — total diário. IMPORTANTE: 'times' = nº EXATO de usos desse
+// dia (senão o Histórico mostrava "6 usos" num dia com 7 pontos). A meta de
+// quantidade compara o TOTAL do dia (mg) com o alvo (150) — não é por consumo.
 // ---------------------------------------------------------------------------
-export const dailyLogs = [
-  { id: uid(), date: dk(0),  timestamp: ts(0, 23),  times: 7,  mg: 140, notes: 'Calmer day, managed to wait longer between sessions' },
-  { id: uid(), date: dk(2),  timestamp: ts(2, 22),  times: 7,  mg: 145, notes: '' },
-  { id: uid(), date: dk(4),  timestamp: ts(4, 22),  times: 6,  mg: 120, notes: '' },
-  { id: uid(), date: dk(7),  timestamp: ts(7, 22),  times: 7,  mg: 140, notes: 'Anxious evening, noticed the craving and rode it out a bit' },
-  { id: uid(), date: dk(9),  timestamp: ts(9, 23),  times: 7,  mg: 135, notes: '' },
-  { id: uid(), date: dk(11), timestamp: ts(11, 23), times: 6,  mg: 130, notes: '' },
-  { id: uid(), date: dk(13), timestamp: ts(13, 22), times: 7,  mg: 145, notes: '' },
-  { id: uid(), date: dk(14), timestamp: ts(14, 22), times: 8,  mg: 160, notes: 'Busier week, a bit higher' },
-  { id: uid(), date: dk(16), timestamp: ts(16, 23), times: 8,  mg: 155, notes: '' },
-  { id: uid(), date: dk(18), timestamp: ts(18, 23), times: 8,  mg: 155, notes: '' },
-  { id: uid(), date: dk(21), timestamp: ts(21, 22), times: 8,  mg: 160, notes: 'Social night, more than I planned — and that\'s okay' },
-  { id: uid(), date: dk(24), timestamp: ts(24, 23), times: 8,  mg: 165, notes: '' },
-  { id: uid(), date: dk(27), timestamp: ts(27, 23), times: 8,  mg: 160, notes: '' },
-  { id: uid(), date: dk(28), timestamp: ts(28, 22), times: 9,  mg: 185, notes: 'Heavier stretch, work was intense' },
-  { id: uid(), date: dk(31), timestamp: ts(31, 23), times: 10, mg: 195, notes: '' },
-  { id: uid(), date: dk(34), timestamp: ts(34, 22), times: 9,  mg: 180, notes: '' },
-  { id: uid(), date: dk(37), timestamp: ts(37, 23), times: 10, mg: 195, notes: '' },
-  { id: uid(), date: dk(40), timestamp: ts(40, 23), times: 10, mg: 200, notes: 'Tough period, leaning on it more' },
-  { id: uid(), date: dk(43), timestamp: ts(43, 22), times: 9,  mg: 185, notes: '' },
+const mgLogDays = [
+  [0, 120, 'Calmer day, more space between sessions'],
+  [2, 120, ''],
+  [4, 145, ''],
+  [6, 100, 'A lighter day'],
+  [8, 140, ''],
+  [10, 125, ''],
+  [13, 145, ''],
+  [15, 150, ''],
+  [18, 160, ''],
+  [21, 150, 'Social night — a bit more, and that\'s okay'],
+  [24, 165, ''],
+  [27, 155, ''],
+  [29, 195, ''],
+  [31, 185, ''],
+  [34, 180, ''],
+  [37, 200, 'Heavier stretch, work was intense'],
+  [40, 185, ''],
+  [43, 200, ''],
 ];
+export const dailyLogs = mgLogDays.map(([day, mg, notes]) => ({
+  id: uid(), date: dk(day), timestamp: ts(day, 22), times: dayCount(day), mg, notes,
+}));
 
 // ---------------------------------------------------------------------------
 // CICLOS DE SONO — quase diários (deixa poucas lacunas), com sono e deitar
