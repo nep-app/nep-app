@@ -818,6 +818,23 @@ export function PatternsView({
                                                                 const sortedDates = Object.keys(byDate).sort();
                                                                 const maxCount = Math.max(...Object.values(byDate));
 
+                                                                // Cor das barras RELATIVA à meta de frequência (se existir):
+                                                                // dentro da meta = verde. Senão, escala fixa antiga.
+                                                                const freqGoalBar = (goals || []).find(g => g.type === 'reduce_frequency' && !g.completed);
+                                                                const gt = freqGoalBar ? parseFloat(freqGoalBar.target) : null;
+                                                                const barColor = (count) => {
+                                                                    if (gt != null && !isNaN(gt)) {
+                                                                        if (count <= gt) return 'bg-gradient-to-t from-green-500 to-green-400';
+                                                                        if (count <= gt + 2) return 'bg-gradient-to-t from-blue-500 to-blue-400';
+                                                                        if (count <= gt + 4) return 'bg-gradient-to-t from-orange-500 to-orange-400';
+                                                                        return 'bg-gradient-to-t from-red-500 to-red-400';
+                                                                    }
+                                                                    if (count >= 10) return 'bg-gradient-to-t from-red-500 to-red-400';
+                                                                    if (count > 6) return 'bg-gradient-to-t from-orange-500 to-orange-400';
+                                                                    if (count > 3) return 'bg-gradient-to-t from-blue-500 to-blue-400';
+                                                                    return 'bg-gradient-to-t from-green-500 to-green-400';
+                                                                };
+
                                                                 // Determinar quantos dias mostrar baseado no período
                                                                 let daysToShow = sortedDates.length;
                                                                 if (patternsPeriod === 'hoje') daysToShow = Math.min(7, sortedDates.length);
@@ -849,13 +866,7 @@ export function PatternsView({
                                                                                             className={'w-full rounded-t transition-all duration-300 ' + (
                                                                                                 isToday
                                                                                                     ? 'bg-gradient-to-t from-yellow-500 to-orange-500'
-                                                                                                    : count >= 10
-                                                                                                        ? 'bg-gradient-to-t from-red-500 to-red-400'
-                                                                                                        : count > 6
-                                                                                                            ? 'bg-gradient-to-t from-orange-500 to-orange-400'
-                                                                                                            : count > 3
-                                                                                                                ? 'bg-gradient-to-t from-blue-500 to-blue-400'
-                                                                                                                : 'bg-gradient-to-t from-green-500 to-green-400'
+                                                                                                    : barColor(count)
                                                                                             )}
                                                                                             style={{ height: `${heightPx}px`, minHeight: '8px' }}
                                                                                         />

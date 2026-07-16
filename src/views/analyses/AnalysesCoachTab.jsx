@@ -417,7 +417,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Se não houver meta, não mostrar esta secção
                         if (!frequencyGoal) return null;
 
-                        const goodThreshold = Math.max(1, frequencyGoal.target - 1); // target - 1
+                        // Um dia DENTRO da meta (≤ alvo) conta como bom — não "alvo - 1".
+                        // Senão, cumprir a meta (ex.: 6 quando o alvo é 6) não aparecia como bom.
+                        const goodThreshold = Math.max(1, frequencyGoal.target);
                         // Use the same global threshold (target + 2) so all sections agree
 
                         const goodDays = Object.entries(consumptionsByDate).filter(([_, d]) => d.count <= goodThreshold);
