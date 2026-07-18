@@ -192,7 +192,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[80vh] overflow-y-auto"
+      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[80dvh] overflow-y-auto"
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
 
         {/* Handle bar */}
