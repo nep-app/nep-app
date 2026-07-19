@@ -2,6 +2,19 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 
+// MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
+// escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
+// nada, senão o streak/contador/resumos da demo ficavam guardados e uma conta
+// REAL criada depois nesse browser via os números da demo (ex.: "streak de 7
+// dias" numa conta acabada de criar).
+const isDemoMode = () => {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem('nep_demo') === '1';
+  } catch {
+    return false;
+  }
+};
+
 /**
  * MIGRAÇÃO ÚNICA: as stats/streaks eram gravadas numa base de dados separada
  * ('NEPDatabase_v2', ficheiro dexieDB.js já removido), órfã do resto da app.
@@ -133,6 +146,7 @@ export const calculateMaxStreak = (allItems) => {
  * @param {Array} goals - Array de goals desencriptados (opcional - lê da DB se não passado)
  */
 export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null) => {
+  if (isDemoMode()) return; // demo nunca grava na base real
   try {
     await ensureStatsMigrated();
     // Calcular streak com todas as fontes de atividade (independente de consumptions)
@@ -657,6 +671,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
  * Conta dias consecutivos em que a app foi aberta, independentemente do que foi feito.
  */
 export const updateAppUsageStreak = async () => {
+  if (isDemoMode()) return 0; // demo nunca grava na base real
   try {
     await ensureStatsMigrated();
     const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
@@ -705,6 +720,7 @@ export const getAppUsageStreak = async () => {
  * os milhares de registos do histórico todo.
  */
 export const saveDailyRollup = async (rollup) => {
+  if (isDemoMode()) return; // demo nunca grava na base real
   try {
     await db.metadata.put({ key: 'consumptionDailyRollup', value: rollup });
   } catch (e) {
@@ -728,6 +744,7 @@ export const getDailyRollup = async () => {
  * desencriptar o histórico inteiro. Também são agregados (não cifrado).
  */
 export const saveDailySummary = async (summary) => {
+  if (isDemoMode()) return; // demo nunca grava na base real
   try {
     await db.metadata.put({ key: 'dailySummary', value: summary });
   } catch (e) {
