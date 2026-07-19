@@ -875,7 +875,10 @@ export function HistoryView({
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        <div className="flex gap-2">
+                                                                            {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                            <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        </div>
                                                                     </div>
                                                                     {(w.mood || w.energy) && (
                                                                         <div className="grid grid-cols-2 gap-2 text-sm mb-2">
