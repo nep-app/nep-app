@@ -6,7 +6,7 @@ import { useLocalData } from './LocalDataContext';
 import { useAuth } from './AuthContext';
 import { syncService } from '../services/syncService';
 import { getDataMode, syncResearchData } from '../services/researchService';
-import { getMetadata, setMetadata } from '../db/localDB';
+import { getMetadata, setMetadata, clearDerivedStats } from '../db/localDB';
 
 export const DataContext = createContext();
 
@@ -143,7 +143,10 @@ export const DataProvider = ({ children }) => {
         const currentUID = user.uid;
 
         if (lastUID && lastUID !== currentUID) {
-          // User mudou - guardar novo UID
+          // User mudou → limpar estatísticas derivadas da conta ANTERIOR (streak,
+          // contador de dias, resumos), senão a conta nova via os números da antiga
+          // (ex.: "streak de 7 dias" numa conta acabada de criar).
+          await clearDerivedStats();
           await setMetadata('lastFirebaseUID', currentUID);
         } else if (!lastUID) {
           await setMetadata('lastFirebaseUID', currentUID);

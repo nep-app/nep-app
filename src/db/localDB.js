@@ -150,6 +150,27 @@ export async function clearUserDataOnly() {
 }
 
 /**
+ * Limpar estatísticas/derivados ESPECÍFICOS DA CONTA guardados em metadata.
+ *
+ * Usar quando se troca de conta (UID diferente): a `clearUserDataOnly` limpa os
+ * dados mas mantém a metadata de propósito (para o auto-lock reabrir depressa).
+ * O problema é que o streak, o contador de dias e os resumos ficavam lá e a conta
+ * NOVA via os números da conta ANTERIOR (ex.: "streak de 7 dias" numa conta acabada
+ * de criar). Aqui apagamos só esses derivados — NÃO o salt/PIN/email.
+ */
+export async function clearDerivedStats() {
+  await db.metadata.bulkDelete([
+    'userStats',
+    'appUsage',
+    'consumptionDailyRollup',
+    'dailySummary',
+    'firstUseDate',
+    'firstUseDateLocked',
+    'lastSyncTimestamp',
+  ]);
+}
+
+/**
  * Obter estatísticas da base de dados
  */
 export async function getDatabaseStats() {
