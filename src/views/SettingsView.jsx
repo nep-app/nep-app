@@ -317,16 +317,8 @@ export const SettingsView = ({
                                         ? firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
                                         : '—'}
                                 </span>
-                                {!firstUseDateLocked && (
-                                    <button
-                                        onClick={() => {
-                                            setFirstUseDateInput(firstUseDate ? firstUseDate.toISOString().slice(0, 10) : '');
-                                            setEditingFirstUse(true);
-                                        }}
-                                        className="text-xs text-gray-500 hover:text-gray-300"
-                                        title={t('settings.firstUseEdit')}
-                                    >✏️</button>
-                                )}
+                                {/* Sem edição: o "primeiro dia" é a data do registo mais antigo
+                                    (recupera-se sozinho após reinstalar) — não é para editar à mão. */}
                             </div>
                         )}
                     </div>
