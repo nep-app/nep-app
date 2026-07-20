@@ -9,7 +9,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyAXCbxOyg7-mOkDH7Sy-4CnJ597JDK1RE0",
+  apiKey: "AIzaSyDH8-OZZQPHzWOnkcABi0tWbeFpxSrnc0w",
   authDomain: "harm-reduction-d4f7d.firebaseapp.com",
   projectId: "harm-reduction-d4f7d",
   storageBucket: "harm-reduction-d4f7d.firebasestorage.app",

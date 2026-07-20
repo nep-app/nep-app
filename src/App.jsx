@@ -958,6 +958,28 @@ export function AuthenticatedApp() {
                 return () => window.removeEventListener('firstUseDateChanged', load);
             }, []);
 
+            // Se NÃO há "primeiro dia" guardado (ex.: depois de reinstalar), usar a
+            // data do registo MAIS ANTIGO. Como os registos voltam da nuvem, a app
+            // deixa de "achar" que é o primeiro dia depois de reinstalar — e fica
+            // guardado outra vez localmente.
+            useEffect(() => {
+                if (firstUseDate) return;
+                const dated = [
+                    ...consumptions, ...dailyLogs, ...cycles,
+                    ...wellbeingLogs, ...reflections, ...thoughts,
+                ];
+                let earliest = null;
+                for (const it of dated) {
+                    const d = it.date || (typeof it.timestamp === 'string' ? it.timestamp.split('T')[0] : null);
+                    if (d && (!earliest || d < earliest)) earliest = d;
+                }
+                if (earliest) {
+                    const dt = new Date(earliest + 'T12:00:00');
+                    setFirstUseDate(dt);
+                    import('./db/localDB').then(({ setMetadata }) => setMetadata('firstUseDate', dt.toISOString()));
+                }
+            }, [firstUseDate, consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts]);
+
             // Memoized coping strategies based on triggers
             const copingStrategies = useMemo(() => {
                 const allTriggers = cycles.flatMap(c => c.triggers || []);
