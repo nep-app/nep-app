@@ -23,7 +23,43 @@ function currentUid() {
 
 async function registerMessagingSW() {
   if (!('serviceWorker' in navigator)) throw new Error('Service workers não suportados.');
-  return navigator.serviceWorker.register(`${import.meta.env.BASE_URL}firebase-messaging-sw.js`);
+  const reg = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}firebase-messaging-sw.js`);
+  // Garantir que o service worker está ATIVO antes de pedir o token (senão o
+  // getToken pode falhar por o SW ainda não controlar a página).
+  await navigator.serviceWorker.ready;
+  return reg;
+}
+
+// Converte um ArrayBuffer (applicationServerKey da subscrição) para base64url,
+// para comparar com a chave VAPID (que já é base64url).
+function abToBase64Url(buf) {
+  const bytes = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/**
+ * Se já existe uma subscrição push com uma CHAVE DIFERENTE (ex.: a VAPID foi
+ * trocada entretanto), tem de ser apagada ANTES de subscrever com a nova —
+ * senão o navegador rejeita com "push service error". Só apaga quando a chave
+ * não bate certo (evita churn desnecessário e o erro 'token-subscribe-failed').
+ */
+async function clearStalePushSubscription(swReg) {
+  try {
+    const existing = await swReg.pushManager.getSubscription();
+    if (!existing) return;
+    const key = existing.options && existing.options.applicationServerKey;
+    const currentB64 = key ? abToBase64Url(key) : null;
+    const wantB64 = (VAPID_KEY || '').replace(/=+$/, '');
+    if (currentB64 !== wantB64) {
+      await existing.unsubscribe();
+      logger.log('[Push] Subscrição antiga (chave diferente) removida.');
+    }
+  } catch (e) {
+    // Se falhar a comparação, remover à mesma é o mais seguro para destravar.
+    try { const s = await swReg.pushManager.getSubscription(); if (s) await s.unsubscribe(); } catch {}
+  }
 }
 
 /**
@@ -45,9 +81,12 @@ export async function enablePushReminders() {
   const swReg = await registerMessagingSW();
   const messaging = getMessaging(getFirebaseApp());
 
-  // Registo simples (estado que funcionou de origem). NÃO fazemos deleteToken antes:
-  // isso podia deixar a "instalação" Firebase num estado que faz o getToken falhar
-  // com 'token-subscribe-failed / missing authentication credential'.
+  // Limpar subscrição antiga se a chave mudou (causa comum de "push service error"
+  // depois de trocar a VAPID). Usamos PushManager.unsubscribe (nível do navegador),
+  // NÃO o deleteToken do Firebase — este último deixava a instalação num estado que
+  // fazia o getToken falhar com 'token-subscribe-failed / missing authentication credential'.
+  await clearStalePushSubscription(swReg);
+
   const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
   if (!token) throw new Error('Não foi possível obter o token de notificações.');
 
