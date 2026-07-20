@@ -8,7 +8,8 @@ export const DailyLogModal = ({
   onClose,
   dailyForm,
   setDailyForm,
-  onSubmit
+  onSubmit,
+  onOpenWeighing
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -28,6 +29,14 @@ export const DailyLogModal = ({
           </button>
         </div>
         <div className="space-y-4">
+          {onOpenWeighing && (
+            <button
+              onClick={onOpenWeighing}
+              className="w-full bg-gray-700/60 hover:bg-gray-700 border border-gray-600 text-gray-200 py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 text-sm"
+            >
+              ⚖️ {t('weighing.openFromDailyLog')}
+            </button>
+          )}
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.dateLabel')}</label>
             <input

@@ -39,6 +39,7 @@ const SettingsView = lazy(() => import('./views/SettingsView').then(module => ({
 
 // Lazy load modals (only load when user opens them)
 const DailyLogModal = lazy(() => import('./components/modals/DailyLogModal').then(module => ({ default: module.DailyLogModal })));
+const WeighingModal = lazy(() => import('./components/modals/WeighingModal').then(module => ({ default: module.WeighingModal })));
 const WellbeingModal = lazy(() => import('./components/modals/WellbeingModal').then(module => ({ default: module.WellbeingModal })));
 const EmotionsModal = lazy(() => import('./components/modals/EmotionsModal').then(module => ({ default: module.EmotionsModal })));
 const ReflectionModal = lazy(() => import('./components/modals/ReflectionModal').then(module => ({ default: module.ReflectionModal })));
@@ -140,7 +141,7 @@ function HarmReductionTracker() {
  */
 export function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
+            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -207,6 +208,7 @@ export function AuthenticatedApp() {
 
             // Editing states for items that don't use UIContext
             const [editingDailyLog, setEditingDailyLog] = useState(null);
+            const [showWeighingModal, setShowWeighingModal] = useState(false);
             const [editingWellbeingLog, setEditingWellbeingLog] = useState(null);
             const [editingReflection, setEditingReflection] = useState(null);
             const [editingThought, setEditingThought] = useState(null);
@@ -433,6 +435,17 @@ export function AuthenticatedApp() {
                 } catch (error) {
                     showToast(t('messages.consumptionEditError'), 'error');
                     logger.error('Erro ao editar:', error);
+                }
+            };
+
+            const saveWeighing = async (record) => {
+                try {
+                    await addWeighing({ id: genId(), ...record });
+                    setShowWeighingModal(false);
+                    showToast(t('weighing.saved'), 'success');
+                } catch (error) {
+                    showToast(t('weighing.saveError'), 'error');
+                    logger.error(error);
                 }
             };
 
@@ -1187,6 +1200,16 @@ export function AuthenticatedApp() {
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
+                                onOpenWeighing={() => { setShowDailyLogModal(false); setShowWeighingModal(true); }}
+                            />
+                        </Suspense>
+
+                        <Suspense fallback={null}>
+                            <WeighingModal
+                                isOpen={showWeighingModal}
+                                onClose={() => setShowWeighingModal(false)}
+                                weighings={weighings}
+                                onSubmit={saveWeighing}
                             />
                         </Suspense>
 
