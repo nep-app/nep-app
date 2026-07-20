@@ -87,8 +87,24 @@ export async function enablePushReminders() {
   // fazia o getToken falhar com 'token-subscribe-failed / missing authentication credential'.
   await clearStalePushSubscription(swReg);
 
-  const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-  if (!token) throw new Error('Não foi possível obter o token de notificações.');
+  // O getToken pode falhar de forma TRANSITÓRIA (token-subscribe-failed / push
+  // service error) mesmo com tudo bem configurado. Tentar até 3 vezes com uma
+  // pequena pausa resolve a maioria dessas falhas passageiras.
+  let token = null;
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      if (token) break;
+    } catch (e) {
+      lastErr = e;
+      logger.error(`[Push] Tentativa ${attempt} falhou:`, e?.message || e);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
+    }
+  }
+  if (!token) {
+    throw lastErr || new Error('Não foi possível obter o token de notificações.');
+  }
 
   const db = getFirebaseDb();
   await setDoc(
