@@ -13,7 +13,13 @@ import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { getFirebaseApp, getFirebaseDb, getFirebaseAuth } from './firebase';
 import { logger } from './logger';
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+// Chave VAPID (Web Push certificate) do projeto harm-reduction-d4f7d, tirada
+// diretamente do Firebase Console (Cloud Messaging → Certificados push da Web).
+// É PÚBLICA (é o applicationServerKey), por isso pode estar aqui fixa. Fixámo-la
+// no código porque o segredo VITE_FIREBASE_VAPID_KEY podia estar com um valor
+// errado (era invisível/não verificável). Se um dia mudar a chave no Console,
+// atualizar aqui.
+const VAPID_KEY = 'BF0WrNv1scVewl7OoCnzwyYaf_uS91k-2mep9Uh6bcQuHBsGFog-f1FxjWGJ_9HcHDinb0Mnuyvk5e8AJ73NUUM';
 
 function currentUid() {
   const user = getFirebaseAuth().currentUser;
