@@ -8,7 +8,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'AIzaSyDH8-OZZQPHzWOnkcABi0tWbeFpxSrnc0w',
+  apiKey: 'AIzaSyAXCbxOyg7-mOkDH7Sy-4CnJ597JDK1RE0',
   authDomain: 'harm-reduction-d4f7d.firebaseapp.com',
   projectId: 'harm-reduction-d4f7d',
   storageBucket: 'harm-reduction-d4f7d.firebasestorage.app',
