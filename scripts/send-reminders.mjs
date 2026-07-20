@@ -82,6 +82,10 @@ async function run() {
           token,
           notification: { title: msg.title, body: msg.body },
           webpush: {
+            // Urgency: high — sem isto, o Android (sobretudo Xiaomi/MIUI) segura
+            // as mensagens em segundo plano e "não chega nada". Lição de uma PWA
+            // que funciona no mesmo aparelho (ver PUSH_NOTIFICATIONS.md).
+            headers: { Urgency: 'high' },
             notification: {
               icon: 'https://nep-app.github.io/nep-app/icon-192.png',
               badge: 'https://nep-app.github.io/nep-app/icon-192.png',
