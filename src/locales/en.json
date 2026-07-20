@@ -106,7 +106,11 @@
     "markNotWeighed": "Mark \"not weighed\"",
     "save": "Save weighing",
     "saved": "Weighing saved.",
-    "saveError": "Couldn't save the weighing."
+    "saveError": "Couldn't save the weighing.",
+    "derivedHint": "From your weighings, this day ≈ {{mg}} mg",
+    "useThisValue": "Tap to use this value",
+    "stateMixed": "part measured, part without weight",
+    "stateUnknownDay": "This day has doses but no weight recorded yet."
   },
   "home": {
     "syncing": "Syncing...",

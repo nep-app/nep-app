@@ -9,7 +9,8 @@ export const DailyLogModal = ({
   dailyForm,
   setDailyForm,
   onSubmit,
-  onOpenWeighing
+  onOpenWeighing,
+  derivedMg
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -56,6 +57,20 @@ export const DailyLogModal = ({
               className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
               min="0"
             />
+            {derivedMg && derivedMg.mg != null && (
+              <button
+                type="button"
+                onClick={() => setDailyForm({...dailyForm, mg: String(derivedMg.mg)})}
+                className="mt-2 w-full text-left bg-gray-900/50 border border-gray-700 hover:border-purple-500 rounded-lg p-2.5 text-xs text-gray-300 transition-colors"
+              >
+                ⚖️ {t('weighing.derivedHint', { mg: derivedMg.mg })}
+                {derivedMg.state === 'mixed' && <span className="text-amber-400"> · {t('weighing.stateMixed')}</span>}
+                <span className="block text-purple-300 mt-0.5">{t('weighing.useThisValue')}</span>
+              </button>
+            )}
+            {derivedMg && derivedMg.mg == null && derivedMg.doseCount > 0 && (
+              <p className="mt-2 text-xs text-gray-500">⚖️ {t('weighing.stateUnknownDay')}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.notesLabel')}</label>

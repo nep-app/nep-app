@@ -106,7 +106,11 @@
     "markNotWeighed": "Marcar \"não pesei\"",
     "save": "Guardar pesagem",
     "saved": "Pesagem guardada.",
-    "saveError": "Não foi possível guardar a pesagem."
+    "saveError": "Não foi possível guardar a pesagem.",
+    "derivedHint": "Pelas tuas pesagens, este dia ≈ {{mg}} mg",
+    "useThisValue": "Toca para usar este valor",
+    "stateMixed": "parte medido, parte sem peso",
+    "stateUnknownDay": "Este dia tem doses mas ainda sem peso registado."
   },
   "home": {
     "syncing": "A sincronizar...",
