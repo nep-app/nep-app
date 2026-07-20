@@ -111,7 +111,9 @@
     "useThisValue": "Tap to use this value",
     "stateMixed": "part measured, part without weight",
     "stateEstimated": "estimate (no weight for this period)",
-    "stateUnknownDay": "This day has doses but no weight recorded yet."
+    "stateUnknownDay": "This day has doses but no weight recorded yet.",
+    "notWeighedForDay": "I refilled without weighing on this day",
+    "markedNotWeighedDay": "Marked as \"not weighed\" for that day."
   },
   "weighingSuggestion": {
     "title": "A quick check",

@@ -455,6 +455,20 @@ export function AuthenticatedApp() {
                 }
             };
 
+            // Marca "não pesei" para o dia escolhido no "Registar mg" (sem abrir o
+            // modal de pesagem). NÃO fecha o modal — a dica de mg atualiza-se logo.
+            const markNotWeighedForDay = async (date) => {
+                try {
+                    const d = date || getTodayKey();
+                    const timestamp = new Date(d + 'T12:00:00').toISOString();
+                    await addWeighing({ id: genId(), timestamp, date: d, notWeighed: true });
+                    showToast(t('weighing.markedNotWeighedDay'), 'success');
+                } catch (error) {
+                    showToast(t('weighing.saveError'), 'error');
+                    logger.error(error);
+                }
+            };
+
             const submitDailyLog = async () => {
                 try {
                     if (editingDailyLog) {
@@ -1208,6 +1222,7 @@ export function AuthenticatedApp() {
                                 onSubmit={submitDailyLog}
                                 onOpenWeighing={() => { setShowDailyLogModal(false); setShowWeighingModal(true); }}
                                 derivedMg={derivedDailyMg[dailyForm.date || getTodayKey()] || null}
+                                onMarkNotWeighed={() => markNotWeighedForDay(dailyForm.date)}
                             />
                         </Suspense>
 

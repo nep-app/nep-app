@@ -111,7 +111,9 @@
     "useThisValue": "Toca para usar este valor",
     "stateMixed": "parte medido, parte sem peso",
     "stateEstimated": "estimativa (sem peso neste período)",
-    "stateUnknownDay": "Este dia tem doses mas ainda sem peso registado."
+    "stateUnknownDay": "Este dia tem doses mas ainda sem peso registado.",
+    "notWeighedForDay": "Enchi sem pesar neste dia",
+    "markedNotWeighedDay": "Marcado como \"não pesei\" nesse dia."
   },
   "weighingSuggestion": {
     "title": "Uma pequena confirmação",

@@ -10,7 +10,8 @@ export const DailyLogModal = ({
   setDailyForm,
   onSubmit,
   onOpenWeighing,
-  derivedMg
+  derivedMg,
+  onMarkNotWeighed
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -71,6 +72,15 @@ export const DailyLogModal = ({
             )}
             {derivedMg && derivedMg.mg == null && derivedMg.doseCount > 0 && (
               <p className="mt-2 text-xs text-gray-500">⚖️ {t('weighing.stateUnknownDay')}</p>
+            )}
+            {onMarkNotWeighed && (
+              <button
+                type="button"
+                onClick={onMarkNotWeighed}
+                className="mt-2 text-xs text-amber-400/90 hover:text-amber-300 underline"
+              >
+                {t('weighing.notWeighedForDay')}
+              </button>
             )}
           </div>
           <div>
