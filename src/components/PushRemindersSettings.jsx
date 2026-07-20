@@ -100,7 +100,7 @@ export function PushRemindersSettings({ showToast }) {
       )}
 
       {msg && (
-        <div className={'rounded-lg px-3 py-2 text-sm ' + (msg.type === 'error' ? 'bg-red-900/20 border border-red-700/40 text-red-300' : msg.type === 'success' ? 'bg-green-900/20 border border-green-700/40 text-green-300' : 'bg-gray-900/40 text-gray-300')}>
+        <div className={'rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ' + (msg.type === 'error' ? 'bg-red-900/20 border border-red-700/40 text-red-300' : msg.type === 'success' ? 'bg-green-900/20 border border-green-700/40 text-green-300' : 'bg-gray-900/40 text-gray-300')}>
           {msg.text}
         </div>
       )}

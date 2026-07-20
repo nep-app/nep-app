@@ -103,7 +103,15 @@ export async function enablePushReminders() {
     }
   }
   if (!token) {
-    throw lastErr || new Error('Não foi possível obter o token de notificações.');
+    // Expor o MÁXIMO de detalhe (o FCM guarda a resposta crua do servidor em
+    // customData.serverResponse) — permite diagnosticar sem consola/PC.
+    const detail =
+      lastErr?.customData?.serverResponse ||
+      lastErr?.customData?._serverResponse ||
+      (lastErr?.customData ? JSON.stringify(lastErr.customData) : '') ||
+      '';
+    const base = `${lastErr?.code || ''} ${lastErr?.message || 'Falha ao obter token'}`.trim();
+    throw new Error(detail ? `${base}\n\nDETALHE: ${detail}` : base);
   }
 
   const db = getFirebaseDb();
