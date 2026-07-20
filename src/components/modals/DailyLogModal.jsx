@@ -65,6 +65,7 @@ export const DailyLogModal = ({
               >
                 ⚖️ {t('weighing.derivedHint', { mg: derivedMg.mg })}
                 {derivedMg.state === 'mixed' && <span className="text-amber-400"> · {t('weighing.stateMixed')}</span>}
+                {derivedMg.state === 'estimated' && <span className="text-amber-400"> · {t('weighing.stateEstimated')}</span>}
                 <span className="block text-purple-300 mt-0.5">{t('weighing.useThisValue')}</span>
               </button>
             )}

@@ -2,6 +2,23 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 
+// IMPORTANTE: definido FORA do modal. Se estivesse dentro, o React recriava o
+// componente a cada tecla e o campo perdia o foco (não dava para escrever).
+const WField = ({ label, value, onChange, placeholder, hint }) => (
+  <div>
+    <label className="block text-sm font-medium mb-1 text-gray-300">{label}</label>
+    <input
+      type="number"
+      inputMode="decimal"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+    />
+    {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+  </div>
+);
+
 /**
  * "Registar pesagem" — regista o peso do saco para a app derivar os mg sozinha.
  * Trabalha por DIFERENÇAS de peso (não pede a tara, não obriga a esvaziar).
@@ -87,21 +104,6 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
     onSubmit(record);
   };
 
-  const Field = ({ label, value, onChange, placeholder, hint }) => (
-    <div>
-      <label className="block text-sm font-medium mb-1 text-gray-300">{label}</label>
-      <input
-        type="number"
-        inputMode="decimal"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-      />
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -148,16 +150,16 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
         ) : (
           <div className="space-y-4">
             {mode === 'novo' && (
-              <Field label={t('weighing.emptyLabel')} value={empty} onChange={setEmpty}
+              <WField label={t('weighing.emptyLabel')} value={empty} onChange={setEmpty}
                 placeholder="0" hint={t('weighing.emptyHint')} />
             )}
             {mode === 'sobrou' && (
-              <Field label={t('weighing.currentLabel')} value={before} onChange={setBefore}
+              <WField label={t('weighing.currentLabel')} value={before} onChange={setBefore}
                 placeholder="0" hint={t('weighing.currentHint')} />
             )}
-            <Field label={t('weighing.fullLabel')} value={full} onChange={setFull} placeholder="0" />
+            <WField label={t('weighing.fullLabel')} value={full} onChange={setFull} placeholder="0" />
             {mode === 'novo' && !firstEver && (
-              <Field label={t('weighing.leftoverPrevLabel')} value={leftoverPrev} onChange={setLeftoverPrev}
+              <WField label={t('weighing.leftoverPrevLabel')} value={leftoverPrev} onChange={setLeftoverPrev}
                 placeholder={t('weighing.optional')} hint={t('weighing.leftoverPrevHint')} />
             )}
 

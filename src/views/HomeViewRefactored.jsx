@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
 import { FeatureAnnouncement } from '../components/FeatureAnnouncement';
+import { WeighingSuggestion } from '../components/WeighingSuggestion';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
@@ -192,6 +193,9 @@ export function HomeViewRefactored({
     <div className="space-y-6">
       {/* Aviso de nova funcionalidade (lembretes push) — fecha-se e não volta */}
       <FeatureAnnouncement />
+
+      {/* Sugestão gentil: possível refill por pesar (Fase 2) */}
+      <WeighingSuggestion />
 
       {/* Botão sync */}
       <div className="flex justify-end">

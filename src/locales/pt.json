@@ -110,7 +110,14 @@
     "derivedHint": "Pelas tuas pesagens, este dia ≈ {{mg}} mg",
     "useThisValue": "Toca para usar este valor",
     "stateMixed": "parte medido, parte sem peso",
+    "stateEstimated": "estimativa (sem peso neste período)",
     "stateUnknownDay": "Este dia tem doses mas ainda sem peso registado."
+  },
+  "weighingSuggestion": {
+    "title": "Uma pequena confirmação",
+    "body": "Um período dá cerca de {{mgDose}} mg/dose — bem abaixo do teu normal (~{{typical}}). Terá ficado algum refill por pesar?",
+    "yesForgot": "Sim, esqueci-me de pesar",
+    "noReal": "Não, foi mesmo assim"
   },
   "home": {
     "syncing": "A sincronizar...",

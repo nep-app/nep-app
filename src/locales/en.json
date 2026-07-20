@@ -110,7 +110,14 @@
     "derivedHint": "From your weighings, this day ≈ {{mg}} mg",
     "useThisValue": "Tap to use this value",
     "stateMixed": "part measured, part without weight",
+    "stateEstimated": "estimate (no weight for this period)",
     "stateUnknownDay": "This day has doses but no weight recorded yet."
+  },
+  "weighingSuggestion": {
+    "title": "A quick check",
+    "body": "One period works out to about {{mgDose}} mg/dose — well below your usual (~{{typical}}). Did a refill maybe go unweighed?",
+    "yesForgot": "Yes, I forgot to weigh",
+    "noReal": "No, it was really like that"
   },
   "home": {
     "syncing": "Syncing...",
