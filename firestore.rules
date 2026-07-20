@@ -29,7 +29,7 @@ service cloud.firestore {
     function isSyncedCollection(collectionId) {
       return collectionId in [
         'consumptions', 'dailyLogs', 'reflections',
-        'wellbeingLogs', 'cycles', 'goals', 'thoughts'
+        'wellbeingLogs', 'cycles', 'goals', 'thoughts', 'weighings'
       ];
     }
 

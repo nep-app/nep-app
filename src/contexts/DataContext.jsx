@@ -55,6 +55,7 @@ export const DataProvider = ({ children }) => {
     goals,
     thoughts,
     healthLogs,
+    weighings,
     addItem,
     updateItem,
     deleteItem,
@@ -307,6 +308,23 @@ export const DataProvider = ({ children }) => {
     return result;
   }, [addItem]);
 
+  const addWeighing = useCallback(async (item) => {
+    const result = await addItem('weighings', item);
+    schedulePush();
+    return result;
+  }, [addItem]);
+
+  const updateWeighing = useCallback(async (id, updates) => {
+    const result = await updateItem('weighings', id, updates);
+    schedulePush();
+    return result;
+  }, [updateItem]);
+
+  const deleteWeighing = useCallback(async (id) => {
+    await deleteItem('weighings', id);
+    schedulePush();
+  }, [deleteItem]);
+
   /**
    * Contar quantos items estão pendentes de sincronização
    */
@@ -425,6 +443,7 @@ export const DataProvider = ({ children }) => {
     copingStrategies,
     thoughts,
     healthLogs,
+    weighings,
 
     // CRUD operations
     addConsumption,
@@ -439,6 +458,9 @@ export const DataProvider = ({ children }) => {
     updateGoal,
     deleteGoal,
     addThought,
+    addWeighing,
+    updateWeighing,
+    deleteWeighing,
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
 

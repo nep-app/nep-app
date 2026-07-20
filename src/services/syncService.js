@@ -38,7 +38,8 @@ const COLLECTIONS = [
   'wellbeingLogs',
   'cycles',
   'goals',
-  'thoughts'
+  'thoughts',
+  'weighings'
 ];
 
 class SyncService {

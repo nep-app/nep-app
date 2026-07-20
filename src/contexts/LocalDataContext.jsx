@@ -112,6 +112,7 @@ export const LocalDataProvider = ({ children }) => {
   const [goals, setGoals] = useState([]);
   const [thoughts, setThoughts] = useState([]);
   const [healthLogs, setHealthLogs] = useState([]);
+  const [weighings, setWeighings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [allDataLoaded, setAllDataLoaded] = useState(false);
@@ -285,6 +286,11 @@ export const LocalDataProvider = ({ children }) => {
       loadCollectionWithFirst('cycles', 7)
         .then(({ items }) => { if (!phase3StartedRef.current) setCycles(items); })
         .catch(err => logger.error('[LocalData] Erro ao carregar ciclos cedo:', err));
+      // Pesagens SEM filtro de data (poucas, como as metas): o motor dos mg precisa
+      // de TODAS para ligar cada refill às doses ao longo dos dias.
+      loadCollectionWithFirst('weighings', 999999)
+        .then(({ items }) => setWeighings(items))
+        .catch(err => logger.error('[LocalData] Erro ao carregar pesagens cedo:', err));
 
       logger.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
 
@@ -390,7 +396,8 @@ export const LocalDataProvider = ({ children }) => {
         cyclesFullData,
         goalsFullData,
         thoughtsFullData,
-        healthLogsFullData
+        healthLogsFullData,
+        weighingsFullData
       ] = await Promise.all([
         loadCollection('consumptions', 999999),
         loadCollection('dailyLogs', 999999),
@@ -399,7 +406,8 @@ export const LocalDataProvider = ({ children }) => {
         loadCollection('cycles', 999999),
         loadCollection('goals', 999999),
         loadCollection('thoughts', 999999),
-        loadCollection('healthLogs', 999999)
+        loadCollection('healthLogs', 999999),
+        loadCollection('weighings', 999999)
       ]);
 
       setConsumptions(consumptionsFullData);
@@ -410,6 +418,7 @@ export const LocalDataProvider = ({ children }) => {
       setGoals(goalsFullData);
       setThoughts(thoughtsFullData);
       setHealthLogs(healthLogsFullData);
+      setWeighings(weighingsFullData);
 
       await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
       setFullDataLoaded(true);
@@ -469,7 +478,8 @@ export const LocalDataProvider = ({ children }) => {
       cycles: setCycles,
       goals: setGoals,
       thoughts: setThoughts,
-      healthLogs: setHealthLogs
+      healthLogs: setHealthLogs,
+      weighings: setWeighings
     };
 
     const setter = setterMap[collectionName];
@@ -521,7 +531,8 @@ export const LocalDataProvider = ({ children }) => {
       cycles: setCycles,
       goals: setGoals,
       thoughts: setThoughts,
-      healthLogs: setHealthLogs
+      healthLogs: setHealthLogs,
+      weighings: setWeighings
     };
 
     const setter = setterMap[collectionName];
@@ -559,7 +570,8 @@ export const LocalDataProvider = ({ children }) => {
       cycles: setCycles,
       goals: setGoals,
       thoughts: setThoughts,
-      healthLogs: setHealthLogs
+      healthLogs: setHealthLogs,
+      weighings: setWeighings
     };
 
     const setter = setterMap[collectionName];
@@ -609,6 +621,7 @@ export const LocalDataProvider = ({ children }) => {
     goals,
     thoughts,
     healthLogs,
+    weighings,
 
     // CRUD operations
     addItem,
