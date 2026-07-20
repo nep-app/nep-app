@@ -99,16 +99,23 @@ Ao contrário da receita "clássica" (Cloud Functions + plano Blaze), aqui o env
 
 ---
 
-## Problemas conhecidos (a resolver)
+## Problema que estava a bloquear tudo — RESOLVIDO ✅
 
 - **`token-subscribe-failed: missing required authentication credential`** no
-  registo, em alguns aparelhos. Já descartados: APIs (ativadas), restrições da
-  chave (permite FCM Registration API + Firebase Installations API), App Check
-  (não aplicado). O link que a Google mete no erro
-  (`.../identity/sign-in/web/devconsole-project`) é **genérico e enganador** (é
-  sobre Google Sign-In, não sobre FCM) — ignorar. Próximo passo: reproduzir num
-  **PC** e ler o pedido exato que falha na **consola do browser** (Network/Console)
-  para ver que endpoint/credencial é rejeitado.
+  registo. **Causa real: a chave VAPID estava ERRADA.** O segredo
+  `VITE_FIREBASE_VAPID_KEY` tinha um valor que não correspondia ao Web Push
+  certificate do projeto (foi alterado muitas vezes, mas o valor nunca ficou
+  certo — e como o segredo é invisível, não dava para confirmar).
+  **Solução:** fixámos no código (`pushNotifications.js`) a chave VAPID **real**,
+  copiada do Firebase Console (Cloud Messaging → Certificados push da Web). Como é
+  o `applicationServerKey` (público), pode estar no código.
+  - Lição: o link que a Google mete neste erro
+    (`.../identity/sign-in/web/devconsole-project`) é **genérico e enganador** (é
+    sobre Google Sign-In, não sobre FCM) — ignorar. E o texto "missing credential"
+    NÃO era a chave de API nem o App Check — era mesmo a VAPID.
+  - Se a chave push da Web for regenerada no Console, **atualizar a constante
+    `VAPID_KEY`** em `src/utils/pushNotifications.js`.
+- Entrega no Android/Xiaomi (MIUI): resolvida com `Urgency: high` no carteiro.
 
 ---
 
