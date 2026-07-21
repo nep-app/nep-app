@@ -42,10 +42,11 @@ function nowInTz(tz) {
   return { date, minutes: hh * 60 + parseInt(g('minute'), 10) };
 }
 
-// Janela larga: o cron grátis do GitHub é estrangulado e corre ~de hora a hora, não
-// de 15 em 15 min. Com uma janela larga, um lembrete das 20h ainda dispara no primeiro
-// run que aconteça até 2h depois (uma vez só, por causa do dedup 'sent' diário).
-const WINDOW_MIN = 120;
+// O cron grátis do GitHub é estrangulado e corre ~de hora a hora, ÀS VEZES COM
+// BURACOS DE 3H. Por isso NÃO usamos uma janela curta (que perdia o lembrete se
+// o buraco fosse maior): o lembrete dispara na PRIMEIRA corrida que aconteça
+// DEPOIS da hora marcada, uma vez por dia (o dedup 'sent' diário evita repetir).
+// Assim chega sempre — pode é chegar mais tarde do que a hora exata.
 
 // Modo de teste: FORCE=true ignora a hora e o dedup diário (envia todos os
 // lembretes ligados, uma vez). Ativado pelo input 'force' do workflow_dispatch.
@@ -70,7 +71,7 @@ async function run() {
     for (const r of reminders) {
       if (!r || r.enabled === false) continue;
       const rMin = (parseInt(r.hour, 10) || 0) * 60 + (parseInt(r.minute, 10) || 0);
-      const due = FORCE || (nowMin >= rMin && (nowMin - rMin) < WINDOW_MIN);
+      const due = FORCE || (nowMin >= rMin);
       if (!due) continue;
       if (!FORCE && sent[r.id] === date) continue; // já enviado hoje (ignorado em teste)
 
