@@ -258,6 +258,10 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         const perDay = deriveDailyMg(weighings, consumptions, { typical });
         for (const [date, day] of Object.entries(perDay || {})) {
           if (!day || !(day.mg > 0)) continue;
+          // SÓ dias realmente MEDIDOS (todas as doses pesadas). Nunca usar dias
+          // 'estimated'/'mixed'/'unknown' — seriam mg ESTIMADOS pelo típico, e a
+          // app não deve mostrar mg inventados como se fossem um valor registado.
+          if (day.state !== 'measured') continue;
           if (atypicalDates.has(date)) continue;
           if (manualMgDates.has(date)) continue; // registo manual manda
           derivedMgEntries.push({ mg: day.mg, timestamp: new Date(`${date}T23:59:59`).getTime() });
