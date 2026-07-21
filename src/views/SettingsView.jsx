@@ -9,54 +9,64 @@ import { getDataMode, setDataMode } from '../services/researchService';
 // Versão vinda do package.json (injetada pelo Vite). Fonte única.
 const APP_VERSION = __APP_VERSION__;
 
-// ── Guia de utilização ────────────────────────────────────────────────────
+// Endereço fixo do fórum/comunidade (app separada, pública e anónima).
+const COMMUNITY_URL = 'https://nep-app.github.io/naosei/';
 
-function HowToUse() {
-    const { t, i18n } = useTranslation();
-    const [open, setOpen] = useState(false);
-    const [openIdx, setOpenIdx] = useState(null);
-
-    const guideSections = i18n.t('settings.guide', { returnObjects: true });
-
+// ── Secção que abre/fecha ───────────────────────────────────────────────────
+// Cartão com cabeçalho clicável. Fechada por defeito para a página não ocupar
+// tanto espaço — a pessoa abre só o que quer mexer.
+function Section({ icon, title, subtitle, defaultOpen = false, children }) {
+    const [open, setOpen] = useState(defaultOpen);
     return (
         <div className="bg-gray-800 border-gray-700 rounded-xl border overflow-hidden">
             <button
                 onClick={() => setOpen(v => !v)}
-                className="w-full flex items-center justify-between p-6 text-left"
+                className="w-full flex items-center justify-between p-4 text-left"
             >
-                <h3 className="font-semibold text-white flex items-center gap-2">
-                    <Icons.Info className="w-5 h-5 text-purple-400" />
-                    {t('settings.guideHeader')}
-                </h3>
-                <Icons.ChevronRight className={'w-5 h-5 text-gray-400 transition-transform ' + (open ? 'rotate-90' : '')} />
+                <span className="font-semibold text-white flex items-center gap-2">
+                    {icon}
+                    <span>{title}</span>
+                </span>
+                <Icons.ChevronRight className={'w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ' + (open ? 'rotate-90' : '')} />
             </button>
-
             {open && (
-                <div className="px-6 pb-6 space-y-2">
-                    <p className="text-xs text-gray-400 mb-3">
-                        {t('settings.guideTapToLearn')}
-                    </p>
-                    {guideSections.map((s, i) => (
-                        <div key={i} className="rounded-lg overflow-hidden border border-gray-700">
-                            <button
-                                onClick={() => setOpenIdx(openIdx === i ? null : i)}
-                                className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-700 hover:bg-gray-600 transition-colors"
-                            >
-                                <span className="flex items-center gap-2 text-sm font-medium text-gray-200">
-                                    <span>{s.emoji}</span>
-                                    <span>{s.title}</span>
-                                </span>
-                                <Icons.ChevronRight className={'w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ' + (openIdx === i ? 'rotate-90' : '')} />
-                            </button>
-                            {openIdx === i && (
-                                <div className="px-4 py-3 bg-gray-800 text-sm text-gray-300 leading-relaxed">
-                                    {s.content}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                <div className="px-4 pb-4">
+                    {subtitle && <p className="text-xs text-gray-400 mb-3">{subtitle}</p>}
+                    {children}
                 </div>
             )}
+        </div>
+    );
+}
+
+// ── Guia de utilização (só a lista; entra dentro de "Sobre e ajuda") ────────
+function GuideAccordion() {
+    const { t, i18n } = useTranslation();
+    const [openIdx, setOpenIdx] = useState(null);
+    const guideSections = i18n.t('settings.guide', { returnObjects: true });
+    if (!Array.isArray(guideSections)) return null;
+    return (
+        <div className="space-y-2">
+            <p className="text-xs text-gray-400 mb-1">{t('settings.guideTapToLearn')}</p>
+            {guideSections.map((s, i) => (
+                <div key={i} className="rounded-lg overflow-hidden border border-gray-700">
+                    <button
+                        onClick={() => setOpenIdx(openIdx === i ? null : i)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-left bg-gray-700 hover:bg-gray-600 transition-colors"
+                    >
+                        <span className="flex items-center gap-2 text-sm font-medium text-gray-200">
+                            <span>{s.emoji}</span>
+                            <span>{s.title}</span>
+                        </span>
+                        <Icons.ChevronRight className={'w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ' + (openIdx === i ? 'rotate-90' : '')} />
+                    </button>
+                    {openIdx === i && (
+                        <div className="px-4 py-3 bg-gray-800 text-sm text-gray-300 leading-relaxed">
+                            {s.content}
+                        </div>
+                    )}
+                </div>
+            ))}
         </div>
     );
 }
@@ -77,10 +87,12 @@ export const SettingsView = ({
     firstUseDateLocked
 }) => {
     const { t, i18n } = useTranslation();
+    const pt = i18n.language !== 'en';
     const [syncStatus, setSyncStatus] = useState(null);
     const importInputRef = useRef(null);
     const [pendingImportFile, setPendingImportFile] = useState(null);
     const [importing, setImporting] = useState(false);
+    const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
 
     const handleImportPicked = (e) => {
         const file = e.target.files && e.target.files[0];
@@ -97,46 +109,14 @@ export const SettingsView = ({
             setPendingImportFile(null);
         }
     };
-    const [currentLang, setCurrentLang] = useState(i18n.language || 'pt');
 
-    const [wellbeingAlarmOn, setWellbeingAlarmOn] = useState(() =>
-        safeLocalStorage.get('wellbeingAlarmEnabled', false)
-    );
+    // Exercício "surfar o impulso" (gate do UrgeSurfingModal na Home). ON por defeito.
     const [urgeExerciseOn, setUrgeExerciseOn] = useState(() =>
         localStorage.getItem('nep_urge_exercise') !== 'false'
     );
     const handleUrgeExerciseToggle = (on) => {
         setUrgeExerciseOn(on);
         localStorage.setItem('nep_urge_exercise', on ? 'true' : 'false');
-    };
-    const [doseAlarmOn, setDoseAlarmOn] = useState(() => {
-        const raw = localStorage.getItem('bagWeighAlarmHour');
-        return raw !== null && raw !== 'null';
-    });
-    const [doseAlarmTime, setDoseAlarmTime] = useState(() => {
-        const raw = localStorage.getItem('bagWeighAlarmHour');
-        if (raw === null || raw === 'null') return '10:00';
-        const h = parseInt(raw);
-        return isNaN(h) ? '10:00' : String(h).padStart(2, '0') + ':00';
-    });
-    const handleWellbeingAlarmToggle = (on) => {
-        setWellbeingAlarmOn(on);
-        safeLocalStorage.set('wellbeingAlarmEnabled', on);
-    };
-    const handleDoseAlarmToggle = (on) => {
-        setDoseAlarmOn(on);
-        if (on) {
-            const hour = parseInt(doseAlarmTime.split(':')[0]);
-            safeLocalStorage.set('bagWeighAlarmHour', hour);
-        } else {
-            safeLocalStorage.set('bagWeighAlarmHour', null);
-        }
-    };
-    const handleDoseAlarmTimeChange = (timeStr) => {
-        setDoseAlarmTime(timeStr);
-        if (doseAlarmOn && timeStr) {
-            safeLocalStorage.set('bagWeighAlarmHour', parseInt(timeStr.split(':')[0]));
-        }
     };
 
     const { lockMode, setLockMode } = useAuth();
@@ -146,11 +126,6 @@ export const SettingsView = ({
         setDataMode(mode);
         setDataModeState(mode);
     };
-
-    const [editingFirstUse, setEditingFirstUse] = useState(false);
-    const [firstUseDateInput, setFirstUseDateInput] = useState(() =>
-        firstUseDate ? firstUseDate.toISOString().slice(0, 10) : ''
-    );
 
     const LOCK_OPTIONS = [
         { value: 'never',   label: t('settings.lockNever'),   desc: t('settings.lockNeverDesc') },
@@ -165,14 +140,15 @@ export const SettingsView = ({
         localStorage.setItem('nep_lang', lang);
         setCurrentLang(lang);
     };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <h2 className="text-2xl font-bold text-white">
                 {t('settings.title')}
             </h2>
 
-            {/* Language Selector */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+            {/* ── Idioma (compacto, no topo) ── */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                     <Icons.Settings className="w-5 h-5" />
                     {t('settings.language')}
@@ -181,7 +157,7 @@ export const SettingsView = ({
                     <button
                         onClick={() => handleChangeLang('pt')}
                         className={
-                            'flex-1 py-3 rounded-lg font-medium transition-all border-2 ' +
+                            'flex-1 py-2.5 rounded-lg font-medium transition-all border-2 ' +
                             (currentLang === 'pt'
                                 ? 'bg-purple-600 border-purple-500 text-white'
                                 : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
@@ -192,7 +168,7 @@ export const SettingsView = ({
                     <button
                         onClick={() => handleChangeLang('en')}
                         className={
-                            'flex-1 py-3 rounded-lg font-medium transition-all border-2 ' +
+                            'flex-1 py-2.5 rounded-lg font-medium transition-all border-2 ' +
                             (currentLang === 'en'
                                 ? 'bg-purple-600 border-purple-500 text-white'
                                 : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
@@ -203,145 +179,73 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* Data Mode */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
-                    🛡️
-                    {i18n.language === 'pt' ? 'Modo de Dados' : 'Data Mode'}
-                </h3>
-                <p className="text-xs text-gray-400 mb-4">
-                    {i18n.language === 'pt'
-                        ? 'Como os teus dados são guardados e partilhados.'
-                        : 'How your data is stored and shared.'}
-                </p>
-                <div className="space-y-2">
-                    {[
-                        { id: 'local', icon: '📱', label: i18n.language === 'pt' ? 'Só local' : 'Local only', desc: i18n.language === 'pt' ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
-                        { id: 'cloud', icon: '🔒', label: i18n.language === 'pt' ? 'Cloud encriptado' : 'Cloud encrypted', desc: i18n.language === 'pt' ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
-                        { id: 'research', icon: '🔬', label: i18n.language === 'pt' ? 'Partilhar investigação' : 'Share research', desc: i18n.language === 'pt' ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
-                    ].map(opt => (
-                        <button
-                            key={opt.id}
-                            onClick={() => handleDataModeChange(opt.id)}
-                            className={
-                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all flex items-start gap-3 ' +
-                                (dataMode === opt.id
-                                    ? 'bg-purple-900/40 border-purple-500'
-                                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600')
-                            }
-                        >
-                            <span className="text-xl mt-0.5">{opt.icon}</span>
-                            <div>
-                                <div className="font-medium text-sm text-white">{opt.label}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
-                            </div>
-                            {dataMode === opt.id && <span className="ml-auto text-purple-400 text-lg">✓</span>}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {/* ── Notificações (abre/fecha) ── */}
+            <Section
+                icon={<Icons.Bell className="w-5 h-5 text-purple-400" />}
+                title={pt ? 'Notificações' : 'Notifications'}
+                subtitle={pt
+                    ? 'Lembretes que chegam mesmo com a app fechada.'
+                    : 'Reminders that arrive even when the app is closed.'}
+            >
+                <PushRemindersSettings />
+            </Section>
 
-            {/* Auto-lock */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
-                    <Icons.Shield className="w-5 h-5" />
-                    {t('settings.autoLock')}
-                </h3>
-                <p className="text-xs text-gray-400 mb-4">{t('settings.autoLockSubtitle')}</p>
-                <div className="space-y-2">
-                    {LOCK_OPTIONS.map(opt => (
-                        <button
-                            key={opt.value}
-                            onClick={() => setLockMode(opt.value)}
-                            className={
-                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all ' +
-                                (lockMode === opt.value
-                                    ? 'bg-purple-900/40 border-purple-500 text-white'
-                                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
-                            }
-                        >
-                            <div className="font-medium text-sm">{opt.label}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
-                        </button>
-                    ))}
-                </div>
-                {lockMode === 'never' && (
-                    <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-xs text-yellow-400">
-                        {t('settings.autoLockWarning')}
-                    </div>
-                )}
-            </div>
-
-            {/* User Info */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.User className="w-5 h-5" />
-                    {t('settings.account')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{t('settings.emailLabel')}</span>
-                        <span className="text-sm">{user?.email || t('settings.emailNotAvailable')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium">📅 {t('settings.firstUseLabel')}</span>
-                        {editingFirstUse ? (
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="date"
-                                    value={firstUseDateInput}
-                                    onChange={e => setFirstUseDateInput(e.target.value)}
-                                    className="bg-gray-700 text-white text-sm rounded px-2 py-1 border border-gray-600"
-                                />
-                                <button
-                                    onClick={() => {
-                                        if (firstUseDateInput) {
-                                            import('../db/localDB').then(({ setMetadata }) => {
-                                                setMetadata('firstUseDate', new Date(firstUseDateInput).toISOString());
-                                            });
-                                            if (typeof window !== 'undefined') window.dispatchEvent(new Event('firstUseDateChanged'));
-                                        }
-                                        setEditingFirstUse(false);
-                                    }}
-                                    className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded"
-                                >✓</button>
-                                <button
-                                    onClick={() => setEditingFirstUse(false)}
-                                    className="text-xs text-gray-400 hover:text-white px-1"
-                                >✕</button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm">
-                                    {firstUseDate
-                                        ? firstUseDate.toLocaleDateString(i18n.language === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                                        : '—'}
-                                </span>
-                                {/* Sem edição: o "primeiro dia" é a data do registo mais antigo
-                                    (recupera-se sozinho após reinstalar) — não é para editar à mão. */}
-                            </div>
-                        )}
+            {/* ── Surfar o impulso (visível e óbvio, junto às notificações) ── */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2">
+                            🌊 {t('settings.urgeExercise')}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{t('settings.urgeExerciseDesc')}</p>
                     </div>
                     <button
-                        onClick={handleLogout}
-                        className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border-red-700/50 w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2"
+                        onClick={() => handleUrgeExerciseToggle(!urgeExerciseOn)}
+                        aria-label={t('settings.urgeExercise')}
+                        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${urgeExerciseOn ? 'bg-purple-500' : 'bg-gray-600'}`}
                     >
-                        <Icons.LogOut className="w-4 h-4" />
-                        {t('settings.logout')}
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${urgeExerciseOn ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                 </div>
             </div>
 
-            {/* Sincronização */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.RefreshCw className="w-5 h-5" />
-                    {t('settings.sync')}
+            {/* ── Comunidade / Fórum (atalho externo) ── */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
+                <h3 className="font-semibold text-white mb-1 flex items-center gap-2">
+                    💬 {pt ? 'Comunidade' : 'Community'}
                 </h3>
+                <p className="text-xs text-gray-400 mb-3">
+                    {pt
+                        ? 'Um fórum anónimo de apoio entre pessoas — observar, não julgar.'
+                        : 'An anonymous peer-support forum — notice, don\'t judge.'}
+                </p>
+                <a
+                    href={COMMUNITY_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
+                >
+                    <span>💬</span>
+                    {pt ? 'Abrir a Comunidade' : 'Open the Community'}
+                    <span aria-hidden="true">↗</span>
+                </a>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                    {pt
+                        ? 'Abre num sítio à parte, no navegador. É público — o que escreveres lá pode ser lido por outras pessoas. O teu diário privado continua fechado à chave e não vai contigo.'
+                        : 'Opens separately in your browser. It is public — what you write there can be read by others. Your private journal stays locked and does not go with you.'}
+                </p>
+            </div>
+
+            {/* ── Os meus dados (abre/fecha): sincronizar + exportar/backup/importar ── */}
+            <Section
+                icon={<Icons.RefreshCw className="w-5 h-5 text-purple-400" />}
+                title={pt ? 'Os meus dados' : 'My data'}
+                subtitle={pt
+                    ? 'Guardar cópia, sincronizar e recuperar.'
+                    : 'Back up, sync and restore.'}
+            >
                 <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.syncDescription')}
-                    </p>
+                    <p className="text-sm">{t('settings.syncDescription')}</p>
 
                     {lastSyncTime && (
                         <div className="text-xs text-gray-400 bg-gray-900/50 rounded p-2">
@@ -386,19 +290,9 @@ export const SettingsView = ({
                             )}
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Exportar Relatório */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Download className="w-5 h-5" />
-                    {t('settings.exportTitle')}
-                </h3>
-                <div className="space-y-3 text-gray-300">
-                    <p className="text-sm">
-                        {t('settings.exportDescription')}
-                    </p>
+                    <div className="border-t border-gray-700 my-1" />
+
                     <button
                         onClick={onOpenExport}
                         className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-indigo-600 transition-all font-medium flex items-center justify-center gap-2"
@@ -413,9 +307,7 @@ export const SettingsView = ({
                         <Icons.Download className="w-4 h-4" />
                         {t('settings.backupJSONButton')}
                     </button>
-                    <p className="text-xs text-gray-500">
-                        {t('settings.backupJSONDescription')}
-                    </p>
+                    <p className="text-xs text-gray-500">{t('settings.backupJSONDescription')}</p>
 
                     {onImportJSON && (
                         <>
@@ -427,9 +319,7 @@ export const SettingsView = ({
                                 <Icons.Upload className="w-4 h-4" />
                                 {t('settings.importJSONButton')}
                             </button>
-                            <p className="text-xs text-gray-500">
-                                {t('settings.importJSONDescription')}
-                            </p>
+                            <p className="text-xs text-gray-500">{t('settings.importJSONDescription')}</p>
                             <input
                                 ref={importInputRef}
                                 type="file"
@@ -439,6 +329,163 @@ export const SettingsView = ({
                             />
                         </>
                     )}
+                </div>
+            </Section>
+
+            {/* ── Modo de dados (abre/fecha, pequeno) ── */}
+            <Section
+                icon={<span>🛡️</span>}
+                title={pt ? 'Modo de dados' : 'Data mode'}
+                subtitle={pt ? 'Como os teus dados são guardados e partilhados.' : 'How your data is stored and shared.'}
+            >
+                <div className="space-y-2">
+                    {[
+                        { id: 'local', icon: '📱', label: pt ? 'Só local' : 'Local only', desc: pt ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
+                        { id: 'cloud', icon: '🔒', label: pt ? 'Cloud encriptado' : 'Cloud encrypted', desc: pt ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
+                        { id: 'research', icon: '🔬', label: pt ? 'Partilhar investigação' : 'Share research', desc: pt ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            onClick={() => handleDataModeChange(opt.id)}
+                            className={
+                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all flex items-start gap-3 ' +
+                                (dataMode === opt.id
+                                    ? 'bg-purple-900/40 border-purple-500'
+                                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600')
+                            }
+                        >
+                            <span className="text-xl mt-0.5">{opt.icon}</span>
+                            <div>
+                                <div className="font-medium text-sm text-white">{opt.label}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                            </div>
+                            {dataMode === opt.id && <span className="ml-auto text-purple-400 text-lg">✓</span>}
+                        </button>
+                    ))}
+                </div>
+            </Section>
+
+            {/* ── Bloqueio automático (abre/fecha, pequeno) ── */}
+            <Section
+                icon={<Icons.Shield className="w-5 h-5 text-purple-400" />}
+                title={t('settings.autoLock')}
+                subtitle={t('settings.autoLockSubtitle')}
+            >
+                <div className="space-y-2">
+                    {LOCK_OPTIONS.map(opt => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setLockMode(opt.value)}
+                            className={
+                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all ' +
+                                (lockMode === opt.value
+                                    ? 'bg-purple-900/40 border-purple-500 text-white'
+                                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
+                            }
+                        >
+                            <div className="font-medium text-sm">{opt.label}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                        </button>
+                    ))}
+                </div>
+                {lockMode === 'never' && (
+                    <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-xs text-yellow-400">
+                        {t('settings.autoLockWarning')}
+                    </div>
+                )}
+            </Section>
+
+            {/* ── Conta (no fim, abre/fecha) ── */}
+            <Section
+                icon={<Icons.User className="w-5 h-5 text-purple-400" />}
+                title={t('settings.account')}
+            >
+                <div className="space-y-3 text-gray-300">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{t('settings.emailLabel')}</span>
+                        <span className="text-sm">{user?.email || t('settings.emailNotAvailable')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium">📅 {t('settings.firstUseLabel')}</span>
+                        {/* O "primeiro dia" é a data do registo mais antigo (recupera-se
+                            sozinho após reinstalar) — é fixo, não se edita à mão. */}
+                        <span className="text-sm">
+                            {firstUseDate
+                                ? firstUseDate.toLocaleDateString(pt ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                                : '—'}
+                        </span>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="bg-red-900/30 hover:bg-red-900/50 text-red-400 border-red-700/50 w-full py-3 rounded-lg transition-all font-medium border flex items-center justify-center gap-2"
+                    >
+                        <Icons.LogOut className="w-4 h-4" />
+                        {t('settings.logout')}
+                    </button>
+                </div>
+            </Section>
+
+            {/* ── Sobre e ajuda (abre/fecha): sobre + como usar + legal ── */}
+            <Section
+                icon={<Icons.Info className="w-5 h-5 text-purple-400" />}
+                title={pt ? 'Sobre e ajuda' : 'About & help'}
+            >
+                <div className="space-y-4 text-sm text-gray-300">
+                    {/* Sobre */}
+                    <div className="space-y-1">
+                        <p><strong>{t('settings.appName')}</strong></p>
+                        <p className="text-xs italic">{t('settings.tagline')}</p>
+                        <p className="text-xs italic">{t('settings.motto')}</p>
+                        <div className="mt-3 pt-3 border-t text-xs border-gray-700 text-gray-400">
+                            <p>{t('settings.version', { version: APP_VERSION })}</p>
+                            <p className="mt-1">{t('settings.copyright')}</p>
+                        </div>
+                    </div>
+
+                    {/* Como usar */}
+                    <div className="pt-2 border-t border-gray-700">
+                        <p className="font-medium text-gray-200 mb-2 flex items-center gap-2">
+                            <Icons.Info className="w-4 h-4 text-purple-400" />
+                            {t('settings.guideHeader')}
+                        </p>
+                        <GuideAccordion />
+                    </div>
+
+                    {/* Legal */}
+                    <div className="pt-2 border-t border-gray-700 space-y-2">
+                        <button
+                            onClick={() => onOpenLegalDoc('license')}
+                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2"><span>📜</span><span>{t('settings.license')}</span></span>
+                            <Icons.ChevronRight className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => onOpenLegalDoc('terms')}
+                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2"><span>📋</span><span>{t('settings.terms')}</span></span>
+                            <Icons.ChevronRight className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => onOpenLegalDoc('governance')}
+                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                        >
+                            <span className="flex items-center gap-2"><span>⚖️</span><span>{t('settings.governance')}</span></span>
+                            <Icons.ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </Section>
+
+            {/* ── Privacidade e segurança (no fundo, sem repetir) ── */}
+            <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-700/50">
+                <div className="flex items-start gap-2">
+                    <Icons.Shield className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-purple-300">
+                        <p className="font-medium mb-1">{t('settings.privacy')}</p>
+                        <p className="text-xs opacity-90">{t('settings.privacyText')}</p>
+                    </div>
                 </div>
             </div>
 
@@ -475,162 +522,6 @@ export const SettingsView = ({
                     </div>
                 </div>
             )}
-
-            {/* Lembretes push (mesmo com a app fechada) */}
-            <PushRemindersSettings />
-
-            {/* Reminders */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                    <Icons.Bell className="w-5 h-5" />
-                    {t('settings.alarmsTitle')}
-                </h3>
-                <div className="space-y-5">
-
-                    {/* Bem-estar */}
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-200">{t('settings.alarmWellbeing')}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{t('settings.alarmWellbeingDesc')}</p>
-                            </div>
-                            <button
-                                onClick={() => handleWellbeingAlarmToggle(!wellbeingAlarmOn)}
-                                className={`relative w-12 h-6 rounded-full transition-colors ${wellbeingAlarmOn ? 'bg-blue-500' : 'bg-gray-600'}`}
-                            >
-                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${wellbeingAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-                        {wellbeingAlarmOn && (
-                            <p className="text-xs text-blue-400 mt-1.5">{t('settings.alarmWellbeingActive')}</p>
-                        )}
-                    </div>
-
-                    <div className="border-t border-gray-700" />
-
-                    {/* Dose diária */}
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-200">{t('settings.alarmDose')}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{t('settings.alarmDoseDesc')}</p>
-                            </div>
-                            <button
-                                onClick={() => handleDoseAlarmToggle(!doseAlarmOn)}
-                                className={`relative w-12 h-6 rounded-full transition-colors ${doseAlarmOn ? 'bg-rose-500' : 'bg-gray-600'}`}
-                            >
-                                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${doseAlarmOn ? 'translate-x-7' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-                        {doseAlarmOn && (
-                            <div className="mt-2 flex items-center gap-3">
-                                <input
-                                    type="time"
-                                    value={doseAlarmTime}
-                                    onChange={e => handleDoseAlarmTimeChange(e.target.value)}
-                                    className="bg-gray-700 border-gray-600 text-white px-3 py-1.5 rounded-lg border text-sm focus:ring-2 focus:ring-rose-500"
-                                />
-                                <p className="text-xs text-rose-400">{t('settings.alarmDoseActive')} {doseAlarmTime.slice(0,5)}</p>
-                            </div>
-                        )}
-                    </div>
-
-                </div>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-200">{t('settings.urgeExercise')}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{t('settings.urgeExerciseDesc')}</p>
-                        </div>
-                        <button
-                            onClick={() => handleUrgeExerciseToggle(!urgeExerciseOn)}
-                            className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${urgeExerciseOn ? 'bg-purple-500' : 'bg-gray-600'}`}
-                        >
-                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${urgeExerciseOn ? 'translate-x-7' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-
-                <p className="text-xs text-gray-600 mt-4">{t('settings.alarmNote')}</p>
-            </div>
-
-            {/* Legal & Ethics */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.FileText className="w-5 h-5" />
-                    {t('settings.legal')}
-                </h3>
-                <div className="space-y-2">
-                    <button
-                        onClick={() => onOpenLegalDoc('license')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2">
-                            <span>📜</span>
-                            <span>{t('settings.license')}</span>
-                        </span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onOpenLegalDoc('terms')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2">
-                            <span>📋</span>
-                            <span>{t('settings.terms')}</span>
-                        </span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onOpenLegalDoc('governance')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2">
-                            <span>⚖️</span>
-                            <span>{t('settings.governance')}</span>
-                        </span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-
-            {/* App Info */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Info className="w-5 h-5" />
-                    {t('settings.about')}
-                </h3>
-                <div className="space-y-2 text-sm text-gray-300">
-                    <p>
-                        <strong>{t('settings.appName')}</strong>
-                    </p>
-                    <p className="text-xs italic">
-                        {t('settings.tagline')}
-                    </p>
-                    <p className="text-xs italic">
-                        {t('settings.motto')}
-                    </p>
-                    <div className="mt-4 pt-4 border-t text-xs border-gray-700 text-gray-400">
-                        <p>{t('settings.version', { version: APP_VERSION })}</p>
-                        <p className="mt-1">{t('settings.copyright')}</p>
-                        <p className="mt-1">{t('settings.privacyNote')}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Como usar a app */}
-            <HowToUse />
-
-            {/* Privacy & Security Info */}
-            <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-700/50">
-                <div className="flex items-start gap-2">
-                    <Icons.Shield className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-purple-300">
-                        <p className="font-medium mb-1">{t('settings.privacy')}</p>
-                        <p className="text-xs opacity-90">
-                            {t('settings.privacyText')}
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
