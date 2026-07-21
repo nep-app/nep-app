@@ -68,7 +68,7 @@ export function HistoryView({
     deleteItem,
     handleFillGap
 }) {
-    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, db } = useData();
+    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, db } = useData();
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
     // Em inglês, traduzir emoções (guardadas como '😌 Calmo/a') e gatilhos (guardados
@@ -130,6 +130,17 @@ export function HistoryView({
         [thoughts, dateRange]
     );
 
+    const tempFilteredWeighings = useMemo(() =>
+        filterByDateRange(weighings || [], dateRange)
+            .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)),
+        [weighings, dateRange]
+    );
+
+    // Pesagens: só aparecem no tópico próprio e no "todos".
+    const filteredWeighings = useMemo(() => (
+        (historyTopic === 'todos' || historyTopic === 'pesagens') ? tempFilteredWeighings : []
+    ), [historyTopic, tempFilteredWeighings]);
+
     // Aplicar filtro de tópico
     const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
         if (historyTopic === 'consumos') {
@@ -187,9 +198,10 @@ export function HistoryView({
             ...filteredCycles.map(cycle => ({ type: 'cycle', data: cycle, timestamp: cycle.timestamp })),
             ...filteredWellbeing.map(w => ({ type: 'wellbeing', data: w, timestamp: w.timestamp || w.date })),
             ...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
-            ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))
+            ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date })),
+            ...filteredWeighings.map(w => ({ type: 'weighing', data: w, timestamp: w.timestamp || w.date }))
         ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }, [filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeing, filteredReflections, filteredThoughts]);
+    }, [filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeing, filteredReflections, filteredThoughts, filteredWeighings]);
 
     // Lista consumos+dailyLogs ordenada — memoizada para não re-ordenar a cada render
     const consumptionLogsSorted = useMemo(() => (
@@ -198,7 +210,38 @@ export function HistoryView({
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     ), [filteredConsumptions, filteredDailyLogs]);
 
-    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0;
+    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0 || filteredWeighings.length > 0;
+
+    // Cartão de uma pesagem no Histórico (mesmo estilo dos outros itens). Mostra o
+    // peso atual em mg e, quando dá, quanto se gastou desde a pesagem anterior.
+    const renderWeighing = (w) => {
+        const dt = new Date(w.timestamp || (w.date ? `${w.date}T12:00:00` : Date.now()));
+        const consumed = (!w.notWeighed && !w.isNewBag && w.before != null && w.full != null && w.before > w.full)
+            ? (w.before - w.full) : null;
+        return (
+            <div key={`weigh-${w.id}`} className="bg-amber-900/25 border-amber-700/50 p-3 rounded-lg border">
+                <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                        <div className="font-medium text-white">⚖️ {formatDateTime(dt)}</div>
+                        {w.notWeighed ? (
+                            <div className="text-sm mt-1 text-gray-300">
+                                {isEN ? 'Filled without weighing (no weight recorded)' : 'Enchi sem pesar (sem peso registado)'}
+                            </div>
+                        ) : (
+                            <div className="text-sm mt-1 text-amber-200">
+                                <span className="font-bold">{w.full}</span> mg
+                                {w.isNewBag && <span className="text-gray-400"> · {isEN ? 'new bag' : 'saco novo'}</span>}
+                                {consumed != null && (
+                                    <span className="text-gray-400"> · {isEN ? 'used since last: ' : 'gasto desde a última: '}<span className="text-amber-200 font-medium">{consumed}</span> mg</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <button onClick={() => deleteItem('weighings', w.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                </div>
+            </div>
+        );
+    };
 
     return (
                                 <div className="space-y-6">
@@ -238,7 +281,8 @@ export function HistoryView({
                                             { id: 'consumos', label: t('history.filterLogs') },
                                             { id: 'ciclos', label: t('history.filterCycles') },
                                             { id: 'estado', label: t('history.filterWellbeing') },
-                                            { id: 'diario', label: t('history.filterDiary') }
+                                            { id: 'diario', label: t('history.filterDiary') },
+                                            { id: 'pesagens', label: isEN ? '⚖️ Weighings' : '⚖️ Pesagens' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {topic.label}
@@ -493,6 +537,8 @@ export function HistoryView({
                                                                             )}
                                                                         </div>
                                                                     );
+                                                                } else if (item.type === 'weighing') {
+                                                                    return renderWeighing(item.data);
                                                                 } else {
                                                                     const thought = item.data;
                                                                     const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;
@@ -568,6 +614,20 @@ export function HistoryView({
                                                 </div>
                                             )}
 
+                                            {/* Bloco dedicado: Pesagens */}
+                                            {historyTopic === 'pesagens' && (
+                                                <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">⚖️ {isEN ? 'Weighings' : 'Pesagens'} ({filteredWeighings.length})</h3>
+                                                    {filteredWeighings.length === 0 ? (
+                                                        <p className="text-sm text-gray-400">{isEN ? 'No weighings in this period.' : 'Sem pesagens neste período.'}</p>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {filteredWeighings.map(renderWeighing)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* Timeline única para tab "diario" */}
                                             {historyTopic === 'diario' && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
@@ -634,6 +694,8 @@ export function HistoryView({
                                                                             )}
                                                                         </div>
                                                                     );
+                                                                } else if (item.type === 'weighing') {
+                                                                    return renderWeighing(item.data);
                                                                 } else {
                                                                     const thought = item.data;
                                                                     const analysis = thought.content ? getCachedSentimentAnalysis(thought.content) : null;

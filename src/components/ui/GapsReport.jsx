@@ -12,7 +12,7 @@ const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
  */
 export const GapsReport = React.memo(({ onFillGap }) => {
   const { t, i18n } = useTranslation();
-  const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts } = useData();
+  const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts, weighings } = useData();
 
   // Estado para gaps confirmados (que o user marcou como "OK/correto")
   const [confirmedGaps, setConfirmedGaps] = useState(() => {
@@ -57,6 +57,14 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     dailyLogs.forEach(log => {
       const logDate = log.date || (log.timestamp ? new Date(log.timestamp).toISOString().split('T')[0] : null);
       if (logDate) dailyLogDates.add(logDate);
+    });
+
+    // Dias com pesagem (ou "não pesei"): contam como mg registado — a app deriva
+    // os mg da pesagem, por isso não deve pedir o "mg" à mão nesses dias.
+    const weighingDates = new Set();
+    (weighings || []).forEach(w => {
+      const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+      if (wDate) weighingDates.add(wDate);
     });
 
     const cycleDates = new Set();
@@ -112,7 +120,8 @@ export const GapsReport = React.memo(({ onFillGap }) => {
 
       // Verificar o que existe para este dia (lookup O(1) - instantâneo!)
       const hasConsumptions = consumptionDates.has(dateKey);
-      const hasDailyLog = dailyLogDates.has(dateKey);
+      // "mg" está registado se houver registo à mão OU uma pesagem nesse dia.
+      const hasDailyLog = dailyLogDates.has(dateKey) || weighingDates.has(dateKey);
       const hasCycle = cycleDates.has(dateKey);
       const hasWellbeingCore = wellbeingCoreDates.has(dateKey);
       const hasEmotions = emotionsDates.has(dateKey);
@@ -148,7 +157,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     }
 
     return days;
-  }, [consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts]);
+  }, [consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts, weighings]);
 
   // Contar total de gaps (excluindo confirmados)
   const totalGaps = useMemo(() => {
