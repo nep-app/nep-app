@@ -9,8 +9,9 @@
  * GitHub e injetada no build. Sem ela, o pedido de token falha com aviso claro.
  */
 import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { getFirebaseApp, getFirebaseDb, getFirebaseAuth } from './firebase';
+import { safeLocalStorage } from './storage';
 import { logger } from './logger';
 
 // Chave VAPID (Web Push certificate) do projeto harm-reduction-d4f7d, tirada
@@ -25,6 +26,43 @@ function currentUid() {
   const user = getFirebaseAuth().currentUser;
   if (!user) throw new Error('Sem sessão Firebase — inicia sessão primeiro.');
   return user.uid;
+}
+
+// Identificador ESTÁVEL deste aparelho (telemóvel, PC…), guardado no localStorage.
+// Serve para guardarmos UMA morada (token) por aparelho na nuvem, de modo a que o
+// telemóvel e o PC não se apaguem um ao outro (cada um tem a sua entrada no mapa
+// `tokens`). Não identifica a pessoa — é só um número aleatório local ao aparelho.
+function getDeviceId() {
+  let id = safeLocalStorage.get('nep_device_id', null);
+  if (typeof id !== 'string' || !id) {
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    safeLocalStorage.set('nep_device_id', id);
+  }
+  return id;
+}
+
+// Grava a morada (token) DESTE aparelho no mapa `tokens.<deviceId>` do doc de prefs,
+// e apaga o campo antigo `token` (formato de morada única) para o carteiro não enviar
+// a dobrar. Cada aparelho fica com a sua própria entrada — nenhum apaga o do outro.
+async function writeDeviceToken(token) {
+  const db = getFirebaseDb();
+  const ref = doc(db, 'users', currentUid(), 'push', 'prefs');
+  const deviceId = getDeviceId();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon';
+  await setDoc(
+    ref,
+    {
+      tokens: { [deviceId]: { token, tz, updatedAt: new Date().toISOString() } },
+      // `tz` também no topo (o carteiro usa-o para saber a hora local dos lembretes).
+      tz,
+      // Apagar o formato antigo de morada única, se existir (evita envio duplicado).
+      token: deleteField(),
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
 }
 
 async function registerMessagingSW() {
@@ -120,17 +158,8 @@ export async function enablePushReminders() {
     throw new Error(detail ? `${base}\n\nDETALHE: ${detail}` : base);
   }
 
-  const db = getFirebaseDb();
-  await setDoc(
-    doc(db, 'users', currentUid(), 'push', 'prefs'),
-    {
-      token,
-      tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon',
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true }
-  );
-  logger.log('[Push] Token registado.');
+  await writeDeviceToken(token);
+  logger.log('[Push] Token registado (morada deste aparelho).');
   return token;
 }
 
@@ -161,13 +190,8 @@ export async function refreshPushTokenIfEnabled() {
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     if (!token) return;
 
-    const db = getFirebaseDb();
-    await setDoc(
-      doc(db, 'users', currentUid(), 'push', 'prefs'),
-      { token, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon', updatedAt: new Date().toISOString() },
-      { merge: true }
-    );
-    logger.log('[Push] Token atualizado em silêncio no arranque.');
+    await writeDeviceToken(token);
+    logger.log('[Push] Token atualizado em silêncio no arranque (morada deste aparelho).');
   } catch (e) {
     // Silencioso de propósito — é só um melhor-esforço em segundo plano.
     logger.error('[Push] refresh silencioso falhou (ignorado):', e?.message || e);
@@ -187,7 +211,11 @@ export async function saveReminderConfig(reminders) {
   );
 }
 
-/** Desativa os lembretes push neste dispositivo (apaga token local e no Firestore). */
+/**
+ * Desativa os lembretes push NESTE aparelho: apaga o token local e remove apenas a
+ * entrada deste aparelho no mapa `tokens` (não mexe nos lembretes nem nas moradas dos
+ * outros aparelhos — desativar no PC não pode calar o telemóvel).
+ */
 export async function disablePushReminders() {
   try {
     if (await isSupported()) {
@@ -195,7 +223,13 @@ export async function disablePushReminders() {
       await deleteToken(messaging).catch(() => {});
     }
     const db = getFirebaseDb();
-    await deleteDoc(doc(db, 'users', currentUid(), 'push', 'prefs')).catch(() => {});
+    const ref = doc(db, 'users', currentUid(), 'push', 'prefs');
+    const deviceId = getDeviceId();
+    // Remove só a morada deste aparelho; apaga também o campo antigo `token` por segurança.
+    await updateDoc(ref, {
+      [`tokens.${deviceId}`]: deleteField(),
+      token: deleteField(),
+    }).catch(() => {});
   } catch (e) {
     logger.error('[Push] Erro ao desativar:', e);
   }

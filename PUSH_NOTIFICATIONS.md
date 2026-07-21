@@ -41,10 +41,14 @@ Ao contrário da receita "clássica" (Cloud Functions + plano Blaze), aqui o env
 
 ## Decisões que custam bugs (importantes)
 
-- **Um token por APARELHO, não por utilizador.** Guardar um só `token` faz o PC
-  apagar o token do telemóvel quando a mesma conta entra nos dois. A app funciona
-  hoje com um token; se for preciso multi-dispositivo fiável, mudar para um mapa
-  `tokens = { [hashDoToken]: {...} }` e enviar para todos.
+- **Um token por APARELHO, não por utilizador.** ✅ **Implementado.** O doc guarda
+  agora `tokens = { [deviceId]: { token, tz, updatedAt } }` — cada aparelho (telemóvel,
+  PC…) tem a sua entrada e nenhum apaga a do outro. O `deviceId` é um id aleatório
+  estável no `localStorage` (`nep_device_id`), não identifica a pessoa. O carteiro
+  envia para **todas** as moradas e, quando uma dá `registration-token-not-registered`,
+  apaga **só essa** entrada (`tokens.<deviceId>`). Recuo para o campo antigo `token`
+  (chave `_legacy`) enquanto houver docs por migrar; ao regravar, o cliente apaga esse
+  campo antigo para não haver envio duplicado.
 - **`Urgency: high` no webpush** ⚠️ — sem isto, o Android (sobretudo Xiaomi/MIUI)
   segura as mensagens em segundo plano → "não chega nada". **Já aplicado** em
   `scripts/send-reminders.mjs` (`webpush.headers.Urgency = 'high'`).

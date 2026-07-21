@@ -60,9 +60,20 @@ async function run() {
   for (const docSnap of snap.docs) {
     if (docSnap.id !== 'prefs') continue;
     const data = docSnap.data() || {};
-    const token = data.token;
     const reminders = Array.isArray(data.reminders) ? data.reminders : [];
-    if (!token || reminders.length === 0) continue;
+
+    // UMA morada por aparelho: o mapa `tokens` tem { <deviceId>: { token, ... } }.
+    // Recuo para o formato antigo (campo único `token`) enquanto houver docs por migrar.
+    // Cada destino leva a sua CHAVE, para podermos apagar só o que der erro.
+    const targets = []; // { key, token }  (key '_legacy' = campo antigo `token`)
+    if (data.tokens && typeof data.tokens === 'object') {
+      for (const [devId, entry] of Object.entries(data.tokens)) {
+        const tk = entry && entry.token;
+        if (tk) targets.push({ key: devId, token: tk });
+      }
+    }
+    if (data.token) targets.push({ key: '_legacy', token: data.token });
+    if (targets.length === 0 || reminders.length === 0) continue;
 
     const { date, minutes: nowMin } = nowInTz(data.tz);
     const sent = { ...(data.sent || {}) };
@@ -76,35 +87,48 @@ async function run() {
       if (!FORCE && sent[r.id] === date) continue; // já enviado hoje (ignorado em teste)
 
       const msg = MESSAGES[r.id] || MESSAGES.custom;
-      try {
-        // Payload 'notification' → o sistema mostra sozinho (fiável com a app fechada).
-        // O service worker NÃO tem onBackgroundMessage, por isso NÃO há duplicado.
-        await admin.messaging().send({
-          token,
-          notification: { title: msg.title, body: msg.body },
-          webpush: {
-            // Urgency: high — sem isto, o Android (sobretudo Xiaomi/MIUI) segura
-            // as mensagens em segundo plano e "não chega nada". Lição de uma PWA
-            // que funciona no mesmo aparelho (ver PUSH_NOTIFICATIONS.md).
-            headers: { Urgency: 'high' },
-            notification: {
-              icon: 'https://nep-app.github.io/nep-app/icon-192.png',
-              badge: 'https://nep-app.github.io/nep-app/icon-192.png',
-              tag: `nep-${r.id}`,
+
+      // Enviar para TODAS as moradas deste utilizador (telemóvel, PC…). Uma falha
+      // numa morada não impede as outras. O dedup diário é por lembrete (não por
+      // aparelho): marcamos 'enviado hoje' se pelo menos uma morada aceitou.
+      let anyOk = false;
+      for (const target of targets) {
+        try {
+          // Payload 'notification' → o sistema mostra sozinho (fiável com a app fechada).
+          // O service worker NÃO tem onBackgroundMessage, por isso NÃO há duplicado.
+          await admin.messaging().send({
+            token: target.token,
+            notification: { title: msg.title, body: msg.body },
+            webpush: {
+              // Urgency: high — sem isto, o Android (sobretudo Xiaomi/MIUI) segura
+              // as mensagens em segundo plano e "não chega nada". Lição de uma PWA
+              // que funciona no mesmo aparelho (ver PUSH_NOTIFICATIONS.md).
+              headers: { Urgency: 'high' },
+              notification: {
+                icon: 'https://nep-app.github.io/nep-app/icon-192.png',
+                badge: 'https://nep-app.github.io/nep-app/icon-192.png',
+                tag: `nep-${r.id}`,
+              },
+              fcmOptions: { link: 'https://nep-app.github.io/nep-app/' },
             },
-            fcmOptions: { link: 'https://nep-app.github.io/nep-app/' },
-          },
-        });
-        if (!FORCE) { sent[r.id] = date; changed = true; } // em teste não marca como enviado
-        sentCount++;
-        console.log(`Enviado '${r.id}' para ${docSnap.ref.path}`);
-      } catch (e) {
-        console.error(`Falha ao enviar '${r.id}' (${docSnap.ref.path}):`, e.message);
-        // Token inválido/expirado → limpar para não tentar sempre
-        if (e.code === 'messaging/registration-token-not-registered') {
-          await docSnap.ref.set({ token: admin.firestore.FieldValue.delete() }, { merge: true }).catch(() => {});
+          });
+          anyOk = true;
+          sentCount++;
+          console.log(`Enviado '${r.id}' para ${docSnap.ref.path} [${target.key}]`);
+        } catch (e) {
+          console.error(`Falha ao enviar '${r.id}' (${docSnap.ref.path} [${target.key}]):`, e.message);
+          // Morada morta → apagar SÓ essa entrada (não as outras), para não tentar sempre.
+          if (e.code === 'messaging/registration-token-not-registered') {
+            // Nota: para apagar um campo ANINHADO com set(merge), usa-se a forma de
+            // objeto aninhado ({ tokens: { <key>: delete } }), não a chave com ponto.
+            const field = target.key === '_legacy'
+              ? { token: admin.firestore.FieldValue.delete() }
+              : { tokens: { [target.key]: admin.firestore.FieldValue.delete() } };
+            await docSnap.ref.set(field, { merge: true }).catch(() => {});
+          }
         }
       }
+      if (anyOk && !FORCE) { sent[r.id] = date; changed = true; } // em teste não marca como enviado
     }
 
     if (changed) {
