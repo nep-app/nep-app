@@ -47,6 +47,10 @@ Quando for pedido para remover um campo (ex: lastBefore00), confirma se os regis
 continuam a contar corretamente em TODAS as análises e indica explicitamente o que foi alterado.
 
 ## Antes de cada commit
+- **Sobe a versão** no `package.json` (fonte única, lida pela app via `__APP_VERSION__`)
+  e alinha o `README.md` — a versão TEM de refletir as mudanças, não é escolha de marca
+  do utilizador. Mudança pequena → sobe o patch/minor; conjunto grande de features → sobe
+  o major. Nunca deixar a versão congelada quando há alterações reais.
 - Constrói a app (`npm run build`) e verifica se não há erros
 - Verifica se não há erros de TDZ/inicialização na consola
 - Confirma que o contador de dias de utilização está correto
