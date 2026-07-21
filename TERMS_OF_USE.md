@@ -1,6 +1,6 @@
 # NEP APP — Terms of Use (v1.0)
 
-**Last updated:** 29 November 2025
+**Last updated:** 21 July 2026
 
 These Terms govern the use of the NEP APP ("Application", "Service", "Software"), created to support people who use drugs in self-management, self-reflection, and understanding their own patterns of use.
 
@@ -24,7 +24,7 @@ Users have the right to:
 * use the application privately and autonomously;
 * export their data at any time;
 * request improvements;
-* request access to the source code under the NEP Ethical Open License 1.0.
+* request access to the source code under the NEP App Source-Available Ethical License v1.0.
 
 ## 3. Prohibited Uses
 
@@ -42,10 +42,10 @@ The following uses are strictly prohibited:
 
 ## 4. Intellectual Property
 
-The software is distributed under the NEP Ethical Open License 1.0, which:
+The software is distributed under the NEP App Source-Available Ethical License v1.0, which:
 
-* allows use and adaptation;
-* obliges derivative works to maintain the same ethical restrictions;
+* is source-available, not open source — no right is automatic, and viewing or reusing the code requires written authorization from the author;
+* forbids redistribution and reverse engineering; any derivative work requires specific written authorization and must keep the same ethical restrictions;
 * forbids use by repressive institutions, exploitative companies, coercive services, and any form of unethical repurposing.
 
 ## 5. API and Interoperability
@@ -62,6 +62,8 @@ Even before an API exists, the following applies:
 * Users control, export, and delete their data whenever they choose.
 * Data will never be sold, shared, or used for commercial or surveillance purposes.
 * If used for research, it requires informed consent, strong anonymisation, and harm reduction ethics.
+
+**Community forum (separate service).** The app may link to an optional Community forum, which is a **separate, public service** with its own rules. It is not part of your private journal: anything you post there (under a chosen nickname) is **public and readable by others**, and is not covered by the private, encrypted-data guarantees above. Participation is voluntary; avoid sharing information that could identify you.
 
 ## 7. Disclaimer
 

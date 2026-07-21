@@ -1,5 +1,7 @@
 # NEP APP — Ethical Governance Policy (v1.0)
 
+**Last updated:** 21 July 2026
+
 The NEP APP is grounded in clear principles:
 **autonomy, pleasure, human rights, anti-repression, and respect for people who use drugs**.
 

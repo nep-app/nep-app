@@ -69,7 +69,9 @@ export const LegalModal = ({
       // List items
       else if (line.startsWith('* ') || line.startsWith('- ')) {
         inList = true;
-        const text = line.slice(2).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        const text = line.slice(2)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>');
         listItems.push(<span dangerouslySetInnerHTML={{ __html: text }} />);
       }
       // Regular paragraphs

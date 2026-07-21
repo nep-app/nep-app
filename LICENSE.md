@@ -1,7 +1,12 @@
-# LICENSE — NEP APP (Source-Available + Ethical Restrictions License)
+# LICENSE — NEP App Source-Available Ethical License v1.0
 
-**NEP APP — Source-Available Ethical License (v1.0)**
+**NEP App Source-Available Ethical License v1.0**
 Copyright © Teresa Castro
+**Last updated:** 21 July 2026
+
+> This is a **source-available** license with ethical use restrictions. It is **not**
+> an "open source" / "open" license: an open-source license cannot restrict fields of
+> use, and this one deliberately does (see Section 2).
 
 The NEP APP is provided under a source-available license that allows partial access to the code and limited use, strictly conditioned on compliance with the ethical principles defined in this license.
 
