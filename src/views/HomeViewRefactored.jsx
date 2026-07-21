@@ -28,7 +28,7 @@ export function HomeViewRefactored({
   showToast
 }) {
   const { t, i18n } = useTranslation();
-  const { consumptions, goals, cycles, dailyLogs, manualSync, isSyncing } = useData();
+  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing } = useData();
   const metrics = useMetrics();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
@@ -162,7 +162,7 @@ export function HomeViewRefactored({
   // Quando a língua muda, regenerar alertas no idioma correcto (só isso)
   useEffect(() => {
     if (!consumptions || consumptions.length === 0) return;
-    updateUserStats(consumptions, cycles, dailyLogs, goals)
+    updateUserStats(consumptions, cycles, dailyLogs, goals, null, null, null, weighings)
       .catch(() => {})
       .finally(() => {
         getUserStats().then(stats => {

@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
+import { deriveDailyMg, typicalMgPerDose } from './mgDerivation';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -145,7 +146,7 @@ export const calculateMaxStreak = (allItems) => {
  * @param {Array} dailyLogs - Array de dailyLogs desencriptados (opcional - lê da DB se não passado)
  * @param {Array} goals - Array de goals desencriptados (opcional - lê da DB se não passado)
  */
-export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null) => {
+export const updateUserStats = async (consumptions, cycles = null, dailyLogs = null, goals = null, wellbeingLogs = null, thoughts = null, reflections = null, weighings = null) => {
   if (isDemoMode()) return; // demo nunca grava na base real
   try {
     await ensureStatsMigrated();
@@ -228,7 +229,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       lastInterval = parseFloat(hours);
     }
 
-    // Último mg (de cycles ou dailyLogs filtrados)
+    // Último mg — de cycles, dailyLogs E dos mg DERIVADOS das pesagens.
+    // Sem a parte das pesagens, quem regista os mg pela PESAGEM (em vez do
+    // "Registar mg" à mão) não via a dose refletida nos avisos do ecrã inicial.
     let lastMg = null;
     const cyclesWithMg = filteredCycles
       .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
@@ -238,7 +241,33 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
       .map(l => ({ mg: l.mg, timestamp: l.timestamp }));
 
-    const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg]
+    // mg/dia derivados das pesagens. Um dia com mg registado à MÃO (dailyLog)
+    // manda — só usamos o derivado para dias SEM registo manual. Dias atípicos
+    // não contam. As datas são LOCAIS (getTodayKey), por isso o fim-do-dia é
+    // construído em hora local (NÃO UTC) para não trocar o limite da meia-noite.
+    const manualMgDates = new Set(
+      filteredDailyLogs
+        .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
+        .map(l => l.date)
+        .filter(Boolean)
+    );
+    const derivedMgEntries = [];
+    if (weighings && weighings.length > 0) {
+      try {
+        const typical = typicalMgPerDose(weighings, consumptions);
+        const perDay = deriveDailyMg(weighings, consumptions, { typical });
+        for (const [date, day] of Object.entries(perDay || {})) {
+          if (!day || !(day.mg > 0)) continue;
+          if (atypicalDates.has(date)) continue;
+          if (manualMgDates.has(date)) continue; // registo manual manda
+          derivedMgEntries.push({ mg: day.mg, timestamp: new Date(`${date}T23:59:59`).getTime() });
+        }
+      } catch (e) {
+        // Derivação é best-effort: nunca deve partir os avisos.
+      }
+    }
+
+    const allWithMg = [...cyclesWithMg, ...dailyLogsWithMg, ...derivedMgEntries]
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     if (allWithMg.length > 0) {

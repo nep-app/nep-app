@@ -308,7 +308,8 @@ export const LocalDataProvider = ({ children }) => {
             { items: cyclesData,       total: totalCy },
             { items: goalsData,        total: totalG },
             { items: thoughtsData,     total: totalT },
-            { items: healthLogsData,   total: totalH }
+            { items: healthLogsData,   total: totalH },
+            { items: weighingsData }
           ] = await Promise.all([
             loadCollectionWithFirst('consumptions', 7),
             loadCollectionWithFirst('dailyLogs', 7),
@@ -320,7 +321,10 @@ export const LocalDataProvider = ({ children }) => {
             // logo carregá-las todas é instantâneo.
             loadCollectionWithFirst('goals', 999999),
             loadCollectionWithFirst('thoughts', 7),
-            loadCollectionWithFirst('healthLogs', 7)
+            loadCollectionWithFirst('healthLogs', 7),
+            // Pesagens SEM filtro de data (poucas): o motor dos mg precisa de todas
+            // para os avisos da dose refletirem os mg derivados da pesagem.
+            loadCollectionWithFirst('weighings', 999999)
           ]);
 
           // Se a FASE 3 (40 dias/tudo) já arrancou entretanto, NÃO escrever os
@@ -352,7 +356,7 @@ export const LocalDataProvider = ({ children }) => {
           if (totalLoaded >= totalInDB) {
             // FASE 2 carregou tudo — actualizar stats e marcar Phase 3 como feita
             logger.log('[LocalData] ⚡ FASE 2 já carregou TUDO - stats actualizadas, skip FASE 3');
-            updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData)
+            updateUserStats(consumptionsData, cyclesData, dailyLogsData, goalsData, wellbeingLogsData, thoughtsData, reflectionsData, weighingsData)
               .catch(err => logger.error('[LocalData] Erro ao actualizar stats FASE 2:', err));
             setFullDataLoaded(true);
           }
@@ -420,7 +424,7 @@ export const LocalDataProvider = ({ children }) => {
       setHealthLogs(healthLogsFullData);
       setWeighings(weighingsFullData);
 
-      await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData);
+      await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData, weighingsFullData);
       setFullDataLoaded(true);
       logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
     } catch (error) {
@@ -445,10 +449,10 @@ export const LocalDataProvider = ({ children }) => {
    */
   const recalculateStats = useCallback(() => {
     // Ler estados atuais e recalcular (async mas não esperamos)
-    updateUserStats(consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections).catch(err =>
+    updateUserStats(consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings).catch(err =>
       logger.error('[LocalData] Erro ao recalcular stats:', err)
     );
-  }, [consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections]);
+  }, [consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings]);
 
   /**
    * CRUD: Adicionar item
@@ -493,7 +497,7 @@ export const LocalDataProvider = ({ children }) => {
       });
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs', 'weighings'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
@@ -540,7 +544,7 @@ export const LocalDataProvider = ({ children }) => {
       setter(prev => prev.map(item => item.id === id ? decrypted : item));
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs', 'weighings'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
@@ -583,7 +587,7 @@ export const LocalDataProvider = ({ children }) => {
       });
 
       // Recalcular stats para collections que afetam avisos (boot rápido futuro)
-      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs'].includes(collectionName)) {
+      if (['consumptions', 'cycles', 'dailyLogs', 'goals', 'wellbeingLogs', 'weighings'].includes(collectionName)) {
         // Usar queueMicrotask para recalcular DEPOIS do setState completar (mais rápido que setTimeout!)
         queueMicrotask(() => recalculateStats());
       }
