@@ -450,31 +450,39 @@ export const SettingsView = ({
                         </p>
                         <GuideAccordion />
                     </div>
+                </div>
+            </Section>
 
-                    {/* Legal */}
-                    <div className="pt-2 border-t border-gray-700 space-y-2">
-                        <button
-                            onClick={() => onOpenLegalDoc('license')}
-                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                        >
-                            <span className="flex items-center gap-2"><span>📜</span><span>{t('settings.license')}</span></span>
-                            <Icons.ChevronRight className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => onOpenLegalDoc('terms')}
-                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                        >
-                            <span className="flex items-center gap-2"><span>📋</span><span>{t('settings.terms')}</span></span>
-                            <Icons.ChevronRight className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => onOpenLegalDoc('governance')}
-                            className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                        >
-                            <span className="flex items-center gap-2"><span>⚖️</span><span>{t('settings.governance')}</span></span>
-                            <Icons.ChevronRight className="w-4 h-4" />
-                        </button>
-                    </div>
+            {/* ── Legal e ética (à parte do "Sobre") ── */}
+            <Section
+                icon={<Icons.FileText className="w-5 h-5 text-purple-400" />}
+                title={pt ? 'Legal e ética' : 'Legal & ethics'}
+                subtitle={pt
+                    ? 'Licença, termos de uso e governança ética.'
+                    : 'Licence, terms of use and ethical governance.'}
+            >
+                <div className="space-y-2">
+                    <button
+                        onClick={() => onOpenLegalDoc('license')}
+                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                    >
+                        <span className="flex items-center gap-2"><span>📜</span><span>{t('settings.license')}</span></span>
+                        <Icons.ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onOpenLegalDoc('terms')}
+                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                    >
+                        <span className="flex items-center gap-2"><span>📋</span><span>{t('settings.terms')}</span></span>
+                        <Icons.ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => onOpenLegalDoc('governance')}
+                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                    >
+                        <span className="flex items-center gap-2"><span>⚖️</span><span>{t('settings.governance')}</span></span>
+                        <Icons.ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
             </Section>
 
