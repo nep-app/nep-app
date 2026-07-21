@@ -135,6 +135,46 @@ export async function enablePushReminders() {
 }
 
 /**
+ * Regrava EM SILÊNCIO a morada (token) na nuvem, se as notificações já estiverem
+ * ligadas neste dispositivo. Serve para o caso em que o telemóvel (sobretudo
+ * Xiaomi/MIUI, ou quando o Chrome recicla o service worker / limpa memória)
+ * TROCA a subscrição push por conta própria: o token guardado no Firestore fica
+ * "morto" (o carteiro apanha 'Device unregistered') e os lembretes deixam de
+ * chegar até a utilizadora reativar à mão.
+ *
+ * Ao correr isto sempre que a app arranca, o token fresco volta a ficar gravado
+ * automaticamente — a utilizadora não tem de fazer nada. NÃO pede permissão nem
+ * mostra erros: se algo falhar, fica calado (é um "melhor esforço" em segundo plano).
+ *
+ * Só corre se: o dispositivo suporta push, a permissão JÁ foi concedida
+ * (`Notification.permission === 'granted'`) e há sessão Firebase.
+ */
+export async function refreshPushTokenIfEnabled() {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!VAPID_KEY) return;
+    if (!(await isSupported())) return;
+    if (!getFirebaseAuth().currentUser) return;
+
+    const swReg = await registerMessagingSW();
+    const messaging = getMessaging(getFirebaseApp());
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (!token) return;
+
+    const db = getFirebaseDb();
+    await setDoc(
+      doc(db, 'users', currentUid(), 'push', 'prefs'),
+      { token, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon', updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+    logger.log('[Push] Token atualizado em silêncio no arranque.');
+  } catch (e) {
+    // Silencioso de propósito — é só um melhor-esforço em segundo plano.
+    logger.error('[Push] refresh silencioso falhou (ignorado):', e?.message || e);
+  }
+}
+
+/**
  * Guarda a configuração de lembretes (quais + a que horas) no Firestore.
  * @param {Array<{id:string, hour:number, minute:number, enabled:boolean}>} reminders
  */

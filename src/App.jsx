@@ -22,6 +22,7 @@ import { deriveDailyMg, typicalMgPerDose } from './utils/mgDerivation';
 import { themeClasses, cn, cx } from './utils/classNames';
 import { analyzeMultipleNotes, identifyThemes, getSentimentDescription, getTrendDescription } from './utils/sentimentAnalysis';
 import { logger } from './utils/logger';
+import { safeLocalStorage } from './utils/storage';
 
 // Lazy load heavy components (reduces initial bundle)
 const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
@@ -182,6 +183,18 @@ export function AuthenticatedApp() {
                     loadFullData();
                 }
             }, [currentView, loadFullData]);
+
+            // Regravar a "morada" das notificações em silêncio no arranque.
+            // O telemóvel (sobretudo Xiaomi/MIUI) pode trocar a subscrição push por
+            // conta própria; sem isto, o token na nuvem ficava morto e os lembretes
+            // paravam até a utilizadora reativar à mão. Corre só se as notificações
+            // já estiverem ligadas (é um melhor-esforço silencioso).
+            useEffect(() => {
+                if (!safeLocalStorage.get('nep_push_enabled', false)) return;
+                import('./utils/pushNotifications')
+                    .then(m => m.refreshPushTokenIfEnabled())
+                    .catch(() => {});
+            }, []);
 
             // Pagination States
             const [consumptionsToShow, setConsumptionsToShow] = useState(20);

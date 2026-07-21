@@ -117,6 +117,25 @@ Ao contrário da receita "clássica" (Cloud Functions + plano Blaze), aqui o env
     `VAPID_KEY`** em `src/utils/pushNotifications.js`.
 - Entrega no Android/Xiaomi (MIUI): resolvida com `Urgency: high` no carteiro.
 
+## Token que "morre sozinho" a meio do dia — RESOLVIDO ✅
+
+- **Sintoma:** o teste à força funcionava (recebia as notificações), mas os
+  lembretes agendados falhavam **sem a utilizadora reinstalar nada**. Nos registos
+  do carteiro: `Falha ao enviar ... Device unregistered.` → `0 enviadas`.
+- **Causa real:** o telemóvel (sobretudo Xiaomi/MIUI, mas também o Chrome ao
+  reciclar o service worker / limpar memória) **troca a subscrição push por conta
+  própria**. O token guardado no Firestore fica "morto", mas a app só regravava o
+  token **quando a utilizadora carregava em "Ativar"** — logo a nuvem ficava a
+  apontar para o token velho até uma reativação manual.
+- **Solução:** `refreshPushTokenIfEnabled()` em `pushNotifications.js`, chamada no
+  arranque do `AuthenticatedApp` (`App.jsx`). Se as notificações já estão ligadas
+  (`nep_push_enabled`) e a permissão foi concedida, faz `getToken` em silêncio e
+  regrava o token fresco no Firestore. Assim o token mantém-se vivo sozinho — basta
+  abrir a app de vez em quando.
+- Nota: o carteiro, quando apanha `messaging/registration-token-not-registered`,
+  apaga o token morto (`send-reminders.mjs`). Por isso, depois de um token morrer,
+  os testes à força davam `0` ("sem token") até haver um refresh/reativação.
+
 ---
 
 ## Ficheiros-chave
