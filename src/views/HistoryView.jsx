@@ -216,8 +216,11 @@ export function HistoryView({
     // peso atual em mg e, quando dá, quanto se gastou desde a pesagem anterior.
     const renderWeighing = (w) => {
         const dt = new Date(w.timestamp || (w.date ? `${w.date}T12:00:00` : Date.now()));
-        const consumed = (!w.notWeighed && !w.isNewBag && w.before != null && w.full != null && w.before > w.full)
-            ? (w.before - w.full) : null;
+        // Mostrar a SUBSTÂNCIA que foi posta no saco = cheio − o que pesava antes,
+        // NÃO o peso do saco cheio (que inclui o saco). É o mesmo valor que o modal
+        // apresenta como "Puseste:".
+        const added = (typeof w.full === 'number' && typeof w.before === 'number')
+            ? Math.round(w.full - w.before) : null;
         return (
             <div key={`weigh-${w.id}`} className="bg-amber-900/25 border-amber-700/50 p-3 rounded-lg border">
                 <div className="flex justify-between items-start">
@@ -229,11 +232,12 @@ export function HistoryView({
                             </div>
                         ) : (
                             <div className="text-sm mt-1 text-amber-200">
-                                <span className="font-bold">{w.full}</span> mg
-                                {w.isNewBag && <span className="text-gray-400"> · {isEN ? 'new bag' : 'saco novo'}</span>}
-                                {consumed != null && (
-                                    <span className="text-gray-400"> · {isEN ? 'used since last: ' : 'gasto desde a última: '}<span className="text-amber-200 font-medium">{consumed}</span> mg</span>
+                                {added != null && added > 0 ? (
+                                    <><span className="font-bold">{added}</span> mg {isEN ? 'added to the bag' : 'postos no saco'}</>
+                                ) : (
+                                    <span className="text-gray-400">{isEN ? 'weighing recorded' : 'pesagem registada'}</span>
                                 )}
+                                {w.isNewBag && <span className="text-gray-400"> · {isEN ? 'new bag' : 'saco novo'}</span>}
                             </div>
                         )}
                     </div>
