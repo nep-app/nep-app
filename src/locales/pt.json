@@ -86,6 +86,7 @@
   "weighing": {
     "title": "Registar pesagem",
     "subtitle": "Pesa o saco e a app faz as contas dos mg por ti. Trabalha por diferenças de peso — não precisas de esvaziar o saco.",
+    "whenLabel": "Data e hora da pesagem",
     "openFromDailyLog": "Registar uma pesagem do saco (mg automático)",
     "leftoverBtn": "Sobrou no saco",
     "newBagBtn": "Saco novo",

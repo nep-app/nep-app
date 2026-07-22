@@ -86,6 +86,7 @@
   "weighing": {
     "title": "Record weighing",
     "subtitle": "Weigh the bag and the app works out the mg for you. It uses weight differences — no need to empty the bag.",
+    "whenLabel": "Weighing date & time",
     "openFromDailyLog": "Record a bag weighing (automatic mg)",
     "leftoverBtn": "Some was left in the bag",
     "newBagBtn": "New bag",

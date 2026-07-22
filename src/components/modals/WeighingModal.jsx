@@ -19,6 +19,13 @@ const WField = ({ label, value, onChange, placeholder, hint }) => (
   </div>
 );
 
+// Valor "agora" no formato do input datetime-local (YYYY-MM-DDTHH:MM), em hora LOCAL.
+const nowLocalInput = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 /**
  * "Registar pesagem" — regista o peso do saco para a app derivar os mg sozinha.
  * Trabalha por DIFERENÇAS de peso (não pede a tara, não obriga a esvaziar).
@@ -49,12 +56,14 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
   const [before, setBefore] = useState('');       // peso atual (sobrou)
   const [empty, setEmpty] = useState('');         // vazio (novo)
   const [leftoverPrev, setLeftoverPrev] = useState(''); // resto do saco antigo (opcional)
+  const [when, setWhen] = useState('');                 // data/hora da pesagem (local)
 
   // Reset ao abrir/fechar
   React.useEffect(() => {
     if (isOpen) {
       setMode(firstEver ? 'novo' : 'normal');
       setFull(''); setBefore(''); setEmpty(''); setLeftoverPrev('');
+      setWhen(nowLocalInput()); // por defeito, agora — mas o utilizador pode mudar
     }
   }, [isOpen, firstEver]);
 
@@ -85,8 +94,11 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
   };
 
   const handleSave = () => {
-    const timestamp = new Date().toISOString();
-    const date = timestamp.split('T')[0];
+    // Data/hora escolhida (ou agora). O 'date' é a parte LOCAL do que a pessoa
+    // escolheu (não toISOString/UTC), para não trocar o dia à meia-noite.
+    const chosen = when || nowLocalInput();
+    const timestamp = new Date(chosen).toISOString();
+    const date = chosen.split('T')[0];
     if (mode === 'naoPesei') {
       onSubmit({ timestamp, date, notWeighed: true });
       return;
@@ -132,6 +144,17 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
             )}
           </div>
         )}
+
+        {/* Data e hora da pesagem — por defeito "agora", mas dá para mudar. */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1 text-gray-300">{t('weighing.whenLabel')}</label>
+          <input
+            type="datetime-local"
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+            className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+          />
+        </div>
 
         {mode === 'naoPesei' ? (
           <div className="space-y-4">
