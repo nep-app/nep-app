@@ -1,19 +1,19 @@
-# NEP APP — Terms of Use (v1.0)
+# NEP App — Terms of Use (v1.1)
 
-**Last updated:** 21 July 2026
+**Last updated:** 22 July 2026
 
-These Terms govern the use of the NEP APP ("Application", "Service", "Software"), created to support people who use drugs in self-management, self-reflection, and understanding their own patterns of use.
+These Terms govern the use of the NEP App ("Application", "Service", "Software"), created to support people who use drugs in self-management, self-reflection, and understanding their own patterns of use.
 
-By using the NEP APP, you agree to these Terms.
+By using the NEP App, you agree to these Terms and to the NEP App Source-Available Ethical License v1.1, which governs the Code and defines the Prohibited Uses referenced below.
 
 ## 1. Purpose of the Service
 
-The NEP APP exists exclusively to support:
+The NEP App exists to support:
 
 * personal tracking of drug use (legal or illegal);
 * monitoring of wellbeing, mood, sleep, and patterns of use;
 * daily reflection on pleasure, habits, and self-care;
-* visualizations and insights for personal use only.
+* visualizations and insights for personal use.
 
 **It is not a medical device, does not diagnose, and does not replace healthcare professionals.**
 
@@ -21,66 +21,54 @@ The NEP APP exists exclusively to support:
 
 Users have the right to:
 
-* use the application privately and autonomously;
+* use the Application privately and autonomously;
 * export their data at any time;
+* delete their data at any time;
 * request improvements;
-* request access to the source code under the NEP App Source-Available Ethical License v1.0.
+* request access to the source code under the NEP App Source-Available Ethical License v1.1.
 
 ## 3. Prohibited Uses
 
-The following uses are strictly prohibited:
+The Prohibited Uses defined in Section 3 of the License apply in full to any use of the Service, not only to the Code. In addition, and specific to the use of the Service:
 
-* Using the NEP APP for surveillance, control, coercion, or "abstinence monitoring" – including by courts, prisons, police, mandatory treatment centres, social services operating coercively, or any institution with power over the user.
+* Use must always be voluntary. No one may be compelled to use the App.
+* You may not use the App to extract, access, or aggregate the data of other people.
+* You may not use the App to surveil, control, coerce, or monitor the abstinence of any other person.
 
-* Using the NEP APP to generate risk scores, behavioural profiles, relapse predictions, or any moralizing evaluation.
-
-* Extracting user data for profit, advertising, insurance, coercive pharmacovigilance, commercial partnerships, or any purpose contrary to human rights.
-
-* Reusing the codebase to build tools that reinforce prohibition, criminalization, stigma, or unethical practices.
-
-* Compelling anyone to use the application. **Use must always be voluntary.**
+Where these overlap with the License, the License's wording prevails.
 
 ## 4. Intellectual Property
 
-The software is distributed under the NEP App Source-Available Ethical License v1.0, which:
-
-* is source-available, not open source — no right is automatic, and viewing or reusing the code requires written authorization from the author;
-* forbids redistribution and reverse engineering; any derivative work requires specific written authorization and must keep the same ethical restrictions;
-* forbids use by repressive institutions, exploitative companies, coercive services, and any form of unethical repurposing.
+The Software is distributed under the NEP App Source-Available Ethical License v1.1. That License, not these Terms, is the authoritative source for what may be done with the Code, including the ban on redistribution and reverse engineering, the requirement of written authorization for any Derivative, and the Prohibited Uses. See the License for details.
 
 ## 5. API and Interoperability
 
-Even before an API exists, the following applies:
-
-* "API" refers to any technical access point that allows sending/receiving data from the NEP APP.
-* Any API use is subject to the same ethical restrictions.
-* Attempts to extract or use data for prohibited purposes may result in immediate access removal and legal action.
+* "API" means any technical access point that allows sending or receiving data from the NEP App.
+* Any API use is subject to the same Prohibited Uses (License, Section 3).
+* Attempts to extract or use data for Prohibited Uses may result in immediate removal of access and, where feasible, legal action (License, Section 8).
 
 ## 6. Data and Privacy
 
 * Data belongs exclusively to the user.
+* At registration, the user chooses whether data stays only on their device, in the cloud fully encrypted, or whether anonymised aggregates are shared for research and to improve the App.
 * Users control, export, and delete their data whenever they choose.
 * Data will never be sold, shared, or used for commercial or surveillance purposes.
-* If used for research, it requires informed consent, strong anonymisation, and harm reduction ethics.
+* Any research use requires informed consent, strong anonymisation, and harm reduction ethics. Anonymous research aggregates are strictly opt-in; free text is never collected for research and data is never sold.
 
-**Community forum (separate service).** The app may link to an optional Community forum, which is a **separate, public service** with its own rules. It is not part of your private journal: anything you post there (under a chosen nickname) is **public and readable by others**, and is not covered by the private, encrypted-data guarantees above. Participation is voluntary; avoid sharing information that could identify you.
+**Community forum (separate service).** The App may link to an optional Community forum, which is a separate, public service with its own rules. It is not part of your private journal: anything you post there (under a chosen nickname) is public and readable by others, and is not covered by the private, encrypted-data guarantees above. Participation is voluntary; avoid sharing information that could identify you.
 
 ## 7. Disclaimer
 
-The NEP APP:
+The NEP App:
 
 * does not prevent overdose, dependence, or harm;
 * is not responsible for misinterpretation of insights;
 * does not replace human or clinical support.
 
-## 8. Suspension for Unethical Use
+## 8. Suspension for Prohibited Use
 
-Access may be blocked if:
-
-* there is an attempt at surveillance;
-* an attempt to extract data from others;
-* intent to use the software against people who use drugs.
+Access to any resource the Author controls (accounts, APIs, non-public code, future versions) may be suspended or terminated in the event of a Prohibited Use, an attempt to surveil or extract others' data, or intent to use the Software against people who use drugs. The consequences and their limits are those set out in Sections 7 and 8 of the License.
 
 ## 9. Updates
 
-Terms may be updated to strengthen ethics and security. Significant changes will be communicated.
+These Terms may be updated to strengthen ethics and security. Significant changes will be communicated.

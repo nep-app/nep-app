@@ -1,72 +1,99 @@
-# LICENSE — NEP App Source-Available Ethical License v1.0
+# LICENSE — NEP App Source-Available Ethical License (v1.1)
 
-**NEP App Source-Available Ethical License v1.0**
-Copyright © Teresa Castro
-**Last updated:** 21 July 2026
+**Copyright © Teresa Castro**
+**Last updated:** 22 July 2026
 
-> This is a **source-available** license with ethical use restrictions. It is **not**
-> an "open source" / "open" license: an open-source license cannot restrict fields of
-> use, and this one deliberately does (see Section 2).
+This is a source-available license with ethical (field-of-use) restrictions. It is not an "open source" / "open" license: an OSI-approved open-source license cannot restrict fields of use, and this one deliberately does (see Section 3).
 
-The NEP APP is provided under a source-available license that allows partial access to the code and limited use, strictly conditioned on compliance with the ethical principles defined in this license.
+This License is the single source of truth for the prohibited uses that apply across the whole NEP App project. The Terms of Use and the Ethical Governance Policy refer back to Section 3 of this License rather than restating it.
 
-By accessing, using, or requesting access to the NEP APP code or its functionalities, you agree to the following terms:
+By accessing, using, adapting, or requesting access to the NEP App, its code, data, outputs, or functionalities, you agree to these terms.
 
-## 1. Granted Rights
+## 1. Definitions
 
-The User is granted:
+* **NEP App / the Software** — the application, its source code, assets, data models, and outputs.
+* **Code** — the source code of the NEP App, in whole or in part.
+* **User** — anyone who uses the Software or the Service.
+* **Derivative** — any adaptation, translation, localization, modification, or work based on the Code.
+* **Author** — Teresa Castro, the copyright holder.
+* **Prohibited Uses** — the uses listed in Section 3.
 
-* The right to use the NEP APP;
-* The right to view portions of the source code *only when explicitly authorized in writing* by the author;
-* The right to request access to the code, external features, or integrations.
+## 2. Grant of Rights
 
-None of these rights are automatic. Access always depends on written authorization.
+Subject to continuous compliance with this License, the User is granted:
 
-## 2. Absolute Restrictions
+* the right to use the NEP App;
+* the right to request access to the Code, features, or integrations;
+* the right to view and reuse the Code only within the limits set out in Sections 4–6.
 
-It is strictly prohibited to use, integrate, adapt, reproduce, or derive from the NEP APP—its code, data, outputs, or functionalities—for any of the following purposes:
+No right under this License is automatic beyond personal use of the App. Any reuse, adaptation, redistribution, or integration of the Code depends on the conditions in Sections 4–6, and where those sections require it, on prior written authorization from the Author.
 
-a) **Policing, surveillance, profiling, or repression**, including law enforcement, immigration authorities, monitoring systems, courts, or any public/private body with coercive power.
+## 3. Prohibited Uses (canonical list)
 
-b) **Military, intelligence, national security, or any defense-related applications.**
+The Software — its Code, data, outputs, or functionalities — must never be used, integrated, adapted, reproduced, or derived from, for any of the following:
 
-c) **Risk assessment, behavioral scoring, or automated decision-making** that could lead to exclusion, discrimination, or control over people who use drugs.
+a) **Policing, surveillance, profiling, or repression** — including law enforcement, immigration authorities, courts, prisons, monitoring systems, criminal investigation, abstinence or compliance verification, or any public or private body exercising coercive power.
 
-d) **Coercive clinical or therapeutic applications**, including forced abstinence, mandatory monitoring, or compliance programs.
+b) **Military, intelligence, national security, or defence** applications of any kind.
 
-e) **Commercial projects** that contradict principles of non-repression, autonomy, or rights-based harm reduction.
+c) **Risk scoring, behavioural profiling, relapse prediction, automated decision-making**, or any moralising evaluation that could lead to the exclusion, discrimination, or control of people who use drugs.
 
-f) Reuse of the code to create **unauthorized direct competitors** or products that exploit people who use drugs.
+d) **Coercive clinical, therapeutic, or social applications** — including forced abstinence, mandatory monitoring, compliance programmes, coercive rehabilitation, coercively operating social services, or coercive pharmacovigilance.
 
-## 3. Ethical Conditionality
+e) **Conditioning access to housing, income, healthcare, treatment, or freedom** on the use of the Software or on the data it holds.
 
-Any access to the code or functionalities requires:
+f) **Exploitative or extractive commercial use** — including selling user data, advertising, insurance, behavioural monetisation, or commercial partnerships that contradict non-repression, autonomy, or rights-based harm reduction.
 
-* Explicit alignment with values of autonomy, dignity, and human rights of people who use drugs;
-* A clear declaration of purpose;
-* A prohibition on abusive data collection or aggregation;
-* Acknowledgment that access may be audited and **revoked at any time** by the author.
+g) **Reuse of the Code to build unauthorized competitors**, products that exploit people who use drugs, or Derivatives that reinforce prohibition, criminalisation, stigma, or mandatory abstinence.
 
-## 4. Redistribution Ban
+h) **Compelling any person to use the Software.** Use must always be voluntary.
 
-It is not permitted to:
+These Prohibited Uses travel with the Code: they bind every User, every authorized Derivative, and every downstream recipient, in perpetuity.
 
-* Copy, redistribute, sublicense, sell, or make the source code available to third parties;
-* Reverse engineer the software;
-* Create unauthorized derivatives.
+## 4. Conditions for Source Access
 
-Derivative works **require specific written authorization**.
+Access to the Code beyond what is publicly published requires that the requester:
 
-## 5. Revocation
+* declares their purpose, data model, and intended use clearly and in good faith;
+* demonstrates alignment with the autonomy, dignity, and human rights of people who use drugs;
+* signs an ethical commitment to this License, including Section 3;
+* accepts that access may be reviewed, audited, and terminated under Section 7.
 
-The author may revoke any authorization if the user violates this license or fails to comply with its ethical principles.
+## 5. Redistribution and Derivatives
 
-## 6. Intellectual Property
+Without specific prior written authorization from the Author, it is not permitted to:
 
-All components of the NEP APP are the exclusive property of Teresa Castro.
-Nothing in this license grants intellectual property rights, trademarks, or patent rights.
+* copy, redistribute, sublicense, sell, or otherwise make the Code available to third parties;
+* create Derivatives (including translations, localizations, and adaptations).
 
-## 7. No Warranty
+Where authorization is granted, every Derivative must be distributed under this same License and must carry the Prohibited Uses in Section 3 unchanged. You may not relicense the Code or any Derivative under more permissive terms.
 
-The software is provided "as is."
-The author is not liable for any direct or indirect damages arising from its use.
+## 6. Publicly Published Code
+
+Where the Author chooses to publish part or all of the Code in a public repository, that publication grants no additional rights. Public visibility of the Code does not permit copying, reuse, adaptation, redistribution, or any Prohibited Use. All restrictions in Sections 3 and 5 continue to apply to publicly visible Code.
+
+## 7. Termination and Revocation
+
+The Author may terminate any right or authorization granted under this License if the User breaches it or acts against its ethical principles.
+
+Termination is understood realistically:
+
+* Termination ends the rights granted by this License. Any use, copying, adaptation, or distribution after termination is unlicensed and constitutes copyright infringement.
+* Termination cannot retrieve copies of the Code already distributed. It does not pretend to.
+* Termination immediately ends any access the Author directly controls — including non-public repositories, APIs, hosted services, accounts, and future versions.
+
+## 8. Enforcement
+
+The Author's primary legal basis for enforcement is copyright. Any copying, modification, distribution, or creation of Derivatives beyond the rights expressly granted here is copyright infringement — independently of the ethical restrictions in this License, and independently of whether the infringing party formally accepted it.
+
+Available responses include, without limitation: cease-and-desist notices; platform takedown requests (including DMCA notices against unauthorized copies or forks); termination of access to APIs, accounts, and non-public resources; and, where feasible, legal action.
+
+The Author acknowledges that cross-border enforcement against state or institutional actors may be practically limited. The Prohibited Uses in Section 3 nonetheless define the uses the Author does not authorize and will publicly repudiate, and any such use remains a breach of this License regardless of the practical reach of enforcement.
+
+## 9. Intellectual Property
+
+All components of the NEP App are the exclusive property of Teresa Castro. Nothing in this License grants intellectual property, trademark, or patent rights beyond the limited rights expressly stated.
+
+## 10. No Warranty
+
+The Software is provided "as is", without warranty of any kind. The Author is not liable for any direct or indirect damages arising from its use.

@@ -1,122 +1,76 @@
-# NEP APP — Ethical Governance Policy (v1.0)
+# NEP App — Ethical Governance Policy (v1.1)
 
-**Last updated:** 21 July 2026
+**Last updated:** 22 July 2026
 
-The NEP APP is grounded in clear principles:
-**autonomy, pleasure, human rights, anti-repression, and respect for people who use drugs**.
+The NEP App is grounded in clear principles: autonomy, pleasure, human rights, anti-repression, and respect for people who use drugs.
+
+This Policy explains why the project restricts certain uses and how access and accountability work in practice. The binding list of forbidden uses lives in Section 3 of the License ("Prohibited Uses"); this Policy refers to it rather than restating it, so that there is only one authoritative list to maintain.
 
 ## 1. Guiding Principles
 
-### a) Autonomy and Self-Determination
+**a) Autonomy and self-determination.** People who use drugs have full sovereignty over their bodies, choices, and experiences.
 
-People who use drugs have full sovereignty over their bodies, choices, and experiences.
+**b) Centrality of lived experience.** Design and development decisions are informed by people who use drugs, not by repressive or punitive institutions.
 
-### b) Centrality of Lived Experience
+**c) Anti-repression.** The NEP App will not collaborate with law enforcement, surveillance systems, coercive programmes, or any initiative that controls or punishes people who use drugs.
 
-Design and development decisions are informed by people who use drugs, not by repressive or punitive institutions.
+**d) Non-discrimination.** Use of the App must not reinforce inequalities based on gender, race, class, or legal status.
 
-### c) Anti-Repression
-
-The NEP APP will not collaborate with law enforcement, surveillance systems, coercive programs, or any initiative that controls or punishes people who use drugs.
-
-### d) Non-Discrimination
-
-Use of the app must not reinforce inequalities based on gender, race, class, or legal status.
-
-### e) Transparency and Accountability
-
-Any external integration requires ethical review and explicit alignment with these principles.
-
-### f) Permanent Ethical Prohibitions
-
-The NEP APP must never be used for:
-
-* mandatory monitoring;
-* surveillance;
-* behavioral scoring;
-* criminal investigation;
-* abstinence verification;
-* compliance programs.
+**e) Transparency and accountability.** Any external integration requires ethical review and explicit alignment with these principles.
 
 ## 2. Core Values
 
-### 2.1 Autonomy & Self-management
+**2.1 Autonomy & self-management.** Users control everything: data, pace, goals, use, and interpretation.
 
-Users control everything: data, pace, goals, usage, interpretation.
+**2.2 Anti-prohibition & anti-coercion.** The App must not support criminalisation, forced abstinence, moralism, or surveillance.
 
-### 2.2 Anti-prohibition & Anti-coercion
+**2.3 "Nothing about us without us."** Any development of the NEP App must include the meaningful involvement of people who use drugs.
 
-The app cannot be used to support criminalization, forced abstinence, moralism, or surveillance.
+**2.4 Transparency.** Clear licensing, source code available on request, and an open ethical rationale.
 
-### 2.3 "Nothing About Us Without Us"
+**2.5 Non-exploitation.** No ads, no commercial data mining, no commercial tracking, no behavioural monetisation. Anonymous research aggregates are strictly opt-in and consented — never free text, never sold.
 
-Any development of the NEP APP must include the meaningful involvement of people who use drugs.
+## 3. How These Principles Are Made Binding
 
-### 2.4 Transparency
+These principles are not only aspirational. They are given legal effect through the Prohibited Uses in Section 3 of the License, which apply to the Code, to any authorized Derivative, and (via the Terms of Use) to any use of the Service. In particular, the project does not authorize use by police, courts, prisons, coercive rehabilitation or social services, insurance companies, institutions that condition access to housing, income, healthcare, or freedom, or any Derivative that repurposes the App for stigma, surveillance, or mandatory abstinence.
 
-Clear licensing, source code available on request, and open ethical rationale.
-
-### 2.5 Non-exploitation
-
-No ads, no commercial data mining, no commercial tracking, no "behavioural monetisation". Anonymous research aggregates are strictly opt-in and consented — never free text, never sold.
-
-## 3. Absolute Ethical Prohibitions
-
-The technology cannot be used by:
-
-* police, courts, prisons;
-* coercive rehabilitation services;
-* insurance companies;
-* institutions that condition access to housing, income, or freedom;
-* derivative apps that deviate from the core ethics to enforce stigma, surveillance, or mandatory abstinence.
+For the exact, authoritative wording, see the License.
 
 ## 4. Criteria for Access to Source Code
 
-Source code will only be shared if:
+Source access beyond what is publicly published is granted only where the requester:
 
-* the requester is transparent about their purpose;
-* the purpose aligns with human rights, harm reduction, and autonomy;
-* the person/organisation signs an ethical commitment;
-* any derivative respects the same license and restrictions.
+* is transparent about their purpose;
+* pursues a purpose aligned with human rights, harm reduction, and autonomy;
+* signs an ethical commitment to the License;
+* ensures any Derivative respects the same License and restrictions.
+
+(See License, Section 4.)
 
 ## 5. Review and Audit
 
-Any entity requesting access must:
+Any entity requesting access must declare its purpose, data model, and intended use; accept ethical review; and accept termination of access in case of ethical deviation, on the terms and within the limits set out in Sections 7 and 8 of the License.
 
-* declare purpose, data model, and intended use;
-* accept ethical auditing;
-* accept immediate revocation in case of ethical deviation.
-
-## 6. Accountability
+## 6. Accountability and Remedies
 
 Ethical violations may lead to:
 
-* revocation of use permissions;
-* blocked access to future versions;
-* public disclosure of violations (for transparency);
-* legal action if meaningful harm occurs.
+* termination of granted permissions (License, Section 7);
+* loss of access to non-public code and future versions;
+* public disclosure of the violation, for transparency and community accountability;
+* copyright-based enforcement and, where feasible, legal action (License, Section 8).
+
+The project is honest about reach: enforcement against state or cross-border institutional actors may be practically limited. Public repudiation and community accountability are treated as real and legitimate remedies in their own right, not as second best.
 
 ## 7. Social Responsibility
 
-The NEP APP commits to:
+The NEP App commits to never selling data, never collaborating with repressive entities, and ensuring that any authorized use aligns with rights-based and pleasure-based harm reduction.
 
-* never selling data;
-* never collaborating with repressive entities;
-* ensuring that any authorized use aligns with rights-based and pleasure-based harm reduction.
+## 8. Political Commitment
 
-## 8. Revocation Mechanisms
-
-The creator reserves the right to revoke access or permissions if:
-
-* principles are violated;
-* emerging ethical risks arise;
-* institutional contexts shift.
-
-## 9. Political Commitment
-
-The NEP APP explicitly commits to:
+The NEP App explicitly commits to:
 
 * rejecting prohibitionism;
 * defending the autonomy and dignity of people who use drugs;
 * refusing collaboration with repressive, commercial, or moralistic institutions;
-* **serving as a tool for real autonomy and self-determination — never control.**
+* serving as a tool for autonomy and self-determination — never control.
