@@ -131,6 +131,8 @@
     "markConsumption": "Log Use Now",
     "thoughts": "Thoughts",
     "wellbeing": "Well-being",
+    "weighPeriodTitle": "Measured between your weighings",
+    "weighPeriodRange": "{{from}} to {{to}}",
     "wellbeingSubtitle": "Mood • Energy • Self-care",
     "emotions": "Emotions",
     "emotionsSubtitle": "Today's emotions",

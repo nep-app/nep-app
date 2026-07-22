@@ -131,6 +131,8 @@
     "markConsumption": "Marcar Consumo Agora",
     "thoughts": "Pensamentos",
     "wellbeing": "Bem-estar",
+    "weighPeriodTitle": "Medido entre as tuas pesagens",
+    "weighPeriodRange": "De {{from}} a {{to}}",
     "wellbeingSubtitle": "Humor • Energia • Autocuidado",
     "emotions": "Emoções",
     "emotionsSubtitle": "Emoções do dia",

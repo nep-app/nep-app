@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { InfoBadge } from '../components/ui/InfoBadge';
@@ -12,6 +12,7 @@ import { useUI } from '../contexts/UIContext';
 import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
+import { lastMeasuredPeriod } from '../utils/mgDerivation';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
@@ -32,6 +33,9 @@ export function HomeViewRefactored({
   const metrics = useMetrics();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
+
+  // Último período FECHADO e MEDIDO entre duas pesagens (consumo real do passado).
+  const lastWeighPeriod = useMemo(() => lastMeasuredPeriod(weighings || []), [weighings]);
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
@@ -256,6 +260,25 @@ export function HomeViewRefactored({
           {cachedAlerts.map((alert, i) => (
             <AlertCard key={i} alert={alert} darkMode={darkMode} />
           ))}
+        </div>
+      )}
+
+      {/* Consumo REAL medido entre as duas últimas pesagens (período fechado). */}
+      {lastWeighPeriod && (
+        <div className="mt-4 flex justify-center">
+          <div className="bg-amber-900/25 border border-amber-700/50 rounded-xl px-4 py-3 text-center max-w-sm">
+            <div className="text-xs text-amber-300/80 mb-0.5">
+              ⚖️ {t('home.weighPeriodTitle')}
+            </div>
+            <div className="text-sm text-amber-100">
+              {t('home.weighPeriodRange', {
+                from: new Date(lastWeighPeriod.start).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+                to: new Date(lastWeighPeriod.end).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+              })}
+              {': '}
+              <span className="font-bold">{lastWeighPeriod.consumed}</span> mg
+            </div>
+          </div>
         </div>
       )}
 

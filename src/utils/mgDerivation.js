@@ -60,6 +60,25 @@ function buildCycles(ws) {
 }
 
 /**
+ * Último período FECHADO e MEDIDO (entre duas pesagens consecutivas com peso
+ * fiável). Devolve o consumo apurado nesse intervalo e as suas datas (ms).
+ * @returns {null | { start:number, end:number, consumed:number }}
+ */
+export function lastMeasuredPeriod(weighings = []) {
+  const ws = [...weighings]
+    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
+    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+  const cycles = buildCycles(ws);
+  for (let i = cycles.length - 1; i >= 0; i--) {
+    const cy = cycles[i];
+    if (cy.measured && cy.consumed != null && cy.consumed >= 0) {
+      return { start: cy.start, end: cy.end, consumed: Math.round(cy.consumed) };
+    }
+  }
+  return null;
+}
+
+/**
  * @param {Array} weighings   pesagens desencriptadas
  * @param {Array} consumptions doses desencriptadas
  * @param {Object} [opts] { typical } mg/dose típico para ESTIMAR dias sem peso.
