@@ -4,6 +4,7 @@ import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
+import { deriveDailyMg, typicalMgPerDose } from '../utils/mgDerivation';
 
 const MetricsContext = createContext();
 
@@ -16,7 +17,23 @@ export const useMetrics = () => {
 };
 
 export const MetricsProvider = ({ children }) => {
-  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts, fullDataLoaded } = useData();
+  const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts, weighings, fullDataLoaded } = useData();
+
+  // mg/dia DERIVADOS das pesagens, SÓ dos dias medidos a sério (todas as doses
+  // pesadas). Estimativas nunca entram — a app não inventa mg. Serve para o resumo
+  // por dia, e assim a pesagem chega às páginas pesadas (Padrões/Análises/Coach).
+  const weighingMeasuredMgByDate = useMemo(() => {
+    const out = {};
+    if (!weighings || weighings.length === 0) return out;
+    try {
+      const typical = typicalMgPerDose(weighings, consumptions);
+      const perDay = deriveDailyMg(weighings, consumptions, { typical });
+      for (const [date, day] of Object.entries(perDay || {})) {
+        if (day && day.mg > 0 && day.state === 'measured') out[date] = day.mg;
+      }
+    } catch (e) { /* best-effort: nunca parte as métricas */ }
+    return out;
+  }, [weighings, consumptions]);
 
   const atypicalDates = useMemo(() => {
     const s = new Set();
@@ -169,8 +186,14 @@ export const MetricsProvider = ({ children }) => {
       if (!out[dk]) out[dk] = blank();
       if (out[dk].mg == null && dl.mg != null && !isNaN(parseFloat(dl.mg))) out[dk].mg = parseFloat(dl.mg);
     });
+    // Pesagem MEDIDA preenche os dias que ainda não têm mg (registo à mão manda).
+    Object.entries(weighingMeasuredMgByDate).forEach(([dk, mg]) => {
+      if (atypicalDates.has(dk)) return;
+      if (!out[dk]) out[dk] = blank();
+      if (out[dk].mg == null) out[dk].mg = mg;
+    });
     return out;
-  }, [consumptionDailyRollup, cyclesByDate, wellbeingByDate, dailyLogsByDate]);
+  }, [consumptionDailyRollup, cyclesByDate, wellbeingByDate, dailyLogsByDate, weighingMeasuredMgByDate, atypicalDates]);
 
   const [persistedSummary, setPersistedSummary] = useState(null);
   useEffect(() => {
