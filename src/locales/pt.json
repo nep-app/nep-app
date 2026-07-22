@@ -158,8 +158,8 @@
   "alerts": {
     "shortInterval": "Intervalo curto! {{hours}}h",
     "goodInterval": "Bom intervalo! {{hours}}h",
-    "watchDose": "Atenção ao consumo de ontem! {{mg}}mg",
-    "goodDose": "Boa! Consumo de ontem: {{mg}}mg",
+    "watchDose": "Atenção ao consumo de {{date}}! {{mg}}mg",
+    "goodDose": "Consumo de {{date}}: {{mg}}mg",
     "goodSleep": "Parabéns! {{hours}}h de sono",
     "excessiveSleep": "Sono excessivo: {{hours}}h",
     "lowSleep": "Atenção ao sono: {{hours}}h",

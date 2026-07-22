@@ -233,13 +233,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     // Sem a parte das pesagens, quem regista os mg pela PESAGEM (em vez do
     // "Registar mg" à mão) não via a dose refletida nos avisos do ecrã inicial.
     let lastMg = null;
+    let lastMgTs = null; // timestamp do valor escolhido, para o aviso mostrar a DATA real
     const cyclesWithMg = filteredCycles
       .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
       .map(c => ({ mg: c.mg, timestamp: c.timestamp }));
 
     const dailyLogsWithMg = filteredDailyLogs
       .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
-      .map(l => ({ mg: l.mg, timestamp: l.timestamp }));
+      .map(l => ({ mg: l.mg, timestamp: l.timestamp || (l.date ? `${l.date}T12:00:00` : null) }));
 
     // mg/dia derivados das pesagens. Um dia com mg registado à MÃO (dailyLog)
     // manda — só usamos o derivado para dias SEM registo manual. Dias atípicos
@@ -277,6 +278,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     if (allWithMg.length > 0) {
       const mgValue = allWithMg[0].mg;
       lastMg = typeof mgValue === 'number' ? mgValue : parseFloat(mgValue);
+      lastMgTs = allWithMg[0].timestamp;
     }
 
     // Consumos últimos 7 dias (excluindo dias atípicos)
@@ -350,16 +352,23 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const quantityGoal = (goals || []).find(g => g.type === 'reduce_quantity');
     if (lastMg !== null && quantityGoal) {
       const targetMg = parseFloat(quantityGoal.target);
+      // Data REAL do valor mostrado (não "ontem" — o valor pode ser de outro dia).
+      let dateLabel = '';
+      try {
+        const d = lastMgTs ? new Date(lastMgTs) : null;
+        if (d && !isNaN(d.getTime())) dateLabel = d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
+      } catch (e) { /* sem data → usa recuo abaixo */ }
+      if (!dateLabel) dateLabel = (i18n.language || '').startsWith('en') ? 'recent' : 'há pouco';
       if (lastMg >= targetMg) {
         alerts.push({
-          text: i18n.t('alerts.watchDose', { mg: lastMg }),
+          text: i18n.t('alerts.watchDose', { mg: lastMg, date: dateLabel }),
           emoji: '📊',
           color: 'orange',
           type: 'negative'
         });
       } else {
         alerts.push({
-          text: i18n.t('alerts.goodDose', { mg: lastMg }),
+          text: i18n.t('alerts.goodDose', { mg: lastMg, date: dateLabel }),
           emoji: '💚',
           color: 'green',
           type: 'positive'

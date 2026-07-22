@@ -158,8 +158,8 @@
   "alerts": {
     "shortInterval": "Short break! {{hours}}h",
     "goodInterval": "Good interval! {{hours}}h",
-    "watchDose": "Watch out yesterday's dosage! {{mg}}mg",
-    "goodDose": "Good! Yesterday: {{mg}}mg",
+    "watchDose": "Watch the dose ({{date}}): {{mg}}mg",
+    "goodDose": "Dose ({{date}}): {{mg}}mg",
     "goodSleep": "Great! {{hours}}h sleep",
     "excessiveSleep": "Too much sleep: {{hours}}h",
     "lowSleep": "Sleep alert: {{hours}}h",
