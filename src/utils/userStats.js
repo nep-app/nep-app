@@ -234,13 +234,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     // "Registar mg" à mão) não via a dose refletida nos avisos do ecrã inicial.
     let lastMg = null;
     let lastMgTs = null; // timestamp do valor escolhido, para o aviso mostrar a DATA real
+    let lastMgEstimated = false; // true → valor ESTIMADO (mostra "≈"), false → medido/à mão
     const cyclesWithMg = filteredCycles
       .filter(c => c.mg !== undefined && c.mg !== null && c.mg !== '')
-      .map(c => ({ mg: c.mg, timestamp: c.timestamp }));
+      .map(c => ({ mg: c.mg, timestamp: c.timestamp, estimated: false }));
 
     const dailyLogsWithMg = filteredDailyLogs
       .filter(l => l.mg !== undefined && l.mg !== null && l.mg !== '')
-      .map(l => ({ mg: l.mg, timestamp: l.timestamp || (l.date ? `${l.date}T12:00:00` : null) }));
+      .map(l => ({ mg: l.mg, timestamp: l.timestamp || (l.date ? `${l.date}T12:00:00` : null), estimated: false }));
 
     // mg/dia derivados das pesagens. Um dia com mg registado à MÃO (dailyLog)
     // manda — só usamos o derivado para dias SEM registo manual. Dias atípicos
@@ -259,13 +260,15 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         const perDay = deriveDailyMg(weighings, consumptions, { typical });
         for (const [date, day] of Object.entries(perDay || {})) {
           if (!day || !(day.mg > 0)) continue;
-          // SÓ dias realmente MEDIDOS (todas as doses pesadas). Nunca usar dias
-          // 'estimated'/'mixed'/'unknown' — seriam mg ESTIMADOS pelo típico, e a
-          // app não deve mostrar mg inventados como se fossem um valor registado.
-          if (day.state !== 'measured') continue;
           if (atypicalDates.has(date)) continue;
           if (manualMgDates.has(date)) continue; // registo manual manda
-          derivedMgEntries.push({ mg: day.mg, timestamp: new Date(`${date}T23:59:59`).getTime() });
+          // Dias 'measured' são exatos; 'estimated'/'mixed' são ESTIMADOS (marcados
+          // com "≈" no aviso). Dias 'unknown' têm mg null e já foram saltados acima.
+          derivedMgEntries.push({
+            mg: day.mg,
+            timestamp: new Date(`${date}T23:59:59`).getTime(),
+            estimated: day.state !== 'measured',
+          });
         }
       } catch (e) {
         // Derivação é best-effort: nunca deve partir os avisos.
@@ -279,6 +282,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const mgValue = allWithMg[0].mg;
       lastMg = typeof mgValue === 'number' ? mgValue : parseFloat(mgValue);
       lastMgTs = allWithMg[0].timestamp;
+      lastMgEstimated = !!allWithMg[0].estimated;
     }
 
     // Consumos últimos 7 dias (excluindo dias atípicos)
@@ -359,16 +363,18 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         if (d && !isNaN(d.getTime())) dateLabel = d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
       } catch (e) { /* sem data → usa recuo abaixo */ }
       if (!dateLabel) dateLabel = (i18n.language || '').startsWith('en') ? 'recent' : 'há pouco';
+      // Valor ESTIMADO (derivado da pesagem, não medido a 100%) → prefixo "≈".
+      const mgShown = lastMgEstimated ? `≈${lastMg}` : `${lastMg}`;
       if (lastMg >= targetMg) {
         alerts.push({
-          text: i18n.t('alerts.watchDose', { mg: lastMg, date: dateLabel }),
+          text: i18n.t('alerts.watchDose', { mg: mgShown, date: dateLabel }),
           emoji: '📊',
           color: 'orange',
           type: 'negative'
         });
       } else {
         alerts.push({
-          text: i18n.t('alerts.goodDose', { mg: lastMg, date: dateLabel }),
+          text: i18n.t('alerts.goodDose', { mg: mgShown, date: dateLabel }),
           emoji: '💚',
           color: 'green',
           type: 'positive'
