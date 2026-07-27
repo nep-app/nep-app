@@ -146,11 +146,11 @@ export function HistoryView({
     // recente para o mais antigo. 'estimated' → mostra "≈". Só dias com valor.
     const derivedDaysList = useMemo(() => {
         try {
-            const typical = typicalMgPerDose(weighings || [], consumptions || []);
-            const perDay = deriveDailyMg(weighings || [], consumptions || [], { typical });
+            const perDay = deriveDailyMg(weighings || [], consumptions || []);
             const arr = Object.entries(perDay || {})
-                .filter(([, v]) => v && v.mg != null && v.mg > 0 && v.state !== 'none' && v.state !== 'unknown')
-                .map(([date, v]) => ({ date, mg: v.mg, estimated: v.state !== 'measured' }));
+                // SÓ dias medidos a 100% — nunca estimativas em dias sem pesagem.
+                .filter(([, v]) => v && v.mg != null && v.mg > 0 && v.state === 'measured')
+                .map(([date, v]) => ({ date, mg: v.mg }));
             return filterByDateRange(arr, dateRange, 'date')
                 .sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
@@ -649,16 +649,14 @@ export function HistoryView({
                                                     {derivedDaysList.length > 0 && (
                                                         <div className="mt-5 pt-4 border-t border-gray-700">
                                                             <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Consumption per day (from weighings)' : 'Consumo por dia (das pesagens)'}</h4>
-                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? '"≈" means estimated (not every dose was weighed).' : '"≈" quer dizer estimado (nem todas as doses foram pesadas).'}</p>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'Only fully-weighed days (measured). Days without a reliable weighing are not shown.' : 'Só dias totalmente pesados (medidos). Dias sem pesagem fiável não aparecem.'}</p>
                                                             <div className="space-y-1">
                                                                 {derivedDaysList.map(d => (
                                                                     <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">
                                                                         <span className="text-sm text-gray-300">
                                                                             {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
                                                                         </span>
-                                                                        <span className={'text-sm font-medium ' + (d.estimated ? 'text-amber-300' : 'text-green-300')}>
-                                                                            {d.estimated ? '≈' : ''}{d.mg} mg
-                                                                        </span>
+                                                                        <span className="text-sm font-medium text-green-300">{d.mg} mg</span>
                                                                     </div>
                                                                 ))}
                                                             </div>

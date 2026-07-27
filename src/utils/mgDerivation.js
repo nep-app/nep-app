@@ -120,11 +120,10 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       const n = doseCountByCycle.get(cy) || 1;
       day.mg += cy.consumed / n;
       day.measuredDoses++;
-    } else if (cy && cy.forgotten && typical != null) {
-      // Refill esquecido / não pesei → estimar cada dose pelo típico.
-      day.mg += typical;
-      day.estimatedDoses++;
     } else {
+      // Período SEM peso fiável (só uma pesagem, refill esquecido, "não pesei").
+      // NUNCA estimar aqui pelo "típico": não se inventa mg em dias sem pesagem.
+      // A única aproximação legítima é repartir o que FOI pesado pelos seus dias.
       day.unknownDoses++;
     }
   }
