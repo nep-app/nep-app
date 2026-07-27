@@ -8,6 +8,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
+import { deriveDailyMg, typicalMgPerDose } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { EMOTION_EN } from '../constants/emotions';
 
@@ -140,6 +141,20 @@ export function HistoryView({
     const filteredWeighings = useMemo(() => (
         (historyTopic === 'todos' || historyTopic === 'pesagens') ? tempFilteredWeighings : []
     ), [historyTopic, tempFilteredWeighings]);
+
+    // Consumo POR DIA derivado das pesagens (do período selecionado), do mais
+    // recente para o mais antigo. 'estimated' → mostra "≈". Só dias com valor.
+    const derivedDaysList = useMemo(() => {
+        try {
+            const typical = typicalMgPerDose(weighings || [], consumptions || []);
+            const perDay = deriveDailyMg(weighings || [], consumptions || [], { typical });
+            const arr = Object.entries(perDay || {})
+                .filter(([, v]) => v && v.mg != null && v.mg > 0 && v.state !== 'none' && v.state !== 'unknown')
+                .map(([date, v]) => ({ date, mg: v.mg, estimated: v.state !== 'measured' }));
+            return filterByDateRange(arr, dateRange, 'date')
+                .sort((a, b) => (a.date < b.date ? 1 : -1));
+        } catch { return []; }
+    }, [weighings, consumptions, dateRange]);
 
     // Aplicar filtro de tópico
     const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
@@ -627,6 +642,26 @@ export function HistoryView({
                                                     ) : (
                                                         <div className="space-y-3">
                                                             {filteredWeighings.map(renderWeighing)}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Consumo por dia (derivado das pesagens). "≈" = estimado. */}
+                                                    {derivedDaysList.length > 0 && (
+                                                        <div className="mt-5 pt-4 border-t border-gray-700">
+                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Consumption per day (from weighings)' : 'Consumo por dia (das pesagens)'}</h4>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? '"≈" means estimated (not every dose was weighed).' : '"≈" quer dizer estimado (nem todas as doses foram pesadas).'}</p>
+                                                            <div className="space-y-1">
+                                                                {derivedDaysList.map(d => (
+                                                                    <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">
+                                                                        <span className="text-sm text-gray-300">
+                                                                            {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
+                                                                        </span>
+                                                                        <span className={'text-sm font-medium ' + (d.estimated ? 'text-amber-300' : 'text-green-300')}>
+                                                                            {d.estimated ? '≈' : ''}{d.mg} mg
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
