@@ -127,6 +127,23 @@ export const SettingsView = ({
         setDataModeState(mode);
     };
 
+    // Modo disfarce (calculadora + código)
+    const [disguiseOn, setDisguiseOn] = useState(() => safeLocalStorage.get('nep_disguise_enabled', false) === true);
+    const [disguiseCode, setDisguiseCode] = useState('');
+    const enableDisguise = () => {
+        const code = (disguiseCode || '').trim();
+        if (code.length < 4) return;
+        safeLocalStorage.set('nep_disguise_code', code);
+        safeLocalStorage.set('nep_disguise_enabled', true);
+        setDisguiseOn(true);
+        setDisguiseCode('');
+    };
+    const disableDisguise = () => {
+        safeLocalStorage.set('nep_disguise_enabled', false);
+        safeLocalStorage.set('nep_disguise_code', '');
+        setDisguiseOn(false);
+    };
+
     const LOCK_OPTIONS = [
         { value: 'never',   label: t('settings.lockNever'),   desc: t('settings.lockNeverDesc') },
         { value: 'on_hide', label: t('settings.lockOnHide'),  desc: t('settings.lockOnHideDesc') },
@@ -391,6 +408,49 @@ export const SettingsView = ({
                 {lockMode === 'never' && (
                     <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/40 rounded-lg text-xs text-yellow-400">
                         {t('settings.autoLockWarning')}
+                    </div>
+                )}
+            </Section>
+
+            {/* ── Modo disfarce (calculadora + código) ── */}
+            <Section
+                icon={<span>🎭</span>}
+                title={pt ? 'Modo disfarce' : 'Disguise mode'}
+                subtitle={pt ? 'A app abre como calculadora; só um código secreto revela a NEP.' : 'The app opens as a calculator; only a secret code reveals NEP.'}
+            >
+                {disguiseOn ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between bg-green-900/20 border border-green-700/40 rounded-lg px-3 py-2">
+                            <span className="text-green-300 text-sm">✅ {pt ? 'Ativado' : 'Enabled'}</span>
+                            <button onClick={disableDisguise} className="text-red-400 text-sm hover:text-red-300">{pt ? 'Desativar' : 'Disable'}</button>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            {pt ? 'Ao abrir a app aparece uma calculadora. Escreve o teu código e carrega em "=" para entrar na NEP.' : 'When you open the app a calculator appears. Type your code and press "=" to enter NEP.'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <label className="block text-xs text-gray-400">{pt ? 'Código secreto (só números, mínimo 4)' : 'Secret code (digits only, min 4)'}</label>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            value={disguiseCode}
+                            onChange={(e) => setDisguiseCode(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                            placeholder="••••"
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white tracking-widest"
+                        />
+                        <button
+                            onClick={enableDisguise}
+                            disabled={disguiseCode.length < 4}
+                            className="w-full py-3 rounded-xl font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                        >
+                            {pt ? 'Ativar disfarce' : 'Enable disguise'}
+                        </button>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                            {pt
+                                ? '⚠️ Guarda bem o código. Se o esqueceres, só voltas a entrar apagando os dados locais deste dispositivo (os dados na nuvem ficam seguros com o teu PIN). O disfarce esconde QUE a app existe; o PIN protege os dados.'
+                                : '⚠️ Keep the code safe. If you forget it, you can only get back in by clearing this device\'s local data (cloud data stays safe with your PIN). The disguise hides THAT the app exists; the PIN protects the data.'}
+                        </p>
                     </div>
                 )}
             </Section>

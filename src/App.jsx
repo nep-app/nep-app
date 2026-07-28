@@ -15,6 +15,7 @@ import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
 import { DataModeSelector } from './components/DataModeSelector';
+import { CalculatorDecoy } from './components/CalculatorDecoy';
 import { getDataMode } from './services/researchService';
 
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
@@ -71,6 +72,10 @@ function HarmReductionTracker() {
             const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
             const [hasPinAccount, setHasPinAccount] = useState(null);
             const [dataModeSet, setDataModeSet] = useState(() => getDataMode() !== null);
+            // Modo disfarce: se ligado, a app abre como calculadora até o código destrancar.
+            const [disguiseUnlocked, setDisguiseUnlocked] = useState(
+                () => safeLocalStorage.get('nep_disguise_enabled', false) !== true
+            );
 
             // 1. Listen to Firebase auth state
             useEffect(() => {
@@ -95,8 +100,13 @@ function HarmReductionTracker() {
             // Render content based on auth state
             let content;
 
+            // DISFARCE: se ligado e ainda não destrancado, mostra SÓ a calculadora
+            // (esconde por completo que existe uma app privada por trás).
+            if (!disguiseUnlocked) {
+                content = <CalculatorDecoy onUnlock={() => setDisguiseUnlocked(true)} />;
+            }
             // LOADING: Firebase auth state checking
-            if (firebaseLoading || pinLoading) {
+            else if (firebaseLoading || pinLoading) {
                 content = (
                     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-blue-900">
                         <div className="text-center">
