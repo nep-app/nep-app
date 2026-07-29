@@ -1,17 +1,31 @@
 import React, { useState } from 'react';
 
+// Botão definido FORA do componente (evita remontagens a cada tecla).
+const BTN_STYLES = {
+  num: 'bg-neutral-700 text-white',
+  fn: 'bg-neutral-500 text-white',
+  op: 'bg-amber-500 text-white',
+};
+function Btn({ label, onClick, kind = 'num', wide = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'flex items-center justify-center rounded-full text-2xl font-medium select-none active:opacity-70 h-full ' +
+        BTN_STYLES[kind] + (wide ? ' col-span-2 justify-start pl-7' : '')
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
 /**
- * Calculadora-disfarce. Quando o "Modo disfarce" está ligado, é isto que aparece
- * ao abrir a app — uma calculadora que funciona a sério.
- *
- * Destrancar: escreve o teu PIN (só dígitos) e carrega em "=". Como numa
- * calculadora real "número + =" (sem operação) não faz nada, usamos esse gesto
- * para TENTAR o PIN em silêncio. Se estiver certo → abre a NEP (onPinAttempt
- * trata disso). Se estiver errado → nada acontece, continua a parecer calculadora.
- * Se usaste uma operação (+ − × ÷), o "=" faz mesmo a conta (nunca tenta o PIN).
- *
- * NOTA: o PIN é escrito na hora (nunca fica guardado). As tentativas na
- * calculadora NÃO contam para o bloqueio (o pai repõe o contador de falhas).
+ * Calculadora-disfarce. Aparece ao abrir a app quando o "Modo disfarce" está ligado.
+ * Funciona a sério. Para entrar na NEP: escreve o teu PIN e carrega em "=" (número
+ * + "=" sem operação tenta o PIN em silêncio). PIN errado → nada; conta com operação
+ * (+ − × ÷) → faz mesmo a conta. Nunca guarda o PIN nem conta tentativas de bloqueio.
  */
 export function CalculatorDecoy({ onPinAttempt }) {
   const [display, setDisplay] = useState('0');
@@ -21,8 +35,7 @@ export function CalculatorDecoy({ onPinAttempt }) {
 
   const inputDigit = (d) => {
     if (fresh) { setDisplay(d); setFresh(false); return; }
-    // Acumula (mantém zeros à esquerda para o PIN funcionar), com limite de tamanho.
-    setDisplay((cur) => (cur.length >= 15 ? cur : cur + d));
+    setDisplay((cur) => (cur.length >= 15 ? cur : cur + d)); // mantém zeros à esquerda (para o PIN)
   };
 
   const inputDot = () => {
@@ -54,14 +67,12 @@ export function CalculatorDecoy({ onPinAttempt }) {
   };
 
   const equals = () => {
-    // Sem operação pendente → gesto de "número + =" → TENTA o PIN em silêncio.
-    if (op == null) {
+    if (op == null) {                    // número + "=" sem operação → tenta o PIN
       if (onPinAttempt) onPinAttempt(display);
       setFresh(true);
       return;
     }
-    // Com operação → conta normal (nunca tenta o PIN).
-    if (stored != null) {
+    if (stored != null) {                // conta real
       const r = compute(stored, display, op);
       setDisplay(r); setStored(null); setOp(null); setFresh(true);
     }
@@ -70,26 +81,18 @@ export function CalculatorDecoy({ onPinAttempt }) {
   const percent = () => setDisplay((cur) => String(parseFloat(cur) / 100));
   const toggleSign = () => setDisplay((cur) => (cur.startsWith('-') ? cur.slice(1) : (cur === '0' ? cur : '-' + cur)));
 
-  const Btn = ({ label, onClick, kind = 'num', wide = false }) => {
-    const base = 'flex items-center justify-center rounded-full text-2xl font-medium select-none active:opacity-70 transition-opacity h-16';
-    const styles = {
-      num: 'bg-neutral-700 text-white',
-      fn: 'bg-neutral-500 text-white',
-      op: 'bg-amber-500 text-white',
-    };
-    return (
-      <button onClick={onClick} className={`${base} ${styles[kind]} ${wide ? 'col-span-2 justify-start pl-7' : ''}`}>
-        {label}
-      </button>
-    );
-  };
-
   return (
-    <div className="fixed inset-0 bg-black flex flex-col justify-end p-4 select-none">
-      <div className="text-right text-white text-6xl font-light px-3 pb-6 pt-10 break-all overflow-hidden" style={{ minHeight: '96px' }}>
-        {display}
+    <div
+      className="fixed inset-0 bg-black flex flex-col select-none"
+      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      {/* Mostrador: ocupa o espaço que sobra e encolhe se preciso (nunca empurra os botões). */}
+      <div className="flex-1 min-h-0 flex items-end justify-end px-6 pb-4">
+        <div className="text-white text-6xl font-light break-all text-right leading-none">{display}</div>
       </div>
-      <div className="grid grid-cols-4 gap-3 pb-4">
+
+      {/* Botões: altura fixa, sempre visíveis no fundo. */}
+      <div className="grid grid-cols-4 grid-rows-5 gap-2 px-3 pb-3" style={{ height: '62vh', maxHeight: '460px' }}>
         <Btn label="AC" kind="fn" onClick={clearAll} />
         <Btn label="±" kind="fn" onClick={toggleSign} />
         <Btn label="%" kind="fn" onClick={percent} />
