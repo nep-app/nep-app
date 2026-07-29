@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
-import { safeLocalStorage } from '../utils/storage';
 
 /**
  * Calculadora-disfarce. Quando o "Modo disfarce" está ligado, é isto que aparece
- * ao abrir a app — uma calculadora que funciona a sério. Escrever o CÓDIGO secreto
- * e carregar em "=" revela a NEP por trás (onUnlock). Quem não souber o código só
- * vê uma calculadora normal.
+ * ao abrir a app — uma calculadora que funciona a sério.
  *
- * NOTA: o código só destranca o ecrã de disfarce (a interface). Os DADOS continuam
- * protegidos pelo PIN/encriptação — o disfarce esconde QUE a app existe, não os dados.
+ * Destrancar: escreve o teu PIN (só dígitos) e carrega em "=". Como numa
+ * calculadora real "número + =" (sem operação) não faz nada, usamos esse gesto
+ * para TENTAR o PIN em silêncio. Se estiver certo → abre a NEP (onPinAttempt
+ * trata disso). Se estiver errado → nada acontece, continua a parecer calculadora.
+ * Se usaste uma operação (+ − × ÷), o "=" faz mesmo a conta (nunca tenta o PIN).
+ *
+ * NOTA: o PIN é escrito na hora (nunca fica guardado). As tentativas na
+ * calculadora NÃO contam para o bloqueio (o pai repõe o contador de falhas).
  */
-export function CalculatorDecoy({ onUnlock }) {
+export function CalculatorDecoy({ onPinAttempt }) {
   const [display, setDisplay] = useState('0');
-  const [stored, setStored] = useState(null);   // valor guardado
-  const [op, setOp] = useState(null);            // operação pendente
-  const [fresh, setFresh] = useState(true);      // próximo dígito começa novo número
-
-  const code = safeLocalStorage.get('nep_disguise_code', '') || '';
+  const [stored, setStored] = useState(null);
+  const [op, setOp] = useState(null);
+  const [fresh, setFresh] = useState(true);
 
   const inputDigit = (d) => {
     if (fresh) { setDisplay(d); setFresh(false); return; }
-    setDisplay((cur) => (cur === '0' ? d : (cur.length >= 15 ? cur : cur + d)));
+    // Acumula (mantém zeros à esquerda para o PIN funcionar), com limite de tamanho.
+    setDisplay((cur) => (cur.length >= 15 ? cur : cur + d));
   };
 
   const inputDot = () => {
@@ -38,7 +40,6 @@ export function CalculatorDecoy({ onUnlock }) {
     else if (operator === '−') r = x - y;
     else if (operator === '×') r = x * y;
     else if (operator === '÷') r = y === 0 ? 0 : x / y;
-    // arredondar para evitar 0.30000000000004
     return String(Math.round(r * 1e10) / 1e10);
   };
 
@@ -53,9 +54,14 @@ export function CalculatorDecoy({ onUnlock }) {
   };
 
   const equals = () => {
-    // GATE do disfarce: se o que está no visor é EXATAMENTE o código → revela a app.
-    if (code && display === code) { onUnlock(); return; }
-    if (op && stored != null) {
+    // Sem operação pendente → gesto de "número + =" → TENTA o PIN em silêncio.
+    if (op == null) {
+      if (onPinAttempt) onPinAttempt(display);
+      setFresh(true);
+      return;
+    }
+    // Com operação → conta normal (nunca tenta o PIN).
+    if (stored != null) {
       const r = compute(stored, display, op);
       setDisplay(r); setStored(null); setOp(null); setFresh(true);
     }
@@ -72,10 +78,7 @@ export function CalculatorDecoy({ onUnlock }) {
       op: 'bg-amber-500 text-white',
     };
     return (
-      <button
-        onClick={onClick}
-        className={`${base} ${styles[kind]} ${wide ? 'col-span-2 justify-start pl-7' : ''}`}
-      >
+      <button onClick={onClick} className={`${base} ${styles[kind]} ${wide ? 'col-span-2 justify-start pl-7' : ''}`}>
         {label}
       </button>
     );

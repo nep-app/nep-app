@@ -69,13 +69,27 @@ function HarmReductionTracker() {
 
             const [firebaseUser, setFirebaseUser] = useState(null);
             const [firebaseLoading, setFirebaseLoading] = useState(true);
-            const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount } = useAuth();
+            const { isAuthenticated: pinAuthenticated, loading: pinLoading, hasAccount, login } = useAuth();
             const [hasPinAccount, setHasPinAccount] = useState(null);
             const [dataModeSet, setDataModeSet] = useState(() => getDataMode() !== null);
-            // Modo disfarce: se ligado, a app abre como calculadora até o código destrancar.
+            // Modo disfarce: se ligado, a app abre como calculadora até o PIN destrancar.
             const [disguiseUnlocked, setDisguiseUnlocked] = useState(
                 () => safeLocalStorage.get('nep_disguise_enabled', false) !== true
             );
+            // A calculadora tenta o PIN em silêncio. As tentativas NÃO contam para o
+            // bloqueio (repomos o contador de falhas — só o ecrã normal do PIN bloqueia).
+            const handleDisguisePin = async (pin) => {
+                const savedFails = localStorage.getItem('nep_login_fails');
+                let ok = false;
+                try { const res = await login(pin); ok = !!(res && res.success); } catch { ok = false; }
+                if (!ok) {
+                    if (savedFails !== null) localStorage.setItem('nep_login_fails', savedFails);
+                    else localStorage.removeItem('nep_login_fails');
+                } else {
+                    setDisguiseUnlocked(true);
+                }
+                return ok;
+            };
 
             // 1. Listen to Firebase auth state
             useEffect(() => {
@@ -103,7 +117,7 @@ function HarmReductionTracker() {
             // DISFARCE: se ligado e ainda não destrancado, mostra SÓ a calculadora
             // (esconde por completo que existe uma app privada por trás).
             if (!disguiseUnlocked) {
-                content = <CalculatorDecoy onUnlock={() => setDisguiseUnlocked(true)} />;
+                content = <CalculatorDecoy onPinAttempt={handleDisguisePin} />;
             }
             // LOADING: Firebase auth state checking
             else if (firebaseLoading || pinLoading) {
