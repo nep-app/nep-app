@@ -3,12 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { logUrgeEvent } from '../../utils/urgeLog';
 
 // ── Timer 15 min ──────────────────────────────────────────────────────────────
+const TIMER_OPTIONS = [15, 20, 30, 45, 60]; // minutos (15 = mínimo/por defeito)
+
 function TimerExercise({ onBack }) {
-  const { t } = useTranslation();
-  const TOTAL = 15 * 60;
-  const [seconds, setSeconds] = useState(TOTAL);
+  const { t, i18n } = useTranslation();
+  const pt = i18n.language !== 'en';
+  const [totalMin, setTotalMin] = useState(15);
+  const TOTAL = totalMin * 60;
+  const [seconds, setSeconds] = useState(15 * 60);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
+  const atStart = !running && !done && seconds === TOTAL; // ainda não começou → dá para escolher o tempo
 
   useEffect(() => {
     if (!running) return;
@@ -30,6 +35,20 @@ function TimerExercise({ onBack }) {
       <p className="text-sm text-gray-300 text-center leading-relaxed px-2">
         {t('urge.timerDesc')}
       </p>
+      {atStart && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs text-gray-500">{pt ? 'Quanto tempo?' : 'How long?'}</span>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {TIMER_OPTIONS.map(m => (
+              <button key={m}
+                onClick={() => { setTotalMin(m); setSeconds(m * 60); }}
+                className={'px-3 py-1 rounded-full text-xs font-medium border ' + (totalMin === m ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-800 border-gray-600 text-gray-300')}>
+                {m} min
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="relative w-36 h-36">
         <svg className="w-36 h-36 -rotate-90" viewBox="0 0 144 144">
           <circle cx="72" cy="72" r="60" fill="none" stroke="#374151" strokeWidth="10" />
