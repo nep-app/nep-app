@@ -129,11 +129,25 @@ export const SettingsView = ({
 
     // Modo disfarce (calculadora — destranca com o PIN de sempre, sem código à parte)
     const [disguiseOn, setDisguiseOn] = useState(() => safeLocalStorage.get('nep_disguise_enabled', false) === true);
-    const toggleDisguise = () => {
-        const next = !disguiseOn;
-        safeLocalStorage.set('nep_disguise_enabled', next);
-        safeLocalStorage.set('nep_disguise_code', ''); // versão nova usa o PIN, não um código separado
-        setDisguiseOn(next);
+    const [showDisguiseConfirm, setShowDisguiseConfirm] = useState(false);
+    const [disguiseAck, setDisguiseAck] = useState(false);
+    const requestToggleDisguise = () => {
+        if (disguiseOn) {
+            // Desligar → direto.
+            safeLocalStorage.set('nep_disguise_enabled', false);
+            safeLocalStorage.set('nep_disguise_code', '');
+            setDisguiseOn(false);
+        } else {
+            // Ligar → primeiro confirmar que percebeu o gesto (não se pode esquecer).
+            setDisguiseAck(false);
+            setShowDisguiseConfirm(true);
+        }
+    };
+    const confirmEnableDisguise = () => {
+        safeLocalStorage.set('nep_disguise_enabled', true);
+        safeLocalStorage.set('nep_disguise_code', '');
+        setDisguiseOn(true);
+        setShowDisguiseConfirm(false);
     };
 
     const LOCK_OPTIONS = [
@@ -197,10 +211,10 @@ export const SettingsView = ({
                     : 'Reminders that arrive even when the app is closed.'}
             >
                 <PushRemindersSettings />
-            </Section>
 
-            {/* ── Surfar o impulso (visível e óbvio, junto às notificações) ── */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
+                {/* Surfar o impulso — ligado às metas: aparece quando consumir agora
+                    quebraria uma meta. Fica aqui, junto dos outros avisos/lembretes. */}
+                <div className="border-t border-gray-700 my-4" />
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <p className="text-sm font-semibold text-white flex items-center gap-2">
@@ -216,7 +230,7 @@ export const SettingsView = ({
                         <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${urgeExerciseOn ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                 </div>
-            </div>
+            </Section>
 
             {/* ── Comunidade / Fórum (atalho externo) ── */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
@@ -250,10 +264,40 @@ export const SettingsView = ({
                 icon={<Icons.RefreshCw className="w-5 h-5 text-purple-400" />}
                 title={pt ? 'Os meus dados' : 'My data'}
                 subtitle={pt
-                    ? 'Guardar cópia, sincronizar e recuperar.'
-                    : 'Back up, sync and restore.'}
+                    ? 'Como são guardados, cópia de segurança, sincronizar e recuperar.'
+                    : 'How they are stored, backup, sync and restore.'}
             >
                 <div className="space-y-3 text-gray-300">
+                    {/* Modo de dados (como são guardados/partilhados) */}
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{pt ? 'Como os dados são guardados' : 'How data is stored'}</p>
+                    <div className="space-y-2">
+                        {[
+                            { id: 'local', icon: '📱', label: pt ? 'Só local' : 'Local only', desc: pt ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
+                            { id: 'cloud', icon: '🔒', label: pt ? 'Cloud encriptado' : 'Cloud encrypted', desc: pt ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
+                            { id: 'research', icon: '🔬', label: pt ? 'Partilhar investigação' : 'Share research', desc: pt ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
+                        ].map(opt => (
+                            <button
+                                key={opt.id}
+                                onClick={() => handleDataModeChange(opt.id)}
+                                className={
+                                    'w-full text-left px-4 py-3 rounded-lg border-2 transition-all flex items-start gap-3 ' +
+                                    (dataMode === opt.id
+                                        ? 'bg-purple-900/40 border-purple-500'
+                                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600')
+                                }
+                            >
+                                <span className="text-xl mt-0.5">{opt.icon}</span>
+                                <div>
+                                    <div className="font-medium text-sm text-white">{opt.label}</div>
+                                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+                                </div>
+                                {dataMode === opt.id && <span className="ml-auto text-purple-400 text-lg">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="border-t border-gray-700 my-1" />
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{pt ? 'Cópia de segurança e sincronização' : 'Backup and sync'}</p>
                     <p className="text-sm">{t('settings.syncDescription')}</p>
 
                     {lastSyncTime && (
@@ -341,45 +385,14 @@ export const SettingsView = ({
                 </div>
             </Section>
 
-            {/* ── Modo de dados (abre/fecha, pequeno) ── */}
-            <Section
-                icon={<span>🛡️</span>}
-                title={pt ? 'Modo de dados' : 'Data mode'}
-                subtitle={pt ? 'Como os teus dados são guardados e partilhados.' : 'How your data is stored and shared.'}
-            >
-                <div className="space-y-2">
-                    {[
-                        { id: 'local', icon: '📱', label: pt ? 'Só local' : 'Local only', desc: pt ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
-                        { id: 'cloud', icon: '🔒', label: pt ? 'Cloud encriptado' : 'Cloud encrypted', desc: pt ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
-                        { id: 'research', icon: '🔬', label: pt ? 'Partilhar investigação' : 'Share research', desc: pt ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
-                    ].map(opt => (
-                        <button
-                            key={opt.id}
-                            onClick={() => handleDataModeChange(opt.id)}
-                            className={
-                                'w-full text-left px-4 py-3 rounded-lg border-2 transition-all flex items-start gap-3 ' +
-                                (dataMode === opt.id
-                                    ? 'bg-purple-900/40 border-purple-500'
-                                    : 'bg-gray-700 border-gray-600 hover:bg-gray-600')
-                            }
-                        >
-                            <span className="text-xl mt-0.5">{opt.icon}</span>
-                            <div>
-                                <div className="font-medium text-sm text-white">{opt.label}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
-                            </div>
-                            {dataMode === opt.id && <span className="ml-auto text-purple-400 text-lg">✓</span>}
-                        </button>
-                    ))}
-                </div>
-            </Section>
-
-            {/* ── Bloqueio automático (abre/fecha, pequeno) ── */}
+            {/* ── Segurança e bloqueio (bloqueio automático + modo disfarce juntos) ── */}
             <Section
                 icon={<Icons.Shield className="w-5 h-5 text-purple-400" />}
-                title={t('settings.autoLock')}
-                subtitle={t('settings.autoLockSubtitle')}
+                title={pt ? 'Segurança e bloqueio' : 'Security & lock'}
+                subtitle={pt ? 'Bloqueio automático e modo disfarce.' : 'Auto-lock and disguise mode.'}
             >
+                {/* Bloqueio automático */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('settings.autoLock')}</p>
                 <div className="space-y-2">
                     {LOCK_OPTIONS.map(opt => (
                         <button
@@ -402,21 +415,18 @@ export const SettingsView = ({
                         {t('settings.autoLockWarning')}
                     </div>
                 )}
-            </Section>
 
-            {/* ── Modo disfarce (calculadora + código) ── */}
-            <Section
-                icon={<span>🎭</span>}
-                title={pt ? 'Modo disfarce' : 'Disguise mode'}
-                subtitle={pt ? 'A app abre como calculadora; só um código secreto revela a NEP.' : 'The app opens as a calculator; only a secret code reveals NEP.'}
-            >
+                {/* Modo disfarce */}
+                <div className="border-t border-gray-700 my-4" />
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">🎭 {pt ? 'Modo disfarce' : 'Disguise mode'}</p>
+                <p className="text-xs text-gray-500 mb-3">{pt ? 'A app abre como calculadora; só um gesto secreto revela a NEP.' : 'The app opens as a calculator; only a secret gesture reveals NEP.'}</p>
                 <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                         <span className={'text-sm ' + (disguiseOn ? 'text-green-300' : 'text-gray-300')}>
                             {disguiseOn ? (pt ? '✅ Ativado' : '✅ Enabled') : (pt ? 'Desativado' : 'Disabled')}
                         </span>
                         <button
-                            onClick={toggleDisguise}
+                            onClick={requestToggleDisguise}
                             aria-label={pt ? 'Modo disfarce' : 'Disguise mode'}
                             className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${disguiseOn ? 'bg-purple-500' : 'bg-gray-600'}`}
                         >
@@ -440,7 +450,7 @@ export const SettingsView = ({
 
                     {/* Ajuda por email */}
                     <a
-                        href="mailto:nep.app@protonmail.me?subject=Ajuda%20NEP"
+                        href="mailto:nep.app@proton.me?subject=Ajuda%20NEP"
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium border border-gray-600"
                     >
                         ✉️ {pt ? 'Preciso de ajuda (enviar email)' : 'I need help (send email)'}
@@ -484,10 +494,10 @@ export const SettingsView = ({
                 </div>
             </Section>
 
-            {/* ── Sobre e ajuda (abre/fecha): sobre + como usar + legal ── */}
+            {/* ── Sobre, ajuda e legal (tudo no mesmo dropdown) ── */}
             <Section
                 icon={<Icons.Info className="w-5 h-5 text-purple-400" />}
-                title={pt ? 'Sobre e ajuda' : 'About & help'}
+                title={pt ? 'Sobre, ajuda e legal' : 'About, help & legal'}
             >
                 <div className="space-y-4 text-sm text-gray-300">
                     {/* Sobre */}
@@ -509,39 +519,55 @@ export const SettingsView = ({
                         </p>
                         <GuideAccordion />
                     </div>
-                </div>
-            </Section>
 
-            {/* ── Legal e ética (à parte do "Sobre") ── */}
-            <Section
-                icon={<Icons.FileText className="w-5 h-5 text-purple-400" />}
-                title={pt ? 'Legal e ética' : 'Legal & ethics'}
-                subtitle={pt
-                    ? 'Licença, termos de uso e governança ética.'
-                    : 'Licence, terms of use and ethical governance.'}
-            >
-                <div className="space-y-2">
-                    <button
-                        onClick={() => onOpenLegalDoc('license')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2"><span>📜</span><span>{t('settings.license')}</span></span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onOpenLegalDoc('terms')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2"><span>📋</span><span>{t('settings.terms')}</span></span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => onOpenLegalDoc('governance')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
-                    >
-                        <span className="flex items-center gap-2"><span>⚖️</span><span>{t('settings.governance')}</span></span>
-                        <Icons.ChevronRight className="w-4 h-4" />
-                    </button>
+                    {/* Contacto */}
+                    <div className="pt-2 border-t border-gray-700">
+                        <p className="font-medium text-gray-200 mb-2 flex items-center gap-2">
+                            ✉️ {pt ? 'Contacto e ajuda' : 'Contact & help'}
+                        </p>
+                        <p className="text-xs text-gray-400 mb-2">
+                            {pt
+                                ? 'Dúvidas, sugestões ou precisas de ajuda? Escreve para:'
+                                : 'Questions, suggestions or need help? Write to:'}
+                        </p>
+                        <a
+                            href="mailto:nep.app@proton.me?subject=Ajuda%20NEP"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium border border-gray-600"
+                        >
+                            ✉️ nep.app@proton.me
+                        </a>
+                    </div>
+
+                    {/* Legal e ética */}
+                    <div className="pt-2 border-t border-gray-700">
+                        <p className="font-medium text-gray-200 mb-2 flex items-center gap-2">
+                            <Icons.FileText className="w-4 h-4 text-purple-400" />
+                            {pt ? 'Legal e ética' : 'Legal & ethics'}
+                        </p>
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => onOpenLegalDoc('license')}
+                                className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                            >
+                                <span className="flex items-center gap-2"><span>📜</span><span>{t('settings.license')}</span></span>
+                                <Icons.ChevronRight className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => onOpenLegalDoc('terms')}
+                                className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                            >
+                                <span className="flex items-center gap-2"><span>📋</span><span>{t('settings.terms')}</span></span>
+                                <Icons.ChevronRight className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => onOpenLegalDoc('governance')}
+                                className="bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 w-full py-3 px-4 rounded-lg transition-all font-medium border flex items-center justify-between"
+                            >
+                                <span className="flex items-center gap-2"><span>⚖️</span><span>{t('settings.governance')}</span></span>
+                                <Icons.ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </Section>
 
@@ -555,6 +581,84 @@ export const SettingsView = ({
                     </div>
                 </div>
             </div>
+
+            {/* Confirmação ao ATIVAR o modo disfarce — a pessoa tem de perceber o
+                gesto e reconhecer que não se pode esquecer (não é personalizável). */}
+            {showDisguiseConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={() => setShowDisguiseConfirm(false)}>
+                    <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-lg">
+                            <span>🎭</span>
+                            {pt ? 'Antes de ativar o disfarce' : 'Before enabling the disguise'}
+                        </h3>
+
+                        <p className="text-sm text-gray-300 mb-3 leading-relaxed">
+                            {pt
+                                ? 'A partir de agora, a app abre como uma calculadora normal. Para entrares na NEP tens de fazer sempre este gesto:'
+                                : 'From now on, the app opens as a normal calculator. To enter NEP you must always do this gesture:'}
+                        </p>
+
+                        <div className="bg-gray-900/50 border border-purple-700/50 rounded-lg p-4 text-sm text-white mb-3 leading-relaxed">
+                            <p className="font-semibold mb-1">📱 {pt ? 'Calculadora' : 'Calculator'}</p>
+                            <p className="whitespace-pre-line">{pt
+                                ? '1) Carrega em AC 3 vezes seguidas.\n2) Escreve o teu PIN — vai aparecer escondido (••••).\n3) Carrega em "=".'
+                                : '1) Press AC 3 times in a row.\n2) Type your PIN — it shows hidden (••••).\n3) Press "=".'}
+                            </p>
+                            <p className="mt-2 text-xs text-gray-400">{pt
+                                ? 'É sempre este gesto — não muda e não é personalizável. Fazer contas normais nunca revela nada.'
+                                : 'It is always this gesture — it never changes and can\'t be customized. Doing normal maths never reveals anything.'}</p>
+                        </div>
+
+                        <div className="bg-yellow-900/15 border border-yellow-700/40 rounded-lg p-3 text-xs text-yellow-300/90 mb-3 leading-relaxed">
+                            {pt
+                                ? '🛟 Rede de segurança: se alguma vez te esqueceres e ficares trancada fora, apagar os dados do site / reinstalar a app DESLIGA o disfarce. Os teus dados na nuvem ficam seguros — recuperas com o teu PIN.'
+                                : '🛟 Safety net: if you ever forget and get locked out, clearing the site data / reinstalling the app TURNS OFF the disguise. Your cloud data stays safe — you recover it with your PIN.'}
+                        </div>
+
+                        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-xs text-gray-300 mb-4 leading-relaxed">
+                            {pt
+                                ? 'Guarda este email para pedires ajuda caso te esqueças do gesto: '
+                                : 'Save this email to ask for help if you forget the gesture: '}
+                            <span className="font-semibold text-white select-all">nep.app@proton.me</span>
+                        </div>
+
+                        <label className="flex items-start gap-3 mb-4 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={disguiseAck}
+                                onChange={(e) => setDisguiseAck(e.target.checked)}
+                                className="mt-0.5 w-5 h-5 accent-purple-500 flex-shrink-0"
+                            />
+                            <span className="text-sm text-gray-200">
+                                {pt
+                                    ? 'Percebi o gesto (AC 3× → PIN → =) e comprometo-me a não me esquecer.'
+                                    : 'I understand the gesture (AC 3× → PIN → =) and I commit to not forgetting it.'}
+                            </span>
+                        </label>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDisguiseConfirm(false)}
+                                className="flex-1 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium"
+                            >
+                                {pt ? 'Cancelar' : 'Cancel'}
+                            </button>
+                            <button
+                                onClick={confirmEnableDisguise}
+                                disabled={!disguiseAck}
+                                className={
+                                    'flex-1 py-3 rounded-lg font-medium transition-all ' +
+                                    (disguiseAck
+                                        ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                        : 'bg-gray-700 text-gray-500 cursor-not-allowed')
+                                }
+                            >
+                                {pt ? 'Ativar disfarce' : 'Enable disguise'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Confirmação de importação */}
             {pendingImportFile && (
