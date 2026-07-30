@@ -87,7 +87,11 @@ export function CalculatorDecoy({ onPinAttempt }) {
       style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Mostrador: ocupa o espaço que sobra e encolhe se preciso (nunca empurra os botões). */}
-      <div className="flex-1 min-h-0 flex items-end justify-end px-6 pb-4">
+      <div className="flex-1 min-h-0 flex flex-col items-end justify-end px-6 pb-4">
+        {/* Linha de cima: a conta em curso (mostra o sinal da operação). */}
+        <div className="text-neutral-500 text-2xl h-8 break-all text-right">
+          {op ? `${stored ?? ''} ${op}` : ''}
+        </div>
         <div className="text-white text-6xl font-light break-all text-right leading-none">{display}</div>
       </div>
 
