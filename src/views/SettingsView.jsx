@@ -423,14 +423,32 @@ export const SettingsView = ({
                             <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${disguiseOn ? 'translate-x-7' : 'translate-x-1'}`} />
                         </button>
                     </div>
-                    <p className="text-xs text-gray-400 leading-relaxed">
+                    {/* Como entrar (gesto fixo, não personalizável) */}
+                    <div className="bg-gray-900/40 border border-gray-700 rounded-lg p-3 text-xs text-gray-300 leading-relaxed">
+                        <p className="font-semibold text-white mb-1">{pt ? 'Como entrar na NEP:' : 'How to enter NEP:'}</p>
+                        <p>{pt
+                            ? 'Ao abrir, aparece uma calculadora. Carrega em AC 3 vezes → escreve o teu PIN (aparece escondido, ••••) → "=". É sempre este gesto (não muda). Uma conta normal nunca revela nada.'
+                            : 'On open, a calculator appears. Press AC 3 times → type your PIN (shown hidden, ••••) → "=". It is always this gesture (it never changes). Normal maths reveals nothing.'}</p>
+                    </div>
+
+                    {/* Rede de segurança — deixar bem claro */}
+                    <div className="bg-yellow-900/15 border border-yellow-700/40 rounded-lg p-3 text-xs text-yellow-300/90 leading-relaxed">
                         {pt
-                            ? 'Ao abrir a app aparece uma calculadora. Escreve o teu PIN de sempre e carrega em "=" para entrar na NEP. Um número errado só faz de calculadora — não revela nada, nem bloqueia. (Se usares uma operação +−×÷, o "=" faz mesmo a conta.)'
-                            : 'When you open the app a calculator appears. Type your usual PIN and press "=" to enter NEP. A wrong number just acts as a calculator — it reveals nothing and never locks. (If you use an operation +−×÷, "=" does the actual maths.)'}
-                    </p>
+                            ? '🛟 Se ficares mesmo trancada fora: apagar os dados do site / reinstalar a app DESLIGA o disfarce. Os teus dados na nuvem ficam seguros — recuperas com o teu PIN.'
+                            : '🛟 If you ever get locked out: clearing the site data / reinstalling the app TURNS OFF the disguise. Your cloud data stays safe — you recover it with your PIN.'}
+                    </div>
+
+                    {/* Ajuda por email */}
+                    <a
+                        href="mailto:nep.app@protonmail.me?subject=Ajuda%20NEP"
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium border border-gray-600"
+                    >
+                        ✉️ {pt ? 'Preciso de ajuda (enviar email)' : 'I need help (send email)'}
+                    </a>
+
                     {disguiseOn && (
                         <p className="text-xs text-gray-500">
-                            {pt ? 'Testa: fecha a app por completo, reabre, e confirma que consegues entrar com o PIN + "=".' : 'Test it: fully close the app, reopen, and confirm you can get in with your PIN + "=".'}
+                            {pt ? 'Testa: fecha a app por completo, reabre, e confirma que entras com AC 3× + PIN + "=".' : 'Test it: fully close the app, reopen, and confirm you get in with AC 3× + PIN + "=".'}
                         </p>
                     )}
                 </div>
