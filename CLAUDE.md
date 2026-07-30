@@ -6,6 +6,23 @@
 
 ---
 
+## ⏳ A RELEMBRAR À TERESA NA PRÓXIMA CONVERSA (pendente, ela pediu para lembrar)
+
+No início da próxima sessão, lembrar a Teresa que ficaram estas duas coisas por fazer
+(ela adiou de propósito, não estão esquecidas):
+
+1. **Estatísticas dos exercícios de "surfar o impulso"** nas Análises — quantas vezes fez
+   um exercício, quantas vezes adiou o consumo, e (se der) quantos minutos adiou (comparar
+   `getUrgeEvents()` de `utils/urgeLog.js` com os consumos seguintes).
+2. **Diário como 2.ª opção de disfarce** — um diário a fingir, credível e útil, que NÃO
+   escreve nos "pensamentos" reais; gesto para entrar: abrir a data → pôr a hora a 00:00 →
+   PIN. Precisa de um seletor do tipo de disfarce nas Definições e de o pop-up de confirmação
+   passar a explicar o gesto conforme o tipo escolhido.
+
+Depois de relembrar e ela decidir, apagar esta secção.
+
+---
+
 ## Sobre o projeto
 
 `nep-app` (NEP.app) é uma **app de redução de danos** para acompanhamento de consumo de
