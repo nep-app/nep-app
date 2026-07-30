@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { logUrgeEvent } from '../../utils/urgeLog';
 
 // ── Timer 15 min ──────────────────────────────────────────────────────────────
 function TimerExercise({ onBack }) {
@@ -140,39 +141,123 @@ function BreathingExercise({ onBack }) {
   );
 }
 
-// ── Check HALT ────────────────────────────────────────────────────────────────
-const HALT_ITEMS = [
-  { key: 'hungry', emoji: '🍽️', labelKey: 'urge.haltHungry', tipKey: 'urge.haltHungryTip' },
-  { key: 'angry',  emoji: '😠', labelKey: 'urge.haltAngry',  tipKey: 'urge.haltAngryTip' },
-  { key: 'lonely', emoji: '🫂', labelKey: 'urge.haltLonely', tipKey: 'urge.haltLonelyTip' },
-  { key: 'tired',  emoji: '😴', labelKey: 'urge.haltTired',  tipKey: 'urge.haltTiredTip' },
+// ── "O que preciso agora?" (pergunta aberta e gentil, no lugar do HALT) ─────────
+const NEEDS = [
+  { key: 'rest',    emoji: '😴', pt: 'Descanso',       en: 'Rest',        ptTip: 'Talvez o corpo esteja só a pedir uma pausa. Consegues deitar-te ou fechar os olhos uns minutos?', enTip: 'Maybe your body just wants a break. Can you lie down or close your eyes for a bit?' },
+  { key: 'food',    emoji: '🍽️', pt: 'Comida ou água', en: 'Food or water', ptTip: 'Comer qualquer coisa ou beber água muda mais o estado do que parece. Experimenta.', enTip: 'Eating something or drinking water shifts your state more than it seems. Try it.' },
+  { key: 'company', emoji: '🫂', pt: 'Companhia',       en: 'Company',     ptTip: 'Falar com alguém — nem que seja uma mensagem — tira peso. Há alguém a quem possas chegar?', enTip: 'Reaching out to someone — even a text — lightens the load. Is there someone you can reach?' },
+  { key: 'move',    emoji: '🚶', pt: 'Movimento',       en: 'Movement',    ptTip: 'Levantar, andar um pouco, água fria na cara — ajuda a descarregar o pico.', enTip: 'Stand up, walk a little, cold water on your face — helps the peak pass.' },
+  { key: 'calm',    emoji: '🌙', pt: 'Calma',           en: 'Calm',        ptTip: 'Talvez precises de baixar o barulho — silêncio, uma música, respirar devagar.', enTip: 'Maybe you need less noise — quiet, some music, slow breathing.' },
+  { key: 'care',    emoji: '💛', pt: 'Carinho',         en: 'Care',        ptTip: 'Sê gentil contigo agora, como serias com uma amiga a sentir isto.', enTip: 'Be kind to yourself right now, like you would with a friend feeling this.' },
 ];
 
-function HaltCheck({ onBack }) {
-  const { t } = useTranslation();
+function NeedCheck({ onBack }) {
+  const { t, i18n } = useTranslation();
+  const pt = i18n.language !== 'en';
   const [selected, setSelected] = useState(null);
+  const sel = NEEDS.find(n => n.key === selected);
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      <p className="text-sm text-gray-300 text-center px-2">{t('urge.haltDesc')}</p>
+      <p className="text-sm text-gray-300 text-center px-2">
+        {pt ? 'Este impulso costuma esconder uma necessidade. Do que é que precisas mesmo agora?' : 'This urge often hides a need. What do you actually need right now?'}
+      </p>
       <div className="grid grid-cols-2 gap-3">
-        {HALT_ITEMS.map(item => (
+        {NEEDS.map(item => (
           <button key={item.key}
             onClick={() => setSelected(selected === item.key ? null : item.key)}
             className={`rounded-xl p-4 text-center border transition-all ${selected === item.key ? 'border-purple-500 bg-purple-900/40' : 'border-gray-700 bg-gray-800/60 hover:border-gray-600'}`}>
             <div className="text-2xl mb-1">{item.emoji}</div>
-            <div className="text-sm font-semibold text-white">{t(item.labelKey)}</div>
+            <div className="text-sm font-semibold text-white">{pt ? item.pt : item.en}</div>
           </button>
         ))}
       </div>
-      {selected && (
+      {sel && (
         <div className="bg-purple-900/30 border border-purple-700/50 rounded-xl p-4 text-sm text-purple-200 leading-relaxed">
-          💡 {t(HALT_ITEMS.find(i => i.key === selected).tipKey)}
+          💡 {pt ? sel.ptTip : sel.enTip}
         </div>
       )}
-      {!selected && (
-        <p className="text-xs text-gray-500 text-center italic">{t('urge.haltPrompt')}</p>
+      {!sel && (
+        <p className="text-xs text-gray-500 text-center italic">
+          {pt ? 'Não faz mal se não souberes ao certo. Só parar para perguntar já ajuda.' : "It's okay not to know exactly. Just pausing to ask already helps."}
+        </p>
       )}
+      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300 text-center">{t('urge.backToMenu')}</button>
+    </div>
+  );
+}
+
+// ── Ancorar 5-4-3-2-1 (grounding pelos sentidos) ────────────────────────────────
+function GroundingExercise({ onBack }) {
+  const { t, i18n } = useTranslation();
+  const pt = i18n.language !== 'en';
+  const STEPS = [
+    { n: 5, pt: 'coisas que consegues VER', en: 'things you can SEE', emoji: '👀' },
+    { n: 4, pt: 'coisas que consegues OUVIR', en: 'things you can HEAR', emoji: '👂' },
+    { n: 3, pt: 'coisas que consegues TOCAR ou sentir', en: 'things you can TOUCH or feel', emoji: '✋' },
+    { n: 2, pt: 'coisas que consegues CHEIRAR', en: 'things you can SMELL', emoji: '👃' },
+    { n: 1, pt: 'coisa que consegues SABOREAR', en: 'thing you can TASTE', emoji: '👅' },
+  ];
+  const [i, setI] = useState(0);
+  const done = i >= STEPS.length;
+  const step = STEPS[Math.min(i, STEPS.length - 1)];
+
+  return (
+    <div className="flex flex-col items-center gap-5 py-2">
+      <p className="text-sm text-gray-300 text-center px-2">
+        {pt ? 'Traz-te de volta ao momento pelos sentidos, sem pressa.' : 'Bring yourself back to the moment through your senses, no rush.'}
+      </p>
+      {!done ? (
+        <>
+          <div className="text-5xl">{step.emoji}</div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-white">{step.n}</div>
+            <div className="text-sm text-gray-300 mt-1 px-6">{pt ? step.pt : step.en}</div>
+          </div>
+          <button onClick={() => setI(i + 1)}
+            className="px-6 py-2 rounded-full font-semibold text-sm bg-purple-600 text-white hover:bg-purple-700">
+            {i === STEPS.length - 1 ? (pt ? 'Terminar' : 'Finish') : (pt ? 'Próximo' : 'Next')}
+          </button>
+        </>
+      ) : (
+        <div className="text-center space-y-1 px-4">
+          <p className="text-green-400 font-semibold text-lg">✅ {pt ? 'Ancoraste-te.' : 'You grounded yourself.'}</p>
+          <p className="text-sm text-gray-300">{pt ? 'Repara como o impulso pode já não estar tão forte.' : 'Notice how the urge may not be as strong now.'}</p>
+          <button onClick={() => setI(0)} className="text-xs text-purple-300 underline mt-2">{pt ? 'Fazer outra vez' : 'Do it again'}</button>
+        </div>
+      )}
+      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">{t('urge.backToMenu')}</button>
+    </div>
+  );
+}
+
+// ── Mexer o corpo (inclui água fria / gelo) ─────────────────────────────────────
+function MoveExercise({ onBack }) {
+  const { t, i18n } = useTranslation();
+  const pt = i18n.language !== 'en';
+  const ITEMS = [
+    { emoji: '🧍', pt: 'Levanta-te e alonga 30 segundos.', en: 'Stand up and stretch for 30 seconds.' },
+    { emoji: '🚶', pt: 'Anda um bocadinho — de um lado para o outro, ou até outra divisão.', en: 'Walk a little — back and forth, or to another room.' },
+    { emoji: '💧', pt: 'Água fria na cara ou nos pulsos.', en: 'Cold water on your face or wrists.' },
+    { emoji: '🧊', pt: 'Segura um cubo de gelo na mão até derreter um pouco — baixa a intensidade.', en: 'Hold an ice cube until it melts a bit — it lowers the intensity.' },
+    { emoji: '🌬️', pt: 'Respira fundo três vezes enquanto o fazes.', en: 'Take three deep breaths while you do it.' },
+  ];
+  return (
+    <div className="flex flex-col gap-4 py-2">
+      <p className="text-sm text-gray-300 text-center px-2">
+        {pt ? 'Mexer o corpo ajuda a descarregar o pico do impulso. Escolhe o que der agora:' : 'Moving your body helps the urge peak pass. Do whatever you can right now:'}
+      </p>
+      <div className="space-y-2">
+        {ITEMS.map((it, idx) => (
+          <div key={idx} className="flex items-start gap-3 bg-gray-800/60 border border-gray-700 rounded-xl p-3">
+            <span className="text-xl flex-shrink-0">{it.emoji}</span>
+            <span className="text-sm text-gray-200 leading-relaxed">{pt ? it.pt : it.en}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-purple-300 italic text-center px-4">
+        {pt ? 'Não tens de fazer tudo. Uma coisa já chega para partir o impulso.' : "You don't have to do all of it. One thing is enough to break the urge."}
+      </p>
       <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300 text-center">{t('urge.backToMenu')}</button>
     </div>
   );
@@ -182,16 +267,31 @@ function HaltCheck({ onBack }) {
 const EXERCISES = [
   { key: 'timer',     emoji: '⏱️', titleKey: 'urge.timerTitle',     descKey: 'urge.timerShortDesc' },
   { key: 'breathing', emoji: '🌬️', titleKey: 'urge.breathingTitle', descKey: 'urge.breathingShortDesc' },
-  { key: 'halt',      emoji: '🔍', titleKey: 'urge.haltTitle',      descKey: 'urge.haltShortDesc' },
+  { key: 'need',      emoji: '🌊', titlePt: 'O que preciso agora?', titleEn: 'What do I need now?', descPt: 'Uma pausa para ouvir o que precisas.', descEn: 'A pause to hear what you need.' },
+  { key: 'grounding', emoji: '🖐️', titlePt: 'Ancorar (5-4-3-2-1)', titleEn: 'Ground (5-4-3-2-1)', descPt: 'Voltar ao momento pelos sentidos.', descEn: 'Back to the moment through your senses.' },
+  { key: 'move',      emoji: '🚶', titlePt: 'Mexer o corpo', titleEn: 'Move your body', descPt: 'Levantar, andar, água fria — descarregar o pico.', descEn: 'Stand up, walk, cold water — let the peak pass.' },
 ];
 
 export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings = [] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const pt = i18n.language !== 'en';
   const [active, setActive] = useState(null);
+  // Registo do momento de impulso: que exercícios usou + o que fez. Loga UMA vez.
+  const usedRef = useRef(new Set());
+  const loggedRef = useRef(false);
+  const logOnce = (outcome) => {
+    if (loggedRef.current) return;
+    loggedRef.current = true;
+    logUrgeEvent({ exercises: Array.from(usedRef.current), outcome });
+  };
+  const openExercise = (key) => { usedRef.current.add(key); setActive(key); };
+  const handleClose = () => { logOnce('delayed'); onClose(); };
+  const handleProceed = () => { logOnce('proceeded'); onClose(); if (onProceed) onProceed(); };
+  const handleThoughts = () => { usedRef.current.add('thoughts'); logOnce('delayed'); onClose(); onOpenThoughts(); };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[80dvh] overflow-y-auto"
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
 
@@ -205,7 +305,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
               <h2 className="text-lg font-bold text-white">💪 {t('urge.title')}</h2>
               <p className="text-xs text-gray-400 mt-0.5">{t('urge.subtitle')}</p>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-white text-2xl leading-none ml-4">✕</button>
+            <button onClick={handleClose} className="text-gray-500 hover:text-white text-2xl leading-none ml-4">✕</button>
           </div>
 
           {/* Why this modal appeared */}
@@ -224,24 +324,26 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
           {/* Exercise area */}
           {active === 'timer'     && <TimerExercise     onBack={() => setActive(null)} />}
           {active === 'breathing' && <BreathingExercise onBack={() => setActive(null)} />}
-          {active === 'halt'      && <HaltCheck         onBack={() => setActive(null)} />}
+          {active === 'need'      && <NeedCheck         onBack={() => setActive(null)} />}
+          {active === 'grounding' && <GroundingExercise onBack={() => setActive(null)} />}
+          {active === 'move'      && <MoveExercise      onBack={() => setActive(null)} />}
 
           {/* Menu */}
           {!active && (
             <div className="space-y-3 pb-2">
               {EXERCISES.map(ex => (
-                <button key={ex.key} onClick={() => setActive(ex.key)}
+                <button key={ex.key} onClick={() => openExercise(ex.key)}
                   className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
                   <span className="text-2xl w-8 text-center flex-shrink-0">{ex.emoji}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-white text-sm">{t(ex.titleKey)}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{t(ex.descKey)}</div>
+                    <div className="font-semibold text-white text-sm">{ex.titleKey ? t(ex.titleKey) : (pt ? ex.titlePt : ex.titleEn)}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{ex.descKey ? t(ex.descKey) : (pt ? ex.descPt : ex.descEn)}</div>
                   </div>
                   <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
                 </button>
               ))}
 
-              <button onClick={() => { onClose(); onOpenThoughts(); }}
+              <button onClick={handleThoughts}
                 className="w-full flex items-center gap-4 p-4 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
                 <span className="text-2xl w-8 text-center flex-shrink-0">✍️</span>
                 <div className="flex-1 min-w-0">
@@ -252,7 +354,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
               </button>
 
               {onProceed && (
-                <button onClick={() => { onClose(); onProceed(); }}
+                <button onClick={handleProceed}
                   className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-700 transition-all text-center">
                   {t('urge.proceedAnyway')}
                 </button>
