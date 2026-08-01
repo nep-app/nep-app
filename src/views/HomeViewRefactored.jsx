@@ -437,6 +437,7 @@ export function HomeViewRefactored({
         <UrgeSurfingModal
           onClose={() => { setShowUrgeSurfing(false); setPendingConsumption(false); }}
           onOpenThoughts={() => setShowThoughtsModal(true)}
+          onOpenReflection={() => setShowReflectionModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
           warnings={urgeWarnings}
         />

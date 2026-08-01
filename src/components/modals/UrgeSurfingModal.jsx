@@ -291,7 +291,7 @@ const EXERCISES = [
   { key: 'move',      emoji: '🚶', titlePt: 'Mexer o corpo', titleEn: 'Move your body', descPt: 'Levantar, andar, água fria — descarregar o pico.', descEn: 'Stand up, walk, cold water — let the peak pass.' },
 ];
 
-export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings = [] }) {
+export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, onProceed, warnings = [] }) {
   const { t, i18n } = useTranslation();
   const pt = i18n.language !== 'en';
   const [active, setActive] = useState(null);
@@ -307,6 +307,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
   const handleClose = () => { logOnce('delayed'); onClose(); };
   const handleProceed = () => { logOnce('proceeded'); onClose(); if (onProceed) onProceed(); };
   const handleThoughts = () => { usedRef.current.add('thoughts'); logOnce('delayed'); onClose(); onOpenThoughts(); };
+  const handleReflection = () => { usedRef.current.add('reflection'); logOnce('delayed'); onClose(); if (onOpenReflection) onOpenReflection(); };
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm"
@@ -371,6 +372,18 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onProceed, warnings 
                 </div>
                 <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
               </button>
+
+              {onOpenReflection && (
+                <button onClick={handleReflection}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
+                  <span className="text-xl w-7 text-center flex-shrink-0">🪞</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-white text-sm">{pt ? 'Responder à reflexão do dia' : 'Answer the daily reflection'}</div>
+                    <div className="text-xs text-gray-400 leading-tight">{pt ? 'Uma pergunta suave para parar e pensar.' : 'A gentle prompt to pause and think.'}</div>
+                  </div>
+                  <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
+                </button>
+              )}
 
               {onProceed && (
                 <button onClick={handleProceed}
