@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "dexie": "^4.2.1",
-    "firebase": "^10.7.1",
+    "firebase": "^12.10.0",
     "i18next": "^25.8.18",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
