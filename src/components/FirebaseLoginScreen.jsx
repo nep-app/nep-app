@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import * as Icons from './Icons';
+import { isValidInviteCode } from '../config/access';
 
 /**
  * FirebaseLoginScreen - Login/Criar conta Firebase (PRIMEIRO passo)
@@ -23,6 +24,7 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -47,6 +49,12 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Criar conta é só por convite: exigir um código válido antes de mais nada.
+    if (!isLogin && !isValidInviteCode(inviteCode)) {
+      setError(t('firebase.errInvalidInvite'));
+      return;
+    }
 
     // Ao criar conta, exigir uma palavra-passe forte (12+ caracteres). É esta conta que
     // protege os dados na nuvem, por isso o mínimo do Firebase (6) é fraco.
@@ -139,6 +147,26 @@ export const FirebaseLoginScreen = ({ auth, darkMode = true }) => {
               minLength={isLogin ? 6 : 12}
             />
           </div>
+
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-purple-300 mb-2">
+                {t('firebase.inviteLabel')}
+              </label>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder={t('firebase.invitePlaceholder')}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1.5">{t('firebase.inviteHint')}</p>
+            </div>
+          )}
 
           {isLogin && (
             <div className="text-right -mt-2">
