@@ -162,7 +162,7 @@ export function PatternsView({
                                                 for (let i = 0; i <= 30; i++) {
                                                     const d = new Date(thirtyDaysAgo);
                                                     d.setDate(d.getDate() + i);
-                                                    const key = d.toISOString().split('T')[0];
+                                                    const key = safeToISODate(d); // chave local (coerente com c.date)
                                                     dailyCounts[key] = 0;
                                                 }
 
@@ -855,7 +855,7 @@ export function PatternsView({
                                                                                 const count = byDate[date];
                                                                                 const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
                                                                                 const heightPx = Math.max((heightPercent / 100) * 192, 8); // 192px = h-48, min 8px
-                                                                                const isToday = date === new Date().toISOString().split('T')[0];
+                                                                                const isToday = date === getTodayKey();
 
                                                                                 return (
                                                                                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group relative" style={{ minWidth: '2px' }}>

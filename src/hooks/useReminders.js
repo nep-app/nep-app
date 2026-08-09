@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getTodayKey, getDateKeyFromItem } from '../utils/helpers';
+import { getTodayKey, getDateKeyFromItem, safeToISODate, getDateDaysAgo } from '../utils/helpers';
 import { safeLocalStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
 
@@ -105,7 +105,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           const missing = [];
           if (!wellbeingLogsRef.current.some(w => w.date === today)) missing.push(t('reminders.itemWellbeing'));
           if (!reflectionsRef.current.some(r => r.date === today)) missing.push(t('reminders.itemReflection'));
-          const yesterday = new Date(new Date() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const yesterday = safeToISODate(getDateDaysAgo(1)); // ontem em hora LOCAL (coerente com getTodayKey)
           if (!dailyLogsRef.current.some(d => d.date === yesterday)) missing.push(t('reminders.itemMgYesterday'));
           if (missing.length > 0) {
             const items = missing.join(', ');

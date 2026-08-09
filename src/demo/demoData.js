@@ -15,7 +15,8 @@ function ts(daysAgo, hour = 12, min = 0) {
 function dk(daysAgo) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split('T')[0];
+  // chave de dia em hora LOCAL (coerente com getTodayKey da app)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 let _n = 1;

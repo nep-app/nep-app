@@ -323,7 +323,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 cyclesWithMg++;
                                 cyclesMgData.push(cycleMg);
                                 // Adicionar data única
-                                const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                const cycleDate = cycle.date || safeToISODate(cycle.timestamp);
                                 datesWithMg.add(cycleDate);
                             }
                         });
@@ -344,7 +344,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Ciclos sem consumo após 00h
                         const cyclesWithNoLateConsumption = analysisCycles.filter(cycle => {
                             // Derivar data do ciclo
-                            const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                            const cycleDate = cycle.date || safeToISODate(cycle.timestamp);
 
                             // Consumos deste dia (consulta O(1))
                             const cycleConsumptions = consumptionsByDate[cycleDate] || [];
@@ -397,7 +397,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Adicionar dados de ciclos
                         analysisCycles.forEach(cycle => {
-                            const cycleDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                            const cycleDate = cycle.date || safeToISODate(cycle.timestamp);
                             if (consumptionsByDate[cycleDate]) {
                                 consumptionsByDate[cycleDate].cycles.push(cycle);
                             }
@@ -852,7 +852,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             // Verificar sono nesses dias
                             const lateDates = new Set(lateConsumptions.map(c => c.date));
                             const cyclesWithLate = analysisCycles.filter(cycle => {
-                                const cDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                                const cDate = cycle.date || safeToISODate(cycle.timestamp);
                                 return lateDates.has(cDate) && cycle.sleep;
                             });
 
@@ -1014,7 +1014,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Adicionar dados de cycles (sono noturno + sesta do mesmo dia)
                         analysisCycles.forEach(c => {
                             if (c.sleep && c.bedtime) {
-                                const date = c.date || new Date(c.timestamp).toISOString().split('T')[0];
+                                const date = c.date || safeToISODate(c.timestamp);
                                 const napMins = analysisWellbeing
                                     .filter(w => (w.date || safeToISODate(w.timestamp)) === date)
                                     .reduce((sum, w) => sum + (w.napDuration || 0), 0);
@@ -1030,7 +1030,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Adicionar dados de wellbeing (se não houver em cycles — legado)
                         analysisWellbeing.forEach(w => {
                             if (w.sleep) {
-                                const date = w.date || new Date(w.timestamp).toISOString().split('T')[0];
+                                const date = w.date || safeToISODate(w.timestamp);
                                 if (!allSleepData.some(s => s.date === date)) {
                                     const napMins = analysisWellbeing
                                         .filter(w2 => (w2.date || safeToISODate(w2.timestamp)) === date)
@@ -1169,11 +1169,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         uniqueConsDates.forEach(date => {
                             const hasSleepC = analysisCycles.some(c => {
-                                const d = c.date || (c.timestamp ? new Date(c.timestamp).toISOString().split('T')[0] : null);
+                                const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
                                 return d === date && c.sleep != null && c.sleep !== '';
                             });
                             const hasSleepW = analysisWellbeing.some(w => {
-                                const d = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+                                const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
                                 return d === date && w.sleep != null && w.sleep !== '';
                             });
                             if (!hasSleepC && !hasSleepW) noSleepDates.add(date);
@@ -1203,7 +1203,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const moodWithSleep = [], energyWithSleep = [];
 
                         analysisWellbeing.forEach(w => {
-                            const d = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+                            const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
                             if (!d) return;
                             if (noSleepDates.has(d)) {
                                 if (w.mood != null) moodNoSleep.push(parseFloat(w.mood));
@@ -1674,7 +1674,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         });
 
                         analysisCycles.forEach(cycle => {
-                            const cDate = cycle.date || new Date(cycle.timestamp).toISOString().split('T')[0];
+                            const cDate = cycle.date || safeToISODate(cycle.timestamp);
                             if (dailyData[cDate] && cycle.sleep) {
                                 dailyData[cDate].sono = parseFloat(cycle.sleep);
                             }

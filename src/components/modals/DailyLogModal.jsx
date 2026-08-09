@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
+import { getTodayKey } from '../../utils/helpers';
 
 export const DailyLogModal = ({
   isOpen,
@@ -18,8 +19,8 @@ export const DailyLogModal = ({
 
   if (!isOpen) return null;
 
-  // Calcular data de hoje em formato YYYY-MM-DD
-  const today = new Date().toISOString().split('T')[0];
+  // Data de hoje em hora LOCAL (nunca UTC — senão entre 00h-01h ficava preso em "ontem")
+  const today = getTodayKey();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>

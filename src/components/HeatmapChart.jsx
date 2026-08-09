@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { safeToISODate } from '../utils/helpers';
 
 const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
   const { t, i18n } = useTranslation();
@@ -13,7 +14,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = safeToISODate(date); // chave local (coerente com c.date)
       dates.push({ date: dateStr, dayOfWeek: date.getDay(), dateObj: date });
     }
     return dates;

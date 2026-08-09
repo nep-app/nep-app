@@ -2,6 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, typicalMgPerDose } from './mgDerivation';
+import { getTodayKey, safeToISODate, getDateDaysAgo } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -75,19 +76,17 @@ export const calculateStreak = (allItems) => {
   if (!allItems || allItems.length === 0) return 0;
 
   // Extract unique date strings (YYYY-MM-DD), sorted desc
+  // Chaves de DIA em hora LOCAL (getTodayKey/safeToISODate), nunca UTC — senão,
+  // em fusos como Lisboa (+1), o "hoje" resolvia para "ontem" e o streak dava 0.
   const uniqueDates = [...new Set(allItems.map(item => {
-    const raw = item.date || item.timestamp || item.createdAt;
-    if (!raw) return null;
-    const d = new Date(raw);
-    return isNaN(d) ? null : d.toISOString().split('T')[0];
+    if (item.date) return item.date; // já é chave local 'YYYY-MM-DD'
+    return safeToISODate(item.timestamp || item.createdAt);
   }).filter(Boolean))].sort().reverse();
 
   if (uniqueDates.length === 0) return 0;
 
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const todayStr = now.toISOString().split('T')[0];
-  const yesterdayStr = new Date(now - 86400000).toISOString().split('T')[0];
+  const todayStr = getTodayKey();
+  const yesterdayStr = safeToISODate(getDateDaysAgo(1));
 
   // Streak only active if most recent date is today or yesterday
   if (uniqueDates[0] !== todayStr && uniqueDates[0] !== yesterdayStr) return 0;
@@ -98,9 +97,9 @@ export const calculateStreak = (allItems) => {
   for (const date of uniqueDates) {
     if (date === expectedDate) {
       streak++;
-      const d = new Date(expectedDate);
+      const d = new Date(expectedDate + 'T12:00:00'); // âncora ao meio-dia (evita saltos de fuso)
       d.setDate(d.getDate() - 1);
-      expectedDate = d.toISOString().split('T')[0];
+      expectedDate = safeToISODate(d);
     } else {
       break; // gap found
     }
@@ -117,10 +116,8 @@ export const calculateMaxStreak = (allItems) => {
   if (!allItems || allItems.length === 0) return 0;
 
   const uniqueDates = [...new Set(allItems.map(item => {
-    const raw = item.date || item.timestamp || item.createdAt;
-    if (!raw) return null;
-    const d = new Date(raw);
-    return isNaN(d) ? null : d.toISOString().split('T')[0];
+    if (item.date) return item.date; // chave local 'YYYY-MM-DD'
+    return safeToISODate(item.timestamp || item.createdAt);
   }).filter(Boolean))].sort();
 
   if (uniqueDates.length === 0) return 0;
@@ -719,7 +716,7 @@ export const updateAppUsageStreak = async () => {
   if (isDemoMode()) return 0; // demo nunca grava na base real
   try {
     await ensureStatsMigrated();
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const today = getTodayKey(); // "YYYY-MM-DD" em hora LOCAL
     const record = await db.metadata.get('appUsage');
     const data = record?.value || { lastOpenDate: null, appStreak: 0 };
 
@@ -728,9 +725,7 @@ export const updateAppUsageStreak = async () => {
       return data.appStreak;
     }
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    const yesterdayStr = safeToISODate(getDateDaysAgo(1)); // ontem em hora LOCAL
 
     const newStreak = data.lastOpenDate === yesterdayStr
       ? data.appStreak + 1  // Dia consecutivo

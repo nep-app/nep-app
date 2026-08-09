@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useData } from '../../contexts/DataContext';
+import { safeToISODate } from '../../utils/helpers';
 
 // Key para localStorage
 const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
@@ -49,13 +50,13 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     const consumptionDates = new Set();
     consumptions.forEach(c => {
       try {
-        consumptionDates.add(new Date(c.timestamp).toISOString().split('T')[0]);
+        consumptionDates.add(safeToISODate(c.timestamp));
       } catch {}
     });
 
     const dailyLogDates = new Set();
     dailyLogs.forEach(log => {
-      const logDate = log.date || (log.timestamp ? new Date(log.timestamp).toISOString().split('T')[0] : null);
+      const logDate = log.date || (log.timestamp ? safeToISODate(log.timestamp) : null);
       if (logDate) dailyLogDates.add(logDate);
     });
 
@@ -63,7 +64,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     // os mg da pesagem, por isso não deve pedir o "mg" à mão nesses dias.
     const weighingDates = new Set();
     (weighings || []).forEach(w => {
-      const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+      const wDate = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
       if (wDate) weighingDates.add(wDate);
     });
 
@@ -71,7 +72,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     cycles.forEach(cycle => {
       if (cycle.timestamp) {
         try {
-          cycleDates.add(new Date(cycle.timestamp).toISOString().split('T')[0]);
+          cycleDates.add(safeToISODate(cycle.timestamp));
         } catch {}
       }
     });
@@ -79,7 +80,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     const wellbeingCoreDates = new Set();
     const emotionsDates = new Set();
     wellbeingLogs.forEach(w => {
-      const wDate = w.date || (w.timestamp ? new Date(w.timestamp).toISOString().split('T')[0] : null);
+      const wDate = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
       if (!wDate) return;
 
       // Verificar bem-estar básico (humor, energia, autocuidado)
@@ -95,13 +96,13 @@ export const GapsReport = React.memo(({ onFillGap }) => {
 
     const reflectionDates = new Set();
     reflections.forEach(r => {
-      const rDate = r.date || (r.timestamp ? new Date(r.timestamp).toISOString().split('T')[0] : null);
+      const rDate = r.date || (r.timestamp ? safeToISODate(r.timestamp) : null);
       if (rDate) reflectionDates.add(rDate);
     });
 
     const thoughtDates = new Set();
     thoughts.forEach(t => {
-      const tDate = t.date || (t.timestamp ? new Date(t.timestamp).toISOString().split('T')[0] : null);
+      const tDate = t.date || (t.timestamp ? safeToISODate(t.timestamp) : null);
       if (tDate) thoughtDates.add(tDate);
     });
 
@@ -113,7 +114,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
 
-      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateKey = safeToISODate(date); // YYYY-MM-DD em hora local (bate certo com os Sets acima)
       const dayName = date.toLocaleDateString(i18n.language, { weekday: 'short' });
       const dayNumber = date.getDate();
       const monthName = date.toLocaleDateString(i18n.language, { month: 'short' });

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import * as Icons from '../Icons';
 import { useData } from '../../contexts/DataContext';
-import { safeDate } from '../../utils/helpers';
+import { safeDate, safeToISODate, getTodayKey } from '../../utils/helpers';
 import { EMOTION_CATEGORIES } from '../../constants/emotions';
 
 const SECTIONS = [
@@ -364,41 +364,41 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
   if (selected.consumptions) {
     data.consumptions.forEach(c => {
       const d = safeDate(c.timestamp); if (!d) return;
-      const dk = d.toISOString().split('T')[0];
+      const dk = safeToISODate(d);
       ensureRaw(dk); rawByDate[dk].consumptions.push({ d, c });
     });
   }
   if (selected.dailyLogs) {
     data.dailyLogs.forEach(l => {
       const d = safeDate(l.date || l.timestamp); if (!d) return;
-      const dk = l.date || d.toISOString().split('T')[0];
+      const dk = l.date || safeToISODate(d);
       ensureRaw(dk); rawByDate[dk].dailyLogs.push(l);
     });
   }
   if (selected.cycles) {
     cyclesWithEnd.forEach(c => {
       const d = safeDate(c.timestamp); if (!d) return;
-      ensureRaw(d.toISOString().split('T')[0]); rawByDate[d.toISOString().split('T')[0]].cycles.push({ d, c });
+      ensureRaw(safeToISODate(d)); rawByDate[safeToISODate(d)].cycles.push({ d, c });
     });
   }
   if (selected.wellbeing) {
     data.wellbeingLogs.forEach(w => {
       const d = safeDate(w.timestamp || w.date); if (!d) return;
-      const dk = d.toISOString().split('T')[0];
+      const dk = safeToISODate(d);
       ensureRaw(dk); rawByDate[dk].wellbeing.push({ d, w });
     });
   }
   if (selected.reflections) {
     data.reflections.forEach(r => {
       const d = safeDate(r.timestamp || r.date); if (!d) return;
-      const dk = d.toISOString().split('T')[0];
+      const dk = safeToISODate(d);
       ensureRaw(dk); rawByDate[dk].reflections.push({ d, r });
     });
   }
   if (selected.thoughts) {
     data.thoughts.forEach(t => {
       const d = safeDate(t.timestamp || t.date); if (!d) return;
-      const dk = d.toISOString().split('T')[0];
+      const dk = safeToISODate(d);
       ensureRaw(dk); rawByDate[dk].thoughts.push({ d, t });
     });
   }
@@ -640,7 +640,7 @@ export const ExportModal = ({ isOpen, onClose }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `nep-relatorio-${new Date().toISOString().split('T')[0]}.html`;
+    a.download = `nep-relatorio-${getTodayKey()}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
