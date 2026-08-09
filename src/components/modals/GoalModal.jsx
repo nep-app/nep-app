@@ -69,6 +69,24 @@ export const GoalModal = ({
     return `${g.target} ${opt?.unit || ''}`.trim();
   };
 
+  // Mostrar só UMA meta por tipo — a mais recente (é a que a app usa de facto).
+  // Evita a lista com duplicados quando há várias metas do mesmo tipo no histórico.
+  const activeGoals = (() => {
+    const byType = {};
+    for (const g of (goals || [])) {
+      if (!byType[g.type] || new Date(g.createdAt || 0) > new Date(byType[g.type].createdAt || 0)) {
+        byType[g.type] = g;
+      }
+    }
+    return Object.values(byType);
+  })();
+
+  // Apagar remove TODAS as metas desse tipo (incl. duplicados antigos), para não
+  // ficar um "zombie" a reaparecer depois de apagar a ativa.
+  const deleteGoalType = (type) => {
+    (goals || []).filter(x => x.type === type).forEach(x => onDelete && onDelete(x.id));
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -93,9 +111,9 @@ export const GoalModal = ({
             {/* Metas atuais — tocar para editar, caixote para apagar */}
             <div className="space-y-2">
               <div className="text-sm font-semibold text-gray-300">{t('modals.goal.current')}</div>
-              {goals && goals.length > 0 ? (
+              {activeGoals.length > 0 ? (
                 <>
-                  {goals.map((g) => {
+                  {activeGoals.map((g) => {
                     const opt = goalOptions.find(o => o.type === g.type);
                     return (
                       <div
@@ -115,7 +133,7 @@ export const GoalModal = ({
                         {onDelete && (
                           <button
                             aria-label={t('a11y.delete')}
-                            onClick={(e) => { e.stopPropagation(); onDelete(g.id); }}
+                            onClick={(e) => { e.stopPropagation(); deleteGoalType(g.type); }}
                             className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
                           >
                             <Icons.Trash2 className="w-4 h-4" aria-hidden="true" />

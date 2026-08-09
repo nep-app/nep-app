@@ -29,13 +29,16 @@ export function computeUrgeStats(events = [], dateRange = null) {
   const evts = (Array.isArray(events) ? events : []).filter(e => tsOf(e) && inRange(tsOf(e)));
 
   let surfed = 0;
-  let delayed = 0;
+  let delayed = 0; // adiados ENTRE os surfados (para ser coerente: adiados ≤ surfados)
   let openedNoUse = 0;
   for (const e of evts) {
     const usedStrategy = Array.isArray(e.exercises) && e.exercises.length > 0;
-    if (usedStrategy) surfed++;
-    else openedNoUse++;
-    if (e.outcome !== 'proceeded') delayed++; // não carregou "consumir na mesma"
+    if (usedStrategy) {
+      surfed++;
+      if (e.outcome !== 'proceeded') delayed++; // usou estratégia e não consumiu na mesma
+    } else {
+      openedNoUse++; // abriu o surfar mas não usou nada (muitas vezes = registo retroativo antigo)
+    }
   }
 
   return {

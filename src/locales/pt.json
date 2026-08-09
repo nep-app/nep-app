@@ -1079,7 +1079,8 @@
     "delayed": "consumos adiados",
     "openedNoUse": "abriste sem usar",
     "reinforceNone": "Ainda não usaste as estratégias. Da próxima que o impulso aparecer, experimenta uma — respirar, o timer, ancorar. 💜",
-    "reinforceMany": "Usaste as estratégias {{surfed}}x e adiaste o consumo {{delayed}}x. Isso conta. 💜"
+    "reinforceMany": "Das {{surfed}} vezes que usaste as estratégias, adiaste o consumo em {{delayed}}. Isso conta. 💜",
+    "openedNoUseNote": "Abriste o surfar sem usar nada {{count}}x. Para registos retroativos usa o \"＋ Registar consumo passado\" na Home — não abre o surfar nem conta como impulso."
   },
   "wellbeing": {
     "exercisePlaceholder": "O quê? ex: caminhar",

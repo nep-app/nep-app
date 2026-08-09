@@ -49,7 +49,7 @@ export function UrgeSurfingStats({ dateRange = null }) {
         <span className="text-xs text-gray-400">{subtitle}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="bg-gray-900/50 rounded-lg py-3 px-2 text-center">
           <div className="text-2xl font-bold text-pink-300 tabular-nums">{stats.surfed}</div>
           <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.surfed')}</div>
@@ -58,13 +58,14 @@ export function UrgeSurfingStats({ dateRange = null }) {
           <div className="text-2xl font-bold text-green-300 tabular-nums">{stats.delayed}</div>
           <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.delayed')}</div>
         </div>
-        <div className="bg-gray-900/50 rounded-lg py-3 px-2 text-center">
-          <div className="text-2xl font-bold text-gray-300 tabular-nums">{stats.openedNoUse}</div>
-          <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.openedNoUse')}</div>
-        </div>
       </div>
 
       <p className="text-xs text-purple-200/90 leading-relaxed mt-3">{reinforce}</p>
+      {stats.openedNoUse > 0 && (
+        <p className="text-[11px] text-gray-500 leading-relaxed mt-2">
+          {t('urgeStats.openedNoUseNote', { count: stats.openedNoUse })}
+        </p>
+      )}
     </div>
   );
 }

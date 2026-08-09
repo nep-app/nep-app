@@ -1079,7 +1079,8 @@
     "delayed": "uses delayed",
     "openedNoUse": "opened, unused",
     "reinforceNone": "You haven't used the strategies yet. Next time the urge shows up, try one — breathing, the timer, grounding. 💜",
-    "reinforceMany": "You used the strategies {{surfed}}× and delayed use {{delayed}}×. That counts. 💜"
+    "reinforceMany": "Of the {{surfed}} times you used the strategies, you delayed use in {{delayed}}. That counts. 💜",
+    "openedNoUseNote": "You opened urge-surfing without using anything {{count}}×. For past entries use \"＋ Log a past use\" on Home — it doesn't open urge-surfing or count as an urge."
   },
   "wellbeing": {
     "exercisePlaceholder": "What? e.g. walking",
