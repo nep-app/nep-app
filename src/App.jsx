@@ -16,6 +16,7 @@ import { AuthScreen } from './components/AuthScreen';
 import { FirebaseLoginScreen } from './components/FirebaseLoginScreen';
 import { DataModeSelector } from './components/DataModeSelector';
 import { CalculatorDecoy } from './components/CalculatorDecoy';
+import { ConfirmModal } from './components/modals/ConfirmModal';
 import { getDataMode } from './services/researchService';
 
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
@@ -184,6 +185,11 @@ export function AuthenticatedApp() {
             // App error state
             const [appError, setAppError] = useState(null);
 
+            // Confirmação com estilo (substitui window.confirm). Guarda a mensagem
+            // e o `resolve` da promessa; os botões resolvem true/false.
+            const [confirmDialog, setConfirmDialog] = useState(null);
+            const askConfirm = (message) => new Promise((resolve) => setConfirmDialog({ message, resolve }));
+
             // PWA shortcut: flag to trigger markConsumption after data loads
             const [pendingPwaConsume] = useState(_pwaAction === 'consume');
 
@@ -343,7 +349,8 @@ export function AuthenticatedApp() {
                 };
                 const itemName = itemNames[collectionName] || t('messages.deleteItem');
 
-                if (!window.confirm(t('messages.deleteConfirm', { item: itemName }))) {
+                const confirmed = await askConfirm(t('messages.deleteConfirm', { item: itemName }));
+                if (!confirmed) {
                     return;
                 }
 
@@ -1415,6 +1422,13 @@ export function AuthenticatedApp() {
                             </div>
                         </div>
                     </div>
+
+                    <ConfirmModal
+                        isOpen={!!confirmDialog}
+                        message={confirmDialog?.message}
+                        onConfirm={() => { confirmDialog?.resolve(true); setConfirmDialog(null); }}
+                        onCancel={() => { confirmDialog?.resolve(false); setConfirmDialog(null); }}
+                    />
 
                     {/* Toast Notifications */}
                     <div className="fixed bottom-20 left-0 right-0 flex flex-col items-center gap-2 px-4 pointer-events-none z-50">

@@ -9,6 +9,7 @@ import { AnalysesCoachTab } from './analyses/AnalysesCoachTab';
 import { AnalysesEstadoTab } from './analyses/AnalysesEstadoTab';
 import { AnalysesCorrelacoesTab } from './analyses/AnalysesCorrelacoesTab';
 import { AnalysesImpactoTab } from './analyses/AnalysesImpactoTab';
+import { UrgeSurfingStats } from '../components/UrgeSurfingStats';
 
 const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
 
@@ -147,11 +148,14 @@ export function AnalysesView({
                     />
                 )}
                 {analysisSubView === 'estado' && (
-                    <AnalysesEstadoTab
-                        analysisConsumptions={analysisConsumptions}
-                        analysisWellbeing={analysisWellbeing}
-                        analysisCycles={analysisCycles}
-                    />
+                    <>
+                        <UrgeSurfingStats dateRange={patternsPeriod === 'tudo' ? null : dateRange} />
+                        <AnalysesEstadoTab
+                            analysisConsumptions={analysisConsumptions}
+                            analysisWellbeing={analysisWellbeing}
+                            analysisCycles={analysisCycles}
+                        />
+                    </>
                 )}
                 {analysisSubView === 'correlacoes' && (
                     <AnalysesCorrelacoesTab

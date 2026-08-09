@@ -122,11 +122,28 @@
     "yesForgot": "Sim, esqueci-me de pesar",
     "noReal": "Não, foi mesmo assim"
   },
+  "a11y": {
+    "edit": "Editar",
+    "delete": "Apagar"
+  },
+  "onboarding": {
+    "next": "Seguinte",
+    "start": "Começar",
+    "skip": "Saltar",
+    "s1Title": "Bem-vinda.",
+    "s1Body": "Aqui não há metas de \"parar\" nem julgamento. É um espaço teu para notares o que se passa contigo — ao teu ritmo.",
+    "s2Title": "Um toque chega.",
+    "s2Body": "Marca um consumo, escreve um pensamento, ou surfa um impulso quando ele aparecer. Fazes só o que te fizer sentido.",
+    "s3Title": "Só teu.",
+    "s3Body": "Os teus dados ficam cifrados e privados neste telemóvel. Nas Definições podes ligar os lembretes e o modo disfarce quando quiseres."
+  },
   "home": {
     "syncing": "A sincronizar...",
     "sync": "Sincronizar",
     "syncError": "Verifica a tua ligação à internet.",
     "timeSinceLabel": "Tempo desde último consumo",
+    "emptyTitle": "O teu espaço começa aqui",
+    "emptyBody": "Ainda sem registos — e está tudo bem. Quando quiseres, marca um consumo ou escreve um pensamento. Ao teu ritmo.",
     "dailyMessage": "Mensagem de Hoje",
     "markConsumption": "Marcar Consumo Agora",
     "thoughts": "Pensamentos",
@@ -429,6 +446,8 @@
     "consumptionSaveError": "✗ Erro ao guardar consumo",
     "itemDeleted": "✓ Item apagado",
     "itemDeleteError": "✗ Erro ao apagar item",
+    "confirmTitle": "Apagar?",
+    "confirmDelete": "Apagar",
     "consumptionHint": "ℹ️ Para registar consumos, usa o botão + na página inicial",
     "consumptionEdited": "✓ Consumo editado",
     "consumptionEditError": "✗ Erro ao editar consumo",
@@ -636,7 +655,7 @@
       "Fala com alguém (amigo, familiar, terapeuta): partilhar alivia, não precisas resolver sozinho/a"
     ],
     "Dependência": [
-      "HALT check: tenho Fome? Raiva? Solidão? Cansaço? Resolve a necessidade real primeiro",
+      "O que precisas mesmo agora? Descanso, comida/água, companhia ou calma — trata primeiro a necessidade real",
       "Surfar impulso: imagina como onda - sobe, pico (3-15min), desce. Não preciso agir no pico",
       "Se vou usar: planeia harm reduction (dose menor, contexto seguro, alguém sabe onde estou, água/comida preparada)"
     ],
@@ -1030,27 +1049,27 @@
     "breatheOut": "Expira",
     "breathingDone": "4 ciclos concluídos!",
     "breathingDoneDesc": "O teu sistema nervoso acalmou. Como te sentes agora?",
-    "haltTitle": "Check HALT",
-    "haltShortDesc": "Descobre a necessidade real por trás do impulso",
-    "haltDesc": "O impulso muitas vezes esconde uma necessidade. O que está a acontecer?",
-    "haltHungry": "Fome",
-    "haltAngry": "Raiva / Stress",
-    "haltLonely": "Solidão",
-    "haltTired": "Cansaço",
-    "haltHungryTip": "Come alguma coisa antes de decidir. O cérebro com fome toma piores decisões — basta um snack.",
-    "haltAngryTip": "A raiva e o stress são gatilhos fortes. Experimenta a respiração 4-7-8 ou sai 5 minutos do sítio onde estás.",
-    "haltLonelyTip": "Manda mensagem a alguém — não precisa de ser sobre isto. Conexão, mesmo pequena, ajuda.",
-    "haltTiredTip": "O cansaço baixa a resistência ao impulso. 20 minutos de olhos fechados, mesmo sem dormir, faz diferença.",
-    "haltPrompt": "Toca no que melhor descreve como te sentes",
     "thoughtsTitle": "Escreve o que sentes",
     "thoughtsShortDesc": "Nomear a emoção reduz a sua intensidade — abre o diário",
     "proceedAnyway": "Registar consumo mesmo assim →"
   },
   "defaultStrategies": [
-    "Check HALT: tenho Fome, Raiva (anger), Solidão (lonely) ou Cansaço (tired)? Resolve isso primeiro",
+    "Pergunta o que precisas agora: descanso, comida/água, companhia ou calma — trata primeiro a necessidade real",
     "Hidratação + snack: cérebro funciona melhor, decisões são melhores, impulsos mais controláveis",
     "Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional"
   ],
+  "urgeStats": {
+    "title": "Surfar o impulso",
+    "subtitlePeriod": "neste período",
+    "subtitleAll": "desde sempre",
+    "surfed": "impulsos surfados",
+    "delayed": "consumos adiados",
+    "avgDelay": "adiamento médio",
+    "reinforceOne": "Paraste para respirar em vez de agir no impulso. Isso conta. 💜",
+    "reinforceMany": "Das {{total}} vezes que sentiste o impulso, paraste para respirar — e adiaste o consumo em {{delayed}} delas. 💜",
+    "avoidedNote": "{{count}} passaram sem consumo a seguir.",
+    "note": "Por agora, isto fica só neste dispositivo."
+  },
   "wellbeing": {
     "exercisePlaceholder": "O quê? ex: caminhar",
     "todayAlreadyLogged": "Hoje já registaste:",

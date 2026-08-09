@@ -122,11 +122,28 @@
     "yesForgot": "Yes, I forgot to weigh",
     "noReal": "No, it was really like that"
   },
+  "a11y": {
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "onboarding": {
+    "next": "Next",
+    "start": "Get started",
+    "skip": "Skip",
+    "s1Title": "Welcome.",
+    "s1Body": "There are no \"quit\" goals here, and no judgement. This is your space to notice what's going on with you — at your own pace.",
+    "s2Title": "One tap is enough.",
+    "s2Body": "Log a use, write a thought, or surf an urge when it shows up. You only do what makes sense to you.",
+    "s3Title": "Only yours.",
+    "s3Body": "Your data stays encrypted and private on this phone. In Settings you can turn on reminders and disguise mode whenever you want."
+  },
   "home": {
     "syncing": "Syncing...",
     "sync": "Sync",
     "syncError": "Check your internet connection.",
     "timeSinceLabel": "Time since last use",
+    "emptyTitle": "Your space starts here",
+    "emptyBody": "No entries yet — and that's okay. Whenever you want, log a use or write a thought. At your own pace.",
     "dailyMessage": "Daily Message",
     "markConsumption": "Log Use Now",
     "thoughts": "Thoughts",
@@ -429,6 +446,8 @@
     "consumptionSaveError": "✗ Error saving consumption",
     "itemDeleted": "✓ Item deleted",
     "itemDeleteError": "✗ Error deleting item",
+    "confirmTitle": "Delete?",
+    "confirmDelete": "Delete",
     "consumptionHint": "ℹ️ To log consumptions, use the + button on the home page",
     "consumptionEdited": "✓ Consumption edited",
     "consumptionEditError": "✗ Error editing consumption",
@@ -636,7 +655,7 @@
       "Talk to someone (friend, family, therapist): sharing relieves, you don't have to solve it alone"
     ],
     "Dependência": [
-      "HALT check: am I Hungry? Angry? Lonely? Tired? Resolve the real need first",
+      "What do you actually need now? Rest, food/water, company or calm — meet the real need first",
       "Surf the urge: imagine it as a wave - rises, peaks (3-15min), falls. I don't have to act at the peak",
       "If I'm going to use: plan harm reduction (smaller dose, safe context, someone knows where I am, water/food ready)"
     ],
@@ -1030,27 +1049,27 @@
     "breatheOut": "Exhale",
     "breathingDone": "4 cycles complete!",
     "breathingDoneDesc": "Your nervous system has calmed. How do you feel now?",
-    "haltTitle": "HALT Check",
-    "haltShortDesc": "Find the real need behind the urge",
-    "haltDesc": "An urge often hides a need. What's going on?",
-    "haltHungry": "Hungry",
-    "haltAngry": "Angry / Stressed",
-    "haltLonely": "Lonely",
-    "haltTired": "Tired",
-    "haltHungryTip": "Eat something before deciding. A hungry brain makes worse decisions — even a snack helps.",
-    "haltAngryTip": "Anger and stress are strong triggers. Try the 4-7-8 breathing or leave the place you're in for 5 minutes.",
-    "haltLonelyTip": "Send a message to someone — it doesn't have to be about this. Connection, even small, helps.",
-    "haltTiredTip": "Tiredness lowers resistance to urges. 20 minutes with eyes closed, even without sleeping, makes a difference.",
-    "haltPrompt": "Tap what best describes how you feel",
     "thoughtsTitle": "Write what you feel",
     "thoughtsShortDesc": "Naming the emotion reduces its intensity — opens the journal",
     "proceedAnyway": "Register use anyway →"
   },
   "defaultStrategies": [
-    "HALT check: am I Hungry, Angry, Lonely or Tired? Resolve that first",
+    "Ask what you need right now: rest, food/water, company or calm — meet the real need first",
     "Hydration + snack: brain functions better, decisions are better, urges more manageable",
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
   ],
+  "urgeStats": {
+    "title": "Surfing the urge",
+    "subtitlePeriod": "this period",
+    "subtitleAll": "all time",
+    "surfed": "urges surfed",
+    "delayed": "uses delayed",
+    "avgDelay": "average delay",
+    "reinforceOne": "You paused to breathe instead of acting on the urge. That counts. 💜",
+    "reinforceMany": "Of the {{total}} times you felt the urge, you paused to breathe — and delayed use {{delayed}} of them. 💜",
+    "avoidedNote": "{{count}} passed with no use afterwards.",
+    "note": "This lives only on this device for now."
+  },
   "wellbeing": {
     "exercisePlaceholder": "What? e.g. walking",
     "todayAlreadyLogged": "Already logged today:",

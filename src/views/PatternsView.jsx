@@ -9,6 +9,7 @@ import { themeClasses } from '../utils/classNames';
 import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
+import { UrgeSurfingStats } from '../components/UrgeSurfingStats';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount, getAllDaysSinceFirstRecord } = analyticsService;
@@ -85,6 +86,8 @@ export function PatternsView({
                                             </button>
                                         ))}
                                     </div>
+
+                                    <UrgeSurfingStats dateRange={patternsData.dateRange} />
 
                                     {(() => {
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)

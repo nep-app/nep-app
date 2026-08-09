@@ -14,6 +14,8 @@ import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 import { lastMeasuredPeriod } from '../utils/mgDerivation';
 
+import { OnboardingWelcome } from '../components/OnboardingWelcome';
+
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
 export function HomeViewRefactored({
@@ -42,6 +44,17 @@ export function HomeViewRefactored({
   const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
   const [pendingConsumption, setPendingConsumption] = useState(false);
   const [urgeWarnings, setUrgeWarnings] = useState([]);
+
+  // Acolhimento de 1.ª vez: só para quem ainda não tem registos e nunca o viu.
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const showOnboarding = typeof window !== 'undefined'
+    && localStorage.getItem('nep_onboarding_seen') !== 'true'
+    && !onboardingDismissed
+    && (consumptions?.length ?? 0) === 0;
+  const dismissOnboarding = () => {
+    try { localStorage.setItem('nep_onboarding_seen', 'true'); } catch { /* best-effort */ }
+    setOnboardingDismissed(true);
+  };
 
   const urgeExerciseEnabled = typeof window !== 'undefined'
     ? localStorage.getItem('nep_urge_exercise') !== 'false'
@@ -255,6 +268,14 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
+      {consumptions.length === 0 && (
+        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-700/40 rounded-xl p-5 text-center">
+          <div className="text-3xl mb-2" aria-hidden="true">🌱</div>
+          <h3 className="text-white font-semibold mb-1 text-balance">{t('home.emptyTitle')}</h3>
+          <p className="text-sm text-gray-300 leading-relaxed">{t('home.emptyBody')}</p>
+        </div>
+      )}
+
       {cachedAlerts.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-4 justify-center">
           {cachedAlerts.map((alert, i) => (
@@ -371,7 +392,7 @@ export function HomeViewRefactored({
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
                     {day.count}
                   </div>
-                  <span className={`${day.isToday ? 'text-white font-semibold' : 'text-gray-600'}`} style={{ fontSize: '9px' }}>
+                  <span className={`text-[11px] ${day.isToday ? 'text-white font-semibold' : 'text-gray-400'}`}>
                     {day.label}
                   </span>
                 </div>
@@ -417,8 +438,8 @@ export function HomeViewRefactored({
                   {c.notes && <div className={'text-xs mt-1 ' + (themeClasses.textTertiaryAlt(darkMode))}>{c.notes}</div>}
                 </div>
                 <div className="flex gap-2 ml-2">
-                  <button onClick={() => openEditConsumption(c)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit className="w-4 h-4" /></button>
-                  <button onClick={() => deleteItem('consumptions', c.id)} className={(darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600')}><Icons.Trash2 className="w-4 h-4" /></button>
+                  <button aria-label={t('a11y.edit')} onClick={() => openEditConsumption(c)} className={(darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-600')}><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>
+                  <button aria-label={t('a11y.delete')} onClick={() => deleteItem('consumptions', c.id)} className={(darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600')}><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                 </div>
               </div>
             ))}
@@ -443,6 +464,8 @@ export function HomeViewRefactored({
         />
       </Suspense>
     )}
+
+    {showOnboarding && <OnboardingWelcome onDone={dismissOnboarding} />}
     </>
   );
 }
