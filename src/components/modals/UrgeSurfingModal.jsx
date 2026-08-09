@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { logUrgeEvent } from '../../utils/urgeLog';
 
 // ── Timer 15 min ──────────────────────────────────────────────────────────────
 const TIMER_OPTIONS = [15, 20, 30, 45, 60]; // minutos (15 = mínimo/por defeito)
@@ -291,7 +290,7 @@ const EXERCISES = [
   { key: 'move',      emoji: '🚶', titlePt: 'Mexer o corpo', titleEn: 'Move your body', descPt: 'Levantar, andar, água fria — descarregar o pico.', descEn: 'Stand up, walk, cold water — let the peak pass.' },
 ];
 
-export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, onProceed, warnings = [] }) {
+export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, onProceed, onLog, warnings = [] }) {
   const { t, i18n } = useTranslation();
   const pt = i18n.language !== 'en';
   const [active, setActive] = useState(null);
@@ -301,7 +300,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, on
   const logOnce = (outcome) => {
     if (loggedRef.current) return;
     loggedRef.current = true;
-    logUrgeEvent({ exercises: Array.from(usedRef.current), outcome });
+    onLog?.({ exercises: Array.from(usedRef.current), outcome });
   };
   const openExercise = (key) => { usedRef.current.add(key); setActive(key); };
   const handleClose = () => { logOnce('delayed'); onClose(); };

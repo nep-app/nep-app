@@ -27,7 +27,8 @@ export function computeUrgeStats(events = [], consumptions = [], dateRange = nul
     return day >= dateRange.start && day <= dateRange.end;
   };
 
-  const evts = (Array.isArray(events) ? events : []).filter(e => e && e.ts && inRange(e.ts));
+  const tsOf = (e) => (e && (e.ts || e.timestamp)) || null;
+  const evts = (Array.isArray(events) ? events : []).filter(e => tsOf(e) && inRange(tsOf(e)));
 
   // Instantes de consumo ordenados (para procurar "o próximo consumo").
   const consTimes = (Array.isArray(consumptions) ? consumptions : [])
@@ -55,7 +56,7 @@ export function computeUrgeStats(events = [], consumptions = [], dateRange = nul
     }
     // outcome 'delayed' (ou qualquer coisa que não seja 'proceeded') = adiou
     delayed++;
-    const evtMs = new Date(e.ts).getTime();
+    const evtMs = new Date(tsOf(e)).getTime();
     if (!Number.isFinite(evtMs)) continue;
     const nextMs = nextConsumptionAfter(evtMs);
     if (nextMs && (nextMs - evtMs) <= FOLLOW_WINDOW_MS) {

@@ -42,7 +42,7 @@ export function ConfirmModal({
       onClick={(e) => { if (e.target === e.currentTarget) onCancel?.(); }}
     >
       <div
-        className="w-full max-w-xs bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5"
+        className="w-full max-w-xs bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 motion-safe:animate-scaleIn"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
         <h3 className="text-base font-bold text-white mb-1.5">{title || t('messages.confirmTitle')}</h3>

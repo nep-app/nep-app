@@ -32,11 +32,11 @@ export function OnboardingWelcome({ onDone }) {
       aria-label={t('onboarding.s1Title')}
     >
       <div
-        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl px-6 pt-8 pb-6 text-center"
+        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-3xl shadow-2xl px-6 pt-8 pb-6 text-center motion-safe:animate-scaleIn"
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
       >
-        <div className="text-5xl mb-4" aria-hidden="true">{slide.emoji}</div>
-        <h2 className="text-xl font-bold text-white mb-2 text-balance">{slide.title}</h2>
+        <div className="text-5xl mb-4 motion-safe:animate-sway" aria-hidden="true">{slide.emoji}</div>
+        <h2 className="text-xl font-bold font-display text-white mb-2 text-balance">{slide.title}</h2>
         <p className="text-sm text-gray-300 leading-relaxed">{slide.body}</p>
 
         {/* Indicadores de passo */}

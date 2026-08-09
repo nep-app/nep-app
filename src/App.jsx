@@ -1125,15 +1125,15 @@ export function AuthenticatedApp() {
                                 <div className="flex-1">
                                     <div className="space-y-0">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-5xl font-black text-purple-600 leading-none">N</span>
+                                            <span className="text-5xl font-black font-display text-purple-600 leading-none">N</span>
                                             <span className='text-2xl font-light text-gray-300'>{t('home.acrosticN')}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-5xl font-black text-pink-600 leading-none">E</span>
+                                            <span className="text-5xl font-black font-display text-pink-600 leading-none">E</span>
                                             <span className='text-2xl font-light text-gray-300'>{t('home.acrosticE')}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-5xl font-black text-blue-600 leading-none">P</span>
+                                            <span className="text-5xl font-black font-display text-blue-600 leading-none">P</span>
                                             <span className='text-2xl font-light text-gray-300'>{t('home.acrosticP')}</span>
                                         </div>
                                     </div>

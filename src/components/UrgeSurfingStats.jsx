@@ -15,11 +15,24 @@ import { computeUrgeStats, formatDelay } from '../utils/urgeStats';
  */
 export function UrgeSurfingStats({ dateRange = null }) {
   const { t } = useTranslation();
-  const { consumptions } = useData();
+  const { consumptions, urgeEvents } = useData();
+
+  // Fonte principal: base cifrada/sincronizada (urgeEvents). Junta eventuais
+  // registos que ainda estejam só em localStorage (antes de a migração correr),
+  // sem duplicar (dedup por instante).
+  const events = useMemo(() => {
+    const fromDb = (urgeEvents || []).map(e => ({ ts: e.timestamp || e.ts, exercises: e.exercises, outcome: e.outcome }));
+    const seen = new Set(fromDb.map(e => e.ts));
+    const merged = [...fromDb];
+    for (const e of getUrgeEvents()) {
+      if (e && e.ts && !seen.has(e.ts)) merged.push(e);
+    }
+    return merged;
+  }, [urgeEvents]);
 
   const stats = useMemo(
-    () => computeUrgeStats(getUrgeEvents(), consumptions || [], dateRange),
-    [consumptions, dateRange]
+    () => computeUrgeStats(events, consumptions || [], dateRange),
+    [events, consumptions, dateRange]
   );
 
   if (!stats.hasData) return null;
@@ -30,7 +43,7 @@ export function UrgeSurfingStats({ dateRange = null }) {
     : t('urgeStats.reinforceMany', { total: stats.total, delayed: stats.delayed });
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+    <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 motion-safe:animate-fadeInUp">
       <div className="flex items-baseline justify-between mb-3">
         <div className="text-sm font-semibold text-white flex items-center gap-2">
           <span aria-hidden="true">🌊</span>

@@ -9,7 +9,7 @@ import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey } from '../utils/helpers';
+import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 import { lastMeasuredPeriod } from '../utils/mgDerivation';
@@ -31,7 +31,7 @@ export function HomeViewRefactored({
   showToast
 }) {
   const { t, i18n } = useTranslation();
-  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing } = useData();
+  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent } = useData();
   const metrics = useMetrics();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
@@ -269,10 +269,10 @@ export function HomeViewRefactored({
       </div>
 
       {consumptions.length === 0 && (
-        <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-700/40 rounded-xl p-5 text-center">
-          <div className="text-3xl mb-2" aria-hidden="true">🌱</div>
-          <h3 className="text-white font-semibold mb-1 text-balance">{t('home.emptyTitle')}</h3>
-          <p className="text-sm text-gray-300 leading-relaxed">{t('home.emptyBody')}</p>
+        <div className="bg-purple-900/15 border border-purple-700/30 rounded-2xl p-6 text-center motion-safe:animate-fadeInUp">
+          <div className="text-4xl mb-2 inline-block motion-safe:animate-sway" aria-hidden="true">🌱</div>
+          <h3 className="text-white font-semibold font-display text-lg mb-1 text-balance">{t('home.emptyTitle')}</h3>
+          <p className="text-sm text-gray-300 leading-relaxed max-w-xs mx-auto">{t('home.emptyBody')}</p>
         </div>
       )}
 
@@ -337,18 +337,20 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
-      {/* Linha 2: Novo Ciclo, Registar mg, Metas */}
+      {/* Linha 2: Novo Ciclo, Registar mg, Metas.
+          Superfícies suaves e tintadas (em vez de gradientes cheios) — mantêm a
+          identidade de cor mas deixam os dois botões principais serem o destaque. */}
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={() => setShowCycleModal(true)} className="bg-gradient-to-br from-yellow-500 to-amber-500 text-white rounded-xl p-3 font-medium hover:from-yellow-600 hover:to-amber-600 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-lg mb-1">🌙</div>
+        <button onClick={() => setShowCycleModal(true)} className="bg-amber-500/10 border border-amber-500/25 text-amber-100 rounded-xl p-3 font-medium hover:bg-amber-500/20 transition-colors flex flex-col items-center">
+          <div className="text-lg mb-1" aria-hidden="true">🌙</div>
           <div className="text-xs">{t('home.newCycle')}</div>
         </button>
-        <button onClick={() => setShowDailyLogModal(true)} className="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-xl p-3 font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-lg mb-1">📊</div>
+        <button onClick={() => setShowDailyLogModal(true)} className="bg-rose-500/10 border border-rose-500/25 text-rose-100 rounded-xl p-3 font-medium hover:bg-rose-500/20 transition-colors flex flex-col items-center">
+          <div className="text-lg mb-1" aria-hidden="true">📊</div>
           <div className="text-xs">{t('home.registerMg')}</div>
         </button>
-        <button onClick={() => setShowGoalModal(true)} className="bg-gradient-to-br from-orange-500 to-amber-600 text-white rounded-xl p-3 font-medium hover:from-orange-600 hover:to-amber-700 transition-all shadow-md hover:shadow-lg flex flex-col items-center">
-          <div className="text-lg mb-1">🎯</div>
+        <button onClick={() => setShowGoalModal(true)} className="bg-violet-500/10 border border-violet-500/25 text-violet-100 rounded-xl p-3 font-medium hover:bg-violet-500/20 transition-colors flex flex-col items-center">
+          <div className="text-lg mb-1" aria-hidden="true">🎯</div>
           <div className="text-xs">{t('home.goals')}</div>
         </button>
       </div>
@@ -460,6 +462,7 @@ export function HomeViewRefactored({
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onOpenReflection={() => setShowReflectionModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
+          onLog={(payload) => addUrgeEvent({ id: genId(), timestamp: new Date().toISOString(), ...payload })}
           warnings={urgeWarnings}
         />
       </Suspense>

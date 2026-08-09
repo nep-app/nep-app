@@ -39,7 +39,8 @@ const COLLECTIONS = [
   'cycles',
   'goals',
   'thoughts',
-  'weighings'
+  'weighings',
+  'urgeEvents'
 ];
 
 class SyncService {

@@ -113,6 +113,7 @@ export const LocalDataProvider = ({ children }) => {
   const [thoughts, setThoughts] = useState([]);
   const [healthLogs, setHealthLogs] = useState([]);
   const [weighings, setWeighings] = useState([]);
+  const [urgeEvents, setUrgeEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [allDataLoaded, setAllDataLoaded] = useState(false);
@@ -309,7 +310,8 @@ export const LocalDataProvider = ({ children }) => {
             { items: goalsData,        total: totalG },
             { items: thoughtsData,     total: totalT },
             { items: healthLogsData,   total: totalH },
-            { items: weighingsData }
+            { items: weighingsData },
+            { items: urgeEventsData }
           ] = await Promise.all([
             loadCollectionWithFirst('consumptions', 7),
             loadCollectionWithFirst('dailyLogs', 7),
@@ -324,7 +326,10 @@ export const LocalDataProvider = ({ children }) => {
             loadCollectionWithFirst('healthLogs', 7),
             // Pesagens SEM filtro de data (poucas): o motor dos mg precisa de todas
             // para os avisos da dose refletirem os mg derivados da pesagem.
-            loadCollectionWithFirst('weighings', 999999)
+            loadCollectionWithFirst('weighings', 999999),
+            // Impulsos surfados SEM filtro de data (poucos): as estatísticas mostram
+            // "desde sempre" e por período, logo é preciso o histórico todo.
+            loadCollectionWithFirst('urgeEvents', 999999)
           ]);
 
           // Se a FASE 3 (40 dias/tudo) já arrancou entretanto, NÃO escrever os
@@ -344,6 +349,7 @@ export const LocalDataProvider = ({ children }) => {
           setGoals(goalsData);
           setThoughts(thoughtsData);
           setHealthLogs(healthLogsData);
+          setUrgeEvents(urgeEventsData);
 
           // Totais já vêm da loadCollectionWithFirst — sem queries extra à DB
           const totalInDB = totalC + totalD + totalR + totalW + totalCy + totalG + totalT + totalH;
@@ -401,7 +407,8 @@ export const LocalDataProvider = ({ children }) => {
         goalsFullData,
         thoughtsFullData,
         healthLogsFullData,
-        weighingsFullData
+        weighingsFullData,
+        urgeEventsFullData
       ] = await Promise.all([
         loadCollection('consumptions', 999999),
         loadCollection('dailyLogs', 999999),
@@ -411,7 +418,8 @@ export const LocalDataProvider = ({ children }) => {
         loadCollection('goals', 999999),
         loadCollection('thoughts', 999999),
         loadCollection('healthLogs', 999999),
-        loadCollection('weighings', 999999)
+        loadCollection('weighings', 999999),
+        loadCollection('urgeEvents', 999999)
       ]);
 
       setConsumptions(consumptionsFullData);
@@ -423,6 +431,7 @@ export const LocalDataProvider = ({ children }) => {
       setThoughts(thoughtsFullData);
       setHealthLogs(healthLogsFullData);
       setWeighings(weighingsFullData);
+      setUrgeEvents(urgeEventsFullData);
 
       await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData, weighingsFullData);
       setFullDataLoaded(true);
@@ -483,7 +492,8 @@ export const LocalDataProvider = ({ children }) => {
       goals: setGoals,
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
-      weighings: setWeighings
+      weighings: setWeighings,
+      urgeEvents: setUrgeEvents
     };
 
     const setter = setterMap[collectionName];
@@ -536,7 +546,8 @@ export const LocalDataProvider = ({ children }) => {
       goals: setGoals,
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
-      weighings: setWeighings
+      weighings: setWeighings,
+      urgeEvents: setUrgeEvents
     };
 
     const setter = setterMap[collectionName];
@@ -575,7 +586,8 @@ export const LocalDataProvider = ({ children }) => {
       goals: setGoals,
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
-      weighings: setWeighings
+      weighings: setWeighings,
+      urgeEvents: setUrgeEvents
     };
 
     const setter = setterMap[collectionName];
@@ -626,6 +638,7 @@ export const LocalDataProvider = ({ children }) => {
     thoughts,
     healthLogs,
     weighings,
+    urgeEvents,
 
     // CRUD operations
     addItem,

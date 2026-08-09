@@ -73,6 +73,27 @@ export class LocalDatabase extends Dexie {
       syncQueue: '++id, collection, documentId, operation, timestamp, retries'
     });
 
+    this.version(4).stores({
+      // Manter todas as tabelas existentes
+      consumptions: '++id, date, timestamp, substance, amount, unit, syncStatus, lastModified',
+      dailyLogs: '++id, date, timestamp, syncStatus, lastModified',
+      reflections: '++id, date, timestamp, syncStatus, lastModified',
+      wellbeingLogs: '++id, date, timestamp, syncStatus, lastModified',
+      cycles: '++id, startDate, endDate, syncStatus, lastModified',
+      goals: '++id, createdAt, syncStatus, lastModified',
+      copingStrategies: '++id, createdAt, syncStatus, lastModified',
+      thoughts: '++id, timestamp, syncStatus, lastModified',
+      healthLogs: '++id, date, timestamp, syncStatus, lastModified',
+      weighings: '++id, date, timestamp, syncStatus, lastModified',
+
+      // Nova tabela: momentos de "surfar o impulso" (cifrados e sincronizados,
+      // como o resto dos dados — deixa de ser só-neste-telemóvel).
+      urgeEvents: '++id, timestamp, syncStatus, lastModified',
+
+      metadata: 'key, value',
+      syncQueue: '++id, collection, documentId, operation, timestamp, retries'
+    });
+
     // Referências tipadas para as tabelas
     this.consumptions = this.table('consumptions');
     this.dailyLogs = this.table('dailyLogs');
@@ -84,6 +105,7 @@ export class LocalDatabase extends Dexie {
     this.thoughts = this.table('thoughts');
     this.healthLogs = this.table('healthLogs');
     this.weighings = this.table('weighings');
+    this.urgeEvents = this.table('urgeEvents');
     this.metadata = this.table('metadata');
     this.syncQueue = this.table('syncQueue');
   }
@@ -122,6 +144,7 @@ export async function clearAllData() {
     db.thoughts,
     db.healthLogs,
     db.weighings,
+    db.urgeEvents,
     db.metadata,
     db.syncQueue
   ], async () => {
@@ -135,6 +158,7 @@ export async function clearAllData() {
     await db.thoughts.clear();
     await db.healthLogs.clear();
     await db.weighings.clear();
+    await db.urgeEvents.clear();
     await db.metadata.clear();
     await db.syncQueue.clear();
   });
@@ -156,6 +180,7 @@ export async function clearUserDataOnly() {
     db.thoughts,
     db.healthLogs,
     db.weighings,
+    db.urgeEvents,
     db.syncQueue
   ], async () => {
     await db.consumptions.clear();
@@ -168,6 +193,7 @@ export async function clearUserDataOnly() {
     await db.thoughts.clear();
     await db.healthLogs.clear();
     await db.weighings.clear();
+    await db.urgeEvents.clear();
     await db.syncQueue.clear();
     // NÃO limpa db.metadata - mantém userEmail, salt, pinVerification
   });
@@ -208,6 +234,7 @@ export async function getDatabaseStats() {
     copingStrategies: await db.copingStrategies.count(),
     thoughts: await db.thoughts.count(),
     healthLogs: await db.healthLogs.count(),
+    urgeEvents: await db.urgeEvents.count(),
     syncQueue: await db.syncQueue.count()
   };
 

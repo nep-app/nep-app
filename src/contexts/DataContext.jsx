@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 import { syncService } from '../services/syncService';
 import { getDataMode, syncResearchData } from '../services/researchService';
 import { getMetadata, setMetadata, clearDerivedStats } from '../db/localDB';
+import { migrateUrgeEventsToDexie } from '../utils/urgeLog';
 
 export const DataContext = createContext();
 
@@ -56,6 +57,7 @@ export const DataProvider = ({ children }) => {
     thoughts,
     healthLogs,
     weighings,
+    urgeEvents,
     addItem,
     updateItem,
     deleteItem,
@@ -314,6 +316,28 @@ export const DataProvider = ({ children }) => {
     return result;
   }, [addItem]);
 
+  // Momento de "surfar o impulso" — cifrado e sincronizado como o resto.
+  const addUrgeEvent = useCallback(async (item) => {
+    const result = await addItem('urgeEvents', item);
+    schedulePush();
+    return result;
+  }, [addItem, schedulePush]);
+
+  // Migração única: os impulsos antigos viviam só em localStorage. Assim que a
+  // app está pronta e autenticada, passam para a base cifrada/sincronizada.
+  const urgeMigrationAttempted = useRef(false);
+  useEffect(() => {
+    if (!pin || !allDataLoaded || urgeMigrationAttempted.current) return;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('nep_urge_migrated_v1') === 'true') {
+      urgeMigrationAttempted.current = true;
+      return;
+    }
+    urgeMigrationAttempted.current = true;
+    migrateUrgeEventsToDexie(addUrgeEvent)
+      .then(() => { try { localStorage.setItem('nep_urge_migrated_v1', 'true'); } catch { /* best-effort */ } })
+      .catch(err => console.warn('[DataContext] Migração de impulsos falhou:', err?.message));
+  }, [pin, allDataLoaded, addUrgeEvent]);
+
   const updateWeighing = useCallback(async (id, updates) => {
     const result = await updateItem('weighings', id, updates);
     schedulePush();
@@ -444,6 +468,7 @@ export const DataProvider = ({ children }) => {
     thoughts,
     healthLogs,
     weighings,
+    urgeEvents,
 
     // CRUD operations
     addConsumption,
@@ -461,6 +486,7 @@ export const DataProvider = ({ children }) => {
     addWeighing,
     updateWeighing,
     deleteWeighing,
+    addUrgeEvent,
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
 
