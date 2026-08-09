@@ -155,6 +155,8 @@
     "wellbeing": "Well-being",
     "weighPeriodTitle": "Measured between your weighings",
     "weighPeriodRange": "{{from}} to {{to}}",
+    "weighPeriodAvg": "≈ {{avg}} mg/day on average",
+    "weighPeriodExplain": "Real weighed total, spread across the days of the period.",
     "wellbeingSubtitle": "Mood • Energy • Self-care",
     "emotions": "Emotions",
     "emotionsSubtitle": "Today's emotions",

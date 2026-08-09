@@ -322,23 +322,29 @@ export function HomeViewRefactored({
       )}
 
       {/* Consumo REAL medido entre as duas últimas pesagens (período fechado). */}
-      {lastWeighPeriod && (
-        <div className="mt-4 flex justify-center">
-          <div className="bg-amber-900/25 border border-amber-700/50 rounded-xl px-4 py-3 text-center max-w-sm">
-            <div className="text-xs text-amber-300/80 mb-0.5">
-              ⚖️ {t('home.weighPeriodTitle')}
-            </div>
-            <div className="text-sm text-amber-100">
-              {t('home.weighPeriodRange', {
-                from: new Date(lastWeighPeriod.start).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
-                to: new Date(lastWeighPeriod.end).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
-              })}
-              {': '}
-              <span className="font-bold">{lastWeighPeriod.consumed}</span> mg
+      {lastWeighPeriod && (() => {
+        const wpDays = Math.max(1, Math.round((lastWeighPeriod.end - lastWeighPeriod.start) / 86400000));
+        const wpAvg = Math.round(lastWeighPeriod.consumed / wpDays);
+        return (
+          <div className="mt-4 flex justify-center">
+            <div className="bg-amber-900/20 border border-amber-700/40 rounded-xl px-4 py-3 text-center max-w-sm">
+              <div className="text-xs text-amber-300/80 mb-0.5">
+                ⚖️ {t('home.weighPeriodTitle')}
+              </div>
+              <div className="text-sm text-amber-100">
+                {t('home.weighPeriodRange', {
+                  from: new Date(lastWeighPeriod.start).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+                  to: new Date(lastWeighPeriod.end).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+                })}
+                {': '}
+                <span className="font-bold">{lastWeighPeriod.consumed}</span> mg
+              </div>
+              <div className="text-xs text-amber-200/90 mt-0.5">{t('home.weighPeriodAvg', { avg: wpAvg })}</div>
+              <div className="text-[11px] text-amber-300/60 mt-1">{t('home.weighPeriodExplain')}</div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Linha 1: Bem-estar, Emoções, Reflexão Diária */}
       <div className="grid grid-cols-3 gap-3">

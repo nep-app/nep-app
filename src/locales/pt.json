@@ -155,6 +155,8 @@
     "wellbeing": "Bem-estar",
     "weighPeriodTitle": "Medido entre as tuas pesagens",
     "weighPeriodRange": "De {{from}} a {{to}}",
+    "weighPeriodAvg": "≈ {{avg}} mg/dia em média",
+    "weighPeriodExplain": "Total real pesado, repartido pelos dias do período.",
     "wellbeingSubtitle": "Humor • Energia • Autocuidado",
     "emotions": "Emoções",
     "emotionsSubtitle": "Emoções do dia",
