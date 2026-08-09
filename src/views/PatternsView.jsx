@@ -1192,6 +1192,11 @@ export function PatternsView({
                                                     return total;
                                                 }
 
+                                                // Fallback: mg derivado das PESAGENS (só dias medidos a 100%) — para o
+                                                // gráfico de dosagem refletir também as pesagens, não só o mg à mão.
+                                                const wMg = metrics?.weighingMeasuredMgByDate?.[date];
+                                                if (wMg != null && wMg > 0) return wMg;
+
                                                 return null;
                                             };
 

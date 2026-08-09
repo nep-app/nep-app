@@ -251,14 +251,22 @@ export const MetricsProvider = ({ children }) => {
         const mgValue = typeof dailyLog.mg === 'number' ? dailyLog.mg : parseFloat(dailyLog.mg);
         if (!isNaN(mgValue)) {
           mgValues.push(mgValue);
+          return;
         }
+      }
+
+      // Fallback: mg derivado das PESAGENS (só dias medidos a 100%) — para a média
+      // por dia refletir também os mg das pesagens, não só os escritos à mão.
+      const wMg = weighingMeasuredMgByDate[date];
+      if (wMg != null && wMg > 0) {
+        mgValues.push(wMg);
       }
     });
 
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [consumptionsByDate, cyclesByDate, dailyLogsByDate, atypicalDates]);
+  }, [consumptionsByDate, cyclesByDate, dailyLogsByDate, weighingMeasuredMgByDate, atypicalDates]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
@@ -443,6 +451,7 @@ export const MetricsProvider = ({ children }) => {
     consumptionsByDate, // memoized, atypical days filtered
     consumptionDailyRollup: effectiveDailyRollup, // resumo-por-dia (persistente no arranque, ao vivo após carregar tudo)
     dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
+    weighingMeasuredMgByDate, // mg/dia derivados das pesagens (só dias medidos a 100%)
   };
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;
