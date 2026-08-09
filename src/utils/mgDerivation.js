@@ -101,43 +101,51 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     return null;
   };
 
-  const doseCountByCycle = new Map();
-  for (const c of cons) {
-    const cy = cycleForDose(toMs(c.timestamp));
-    if (cy) doseCountByCycle.set(cy, (doseCountByCycle.get(cy) || 0) + 1);
-  }
-
   const perDay = {};
-  const ensure = (d) => (perDay[d] = perDay[d] || { mg: 0, doseCount: 0, measuredDoses: 0, estimatedDoses: 0, unknownDoses: 0 });
+  const ensure = (d) => (perDay[d] = perDay[d] || { mg: 0, doseCount: 0, measuredDoses: 0, estimatedDoses: 0, unknownDoses: 0, measuredShare: false });
 
+  // 1) Classificar as DOSES por dia — só para o "estado" do dia (tem doses num
+  //    ciclo pesado? fora de ciclo pesado?). NÃO usamos a contagem de doses para
+  //    repartir mg (era isso que criava falsos picos quando não se registava tudo).
   for (const c of cons) {
     const d = dayKey(c);
     if (!d) continue;
     const day = ensure(d);
     day.doseCount++;
     const cy = cycleForDose(toMs(c.timestamp));
-    if (cy && cy.measured) {
-      const n = doseCountByCycle.get(cy) || 1;
-      day.mg += cy.consumed / n;
-      day.measuredDoses++;
-    } else {
-      // Período SEM peso fiável (só uma pesagem, refill esquecido, "não pesei").
-      // NUNCA estimar aqui pelo "típico": não se inventa mg em dias sem pesagem.
-      // A única aproximação legítima é repartir o que FOI pesado pelos seus dias.
-      day.unknownDoses++;
+    if (cy && cy.measured) day.measuredDoses++;
+    else day.unknownDoses++; // período sem peso fiável — nunca se inventam mg aqui
+  }
+
+  // 2) Repartir o consumo MEDIDO de cada ciclo IGUALMENTE pelos dias do período
+  //    (média medida). Dias = do dia A SEGUIR à pesagem anterior até ao dia da
+  //    pesagem de fecho (cada dia de pesagem pertence ao ciclo que fecha — sem
+  //    duplicar). Isto substitui a divisão por doses e elimina os picos falsos.
+  const localKey = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  for (const cy of cycles) {
+    if (!cy.measured || cy.consumed == null || cy.consumed < 0) continue;
+    const days = [];
+    const d = new Date(cy.start); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1);
+    const endD = new Date(cy.end); endD.setHours(0, 0, 0, 0);
+    while (d <= endD) { days.push(localKey(d)); d.setDate(d.getDate() + 1); }
+    if (days.length === 0) continue;
+    const share = cy.consumed / days.length;
+    for (const dk of days) {
+      const day = ensure(dk);
+      day.mg += share;
+      day.measuredShare = true;
     }
   }
 
+  // 3) Estado e mg final por dia.
   for (const d in perDay) {
     const day = perDay[d];
-    const known = day.measuredDoses + day.estimatedDoses;
-    if (day.doseCount === 0) day.state = 'none';
-    else if (day.measuredDoses > 0 && day.estimatedDoses === 0 && day.unknownDoses === 0) day.state = 'measured';
-    else if (day.estimatedDoses > 0 && day.measuredDoses === 0 && day.unknownDoses === 0) day.state = 'estimated';
-    else if (known === 0) day.state = 'unknown';
-    else day.state = 'mixed';
-    day.estimated = day.estimatedDoses > 0;
-    day.mg = known > 0 ? Math.round(day.mg) : null;
+    if (day.doseCount === 0 && !day.measuredShare) { day.state = 'none'; day.mg = null; day.estimated = false; continue; }
+    if (day.measuredShare && day.unknownDoses === 0) day.state = 'measured';
+    else if (day.measuredShare && day.unknownDoses > 0) day.state = 'mixed';
+    else day.state = 'unknown'; // tem doses mas nenhuma num ciclo pesado (ou fora do range)
+    day.estimated = false; // nunca estimamos: só há "medido" (quota do período) ou "desconhecido"
+    day.mg = day.measuredShare ? Math.round(day.mg) : null;
   }
 
   return perDay;

@@ -71,7 +71,6 @@ export function UrgeSurfingStats({ dateRange = null }) {
       {stats.avoided > 0 && (
         <p className="text-[11px] text-gray-400 mt-1">🌱 {t('urgeStats.avoidedNote', { count: stats.avoided })}</p>
       )}
-      <p className="text-[11px] text-gray-500 italic mt-2">{t('urgeStats.note')}</p>
     </div>
   );
 }
