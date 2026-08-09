@@ -968,8 +968,8 @@
       "night": "Noite"
     },
     "heatmap": {
-      "titleConsumptions": "Mapa de Calor",
-      "titleWellbeing": "Mapa de Calor",
+      "titleConsumptions": "Mapa de Calor — Consumos",
+      "titleWellbeing": "Mapa de Calor — Bem-estar",
       "desc": "Visão geral dos últimos {{days}} dias. Passa o rato sobre os quadrados para ver detalhes.",
       "btnConsumptions": "💊 Consumos",
       "btnWellbeing": "💚 Bem-estar",

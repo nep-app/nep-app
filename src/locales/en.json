@@ -906,8 +906,8 @@
       "night": "Night"
     },
     "heatmap": {
-      "titleConsumptions": "Heatmap",
-      "titleWellbeing": "Heatmap",
+      "titleConsumptions": "Heatmap — Use",
+      "titleWellbeing": "Heatmap — Wellbeing",
       "desc": "Overview of the last {{days}} days. Hover over squares to see details.",
       "btnConsumptions": "💊 Uses",
       "btnWellbeing": "💚 Wellbeing",

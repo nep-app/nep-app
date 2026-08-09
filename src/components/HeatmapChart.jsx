@@ -105,7 +105,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
       <div className="mb-4">
         <div className="flex flex-col gap-2">
           <h3 className="text-lg font-bold text-gray-200">
-            {t('patterns.heatmap.titleConsumptions')}
+            {view === 'consumptions' ? t('patterns.heatmap.titleConsumptions') : t('patterns.heatmap.titleWellbeing')}
           </h3>
           <div className="flex justify-between items-center">
             <p className="text-xs text-gray-400">
@@ -182,6 +182,7 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
 
                 const consumptionInfo = consumptionData[day.date];
                 const wellbeingInfo = wellbeingData[day.date];
+                const hasData = view === 'consumptions' ? !!consumptionInfo : !!wellbeingInfo;
                 const color = view === 'consumptions'
                   ? getConsumptionColor(consumptionInfo?.count || 0)
                   : getWellbeingColor(wellbeingInfo?.avgWellbeing || null);
@@ -190,15 +191,22 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
                 return (
                   <div
                     key={dow}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={formatDate(day.date)}
+                    onClick={() => setHoveredDay(isHovered ? null : day.date)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setHoveredDay(isHovered ? null : day.date); } }}
                     onMouseEnter={() => setHoveredDay(day.date)}
                     onMouseLeave={() => setHoveredDay(null)}
-                    className="cursor-pointer transition-transform hover:scale-125"
+                    className="cursor-pointer transition-transform hover:scale-125 focus:outline-none focus:scale-125"
                     style={{
                       width: cellSize,
                       height: cellSize,
                       backgroundColor: color,
                       borderRadius: 3,
-                      border: isHovered ? '2px solid #fff' : 'none',
+                      // dias sem dados ficam com um contorno subtil, para a grelha
+                      // ser sempre visível (mesmo quando há poucos registos).
+                      border: isHovered ? '2px solid #fff' : (hasData ? 'none' : '1px solid #374151'),
                       zIndex: isHovered ? 10 : 1,
                       position: 'relative',
                     }}

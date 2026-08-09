@@ -252,7 +252,8 @@ export function PatternsView({
                                                                  patternsPeriod === 'mes' ? 30 :
                                                                  uniqueDays || 1;
 
-                                                const totalAchievements = uniqueGoals.reduce((sum, g) => sum + getGoalAchievementCount(g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs), 0);
+                                                // (totalAchievements é calculado ABAIXO, a partir do goalBreakdown, para
+                                                //  respeitar a guarda createdAt e bater certo com a soma dos cartões.)
 
                                                 // Calcular dias únicos com consumos (base para TODAS as metas exceto sleep_hours/bedtime_before)
                                                 const today = getTodayKey(); // ISO format for consistent date comparisons
@@ -402,6 +403,10 @@ export function PatternsView({
                                                     };
                                                 });
 
+                                                // Total = soma dos cumprimentos por meta (já com a guarda createdAt).
+                                                // Antes somava dados em bruto (contava até de antes de a meta existir),
+                                                // por isso dava números impossíveis tipo "700".
+                                                const totalAchievements = goalBreakdown.reduce((sum, gb) => sum + (gb.achievementCount || 0), 0);
                                                 const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : 0;
                                                 const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
 
@@ -821,17 +826,11 @@ export function PatternsView({
                                                                 const sortedDates = Object.keys(byDate).sort();
                                                                 const maxCount = Math.max(...Object.values(byDate));
 
-                                                                // Cor das barras RELATIVA à meta de frequência (se existir):
-                                                                // dentro da meta = verde. Senão, escala fixa antiga.
-                                                                const freqGoalBar = (goals || []).find(g => g.type === 'reduce_frequency' && !g.completed);
-                                                                const gt = freqGoalBar ? parseFloat(freqGoalBar.target) : null;
+                                                                // Cor das barras pela QUANTIDADE de consumos do dia — igual à legenda:
+                                                                // 1-3 verde · 4-6 azul · 7-9 laranja · 10+ vermelho.
+                                                                // (Antes havia um "override" pela meta que deixava tudo verde quando a
+                                                                //  meta era folgada; removido para a cor acompanhar mesmo a quantidade.)
                                                                 const barColor = (count) => {
-                                                                    if (gt != null && !isNaN(gt)) {
-                                                                        if (count <= gt) return 'bg-gradient-to-t from-green-500 to-green-400';
-                                                                        if (count <= gt + 2) return 'bg-gradient-to-t from-blue-500 to-blue-400';
-                                                                        if (count <= gt + 4) return 'bg-gradient-to-t from-orange-500 to-orange-400';
-                                                                        return 'bg-gradient-to-t from-red-500 to-red-400';
-                                                                    }
                                                                     if (count >= 10) return 'bg-gradient-to-t from-red-500 to-red-400';
                                                                     if (count > 6) return 'bg-gradient-to-t from-orange-500 to-orange-400';
                                                                     if (count > 3) return 'bg-gradient-to-t from-blue-500 to-blue-400';
