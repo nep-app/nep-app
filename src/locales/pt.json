@@ -419,11 +419,15 @@
       "notesPlaceholder": "Adiciona notas sobre este consumo..."
     },
     "goal": {
-      "title": "Escolher Meta",
+      "title": "As tuas metas",
+      "chooseTitle": "Escolher Meta",
       "metaIn": "Meta em {{unit}}",
       "timeLimit": "Hora limite",
       "metaUnit": "Meta ({{unit}})",
       "create": "Criar Meta",
+      "current": "As tuas metas atuais",
+      "none": "Ainda não tens nenhuma meta definida. Escolhe uma abaixo.",
+      "addNew": "➕ Definir nova meta",
       "options": {
         "reduce_quantity": "Reduzir quantidade diária",
         "reduce_frequency": "Reduzir frequência diária",

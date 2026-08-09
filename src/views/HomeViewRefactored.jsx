@@ -97,10 +97,13 @@ export function HomeViewRefactored({
     if (limitGoal) {
       const targetStr = typeof limitGoal.target === 'string' ? limitGoal.target : '00:00';
       const [th, tm] = targetStr.split(':').map(Number);
-      const targetMin = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+      const targetMinRaw = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+      // Alvo no MESMO frame de "noite alargada" que a hora atual (madrugada = +1440),
+      // senão uma meta de madrugada (ex.: 01:30) disparava sempre. Igual = OK.
+      const targetMin = targetMinRaw < 360 ? targetMinRaw + 1440 : targetMinRaw;
       let nowMin = now.getHours() * 60 + now.getMinutes();
       if (nowMin < 360) nowMin += 1440; // madrugada conta como fim do dia
-      if (nowMin >= targetMin) {
+      if (nowMin > targetMin) {
         const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         reasons.push({ text: t('alerts.limitLastFail', { time: nowStr, target: targetStr }), emoji: '⏰', color: 'orange', type: 'negative', urge: true });
       }

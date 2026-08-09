@@ -419,11 +419,15 @@
       "notesPlaceholder": "Add notes about this log..."
     },
     "goal": {
-      "title": "Choose Goal",
+      "title": "Your goals",
+      "chooseTitle": "Choose Goal",
       "metaIn": "Goal in {{unit}}",
       "timeLimit": "Time limit",
       "metaUnit": "Goal ({{unit}})",
       "create": "Create Goal",
+      "current": "Your current goals",
+      "none": "You don't have any goals set yet. Pick one below.",
+      "addNew": "➕ Set a new goal",
       "options": {
         "reduce_quantity": "Reduce daily quantity",
         "reduce_frequency": "Reduce daily frequency",

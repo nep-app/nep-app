@@ -9,7 +9,9 @@ export const GoalModal = ({
   editingGoal,
   goalForm,
   setGoalForm,
-  onSubmit
+  onSubmit,
+  goals = [],
+  onDelete
 }) => {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState(null);
@@ -51,6 +53,13 @@ export const GoalModal = ({
   const selectedOption = goalOptions.find(opt => opt.type === selectedType);
   const isTimeType = selectedType === 'limit_last' || selectedType === 'bedtime_before';
 
+  // Como mostrar o valor de uma meta já definida (hora tal-e-tal, ou número + unidade)
+  const goalValueLabel = (g, opt) => {
+    const timeType = g.type === 'limit_last' || g.type === 'bedtime_before';
+    if (timeType) return g.target; // já é "HH:MM"
+    return `${g.target} ${opt?.unit || ''}`.trim();
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -71,23 +80,57 @@ export const GoalModal = ({
         </div>
 
         {!selectedType ? (
-          <div className="space-y-2">
-            {goalOptions.map((option) => (
-              <button
-                key={option.type}
-                onClick={() => handleSelectType(option.type)}
-                className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600 w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3"
-              >
-                <span className="text-2xl">{option.icon}</span>
-                <div className="flex-1">
-                  <div className="font-medium">{option.label}</div>
-                  <div className="text-xs text-gray-400">
-                    {t('modals.goal.metaIn', { unit: option.unit })}
+          <div className="space-y-5">
+            {/* Metas atuais */}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-gray-300">{t('modals.goal.current')}</div>
+              {goals && goals.length > 0 ? (
+                goals.map((g) => {
+                  const opt = goalOptions.find(o => o.type === g.type);
+                  return (
+                    <div key={g.id} className="flex items-center gap-3 bg-gray-700/60 border border-gray-600 rounded-xl p-3">
+                      <span className="text-2xl" aria-hidden="true">{opt?.icon || '🎯'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-white text-sm">{opt?.label || g.type}</div>
+                        <div className="text-xs text-purple-300">{goalValueLabel(g, opt)}</div>
+                      </div>
+                      {onDelete && (
+                        <button
+                          aria-label={t('a11y.delete')}
+                          onClick={() => onDelete(g.id)}
+                          className="text-red-400 hover:text-red-300 p-1"
+                        >
+                          <Icons.Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-400">{t('modals.goal.none')}</p>
+              )}
+            </div>
+
+            {/* Definir nova meta */}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-gray-300">{t('modals.goal.addNew')}</div>
+              {goalOptions.map((option) => (
+                <button
+                  key={option.type}
+                  onClick={() => handleSelectType(option.type)}
+                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600 w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3"
+                >
+                  <span className="text-2xl" aria-hidden="true">{option.icon}</span>
+                  <div className="flex-1">
+                    <div className="font-medium">{option.label}</div>
+                    <div className="text-xs text-gray-400">
+                      {t('modals.goal.metaIn', { unit: option.unit })}
+                    </div>
                   </div>
-                </div>
-                <Icons.ChevronRight className="text-gray-400 w-5 h-5" />
-              </button>
-            ))}
+                  <Icons.ChevronRight className="text-gray-400 w-5 h-5" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

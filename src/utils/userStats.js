@@ -517,22 +517,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         const lastConsMinutes = lastCons.getHours() * 60 + lastCons.getMinutes();
         const lastTimeStr = `${String(lastCons.getHours()).padStart(2,'0')}:${String(lastCons.getMinutes()).padStart(2,'0')}`;
 
-        // A meia-noite relevante é a primeira 00:00 que ocorreu DENTRO deste ciclo
-        const cycleStart = lastCycleTime || new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        // Se a meia-noite já passou E ocorreu depois do início do ciclo → é a meia-noite relevante
-        const midnightIsWithinCycle = midnight > cycleStart && midnight <= now;
+        // Frame de "noite alargada": a madrugada (00:00–05:59) conta como o FIM da
+        // noite (+1440). O ALVO usa o MESMO frame — senão uma meta de madrugada
+        // (ex.: "último consumo até 01:30") ficava quase sempre a vermelho.
+        // Igual ao alvo = cumprido (verde).
+        const toExt = (m) => (m < 360 ? m + 1440 : m);
+        const isAfterTarget = toExt(lastConsMinutes) > toExt(targetMinutes);
 
-        let afterMidnight = false;
-        if (midnightIsWithinCycle) {
-          // Há consumos depois da meia-noite deste ciclo?
-          afterMidnight = cycleConsumptions.some(c => new Date(c.timestamp) >= midnight);
-        } else {
-          // A meia-noite ainda não aconteceu neste ciclo → avaliar pela hora (< targetMinutes)
-          afterMidnight = (lastConsMinutes + (lastConsMinutes < 360 ? 1440 : 0)) >= targetMinutes;
-        }
-
-        if (afterMidnight) {
+        if (isAfterTarget) {
           alerts.push({
             text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
@@ -562,16 +554,13 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (prevCycleCons.length > 0) {
           const prevLast = new Date(prevCycleCons[0].timestamp);
-          // Meia-noite dentro do ciclo anterior
-          const prevMidnight = new Date(lastCycleTime.getFullYear(), lastCycleTime.getMonth(), lastCycleTime.getDate(), 0, 0, 0);
-          const prevCycleStartTs = prevCycleStart || new Date(0);
-          const prevMidnightInCycle = prevMidnight > prevCycleStartTs && prevMidnight <= lastCycleTime;
-          const hadAfterMidnight = prevMidnightInCycle
-            ? prevCycleCons.some(c => new Date(c.timestamp) >= prevMidnight)
-            : false;
+          const prevLastMinutes = prevLast.getHours() * 60 + prevLast.getMinutes();
+          const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
+          // Mesmo frame de "noite alargada" do ramo do ciclo atual (igual ao alvo = OK).
+          const toExt = (m) => (m < 360 ? m + 1440 : m);
+          const wasAfterTarget = toExt(prevLastMinutes) > toExt(targetMinutes);
 
-          if (hadAfterMidnight) {
-            const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
+          if (wasAfterTarget) {
             // SEM urge: é o resultado de um ciclo JÁ FECHADO (retrospetivo). Não deve
             // abrir a janela do impulso quando se vai consumir num ciclo novo.
             alerts.push({

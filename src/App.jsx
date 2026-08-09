@@ -1355,6 +1355,8 @@ export function AuthenticatedApp() {
                                 goalForm={goalForm}
                                 setGoalForm={setGoalForm}
                                 onSubmit={submitGoal}
+                                goals={goals}
+                                onDelete={(id) => deleteGoal(id)}
                             />
                         </Suspense>
 
