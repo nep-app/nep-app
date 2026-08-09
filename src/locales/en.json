@@ -144,6 +144,11 @@
     "timeSinceLabel": "Time since last use",
     "emptyTitle": "Your space starts here",
     "emptyBody": "No entries yet — and that's okay. Whenever you want, log a use or write a thought. At your own pace.",
+    "logPast": "＋ Log a past use",
+    "logPastTitle": "Log a past use",
+    "logPastWhen": "When was it?",
+    "logPastNotes": "Notes (optional)",
+    "logPastHint": "Saves without opening urge-surfing and without counting as an urge — for when you forgot to log it at the time.",
     "dailyMessage": "Daily Message",
     "markConsumption": "Log Use Now",
     "thoughts": "Thoughts",
@@ -1070,11 +1075,9 @@
     "subtitleAll": "all time",
     "surfed": "urges surfed",
     "delayed": "uses delayed",
-    "avgDelay": "average delay",
-    "reinforceOne": "You paused to breathe instead of acting on the urge. That counts. 💜",
-    "reinforceMany": "Of the {{total}} times you felt the urge, you paused to breathe — and delayed use {{delayed}} of them. 💜",
-    "avoidedNote": "{{count}} passed with no use afterwards.",
-    "note": "This lives only on this device for now."
+    "openedNoUse": "opened, unused",
+    "reinforceNone": "You haven't used the strategies yet. Next time the urge shows up, try one — breathing, the timer, grounding. 💜",
+    "reinforceMany": "You used the strategies {{surfed}}× and delayed use {{delayed}}×. That counts. 💜"
   },
   "wellbeing": {
     "exercisePlaceholder": "What? e.g. walking",

@@ -144,6 +144,11 @@
     "timeSinceLabel": "Tempo desde último consumo",
     "emptyTitle": "O teu espaço começa aqui",
     "emptyBody": "Ainda sem registos — e está tudo bem. Quando quiseres, marca um consumo ou escreve um pensamento. Ao teu ritmo.",
+    "logPast": "＋ Registar um consumo passado",
+    "logPastTitle": "Registar consumo passado",
+    "logPastWhen": "Quando foi?",
+    "logPastNotes": "Notas (opcional)",
+    "logPastHint": "Guarda sem abrir o surfar e sem contar como impulso — para quando te esqueceste de registar na altura.",
     "dailyMessage": "Mensagem de Hoje",
     "markConsumption": "Marcar Consumo Agora",
     "thoughts": "Pensamentos",
@@ -1070,11 +1075,9 @@
     "subtitleAll": "desde sempre",
     "surfed": "impulsos surfados",
     "delayed": "consumos adiados",
-    "avgDelay": "adiamento médio",
-    "reinforceOne": "Paraste para respirar em vez de agir no impulso. Isso conta. 💜",
-    "reinforceMany": "Das {{total}} vezes que sentiste o impulso, paraste para respirar — e adiaste o consumo em {{delayed}} delas. 💜",
-    "avoidedNote": "{{count}} passaram sem consumo a seguir.",
-    "note": "Por agora, isto fica só neste dispositivo."
+    "openedNoUse": "abriste sem usar",
+    "reinforceNone": "Ainda não usaste as estratégias. Da próxima que o impulso aparecer, experimenta uma — respirar, o timer, ancorar. 💜",
+    "reinforceMany": "Usaste as estratégias {{surfed}}x e adiaste o consumo {{delayed}}x. Isso conta. 💜"
   },
   "wellbeing": {
     "exercisePlaceholder": "O quê? ex: caminhar",

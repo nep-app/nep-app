@@ -149,7 +149,9 @@ export function AnalysesView({
                 )}
                 {analysisSubView === 'estado' && (
                     <>
-                        <UrgeSurfingStats dateRange={patternsPeriod === 'tudo' ? null : dateRange} />
+                        {/* Sempre "desde sempre" (não depende do período) — evita
+                            aparecer só no "tudo". */}
+                        <UrgeSurfingStats dateRange={null} />
                         <AnalysesEstadoTab
                             analysisConsumptions={analysisConsumptions}
                             analysisWellbeing={analysisWellbeing}

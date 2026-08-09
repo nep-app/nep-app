@@ -1,13 +1,16 @@
 /**
- * Registo simples dos momentos de impulso (quando o exercício "surfar o impulso"
- * aparece) e do que a pessoa fez. Guardado LOCALMENTE (localStorage) — é dado de
- * comportamento, fica só neste dispositivo por agora.
+ * Registo dos momentos de impulso (quando o exercício "surfar o impulso" aparece)
+ * e do que a pessoa fez.
  *
- * Evento: { ts: ISO, exercises: string[], outcome: 'delayed' | 'proceeded' }
+ * NOTA: os eventos NOVOS são gravados na base cifrada/sincronizada (coleção
+ * `urgeEvents`, via DataContext.addUrgeEvent) — já NÃO ficam só no telemóvel.
+ * Este ficheiro mantém-se só para (a) ler eventos antigos ainda em localStorage
+ * e (b) migrá-los para a base (migrateUrgeEventsToDexie).
+ *
+ * Evento: { ts/timestamp: ISO, exercises: string[], outcome: 'delayed' | 'proceeded' }
+ *  - usou estratégia = exercises.length > 0 (conta como "impulso surfado").
  *  - 'delayed'   → fechou o aviso sem carregar em "consumir na mesma" (adiou).
  *  - 'proceeded' → carregou em "consumir na mesma".
- * O "adiou quantos minutos" NÃO se guarda aqui — calcula-se depois, comparando
- * com o próximo consumo registado.
  */
 import { safeLocalStorage } from './storage';
 import { genId } from './helpers';

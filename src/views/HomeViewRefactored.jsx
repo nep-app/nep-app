@@ -31,7 +31,7 @@ export function HomeViewRefactored({
   showToast
 }) {
   const { t, i18n } = useTranslation();
-  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent } = useData();
+  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption } = useData();
   const metrics = useMetrics();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
@@ -54,6 +54,30 @@ export function HomeViewRefactored({
   const dismissOnboarding = () => {
     try { localStorage.setItem('nep_onboarding_seen', 'true'); } catch { /* best-effort */ }
     setOnboardingDismissed(true);
+  };
+
+  // Registo RETROATIVO (consumo passado): guarda na hora escolhida, SEM abrir o
+  // surfar e SEM contar como impulso. É o caminho calmo para "esqueci-me de
+  // registar na altura" — deixa de poluir as estatísticas do impulso.
+  const nowLocalInput = () => {
+    const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm' na hora local
+  };
+  const [showPastModal, setShowPastModal] = useState(false);
+  const [pastDatetime, setPastDatetime] = useState('');
+  const [pastNotes, setPastNotes] = useState('');
+  const openPastModal = () => { setPastDatetime(nowLocalInput()); setPastNotes(''); setShowPastModal(true); };
+  const savePastConsumption = async () => {
+    if (!pastDatetime) return;
+    const d = new Date(pastDatetime);
+    if (isNaN(d)) return;
+    try {
+      await addConsumption({ id: genId(), timestamp: d.toISOString(), date: safeToISODate(d), notes: pastNotes || '' });
+      showToast(t('messages.consumptionSaved'), 'success');
+    } catch {
+      showToast(t('messages.consumptionSaveError'), 'error');
+    }
+    setShowPastModal(false);
   };
 
   const urgeExerciseEnabled = typeof window !== 'undefined'
@@ -271,6 +295,16 @@ export function HomeViewRefactored({
         </GradientButton>
       </div>
 
+      {/* Registo retroativo — caminho calmo, sem surfar nem contar como impulso */}
+      <div className="flex justify-center -mt-2">
+        <button
+          onClick={openPastModal}
+          className="text-xs text-gray-400 hover:text-gray-200 underline decoration-dotted underline-offset-4 transition-colors"
+        >
+          {t('home.logPast')}
+        </button>
+      </div>
+
       {consumptions.length === 0 && (
         <div className="bg-purple-900/15 border border-purple-700/30 rounded-2xl p-6 text-center motion-safe:animate-fadeInUp">
           <div className="text-4xl mb-2 inline-block motion-safe:animate-sway" aria-hidden="true">🌱</div>
@@ -472,6 +506,50 @@ export function HomeViewRefactored({
     )}
 
     {showOnboarding && <OnboardingWelcome onDone={dismissOnboarding} />}
+
+    {showPastModal && (
+      <div
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => { if (e.target === e.currentTarget) setShowPastModal(false); }}
+      >
+        <div className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 motion-safe:animate-scaleIn"
+          style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-base font-bold text-white">🕓 {t('home.logPastTitle')}</h3>
+            <button aria-label={t('common.cancel')} onClick={() => setShowPastModal(false)} className="text-gray-400 hover:text-gray-200 text-xl leading-none">✕</button>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">{t('home.logPastHint')}</p>
+
+          <label className="block text-sm font-medium text-gray-300 mb-1">{t('home.logPastWhen')}</label>
+          <input
+            type="datetime-local"
+            value={pastDatetime}
+            max={nowLocalInput()}
+            onChange={(e) => setPastDatetime(e.target.value)}
+            className="bg-gray-700 border border-gray-600 text-white w-full p-3 rounded-lg focus:ring-2 focus:ring-purple-400 mb-3"
+          />
+
+          <label className="block text-sm font-medium text-gray-300 mb-1">{t('home.logPastNotes')}</label>
+          <textarea
+            value={pastNotes}
+            onChange={(e) => setPastNotes(e.target.value)}
+            rows={2}
+            className="bg-gray-700 border border-gray-600 text-white w-full p-3 rounded-lg focus:ring-2 focus:ring-purple-400 mb-4 resize-none"
+          />
+
+          <div className="flex gap-3">
+            <button onClick={() => setShowPastModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors">
+              {t('common.cancel')}
+            </button>
+            <button onClick={savePastConsumption} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors">
+              {t('common.save')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
