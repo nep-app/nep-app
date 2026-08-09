@@ -428,6 +428,8 @@
       "current": "Your current goals",
       "none": "You don't have any goals set yet. Pick one below.",
       "addNew": "➕ Set a new goal",
+      "editHint": "Tap a goal to edit, or the bin to delete.",
+      "allSet": "You already have one goal of each type. Tap one above to edit.",
       "options": {
         "reduce_quantity": "Reduce daily quantity",
         "reduce_frequency": "Reduce daily frequency",

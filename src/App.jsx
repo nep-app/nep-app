@@ -1357,6 +1357,8 @@ export function AuthenticatedApp() {
                                 onSubmit={submitGoal}
                                 goals={goals}
                                 onDelete={(id) => deleteGoal(id)}
+                                onEdit={(g) => { setEditingGoal(g); setGoalForm({ type: g.type, target: g.target, period: g.period || 'daily' }); }}
+                                onClearEdit={() => { setEditingGoal(null); setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' }); }}
                             />
                         </Suspense>
 

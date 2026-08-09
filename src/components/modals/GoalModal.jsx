@@ -11,7 +11,9 @@ export const GoalModal = ({
   setGoalForm,
   onSubmit,
   goals = [],
-  onDelete
+  onDelete,
+  onEdit,
+  onClearEdit
 }) => {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState(null);
@@ -28,6 +30,12 @@ export const GoalModal = ({
       setSelectedType(null);
     }
   }, [isOpen]);
+
+  // Abrir uma meta existente para EDITAR (prefill + mostrar o formulário do valor).
+  const handleEditGoal = (g) => {
+    if (onEdit) onEdit(g);
+    setSelectedType(g.type);
+  };
 
   if (!isOpen) return null;
 
@@ -48,6 +56,7 @@ export const GoalModal = ({
 
   const handleBack = () => {
     setSelectedType(null);
+    if (onClearEdit) onClearEdit(); // sair do modo edição sem gravar
   };
 
   const selectedOption = goalOptions.find(opt => opt.type === selectedType);
@@ -81,55 +90,72 @@ export const GoalModal = ({
 
         {!selectedType ? (
           <div className="space-y-5">
-            {/* Metas atuais */}
+            {/* Metas atuais — tocar para editar, caixote para apagar */}
             <div className="space-y-2">
               <div className="text-sm font-semibold text-gray-300">{t('modals.goal.current')}</div>
               {goals && goals.length > 0 ? (
-                goals.map((g) => {
-                  const opt = goalOptions.find(o => o.type === g.type);
-                  return (
-                    <div key={g.id} className="flex items-center gap-3 bg-gray-700/60 border border-gray-600 rounded-xl p-3">
-                      <span className="text-2xl" aria-hidden="true">{opt?.icon || '🎯'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-white text-sm">{opt?.label || g.type}</div>
-                        <div className="text-xs text-purple-300">{goalValueLabel(g, opt)}</div>
+                <>
+                  {goals.map((g) => {
+                    const opt = goalOptions.find(o => o.type === g.type);
+                    return (
+                      <div
+                        key={g.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleEditGoal(g)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEditGoal(g); } }}
+                        className="flex items-center gap-3 bg-gray-700/60 border border-gray-600 rounded-xl p-3 cursor-pointer hover:border-purple-500/60 hover:bg-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      >
+                        <span className="text-2xl" aria-hidden="true">{opt?.icon || '🎯'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-white text-sm">{opt?.label || g.type}</div>
+                          <div className="text-xs text-purple-300">{goalValueLabel(g, opt)}</div>
+                        </div>
+                        <Icons.Edit className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                        {onDelete && (
+                          <button
+                            aria-label={t('a11y.delete')}
+                            onClick={(e) => { e.stopPropagation(); onDelete(g.id); }}
+                            className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
+                          >
+                            <Icons.Trash2 className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        )}
                       </div>
-                      {onDelete && (
-                        <button
-                          aria-label={t('a11y.delete')}
-                          onClick={() => onDelete(g.id)}
-                          className="text-red-400 hover:text-red-300 p-1"
-                        >
-                          <Icons.Trash2 className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                  <p className="text-xs text-gray-500">{t('modals.goal.editHint')}</p>
+                </>
               ) : (
                 <p className="text-sm text-gray-400">{t('modals.goal.none')}</p>
               )}
             </div>
 
-            {/* Definir nova meta */}
+            {/* Definir nova meta — só os tipos que ainda não existem (evita duplicados) */}
             <div className="space-y-2">
               <div className="text-sm font-semibold text-gray-300">{t('modals.goal.addNew')}</div>
-              {goalOptions.map((option) => (
-                <button
-                  key={option.type}
-                  onClick={() => handleSelectType(option.type)}
-                  className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600 w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3"
-                >
-                  <span className="text-2xl" aria-hidden="true">{option.icon}</span>
-                  <div className="flex-1">
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-xs text-gray-400">
-                      {t('modals.goal.metaIn', { unit: option.unit })}
+              {(() => {
+                const available = goalOptions.filter(o => !goals.some(g => g.type === o.type));
+                if (available.length === 0) {
+                  return <p className="text-sm text-gray-400">{t('modals.goal.allSet')}</p>;
+                }
+                return available.map((option) => (
+                  <button
+                    key={option.type}
+                    onClick={() => handleSelectType(option.type)}
+                    className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600 w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-3"
+                  >
+                    <span className="text-2xl" aria-hidden="true">{option.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-medium">{option.label}</div>
+                      <div className="text-xs text-gray-400">
+                        {t('modals.goal.metaIn', { unit: option.unit })}
+                      </div>
                     </div>
-                  </div>
-                  <Icons.ChevronRight className="text-gray-400 w-5 h-5" aria-hidden="true" />
-                </button>
-              ))}
+                    <Icons.ChevronRight className="text-gray-400 w-5 h-5" aria-hidden="true" />
+                  </button>
+                ));
+              })()}
             </div>
           </div>
         ) : (
@@ -151,7 +177,7 @@ export const GoalModal = ({
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"
             >
-              {t('modals.goal.create')}
+              {editingGoal ? t('common.save') : t('modals.goal.create')}
             </button>
           </div>
         )}

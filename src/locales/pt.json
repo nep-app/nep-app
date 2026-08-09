@@ -428,6 +428,8 @@
       "current": "As tuas metas atuais",
       "none": "Ainda não tens nenhuma meta definida. Escolhe uma abaixo.",
       "addNew": "➕ Definir nova meta",
+      "editHint": "Toca numa meta para editar, ou no caixote para apagar.",
+      "allSet": "Já tens uma meta de cada tipo. Toca numa acima para editar.",
       "options": {
         "reduce_quantity": "Reduzir quantidade diária",
         "reduce_frequency": "Reduzir frequência diária",
