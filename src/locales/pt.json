@@ -1077,6 +1077,7 @@
     "subtitleAll": "desde sempre",
     "surfed": "impulsos surfados",
     "delayed": "consumos adiados",
+    "avgHeld": "tempo aguentado",
     "openedNoUse": "abriste sem usar",
     "reinforceNone": "Ainda não usaste as estratégias. Da próxima que o impulso aparecer, experimenta uma — respirar, o timer, ancorar. 💜",
     "reinforceMany": "Das {{surfed}} vezes que usaste as estratégias, adiaste o consumo em {{delayed}}. Isso conta. 💜",

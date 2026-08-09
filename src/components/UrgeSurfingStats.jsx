@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { getUrgeEvents } from '../utils/urgeLog';
-import { computeUrgeStats } from '../utils/urgeStats';
+import { computeUrgeStats, formatDelay } from '../utils/urgeStats';
 
 /**
  * Cartão de estatísticas do "Surfar o Impulso" — vive na subtab "Estado".
@@ -16,7 +16,7 @@ import { computeUrgeStats } from '../utils/urgeStats';
  */
 export function UrgeSurfingStats({ dateRange = null }) {
   const { t } = useTranslation();
-  const { urgeEvents } = useData();
+  const { urgeEvents, consumptions } = useData();
 
   // Fonte principal: base cifrada/sincronizada; junta o que ainda esteja em
   // localStorage (antes da migração), sem duplicar (dedup por instante).
@@ -30,7 +30,7 @@ export function UrgeSurfingStats({ dateRange = null }) {
     return merged;
   }, [urgeEvents]);
 
-  const stats = useMemo(() => computeUrgeStats(events, dateRange), [events, dateRange]);
+  const stats = useMemo(() => computeUrgeStats(events, consumptions || [], dateRange), [events, consumptions, dateRange]);
 
   if (!stats.hasData) return null;
 
@@ -49,7 +49,7 @@ export function UrgeSurfingStats({ dateRange = null }) {
         <span className="text-xs text-gray-400">{subtitle}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <div className="bg-gray-900/50 rounded-lg py-3 px-2 text-center">
           <div className="text-2xl font-bold text-pink-300 tabular-nums">{stats.surfed}</div>
           <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.surfed')}</div>
@@ -58,14 +58,13 @@ export function UrgeSurfingStats({ dateRange = null }) {
           <div className="text-2xl font-bold text-green-300 tabular-nums">{stats.delayed}</div>
           <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.delayed')}</div>
         </div>
+        <div className="bg-gray-900/50 rounded-lg py-3 px-2 text-center">
+          <div className="text-2xl font-bold text-blue-300 tabular-nums">{formatDelay(stats.avgHeldMin)}</div>
+          <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{t('urgeStats.avgHeld')}</div>
+        </div>
       </div>
 
       <p className="text-xs text-purple-200/90 leading-relaxed mt-3">{reinforce}</p>
-      {stats.openedNoUse > 0 && (
-        <p className="text-[11px] text-gray-500 leading-relaxed mt-2">
-          {t('urgeStats.openedNoUseNote', { count: stats.openedNoUse })}
-        </p>
-      )}
     </div>
   );
 }

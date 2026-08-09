@@ -1077,6 +1077,7 @@
     "subtitleAll": "all time",
     "surfed": "urges surfed",
     "delayed": "uses delayed",
+    "avgHeld": "held off",
     "openedNoUse": "opened, unused",
     "reinforceNone": "You haven't used the strategies yet. Next time the urge shows up, try one — breathing, the timer, grounding. 💜",
     "reinforceMany": "Of the {{surfed}} times you used the strategies, you delayed use in {{delayed}}. That counts. 💜",
