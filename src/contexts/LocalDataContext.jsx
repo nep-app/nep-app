@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
 import { useAuth } from './AuthContext';
 import { db } from '../db/localDB';
@@ -640,7 +640,9 @@ export const LocalDataProvider = ({ children }) => {
     await markAsSynced(collectionName, id);
   }, []);
 
-  const value = {
+  // ⚡ Memoizado: evita recriar o objeto a cada render (o que forçava todos os
+  // consumidores a re-renderizar e a repetir as contas pesadas).
+  const value = useMemo(() => ({
     // Estado
     loading,
     backgroundLoading,
@@ -669,7 +671,13 @@ export const LocalDataProvider = ({ children }) => {
     // Reload
     loadAllCollections,
     loadFullData
-  };
+  }), [
+    loading, backgroundLoading, allDataLoaded, fullDataLoaded,
+    consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
+    thoughts, healthLogs, weighings, urgeEvents,
+    addItem, updateItem, deleteItem, getPendingSyncItems, markItemAsSynced,
+    loadAllCollections, loadFullData,
+  ]);
 
   return <LocalDataContext.Provider value={value}>{children}</LocalDataContext.Provider>;
 };

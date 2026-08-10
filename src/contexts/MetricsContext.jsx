@@ -434,7 +434,11 @@ export const MetricsProvider = ({ children }) => {
     };
   }, [avgFrequencyLast7Days, last7Days, analysis.intervalStats, filteredCycles, cyclesByDate, wellbeingByDate, filteredConsumptions]);
 
-  const value = {
+  // ⚡ Memoizado: só cria um objeto novo quando uma das peças (todas já
+  // memoizadas) muda de facto. Sem isto, cada render do provider criava um
+  // 'value' novo e obrigava TODOS os consumidores (Padrões, Análises…) a
+  // recalcular do zero — mesmo sem nada ter mudado.
+  const value = useMemo(() => ({
     // From useAnalysis hook
     intervalStats: analysis.intervalStats,
     lastInterval: analysis.lastInterval,
@@ -452,7 +456,12 @@ export const MetricsProvider = ({ children }) => {
     consumptionDailyRollup: effectiveDailyRollup, // resumo-por-dia (persistente no arranque, ao vivo após carregar tudo)
     dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
     weighingMeasuredMgByDate, // mg/dia derivados das pesagens (só dias medidos a 100%)
-  };
+  }), [
+    analysis.intervalStats, analysis.lastInterval, todayConsumptions,
+    analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
+    timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
+    consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
+  ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;
 };

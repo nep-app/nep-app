@@ -449,7 +449,9 @@ export const DataProvider = ({ children }) => {
     }
   }, [isSyncing, loadAllCollections]);
 
-  const value = {
+  // ⚡ Memoizado: evita recriar o objeto (e re-renderizar todos os consumidores)
+  // a cada render do provider. Só muda quando os dados/estado abaixo mudam mesmo.
+  const value = useMemo(() => ({
     // Firebase (para compatibilidade)
     app,
     auth,
@@ -500,7 +502,17 @@ export const DataProvider = ({ children }) => {
     // Carregamento histórico sob-demanda
     loadFullData,
     fullDataLoaded,
-  };
+  }), [
+    app, auth, db, user, loading,
+    consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
+    copingStrategies, thoughts, healthLogs, weighings, urgeEvents,
+    addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog,
+    addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal,
+    addThought, addWeighing, updateWeighing, deleteWeighing, addUrgeEvent,
+    updateItem, deleteItem,
+    isSyncing, lastSyncTime, manualSync, forcePushAll, countPendingItems,
+    loadFullData, fullDataLoaded,
+  ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
