@@ -114,7 +114,12 @@
     "stateEstimated": "estimativa (sem peso neste período)",
     "stateUnknownDay": "Este dia tem doses mas ainda sem peso registado.",
     "notWeighedForDay": "Enchi sem pesar neste dia",
-    "markedNotWeighedDay": "Marcado como \"não pesei\" nesse dia."
+    "markedNotWeighedDay": "Marcado como \"não pesei\" nesse dia.",
+    "oldBagQuestion": "O que aconteceu ao saco antigo?",
+    "oldBagEmpty": "Ficou vazio",
+    "oldBagLeftover": "Ainda tinha resto",
+    "leftoverGrossLabel": "Peso do saco antigo agora (na balança)",
+    "leftoverGrossHint": "Pesa o saco antigo como está, com o resto lá dentro. A app desconta o peso do saco vazio."
   },
   "weighingSuggestion": {
     "title": "Uma pequena confirmação",

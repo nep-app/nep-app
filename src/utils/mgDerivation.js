@@ -46,8 +46,22 @@ function buildCycles(ws) {
     if (forgotten) {
       consumed = null;
     } else if (curr.isNewBag) {
-      if (curr.leftoverPrev != null && !isNaN(curr.leftoverPrev) && prev.full != null) {
-        consumed = prev.full - curr.leftoverPrev;
+      // Troca de saco: o consumo apurado é o do SACO ANTIGO. O peso do saco vazio
+      // (tara) NUNCA conta como consumo. A tara do saco antigo = 'empty' da pesagem
+      // anterior (o mesmo saco).
+      const oldTare = (prev.empty != null && !isNaN(prev.empty)) ? prev.empty
+        : (curr.empty != null && !isNaN(curr.empty)) ? curr.empty : null;
+      if (prev.full != null && oldTare != null) {
+        const lp = curr.leftoverPrev;
+        if (lp != null && !isNaN(lp) && lp > oldTare) {
+          // Ainda tinha resto: leftoverPrev = peso BRUTO do saco antigo (com o
+          // resto). A tara cancela-se (mesmo saco): consumido = cheio − bruto.
+          consumed = prev.full - lp;
+        } else {
+          // Ficou vazio (botão), ou 0/branco/≤tara em dados antigos: consumiu-se
+          // tudo o que lá estava menos a tara. consumido = cheio − tara.
+          consumed = prev.full - oldTare;
+        }
       }
     } else if (prev.full != null && curr.before != null) {
       consumed = prev.full - curr.before;

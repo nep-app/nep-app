@@ -55,14 +55,15 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
   const [full, setFull] = useState('');
   const [before, setBefore] = useState('');       // peso atual (sobrou)
   const [empty, setEmpty] = useState('');         // vazio (novo)
-  const [leftoverPrev, setLeftoverPrev] = useState(''); // resto do saco antigo (opcional)
+  const [leftoverPrev, setLeftoverPrev] = useState(''); // peso BRUTO do saco antigo (se ainda tinha resto)
+  const [oldBagLeft, setOldBagLeft] = useState('vazio'); // 'vazio' | 'resto' — o que aconteceu ao saco antigo
   const [when, setWhen] = useState('');                 // data/hora da pesagem (local)
 
   // Reset ao abrir/fechar
   React.useEffect(() => {
     if (isOpen) {
       setMode(firstEver ? 'novo' : 'normal');
-      setFull(''); setBefore(''); setEmpty(''); setLeftoverPrev('');
+      setFull(''); setBefore(''); setEmpty(''); setLeftoverPrev(''); setOldBagLeft('vazio');
       setWhen(nowLocalInput()); // por defeito, agora — mas o utilizador pode mudar
     }
   }, [isOpen, firstEver]);
@@ -79,11 +80,16 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
 
   const fullN = num(full);
   const added = (fullN != null && effectiveBefore != null) ? fullN - effectiveBefore : null;
-  const consumedPrev = (known.lastFull != null && effectiveBefore != null && mode !== 'novo')
-    ? known.lastFull - effectiveBefore
-    : (mode === 'novo' && num(leftoverPrev) != null && known.lastFull != null)
-      ? known.lastFull - num(leftoverPrev)
-      : null;
+  // Consumo do saco ANTIGO ao trocar: a tara (peso do saco vazio) nunca conta.
+  const oldTareRef = known.lastEmpty;
+  const consumedPrev =
+    (known.lastFull != null && effectiveBefore != null && mode !== 'novo')
+      ? known.lastFull - effectiveBefore
+      : (mode === 'novo' && known.lastFull != null && oldTareRef != null)
+        ? ((oldBagLeft === 'resto' && num(leftoverPrev) != null && num(leftoverPrev) > oldTareRef)
+            ? known.lastFull - num(leftoverPrev)          // resto pesado (bruto)
+            : known.lastFull - oldTareRef)                // ficou vazio → cheio − tara
+        : null;
 
   const canSave = () => {
     if (mode === 'naoPesei') return true;
@@ -108,7 +114,13 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
       record.isNewBag = true;
       record.empty = num(empty);
       record.before = num(empty);
-      if (num(leftoverPrev) != null) record.leftoverPrev = num(leftoverPrev);
+      if (oldBagLeft === 'resto' && num(leftoverPrev) != null) {
+        // Ainda tinha resto: guardamos o peso BRUTO do saco antigo.
+        record.leftoverPrev = num(leftoverPrev);
+      } else {
+        // Ficou vazio: consumiu-se tudo menos a tara (a app trata da conta).
+        record.emptiedPrev = true;
+      }
     } else {
       // normal e sobrou mantêm o mesmo vazio guardado
       record.empty = known.lastEmpty;
@@ -182,8 +194,23 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
             )}
             <WField label={t('weighing.fullLabel')} value={full} onChange={setFull} placeholder="0" />
             {mode === 'novo' && !firstEver && (
-              <WField label={t('weighing.leftoverPrevLabel')} value={leftoverPrev} onChange={setLeftoverPrev}
-                placeholder={t('weighing.optional')} hint={t('weighing.leftoverPrevHint')} />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">{t('weighing.oldBagQuestion')}</label>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setOldBagLeft('vazio')}
+                    className={'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ' + (oldBagLeft === 'vazio' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300')}>
+                    {t('weighing.oldBagEmpty')}
+                  </button>
+                  <button type="button" onClick={() => setOldBagLeft('resto')}
+                    className={'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ' + (oldBagLeft === 'resto' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300')}>
+                    {t('weighing.oldBagLeftover')}
+                  </button>
+                </div>
+                {oldBagLeft === 'resto' && (
+                  <WField label={t('weighing.leftoverGrossLabel')} value={leftoverPrev} onChange={setLeftoverPrev}
+                    placeholder="0" hint={t('weighing.leftoverGrossHint')} />
+                )}
+              </div>
             )}
 
             {/* Pré-visualização do que a app calculou */}

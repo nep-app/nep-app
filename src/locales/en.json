@@ -114,7 +114,12 @@
     "stateEstimated": "estimate (no weight for this period)",
     "stateUnknownDay": "This day has doses but no weight recorded yet.",
     "notWeighedForDay": "I refilled without weighing on this day",
-    "markedNotWeighedDay": "Marked as \"not weighed\" for that day."
+    "markedNotWeighedDay": "Marked as \"not weighed\" for that day.",
+    "oldBagQuestion": "What happened to the old bag?",
+    "oldBagEmpty": "It was empty",
+    "oldBagLeftover": "It still had some left",
+    "leftoverGrossLabel": "Weight of the old bag now (on the scale)",
+    "leftoverGrossHint": "Weigh the old bag as it is, with the leftover inside. The app subtracts the empty bag weight."
   },
   "weighingSuggestion": {
     "title": "A quick check",
