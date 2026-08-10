@@ -527,8 +527,25 @@ export const LocalDataProvider = ({ children }) => {
 
     const salt = await getCachedSalt();
 
-    // Encriptar campos sensíveis nos updates
-    const encryptedUpdates = await encryptItem(collectionName, updates, encryptionKey, salt);
+    // ⚠️ Os campos sensíveis são cifrados TODOS juntos num único envelope
+    // (_encrypted). Por isso um update parcial (ex.: só 'full') NÃO pode ser
+    // cifrado sozinho e fundido no Dexie: isso substituiria o envelope inteiro e
+    // apagaria os restantes campos (before/empty/…), corrompendo o registo.
+    // Fundimos primeiro ao nível dos campos DESencriptados e só depois voltamos a
+    // cifrar o item completo.
+    const existingRaw = await db[collectionName].get(id);
+    if (!existingRaw) {
+      throw new Error(`Item ${id} não encontrado em ${collectionName}`);
+    }
+    const existingDecrypted = await decryptItem(collectionName, existingRaw, encryptionKey, salt);
+    if (existingDecrypted._decryptionError) {
+      // Não conseguimos ler o item — abortar para não corromper dados.
+      throw new Error(`Não foi possível desencriptar ${collectionName}/${id} para atualizar`);
+    }
+    const mergedPlain = { ...existingDecrypted, ...updates };
+
+    // Encriptar o item COMPLETO (não só os campos alterados)
+    const encryptedUpdates = await encryptItem(collectionName, mergedPlain, encryptionKey, salt);
 
     // Atualizar no Dexie
     const updated = await updateItemWithSync(collectionName, id, encryptedUpdates);

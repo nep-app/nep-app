@@ -88,11 +88,25 @@ export function HistoryView({
         const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
         return x.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm' local
     };
-    const weighingCanEditAdded = (w) => typeof w.full === 'number' && typeof w.before === 'number' && !w.notWeighed;
+    // Peso do saco VAZIO = constante recuperável da pesagem intacta mais recente.
+    // Serve de referência para calcular "mg postos = cheio − vazio" e para curar
+    // pesagens a que faltem os campos before/empty (ex.: estragadas por edições
+    // antigas antes da correção do envelope cifrado).
+    const emptyRef = useMemo(() => {
+        const sorted = [...(weighings || [])]
+            .filter(w => w && !w.notWeighed && typeof w.empty === 'number')
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        return sorted.length ? sorted[0].empty : null;
+    }, [weighings]);
+    // Referência de "antes" desta pesagem: o próprio 'before' se existir, senão o
+    // vazio recuperado das outras pesagens.
+    const weighingBeforeRef = (w) => (typeof w.before === 'number' ? w.before : emptyRef);
+    const weighingCanEditAdded = (w) => !w.notWeighed && typeof w.full === 'number' && weighingBeforeRef(w) != null;
     const openEditWeighing = (w) => {
         const dt = new Date(w.timestamp || (w.date ? `${w.date}T12:00:00` : Date.now()));
         setEwDatetime(toLocalInput(dt));
-        const added = weighingCanEditAdded(w) ? Math.round(w.full - w.before) : '';
+        const ref = weighingBeforeRef(w);
+        const added = (typeof w.full === 'number' && ref != null) ? Math.round(w.full - ref) : '';
         setEwAdded(added === '' ? '' : String(added));
         setEditingWeighing(w);
     };
@@ -102,9 +116,15 @@ export function HistoryView({
         const d = new Date(ewDatetime);
         if (isNaN(d)) return;
         const updates = { timestamp: d.toISOString(), date: safeToISODate(d) };
-        if (weighingCanEditAdded(w) && ewAdded !== '') {
+        const ref = weighingBeforeRef(w);
+        if (weighingCanEditAdded(w) && ewAdded !== '' && ref != null) {
             const addedVal = parseFloat(ewAdded);
-            if (!isNaN(addedVal) && addedVal >= 0) updates.full = w.before + addedVal;
+            if (!isNaN(addedVal) && addedVal >= 0) {
+                updates.full = ref + addedVal;
+                // Curar registos a que faltem os campos (recupera o vazio constante).
+                if (typeof w.before !== 'number') updates.before = ref;
+                if (typeof w.empty !== 'number' && emptyRef != null) updates.empty = emptyRef;
+            }
         }
         try { await updateWeighing(w.id, updates); } catch { /* silencioso */ }
         setEditingWeighing(null);
