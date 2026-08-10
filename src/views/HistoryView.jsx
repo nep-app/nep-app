@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate } from '../utils/helpers';
+import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 import { deriveDailyMg, typicalMgPerDose } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
@@ -69,7 +69,7 @@ export function HistoryView({
     deleteItem,
     handleFillGap
 }) {
-    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, db } = useData();
+    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, updateWeighing, db } = useData();
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
     // Em inglês, traduzir emoções (guardadas como '😌 Calmo/a') e gatilhos (guardados
@@ -79,6 +79,36 @@ export function HistoryView({
     const trTrigger = (tr) => t('triggers.' + tr, tr);
 
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);
+
+    // Edição de PESAGENS: data/hora + "mg postos no saco" (= cheio − antes).
+    const [editingWeighing, setEditingWeighing] = useState(null);
+    const [ewDatetime, setEwDatetime] = useState('');
+    const [ewAdded, setEwAdded] = useState('');
+    const toLocalInput = (d) => {
+        const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+        return x.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm' local
+    };
+    const weighingCanEditAdded = (w) => typeof w.full === 'number' && typeof w.before === 'number' && !w.notWeighed;
+    const openEditWeighing = (w) => {
+        const dt = new Date(w.timestamp || (w.date ? `${w.date}T12:00:00` : Date.now()));
+        setEwDatetime(toLocalInput(dt));
+        const added = weighingCanEditAdded(w) ? Math.round(w.full - w.before) : '';
+        setEwAdded(added === '' ? '' : String(added));
+        setEditingWeighing(w);
+    };
+    const saveEditWeighing = async () => {
+        const w = editingWeighing;
+        if (!w || !ewDatetime) return;
+        const d = new Date(ewDatetime);
+        if (isNaN(d)) return;
+        const updates = { timestamp: d.toISOString(), date: safeToISODate(d) };
+        if (weighingCanEditAdded(w) && ewAdded !== '') {
+            const addedVal = parseFloat(ewAdded);
+            if (!isNaN(addedVal) && addedVal >= 0) updates.full = w.before + addedVal;
+        }
+        try { await updateWeighing(w.id, updates); } catch { /* silencioso */ }
+        setEditingWeighing(null);
+    };
 
     const toggleAnalysis = (id, text) => {
         if (expandedAnalysis === id) {
@@ -256,7 +286,10 @@ export function HistoryView({
                             </div>
                         )}
                     </div>
-                    <button onClick={() => deleteItem('weighings', w.id)} className="text-red-600 hover:text-red-700 ml-2"><Icons.Trash2 className="w-4 h-4" /></button>
+                    <div className="flex gap-2 ml-2 flex-shrink-0">
+                        <button onClick={() => openEditWeighing(w)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={() => deleteItem('weighings', w.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-red-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                    </div>
                 </div>
             </div>
         );
@@ -265,6 +298,38 @@ export function HistoryView({
     return (
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-white">{t('history.title')}</h2>
+
+                                    {editingWeighing && (
+                                        <div
+                                            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                                            role="dialog" aria-modal="true"
+                                            onClick={(e) => { if (e.target === e.currentTarget) setEditingWeighing(null); }}
+                                        >
+                                            <div className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 motion-safe:animate-scaleIn"
+                                                style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="text-base font-bold text-white">⚖️ {isEN ? 'Edit weighing' : 'Editar pesagem'}</h3>
+                                                    <button aria-label={isEN ? 'Cancel' : 'Cancelar'} onClick={() => setEditingWeighing(null)} className="text-gray-400 hover:text-gray-200 text-xl leading-none">✕</button>
+                                                </div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-1">{isEN ? 'Date & time' : 'Data e hora'}</label>
+                                                <input type="datetime-local" value={ewDatetime} onChange={(e) => setEwDatetime(e.target.value)}
+                                                    className="bg-gray-700 border border-gray-600 text-white w-full p-3 rounded-lg focus:ring-2 focus:ring-purple-400 mb-3" />
+                                                {weighingCanEditAdded(editingWeighing) ? (
+                                                    <>
+                                                        <label className="block text-sm font-medium text-gray-300 mb-1">{isEN ? 'mg added to the bag' : 'mg postos no saco'}</label>
+                                                        <input type="number" inputMode="numeric" value={ewAdded} onChange={(e) => setEwAdded(e.target.value)}
+                                                            className="bg-gray-700 border border-gray-600 text-white w-full p-3 rounded-lg focus:ring-2 focus:ring-purple-400 mb-4" />
+                                                    </>
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 mb-4">{isEN ? 'This weighing has no weight to edit (date/time only).' : 'Esta pesagem não tem peso para editar (só data/hora).'}</p>
+                                                )}
+                                                <div className="flex gap-3">
+                                                    <button onClick={() => setEditingWeighing(null)} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 transition-colors">{isEN ? 'Cancel' : 'Cancelar'}</button>
+                                                    <button onClick={saveEditWeighing} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors">{isEN ? 'Save' : 'Guardar'}</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Gaps Report - Preencher dados em falta */}
                                     {handleFillGap && <GapsReport onFillGap={handleFillGap} />}
