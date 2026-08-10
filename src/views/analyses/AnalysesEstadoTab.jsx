@@ -22,6 +22,17 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     };
     const translateTrigger = (trigger) => i18n.language === 'en' ? (TRIGGER_EN[trigger] || trigger) : trigger;
 
+    // ⚡ Contagem de consumos por dia, calculada UMA vez. Antes, cada cartão
+    // (emoções/gatilhos vs consumo) fazia um .filter em toda a lista de consumos
+    // por cada registo — O(n²) a cada render. Agora é uma consulta direta O(1).
+    const consCountByDate = useMemo(() => {
+        const m = {};
+        for (const c of analysisConsumptions) {
+            if (c && c.date != null) m[c.date] = (m[c.date] || 0) + 1;
+        }
+        return m;
+    }, [analysisConsumptions]);
+
     const emotionStats = useMemo(() => {
         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
 
@@ -464,8 +475,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                 const logDate = safeToISODate(log.timestamp);
                                 if (!logDate) return;
 
-                                // Contar consumos nesse dia
-                                const dayConsumptions = analysisConsumptions.filter(c => c.date === logDate).length;
+                                // Contar consumos nesse dia (índice pré-calculado)
+                                const dayConsumptions = consCountByDate[logDate] || 0;
 
                                 log.emotions.forEach(emotion => {
                                     if (!emotionData[emotion]) {
@@ -690,8 +701,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                 const cycleDate = safeToISODate(cycle.timestamp);
                                 if (!cycleDate) return;
 
-                                // Contar consumos nesse dia
-                                const dayConsumptions = analysisConsumptions.filter(c => c.date === cycleDate).length;
+                                // Contar consumos nesse dia (índice pré-calculado)
+                                const dayConsumptions = consCountByDate[cycleDate] || 0;
 
                                 cycle.triggers.forEach(trigger => {
                                     if (!triggerData[trigger]) {

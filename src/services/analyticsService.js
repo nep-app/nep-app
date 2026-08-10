@@ -334,28 +334,33 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         // Adicionar "agora" como fim do ciclo atual (ciclo aberto)
         const boundaries = [...sortedCycles, now];
 
+        // ⚡ Pré-processar os timestamps dos consumos UMA vez (em ms), em vez de
+        // fazer new Date() por consumo dentro de cada ciclo (O(ciclos×consumos)
+        // de parsing de datas). Resultados idênticos, só mais leve.
+        const consMs = consumptions
+            .map(c => new Date(c.timestamp).getTime())
+            .filter(ms => !isNaN(ms));
+
         // Para cada ciclo fechado (entre boundary[i] e boundary[i+1])
         for (let i = 0; i < boundaries.length - 1; i++) {
-            const cycleStart = boundaries[i];
-            const cycleEnd = boundaries[i + 1];
+            const startMs = boundaries[i].getTime();
+            const endMs = boundaries[i + 1].getTime();
 
             // Consumos deste ciclo
-            const cycleCons = consumptions.filter(c => {
-                const t = new Date(c.timestamp);
-                return t > cycleStart && t <= cycleEnd;
-            });
+            const cycleCons = consMs.filter(ms => ms > startMs && ms <= endMs);
             if (cycleCons.length === 0) continue;
 
             // Meia-noite que cai dentro deste ciclo
             // Procurar a primeira 00:00 depois de cycleStart
-            const midnight = new Date(cycleStart);
+            const midnight = new Date(boundaries[i]);
             midnight.setDate(midnight.getDate() + 1);
             midnight.setHours(0, 0, 0, 0);
+            const midnightMs = midnight.getTime();
             // Se a meia-noite ainda não ocorreu dentro do ciclo, ignorar (ciclo ainda em aberto sem meia-noite)
-            if (midnight >= cycleEnd) continue;
+            if (midnightMs >= endMs) continue;
 
             // Houve consumo depois dessa meia-noite?
-            const violated = cycleCons.some(c => new Date(c.timestamp) >= midnight);
+            const violated = cycleCons.some(ms => ms >= midnightMs);
             if (!violated) achievedCount++;
         }
     }
