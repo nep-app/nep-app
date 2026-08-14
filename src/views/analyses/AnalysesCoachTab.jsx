@@ -17,6 +17,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisThoughts,
     goals,
     consumptions,
+    mgByDate,
     patternsPeriod,
     patternsPeriodOffset,
 }) {
@@ -307,30 +308,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                     {/* Quantity/mg */}
                     {(() => {
-                        if (analysisCycles.length === 0) return null;
+                        // mg reais por DIA, derivados das PESAGENS (mesma fonte do
+                        // gráfico de dosagem: só dias medidos a 100%). NÃO usar
+                        // cycle.mg — campo antigo dos ciclos de sono, que subcontava
+                        // os dias com dosagem (mostrava só ~16).
+                        const mgDates = Object.keys(mgByDate || {});
+                        if (mgDates.length === 0) return null;
 
-                        // Calcular mg total e média por DIA (não por ciclo)
                         let totalMg = 0;
-                        let cyclesWithMg = 0;
-                        const cyclesMgData = [];
-                        const datesWithMg = new Set();
-
-                        analysisCycles.forEach(cycle => {
-                            // Usar cycle.mg diretamente (fonte única de verdade)
-                            const cycleMg = parseFloat(cycle.mg) || 0;
-                            if (cycleMg > 0) {
-                                totalMg += cycleMg;
-                                cyclesWithMg++;
-                                cyclesMgData.push(cycleMg);
-                                // Adicionar data única
-                                const cycleDate = cycle.date || safeToISODate(cycle.timestamp);
-                                datesWithMg.add(cycleDate);
-                            }
-                        });
-
-                        if (cyclesWithMg === 0) return null;
-
-                        const uniqueDaysWithMg = datesWithMg.size;
+                        mgDates.forEach(d => { totalMg += mgByDate[d]; });
+                        const uniqueDaysWithMg = mgDates.length;
                         const avgMgPerDay = totalMg / uniqueDaysWithMg;
 
                         // Índice consumos-por-data (uma vez) para não varrer todos os

@@ -3,6 +3,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
+import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { safeToISODate } from '../utils/helpers';
 import { AnalysesCoachTab } from './analyses/AnalysesCoachTab';
@@ -22,6 +23,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
+    const { weighingMeasuredMgByDate } = useMetrics();
     const { selectedCycle } = useUI();
     const { t, i18n } = useTranslation();
 
@@ -60,6 +62,23 @@ export function AnalysesView({
         analysisConsumptions, analysisWellbeing, analysisCycles,
         analysisDailyLogs, analysisReflections, analysisThoughts,
     } = analysisData;
+
+    // mg reais por dia (derivados das PESAGENS — mesma fonte do gráfico de
+    // dosagem), limitados às datas do período em análise. Serve para o Coach
+    // contar corretamente os "dias com dosagem" (o campo antigo cycle.mg
+    // subcontava — só apanhava 16 dias).
+    const analysisMgByDate = useMemo(() => {
+        const out = {};
+        const seen = new Set();
+        for (const c of analysisConsumptions) {
+            const d = c.date || safeToISODate(c.timestamp);
+            if (!d || seen.has(d)) continue;
+            seen.add(d);
+            const mg = weighingMeasuredMgByDate?.[d];
+            if (mg != null && mg > 0) out[d] = mg;
+        }
+        return out;
+    }, [analysisConsumptions, weighingMeasuredMgByDate]);
 
     return (
         <div className="space-y-6">
@@ -143,6 +162,7 @@ export function AnalysesView({
                         analysisThoughts={analysisThoughts}
                         goals={goals}
                         consumptions={consumptions}
+                        mgByDate={analysisMgByDate}
                         patternsPeriod={patternsPeriod}
                         patternsPeriodOffset={patternsPeriodOffset}
                     />
