@@ -1629,6 +1629,8 @@
     "closingText": "The simple fact that you're here, recording, reflecting, analysing — that's already change.",
     "closingHarmReduction": "Harm reduction is not perfection, it's progress. And you are progressing, at your own pace.",
     "closingRemember": "Remember: change is not linear. There will be better and worse days, and that's normal. What matters is that you keep showing up for yourself.",
-    "closingProud": "You've been showing up and noticing your own patterns — that takes real awareness. 💜"
+    "closingProud": "You've been showing up and noticing your own patterns — that takes real awareness. 💜",
+    "peakWindowLabel": "Busiest window:",
+    "peakWindowSpread": "Your use is quite spread through the day, with no strong peak — which is also useful information about you."
   }
 }

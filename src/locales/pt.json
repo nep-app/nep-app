@@ -1361,12 +1361,12 @@
     "nameConsNextMood": "Consumo → Humor Amanhã",
     "nameConsNextEnergy": "Consumo → Energia Amanhã",
     "nameIntervalDosage": "Intervalo → Dosagem",
-    "nameConsBedtime": "Consumo → Bedtime Amanhã",
-    "nameBedtimeMood": "Bedtime → Humor Amanhã",
-    "nameBedtimeEnergy": "Bedtime → Energia Amanhã",
+    "nameConsBedtime": "Consumo → Hora de deitar amanhã",
+    "nameBedtimeMood": "Hora de deitar → Humor amanhã",
+    "nameBedtimeEnergy": "Hora de deitar → Energia amanhã",
     "nameSleepMoodSameDay": "Sono (última noite) → Humor hoje",
     "nameSleepMoodNextDay": "Sono → Humor amanhã",
-    "nameBedtimeCons": "Bedtime → Consumo",
+    "nameBedtimeCons": "Hora de deitar → Consumo",
     "nameCompositeLowMoodSleep": "Humor Baixo + Sono Mau",
     "nameCompositeLowMoodEnergy": "Humor Baixo + Energia Baixa",
     "nameAntecedentMoodFalling": "Humor estava a descer antes de consumir",
@@ -1629,6 +1629,8 @@
     "closingText": "O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.",
     "closingHarmReduction": "Redução de danos não é perfeição, é progresso. E tu estás a progredir, ao teu ritmo.",
     "closingRemember": "Lembra-te: a mudança não é linear. Haverá dias melhores e piores, e isso é normal. O que importa é continuares a aparecer por ti.",
-    "closingProud": "Tens vindo a aparecer e a reparar nos teus próprios padrões — isso exige consciência a sério. 💜"
+    "closingProud": "Tens vindo a aparecer e a reparar nos teus próprios padrões — isso exige consciência a sério. 💜",
+    "peakWindowLabel": "Janela de maior consumo:",
+    "peakWindowSpread": "O teu consumo está bastante espalhado pelo dia, sem um pico marcado — o que também é informação útil sobre ti."
   }
 }

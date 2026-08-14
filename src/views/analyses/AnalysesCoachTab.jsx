@@ -752,9 +752,6 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         const concentrationPercent = Math.round((maxWindowCount / analysisConsumptions.length) * 100);
 
-                        // Só mostrar se concentração >= 50%
-                        if (concentrationPercent < 50) return null;
-
                         const formatWindow = (start) => {
                             const end = (start + 4) % 24;
                             return `${String(start).padStart(2, '0')}h-${String(end).padStart(2, '0')}h`;
@@ -767,14 +764,23 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         else if (maxWindowStart >= 12 && maxWindowStart <= 17) windowTypeKey = 'coach.windowAfternoon';
                         else windowTypeKey = 'coach.windowEveningNight';
 
+                        // Mostrar SEMPRE a janela de maior consumo (com ≥10 consumos há
+                        // sempre uma). Se houver pico forte (≥50%), enquadra-se como janela
+                        // de risco; se o consumo estiver espalhado, é uma observação neutra
+                        // (tom observacional, sem alarmismo).
+                        const concentrated = concentrationPercent >= 50;
                         return (
                             <p>
-                                ⏰ <strong className={('text-red-400')}>{t('coach.vulnerabilityLabel')}</strong>{' '}
+                                ⏰ <strong className={concentrated ? 'text-red-400' : 'text-cyan-400'}>
+                                    {t(concentrated ? 'coach.vulnerabilityLabel' : 'coach.peakWindowLabel')}
+                                </strong>{' '}
                                 {t('coach.vulnerabilityText', { pct: concentrationPercent, window: formatWindow(maxWindowStart), type: t(windowTypeKey) })}
                                 {concentrationPercent >= 70 ? (
                                     <> <span className={('text-yellow-400')}>{t('coach.vulnerabilityHighWarning')}</span></>
-                                ) : (
+                                ) : concentrated ? (
                                     <> <span className={('text-cyan-400')}>{t('coach.vulnerabilityTip')}</span></>
+                                ) : (
+                                    <> <span className={('text-gray-400')}>{t('coach.peakWindowSpread')}</span></>
                                 )}
                             </p>
                         );
@@ -997,7 +1003,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     if (_horarioBlocks.length === 0) {
                         return <p className="text-gray-500 text-sm italic text-center py-2">{t('coach.noData')}</p>;
                     }
-                    return _horarioBlocks;
+                    return _horarioBlocks.map((block, i) => <React.Fragment key={`horario-${i}`}>{block}</React.Fragment>);
                     })()}
                 </div>
             )}
