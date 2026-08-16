@@ -80,6 +80,7 @@ export function HistoryView({
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);
 
     // Edição de PESAGENS: data/hora + "mg postos no saco" (= cheio − antes).
+    const [showAllDoseDays, setShowAllDoseDays] = useState(false);
     const [editingWeighing, setEditingWeighing] = useState(null);
     const [ewDatetime, setEwDatetime] = useState('');
     const [ewAdded, setEwAdded] = useState('');
@@ -322,9 +323,9 @@ export function HistoryView({
         );
     };
 
-    // Cartão de um REGISTO DE MG à mão (dailyLogs.mg). Aparece lado a lado com as
-    // pesagens no separador "Dosagens" — são a mesma informação (quanto), só
-    // registada de maneiras diferentes.
+    // Cartão de um REGISTO DE MG (dailyLogs.mg). Aparece lado a lado com as
+    // pesagens no separador "Dosagens" — são a mesma informação (quanto),
+    // registada de maneiras diferentes. Nenhuma vale menos do que a outra.
     const renderMgLog = (log) => {
         const d = safeDate(log.date || log.timestamp);
         return (
@@ -333,7 +334,7 @@ export function HistoryView({
                     <div className="flex-1">
                         <div className="font-medium text-white">📝 {d ? d.toLocaleDateString(i18n.language) : t('history.invalidDate')}</div>
                         <div className="text-sm mt-1 text-pink-200">
-                            <span className="font-bold">{log.mg}</span> mg {isEN ? 'logged by hand' : 'registados à mão'}
+                            <span className="font-bold">{log.mg}</span> mg {isEN ? 'logged' : 'registados'}
                             {log.times != null && (
                                 <span className="text-gray-400"> · {log.times} {log.times === 1 ? t('history.use') : t('history.uses')}</span>
                             )}
@@ -762,22 +763,17 @@ export function HistoryView({
                                                 return (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                     <h3 className="font-semibold text-white mb-1 flex items-center gap-2">⚖️ {isEN ? 'Doses' : 'Dosagens'} ({doseItems.length})</h3>
-                                                    <p className="text-xs text-gray-500 mb-4">{isEN ? 'Bag weighings (⚖️) and mg logged by hand (📝) — both ways of recording how much.' : 'Pesagens do saco (⚖️) e mg registados à mão (📝) — as duas formas de registar quanto.'}</p>
-                                                    {doseItems.length === 0 ? (
-                                                        <p className="text-sm text-gray-400">{isEN ? 'No doses recorded in this period.' : 'Sem dosagens registadas neste período.'}</p>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            {doseItems.map(it => it.kind === 'w' ? renderWeighing(it.data) : renderMgLog(it.data))}
-                                                        </div>
-                                                    )}
+                                                    <p className="text-xs text-gray-500 mb-4">{isEN ? 'Bag weighings (⚖️) and mg you logged (📝) — both ways of recording how much.' : 'Pesagens do saco (⚖️) e mg registados (📝) — as duas formas de registar quanto.'}</p>
 
-                                                    {/* Total de mg por dia (fonte unificada: à mão + pesagens). */}
+                                                    {/* Total de mg por dia PRIMEIRO: é o que se procura ao entrar
+                                                        aqui. Fica encurtado para não empurrar os registos para
+                                                        fora do ecrã quando há muitas dosagens. */}
                                                     {derivedDaysList.length > 0 && (
-                                                        <div className="mt-5 pt-4 border-t border-gray-700">
+                                                        <div className="mb-5 pb-4 border-b border-gray-700">
                                                             <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per day' : 'Total por dia'}</h4>
-                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'From what you logged by hand or from fully-weighed days. Days without a reliable value are not shown.' : 'Do que registaste à mão ou de dias totalmente pesados. Dias sem valor fiável não aparecem.'}</p>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'From what you logged or from fully-weighed days. Days without a reliable value are not shown.' : 'Do que registaste ou de dias totalmente pesados. Dias sem valor fiável não aparecem.'}</p>
                                                             <div className="space-y-1">
-                                                                {derivedDaysList.map(d => (
+                                                                {(showAllDoseDays ? derivedDaysList : derivedDaysList.slice(0, 7)).map(d => (
                                                                     <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">
                                                                         <span className="text-sm text-gray-300">
                                                                             {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
@@ -786,6 +782,24 @@ export function HistoryView({
                                                                     </div>
                                                                 ))}
                                                             </div>
+                                                            {derivedDaysList.length > 7 && (
+                                                                <button
+                                                                    onClick={() => setShowAllDoseDays(v => !v)}
+                                                                    className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline"
+                                                                >
+                                                                    {showAllDoseDays
+                                                                        ? (isEN ? 'Show fewer' : 'Mostrar menos')
+                                                                        : (isEN ? `Show all ${derivedDaysList.length} days` : `Ver todos os ${derivedDaysList.length} dias`)}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {doseItems.length === 0 ? (
+                                                        <p className="text-sm text-gray-400">{isEN ? 'No doses recorded in this period.' : 'Sem dosagens registadas neste período.'}</p>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {doseItems.map(it => it.kind === 'w' ? renderWeighing(it.data) : renderMgLog(it.data))}
                                                         </div>
                                                     )}
                                                 </div>
