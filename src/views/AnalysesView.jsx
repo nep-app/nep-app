@@ -23,7 +23,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
-    const { weighingMeasuredMgByDate } = useMetrics();
+    const { dailySummary } = useMetrics();
     const { selectedCycle } = useUI();
     const { t, i18n } = useTranslation();
 
@@ -63,10 +63,11 @@ export function AnalysesView({
         analysisDailyLogs, analysisReflections, analysisThoughts,
     } = analysisData;
 
-    // mg reais por dia (derivados das PESAGENS — mesma fonte do gráfico de
-    // dosagem), limitados às datas do período em análise. Serve para o Coach
-    // contar corretamente os "dias com dosagem" (o campo antigo cycle.mg
-    // subcontava — só apanhava 16 dias).
+    // mg real por dia a partir da FONTE UNIFICADA (dailySummary): inclui tanto o
+    // "registo de mg" à mão (dailyLogs) como o mg derivado das pesagens — a mesma
+    // regra do resto da app (o registo à mão manda; a pesagem preenche o resto).
+    // Limitado às datas do período em análise. Serve para o Coach contar TODOS os
+    // dias com dosagem (à mão OU pesados), não só os das pesagens.
     const analysisMgByDate = useMemo(() => {
         const out = {};
         const seen = new Set();
@@ -74,11 +75,11 @@ export function AnalysesView({
             const d = c.date || safeToISODate(c.timestamp);
             if (!d || seen.has(d)) continue;
             seen.add(d);
-            const mg = weighingMeasuredMgByDate?.[d];
+            const mg = dailySummary?.[d]?.mg;
             if (mg != null && mg > 0) out[d] = mg;
         }
         return out;
-    }, [analysisConsumptions, weighingMeasuredMgByDate]);
+    }, [analysisConsumptions, dailySummary]);
 
     return (
         <div className="space-y-6">

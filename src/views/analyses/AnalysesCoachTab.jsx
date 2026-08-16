@@ -308,10 +308,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                     {/* Quantity/mg */}
                     {(() => {
-                        // mg reais por DIA, derivados das PESAGENS (mesma fonte do
-                        // gráfico de dosagem: só dias medidos a 100%). NÃO usar
-                        // cycle.mg — campo antigo dos ciclos de sono, que subcontava
-                        // os dias com dosagem (mostrava só ~16).
+                        // mg real por DIA vindo da FONTE UNIFICADA (dailySummary):
+                        // inclui o registo de mg à mão (dailyLogs) E o mg derivado
+                        // das pesagens. Assim "dias em que registaste dosagem" conta
+                        // TODOS os dias com dosagem, não só os das pesagens (antes,
+                        // ligado só às pesagens, mostrava ~20; e o cycle.mg antigo ~16).
                         const mgDates = Object.keys(mgByDate || {});
                         if (mgDates.length === 0) return null;
 
