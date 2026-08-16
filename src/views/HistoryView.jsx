@@ -252,6 +252,17 @@ export function HistoryView({
                 filteredReflections: tempFilteredReflections,
                 filteredThoughts: tempFilteredThoughts
             };
+        } else if (historyTopic === 'pesagens') {
+            // Só dosagens: sem este ramo, 'pesagens' caía no 'todos' e o separador
+            // mostrava também reflexões, pensamentos, bem-estar, ciclos e consumos.
+            return {
+                filteredConsumptions: [],
+                filteredWellbeing: [],
+                filteredDailyLogs: [],
+                filteredCycles: [],
+                filteredReflections: [],
+                filteredThoughts: []
+            };
         }
         // 'todos'
         return {
@@ -283,7 +294,7 @@ export function HistoryView({
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     ), [filteredConsumptions, filteredDailyLogs]);
 
-    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0 || filteredWeighings.length > 0;
+    const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0 || filteredWeighings.length > 0 || filteredMgLogs.length > 0;
 
     // Cartão de uma pesagem no Histórico (mesmo estilo dos outros itens). Mostra o
     // peso atual em mg e, quando dá, quanto se gastou desde a pesagem anterior.
@@ -809,7 +820,12 @@ export function HistoryView({
                                             {/* Timeline única para tab "diario" */}
                                             {historyTopic === 'diario' && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">📝 Diário ({filteredReflections.length + filteredThoughts.length})</h3>
+                                                    <h3 className="font-semibold text-white mb-1 flex items-center gap-2">📝 {isEN ? 'Journal' : 'Diário'} ({filteredReflections.length + filteredThoughts.length})</h3>
+                                                    <p className="text-xs text-gray-500 mb-4">
+                                                        ✍️ {filteredReflections.length} {isEN ? (filteredReflections.length === 1 ? 'reflection' : 'reflections') : (filteredReflections.length === 1 ? 'reflexão' : 'reflexões')}
+                                                        {' · '}
+                                                        📖 {filteredThoughts.length} {isEN ? (filteredThoughts.length === 1 ? 'thought' : 'thoughts') : (filteredThoughts.length === 1 ? 'pensamento' : 'pensamentos')}
+                                                    </p>
                                                     <div className="space-y-4">
                                                         {[...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
                                                           ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
@@ -821,6 +837,10 @@ export function HistoryView({
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
                                                                         <div key={`r-${r.id}`} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            {/* Etiqueta: distinguir pelo NOME, não só pela cor. */}
+                                                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-300 mb-1">
+                                                                                ✍️ {isEN ? 'Reflection' : 'Reflexão'}
+                                                                            </div>
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     {(() => {
@@ -880,6 +900,10 @@ export function HistoryView({
                                                                     const isExpanded = expandedAnalysis === `thought-${thought.id}`;
                                                                     return (
                                                                         <div key={`t-${thought.id}`} className="border-pink-500 bg-pink-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                            {/* Etiqueta: distinguir pelo NOME, não só pela cor. */}
+                                                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-pink-300 mb-1">
+                                                                                📖 {isEN ? 'Thought' : 'Pensamento'}
+                                                                            </div>
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     {(() => {
