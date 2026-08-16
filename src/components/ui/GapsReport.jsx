@@ -6,6 +6,8 @@ import { safeToISODate } from '../../utils/helpers';
 
 // Key para localStorage
 const CONFIRMED_GAPS_KEY = 'nep-confirmed-gaps';
+// Aberto/fechado do painel (fica fechado por defeito e lembra a escolha).
+const GAPS_OPEN_KEY = 'nep-gaps-open';
 
 /**
  * Componente para mostrar gaps (dias com dados em falta) e permitir preenchimento rápido
@@ -29,6 +31,15 @@ export const GapsReport = React.memo(({ onFillGap }) => {
   useEffect(() => {
     localStorage.setItem(CONFIRMED_GAPS_KEY, JSON.stringify(confirmedGaps));
   }, [confirmedGaps]);
+
+  // Painel recolhido por defeito: ocupa o topo do Histórico em todos os
+  // separadores e não deve estar sempre aberto. A escolha fica guardada.
+  const [isOpen, setIsOpen] = useState(() => {
+    try { return localStorage.getItem(GAPS_OPEN_KEY) === 'true'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(GAPS_OPEN_KEY, String(isOpen)); } catch { /* best-effort */ }
+  }, [isOpen]);
 
   // Função para confirmar que um gap está correto (não precisa preencher)
   const confirmGap = (type, date) => {
@@ -176,19 +187,30 @@ export const GapsReport = React.memo(({ onFillGap }) => {
 
   return (
     <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-700/50 rounded-xl p-4 border">
-      <div className="flex items-center justify-between mb-3">
+      {/* Cabeçalho clicável: o contador fica sempre à vista, o detalhe abre só se quiser. */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(v => !v)}
+        aria-expanded={isOpen}
+        className={'w-full flex items-center justify-between gap-2 text-left' + (isOpen ? ' mb-3' : '')}
+      >
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Icons.AlertCircle className="w-5 h-5 text-yellow-400" />
           {t('gaps.title')}
         </h3>
-        {totalGaps === 0 ? (
-          <span className="text-sm font-medium text-green-400">{t('gaps.allFilled')}</span>
-        ) : (
-          <span className="text-sm font-medium text-yellow-400">{totalGaps === 1 ? t('gaps.gapCount', { count: totalGaps }) : t('gaps.gapsCount', { count: totalGaps })}</span>
-        )}
-      </div>
+        <span className="flex items-center gap-2 flex-shrink-0">
+          {totalGaps === 0 ? (
+            <span className="text-sm font-medium text-green-400">{t('gaps.allFilled')}</span>
+          ) : (
+            <span className="text-sm font-medium text-yellow-400">{totalGaps === 1 ? t('gaps.gapCount', { count: totalGaps }) : t('gaps.gapsCount', { count: totalGaps })}</span>
+          )}
+          {isOpen
+            ? <Icons.ChevronUp className="w-4 h-4 text-gray-300" />
+            : <Icons.ChevronDown className="w-4 h-4 text-gray-300" />}
+        </span>
+      </button>
 
-      {totalGaps === 0 ? (
+      {!isOpen ? null : totalGaps === 0 ? (
         <p className="text-sm text-gray-300">{t('gaps.allComplete')}</p>
       ) : (
         <div className="space-y-2">
