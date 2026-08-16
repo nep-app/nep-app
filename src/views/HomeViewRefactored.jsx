@@ -323,7 +323,12 @@ export function HomeViewRefactored({
 
       {/* Consumo REAL medido entre as duas últimas pesagens (período fechado). */}
       {lastWeighPeriod && (() => {
-        const wpDays = Math.max(1, Math.round((lastWeighPeriod.end - lastWeighPeriod.start) / 86400000));
+        // Nº de DIAS DE CALENDÁRIO que o período toca (início e fim inclusive),
+        // em hora LOCAL. Antes dividia pela duração em ms arredondada, o que num
+        // período que atravessa a meia-noite (ex.: 23:50 → 19:02 do dia seguinte)
+        // arredondava para 1 dia e inflava o "mg/dia" para o dobro.
+        const dayStartMs = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+        const wpDays = Math.max(1, Math.round((dayStartMs(lastWeighPeriod.end) - dayStartMs(lastWeighPeriod.start)) / 86400000) + 1);
         const wpAvg = Math.round(lastWeighPeriod.consumed / wpDays);
         return (
           <div className="mt-4 flex justify-center">
