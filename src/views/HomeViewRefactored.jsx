@@ -12,7 +12,6 @@ import { useUI } from '../contexts/UIContext';
 import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
-import { lastMeasuredPeriod } from '../utils/mgDerivation';
 
 import { OnboardingWelcome } from '../components/OnboardingWelcome';
 
@@ -35,9 +34,6 @@ export function HomeViewRefactored({
   const metrics = useMetrics();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
-
-  // Último período FECHADO e MEDIDO entre duas pesagens (consumo real do passado).
-  const lastWeighPeriod = useMemo(() => lastMeasuredPeriod(weighings || []), [weighings]);
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
@@ -321,35 +317,10 @@ export function HomeViewRefactored({
         </div>
       )}
 
-      {/* Consumo REAL medido entre as duas últimas pesagens (período fechado). */}
-      {lastWeighPeriod && (() => {
-        // Nº de DIAS DE CALENDÁRIO que o período toca (início e fim inclusive),
-        // em hora LOCAL. Antes dividia pela duração em ms arredondada, o que num
-        // período que atravessa a meia-noite (ex.: 23:50 → 19:02 do dia seguinte)
-        // arredondava para 1 dia e inflava o "mg/dia" para o dobro.
-        const dayStartMs = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
-        const wpDays = Math.max(1, Math.round((dayStartMs(lastWeighPeriod.end) - dayStartMs(lastWeighPeriod.start)) / 86400000) + 1);
-        const wpAvg = Math.round(lastWeighPeriod.consumed / wpDays);
-        return (
-          <div className="mt-4 flex justify-center">
-            <div className="bg-amber-900/20 border border-amber-700/40 rounded-xl px-4 py-3 text-center max-w-sm">
-              <div className="text-xs text-amber-300/80 mb-0.5">
-                ⚖️ {t('home.weighPeriodTitle')}
-              </div>
-              <div className="text-sm text-amber-100">
-                {t('home.weighPeriodRange', {
-                  from: new Date(lastWeighPeriod.start).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
-                  to: new Date(lastWeighPeriod.end).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
-                })}
-                {': '}
-                <span className="font-bold">{lastWeighPeriod.consumed}</span> mg
-              </div>
-              <div className="text-xs text-amber-200/90 mt-0.5">{t('home.weighPeriodAvg', { avg: wpAvg })}</div>
-              <div className="text-[11px] text-amber-300/60 mt-1">{t('home.weighPeriodExplain')}</div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* O cartão "Medido entre as tuas pesagens" foi removido do Início: é
+          análise (consumo real entre pesagens) e vive melhor nas Análises
+          ("Análise de Quantidade"). Tê-lo aqui, ao lado do selo do dia, criava
+          dois números de mg com significados diferentes e confundia. */}
 
       {/* Linha 1: Bem-estar, Emoções, Reflexão Diária */}
       <div className="grid grid-cols-3 gap-3">
