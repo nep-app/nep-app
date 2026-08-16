@@ -8,7 +8,6 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
-import { deriveDailyMg, typicalMgPerDose } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { EMOTION_EN } from '../constants/emotions';
 
@@ -192,19 +191,27 @@ export function HistoryView({
         (historyTopic === 'todos' || historyTopic === 'pesagens') ? tempFilteredWeighings : []
     ), [historyTopic, tempFilteredWeighings]);
 
-    // Consumo POR DIA derivado das pesagens (do período selecionado), do mais
-    // recente para o mais antigo. 'estimated' → mostra "≈". Só dias com valor.
+    // Registos de mg À MÃO (dailyLogs com mg): é dosagem tal como uma pesagem,
+    // só registada de outra forma — por isso vive no mesmo separador.
+    const filteredMgLogs = useMemo(() => (
+        historyTopic === 'pesagens'
+            ? tempFilteredDailyLogs.filter(l => l && l.mg != null && !isNaN(parseFloat(l.mg)) && parseFloat(l.mg) > 0)
+            : []
+    ), [historyTopic, tempFilteredDailyLogs]);
+
+    // Total de mg POR DIA, da FONTE UNIFICADA (registo à mão OU derivado das
+    // pesagens — a mesma regra do resto da app), do mais recente para o mais
+    // antigo, dentro do período selecionado.
     const derivedDaysList = useMemo(() => {
         try {
-            const perDay = deriveDailyMg(weighings || [], consumptions || []);
-            const arr = Object.entries(perDay || {})
-                // SÓ dias medidos a 100% — nunca estimativas em dias sem pesagem.
-                .filter(([, v]) => v && v.mg != null && v.mg > 0 && v.state === 'measured')
-                .map(([date, v]) => ({ date, mg: v.mg }));
+            const summary = metrics?.dailySummary || {};
+            const arr = Object.entries(summary)
+                .filter(([, v]) => v && v.mg != null && v.mg > 0)
+                .map(([date, v]) => ({ date, mg: Math.round(v.mg) }));
             return filterByDateRange(arr, dateRange, 'date')
                 .sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
-    }, [weighings, consumptions, dateRange]);
+    }, [metrics?.dailySummary, dateRange]);
 
     // Aplicar filtro de tópico
     const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
@@ -315,6 +322,32 @@ export function HistoryView({
         );
     };
 
+    // Cartão de um REGISTO DE MG à mão (dailyLogs.mg). Aparece lado a lado com as
+    // pesagens no separador "Dosagens" — são a mesma informação (quanto), só
+    // registada de maneiras diferentes.
+    const renderMgLog = (log) => {
+        const d = safeDate(log.date || log.timestamp);
+        return (
+            <div key={`mglog-${log.id}`} className="bg-pink-900/25 border-pink-700/50 p-3 rounded-lg border">
+                <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                        <div className="font-medium text-white">📝 {d ? d.toLocaleDateString(i18n.language) : t('history.invalidDate')}</div>
+                        <div className="text-sm mt-1 text-pink-200">
+                            <span className="font-bold">{log.mg}</span> mg {isEN ? 'logged by hand' : 'registados à mão'}
+                            {log.times != null && (
+                                <span className="text-gray-400"> · {log.times} {log.times === 1 ? t('history.use') : t('history.uses')}</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex gap-2 ml-2 flex-shrink-0">
+                        {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>}
+                        <button onClick={() => deleteItem('dailyLogs', log.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-red-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
                                 <div className="space-y-6">
                                     <h2 className="text-2xl font-bold text-white">{t('history.title')}</h2>
@@ -386,7 +419,7 @@ export function HistoryView({
                                             { id: 'ciclos', label: t('history.filterCycles') },
                                             { id: 'estado', label: t('history.filterWellbeing') },
                                             { id: 'diario', label: t('history.filterDiary') },
-                                            { id: 'pesagens', label: isEN ? '⚖️ Weighings' : '⚖️ Pesagens' }
+                                            { id: 'pesagens', label: isEN ? '⚖️ Doses' : '⚖️ Dosagens' }
                                         ].map(topic => (
                                             <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                 {topic.label}
@@ -718,23 +751,31 @@ export function HistoryView({
                                                 </div>
                                             )}
 
-                                            {/* Bloco dedicado: Pesagens */}
-                                            {historyTopic === 'pesagens' && (
+                                            {/* Bloco dedicado: Dosagens (pesagens + registos de mg à mão) */}
+                                            {historyTopic === 'pesagens' && (() => {
+                                                // As duas formas de registar dosagem, numa lista só, por ordem
+                                                // de data (mais recente primeiro).
+                                                const doseItems = [
+                                                    ...filteredWeighings.map(w => ({ kind: 'w', data: w, ts: w.timestamp || (w.date ? `${w.date}T12:00:00` : null) })),
+                                                    ...filteredMgLogs.map(l => ({ kind: 'l', data: l, ts: l.timestamp || (l.date ? `${l.date}T12:00:00` : null) })),
+                                                ].sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+                                                return (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">⚖️ {isEN ? 'Weighings' : 'Pesagens'} ({filteredWeighings.length})</h3>
-                                                    {filteredWeighings.length === 0 ? (
-                                                        <p className="text-sm text-gray-400">{isEN ? 'No weighings in this period.' : 'Sem pesagens neste período.'}</p>
+                                                    <h3 className="font-semibold text-white mb-1 flex items-center gap-2">⚖️ {isEN ? 'Doses' : 'Dosagens'} ({doseItems.length})</h3>
+                                                    <p className="text-xs text-gray-500 mb-4">{isEN ? 'Bag weighings (⚖️) and mg logged by hand (📝) — both ways of recording how much.' : 'Pesagens do saco (⚖️) e mg registados à mão (📝) — as duas formas de registar quanto.'}</p>
+                                                    {doseItems.length === 0 ? (
+                                                        <p className="text-sm text-gray-400">{isEN ? 'No doses recorded in this period.' : 'Sem dosagens registadas neste período.'}</p>
                                                     ) : (
                                                         <div className="space-y-3">
-                                                            {filteredWeighings.map(renderWeighing)}
+                                                            {doseItems.map(it => it.kind === 'w' ? renderWeighing(it.data) : renderMgLog(it.data))}
                                                         </div>
                                                     )}
 
-                                                    {/* Consumo por dia (derivado das pesagens). "≈" = estimado. */}
+                                                    {/* Total de mg por dia (fonte unificada: à mão + pesagens). */}
                                                     {derivedDaysList.length > 0 && (
                                                         <div className="mt-5 pt-4 border-t border-gray-700">
-                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Consumption per day (from weighings)' : 'Consumo por dia (das pesagens)'}</h4>
-                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'Only fully-weighed days (measured). Days without a reliable weighing are not shown.' : 'Só dias totalmente pesados (medidos). Dias sem pesagem fiável não aparecem.'}</p>
+                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per day' : 'Total por dia'}</h4>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'From what you logged by hand or from fully-weighed days. Days without a reliable value are not shown.' : 'Do que registaste à mão ou de dias totalmente pesados. Dias sem valor fiável não aparecem.'}</p>
                                                             <div className="space-y-1">
                                                                 {derivedDaysList.map(d => (
                                                                     <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">
@@ -748,7 +789,8 @@ export function HistoryView({
                                                         </div>
                                                     )}
                                                 </div>
-                                            )}
+                                                );
+                                            })()}
 
                                             {/* Timeline única para tab "diario" */}
                                             {historyTopic === 'diario' && (
