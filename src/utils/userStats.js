@@ -630,9 +630,20 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const cycleLoggedToday = lastCycleTs !== null && lastCycleTs >= todayStart;
 
       if (todayConsumptions.length > 0 && lastCycleWithSleep && cycleLoggedToday) {
-        const [bh, bm] = lastCycleWithSleep.bedtime.split(':').map(Number);
-        let wakeupMinutes = bh * 60 + bm + parseFloat(lastCycleWithSleep.sleep) * 60;
-        if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+        // HORA DE ACORDAR = quando o ciclo foi criado. O ciclo é criado ao acordar
+        // ("Cria um novo ciclo quando acordas"), por isso o seu timestamp é a hora
+        // REAL de acordar. Derivá-la de "deitar + horas de sono" somava duas
+        // aproximações e podia falhar por 1h ou mais (ex.: deitar 11:30 + 5h dava
+        // 16:30 quando a pessoa acordou mesmo às 18:00), dando metas por cumpridas
+        // que não foram. O cálculo antigo fica só como recurso.
+        let wakeupMinutes;
+        if (lastCycleTs && !isNaN(lastCycleTs)) {
+          wakeupMinutes = lastCycleTs.getHours() * 60 + lastCycleTs.getMinutes();
+        } else {
+          const [bh, bm] = lastCycleWithSleep.bedtime.split(':').map(Number);
+          wakeupMinutes = bh * 60 + bm + parseFloat(lastCycleWithSleep.sleep) * 60;
+          if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+        }
         const targetMinutes = (wakeupMinutes + parseFloat(firstNotBeforeGoal.target) * 60) % 1440;
 
         // Ignorar consumos antes de acordar (pertencem ao ciclo anterior)

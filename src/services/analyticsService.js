@@ -485,13 +485,21 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
         Object.entries(consumptionsByDate).forEach(([date, dayConsumptions]) => {
             if (dayConsumptions.length === 0) return;
 
-            // Calcular hora de acordar: bedtime + sleep do ciclo desse dia, ou fallback 8:00
+            // HORA DE ACORDAR = quando o ciclo foi criado (o ciclo cria-se ao
+            // acordar, por isso o timestamp é a hora real). Só se não houver
+            // timestamp é que se deriva de "deitar + horas de sono" (duas
+            // aproximações somadas, que podem errar por 1h ou mais).
             const cycle = cycles.find(c => getDateKeyFromItem(c) === date && c.bedtime && c.sleep);
             let wakeupMinutes = 480; // default 8:00am se não há dados de sono
             if (cycle) {
-                const [bh, bm] = cycle.bedtime.split(':').map(Number);
-                wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
-                if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+                const ts = new Date(cycle.timestamp || cycle.createdAt);
+                if (!isNaN(ts)) {
+                    wakeupMinutes = ts.getHours() * 60 + ts.getMinutes();
+                } else {
+                    const [bh, bm] = cycle.bedtime.split(':').map(Number);
+                    wakeupMinutes = bh * 60 + bm + parseFloat(cycle.sleep) * 60;
+                    if (wakeupMinutes >= 1440) wakeupMinutes -= 1440;
+                }
             }
 
             const targetMinutes = (wakeupMinutes + targetHours * 60) % 1440;
