@@ -80,6 +80,12 @@ export function HomeViewRefactored({
     ? localStorage.getItem('nep_urge_exercise') !== 'false'
     : true;
 
+  // Modo demonstração: quem está só a experimentar não tem metas definidas, por
+  // isso o "Surfar o Impulso" nunca chegava a aparecer — e é das partes mais
+  // úteis da app. No demo, mostra-se sempre ao marcar um consumo.
+  const isDemoMode = typeof window !== 'undefined'
+    && localStorage.getItem('nep_demo') === '1';
+
   // Verifica NA HORA se consumir agora te põe fora de uma meta de CONSUMO que
   // definiste (intervalo, frequência, hora-limite). As metas de sono/deitar não
   // entram aqui — não têm a ver com o ato de consumir.
@@ -163,7 +169,7 @@ export function HomeViewRefactored({
 
   const handleMarkConsumption = () => {
     const reasons = computeLiveGoalBreaches();
-    if (reasons.length > 0 && urgeExerciseEnabled) {
+    if ((reasons.length > 0 || isDemoMode) && urgeExerciseEnabled) {
       setUrgeWarnings(reasons);
       setPendingConsumption(true);
       setShowUrgeSurfing(true);
