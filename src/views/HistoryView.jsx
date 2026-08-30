@@ -8,6 +8,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
+import { periodInfoForClosing, typicalMgPerDose } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { EMOTION_EN } from '../constants/emotions';
 
@@ -201,6 +202,12 @@ export function HistoryView({
             : []
     ), [historyTopic, tempFilteredDailyLogs]);
 
+    // mg/toque típico — referência para a pessoa julgar um período suspeito.
+    const typicalPerDose = useMemo(
+        () => typicalMgPerDose(weighings || [], consumptions || []),
+        [weighings, consumptions]
+    );
+
     // Dias marcados como ATÍPICOS (ficam fora das médias).
     const atypicalDates = useMemo(() => {
         const s = new Set();
@@ -250,11 +257,15 @@ export function HistoryView({
             case 'newBagMissingWeights':
                 return isEN ? '⚖️ bag change without the empty-bag weight' : '⚖️ troca de saco sem o peso do saco vazio';
             case 'missingWeights':
-                return isEN ? '⚖️ a weighing is missing a weight' : '⚖️ falta um peso numa das pesagens';
+                return isEN ? '⚖️ a weighing in this period is missing a weight' : '⚖️ uma pesagem deste período ficou sem um dos pesos';
             case 'negative':
                 return isEN ? '⚖️ weights look swapped (negative result)' : '⚖️ pesos parecem trocados (deu negativo)';
+            case 'beforeFirstWeighing':
+                return isEN ? '⚖️ before you started weighing' : '⚖️ antes de teres começado a pesar';
+            case 'afterLastWeighing':
+                return isEN ? '⚖️ no weighing after these uses yet' : '⚖️ ainda não há pesagem depois destes toques';
             case 'outsideAnyPeriod':
-                return isEN ? '⚖️ uses outside any closed weighing (bag still open)' : '⚖️ toques fora de pesagens fechadas (saco ainda aberto)';
+                return isEN ? '⚖️ uses outside any closed weighing' : '⚖️ toques fora de pesagens fechadas';
             default:
                 return isEN ? '⚖️ no weighing covering the whole day' : '⚖️ sem pesagem que cubra o dia todo';
         }
@@ -387,17 +398,39 @@ export function HistoryView({
                         {/* Marca de "enchimento esquecido": foi respondida uma vez à
                             pergunta da app e deixava o período sem mg PARA SEMPRE,
                             sem forma de voltar atrás. Agora dá para desmarcar. */}
-                        {w.forgottenRefill && (
-                            <div className="mt-2 text-xs text-amber-300/90 flex flex-wrap items-center gap-2">
-                                <span>⚠️ {isEN ? 'marked as "I forgot to weigh a refill"' : 'marcada como "esqueci-me de pesar um enchimento"'}</span>
-                                <button
-                                    onClick={() => updateWeighing(w.id, { forgottenRefill: false }).catch(() => {})}
-                                    className="underline text-amber-200 hover:text-white"
-                                >
-                                    {isEN ? 'undo' : 'desmarcar'}
-                                </button>
-                            </div>
-                        )}
+                        {w.forgottenRefill && (() => {
+                            // Mostrar os NÚMEROS do período para a pessoa poder decidir
+                            // com base em factos (não de memória): o que daria por toque
+                            // vs. o seu normal. Um valor perto do normal é sinal de que
+                            // a marca foi um engano.
+                            const info = periodInfoForClosing(weighings || [], consumptions || [], w.id);
+                            const fmtD = (ms) => new Date(ms).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
+                            return (
+                                <div className="mt-2 text-xs text-amber-300/90 space-y-1">
+                                    <div>⚠️ {isEN ? 'marked as "I forgot to weigh a refill"' : 'marcada como "esqueci-me de pesar um enchimento"'}</div>
+                                    {info && (
+                                        <div className="text-gray-300">
+                                            {isEN ? 'Period' : 'Período'} {fmtD(info.start)} → {fmtD(info.end)}
+                                            {' · '}{info.doseCount} {isEN ? 'uses' : 'toques'}
+                                            {info.mgPerDose != null && (
+                                                <>
+                                                    {' · '}{isEN ? 'would give' : 'daria'} <span className="font-bold">~{info.mgPerDose}</span> mg/{isEN ? 'use' : 'toque'}
+                                                    {typicalPerDose != null && (
+                                                        <> ({isEN ? 'your usual' : 'o teu normal'} ~{Math.round(typicalPerDose)})</>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => updateWeighing(w.id, { forgottenRefill: false }).catch(() => {})}
+                                        className="underline text-amber-200 hover:text-white"
+                                    >
+                                        {isEN ? 'undo (count this period again)' : 'desmarcar (voltar a contar este período)'}
+                                    </button>
+                                </div>
+                            );
+                        })()}
                     </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
                         <button onClick={() => openEditWeighing(w)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>

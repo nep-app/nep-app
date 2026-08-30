@@ -153,9 +153,18 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       day.measuredDoses++;
     } else {
       day.unknownDoses++;
-      // Guardar o PORQUÊ: sem ciclo = toque fora de qualquer período pesado
-      // (saco atual em aberto, ou antes da 1.ª pesagem).
-      day.reasons.add(cy ? (cy.reason || 'unmeasuredPeriod') : 'outsideAnyPeriod');
+      // Guardar o PORQUÊ. Sem ciclo, distinguir os dois casos MUITO diferentes:
+      // toques anteriores à 1.ª pesagem de sempre vs. toques do saco atual, que
+      // ainda não foi fechado por uma pesagem seguinte.
+      if (cy) {
+        day.reasons.add(cy.reason || 'unmeasuredPeriod');
+      } else {
+        const ms = toMs(c.timestamp);
+        const firstWs = ws.length ? toMs(ws[0].timestamp) : null;
+        day.reasons.add(firstWs != null && ms != null && ms <= firstWs
+          ? 'beforeFirstWeighing'
+          : 'afterLastWeighing');
+      }
     }
   }
 
@@ -215,6 +224,52 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
     }
   }
   return out;
+}
+
+/**
+ * Detalhe do período fechado por uma pesagem — para a app poder MOSTRAR os
+ * números em vez de pedir à pessoa que confie de olhos fechados (ex.: ao
+ * decidir se desmarca um "enchimento esquecido"). Calcula o consumo COMO SE o
+ * período fosse fiável, ignorando de propósito a marca de esquecido.
+ * @returns {null | { start:number, end:number, doseCount:number, consumed:number|null, mgPerDose:number|null }}
+ */
+export function periodInfoForClosing(weighings = [], consumptions = [], closingId = null) {
+  if (!closingId) return null;
+  const ws = [...weighings]
+    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
+    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+  const i = ws.findIndex(w => w.id === closingId);
+  if (i <= 0) return null;
+  const prev = ws[i - 1];
+  const curr = ws[i];
+  const start = toMs(prev.timestamp);
+  const end = toMs(curr.timestamp);
+
+  let consumed = null;
+  if (curr.isNewBag) {
+    const oldTare = (prev.empty != null && !isNaN(prev.empty)) ? prev.empty
+      : (curr.empty != null && !isNaN(curr.empty)) ? curr.empty : null;
+    if (prev.full != null && oldTare != null) {
+      const lp = curr.leftoverPrev;
+      consumed = (lp != null && !isNaN(lp) && lp > oldTare) ? prev.full - lp : prev.full - oldTare;
+    }
+  } else if (prev.full != null && curr.before != null) {
+    consumed = prev.full - curr.before;
+  }
+  if (consumed != null && consumed < 0) consumed = null;
+
+  const doses = consumptions.filter(c => {
+    const t = toMs(c && c.timestamp);
+    return t != null && t > start && t <= end;
+  });
+  const mgPerDose = (consumed != null && doses.length > 0) ? consumed / doses.length : null;
+
+  return {
+    start, end,
+    doseCount: doses.length,
+    consumed: consumed != null ? Math.round(consumed) : null,
+    mgPerDose: mgPerDose != null ? Math.round(mgPerDose) : null,
+  };
 }
 
 /**
