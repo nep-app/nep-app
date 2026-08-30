@@ -226,11 +226,39 @@ export function HistoryView({
                 seen.add(d);
                 const mg = summary[d]?.mg;
                 if (mg != null && mg > 0) continue;
-                arr.push({ date: d, reason: atypicalDates.has(d) ? 'atypical' : 'unmeasured' });
+                // Motivo concreto vindo do motor de mg (troca de saco sem pesos,
+                // "não pesei", saco ainda em aberto, …). Atípico manda sempre.
+                const codes = metrics?.mgGapReasonsByDate?.[d] || [];
+                arr.push({
+                    date: d,
+                    reason: atypicalDates.has(d) ? 'atypical' : (codes[0] || 'unmeasured'),
+                });
             }
             return filterByDateRange(arr, dateRange, 'date').sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
-    }, [consumptions, metrics?.dailySummary, atypicalDates, dateRange]);
+    }, [consumptions, metrics?.dailySummary, metrics?.mgGapReasonsByDate, atypicalDates, dateRange]);
+
+    // Motivos em linguagem simples (o objetivo é a pessoa perceber o que fazer).
+    const mgGapReasonText = (code) => {
+        switch (code) {
+            case 'atypical':
+                return isEN ? '📌 atypical day (kept out of averages)' : '📌 dia atípico (fora das médias)';
+            case 'notWeighed':
+                return isEN ? '⚖️ a refill was marked "not weighed"' : '⚖️ houve um enchimento marcado "não pesei"';
+            case 'forgottenRefill':
+                return isEN ? '⚖️ a forgotten refill in this period' : '⚖️ enchimento esquecido neste período';
+            case 'newBagMissingWeights':
+                return isEN ? '⚖️ bag change without the empty-bag weight' : '⚖️ troca de saco sem o peso do saco vazio';
+            case 'missingWeights':
+                return isEN ? '⚖️ a weighing is missing a weight' : '⚖️ falta um peso numa das pesagens';
+            case 'negative':
+                return isEN ? '⚖️ weights look swapped (negative result)' : '⚖️ pesos parecem trocados (deu negativo)';
+            case 'outsideAnyPeriod':
+                return isEN ? '⚖️ uses outside any closed weighing (bag still open)' : '⚖️ toques fora de pesagens fechadas (saco ainda aberto)';
+            default:
+                return isEN ? '⚖️ no weighing covering the whole day' : '⚖️ sem pesagem que cubra o dia todo';
+        }
+    };
 
     // Total de mg POR DIA, da FONTE UNIFICADA (registo à mão OU derivado das
     // pesagens — a mesma regra do resto da app), do mais recente para o mais
@@ -857,9 +885,7 @@ export function HistoryView({
                                                                                         {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
                                                                                     </span>
                                                                                     <span className="text-[11px] text-gray-500 text-right">
-                                                                                        {d.reason === 'atypical'
-                                                                                            ? (isEN ? '📌 atypical day (kept out of averages)' : '📌 dia atípico (fora das médias)')
-                                                                                            : (isEN ? '⚖️ no weighing covering the whole day' : '⚖️ sem pesagem que cubra o dia todo')}
+                                                                                        {mgGapReasonText(d.reason)}
                                                                                     </span>
                                                                                 </div>
                                                                             ))}

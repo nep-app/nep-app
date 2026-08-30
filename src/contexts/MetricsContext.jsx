@@ -35,6 +35,22 @@ export const MetricsProvider = ({ children }) => {
     return out;
   }, [weighings, consumptions]);
 
+  // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
+  // explicar a ausência em vez de saltar o dia em silêncio.
+  const mgGapReasonsByDate = useMemo(() => {
+    const out = {};
+    if (!weighings || weighings.length === 0) return out;
+    try {
+      const perDay = deriveDailyMg(weighings, consumptions);
+      for (const [date, day] of Object.entries(perDay || {})) {
+        if (day && day.state !== 'measured' && day.reasons && day.reasons.length) {
+          out[date] = day.reasons;
+        }
+      }
+    } catch (e) { /* best-effort */ }
+    return out;
+  }, [weighings, consumptions]);
+
   const atypicalDates = useMemo(() => {
     const s = new Set();
     wellbeingLogs.forEach(w => {
@@ -456,11 +472,13 @@ export const MetricsProvider = ({ children }) => {
     consumptionDailyRollup: effectiveDailyRollup, // resumo-por-dia (persistente no arranque, ao vivo após carregar tudo)
     dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
     weighingMeasuredMgByDate, // mg/dia derivados das pesagens (só dias medidos a 100%)
+    mgGapReasonsByDate, // porque é que um dia ficou sem mg fiável
   }), [
     analysis.intervalStats, analysis.lastInterval, todayConsumptions,
     analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
     timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
     consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
+    mgGapReasonsByDate,
   ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

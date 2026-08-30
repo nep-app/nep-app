@@ -40,11 +40,16 @@ function buildCycles(ws) {
     const start = toMs(prev.timestamp);
     const end = toMs(curr.timestamp);
     let consumed = null;
+    // Motivo pelo qual o período não deu para medir (para a app poder EXPLICAR
+    // à utilizadora porque é que um dia fica sem mg, em vez de o omitir em
+    // silêncio). Fica null quando o período é medido com sucesso.
+    let reason = null;
     // "não pesei" ou refill esquecido confirmado → intervalo sem peso fiável.
     const forgotten = prev.notWeighed || curr.notWeighed || curr.forgottenRefill;
 
     if (forgotten) {
       consumed = null;
+      reason = curr.forgottenRefill ? 'forgottenRefill' : 'notWeighed';
     } else if (curr.isNewBag) {
       // Troca de saco: o consumo apurado é o do SACO ANTIGO. O peso do saco vazio
       // (tara) NUNCA conta como consumo. A tara do saco antigo = 'empty' da pesagem
@@ -62,13 +67,19 @@ function buildCycles(ws) {
           // tudo o que lá estava menos a tara. consumido = cheio − tara.
           consumed = prev.full - oldTare;
         }
+      } else {
+        // Troca de saco sem os pesos necessários (falta o peso do saco cheio
+        // anterior ou o peso do saco vazio/tara).
+        reason = 'newBagMissingWeights';
       }
     } else if (prev.full != null && curr.before != null) {
       consumed = prev.full - curr.before;
+    } else {
+      reason = 'missingWeights';
     }
-    if (consumed != null && consumed < 0) consumed = null;
+    if (consumed != null && consumed < 0) { consumed = null; reason = 'negative'; }
 
-    cycles.push({ start, end, consumed, measured: consumed != null, forgotten, closing: curr });
+    cycles.push({ start, end, consumed, measured: consumed != null, forgotten, reason, closing: curr });
   }
   return cycles;
 }
@@ -123,7 +134,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   }
 
   const perDay = {};
-  const ensure = (d) => (perDay[d] = perDay[d] || { mg: 0, doseCount: 0, measuredDoses: 0, estimatedDoses: 0, unknownDoses: 0 });
+  const ensure = (d) => (perDay[d] = perDay[d] || { mg: 0, doseCount: 0, measuredDoses: 0, estimatedDoses: 0, unknownDoses: 0, reasons: new Set() });
 
   // Modelo POR-TOQUE: cada toque de um ciclo pesado vale (peso do saco ÷ nº de
   // toques desse saco). O mg do dia = soma das fatias dos seus toques. Um dia que
@@ -142,6 +153,9 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       day.measuredDoses++;
     } else {
       day.unknownDoses++;
+      // Guardar o PORQUÊ: sem ciclo = toque fora de qualquer período pesado
+      // (saco atual em aberto, ou antes da 1.ª pesagem).
+      day.reasons.add(cy ? (cy.reason || 'unmeasuredPeriod') : 'outsideAnyPeriod');
     }
   }
 
@@ -155,6 +169,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     else day.state = 'mixed';
     day.estimated = day.estimatedDoses > 0;
     day.mg = known > 0 ? Math.round(day.mg) : null;
+    day.reasons = Array.from(day.reasons); // Set → array (serializável)
   }
 
   return perDay;

@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v6.36.0**
+**Versão actual: v6.37.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
