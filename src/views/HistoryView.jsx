@@ -384,6 +384,20 @@ export function HistoryView({
                                 {w.isNewBag && <span className="text-gray-400"> · {isEN ? 'new bag' : 'saco novo'}</span>}
                             </div>
                         )}
+                        {/* Marca de "enchimento esquecido": foi respondida uma vez à
+                            pergunta da app e deixava o período sem mg PARA SEMPRE,
+                            sem forma de voltar atrás. Agora dá para desmarcar. */}
+                        {w.forgottenRefill && (
+                            <div className="mt-2 text-xs text-amber-300/90 flex flex-wrap items-center gap-2">
+                                <span>⚠️ {isEN ? 'marked as "I forgot to weigh a refill"' : 'marcada como "esqueci-me de pesar um enchimento"'}</span>
+                                <button
+                                    onClick={() => updateWeighing(w.id, { forgottenRefill: false }).catch(() => {})}
+                                    className="underline text-amber-200 hover:text-white"
+                                >
+                                    {isEN ? 'undo' : 'desmarcar'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
                         <button onClick={() => openEditWeighing(w)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>
