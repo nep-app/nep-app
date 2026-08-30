@@ -8,7 +8,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
-import { periodInfoForClosing, typicalMgPerDose } from '../utils/mgDerivation';
+import { periodInfoForClosing, typicalMgPerDose, measuredPeriods } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { EMOTION_EN } from '../constants/emotions';
 
@@ -83,6 +83,8 @@ export function HistoryView({
     // Edição de PESAGENS: data/hora + "mg postos no saco" (= cheio − antes).
     const [showAllDoseDays, setShowAllDoseDays] = useState(false);
     const [showMissingMgDays, setShowMissingMgDays] = useState(false);
+    const [showPeriods, setShowPeriods] = useState(false);
+    const [showAllPeriods, setShowAllPeriods] = useState(false);
     const [editingWeighing, setEditingWeighing] = useState(null);
     const [ewDatetime, setEwDatetime] = useState('');
     const [ewAdded, setEwAdded] = useState('');
@@ -205,6 +207,13 @@ export function HistoryView({
     // mg/toque típico — referência para a pessoa julgar um período suspeito.
     const typicalPerDose = useMemo(
         () => typicalMgPerDose(weighings || [], consumptions || []),
+        [weighings, consumptions]
+    );
+
+    // PERÍODOS PESADOS: o que saiu do saco entre duas pesagens. Vem da balança,
+    // não depende de toques — é o que continua verdade quando faltam registos.
+    const weighedPeriods = useMemo(
+        () => measuredPeriods(weighings || [], consumptions || []),
         [weighings, consumptions]
     );
 
@@ -945,16 +954,83 @@ export function HistoryView({
                                                                                     </div>
                                                                                     {/* Os NÚMEROS que sustentam a suspeita — e o que é sólido:
                                                                                         o total do período saiu mesmo do saco. */}
-                                                                                    {d.reason === 'missingTouches' && d.detail && (
+                                                                                    {d.reason === 'missingTouches' && d.detail && d.detail.consumed != null && (
                                                                                         <div className="text-[11px] text-gray-500 mt-1 leading-snug">
                                                                                             {isEN
-                                                                                                ? `${d.detail.consumed} mg left the bag with only ${d.detail.doseCount} uses logged (≈${d.detail.mgPerDose} mg/use vs your usual ~${d.detail.typical}). Add the missing uses and the value comes back.`
-                                                                                                : `Saíram ${d.detail.consumed} mg do saco com apenas ${d.detail.doseCount} toques registados (≈${d.detail.mgPerDose} mg/toque, o teu normal ~${d.detail.typical}). Regista os toques em falta e o valor volta.`}
+                                                                                                ? `${d.detail.consumed} mg left the bag with only ${d.detail.doseCount} uses logged (≈${d.detail.mgPerDose} mg/use vs your usual ~${d.detail.typical}). If you remember the missing uses, add them and the value comes back — if not, the ${d.detail.consumed} mg are still counted under "Per weighed period" above.`
+                                                                                                : `Saíram ${d.detail.consumed} mg do saco com apenas ${d.detail.doseCount} toques registados (≈${d.detail.mgPerDose} mg/toque, o teu normal ~${d.detail.typical}). Se te lembrares dos toques que faltam, regista-os e o valor volta — se não, os ${d.detail.consumed} mg continuam contados em "Por período pesado", aqui em cima.`}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {/* Dizer QUAL pesagem e QUE peso falta — sem isso a
+                                                                                        mensagem não dá para agir. */}
+                                                                                    {(d.reason === 'missingWeights' || d.reason === 'newBagMissingWeights') && d.detail && d.detail.missingTs && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN ? 'The weighing of ' : 'À pesagem de '}
+                                                                                            <span className="text-gray-400">
+                                                                                                {new Date(d.detail.missingTs).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
+                                                                                            </span>
+                                                                                            {d.detail.missingField === 'full'
+                                                                                                ? (isEN ? ' has no "full" weight (after filling).' : ' falta o peso depois de encheres o saco.')
+                                                                                                : d.detail.missingField === 'before'
+                                                                                                    ? (isEN ? ' has no "before" weight (before filling).' : ' falta o peso do saco antes de o encheres.')
+                                                                                                    : (isEN ? ' has no empty-bag weight.' : ' falta o peso do saco vazio.')}
+                                                                                            {isEN ? ' Edit it (pencil) to fill it in.' : ' Edita-a (lápis) para preencher.'}
                                                                                         </div>
                                                                                     )}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* O QUE A BALANÇA SABE, independentemente dos toques: quanto
+                                                        saiu do saco entre cada duas pesagens. Continua verdade
+                                                        mesmo quando não dá para repartir por dia. */}
+                                                    {weighedPeriods.length > 0 && (
+                                                        <div className="mb-5 pb-4 border-b border-gray-700">
+                                                            <button
+                                                                onClick={() => setShowPeriods(v => !v)}
+                                                                aria-expanded={showPeriods}
+                                                                className="text-sm font-semibold text-white hover:text-gray-200"
+                                                            >
+                                                                {isEN ? 'Per weighed period' : 'Por período pesado'} {showPeriods ? '▴' : '▾'}
+                                                            </button>
+                                                            <p className="text-xs text-gray-500 mt-1 mb-2">
+                                                                {isEN
+                                                                    ? 'What actually left the bag between two weighings. This comes from the scale, so it holds even when uses are missing.'
+                                                                    : 'O que saiu mesmo do saco entre duas pesagens. Vem da balança, por isso vale mesmo quando faltam toques.'}
+                                                            </p>
+                                                            {showPeriods && (
+                                                                <div className="space-y-1">
+                                                                    {weighedPeriods.slice(0, showAllPeriods ? undefined : 8).map(p => {
+                                                                        const f = (ms) => new Date(ms).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
+                                                                        return (
+                                                                            <div key={`per-${p.start}-${p.end}`} className="bg-gray-900/40 rounded px-3 py-1.5">
+                                                                                <div className="flex items-center justify-between gap-2">
+                                                                                    <span className="text-sm text-gray-300">{f(p.start)} → {f(p.end)}</span>
+                                                                                    <span className="text-sm font-medium text-green-300">{p.consumed} mg</span>
+                                                                                </div>
+                                                                                <div className="text-[11px] text-gray-500">
+                                                                                    {p.days} {p.days === 1 ? (isEN ? 'day' : 'dia') : (isEN ? 'days' : 'dias')}
+                                                                                    {' · '}{p.doseCount} {isEN ? 'uses' : 'toques'}
+                                                                                    {p.mgPerDose != null && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
+                                                                                    {' · ≈'}{Math.round(p.consumed / p.days)} mg/{isEN ? 'day' : 'dia'}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                    {weighedPeriods.length > 8 && (
+                                                                        <button
+                                                                            onClick={() => setShowAllPeriods(v => !v)}
+                                                                            className="mt-1 text-xs text-indigo-300 hover:text-indigo-200 underline"
+                                                                        >
+                                                                            {showAllPeriods
+                                                                                ? (isEN ? 'Show fewer' : 'Mostrar menos')
+                                                                                : (isEN ? `Show all ${weighedPeriods.length}` : `Ver todos os ${weighedPeriods.length}`)}
+                                                                        </button>
                                                                     )}
                                                                 </div>
                                                             )}

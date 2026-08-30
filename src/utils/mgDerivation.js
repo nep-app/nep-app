@@ -44,6 +44,7 @@ function buildCycles(ws) {
     // à utilizadora porque é que um dia fica sem mg, em vez de o omitir em
     // silêncio). Fica null quando o período é medido com sucesso.
     let reason = null;
+    let reasonDetail = null; // qual pesagem e que peso falta (para a app poder dizer)
     // "não pesei" ou refill esquecido confirmado → intervalo sem peso fiável.
     const forgotten = prev.notWeighed || curr.notWeighed || curr.forgottenRefill;
 
@@ -71,15 +72,21 @@ function buildCycles(ws) {
         // Troca de saco sem os pesos necessários (falta o peso do saco cheio
         // anterior ou o peso do saco vazio/tara).
         reason = 'newBagMissingWeights';
+        reasonDetail = prev.full == null
+          ? { missingTs: prev.timestamp, missingField: 'full' }
+          : { missingTs: prev.timestamp, missingField: 'tare' };
       }
     } else if (prev.full != null && curr.before != null) {
       consumed = prev.full - curr.before;
     } else {
       reason = 'missingWeights';
+      reasonDetail = prev.full == null
+        ? { missingTs: prev.timestamp, missingField: 'full' }
+        : { missingTs: curr.timestamp, missingField: 'before' };
     }
-    if (consumed != null && consumed < 0) { consumed = null; reason = 'negative'; }
+    if (consumed != null && consumed < 0) { consumed = null; reason = 'negative'; reasonDetail = null; }
 
-    cycles.push({ start, end, consumed, measured: consumed != null, forgotten, reason, closing: curr });
+    cycles.push({ start, end, consumed, measured: consumed != null, forgotten, reason, reasonDetail, closing: curr });
   }
   return cycles;
 }
@@ -193,6 +200,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       // ainda não foi fechado por uma pesagem seguinte.
       if (cy) {
         day.reasons.add(cy.reason || 'unmeasuredPeriod');
+        if (!day.gapDetail && cy.reasonDetail) day.gapDetail = cy.reasonDetail;
       } else {
         const ms = toMs(c.timestamp);
         const firstWs = ws.length ? toMs(ws[0].timestamp) : null;
@@ -259,6 +267,41 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
     }
   }
   return out;
+}
+
+/**
+ * Lista dos PERÍODOS PESADOS (entre duas pesagens) com o que saiu do saco em
+ * cada um. Este total vem só da balança — não depende de haver toques
+ * registados — por isso continua fiável mesmo quando não dá para repartir por
+ * dia. É a forma honesta de ver o consumo quando faltam toques.
+ * @returns {Array<{start:number,end:number,consumed:number,doseCount:number,mgPerDose:number|null,days:number}>}
+ */
+export function measuredPeriods(weighings = [], consumptions = []) {
+  const ws = [...weighings]
+    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
+    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+  const cons = [...consumptions].filter(c => c && c.timestamp && toMs(c.timestamp) != null);
+
+  const out = [];
+  for (const cy of buildCycles(ws)) {
+    if (!cy.measured || cy.consumed == null) continue;
+    const doseCount = cons.filter(c => {
+      const t = toMs(c.timestamp);
+      return t > cy.start && t <= cy.end;
+    }).length;
+    // Nº de dias de calendário que o período toca (início e fim inclusive).
+    const dayStart = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const days = Math.max(1, Math.round((dayStart(cy.end) - dayStart(cy.start)) / 86400000) + 1);
+    out.push({
+      start: cy.start,
+      end: cy.end,
+      consumed: Math.round(cy.consumed),
+      doseCount,
+      mgPerDose: doseCount > 0 ? Math.round(cy.consumed / doseCount) : null,
+      days,
+    });
+  }
+  return out.sort((a, b) => b.end - a.end); // mais recente primeiro
 }
 
 /**
