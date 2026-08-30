@@ -81,6 +81,7 @@ export function HistoryView({
 
     // Edição de PESAGENS: data/hora + "mg postos no saco" (= cheio − antes).
     const [showAllDoseDays, setShowAllDoseDays] = useState(false);
+    const [showMissingMgDays, setShowMissingMgDays] = useState(false);
     const [editingWeighing, setEditingWeighing] = useState(null);
     const [ewDatetime, setEwDatetime] = useState('');
     const [ewAdded, setEwAdded] = useState('');
@@ -199,6 +200,37 @@ export function HistoryView({
             ? tempFilteredDailyLogs.filter(l => l && l.mg != null && !isNaN(parseFloat(l.mg)) && parseFloat(l.mg) > 0)
             : []
     ), [historyTopic, tempFilteredDailyLogs]);
+
+    // Dias marcados como ATÍPICOS (ficam fora das médias).
+    const atypicalDates = useMemo(() => {
+        const s = new Set();
+        (wellbeingLogs || []).forEach(w => {
+            if (w && w.isAtypical) {
+                const d = w.date || safeToISODate(w.timestamp);
+                if (d) s.add(d);
+            }
+        });
+        return s;
+    }, [wellbeingLogs]);
+
+    // Dias COM consumos mas SEM valor de mg — e o motivo. Sem isto, o "Total por
+    // dia" limitava-se a saltar dias em silêncio, o que parece um erro.
+    const missingMgDays = useMemo(() => {
+        try {
+            const summary = metrics?.dailySummary || {};
+            const seen = new Set();
+            const arr = [];
+            for (const c of (consumptions || [])) {
+                const d = c.date || safeToISODate(c.timestamp);
+                if (!d || seen.has(d)) continue;
+                seen.add(d);
+                const mg = summary[d]?.mg;
+                if (mg != null && mg > 0) continue;
+                arr.push({ date: d, reason: atypicalDates.has(d) ? 'atypical' : 'unmeasured' });
+            }
+            return filterByDateRange(arr, dateRange, 'date').sort((a, b) => (a.date < b.date ? 1 : -1));
+        } catch { return []; }
+    }, [consumptions, metrics?.dailySummary, atypicalDates, dateRange]);
 
     // Total de mg POR DIA, da FONTE UNIFICADA (registo à mão OU derivado das
     // pesagens — a mesma regra do resto da app), do mais recente para o mais
@@ -802,6 +834,38 @@ export function HistoryView({
                                                                         ? (isEN ? 'Show fewer' : 'Mostrar menos')
                                                                         : (isEN ? `Show all ${derivedDaysList.length} days` : `Ver todos os ${derivedDaysList.length} dias`)}
                                                                 </button>
+                                                            )}
+
+                                                            {/* Dias que NÃO aparecem em cima — e porquê. Saltar dias em
+                                                                silêncio parece um erro; dizer o motivo é informação. */}
+                                                            {missingMgDays.length > 0 && (
+                                                                <div className="mt-4 pt-3 border-t border-gray-700/60">
+                                                                    <button
+                                                                        onClick={() => setShowMissingMgDays(v => !v)}
+                                                                        aria-expanded={showMissingMgDays}
+                                                                        className="text-xs text-gray-400 hover:text-gray-200 underline"
+                                                                    >
+                                                                        {isEN
+                                                                            ? `${missingMgDays.length} day(s) with uses but no mg value — why?`
+                                                                            : `${missingMgDays.length} dia(s) com consumos mas sem mg — porquê?`}
+                                                                    </button>
+                                                                    {showMissingMgDays && (
+                                                                        <div className="mt-2 space-y-1">
+                                                                            {missingMgDays.map(d => (
+                                                                                <div key={`miss-${d.date}`} className="flex items-center justify-between gap-2 bg-gray-900/30 rounded px-3 py-1.5">
+                                                                                    <span className="text-sm text-gray-400">
+                                                                                        {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
+                                                                                    </span>
+                                                                                    <span className="text-[11px] text-gray-500 text-right">
+                                                                                        {d.reason === 'atypical'
+                                                                                            ? (isEN ? '📌 atypical day (kept out of averages)' : '📌 dia atípico (fora das médias)')
+                                                                                            : (isEN ? '⚖️ no weighing covering the whole day' : '⚖️ sem pesagem que cubra o dia todo')}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </div>
                                                     )}
