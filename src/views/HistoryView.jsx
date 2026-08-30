@@ -235,10 +235,15 @@ export function HistoryView({
                 if (mg != null && mg > 0) continue;
                 // Motivo concreto vindo do motor de mg (troca de saco sem pesos,
                 // "não pesei", saco ainda em aberto, …). Atípico manda sempre.
-                const codes = metrics?.mgGapReasonsByDate?.[d] || [];
+                const gap = metrics?.mgGapReasonsByDate?.[d] || null;
+                const codes = gap?.codes || [];
+                // "Faltam toques" manda sobre os outros motivos: é o que explica
+                // um dia inflacionado, e é o que a pessoa pode corrigir.
+                const code = codes.includes('missingTouches') ? 'missingTouches' : (codes[0] || 'unmeasured');
                 arr.push({
                     date: d,
-                    reason: atypicalDates.has(d) ? 'atypical' : (codes[0] || 'unmeasured'),
+                    reason: atypicalDates.has(d) ? 'atypical' : code,
+                    detail: gap?.detail || null,
                 });
             }
             return filterByDateRange(arr, dateRange, 'date').sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -260,6 +265,8 @@ export function HistoryView({
                 return isEN ? '⚖️ a weighing in this period is missing a weight' : '⚖️ uma pesagem deste período ficou sem um dos pesos';
             case 'negative':
                 return isEN ? '⚖️ weights look swapped (negative result)' : '⚖️ pesos parecem trocados (deu negativo)';
+            case 'missingTouches':
+                return isEN ? '➕ uses missing in this period' : '➕ faltam toques registados neste período';
             case 'beforeFirstWeighing':
                 return isEN ? '⚖️ before you started weighing' : '⚖️ antes de teres começado a pesar';
             case 'afterLastWeighing':
@@ -927,13 +934,24 @@ export function HistoryView({
                                                                     {showMissingMgDays && (
                                                                         <div className="mt-2 space-y-1">
                                                                             {missingMgDays.map(d => (
-                                                                                <div key={`miss-${d.date}`} className="flex items-center justify-between gap-2 bg-gray-900/30 rounded px-3 py-1.5">
-                                                                                    <span className="text-sm text-gray-400">
-                                                                                        {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
-                                                                                    </span>
-                                                                                    <span className="text-[11px] text-gray-500 text-right">
-                                                                                        {mgGapReasonText(d.reason)}
-                                                                                    </span>
+                                                                                <div key={`miss-${d.date}`} className="bg-gray-900/30 rounded px-3 py-1.5">
+                                                                                    <div className="flex items-center justify-between gap-2">
+                                                                                        <span className="text-sm text-gray-400">
+                                                                                            {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
+                                                                                        </span>
+                                                                                        <span className="text-[11px] text-gray-500 text-right">
+                                                                                            {mgGapReasonText(d.reason)}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    {/* Os NÚMEROS que sustentam a suspeita — e o que é sólido:
+                                                                                        o total do período saiu mesmo do saco. */}
+                                                                                    {d.reason === 'missingTouches' && d.detail && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN
+                                                                                                ? `${d.detail.consumed} mg left the bag with only ${d.detail.doseCount} uses logged (≈${d.detail.mgPerDose} mg/use vs your usual ~${d.detail.typical}). Add the missing uses and the value comes back.`
+                                                                                                : `Saíram ${d.detail.consumed} mg do saco com apenas ${d.detail.doseCount} toques registados (≈${d.detail.mgPerDose} mg/toque, o teu normal ~${d.detail.typical}). Regista os toques em falta e o valor volta.`}
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             ))}
                                                                         </div>

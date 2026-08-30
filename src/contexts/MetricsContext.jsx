@@ -44,7 +44,7 @@ export const MetricsProvider = ({ children }) => {
       const perDay = deriveDailyMg(weighings, consumptions);
       for (const [date, day] of Object.entries(perDay || {})) {
         if (day && day.state !== 'measured' && day.reasons && day.reasons.length) {
-          out[date] = day.reasons;
+          out[date] = { codes: day.reasons, detail: day.gapDetail || null };
         }
       }
     } catch (e) { /* best-effort */ }

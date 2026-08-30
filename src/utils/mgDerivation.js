@@ -133,6 +133,35 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     if (cy) doseCountByCycle.set(cy, (doseCountByCycle.get(cy) || 0) + 1);
   }
 
+  // ⚠️ FALTAM TOQUES: o modelo por-toque assume que TODOS os toques foram
+  // registados. Quando faltam (esquecimento, dia mau, adormecer), a mesma
+  // quantidade é dividida por menos toques e os dias que restam ficam
+  // inflacionados — ex.: 350 mg repartidos por 4 toques = 88 mg/toque quando o
+  // normal da pessoa são ~25. Nesse caso o valor NÃO é fiável e não deve ser
+  // apresentado como facto. É a pergunta simétrica à do "refill esquecido"
+  // (mg/toque muito ABAIXO do normal).
+  const HIGH_RATIO = 2.5; // acima de 2,5× o típico → há toques em falta
+  const measuredCycles = cycles.filter(cy => cy.measured);
+  const typicalRef = (typical != null && typical > 0)
+    ? typical
+    : typicalMgPerDose(ws, cons);
+  const unreliableByTouches = new Map(); // cycle -> { consumed, doseCount, mgPerDose }
+  if (typicalRef != null && typicalRef > 0 && measuredCycles.length >= 3) {
+    for (const cy of measuredCycles) {
+      const n = doseCountByCycle.get(cy) || 0;
+      if (n <= 0) continue;
+      const mgPerDose = cy.consumed / n;
+      if (mgPerDose > typicalRef * HIGH_RATIO) {
+        unreliableByTouches.set(cy, {
+          consumed: Math.round(cy.consumed),
+          doseCount: n,
+          mgPerDose: Math.round(mgPerDose),
+          typical: Math.round(typicalRef),
+        });
+      }
+    }
+  }
+
   const perDay = {};
   const ensure = (d) => (perDay[d] = perDay[d] || { mg: 0, doseCount: 0, measuredDoses: 0, estimatedDoses: 0, unknownDoses: 0, reasons: new Set() });
 
@@ -147,10 +176,16 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     const day = ensure(d);
     day.doseCount++;
     const cy = cycleForDose(toMs(c.timestamp));
-    if (cy && cy.measured) {
+    const suspect = cy ? unreliableByTouches.get(cy) : null;
+    if (cy && cy.measured && !suspect) {
       const n = doseCountByCycle.get(cy) || 1;
       day.mg += cy.consumed / n;
       day.measuredDoses++;
+    } else if (suspect) {
+      // Período com toques a menos: conta o toque, mas SEM mg (não inventar).
+      day.unknownDoses++;
+      day.reasons.add('missingTouches');
+      if (!day.gapDetail) day.gapDetail = suspect;
     } else {
       day.unknownDoses++;
       // Guardar o PORQUÊ. Sem ciclo, distinguir os dois casos MUITO diferentes:
@@ -283,18 +318,16 @@ export function typicalMgPerDose(weighings = [], consumptions = []) {
     .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
   const cons = [...consumptions].filter(c => c && c.timestamp && toMs(c.timestamp) != null);
 
+  // Usa TODOS os ciclos medidos, incluindo os fechados por troca de saco (desde
+  // que a tara é descontada, esses também são fiáveis). Antes eram ignorados, o
+  // que deixava o "típico" apoiado em pouquíssimos ciclos para quem troca de
+  // saco com frequência. Ciclos "não pesei"/refill esquecido ficam de fora
+  // (buildCycles já os marca como não medidos).
   const perDoseValues = [];
-  for (let i = 1; i < ws.length; i++) {
-    const prev = ws[i - 1];
-    const curr = ws[i];
-    if (prev.notWeighed || curr.notWeighed || curr.isNewBag) continue;
-    if (prev.full == null || curr.before == null) continue;
-    const consumed = prev.full - curr.before;
-    if (consumed < 0) continue;
-    const start = toMs(prev.timestamp);
-    const end = toMs(curr.timestamp);
-    const n = cons.filter(c => { const t = toMs(c.timestamp); return t > start && t <= end; }).length;
-    if (n > 0) perDoseValues.push(consumed / n);
+  for (const cy of buildCycles(ws)) {
+    if (!cy.measured || cy.consumed == null || cy.consumed < 0) continue;
+    const n = cons.filter(c => { const t = toMs(c.timestamp); return t > cy.start && t <= cy.end; }).length;
+    if (n > 0) perDoseValues.push(cy.consumed / n);
   }
   if (perDoseValues.length === 0) return null;
   perDoseValues.sort((a, b) => a - b);
