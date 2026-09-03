@@ -998,12 +998,13 @@ export function HistoryView({
                                                             >
                                                                 {isEN ? 'Per weighed period' : 'Por período pesado'} {showPeriods ? '▴' : '▾'}
                                                             </button>
-                                                            <p className="text-xs text-gray-500 mt-1 mb-2">
-                                                                {isEN
-                                                                    ? 'What actually left the bag between two weighings. This comes from the scale, so it holds even when uses are missing.'
-                                                                    : 'O que saiu mesmo do saco entre duas pesagens. Vem da balança, por isso vale mesmo quando faltam toques.'}
-                                                            </p>
                                                             {showPeriods && (
+                                                                <>
+                                                                <p className="text-xs text-gray-500 mt-1 mb-2">
+                                                                    {isEN
+                                                                        ? 'What actually left the bag between two weighings. This comes from the scale, so it holds even when uses are missing.'
+                                                                        : 'O que saiu mesmo do saco entre duas pesagens. Vem da balança, por isso vale mesmo quando faltam toques.'}
+                                                                </p>
                                                                 <div className="space-y-1">
                                                                     {weighedPeriods.slice(0, showAllPeriods ? undefined : 8).map(p => {
                                                                         const f = (ms) => new Date(ms).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
@@ -1033,10 +1034,22 @@ export function HistoryView({
                                                                         </button>
                                                                     )}
                                                                 </div>
+                                                                </>
                                                             )}
                                                         </div>
                                                     )}
 
+                                                    {/* Título próprio para a lista de registos — sem ele, colava-se à
+                                                        secção de cima e "260 mg postos no saco" parecia ser "o que
+                                                        saiu do saco" (é o contrário: o que lá foi POSTO). */}
+                                                    <h4 className="text-sm font-semibold text-white mb-1">
+                                                        {isEN ? 'Records' : 'Registos'}
+                                                    </h4>
+                                                    <p className="text-xs text-gray-500 mb-3">
+                                                        {isEN
+                                                            ? 'Each weighing (how much you put IN the bag) and each mg entry, by date.'
+                                                            : 'Cada pesagem (quanto PUSESTE no saco) e cada registo de mg, por data.'}
+                                                    </p>
                                                     {doseItems.length === 0 ? (
                                                         <p className="text-sm text-gray-400">{isEN ? 'No doses recorded in this period.' : 'Sem dosagens registadas neste período.'}</p>
                                                     ) : (
