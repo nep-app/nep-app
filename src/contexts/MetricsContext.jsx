@@ -19,6 +19,23 @@ export const useMetrics = () => {
 export const MetricsProvider = ({ children }) => {
   const { consumptions, wellbeingLogs, reflections, cycles, goals, dailyLogs, thoughts, weighings, fullDataLoaded } = useData();
 
+  // DIAS "NÃO REGISTEI": dias que a pessoa marcou como sem registo nenhum.
+  // Isto NÃO é o mesmo que um dia a zero. É informação em falta: um dia sem
+  // registo não prova que não houve consumo, por isso não pode entrar nas médias
+  // como 0 (baixava a média sem razão) nem ser contado como dia observado.
+  // Fica GUARDADO (dailyLogs → sincroniza), ao contrário do "está correto" dos
+  // gaps, que só vivia no localStorage deste telemóvel.
+  const unloggedDates = useMemo(() => {
+    const s = new Set();
+    (dailyLogs || []).forEach(l => {
+      if (l && l.notLogged) {
+        const d = l.date || getDateKeyFromItem(l);
+        if (d) s.add(d);
+      }
+    });
+    return s;
+  }, [dailyLogs]);
+
   // mg/dia DERIVADOS das pesagens, SÓ dos dias medidos a sério (todas as doses
   // pesadas). Estimativas nunca entram — a app não inventa mg. Serve para o resumo
   // por dia, e assim a pesagem chega às páginas pesadas (Padrões/Análises/Coach).
@@ -26,14 +43,14 @@ export const MetricsProvider = ({ children }) => {
     const out = {};
     if (!weighings || weighings.length === 0) return out;
     try {
-      const typical = typicalMgPerDose(weighings, consumptions);
-      const perDay = deriveDailyMg(weighings, consumptions, { typical });
+      const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
+      const perDay = deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
       for (const [date, day] of Object.entries(perDay || {})) {
         if (day && day.mg > 0 && day.state === 'measured') out[date] = day.mg;
       }
     } catch (e) { /* best-effort: nunca parte as métricas */ }
     return out;
-  }, [weighings, consumptions]);
+  }, [weighings, consumptions, unloggedDates]);
 
   // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
   // explicar a ausência em vez de saltar o dia em silêncio.
@@ -41,7 +58,7 @@ export const MetricsProvider = ({ children }) => {
     const out = {};
     if (!weighings || weighings.length === 0) return out;
     try {
-      const perDay = deriveDailyMg(weighings, consumptions);
+      const perDay = deriveDailyMg(weighings, consumptions, { unloggedDates });
       for (const [date, day] of Object.entries(perDay || {})) {
         if (day && day.state !== 'measured' && day.reasons && day.reasons.length) {
           out[date] = { codes: day.reasons, detail: day.gapDetail || null };
@@ -49,7 +66,7 @@ export const MetricsProvider = ({ children }) => {
       }
     } catch (e) { /* best-effort */ }
     return out;
-  }, [weighings, consumptions]);
+  }, [weighings, consumptions, unloggedDates]);
 
   const atypicalDates = useMemo(() => {
     const s = new Set();
@@ -62,17 +79,29 @@ export const MetricsProvider = ({ children }) => {
     return s;
   }, [wellbeingLogs]);
 
+  // Dias fora das contas: atípicos (aconteceram de forma diferente) e dias
+  // marcados "não registei" (o que lá está é parte da história, não a história
+  // toda — usá-lo como se fosse um dia completo enviesava as médias para baixo).
+  const excludedDates = useMemo(() => {
+    if (unloggedDates.size === 0) return atypicalDates;
+    const s = new Set(atypicalDates);
+    unloggedDates.forEach(d => s.add(d));
+    return s;
+  }, [atypicalDates, unloggedDates]);
+
   const filteredConsumptions = useMemo(() =>
-    consumptions.filter(c => !atypicalDates.has(c.date || getDateKeyFromItem(c))),
-  [consumptions, atypicalDates]);
+    consumptions.filter(c => !excludedDates.has(c.date || getDateKeyFromItem(c))),
+  [consumptions, excludedDates]);
 
   const filteredCycles = useMemo(() =>
-    cycles.filter(c => !atypicalDates.has(c.date || getDateKeyFromItem(c))),
-  [cycles, atypicalDates]);
+    cycles.filter(c => !excludedDates.has(c.date || getDateKeyFromItem(c))),
+  [cycles, excludedDates]);
 
+  // As marcas "não registei" são metadados, não registos: não podem contar como
+  // dia com dados (senão faziam streak e enchiam as contagens de registos).
   const filteredDailyLogs = useMemo(() =>
-    dailyLogs.filter(l => !atypicalDates.has(l.date || getDateKeyFromItem(l))),
-  [dailyLogs, atypicalDates]);
+    dailyLogs.filter(l => !l?.notLogged && !excludedDates.has(l.date || getDateKeyFromItem(l))),
+  [dailyLogs, excludedDates]);
 
   const filteredWellbeingLogs = useMemo(() =>
     wellbeingLogs.filter(w => !w.isAtypical),
@@ -204,12 +233,12 @@ export const MetricsProvider = ({ children }) => {
     });
     // Pesagem MEDIDA preenche os dias que ainda não têm mg (registo à mão manda).
     Object.entries(weighingMeasuredMgByDate).forEach(([dk, mg]) => {
-      if (atypicalDates.has(dk)) return;
+      if (excludedDates.has(dk)) return;
       if (!out[dk]) out[dk] = blank();
       if (out[dk].mg == null) out[dk].mg = mg;
     });
     return out;
-  }, [consumptionDailyRollup, cyclesByDate, wellbeingByDate, dailyLogsByDate, weighingMeasuredMgByDate, atypicalDates]);
+  }, [consumptionDailyRollup, cyclesByDate, wellbeingByDate, dailyLogsByDate, weighingMeasuredMgByDate, excludedDates]);
 
   const [persistedSummary, setPersistedSummary] = useState(null);
   useEffect(() => {
@@ -241,6 +270,9 @@ export const MetricsProvider = ({ children }) => {
     let nonAtypicalDayCount = 0;
     last7Dates.forEach(date => {
       if (atypicalDates.has(date)) return;
+      // Dia marcado "não registei" = dado em falta, não um dia a zero. Contá-lo
+      // como 0 baixava a média das vezes por dia sem que nada tivesse mudado.
+      if (unloggedDates.has(date)) return;
       nonAtypicalDayCount++;
       totalConsumptions += consumptionsByDate[date] || 0;
     });
@@ -282,7 +314,7 @@ export const MetricsProvider = ({ children }) => {
     const avgMg = mgValues.length > 0 ? (mgValues.reduce((sum, mg) => sum + mg, 0) / mgValues.length).toFixed(0) : 0;
 
     return { avgTimes, avgMg };
-  }, [consumptionsByDate, cyclesByDate, dailyLogsByDate, weighingMeasuredMgByDate, atypicalDates]);
+  }, [consumptionsByDate, cyclesByDate, dailyLogsByDate, weighingMeasuredMgByDate, atypicalDates, unloggedDates]);
 
   // Average frequency with 2h+ interval rule
   const avgFrequencyLast7Days = useMemo(() => {
@@ -473,12 +505,14 @@ export const MetricsProvider = ({ children }) => {
     dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
     weighingMeasuredMgByDate, // mg/dia derivados das pesagens (só dias medidos a 100%)
     mgGapReasonsByDate, // porque é que um dia ficou sem mg fiável
+    unloggedDates, // dias marcados "não registei" (dados em falta, não zeros)
+    atypicalDates, // dias marcados como atípicos (fora das médias)
   }), [
     analysis.intervalStats, analysis.lastInterval, todayConsumptions,
     analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
     timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
     consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
-    mgGapReasonsByDate,
+    mgGapReasonsByDate, unloggedDates, atypicalDates,
   ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

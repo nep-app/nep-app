@@ -66,9 +66,15 @@ export const GapsReport = React.memo(({ onFillGap }) => {
     });
 
     const dailyLogDates = new Set();
+    // Dias marcados como "não registei": não são registos de mg (são o
+    // contrário), por isso não contam como preenchidos — mas também não se
+    // pede à pessoa que os preencha: ela já disse que não há o que preencher.
+    const unloggedDates = new Set();
     dailyLogs.forEach(log => {
       const logDate = log.date || (log.timestamp ? safeToISODate(log.timestamp) : null);
-      if (logDate) dailyLogDates.add(logDate);
+      if (!logDate) return;
+      if (log.notLogged) { unloggedDates.add(logDate); return; }
+      dailyLogDates.add(logDate);
     });
 
     // Dias com pesagem (ou "não pesei"): contam como mg registado — a app deriva
@@ -140,8 +146,20 @@ export const GapsReport = React.memo(({ onFillGap }) => {
       const hasReflection = reflectionDates.has(dateKey);
       const hasThought = thoughtDates.has(dateKey);
 
+      // Dia assumidamente sem registo: não há buraco a apontar.
+      const isUnlogged = unloggedDates.has(dateKey);
+
       // Construir lista de gaps RAW (sem filtrar confirmados ainda)
       const gaps = [];
+      if (isUnlogged) {
+        days.push({
+          date: dateKey, dateObj: date, dayName, dayNumber, monthName,
+          hasConsumptions, hasDailyLog, hasCycle, hasWellbeingCore,
+          hasEmotions, hasReflection, hasThought,
+          gaps, isUnlogged, isComplete: false,
+        });
+        continue;
+      }
       if (!hasConsumptions) gaps.push({ type: 'consumption', label: 'consumos' });
       if (!hasDailyLog) gaps.push({ type: 'dailyLog', label: 'mg' });
       if (!hasCycle) gaps.push({ type: 'cycle', label: 'ciclo' });

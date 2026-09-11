@@ -10,6 +10,7 @@ import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeT
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 import { periodInfoForClosing, typicalMgPerDose, measuredPeriods } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
+import { UnloggedDaysPanel } from '../components/ui/UnloggedDaysPanel';
 import { EMOTION_EN } from '../constants/emotions';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
@@ -206,15 +207,15 @@ export function HistoryView({
 
     // mg/toque típico — referência para a pessoa julgar um período suspeito.
     const typicalPerDose = useMemo(
-        () => typicalMgPerDose(weighings || [], consumptions || []),
-        [weighings, consumptions]
+        () => typicalMgPerDose(weighings || [], consumptions || [], { unloggedDates: metrics?.unloggedDates }),
+        [weighings, consumptions, metrics?.unloggedDates]
     );
 
     // PERÍODOS PESADOS: o que saiu do saco entre duas pesagens. Vem da balança,
     // não depende de toques — é o que continua verdade quando faltam registos.
     const weighedPeriods = useMemo(
-        () => measuredPeriods(weighings || [], consumptions || []),
-        [weighings, consumptions]
+        () => measuredPeriods(weighings || [], consumptions || [], { unloggedDates: metrics?.unloggedDates }),
+        [weighings, consumptions, metrics?.unloggedDates]
     );
 
     // Dias marcados como ATÍPICOS (ficam fora das médias).
@@ -229,6 +230,9 @@ export function HistoryView({
         return s;
     }, [wellbeingLogs]);
 
+    // Dias marcados como "NÃO REGISTEI" (dados em falta, não zeros).
+    const unloggedDates = metrics?.unloggedDates || new Set();
+
     // Dias COM consumos mas SEM valor de mg — e o motivo. Sem isto, o "Total por
     // dia" limitava-se a saltar dias em silêncio, o que parece um erro.
     const missingMgDays = useMemo(() => {
@@ -236,28 +240,34 @@ export function HistoryView({
             const summary = metrics?.dailySummary || {};
             const seen = new Set();
             const arr = [];
-            for (const c of (consumptions || [])) {
-                const d = c.date || safeToISODate(c.timestamp);
-                if (!d || seen.has(d)) continue;
+            const consider = (d) => {
+                if (!d || seen.has(d)) return;
                 seen.add(d);
                 const mg = summary[d]?.mg;
-                if (mg != null && mg > 0) continue;
+                if (mg != null && mg > 0) return;
                 // Motivo concreto vindo do motor de mg (troca de saco sem pesos,
-                // "não pesei", saco ainda em aberto, …). Atípico manda sempre.
+                // "não pesei", saco ainda em aberto, …). A marca da pessoa manda
+                // sempre sobre o que a app deduz.
                 const gap = metrics?.mgGapReasonsByDate?.[d] || null;
                 const codes = gap?.codes || [];
                 // "Faltam toques" manda sobre os outros motivos: é o que explica
                 // um dia inflacionado, e é o que a pessoa pode corrigir.
-                const code = codes.includes('missingTouches') ? 'missingTouches' : (codes[0] || 'unmeasured');
+                const code = codes.includes('unloggedDaysInPeriod')
+                    ? 'unloggedDaysInPeriod'
+                    : codes.includes('missingTouches') ? 'missingTouches' : (codes[0] || 'unmeasured');
                 arr.push({
                     date: d,
-                    reason: atypicalDates.has(d) ? 'atypical' : code,
+                    reason: unloggedDates.has(d) ? 'unlogged' : atypicalDates.has(d) ? 'atypical' : code,
                     detail: gap?.detail || null,
                 });
-            }
+            };
+            for (const c of (consumptions || [])) consider(c.date || safeToISODate(c.timestamp));
+            // Dias marcados "não registei" não têm consumos — mas têm de aparecer
+            // na explicação, senão a pessoa vê um buraco sem motivo nenhum.
+            unloggedDates.forEach(d => consider(d));
             return filterByDateRange(arr, dateRange, 'date').sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
-    }, [consumptions, metrics?.dailySummary, metrics?.mgGapReasonsByDate, atypicalDates, dateRange]);
+    }, [consumptions, metrics?.dailySummary, metrics?.mgGapReasonsByDate, atypicalDates, unloggedDates, dateRange]);
 
     // Motivos em linguagem simples (o objetivo é a pessoa perceber o que fazer).
     const mgGapReasonText = (code) => {
@@ -276,6 +286,10 @@ export function HistoryView({
                 return isEN ? '⚖️ weights look swapped (negative result)' : '⚖️ pesos parecem trocados (deu negativo)';
             case 'missingTouches':
                 return isEN ? '➕ uses missing in this period' : '➕ faltam toques registados neste período';
+            case 'unlogged':
+                return isEN ? '🕳️ you marked it as not logged' : '🕳️ marcaste como "não registei"';
+            case 'unloggedDaysInPeriod':
+                return isEN ? '🕳️ period covers days you did not log' : '🕳️ período apanha dias que não registaste';
             case 'beforeFirstWeighing':
                 return isEN ? '⚖️ before you started weighing' : '⚖️ antes de teres começado a pesar';
             case 'afterLastWeighing':
@@ -521,6 +535,11 @@ export function HistoryView({
 
                                     {/* Gaps Report - Preencher dados em falta */}
                                     {handleFillGap && <GapsReport onFillGap={handleFillGap} />}
+
+                                    {/* Dias que simplesmente não foram registados: dado em
+                                        falta, não um dia a zero. Fica ao lado dos gaps porque
+                                        é a resposta para quando não há nada a preencher. */}
+                                    <UnloggedDaysPanel />
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
@@ -937,8 +956,8 @@ export function HistoryView({
                                                                         className="text-xs text-gray-400 hover:text-gray-200 underline"
                                                                     >
                                                                         {isEN
-                                                                            ? `${missingMgDays.length} day(s) with uses but no mg value — why?`
-                                                                            : `${missingMgDays.length} dia(s) com consumos mas sem mg — porquê?`}
+                                                                            ? `${missingMgDays.length} day(s) without an mg value — why?`
+                                                                            : `${missingMgDays.length} dia(s) sem valor de mg — porquê?`}
                                                                     </button>
                                                                     {showMissingMgDays && (
                                                                         <div className="mt-2 space-y-1">
@@ -959,6 +978,23 @@ export function HistoryView({
                                                                                             {isEN
                                                                                                 ? `${d.detail.consumed} mg left the bag with only ${d.detail.doseCount} uses logged (≈${d.detail.mgPerDose} mg/use vs your usual ~${d.detail.typical}). If you remember the missing uses, add them and the value comes back — if not, the ${d.detail.consumed} mg are still counted under "Per weighed period" above.`
                                                                                                 : `Saíram ${d.detail.consumed} mg do saco com apenas ${d.detail.doseCount} toques registados (≈${d.detail.mgPerDose} mg/toque, o teu normal ~${d.detail.typical}). Se te lembrares dos toques que faltam, regista-os e o valor volta — se não, os ${d.detail.consumed} mg continuam contados em "Por período pesado", aqui em cima.`}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {/* Período que atravessa dias "não registei": dizer o que
+                                                                                        é sólido (o total do saco) e porque é que não dá para
+                                                                                        repartir por dia. */}
+                                                                                    {d.reason === 'unloggedDaysInPeriod' && d.detail && d.detail.consumed != null && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN
+                                                                                                ? `${d.detail.consumed} mg left the bag in a period that covers ${d.detail.dates.length} day(s) you marked as not logged. Splitting it per day would pile those mg onto the days that do have uses, so it is not split — the ${d.detail.consumed} mg still count under "Per weighed period", above.`
+                                                                                                : `Saíram ${d.detail.consumed} mg do saco num período que apanha ${d.detail.dates.length} dia(s) que marcaste como não registados. Reparti-los por dia empilhava esses mg nos dias que têm toques, por isso não se repartem — os ${d.detail.consumed} mg continuam contados em "Por período pesado", aqui em cima.`}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {d.reason === 'unlogged' && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN
+                                                                                                ? 'Missing information, not a zero: this day is left out of the averages instead of dragging them down.'
+                                                                                                : 'Informação em falta, não um zero: este dia fica de fora das médias em vez de as puxar para baixo.'}
                                                                                         </div>
                                                                                     )}
                                                                                     {/* Dizer QUAL pesagem e QUE peso falta — sem isso a
@@ -1020,6 +1056,15 @@ export function HistoryView({
                                                                                     {p.mgPerDose != null && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
                                                                                     {' · ≈'}{Math.round(p.consumed / p.days)} mg/{isEN ? 'day' : 'dia'}
                                                                                 </div>
+                                                                                {/* O total continua fiável (veio da balança); o mg/toque
+                                                                                    é que não, porque faltam os toques desses dias. */}
+                                                                                {p.unloggedDays && p.unloggedDays.length > 0 && (
+                                                                                    <div className="text-[11px] text-amber-400/70 mt-0.5 leading-snug">
+                                                                                        {isEN
+                                                                                            ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged — the ${p.consumed} mg total still holds, the per-use value does not.`
+                                                                                            : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como não registados — o total de ${p.consumed} mg continua a valer, o mg/toque é que não.`}
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })}

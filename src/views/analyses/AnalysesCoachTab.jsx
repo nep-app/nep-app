@@ -18,6 +18,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     goals,
     consumptions,
     mgByDate,
+    unloggedDates,
     patternsPeriod,
     patternsPeriodOffset,
 }) {
@@ -348,7 +349,28 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         const pctNoLate = ((cyclesWithNoLateConsumption / analysisCycles.length) * 100).toFixed(0);
 
+                        // COBERTURA: uma média de 20 dias não quer dizer o mesmo se o
+                        // período tinha 20 dias ou 60. Dizer de quantos dias falamos é
+                        // o que torna a média honesta — sem isto, dias em falta somem
+                        // em silêncio e a média parece valer para o período todo.
+                        const isEN = i18n.language === 'en';
+                        const dayKeyOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        const range = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                        const allDates = [...mgDates, ...Object.keys(consumptionsByDate)].sort();
+                        const spanStartKey = range.start ? dayKeyOf(range.start) : (allDates[0] || null);
+                        const spanEndKey = range.end ? dayKeyOf(range.end) : getTodayKey();
+                        let spanDays = null;
+                        if (spanStartKey && spanEndKey && spanStartKey <= spanEndKey) {
+                            const a = new Date(`${spanStartKey}T12:00:00`);
+                            const b = new Date(`${spanEndKey}T12:00:00`);
+                            spanDays = Math.round((b - a) / 86400000) + 1;
+                        }
+                        const unloggedInSpan = unloggedDates
+                            ? [...unloggedDates].filter(d => (!spanStartKey || d >= spanStartKey) && (!spanEndKey || d <= spanEndKey)).length
+                            : 0;
+
                         return (
+                            <>
                             <p>
                                 📊 <strong className={('text-cyan-400')}>{t('coach.quantityLabel')}</strong>{' '}
                                 {t('coach.quantityText', { mg: avgMgPerDay.toFixed(0), n: uniqueDaysWithMg, label: t(uniqueDaysWithMg === 1 ? 'coach.day_singular' : 'coach.day_plural') })}
@@ -363,6 +385,17 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 )}
                                 {analysisCycles.length >= 3 && <> {t(pctNoLate >= 70 ? 'coach.quantityNoLateHighPct' : pctNoLate >= 50 ? 'coach.quantityNoLateMedPct' : 'coach.quantityNoLateLowPct', { pct: pctNoLate })}</>}
                             </p>
+                            {spanDays != null && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    {isEN
+                                        ? `This average is built on ${uniqueDaysWithMg} of the ${spanDays} days in the period.`
+                                        : `Esta média é feita com ${uniqueDaysWithMg} dos ${spanDays} dias do período.`}
+                                    {unloggedInSpan > 0 && (isEN
+                                        ? ` ${unloggedInSpan} of them you marked as "not logged" — missing information, so they are left out instead of counting as zero.`
+                                        : ` ${unloggedInSpan} deles marcaste como "não registei" — informação em falta, por isso ficam de fora em vez de contarem como zero.`)}
+                                </p>
+                            )}
+                            </>
                         );
                     })()}
                 </div>

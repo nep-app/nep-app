@@ -31,6 +31,38 @@ const toMs = (t) => {
 
 const dayKey = (item) => item.date || (typeof item.timestamp === 'string' ? item.timestamp.split('T')[0] : null);
 
+// Normaliza a lista de dias marcados como "não registei" (Set ou array) para Set.
+const toDateSet = (v) => {
+  if (!v) return null;
+  if (v instanceof Set) return v.size ? v : null;
+  if (Array.isArray(v)) return v.length ? new Set(v) : null;
+  return null;
+};
+
+// Datas de calendário (locais) que um período [start,end] em ms atravessa.
+const datesBetween = (startMs, endMs) => {
+  const out = [];
+  if (startMs == null || endMs == null || endMs < startMs) return out;
+  const d = new Date(startMs);
+  d.setHours(12, 0, 0, 0);
+  const last = new Date(endMs);
+  last.setHours(12, 0, 0, 0);
+  let guard = 0;
+  while (d.getTime() <= last.getTime() && guard++ < 1000) {
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+};
+
+// Dias "não registei" que caem dentro de um ciclo (entre duas pesagens).
+// Um ciclo assim NÃO pode ser repartido por toques: o que saiu do saco nesses
+// dias não tem toques onde assentar e iria empilhar-se nos dias que têm.
+const unloggedInCycle = (cy, unloggedSet) => {
+  if (!unloggedSet) return [];
+  return datesBetween(cy.start, cy.end).filter(d => unloggedSet.has(d));
+};
+
 // Constrói a lista de ciclos entre refills consecutivos (interno, reutilizado).
 function buildCycles(ws) {
   const cycles = [];
@@ -113,11 +145,13 @@ export function lastMeasuredPeriod(weighings = []) {
 /**
  * @param {Array} weighings   pesagens desencriptadas
  * @param {Array} consumptions doses desencriptadas
- * @param {Object} [opts] { typical } mg/dose típico para ESTIMAR dias sem peso.
+ * @param {Object} [opts] { typical, unloggedDates } mg/dose típico e dias que a
+ *        pessoa marcou como "não registei" (dados em falta, não zeros).
  * @returns {Object} { [date]: { mg, state, doseCount, measuredDoses, estimatedDoses, unknownDoses, estimated } }
  */
 export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const typical = (opts.typical != null && !isNaN(opts.typical) && opts.typical > 0) ? opts.typical : null;
+  const unloggedSet = toDateSet(opts.unloggedDates);
 
   const ws = [...weighings]
     .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
@@ -151,8 +185,28 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const measuredCycles = cycles.filter(cy => cy.measured);
   const typicalRef = (typical != null && typical > 0)
     ? typical
-    : typicalMgPerDose(ws, cons);
+    : typicalMgPerDose(ws, cons, { unloggedDates: unloggedSet });
   const unreliableByTouches = new Map(); // cycle -> { consumed, doseCount, mgPerDose }
+
+  // ⚠️ DIAS "NÃO REGISTEI": a pessoa disse-nos que nesses dias não registou nada.
+  // Não são zeros — são dados em falta. Se o período pesado atravessa um desses
+  // dias, os mg que saíram do saco nesses dias não têm toques onde assentar e
+  // seriam empilhados nos dias que têm (o dia bom fica com o dobro). Por isso o
+  // período inteiro deixa de ser repartido por dia: o total continua a contar em
+  // "Por período pesado", que é o que a balança sabe mesmo.
+  const unreliableByUnlogged = new Map(); // cycle -> { consumed, dates, doseCount }
+  if (unloggedSet) {
+    for (const cy of measuredCycles) {
+      const dates = unloggedInCycle(cy, unloggedSet);
+      if (dates.length === 0) continue;
+      unreliableByUnlogged.set(cy, {
+        consumed: Math.round(cy.consumed),
+        dates,
+        doseCount: doseCountByCycle.get(cy) || 0,
+      });
+    }
+  }
+
   if (typicalRef != null && typicalRef > 0 && measuredCycles.length >= 3) {
     for (const cy of measuredCycles) {
       const n = doseCountByCycle.get(cy) || 0;
@@ -183,11 +237,17 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     const day = ensure(d);
     day.doseCount++;
     const cy = cycleForDose(toMs(c.timestamp));
+    const unlogged = cy ? unreliableByUnlogged.get(cy) : null;
     const suspect = cy ? unreliableByTouches.get(cy) : null;
-    if (cy && cy.measured && !suspect) {
+    if (cy && cy.measured && !suspect && !unlogged) {
       const n = doseCountByCycle.get(cy) || 1;
       day.mg += cy.consumed / n;
       day.measuredDoses++;
+    } else if (unlogged) {
+      // Período que atravessa dias "não registei": conta o toque, SEM mg.
+      day.unknownDoses++;
+      day.reasons.add('unloggedDaysInPeriod');
+      if (!day.gapDetail) day.gapDetail = unlogged;
     } else if (suspect) {
       // Período com toques a menos: conta o toque, mas SEM mg (não inventar).
       day.unknownDoses++;
@@ -276,7 +336,8 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
  * dia. É a forma honesta de ver o consumo quando faltam toques.
  * @returns {Array<{start:number,end:number,consumed:number,doseCount:number,mgPerDose:number|null,days:number}>}
  */
-export function measuredPeriods(weighings = [], consumptions = []) {
+export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
+  const unloggedSet = toDateSet(opts.unloggedDates);
   const ws = [...weighings]
     .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
     .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
@@ -292,6 +353,7 @@ export function measuredPeriods(weighings = [], consumptions = []) {
     // Nº de dias de calendário que o período toca (início e fim inclusive).
     const dayStart = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
     const days = Math.max(1, Math.round((dayStart(cy.end) - dayStart(cy.start)) / 86400000) + 1);
+    const unloggedDays = unloggedInCycle(cy, unloggedSet);
     out.push({
       start: cy.start,
       end: cy.end,
@@ -299,6 +361,9 @@ export function measuredPeriods(weighings = [], consumptions = []) {
       doseCount,
       mgPerDose: doseCount > 0 ? Math.round(cy.consumed / doseCount) : null,
       days,
+      // Dias dentro do período que a pessoa marcou como "não registei" — o
+      // total continua fiável (veio da balança), o mg/toque é que não.
+      unloggedDays,
     });
   }
   return out.sort((a, b) => b.end - a.end); // mais recente primeiro
@@ -355,7 +420,8 @@ export function periodInfoForClosing(weighings = [], consumptions = [], closingI
  * base para o design anti-culpa (mostrar padrões) e, mais tarde, para estimativas
  * e para detetar refills esquecidos (mg/dose muito abaixo do típico).
  */
-export function typicalMgPerDose(weighings = [], consumptions = []) {
+export function typicalMgPerDose(weighings = [], consumptions = [], opts = {}) {
+  const unloggedSet = toDateSet(opts.unloggedDates);
   const ws = [...weighings]
     .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
     .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
@@ -369,6 +435,9 @@ export function typicalMgPerDose(weighings = [], consumptions = []) {
   const perDoseValues = [];
   for (const cy of buildCycles(ws)) {
     if (!cy.measured || cy.consumed == null || cy.consumed < 0) continue;
+    // Períodos que atravessam dias "não registei" têm toques a menos por
+    // construção — usá-los empurrava o "típico" artificialmente para cima.
+    if (unloggedInCycle(cy, unloggedSet).length > 0) continue;
     const n = cons.filter(c => { const t = toMs(c.timestamp); return t > cy.start && t <= cy.end; }).length;
     if (n > 0) perDoseValues.push(cy.consumed / n);
   }

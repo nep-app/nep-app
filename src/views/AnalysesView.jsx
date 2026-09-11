@@ -23,7 +23,7 @@ export function AnalysesView({
     setPatternsPeriodOffset
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, reflections, thoughts } = useData();
-    const { dailySummary } = useMetrics();
+    const { dailySummary, unloggedDates } = useMetrics();
     const { selectedCycle } = useUI();
     const { t, i18n } = useTranslation();
 
@@ -164,6 +164,7 @@ export function AnalysesView({
                         goals={goals}
                         consumptions={consumptions}
                         mgByDate={analysisMgByDate}
+                        unloggedDates={unloggedDates}
                         patternsPeriod={patternsPeriod}
                         patternsPeriodOffset={patternsPeriodOffset}
                     />
