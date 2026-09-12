@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
@@ -394,6 +394,37 @@ export function HistoryView({
          ...filteredDailyLogs.map(log => ({ type: 'dailyLog', data: log, timestamp: log.timestamp || log.date }))]
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     ), [filteredConsumptions, filteredDailyLogs]);
+
+    // Diário (reflexões + pensamentos) — ordenado uma vez, não a cada render.
+    const diaryItemsSorted = useMemo(() => (
+        [...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
+         ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    ), [filteredReflections, filteredThoughts]);
+
+    // Dosagens (pesagens + registos de mg), a mesma lista dos dois lados.
+    const doseItemsSorted = useMemo(() => (
+        [...filteredWeighings.map(w => ({ kind: 'w', data: w, ts: w.timestamp || (w.date ? `${w.date}T12:00:00` : null) })),
+         ...filteredMgLogs.map(l => ({ kind: 'l', data: l, ts: l.timestamp || (l.date ? `${l.date}T12:00:00` : null) }))]
+            .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
+    ), [filteredWeighings, filteredMgLogs]);
+
+    // ⚡ LIMITES DE ECRÃ. Estas três listas desenhavam TUDO de uma vez: com o
+    // período "Tudo" e meses de registos eram milhares de cartões no ecrã ao
+    // mesmo tempo (cada um com botões e ícones), e o telemóvel ficava a arrastar
+    // só para os manter. Passam a mostrar um bocado e a crescer a pedido, como
+    // já faziam as reflexões, os ciclos e o bem-estar.
+    const PAGE = 30;
+    const [consumptionsToShow, setConsumptionsToShow] = useState(PAGE);
+    const [diaryToShow, setDiaryToShow] = useState(PAGE);
+    const [doseItemsToShow, setDoseItemsToShow] = useState(PAGE);
+    // Mudar de período ou de separador recomeça do início (senão ficava a
+    // arrastar o limite antigo de uma lista que já não é a mesma).
+    useEffect(() => {
+        setConsumptionsToShow(PAGE);
+        setDiaryToShow(PAGE);
+        setDoseItemsToShow(PAGE);
+    }, [historyTopic, historyPeriod, historyPeriodOffset]);
 
     const hasData = filteredReflections.length > 0 || filteredWellbeing.length > 0 || filteredDailyLogs.length > 0 || filteredConsumptions.length > 0 || filteredCycles.length > 0 || filteredThoughts.length > 0 || filteredWeighings.length > 0 || filteredMgLogs.length > 0;
 
@@ -909,10 +940,7 @@ export function HistoryView({
                                             {historyTopic === 'pesagens' && (() => {
                                                 // As duas formas de registar dosagem, numa lista só, por ordem
                                                 // de data (mais recente primeiro).
-                                                const doseItems = [
-                                                    ...filteredWeighings.map(w => ({ kind: 'w', data: w, ts: w.timestamp || (w.date ? `${w.date}T12:00:00` : null) })),
-                                                    ...filteredMgLogs.map(l => ({ kind: 'l', data: l, ts: l.timestamp || (l.date ? `${l.date}T12:00:00` : null) })),
-                                                ].sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+                                                const doseItems = doseItemsSorted;
                                                 return (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                     <h3 className="font-semibold text-white mb-1 flex items-center gap-2">⚖️ {isEN ? 'Doses' : 'Dosagens'} ({doseItems.length})</h3>
@@ -1099,7 +1127,15 @@ export function HistoryView({
                                                         <p className="text-sm text-gray-400">{isEN ? 'No doses recorded in this period.' : 'Sem dosagens registadas neste período.'}</p>
                                                     ) : (
                                                         <div className="space-y-3">
-                                                            {doseItems.map(it => it.kind === 'w' ? renderWeighing(it.data) : renderMgLog(it.data))}
+                                                            {doseItems.slice(0, doseItemsToShow).map(it => it.kind === 'w' ? renderWeighing(it.data) : renderMgLog(it.data))}
+                                                        {doseItems.length > doseItemsToShow && (
+                                                            <button
+                                                                onClick={() => setDoseItemsToShow(prev => prev + PAGE)}
+                                                                className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2"
+                                                            >
+                                                                {t('history.showMore', { count: doseItems.length - doseItemsToShow })}
+                                                            </button>
+                                                        )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1116,9 +1152,7 @@ export function HistoryView({
                                                         📖 {filteredThoughts.length} {isEN ? (filteredThoughts.length === 1 ? 'thought' : 'thoughts') : (filteredThoughts.length === 1 ? 'pensamento' : 'pensamentos')}
                                                     </p>
                                                     <div className="space-y-4">
-                                                        {[...filteredReflections.map(r => ({ type: 'reflection', data: r, timestamp: r.timestamp || r.date })),
-                                                          ...filteredThoughts.map(t => ({ type: 'thought', data: t, timestamp: t.timestamp || t.date }))]
-                                                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                                                        {diaryItemsSorted.slice(0, diaryToShow)
                                                             .map(item => {
                                                                 if (item.type === 'reflection') {
                                                                     const r = item.data;
@@ -1246,6 +1280,14 @@ export function HistoryView({
                                                                 }
                                                             })
                                                         }
+                                                        {diaryItemsSorted.length > diaryToShow && (
+                                                            <button
+                                                                onClick={() => setDiaryToShow(prev => prev + PAGE)}
+                                                                className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2"
+                                                            >
+                                                                {t('history.showMore', { count: diaryItemsSorted.length - diaryToShow })}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
@@ -1500,7 +1542,7 @@ export function HistoryView({
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
                                                         <div className="space-y-3">
-                                                            {consumptionLogsSorted.map(item => {
+                                                            {consumptionLogsSorted.slice(0, consumptionsToShow).map(item => {
                                                                     if (item.type === 'consumption') {
                                                                         const c = item.data;
                                                                         return (
@@ -1562,6 +1604,14 @@ export function HistoryView({
                                                                     }
                                                                 })
                                                             }
+                                                            {consumptionLogsSorted.length > consumptionsToShow && (
+                                                                <button
+                                                                    onClick={() => setConsumptionsToShow(prev => prev + PAGE)}
+                                                                    className="text-blue-400 hover:text-blue-300 text-sm font-medium mt-3 w-full py-2"
+                                                                >
+                                                                    {t('history.showMore', { count: consumptionLogsSorted.length - consumptionsToShow })}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

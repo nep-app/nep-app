@@ -63,6 +63,58 @@ const unloggedInCycle = (cy, unloggedSet) => {
   return datesBetween(cy.start, cy.end).filter(d => unloggedSet.has(d));
 };
 
+// ⚡ PREPARAÇÃO ÚNICA DAS DOSES.
+// O custo real destas funções não estava nas contas — estava em transformar
+// texto ("2025-09-01T12:00:00") em data. Cada função voltava a fazê-lo para
+// CADA dose e CADA ciclo: com 4000 doses e 90 pesagens dava ~350 mil conversões
+// por função, e há meia dúzia de funções destas a correr sempre que se abre o
+// Histórico ou as Análises. Agora converte-se uma vez só, aqui.
+function prepDoses(consumptions) {
+  const out = [];
+  for (const c of consumptions) {
+    if (!c || !c.timestamp) continue;
+    const ms = toMs(c.timestamp);
+    if (ms == null) continue;
+    out.push({ ms, day: dayKey(c) });
+  }
+  out.sort((a, b) => a.ms - b.ms);
+  return out;
+}
+
+// Pesagens válidas, por ordem de tempo. São poucas (dezenas), por isso o custo
+// aqui é irrelevante — o que interessa é toda a gente usar a MESMA função.
+function prepWeighings(weighings) {
+  return (weighings || [])
+    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
+    .slice()
+    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+}
+
+// A que ciclo pertence cada dose, numa passagem só (doses e ciclos ordenados e
+// encostados uns aos outros). Antes era uma procura por cada dose: doses ×
+// ciclos. Devolve, para cada dose, o índice do ciclo (ou -1 = fora de ciclo).
+function assignDoses(cycles, doses) {
+  const owner = new Int32Array(doses.length).fill(-1);
+  let ci = 0;
+  for (let di = 0; di < doses.length; di++) {
+    const ms = doses[di].ms;
+    while (ci < cycles.length && ms > cycles[ci].end) ci++;
+    if (ci >= cycles.length) break;
+    if (ms > cycles[ci].start && ms <= cycles[ci].end) owner[di] = ci;
+  }
+  return owner;
+}
+
+// Nº de doses por ciclo, a partir da atribuição acima.
+function countDosesByCycle(owner, nCycles) {
+  const counts = new Int32Array(nCycles);
+  for (let i = 0; i < owner.length; i++) {
+    const ci = owner[i];
+    if (ci >= 0) counts[ci]++;
+  }
+  return counts;
+}
+
 // Constrói a lista de ciclos entre refills consecutivos (interno, reutilizado).
 function buildCycles(ws) {
   const cycles = [];
@@ -129,9 +181,7 @@ function buildCycles(ws) {
  * @returns {null | { start:number, end:number, consumed:number }}
  */
 export function lastMeasuredPeriod(weighings = []) {
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+  const ws = prepWeighings(weighings);
   const cycles = buildCycles(ws);
   for (let i = cycles.length - 1; i >= 0; i--) {
     const cy = cycles[i];
@@ -153,26 +203,16 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const typical = (opts.typical != null && !isNaN(opts.typical) && opts.typical > 0) ? opts.typical : null;
   const unloggedSet = toDateSet(opts.unloggedDates);
 
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
-
-  const cons = [...consumptions]
-    .filter(c => c && c.timestamp && toMs(c.timestamp) != null);
+  const ws = prepWeighings(weighings);
+  const doses = opts._doses || prepDoses(consumptions);
 
   const cycles = buildCycles(ws);
-
-  const cycleForDose = (ms) => {
-    for (const cy of cycles) if (ms > cy.start && ms <= cy.end) return cy;
-    return null;
-  };
-
-  // Nº de doses (toques) de cada ciclo — o consumo do ciclo reparte-se por elas.
+  const owner = assignDoses(cycles, doses);
+  const counts = countDosesByCycle(owner, cycles.length);
   const doseCountByCycle = new Map();
-  for (const c of cons) {
-    const cy = cycleForDose(toMs(c.timestamp));
-    if (cy) doseCountByCycle.set(cy, (doseCountByCycle.get(cy) || 0) + 1);
-  }
+  cycles.forEach((cy, i) => { if (counts[i] > 0) doseCountByCycle.set(cy, counts[i]); });
+
+  const firstWs = ws.length ? toMs(ws[0].timestamp) : null;
 
   // ⚠️ FALTAM TOQUES: o modelo por-toque assume que TODOS os toques foram
   // registados. Quando faltam (esquecimento, dia mau, adormecer), a mesma
@@ -185,7 +225,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const measuredCycles = cycles.filter(cy => cy.measured);
   const typicalRef = (typical != null && typical > 0)
     ? typical
-    : typicalMgPerDose(ws, cons, { unloggedDates: unloggedSet });
+    : typicalMgPerDose(weighings, consumptions, { unloggedDates: unloggedSet, _doses: doses });
   const unreliableByTouches = new Map(); // cycle -> { consumed, doseCount, mgPerDose }
 
   // ⚠️ DIAS "NÃO REGISTEI": a pessoa disse-nos que nesses dias não registou nada.
@@ -231,12 +271,13 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   // apanha dois sacos soma as fatias de cada (ex.: fim de um saco + início de outro).
   // NUNCA se inventam mg: toques fora de um ciclo pesado (saco atual em aberto,
   // "não pesei", refill esquecido) contam como toque mas SEM mg.
-  for (const c of cons) {
-    const d = dayKey(c);
+  for (let di = 0; di < doses.length; di++) {
+    const d = doses[di].day;
     if (!d) continue;
     const day = ensure(d);
     day.doseCount++;
-    const cy = cycleForDose(toMs(c.timestamp));
+    const ci = owner[di];
+    const cy = ci >= 0 ? cycles[ci] : null;
     const unlogged = cy ? unreliableByUnlogged.get(cy) : null;
     const suspect = cy ? unreliableByTouches.get(cy) : null;
     if (cy && cy.measured && !suspect && !unlogged) {
@@ -262,8 +303,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
         day.reasons.add(cy.reason || 'unmeasuredPeriod');
         if (!day.gapDetail && cy.reasonDetail) day.gapDetail = cy.reasonDetail;
       } else {
-        const ms = toMs(c.timestamp);
-        const firstWs = ws.length ? toMs(ws[0].timestamp) : null;
+        const ms = doses[di].ms;
         day.reasons.add(firstWs != null && ms != null && ms <= firstWs
           ? 'beforeFirstWeighing'
           : 'afterLastWeighing');
@@ -298,31 +338,40 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
 export function detectForgottenRefills(weighings = [], consumptions = [], typical = null) {
   if (typical == null || isNaN(typical) || typical <= 0) return [];
 
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
-  const cons = [...consumptions].filter(c => c && c.timestamp && toMs(c.timestamp) != null);
+  const ws = prepWeighings(weighings);
+  const doses = prepDoses(consumptions);
 
   // Precisa de pelo menos 3 ciclos bem pesados para o típico assentar.
   const cycles = buildCycles(ws);
   const measuredCount = cycles.filter(c => c.measured).length;
   if (measuredCount < 3) return [];
 
+  // Doses agrupadas por ciclo numa passagem (em vez de varrer tudo por ciclo).
+  const owner = assignDoses(cycles, doses);
+  const datesByCycle = cycles.map(() => null);
+  const counts = countDosesByCycle(owner, cycles.length);
+  for (let di = 0; di < doses.length; di++) {
+    const ci = owner[di];
+    if (ci < 0) continue;
+    (datesByCycle[ci] || (datesByCycle[ci] = new Set())).add(doses[di].day);
+  }
+
   const RATIO = 0.4; // < 40% do típico → suspeito
   const out = [];
-  for (const cy of cycles) {
+  for (let ci = 0; ci < cycles.length; ci++) {
+    const cy = cycles[ci];
     if (!cy.measured) continue;
     if (cy.closing?.confirmedLow || cy.closing?.forgottenRefill) continue;
-    const doses = cons.filter(c => { const t = toMs(c.timestamp); return t > cy.start && t <= cy.end; });
-    if (doses.length < 2) continue; // pouca informação
-    const mgPerDose = cy.consumed / doses.length;
+    const n = counts[ci];
+    if (n < 2) continue; // pouca informação
+    const mgPerDose = cy.consumed / n;
     if (mgPerDose < typical * RATIO) {
-      const dates = [...new Set(doses.map(dayKey).filter(Boolean))];
       out.push({
         closingId: cy.closing?.id || null,
         startTs: cy.start, endTs: cy.end,
         mgPerDose: Math.round(mgPerDose), typical: Math.round(typical),
-        dates, doseCount: doses.length,
+        dates: [...(datesByCycle[ci] || [])].filter(Boolean),
+        doseCount: n,
       });
     }
   }
@@ -338,18 +387,17 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
  */
 export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
   const unloggedSet = toDateSet(opts.unloggedDates);
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
-  const cons = [...consumptions].filter(c => c && c.timestamp && toMs(c.timestamp) != null);
+  const ws = prepWeighings(weighings);
+  const doses = opts._doses || prepDoses(consumptions);
+
+  const cycles = buildCycles(ws);
+  const counts = countDosesByCycle(assignDoses(cycles, doses), cycles.length);
 
   const out = [];
-  for (const cy of buildCycles(ws)) {
+  for (let ci = 0; ci < cycles.length; ci++) {
+    const cy = cycles[ci];
     if (!cy.measured || cy.consumed == null) continue;
-    const doseCount = cons.filter(c => {
-      const t = toMs(c.timestamp);
-      return t > cy.start && t <= cy.end;
-    }).length;
+    const doseCount = counts[ci];
     // Nº de dias de calendário que o período toca (início e fim inclusive).
     const dayStart = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
     const days = Math.max(1, Math.round((dayStart(cy.end) - dayStart(cy.start)) / 86400000) + 1);
@@ -378,9 +426,7 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
  */
 export function periodInfoForClosing(weighings = [], consumptions = [], closingId = null) {
   if (!closingId) return null;
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
+  const ws = prepWeighings(weighings);
   const i = ws.findIndex(w => w.id === closingId);
   if (i <= 0) return null;
   const prev = ws[i - 1];
@@ -422,23 +468,24 @@ export function periodInfoForClosing(weighings = [], consumptions = [], closingI
  */
 export function typicalMgPerDose(weighings = [], consumptions = [], opts = {}) {
   const unloggedSet = toDateSet(opts.unloggedDates);
-  const ws = [...weighings]
-    .filter(w => w && w.timestamp && toMs(w.timestamp) != null)
-    .sort((a, b) => toMs(a.timestamp) - toMs(b.timestamp));
-  const cons = [...consumptions].filter(c => c && c.timestamp && toMs(c.timestamp) != null);
+  const ws = prepWeighings(weighings);
+  const doses = opts._doses || prepDoses(consumptions);
 
   // Usa TODOS os ciclos medidos, incluindo os fechados por troca de saco (desde
   // que a tara é descontada, esses também são fiáveis). Antes eram ignorados, o
   // que deixava o "típico" apoiado em pouquíssimos ciclos para quem troca de
   // saco com frequência. Ciclos "não pesei"/refill esquecido ficam de fora
   // (buildCycles já os marca como não medidos).
+  const cycles = buildCycles(ws);
+  const counts = countDosesByCycle(assignDoses(cycles, doses), cycles.length);
   const perDoseValues = [];
-  for (const cy of buildCycles(ws)) {
+  for (let ci = 0; ci < cycles.length; ci++) {
+    const cy = cycles[ci];
     if (!cy.measured || cy.consumed == null || cy.consumed < 0) continue;
     // Períodos que atravessam dias "não registei" têm toques a menos por
     // construção — usá-los empurrava o "típico" artificialmente para cima.
     if (unloggedInCycle(cy, unloggedSet).length > 0) continue;
-    const n = cons.filter(c => { const t = toMs(c.timestamp); return t > cy.start && t <= cy.end; }).length;
+    const n = counts[ci];
     if (n > 0) perDoseValues.push(cy.consumed / n);
   }
   if (perDoseValues.length === 0) return null;

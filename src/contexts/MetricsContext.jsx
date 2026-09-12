@@ -4,7 +4,7 @@ import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
-import { deriveDailyMg, typicalMgPerDose } from '../utils/mgDerivation';
+import { deriveDailyMg } from '../utils/mgDerivation';
 
 const MetricsContext = createContext();
 
@@ -39,34 +39,30 @@ export const MetricsProvider = ({ children }) => {
   // mg/dia DERIVADOS das pesagens, SÓ dos dias medidos a sério (todas as doses
   // pesadas). Estimativas nunca entram — a app não inventa mg. Serve para o resumo
   // por dia, e assim a pesagem chega às páginas pesadas (Padrões/Análises/Coach).
-  const weighingMeasuredMgByDate = useMemo(() => {
-    const out = {};
-    if (!weighings || weighings.length === 0) return out;
-    try {
-      const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
-      const perDay = deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
-      for (const [date, day] of Object.entries(perDay || {})) {
-        if (day && day.mg > 0 && day.state === 'measured') out[date] = day.mg;
-      }
-    } catch (e) { /* best-effort: nunca parte as métricas */ }
-    return out;
-  }, [weighings, consumptions, unloggedDates]);
-
-  // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
-  // explicar a ausência em vez de saltar o dia em silêncio.
-  const mgGapReasonsByDate = useMemo(() => {
-    const out = {};
-    if (!weighings || weighings.length === 0) return out;
+  // ⚡ UMA passagem só. Antes eram duas derivações completas dos mesmos dados
+  // (uma para os mg, outra para os motivos), cada uma a percorrer o histórico
+  // inteiro. Agora deriva-se uma vez e tiram-se as duas leituras daí.
+  const mgDerivation = useMemo(() => {
+    const mgByDate = {};
+    const reasonsByDate = {};
+    if (!weighings || weighings.length === 0) return { mgByDate, reasonsByDate };
     try {
       const perDay = deriveDailyMg(weighings, consumptions, { unloggedDates });
       for (const [date, day] of Object.entries(perDay || {})) {
-        if (day && day.state !== 'measured' && day.reasons && day.reasons.length) {
-          out[date] = { codes: day.reasons, detail: day.gapDetail || null };
+        if (!day) continue;
+        if (day.mg > 0 && day.state === 'measured') mgByDate[date] = day.mg;
+        else if (day.state !== 'measured' && day.reasons && day.reasons.length) {
+          reasonsByDate[date] = { codes: day.reasons, detail: day.gapDetail || null };
         }
       }
-    } catch (e) { /* best-effort */ }
-    return out;
+    } catch (e) { /* best-effort: nunca parte as métricas */ }
+    return { mgByDate, reasonsByDate };
   }, [weighings, consumptions, unloggedDates]);
+
+  const weighingMeasuredMgByDate = mgDerivation.mgByDate;
+  // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
+  // explicar a ausência em vez de saltar o dia em silêncio.
+  const mgGapReasonsByDate = mgDerivation.reasonsByDate;
 
   const atypicalDates = useMemo(() => {
     const s = new Set();

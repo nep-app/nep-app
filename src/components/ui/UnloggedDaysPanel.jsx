@@ -97,6 +97,15 @@ export const UnloggedDaysPanel = React.memo(() => {
     new Date(`${date}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })
   ), [i18n.language]);
 
+  // Dias que a escolha actual vai marcar (para mostrar o número antes de gravar).
+  const pending = useMemo(() => {
+    const start = from || to;
+    const end = to || from;
+    if (!start || !end) return [];
+    const [a, b] = start <= end ? [start, end] : [end, start];
+    return datesInRange(a, b);
+  }, [from, to]);
+
   const handleMark = async () => {
     const start = from || to;
     const end = to || from;
@@ -115,10 +124,15 @@ export const UnloggedDaysPanel = React.memo(() => {
       return;
     }
     setBusy(true);
-    try {
-      let added = 0;
-      for (const date of dates) {
-        if (marks.has(date)) continue;
+    // Um dia que falhe NÃO pode levar os outros atrás nem passar despercebido:
+    // antes, um erro a meio parava o resto em silêncio e ficavam dias por marcar
+    // sem a app dizer nada. Agora tenta todos e diz exactamente o que ficou.
+    const added = [];
+    const already = [];
+    const failed = [];
+    for (const date of dates) {
+      if (marks.has(date)) { already.push(date); continue; }
+      try {
         await addDailyLog({
           id: genId(),
           date,
@@ -126,20 +140,34 @@ export const UnloggedDaysPanel = React.memo(() => {
           notLogged: true,
           mg: null,
         });
-        added++;
+        added.push(date);
+      } catch (e) {
+        failed.push(date);
       }
-      setFrom(''); setTo('');
-      setFeedback({
-        type: 'ok',
-        text: added === 0
-          ? (isEN ? 'Those days were already marked.' : 'Esses dias já estavam marcados.')
-          : (isEN ? `${added} day(s) marked as not logged.` : `${added} dia(s) marcado(s) como sem registo.`),
-      });
-    } catch (e) {
-      setFeedback({ type: 'error', text: isEN ? 'Could not save. Try again.' : 'Não deu para guardar. Tenta outra vez.' });
-    } finally {
-      setBusy(false);
     }
+    setBusy(false);
+
+    const shortFmt = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
+    if (failed.length > 0) {
+      setFeedback({
+        type: 'error',
+        text: isEN
+          ? `Could not save ${failed.length} of the ${dates.length} day(s): ${failed.map(shortFmt).join(', ')}. Try again — the rest were saved.`
+          : `Não deu para guardar ${failed.length} dos ${dates.length} dia(s): ${failed.map(shortFmt).join(', ')}. Tenta outra vez — os outros ficaram guardados.`,
+      });
+      return;
+    }
+    setFrom(''); setTo('');
+    // Dizer sempre o número pedido E o número marcado. Se um dia não entrar,
+    // as duas contas deixam de bater e vê-se logo.
+    setFeedback({
+      type: 'ok',
+      text: added.length === 0
+        ? (isEN ? `Those ${dates.length} day(s) were already marked.` : `Esses ${dates.length} dia(s) já estavam marcados.`)
+        : (isEN
+          ? `${dates.length} day(s) selected · ${added.length} newly marked${already.length ? ` · ${already.length} already were` : ''}.`
+          : `${dates.length} dia(s) escolhido(s) · ${added.length} marcado(s) agora${already.length ? ` · ${already.length} já estava(m)` : ''}.`),
+    });
   };
 
   const handleUnmark = async (dates) => {
@@ -217,9 +245,20 @@ export const UnloggedDaysPanel = React.memo(() => {
               {isEN ? 'Mark' : 'Marcar'}
             </button>
           </div>
-          <p className="text-[11px] text-gray-500 mt-1">
-            {isEN ? 'One day: fill in just one of the fields.' : 'Só um dia: preenche só um dos campos.'}
-          </p>
+          {/* Dizer ANTES de carregar quantos dias vão ser marcados. Num telemóvel
+              é fácil um dos campos não ficar preenchido e só se perceber depois;
+              assim vê-se o número antes, e ou bate certo ou não. */}
+          {pending.length > 0 ? (
+            <p className="text-[11px] text-indigo-300 mt-1">
+              {isEN
+                ? `Will mark ${pending.length} day(s): ${pending.length === 1 ? fmt(pending[0]) : `${fmt(pending[0])} → ${fmt(pending[pending.length - 1])}`}`
+                : `Vai marcar ${pending.length} dia(s): ${pending.length === 1 ? fmt(pending[0]) : `${fmt(pending[0])} → ${fmt(pending[pending.length - 1])}`}`}
+            </p>
+          ) : (
+            <p className="text-[11px] text-gray-500 mt-1">
+              {isEN ? 'One day: fill in just one of the fields.' : 'Só um dia: preenche só um dos campos.'}
+            </p>
+          )}
 
           {feedback && (
             <p className={`text-xs mt-2 ${feedback.type === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
