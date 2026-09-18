@@ -372,6 +372,9 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
         mgPerDose: Math.round(mgPerDose), typical: Math.round(typical),
         dates: [...(datesByCycle[ci] || [])].filter(Boolean),
         doseCount: n,
+        // Os mg que saíram do saco nesse período: sem este número a pergunta
+        // não dá para responder — não se sabe DE QUE período se está a falar.
+        consumed: Math.round(cy.consumed),
       });
     }
   }
