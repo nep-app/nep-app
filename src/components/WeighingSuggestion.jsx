@@ -7,9 +7,19 @@ import { typicalMgPerDose, detectForgottenRefills } from '../utils/mgDerivation'
 // Sugestões que a pessoa adiou ("agora não"). Fica só neste telemóvel de
 // propósito: não é um dado sobre ela, é só para a app não voltar a insistir já.
 const SNOOZED_KEY = 'nep-weighing-suggestion-snoozed';
+// "Depois" é mesmo DEPOIS, não "nunca mais": adiar não pode ser uma forma de
+// apagar a pergunta para sempre sem a pessoa ter decidido nada.
+const SNOOZE_DAYS = 14;
 
+// { [closingId]: timestamp-em-que-volta }. Lê o formato antigo (lista de ids)
+// sem se queixar, dando-lhes a mesma validade a partir de agora.
 const readSnoozed = () => {
-  try { return JSON.parse(localStorage.getItem(SNOOZED_KEY) || '[]'); } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(SNOOZED_KEY) || '{}');
+    const until = Date.now() + SNOOZE_DAYS * 86400000;
+    if (Array.isArray(raw)) return Object.fromEntries(raw.map(id => [id, until]));
+    return (raw && typeof raw === 'object') ? raw : {};
+  } catch { return {}; }
 };
 
 /**
@@ -38,7 +48,8 @@ export const WeighingSuggestion = () => {
   const suspicion = useMemo(() => {
     const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
     const list = detectForgottenRefills(weighings, consumptions, typical);
-    return list.find(s => s.closingId && !snoozed.includes(s.closingId)) || null;
+    const now = Date.now();
+    return list.find(s => s.closingId && !(snoozed[s.closingId] > now)) || null;
   }, [weighings, consumptions, unloggedDates, snoozed]);
 
   if (!suspicion) return null;
@@ -103,11 +114,11 @@ export const WeighingSuggestion = () => {
       {/* Não saber é uma resposta legítima — não se obriga ninguém a decidir
           sobre os próprios dados só para o cartão desaparecer. */}
       <button
-        onClick={() => setSnoozed(prev => [...prev, suspicion.closingId])}
+        onClick={() => setSnoozed(prev => ({ ...prev, [suspicion.closingId]: Date.now() + SNOOZE_DAYS * 86400000 }))}
         disabled={busy}
         className="w-full mt-2 text-xs text-gray-500 hover:text-gray-300 underline disabled:opacity-50"
       >
-        {isEN ? "I don't know — ask me later" : 'Não sei — pergunta-me depois'}
+        {isEN ? `I don't know — ask me again in ${SNOOZE_DAYS} days` : `Não sei — pergunta-me daqui a ${SNOOZE_DAYS} dias`}
       </button>
       <p className="text-[11px] text-gray-500 mt-2 leading-snug">
         {isEN

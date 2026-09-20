@@ -162,8 +162,11 @@ export function HistoryView({
         [wellbeingLogs, dateRange]
     );
 
+    // As marcas "não registei" são metadados, não registos: se entrassem aqui
+    // apareciam como cartões vazios no Histórico e inchavam as contagens
+    // ("Tudo (4103)"). Quem as mostra é o painel "Dias que não registei".
     const tempFilteredDailyLogs = useMemo(() =>
-        filterByDateRange(dailyLogs, dateRange, 'date')
+        filterByDateRange(dailyLogs.filter(l => !l?.notLogged), dateRange, 'date')
             .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)),
         [dailyLogs, dateRange]
     );

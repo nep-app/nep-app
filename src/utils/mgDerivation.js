@@ -481,16 +481,26 @@ export function typicalMgPerDose(weighings = [], consumptions = [], opts = {}) {
   // (buildCycles já os marca como não medidos).
   const cycles = buildCycles(ws);
   const counts = countDosesByCycle(assignDoses(cycles, doses), cycles.length);
-  const perDoseValues = [];
+  const clean = [];  // períodos sem dias "não registei" pelo meio
+  const all = [];    // todos os períodos medidos (rede de segurança)
   for (let ci = 0; ci < cycles.length; ci++) {
     const cy = cycles[ci];
     if (!cy.measured || cy.consumed == null || cy.consumed < 0) continue;
+    const n = counts[ci];
+    if (n <= 0) continue;
+    const perDose = cy.consumed / n;
+    all.push(perDose);
     // Períodos que atravessam dias "não registei" têm toques a menos por
     // construção — usá-los empurrava o "típico" artificialmente para cima.
-    if (unloggedInCycle(cy, unloggedSet).length > 0) continue;
-    const n = counts[ci];
-    if (n > 0) perDoseValues.push(cy.consumed / n);
+    if (unloggedInCycle(cy, unloggedSet).length === 0) clean.push(perDose);
   }
+
+  // ⚠️ NUNCA devolver null só porque TODOS os períodos apanham um dia marcado.
+  // O "típico" é a referência que liga o aviso de "faltam toques" (mg/toque
+  // muito acima do normal). Sem ele, esse aviso desaparecia em silêncio e os
+  // dias inflacionados voltavam a ser apresentados como facto — o oposto do que
+  // marcar dias devia fazer. Se não houver períodos limpos, usa-se o que há.
+  const perDoseValues = clean.length > 0 ? clean : all;
   if (perDoseValues.length === 0) return null;
   perDoseValues.sort((a, b) => a - b);
   const mid = Math.floor(perDoseValues.length / 2);

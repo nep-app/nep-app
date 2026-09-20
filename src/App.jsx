@@ -242,10 +242,14 @@ export function AuthenticatedApp() {
             // Form States
             const [dailyForm, setDailyForm] = useState({ mg: 30, notes: '', date: getTodayKey() });
             // mg/dia DERIVADOS das pesagens (automático). Alimenta o "registar mg".
+            // Tem de conhecer os dias "não registei", senão o modal oferecia um mg
+            // de um dia que o Histórico e as Análises dizem não ser de confiança —
+            // a app a contradizer-se a si própria.
             const derivedDailyMg = React.useMemo(() => {
-                const typical = typicalMgPerDose(weighings, consumptions);
-                return deriveDailyMg(weighings, consumptions, { typical });
-            }, [weighings, consumptions]);
+                const unloggedDates = metrics?.unloggedDates;
+                const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
+                return deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
+            }, [weighings, consumptions, metrics?.unloggedDates]);
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '', isAtypical: false, atypicalReason: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');

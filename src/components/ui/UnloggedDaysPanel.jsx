@@ -7,13 +7,16 @@ const OPEN_KEY = 'nep-unlogged-open';
 const MAX_RANGE_DAYS = 120;
 
 // Lista de datas 'YYYY-MM-DD' entre duas datas (inclusive).
+// NÃO corta no limite: se cortasse, a pré-visualização mostrava um número de
+// dias e uma data de fim que a pessoa não escolheu. Quem decide o que fazer com
+// um intervalo grande demais é quem chama (avisa em vez de mentir).
 const datesInRange = (from, to) => {
   const out = [];
   const d = new Date(`${from}T12:00:00`);
   const last = new Date(`${to}T12:00:00`);
   if (isNaN(d.getTime()) || isNaN(last.getTime()) || last < d) return out;
   let guard = 0;
-  while (d.getTime() <= last.getTime() && guard++ <= MAX_RANGE_DAYS) {
+  while (d.getTime() <= last.getTime() && guard++ <= 3700) {
     out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
     d.setDate(d.getDate() + 1);
   }
@@ -52,7 +55,7 @@ const groupConsecutive = (sortedDates) => {
 export const UnloggedDaysPanel = React.memo(() => {
   const { i18n } = useTranslation();
   const isEN = i18n.language === 'en';
-  const { dailyLogs, consumptions, addDailyLog, deleteItem } = useData();
+  const { dailyLogs, consumptions, cycles, wellbeingLogs, weighings, addDailyLog, deleteItem } = useData();
 
   const [isOpen, setIsOpen] = useState(() => {
     try { return localStorage.getItem(OPEN_KEY) === 'true'; } catch { return false; }
@@ -67,12 +70,17 @@ export const UnloggedDaysPanel = React.memo(() => {
   const [feedback, setFeedback] = useState(null);
 
   // Marcas já existentes (guardadas em dailyLogs → sincronizam com a nuvem).
+  // Guarda-se a LISTA por data, não só a primeira: dois telemóveis a sincronizar
+  // podem criar duas marcas para o mesmo dia, e aí "Desmarcar" apagava uma e
+  // dizia "desmarcado" com o dia a continuar marcado.
   const marks = useMemo(() => {
     const byDate = new Map();
     (dailyLogs || []).forEach(l => {
       if (!l || !l.notLogged) return;
       const d = l.date || (l.timestamp ? safeToISODate(l.timestamp) : null);
-      if (d && !byDate.has(d)) byDate.set(d, l);
+      if (!d) return;
+      const list = byDate.get(d);
+      if (list) list.push(l); else byDate.set(d, [l]);
     });
     return byDate;
   }, [dailyLogs]);
@@ -83,15 +91,23 @@ export const UnloggedDaysPanel = React.memo(() => {
   );
 
   // Dias marcados que afinal TÊM registos — vale a pena avisar, porque nesses
-  // dias a marca esconde dados reais.
+  // dias a marca põe dados reais de fora das médias. Tem de olhar para TODOS os
+  // tipos de registo, não só consumos: marcar um dia também tira dali a pesagem,
+  // o ciclo de sono, o humor e o registo de mg desse dia.
   const datesWithRecords = useMemo(() => {
     const s = new Set();
-    (consumptions || []).forEach(c => {
-      const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
+    const scan = (arr) => (arr || []).forEach(item => {
+      if (!item || item.notLogged) return;
+      const d = item.date || (item.timestamp ? safeToISODate(item.timestamp) : null);
       if (d && marks.has(d)) s.add(d);
     });
+    scan(consumptions);
+    scan(dailyLogs);
+    scan(cycles);
+    scan(wellbeingLogs);
+    scan(weighings);
     return s;
-  }, [consumptions, marks]);
+  }, [consumptions, dailyLogs, cycles, wellbeingLogs, weighings, marks]);
 
   const fmt = useCallback((date) => (
     new Date(`${date}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -172,17 +188,20 @@ export const UnloggedDaysPanel = React.memo(() => {
 
   const handleUnmark = async (dates) => {
     setBusy(true);
-    try {
-      for (const date of dates) {
-        const log = marks.get(date);
-        if (log?.id) await deleteItem('dailyLogs', log.id);
+    const failed = [];
+    for (const date of dates) {
+      // TODAS as marcas do dia, não só a primeira: com duas marcas (dois
+      // telemóveis a sincronizar) a app dizia "desmarcado" e o dia continuava
+      // marcado — a pior combinação possível.
+      for (const log of (marks.get(date) || [])) {
+        if (!log?.id) continue;
+        try { await deleteItem('dailyLogs', log.id); } catch (e) { failed.push(date); }
       }
-      setFeedback({ type: 'ok', text: isEN ? 'Unmarked.' : 'Desmarcado.' });
-    } catch (e) {
-      setFeedback({ type: 'error', text: isEN ? 'Could not remove. Try again.' : 'Não deu para remover. Tenta outra vez.' });
-    } finally {
-      setBusy(false);
     }
+    setBusy(false);
+    setFeedback(failed.length > 0
+      ? { type: 'error', text: isEN ? 'Could not remove all of them. Try again.' : 'Não deu para remover todas. Tenta outra vez.' }
+      : { type: 'ok', text: isEN ? 'Unmarked.' : 'Desmarcado.' });
   };
 
   const today = getTodayKey();
@@ -248,7 +267,13 @@ export const UnloggedDaysPanel = React.memo(() => {
           {/* Dizer ANTES de carregar quantos dias vão ser marcados. Num telemóvel
               é fácil um dos campos não ficar preenchido e só se perceber depois;
               assim vê-se o número antes, e ou bate certo ou não. */}
-          {pending.length > 0 ? (
+          {pending.length > MAX_RANGE_DAYS ? (
+            <p className="text-[11px] text-amber-400 mt-1">
+              {isEN
+                ? `That is ${pending.length} days — too many at once (max ${MAX_RANGE_DAYS}). Split it into shorter stretches.`
+                : `São ${pending.length} dias — demasiados de uma vez (máx. ${MAX_RANGE_DAYS}). Faz em bocados mais pequenos.`}
+            </p>
+          ) : pending.length > 0 ? (
             <p className="text-[11px] text-indigo-300 mt-1">
               {isEN
                 ? `Will mark ${pending.length} day(s): ${pending.length === 1 ? fmt(pending[0]) : `${fmt(pending[0])} → ${fmt(pending[pending.length - 1])}`}`

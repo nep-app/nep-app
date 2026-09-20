@@ -41,13 +41,25 @@ export function PatternsView({
         );
         const atypicalCount = atypicalDates.size;
 
-        const filteredConsumptions = allFilteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
-        const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
-        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp)));
+        // Dias marcados "não registei" saem das contas aqui TAMBÉM. Sem isto, os
+        // Padrões e as Análises davam números diferentes para o mesmo período —
+        // e não há forma de a pessoa saber qual deles acreditar.
+        const unloggedDates = metrics?.unloggedDates || new Set();
+        const excluded = (date) => atypicalDates.has(date) || unloggedDates.has(date);
+        const unloggedCount = [...unloggedDates].filter(d => {
+            if (!dateRange || !dateRange.start) return true;
+            const t = new Date(`${d}T12:00:00`).getTime();
+            return t >= dateRange.start.getTime() && t <= dateRange.end.getTime();
+        }).length;
 
-        return { dateRange, atypicalDates, atypicalCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
-    }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset]);
+        const filteredConsumptions = allFilteredConsumptions.filter(c => !excluded(c.date || safeToISODate(c.timestamp)));
+        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !excluded(w.date || safeToISODate(w.timestamp)));
+        const filteredCycles = allFilteredCycles.filter(c => !excluded(c.date || safeToISODate(c.timestamp)));
+        // A própria marca não é um registo.
+        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !l?.notLogged && !excluded(l.date || safeToISODate(l.timestamp)));
+
+        return { dateRange, atypicalDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset, metrics?.unloggedDates]);
 
     return (
                                 <div className="space-y-6">
@@ -88,13 +100,19 @@ export function PatternsView({
 
                                     {(() => {
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)
-                                        const { dateRange, atypicalDates, atypicalCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
+                                        const { dateRange, atypicalDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
 
                                         // Nota dias atípicos (mostrar em qualquer view)
-                                        const atypicalBanner = atypicalCount > 0 ? (
+                                        const atypicalBanner = (atypicalCount > 0 || unloggedCount > 0) ? (
                                             <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2 mb-2">
                                                 <span>📌</span>
-                                                <span>{t('wellbeing.atypicalBanner', { count: atypicalCount })}</span>
+                                                <span>
+                                                    {atypicalCount > 0 && t('wellbeing.atypicalBanner', { count: atypicalCount })}
+                                                    {atypicalCount > 0 && unloggedCount > 0 && ' · '}
+                                                    {unloggedCount > 0 && (i18n.language === 'en'
+                                                        ? `${unloggedCount} day(s) marked "not logged" are left out`
+                                                        : `${unloggedCount} dia(s) marcado(s) "não registei" ficam de fora`)}
+                                                </span>
                                             </div>
                                         ) : null;
 

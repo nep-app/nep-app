@@ -197,9 +197,18 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         })
         .filter(Boolean)
     );
-    const filteredConsumptions = consumptions.filter(c => !atypicalDates.has(c.date));
-    const filteredCycles = cycles.filter(c => !atypicalDates.has(c.date));
-    const filteredDailyLogs = dailyLogs.filter(l => !atypicalDates.has(l.date));
+    // Dias marcados "não registei": informação em FALTA, não dias a zero. Ficam
+    // de fora das metas e dos avisos, tal como nas Análises — senão o mesmo dia
+    // contava aqui e não contava lá.
+    const unloggedDates = new Set(
+      dailyLogs.filter(l => l && l.notLogged).map(l => l.date).filter(Boolean)
+    );
+    const excluded = (date) => atypicalDates.has(date) || unloggedDates.has(date);
+
+    const filteredConsumptions = consumptions.filter(c => !excluded(c.date));
+    const filteredCycles = cycles.filter(c => !excluded(c.date));
+    // A própria marca não é um registo (não pode contar como dia com dados).
+    const filteredDailyLogs = dailyLogs.filter(l => !l?.notLogged && !excluded(l.date));
     const filteredWellbeingLogs = (wellbeingLogs || []).filter(w => !w.isAtypical);
 
     // Último consumo real (para badge "Tempo desde último consumo" — inclui dias atípicos)
@@ -253,14 +262,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const derivedMgEntries = [];
     if (weighings && weighings.length > 0) {
       try {
-        const typical = typicalMgPerDose(weighings, consumptions);
-        const perDay = deriveDailyMg(weighings, consumptions, { typical });
+        const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
+        const perDay = deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
         for (const [date, day] of Object.entries(perDay || {})) {
           if (!day || !(day.mg > 0)) continue;
           // SÓ dias medidos a 100% (todas as doses dentro de períodos pesados).
           // Nada de estimados/mistos: não se inventa mg em dias sem pesagem.
           if (day.state !== 'measured') continue;
-          if (atypicalDates.has(date)) continue;
+          if (excluded(date)) continue;
           if (manualMgDates.has(date)) continue; // registo manual manda
           derivedMgEntries.push({ mg: day.mg, timestamp: new Date(`${date}T23:59:59`).getTime(), estimated: false });
         }
