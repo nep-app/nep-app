@@ -4,10 +4,14 @@ import { setDataMode } from '../services/researchService';
 
 const OPTIONS = [
     {
+        // Azul, não amarelo: o amarelo dizia "cuidado com esta" à opção que é, de
+        // facto, a mais privada. O risco do modo local (perder tudo) continua a
+        // ser dito em letra grande na caixa de aviso — mas é um risco, não um
+        // defeito. As três opções são escolhas legítimas com custos diferentes.
         id: 'local',
         icon: '📱',
-        border: 'border-yellow-600',
-        badgeColor: 'bg-yellow-900/40 text-yellow-300',
+        border: 'border-blue-600',
+        badgeColor: 'bg-blue-900/40 text-blue-300',
     },
     {
         id: 'cloud',
@@ -90,6 +94,15 @@ export function DataModeSelector({ onSelected }) {
                             <li className="text-red-400">❌ {t('dataMode.research.sharedNever')}</li>
                         </ul>
                         <p className="text-xs text-gray-500 italic">{t('dataMode.research.idNote')}</p>
+                    </div>
+                )}
+
+                {/* O que a nuvem com PIN NÃO protege. Aparece nas duas opções de
+                    nuvem, com o mesmo peso visual do aviso de perda de dados do modo
+                    local: escolher entre dois riscos exige conhecer os dois. */}
+                {(selected === 'cloud' || selected === 'research') && (
+                    <div className="bg-amber-900/20 border border-amber-700/40 rounded-xl p-4 text-sm text-amber-200">
+                        ⚠️ {t('dataMode.cloud.limit')}
                     </div>
                 )}
 

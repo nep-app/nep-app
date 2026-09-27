@@ -272,9 +272,13 @@ export const SettingsView = ({
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{pt ? 'Como os dados são guardados' : 'How data is stored'}</p>
                     <div className="space-y-2">
                         {[
-                            { id: 'local', icon: '📱', label: pt ? 'Só local' : 'Local only', desc: pt ? 'Dados só neste dispositivo, sem backup na cloud.' : 'Data only on this device, no cloud backup.' },
-                            { id: 'cloud', icon: '🔒', label: pt ? 'Cloud encriptado' : 'Cloud encrypted', desc: pt ? 'Backup seguro na cloud. Recomendado.' : 'Secure cloud backup. Recommended.' },
-                            { id: 'research', icon: '🔬', label: pt ? 'Partilhar investigação' : 'Share research', desc: pt ? 'Cloud + resumos semanais anónimos para investigação.' : 'Cloud + anonymous weekly summaries for research.' },
+                            // As descrições aqui têm de dizer o mesmo que o ecrã de escolha
+                            // inicial. Antes diziam "backup seguro, recomendado" e "resumos
+                            // anónimos" — nenhuma das duas coisas é exacta (ver SEGURANCA.md,
+                            // S-01 e S-04), e é aqui que a pessoa muda de ideias mais tarde.
+                            { id: 'local', icon: '📱', label: pt ? 'Só local' : 'Local only', desc: pt ? 'Só neste dispositivo. Nada sai daqui — e não há backup.' : 'This device only. Nothing leaves it — and there is no backup.' },
+                            { id: 'cloud', icon: '🔒', label: pt ? 'Cloud encriptado' : 'Cloud encrypted', desc: pt ? 'Backup cifrado no telemóvel antes de subir. Um PIN de 4 dígitos não trava quem consiga ler o servidor.' : 'Backup encrypted on your phone before upload. A 4-digit PIN does not stop anyone able to read the server.' },
+                            { id: 'research', icon: '🔬', label: pt ? 'Partilhar investigação' : 'Share research', desc: pt ? 'Cloud + resumos semanais pseudonimizados (sem textos) para investigação.' : 'Cloud + pseudonymous weekly summaries (no text) for research.' },
                         ].map(opt => (
                             <button
                                 key={opt.id}

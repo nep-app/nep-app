@@ -6,26 +6,27 @@
     "footer": "Podes mudar esta opção em Definições a qualquer momento.",
     "local": {
       "title": "Só no meu telemóvel",
-      "desc": "Os dados ficam apenas no teu dispositivo. Sem cópia de segurança — se perderes o telemóvel ou desinstalares a app, perdes tudo.",
+      "desc": "Os dados ficam apenas no teu dispositivo. Nada sai daqui, por isso ninguém à distância lhes consegue chegar. Sem cópia de segurança — se perderes o telemóvel ou desinstalares a app, perdes tudo.",
       "desc2": "Confirmo que aceito o risco de perda de dados sem backup.",
-      "badge": "⚠️ Sem backup",
+      "badge": "🔒 Mais privado · sem backup",
       "warning": "⚠️ Sem cópia de segurança. Se perderes o telemóvel ou limpares os dados do browser, perdes todo o histórico. Não há forma de recuperar."
     },
     "cloud": {
       "title": "Cloud encriptada",
-      "desc": "Cópia de segurança automática na cloud, completamente encriptada com o teu PIN. Nem nós temos acesso — zero-knowledge.",
-      "badge": "✅ Recomendado"
+      "desc": "Cópia de segurança automática na nuvem, cifrada no teu telemóvel antes de subir. O servidor só guarda o bloco cifrado — não conseguimos ler nada.",
+      "badge": "☁️ Com cópia de segurança",
+      "limit": "O que um PIN de 4 dígitos não protege: quem consiga ler o servidor (por exemplo a Google, ou um pedido legal à Google) pode experimentar as 10.000 combinações no computador dele, sem limite de tentativas. Não é como no banco, onde alguém conta as tentativas e bloqueia à terceira. Se isso for uma preocupação para ti, escolhe \"Só no meu telemóvel\"."
     },
     "research": {
       "title": "Cloud + partilha para investigação",
-      "desc": "Igual à opção anterior, mas partilhas números e padrões anonimizados para investigação de redução de danos. Nunca partilhamos textos — apenas contagens, médias e pontuações de sentimento.",
+      "desc": "Igual à opção anterior, mas partilhas números e padrões para investigação de redução de danos. Nunca partilhamos texto que escrevas — só contagens e médias.",
       "badge": "🔬 Ajudas a investigar",
-      "sharedTitle": "O que é partilhado (anónimo):",
+      "sharedTitle": "O que é partilhado:",
       "shared1": "Nº de consumos, mg médio, padrões por hora do dia",
       "shared2": "Horas de sono, hora de deitar, gatilhos (da lista fixa)",
       "shared3": "Humor e energia médios, emoções registadas",
-      "sharedNever": "Nunca: notas, reflexões, pensamentos escritos, nome, email",
-      "idNote": "O teu ID de investigação é aleatório e não tem ligação à tua conta."
+      "sharedNever": "Nunca: notas, reflexões, pensamentos escritos, análise de sentimento, nome, email",
+      "idNote": "O teu ID de investigação é aleatório e não está ligado à tua conta. Mas é sempre o mesmo, semana após semana — por isso as tuas contribuições formam uma série que se sabe ser da mesma pessoa, mesmo sem se saber quem és. Chama-se pseudonimizado, não anónimo."
     }
   },
   "period": {
@@ -255,9 +256,9 @@
     "motto": "Não Estás Perdida.",
     "version": "Versão {{version}}",
     "copyright": "Copyright © Teresa Castro",
-    "privacyNote": "Os teus dados são privados e seguros.",
+    "privacyNote": "Os teus dados são cifrados neste telemóvel antes de saírem.",
     "privacy": "🔒 Privacidade & Segurança",
-    "privacyText": "Todos os teus dados são encriptados e só tu tens acesso. Nenhuma informação é partilhada com terceiros.",
+    "privacyText": "Tudo o que escreves é cifrado no teu telemóvel antes de subir, e o servidor só guarda o bloco cifrado. Não vendemos nem partilhamos os teus dados. Se escolheste partilhar para investigação, saem só contagens e médias — nunca textos. O que a cifra com PIN de 4 dígitos não protege está escrito, com datas, no ficheiro SEGURANCA.md do projeto.",
     "language": "Idioma / Language",
     "lockNever": "🔓 Nunca",
     "lockOnHide": "📱 Ao minimizar",

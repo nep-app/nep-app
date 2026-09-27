@@ -6,26 +6,27 @@
     "footer": "You can change this in Settings at any time.",
     "local": {
       "title": "My device only",
-      "desc": "Data stays only on your device. No backup — if you lose your phone or uninstall the app, all data is lost.",
+      "desc": "Your data stays on this device only. Nothing leaves it, so nobody can reach it remotely. No backup — if you lose the phone or uninstall the app, you lose everything.",
       "desc2": "I accept the risk of losing all data with no backup.",
-      "badge": "⚠️ No backup",
+      "badge": "🔒 Most private · no backup",
       "warning": "⚠️ No backup. If you lose your phone or clear browser data, all history is lost with no way to recover."
     },
     "cloud": {
       "title": "Encrypted cloud",
-      "desc": "Automatic cloud backup, fully encrypted with your PIN. We have zero access — zero-knowledge.",
-      "badge": "✅ Recommended"
+      "desc": "Automatic cloud backup, encrypted on your phone before it is uploaded. The server only stores the encrypted block — we cannot read any of it.",
+      "badge": "☁️ With backup",
+      "limit": "What a 4-digit PIN does not protect: anyone able to read the server (Google, or a legal request to Google) can try all 10,000 combinations on their own computer, with no limit on attempts. It is not like your bank, where something counts the tries and locks you out after three. If that matters to you, choose \"This device only\"."
     },
     "research": {
       "title": "Cloud + research sharing",
-      "desc": "Same as above, but you share anonymised numbers and patterns for harm reduction research. We never share any text — only counts, averages, and sentiment scores.",
+      "desc": "Same as above, but you share numbers and patterns for harm reduction research. We never share any text you write — only counts and averages.",
       "badge": "🔬 Help research",
-      "sharedTitle": "What is shared (anonymous):",
+      "sharedTitle": "What is shared:",
       "shared1": "Number of uses, average mg, patterns by time of day",
       "shared2": "Sleep hours, bedtime, triggers (from fixed list)",
       "shared3": "Average mood and energy, logged emotions",
-      "sharedNever": "Never: notes, reflections, written thoughts, name, email",
-      "idNote": "Your research ID is random and has no link to your account."
+      "sharedNever": "Never: notes, reflections, written thoughts, sentiment analysis, name, email",
+      "idNote": "Your research ID is random and not linked to your account. But it is always the same one, week after week — so your contributions form a series known to come from one person, even without knowing who. That is pseudonymous, not anonymous."
     }
   },
   "period": {
@@ -255,9 +256,9 @@
     "motto": "Navigate Every Problem.",
     "version": "Version {{version}}",
     "copyright": "Copyright © Teresa Castro",
-    "privacyNote": "Your data is private and secure.",
+    "privacyNote": "Your data is encrypted on this phone before it leaves.",
     "privacy": "🔒 Privacy & Security",
-    "privacyText": "All your data is encrypted and only you have access. No information is shared with third parties.",
+    "privacyText": "Everything you write is encrypted on your phone before upload, and the server only stores the encrypted block. We do not sell or share your data. If you opted into research, only counts and averages leave — never any text. What a 4-digit PIN does not protect is written down, with dates, in the project's SEGURANCA.md file.",
     "language": "Idioma / Language",
     "lockNever": "🔓 Never",
     "lockOnHide": "📱 On minimize",
