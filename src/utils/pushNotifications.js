@@ -9,10 +9,36 @@
  * GitHub e injetada no build. Sem ela, o pedido de token falha com aviso claro.
  */
 import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
-import { doc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteDoc, getDoc, deleteField } from 'firebase/firestore';
 import { getFirebaseApp, getFirebaseDb, getFirebaseAuth } from './firebase';
 import { safeLocalStorage } from './storage';
 import { logger } from './logger';
+
+// 🔐 As preferências de lembretes vivem FORA da árvore do utilizador.
+// O "carteiro" (GitHub Action) precisa de as ler com uma credencial de admin.
+// Enquanto estavam em `users/{uid}/push/prefs`, essa credencial tinha de entrar
+// na árvore onde também vivem o salt e o pinVerification de toda a gente. Numa
+// colecção de topo, o carteiro deixa de ter razão nenhuma para lá entrar.
+// (Ver docs/SEGURANCA.md: isto reduz o motivo, não a capacidade — a credencial
+// de admin continua a poder ler o projecto todo. O que fecha isso é o item 1.)
+const prefsRef = (db, uid) => doc(db, 'pushPrefs', uid);
+const legacyPrefsRef = (db, uid) => doc(db, 'users', uid, 'push', 'prefs');
+
+/**
+ * Migração única: passa as preferências do caminho antigo para o novo e apaga o
+ * antigo. Silenciosa e best-effort — se falhar, o carteiro ainda lê os dois.
+ */
+async function migrateLegacyPrefs(db, uid) {
+  try {
+    const legacy = await getDoc(legacyPrefsRef(db, uid));
+    if (!legacy.exists()) return;
+    await setDoc(prefsRef(db, uid), legacy.data(), { merge: true });
+    await deleteDoc(legacyPrefsRef(db, uid));
+    logger.log('[Push] ✅ Preferências movidas para fora da árvore do utilizador');
+  } catch (e) {
+    logger.warn('[Push] ⚠️ Migração de preferências falhou (não crítico):', e?.message);
+  }
+}
 
 // Chave VAPID (Web Push certificate) do projeto harm-reduction-d4f7d, tirada
 // diretamente do Firebase Console (Cloud Messaging → Certificados push da Web).
@@ -48,7 +74,9 @@ function getDeviceId() {
 // a dobrar. Cada aparelho fica com a sua própria entrada — nenhum apaga o do outro.
 async function writeDeviceToken(token) {
   const db = getFirebaseDb();
-  const ref = doc(db, 'users', currentUid(), 'push', 'prefs');
+  const uid = currentUid();
+  await migrateLegacyPrefs(db, uid);
+  const ref = prefsRef(db, uid);
   const deviceId = getDeviceId();
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Lisbon';
   await setDoc(
@@ -205,7 +233,7 @@ export async function refreshPushTokenIfEnabled() {
 export async function saveReminderConfig(reminders) {
   const db = getFirebaseDb();
   await setDoc(
-    doc(db, 'users', currentUid(), 'push', 'prefs'),
+    prefsRef(db, currentUid()),
     { reminders, updatedAt: new Date().toISOString() },
     { merge: true }
   );
@@ -223,7 +251,7 @@ export async function disablePushReminders() {
       await deleteToken(messaging).catch(() => {});
     }
     const db = getFirebaseDb();
-    const ref = doc(db, 'users', currentUid(), 'push', 'prefs');
+    const ref = prefsRef(db, currentUid());
     const deviceId = getDeviceId();
     // Remove só a morada deste aparelho; apaga também o campo antigo `token` por segurança.
     await updateDoc(ref, {

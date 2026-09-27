@@ -10,8 +10,25 @@ export const setDataMode = (mode) => localStorage.setItem(DATA_MODE_KEY, mode);
 export const getOrCreateResearchId = () => {
     let id = localStorage.getItem(RESEARCH_ID_KEY);
     if (!id) {
-        id = (crypto.randomUUID ? crypto.randomUUID() :
-            Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+        if (crypto.randomUUID) {
+            id = crypto.randomUUID();
+        } else {
+            // Math.random() NÃO é aleatoriedade criptográfica e dava ~20 chars:
+            // adivinhável demais para um identificador que tem de ser impossível
+            // de acertar (é o que impede alguém de escrever na série de outra
+            // pessoa). crypto.getRandomValues existe em todo o lado onde esta
+            // app corre; o Math.random fica como último recurso.
+            const bytes = new Uint8Array(16);
+            if (crypto.getRandomValues) {
+                crypto.getRandomValues(bytes);
+            } else {
+                for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+            }
+            bytes[6] = (bytes[6] & 0x0f) | 0x40; // versão 4
+            bytes[8] = (bytes[8] & 0x3f) | 0x80; // variante
+            const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        }
         localStorage.setItem(RESEARCH_ID_KEY, id);
     }
     return id;

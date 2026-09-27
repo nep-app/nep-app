@@ -30,15 +30,21 @@ let _cachedKeyId = null;
  * @returns {Promise<CryptoKey>} - Chave derivada para encriptação
  */
 async function deriveKey(password, salt) {
-  // Criar identificador único para este par (password, salt)
+  const encoder = new TextEncoder();
   const saltStr = (salt instanceof Uint8Array ? salt : new Uint8Array(salt)).join(',');
-  const keyId = `${password}:${saltStr}`;
+
+  // 🔐 Identificador do par (password, salt) por HASH, nunca em claro.
+  // Antes era `${password}:${salt}`, o que deixava o PIN em texto numa variável
+  // de módulo durante toda a sessão (visível em qualquer heap dump ou inspecção
+  // de memória). O hash serve exactamente para o mesmo — saber se é o mesmo par
+  // — sem guardar o segredo.
+  const idBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(`${password}:${saltStr}`));
+  const keyId = Array.from(new Uint8Array(idBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
   if (_cachedKeyId === keyId && _cachedKey) {
     return _cachedKey;
   }
 
-  const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
 
   // Importar password como "raw key" para PBKDF2

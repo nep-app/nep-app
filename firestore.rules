@@ -25,6 +25,14 @@ service cloud.firestore {
         && request.resource.data.iv.size() <= 256;
     }
 
+    // 🪦 Lápide de item apagado: NÃO transporta conteúdo. Apagar tem de apagar
+    // mesmo — o envelope cifrado do item sai do servidor e fica só a marca que
+    // impede o item de ressuscitar a partir de outro dispositivo.
+    function isValidTombstone() {
+      return request.resource.data.deleted == true
+        && !request.resource.data.keys().hasAny(['data', 'iv']);
+    }
+
     // Coleções de dados realmente sincronizadas (ver COLLECTIONS em syncService.js).
     function isSyncedCollection(collectionId) {
       return collectionId in [
@@ -39,7 +47,7 @@ service cloud.firestore {
       allow read, delete: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && isSyncedCollection(collectionId)
-        && isValidEncryptedDoc();
+        && (isValidEncryptedDoc() || isValidTombstone());
     }
 
     // ---- Definições de encriptação (salt) — src/utils/saltManager.js ----
@@ -56,19 +64,65 @@ service cloud.firestore {
     }
 
     // ---- Notificações push (token FCM + preferências de lembretes) ----
-    // users/{uid}/push/prefs. Escrita/leitura só do dono. A leitura pelo "carteiro"
-    // (GitHub Action) é feita com uma service account de admin, que ignora estas regras.
+    // 🔐 pushPrefs/{uid} — FORA da árvore do utilizador de propósito. O "carteiro"
+    // (GitHub Action) lê isto com uma service account de admin, que ignora estas
+    // regras; enquanto vivia em users/{uid}/push, essa credencial tinha de entrar
+    // na árvore onde também estão o salt e o pinVerification de toda a gente.
+    // Nota honesta: isto tira o MOTIVO, não a CAPACIDADE — a credencial de admin
+    // continua a poder ler o projecto inteiro. Ver docs/SEGURANCA.md.
+    match /pushPrefs/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Caminho antigo, mantido só para a app poder ler e APAGAR o que lá ficou
+    // durante a migração. Remover quando não houver documentos por migrar.
     match /users/{userId}/push/{docId} {
       allow read, write: if isOwner(userId);
     }
 
-    // ---- Dados de investigação anónimos ----
-    // Leitura bloqueada (só via consola/admin). Escrita: autenticado E só no SEU anonId
-    // (o documento tem de conter `anonId` igual ao do caminho — ver researchService.js).
-    match /research/{anonId}/{document=**} {
-      allow read: if false;
-      allow write: if request.auth != null
-        && request.resource.data.anonId == anonId;
+    // ---- Dados de investigação pseudonimizados ----
+    // ⚠️ LIMITE CONHECIDO, ASSUMIDO: não é possível, só com regras, impedir que
+    // uma conta autenticada escreva sob OUTRO anonId E ao mesmo tempo manter o
+    // anonId desligado da conta. Amarrar o anonId ao request.auth.uid fecharia
+    // esta porta mas ligaria cada linha de investigação à conta Firebase da
+    // pessoa — que é exactamente o que o anonId existe para evitar.
+    // Como o anonId é um UUID v4 (122 bits), ninguém consegue ADIVINHAR o de
+    // outra pessoa: o risco real não é contaminar uma pessoa específica, é
+    // poluir o conjunto com participantes inventados.
+    // O que se faz aqui é reduzir o estrago: forma de UUID obrigatória, só
+    // documentos de semana, forma e tamanho validados, sem apagar.
+    // Ver docs/SEGURANCA.md.
+    // Propositadamente NÃO se usa hasOnly: a escrita é feita com merge, por isso
+    // `request.resource.data` traz também os campos que já lá estivessem de
+    // versões anteriores — uma lista fechada rejeitaria documentos legítimos e
+    // partia em silêncio a série de quem já contribui. Um tecto no número de
+    // campos chega para impedir que isto sirva de armazenamento livre.
+    function isResearchWeekDoc() {
+      return request.resource.data.keys().hasAll(['anonId', 'week'])
+        && request.resource.data.keys().size() <= 12
+        && request.resource.data.anonId is string
+        && request.resource.data.week is string
+        && request.resource.data.week.size() <= 10;
+    }
+
+    match /research/{anonId}/weeks/{weekKey} {
+      allow read, delete: if false;
+      // O anonId aceita o UUID e o formato antigo (base36) que alguns browsers
+      // sem crypto.randomUUID geraram — apertar isto agora cortaria a série
+      // longitudinal de quem já está a contribuir. Exige-se comprimento que
+      // torne o valor inadivinhável e caracteres que não construam caminhos.
+      allow create, update: if request.auth != null
+        && anonId.size() >= 20 && anonId.size() <= 64
+        && anonId.matches('^[0-9a-zA-Z-]+$')
+        && weekKey.matches('^[0-9]{4}-W[0-9]{2}$')
+        && request.resource.data.anonId == anonId
+        && isResearchWeekDoc();
+    }
+
+    // Nada mais dentro de /research (antes, `{document=**}` deixava criar
+    // qualquer caminho e guardar qualquer coisa lá dentro).
+    match /research/{document=**} {
+      allow read, write: if false;
     }
 
     // ---- Negar tudo o resto ----

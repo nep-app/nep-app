@@ -54,11 +54,22 @@ const FORCE = process.env.FORCE === 'true';
 
 async function run() {
   if (FORCE) console.log('MODO FORÇADO: ignora hora e dedup (teste).');
-  const snap = await db.collectionGroup('push').get();
+  // 🔐 As preferências vivem agora em `pushPrefs/{uid}`, FORA da árvore do
+  // utilizador (ver docs/SEGURANCA.md). Enquanto houver aparelhos por migrar,
+  // lê-se também o caminho antigo `users/{uid}/push/prefs` — a app move cada
+  // documento assim que o aparelho volta a registar a morada.
+  const [newSnap, legacySnap] = await Promise.all([
+    db.collection('pushPrefs').get(),
+    db.collectionGroup('push').get(),
+  ]);
+  const docs = [
+    ...newSnap.docs,
+    ...legacySnap.docs.filter(d => d.id === 'prefs'),
+  ];
+  console.log(`Preferências: ${newSnap.size} novas + ${legacySnap.docs.filter(d => d.id === 'prefs').length} por migrar.`);
   let sentCount = 0;
 
-  for (const docSnap of snap.docs) {
-    if (docSnap.id !== 'prefs') continue;
+  for (const docSnap of docs) {
     const data = docSnap.data() || {};
     const reminders = Array.isArray(data.reminders) ? data.reminders : [];
 

@@ -200,15 +200,28 @@ class SyncService {
             // Items deletados são marcados como deleted:true no Firebase
             // Isso previne ressurreição quando outros dispositivos fazem sync
 
-            const { data, iv } = await encryptForFirebase(item, this.pin, this.salt);
-
-            const firebaseData = {
-              encrypted: true,
-              data,
-              iv,
-              lastModified: item.lastModified || new Date().toISOString(),
-              deleted: item.deleted || false  // 🪦 Tombstone flag
-            };
+            // 🔐 APAGAR APAGA. Antes a lápide continuava a carregar o envelope
+            // cifrado (data + iv): o conteúdo do registo apagado ficava no
+            // servidor para sempre, e a interface dizia que tinha sido apagado.
+            // Agora a lápide guarda só o necessário para não ressuscitar o item
+            // noutro dispositivo — o id, a data e a marca de apagado.
+            let firebaseData;
+            if (item.deleted) {
+              firebaseData = {
+                encrypted: false,
+                lastModified: item.lastModified || new Date().toISOString(),
+                deleted: true
+              };
+            } else {
+              const { data, iv } = await encryptForFirebase(item, this.pin, this.salt);
+              firebaseData = {
+                encrypted: true,
+                data,
+                iv,
+                lastModified: item.lastModified || new Date().toISOString(),
+                deleted: false
+              };
+            }
 
             // Salvar no Firebase (mesmo se deleted)
             const docRef = doc(this.firebaseDB, firebasePath, String(item.id));
@@ -403,7 +416,10 @@ class SyncService {
             if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
               item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
             } else {
-              item = { ...firebaseData };
+              // Sem payload cifrado: é uma lápide (item apagado, conteúdo removido
+              // do servidor) ou um registo antigo em claro. O id vem do documento —
+              // sem ele, o Dexie criaria um registo novo com id automático.
+              item = { ...firebaseData, id: docSnap.id };
             }
 
             item.lastModified = firebaseData.lastModified || item.lastModified || new Date().toISOString();
@@ -532,15 +548,22 @@ class SyncService {
                 await dexieDB[collectionName].put(firebaseItem);
                 totalPulled++;
               } else if (localTime > firebaseTime) {
-                // Local mais recente → atualizar Firebase
-                const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
-                const firebaseData = {
-                  encrypted: true,
-                  data,
-                  iv,
-                  lastModified: localItem.lastModified,
-                  deleted: localItem.deleted || false
-                };
+                // Local mais recente → atualizar Firebase.
+                // Apagado = lápide sem conteúdo (ver acima): o envelope cifrado
+                // do item apagado não fica no servidor.
+                let firebaseData;
+                if (localItem.deleted) {
+                  firebaseData = { encrypted: false, lastModified: localItem.lastModified, deleted: true };
+                } else {
+                  const { data, iv } = await encryptForFirebase(localItem, this.pin, this.salt);
+                  firebaseData = {
+                    encrypted: true,
+                    data,
+                    iv,
+                    lastModified: localItem.lastModified,
+                    deleted: false
+                  };
+                }
                 const docRef = doc(this.firebaseDB, firebasePath, itemId);
                 await setDoc(docRef, firebaseData);
                 await markAsSynced(collectionName, localItem.id);
@@ -900,7 +923,9 @@ class SyncService {
                   if (firebaseData.encrypted === true && firebaseData.data && firebaseData.iv) {
                     item = await decryptFromFirebase(firebaseData.data, firebaseData.iv, this.pin, this.salt);
                   } else {
-                    item = { ...firebaseData };
+                    // Lápide (conteúdo já removido do servidor) ou registo antigo em
+                    // claro — o id tem de vir do documento.
+                    item = { ...firebaseData, id: itemId };
                   }
 
                   // Adicionar metadados
