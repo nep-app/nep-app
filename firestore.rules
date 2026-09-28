@@ -34,10 +34,16 @@ service cloud.firestore {
     }
 
     // Coleções de dados realmente sincronizadas (ver COLLECTIONS em syncService.js).
+    // ⚠️ TEM DE BATER CERTO com COLLECTIONS em src/services/syncService.js.
+    // Estava a faltar 'urgeEvents': o cliente tentava sincronizá-los, as regras
+    // recusavam, e o erro era engolido pelo try/catch do sync. Resultado: os
+    // registos de "surfar o impulso" nunca chegaram à nuvem, apesar de o código
+    // dizer que sim. Falha em silêncio = a pior espécie.
     function isSyncedCollection(collectionId) {
       return collectionId in [
         'consumptions', 'dailyLogs', 'reflections',
-        'wellbeingLogs', 'cycles', 'goals', 'thoughts', 'weighings'
+        'wellbeingLogs', 'cycles', 'goals', 'thoughts', 'weighings',
+        'urgeEvents'
       ];
     }
 

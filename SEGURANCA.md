@@ -8,7 +8,7 @@ confiança sem dizer o que ainda não está resolvido.
 que aqui está veio de leitura de código, não de testes de intrusão. Não
 encontrar mais não quer dizer que não haja mais.
 
-Última revisão: **27-09-2026**
+Última revisão: **28-09-2026**
 
 ---
 
@@ -128,6 +128,41 @@ não está coberto por esta análise.
 ---
 
 ## Corrigidas
+
+### S-09 · O backup não exportava as pesagens (nem os registos de saúde e de impulsos)
+**Corrigida em 28-09-2026 · Detectada em 28-09-2026**
+
+A base de dados tem 11 tabelas de dados. O backup exportava **7**. Ficavam de
+fora as **pesagens** — que são a principal fonte de mg/dia desde que existem —,
+os registos de saúde e os momentos de "surfar o impulso".
+
+Efeito prático: os ficheiros de backup pareciam completos e tinham meses
+inteiros sem uma única dose, quando a pessoa tinha registado todos os dias — só
+noutro sítio. Ninguém foi avisado, porque o ficheiro não dizia o que faltava.
+
+Corrigido: o export passa a cobrir as 11 tabelas, a lista de import é derivada
+da lista de export (não podem voltar a divergir), e o ficheiro passa a declarar
+que coleções traz. Se quem chama esquecer alguma, isso fica escrito no próprio
+ficheiro em vez de desaparecer.
+
+**Nota:** as pesagens estavam a ser sincronizadas para a nuvem, por isso quem usa
+modo de nuvem não as perdeu. Quem usa modo local tinha-as só no aparelho.
+
+---
+
+### S-10 · Os registos de "surfar o impulso" nunca chegaram à nuvem
+**Corrigida em 28-09-2026 · Detectada em 28-09-2026**
+
+O cliente tentava sincronizá-los (`urgeEvents` estava na lista do
+`syncService`), mas as regras do Firestore não os reconheciam como coleção
+válida e recusavam a escrita. O erro era engolido pelo `try/catch` do sync.
+Resultado: o código dizia que estavam sincronizados e cifrados, e eles nunca
+saíram do aparelho.
+
+Corrigido nas regras. **Exige publicação manual no Firebase Console.**
+
+---
+
 
 ### S-06 · Apagar não apagava no servidor
 **Corrigida em 27-09-2026 · Detectada em 27-09-2026**

@@ -489,6 +489,7 @@ export const DataProvider = ({ children }) => {
     updateWeighing,
     deleteWeighing,
     addUrgeEvent,
+    addItem,    // Generic add for all collections (usado ao restaurar backups)
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
 
@@ -509,7 +510,7 @@ export const DataProvider = ({ children }) => {
     addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog,
     addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal,
     addThought, addWeighing, updateWeighing, deleteWeighing, addUrgeEvent,
-    updateItem, deleteItem,
+    addItem, updateItem, deleteItem,
     isSyncing, lastSyncTime, manualSync, forcePushAll, countPendingItems,
     loadFullData, fullDataLoaded,
   ]);

@@ -168,7 +168,7 @@ function HarmReductionTracker() {
  */
 export function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
+            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -929,14 +929,23 @@ export function AuthenticatedApp() {
             };
 
             const exportToJSON = () => {
+                // ⚠️ TODAS as coleções de dados. Faltavam as PESAGENS (a principal
+                // fonte de mg desde que existem), os registos de saúde e o "surfar
+                // o impulso" — os backups pareciam completos e tinham meses sem
+                // uma única dose. Ao criar uma tabela nova, acrescentar aqui e em
+                // EXPORTED_COLLECTIONS (services/exportService.js).
                 const allData = {
                     consumptions,
                     cycles,
                     dailyLogs,
+                    weighings,
                     wellbeingLogs,
                     reflections,
                     thoughts,
-                    goals
+                    goals,
+                    urgeEvents,
+                    healthLogs,
+                    copingStrategies: copingStrategiesData || [],
                 };
                 const result = exportAndDownloadAll(allData);
                 showToast(t('messages.backupCreated', { count: result.totalRecords }), 'success');
@@ -947,14 +956,23 @@ export function AuthenticatedApp() {
             // duplica). Encripta e sincroniza pelos mesmos caminhos dos registos
             // normais. Devolve o número de registos importados.
             const importFromJSON = async (file) => {
+                // ⚠️ Tem de cobrir as MESMAS coleções que o export. Um backup que
+                // exporta mais do que consegue restaurar é tão inútil como um que
+                // não exporta: faltavam aqui as pesagens, os registos de saúde, o
+                // "surfar o impulso" e as estratégias de coping — os registos
+                // passavam despercebidos no ficheiro e eram ignorados ao restaurar.
                 const addByCollection = {
                     consumptions: addConsumption,
                     cycles: addCycle,
                     dailyLogs: addDailyLog,
+                    weighings: addWeighing,
                     wellbeingLogs: addWellbeingLog,
                     reflections: addReflection,
                     thoughts: addThought,
                     goals: addGoal,
+                    urgeEvents: (item) => addItem('urgeEvents', item),
+                    healthLogs: (item) => addItem('healthLogs', item),
+                    copingStrategies: (item) => addItem('copingStrategies', item),
                 };
                 try {
                     const text = await file.text();

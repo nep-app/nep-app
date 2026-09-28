@@ -1,9 +1,30 @@
 /**
  * Serviço de Export Completo de Dados
  *
- * Exporta TODAS as coleções em formato JSON
- * Inclui: consumptions, cycles, dailyLogs, wellbeingLogs, reflections, thoughts, goals
+ * ⚠️ REGRA: esta lista TEM de cobrir todas as tabelas de dados de src/db/localDB.js.
+ * Durante meses exportou 7 das 11 e ficaram de fora as PESAGENS, os registos de
+ * saúde e o "surfar o impulso". Como as pesagens são a principal fonte de mg
+ * desde que existem, os backups pareciam completos e não eram: meses inteiros
+ * sem uma única dose, quando a pessoa tinha registado todos os dias — só noutro
+ * sítio. Um backup que falha em silêncio é pior do que não haver backup.
+ * Ao criar uma tabela nova, acrescentar aqui E em IMPORTABLE_COLLECTIONS E na
+ * chamada em App.jsx.
  */
+
+// Todas as coleções de dados, com a descrição que vai no ficheiro.
+const EXPORTED_COLLECTIONS = [
+  ['consumptions',     'Cada consumo registado (data/hora e notas)'],
+  ['cycles',           'Ciclos de sono/vigília com bedtime, horas dormidas e gatilhos'],
+  ['dailyLogs',        'Dosagem total diária em mg registada à mão'],
+  ['weighings',        'Pesagens do saco — a principal fonte de mg/dia. NÃO era exportada até 28-09-2026.'],
+  ['wellbeingLogs',    'Humor, energia, autocuidado (água, descanso, social, alimentação) e emoções'],
+  ['reflections',      'Reflexões escritas'],
+  ['thoughts',         'Pensamentos registados'],
+  ['goals',            'Objetivos definidos'],
+  ['urgeEvents',       'Momentos de "surfar o impulso". NÃO era exportada até 28-09-2026.'],
+  ['healthLogs',       'Registos de saúde/sintomas. NÃO era exportada até 28-09-2026.'],
+  ['copingStrategies', 'Estratégias de coping (pode estar vazia)'],
+];
 
 /**
  * Exporta todos os dados em formato JSON
@@ -11,76 +32,38 @@
  * @returns {string} - JSON formatado
  */
 export function exportAllDataToJSON(data) {
-  const {
-    consumptions = [],
-    cycles = [],
-    dailyLogs = [],
-    wellbeingLogs = [],
-    reflections = [],
-    thoughts = [],
-    goals = [],
-    copingStrategies = []
-  } = data;
+  const collections = {};
+  let totalRecords = 0;
+  const missing = [];
+
+  for (const [name, description] of EXPORTED_COLLECTIONS) {
+    const items = Array.isArray(data[name]) ? data[name] : [];
+    // Quem chama TEM de passar todas as coleções. Se faltar alguma, isso fica
+    // escrito no próprio ficheiro em vez de desaparecer sem ninguém notar.
+    if (!(name in data)) missing.push(name);
+    collections[name] = { count: items.length, data: items, description };
+    totalRecords += items.length;
+  }
 
   const exportData = {
     metadata: {
       exportDate: new Date().toISOString(),
-      version: '1.0',
+      version: '2.0',
       appName: 'NEP Harm Reduction Tracker',
-      totalRecords: consumptions.length + cycles.length + dailyLogs.length +
-                    wellbeingLogs.length + reflections.length + thoughts.length + goals.length
+      totalRecords,
+      collectionsIncluded: EXPORTED_COLLECTIONS.map(([n]) => n),
+      ...(missing.length > 0 ? { warningNotProvided: missing } : {}),
     },
-    collections: {
-      consumptions: {
-        count: consumptions.length,
-        data: consumptions
-      },
-      cycles: {
-        count: cycles.length,
-        data: cycles,
-        description: 'Ciclos de sono/vigília com bedtime, horas dormidas e gatilhos'
-      },
-      dailyLogs: {
-        count: dailyLogs.length,
-        data: dailyLogs,
-        description: 'Dosagem total diária em mg'
-      },
-      wellbeingLogs: {
-        count: wellbeingLogs.length,
-        data: wellbeingLogs,
-        description: 'Humor, energia, autocuidado (água, descanso, social, alimentação) e emoções'
-      },
-      reflections: {
-        count: reflections.length,
-        data: reflections,
-        description: 'Reflexões escritas'
-      },
-      thoughts: {
-        count: thoughts.length,
-        data: thoughts,
-        description: 'Pensamentos registados'
-      },
-      goals: {
-        count: goals.length,
-        data: goals,
-        description: 'Objetivos definidos'
-      },
-      copingStrategies: {
-        count: copingStrategies.length,
-        data: copingStrategies,
-        description: 'Estratégias de coping (pode estar vazia)'
-      }
-    }
+    collections,
   };
 
   return JSON.stringify(exportData, null, 2);
 }
 
-// Coleções que sabemos importar (as mesmas que exportamos).
-const IMPORTABLE_COLLECTIONS = [
-  'consumptions', 'cycles', 'dailyLogs', 'wellbeingLogs',
-  'reflections', 'thoughts', 'goals',
-];
+// Coleções que sabemos importar — derivadas da lista de export, para não
+// voltarem a divergir. Um backup que exporta mais do que consegue restaurar é
+// tão inútil como um que não exporta.
+const IMPORTABLE_COLLECTIONS = EXPORTED_COLLECTIONS.map(([name]) => name);
 
 /**
  * Lê e valida um ficheiro de backup JSON (o mesmo formato que exportamos).
