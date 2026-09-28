@@ -120,6 +120,11 @@ Freedman–Lane:
 Só se baralha a parte de y que z não explica — que é exactamente a hipótese
 nula certa.
 
+**Consequência de desenho, e é a melhor razão para escolher o intervalo: a app
+nunca tem de imprimir a palavra "significativo".** Não há limiar a defender, não
+há 0,05 a explicar, não há veredicto binário. Há um intervalo, e ou atravessa o
+zero ou não.
+
 **Com intervalo, não com p sozinho.** Com r = 0,477 entre os mg e os toques, a
 parcial de −0,53 vem com um intervalo largo. *"−0,53"* e *"−0,53, algures entre
 −0,7 e −0,3"* são frases diferentes, e a segunda é a verdadeira. É a mesma
