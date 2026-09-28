@@ -339,7 +339,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {t('analyses.emotionalOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-4 border text-center'}>
+                            <div className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-4 border text-center'}>
                                 <div className={'text-3xl font-black mb-1 ' + ('text-green-400')}>
                                     {emotionStats.positivePercent.toFixed(0)}%
                                 </div>
@@ -520,16 +520,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Emoções de ALTO risco (mais consumo) */}
                                     {highRiskEmotions.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-amber-300')}>
                                                 {t('analyses.highRisk')}
                                             </div>
                                             {highRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={e.emotion} className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-amber-200')}>{translateEmotion(e.emotion)}</span>
+                                                        <span className={('bg-amber-800/40 text-amber-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-red-400/70')}>
+                                                    <div className={'text-xs ' + ('text-amber-300/70')}>
                                                         {t('analyses.highRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
@@ -540,16 +540,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Emoções de BAIXO risco (menos consumo) */}
                                     {lowRiskEmotions.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-indigo-300')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={e.emotion} className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-indigo-200')}>{translateEmotion(e.emotion)}</span>
+                                                        <span className={('bg-indigo-800/40 text-indigo-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-green-400/70')}>
+                                                    <div className={'text-xs ' + ('text-indigo-300/70')}>
                                                         {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
@@ -580,7 +580,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {t('analyses.triggerOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4">
-                            <div className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-4 border text-center'}>
+                            <div className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-4 border text-center'}>
                                 <div className={'text-3xl font-black mb-1 ' + ('text-red-400')}>
                                     {triggerStats.allTriggers.length}
                                 </div>
@@ -746,16 +746,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Gatilhos de ALTO risco (mais consumo) */}
                                     {highRiskTriggers.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-red-400')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-amber-300')}>
                                                 {t('analyses.highRisk')}
                                             </div>
                                             {highRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-red-900/20 border-red-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <span className={'font-medium text-sm ' + ('text-red-300')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-red-700/50 text-red-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                                        <span className={('bg-amber-800/40 text-amber-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-red-400/70')}>
+                                                    <div className={'text-xs ' + ('text-amber-300/70')}>
                                                         {t('analyses.highRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
@@ -766,16 +766,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Gatilhos de BAIXO risco (menos consumo) */}
                                     {lowRiskTriggers.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-green-400')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-indigo-300')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-green-900/20 border-green-700/50') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <span className={'font-medium text-sm ' + ('text-green-300')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-green-700/50 text-green-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                                        <span className={('bg-indigo-800/40 text-indigo-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-green-400/70')}>
+                                                    <div className={'text-xs ' + ('text-indigo-300/70')}>
                                                         {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>

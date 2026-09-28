@@ -449,11 +449,18 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         const mood = parseInt(lastWellbeingWithMood.mood);
 
         if (sleepHours < 6 && mood < 5) {
+          // ⚠️ NÃO é uma previsão nem um risco. Isto era "Risco elevado hoje —
+          // 75% probabilidade de dia desafiante, considera estratégias
+          // preventivas", a vermelho. Os 75% eram fixos no texto: nada os
+          // calculava. E chamar RISCO a um dia de uso maior é dizer que usar
+          // mais é perigoso em si — a linha vermelha do projeto.
+          // Fica a observação (dormiste pouco e o humor está baixo), sem
+          // veredicto, sem número inventado e sem alarme.
           alerts.push({
             text: i18n.t('alerts.highRisk', { hours: sleepHours, mood }),
-            emoji: '🔴',
-            color: 'red',
-            type: 'predictive',
+            emoji: '💤',
+            color: 'blue',
+            type: 'observational',
             description: i18n.t('alerts.highRiskDesc')
           });
         } else if (sleepHours < 6 || mood < 5) {
@@ -461,9 +468,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
           const factorVal = sleepHours < 6 ? { hours: sleepHours } : { mood };
           alerts.push({
             text: i18n.t(factorKey, factorVal),
-            emoji: '⚠️',
-            color: 'orange',
-            type: 'predictive',
+            emoji: '💤',
+            color: 'blue',
+            type: 'observational',
             description: i18n.t('alerts.moderateRiskDesc')
           });
         }
