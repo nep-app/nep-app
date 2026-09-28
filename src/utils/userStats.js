@@ -59,7 +59,7 @@ function ensureStatsMigrated() {
  * SOLUÇÃO: Guardar stats pré-calculadas (NÃO-encriptadas) em metadata
  *
  * Stats guardadas:
- * - streak: dias consecutivos sem consumo
+ * - streak: dias consecutivos COM REGISTO (não "sem consumo" — ver abaixo)
  * - lastConsumptionTime: timestamp do último consumo
  * - totalConsumptions: total de consumos
  * - last7DaysCount: consumos nos últimos 7 dias
@@ -68,10 +68,22 @@ function ensureStatsMigrated() {
  */
 
 /**
- * Calcular streak (dias consecutivos sem consumo)
- * Recebe consumptions já desencriptados e ordenados
+ * Calcular streak: dias consecutivos COM REGISTO.
+ *
+ * ⚠️ NÃO é "dias sem consumo". Este comentário dizia isso durante meses e o
+ * código sempre fez outra coisa — um comentário obsoleto a dizer o contrário
+ * da função é pior do que nenhum comentário, e já enganou quem o leu.
+ *
+ * Conta dias seguidos em que existe QUALQUER registo (consumo, bem-estar,
+ * pensamento, reflexão, dosagem). Não há condição nenhuma sobre ter consumido
+ * ou não. É deliberado, e alinhado com o paradigma de redução de danos: o que
+ * se reconhece é a pessoa aparecer, não usar menos. A string mostrada ao
+ * utilizador já o diz ("dias consecutivos de registo").
+ *
+ * Não confundir com updateAppUsageStreak(), que conta aberturas da app.
+ *
+ * Recebe items já desencriptados; aceita qualquer mistura de coleções.
  */
-// calculateStreak accepts any mix of items (consumptions, wellbeingLogs, thoughts, etc.)
 export const calculateStreak = (allItems) => {
   if (!allItems || allItems.length === 0) return 0;
 
