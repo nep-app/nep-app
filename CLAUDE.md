@@ -39,6 +39,12 @@
 ## ⛔ DECISÕES & LINHAS VERMELHAS (O que NUNCA fazer)
 
 * **Sem Cultura de 12 Passos:** Proibido reintroduzir modelos baseados em abstinência/12 passos (ex: o HALT foi removido do Urge Surfing a pedido explícito).
+* **A Direção é da Utilizadora, Não da App (regra do elogio):** A app NUNCA decide sozinha que uma direção de consumo é boa. Elogio, cor (verde/vermelho), emoji de alarme (🚨/⚠️/✅) e frases de incentivo ("Continua assim!", "Progresso!") só existem para uma meta que a pessoa definiu.
+  * **Sem meta → só descrição.** O número mostra-se sempre; o juízo é que não. *Gate no elogio, nunca nos dados.*
+  * **Meta de reduzir ou manter → pode reconhecer-se o progresso**, porque é a escolha dela.
+  * **Meta de aumentar → só descritivo, nunca celebração.** Não julgar ≠ encorajar: uma app não empurra ninguém para usar mais. O neutro está sempre disponível.
+  * Isto vale para bem-estar (sono, humor, autocuidado) de forma mais solta — aí o elogio é sobre cuidar de si, não sobre a direção do consumo.
+  * *Aplicado em v6.50.0. Tipos de meta existentes: `reduce_frequency`, `reduce_quantity`, `increase_interval`, `limit_last`, `sleep_hours`, `bedtime_before`. Não existe "manter" nem "aumentar" — se forem criados, a regra acima já decide o comportamento.*
 * **Medição de mg Sem Estimativas Inventadas:** NUNCA inventar ou estimar doses em mg para dias sem pesagem. O sistema usa apenas dias com medição real (`measured`).
 * **Segurança do PIN & Disfarce:** O PIN NUNCA é guardado em texto claro. Textos de ajuda ou email de recuperação NUNCA devem aparecer dentro do ecrã do modo disfarce (Calculadora).
 * **Privacidade / Research:** NUNCA enviar texto livre nem análise de sentimento para o modo de investigação/research — apenas dados quantitativos e agregados anónimos.

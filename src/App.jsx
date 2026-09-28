@@ -1077,8 +1077,13 @@ export function AuthenticatedApp() {
                 if (streaks.current >= 7) messages.push(t('feedback.streakHigh', { count: streaks.current }));
                 else if (streaks.current >= 3) messages.push(t('feedback.streakMid', { count: streaks.current }));
 
-                // Check interval quality
-                if (consumptions.length >= 2) {
+                // Intervalo entre consumos — SÓ se a pessoa tiver essa meta.
+                // A app não pode decidir por si que intervalos maiores são
+                // melhores: isso é assumir que menos consumo = melhor. Se ela
+                // própria definiu a meta, reconhecer o progresso é apoiar a
+                // escolha dela, não impor uma direcção.
+                const wantsLongerIntervals = (goals || []).some(g => g.type === 'increase_interval' && g.active !== false);
+                if (wantsLongerIntervals && consumptions.length >= 2) {
                     const lastIntervalData = metrics.lastInterval;
                     if (lastIntervalData && !lastIntervalData.isShort) {
                         messages.push(t('feedback.intervalGood', { hours: lastIntervalData.hours }));
@@ -1092,14 +1097,11 @@ export function AuthenticatedApp() {
                     if (completedItems >= 3) messages.push(t('feedback.selfcareGood', { count: completedItems }));
                 }
 
-                // Check reduction trend
-                if (dailyLogs.length >= 2) {
-                    const last = dailyLogs[0];
-                    const prev = dailyLogs[1];
-                    if (last.times < prev.times) {
-                        messages.push(t('feedback.progressVisible', { count: prev.times - last.times }));
-                    }
-                }
+                // ⛔ REMOVIDO: "📉 Progresso visível! Menos X consumos que antes".
+                // Chamava PROGRESSO a usar menos, sem a pessoa ter pedido nada.
+                // É a linha vermelha do projeto: tom observacional, nunca assumir
+                // que menos consumo = melhor. Quem tem uma meta de redução vê o
+                // progresso dessa meta no sítio das metas — aí é a escolha dela.
 
                 // Default positive messages
                 if (messages.length === 0) {
@@ -1113,7 +1115,7 @@ export function AuthenticatedApp() {
                 }
 
                 return messages[0];
-            }, [streaks, consumptions, metrics.lastInterval, wellbeingLogs, dailyLogs, i18n.language]);
+            }, [streaks, consumptions, metrics.lastInterval, wellbeingLogs, goals, i18n.language]);
 
             // Render
             if (appError) return (

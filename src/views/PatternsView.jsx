@@ -228,7 +228,9 @@ export function PatternsView({
                                                     const bestCount = byDate[bestDate];
                                                     const bestDayName = new Date(bestDate + 'T12:00:00').toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
                                                     const countStr = bestCount === 1 ? t('patterns.bestDay.oneUse') : t('patterns.bestDay.multiUse', { count: bestCount });
-                                                    const suffixStr = bestCount <= 2 ? t('patterns.bestDay.identifyGood') : t('patterns.bestDay.keepImproving');
+                                                    // Sem sufixo de incentivo: 'Identifica o que funcionou!' e 'Continua a
+                                                    // melhorar!' partiam do princípio de que menos é melhor.
+                                                    const suffixStr = '';
                                                     const prefix = completedDates.length === 1 ? t('patterns.bestDay.single', { date: bestDayName, count: countStr }) : t('patterns.bestDay.multi', { date: bestDayName, count: countStr });
                                                     insights.push({
                                                         text: `${prefix} ${suffixStr}`,
@@ -487,14 +489,16 @@ export function PatternsView({
                                                                     {t('patterns.trend.title')}
                                                                 </div>
                                                                 <span className={'text-2xl ' + (
-                                                                    trend.direction === 'increasing' ? '⚠️' :
-                                                                    trend.direction === 'decreasing' ? '✅' : '➖'
+                                                                    // Sem ⚠️/✅: a app não decide que subir é mau e
+                                                                    // descer é bom. Quem decide a direcção é a meta
+                                                                    // da pessoa, e isso vê-se no sítio das metas.
+                                                                    trend.direction === 'stable' ? '➖' : '📊'
                                                                 )}></span>
                                                             </div>
                                                             <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                 {trend.direction === 'increasing' && (
                                                                     <>
-                                                                        <strong className={'text-red-400'}>{t('patterns.trend.increasing')}</strong> +{trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
+                                                                        <strong className={'text-gray-200'}>{t('patterns.trend.increasing')}</strong> +{trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
                                                                             {t('patterns.trend.increasingDetail', { slope: trend.slopePerDay, projection: trend.projection })}
@@ -503,7 +507,7 @@ export function PatternsView({
                                                                 )}
                                                                 {trend.direction === 'decreasing' && (
                                                                     <>
-                                                                        <strong className={'text-green-400'}>{t('patterns.trend.decreasing')}</strong> {trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
+                                                                        <strong className={'text-gray-200'}>{t('patterns.trend.decreasing')}</strong> {trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
                                                                         <br />
                                                                         <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
                                                                             {t('patterns.trend.decreasingDetail', { slope: Math.abs(parseFloat(trend.slopePerDay)), projection: trend.projection })}
@@ -731,21 +735,21 @@ export function PatternsView({
 
                                                         // 6. mg ontem vs. média histórica
                                                         if (mgYesterday !== null && mgAvg !== null) {
-                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', positive: false, text: t('patterns.riskLevel.mgWayAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
-                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', positive: false, text: t('patterns.riskLevel.mgAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
-                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; riskFactors.push({ emoji: '💊', positive: true, text: t('patterns.riskLevel.mgBelow', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
+                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgWayAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
+                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
+                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgBelow', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
                                                         }
 
                                                         // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
                                                         if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
                                                             riskScore += 12;
                                                             const dayNames = t('analyses.dayNames', { returnObjects: true });
-                                                            riskFactors.push({ emoji: '📅', positive: false, text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
+                                                            riskFactors.push({ emoji: '📅', positive: null, text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
                                                         }
 
                                                         // 8. Tendência consumo últimos 7 dias
-                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📈', positive: false, text: t('patterns.riskLevel.trendIncreasing') }); }
-                                                        else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📉', positive: true, text: t('patterns.riskLevel.trendDecreasing') }); }
+                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📊', positive: null, text: t('patterns.riskLevel.trendIncreasing') }); }
+                                                        else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📊', positive: null, text: t('patterns.riskLevel.trendDecreasing') }); }
 
                                                         // 9. Emoções — craving, valência e instabilidade
                                                         if (hasCravingYesterday) { riskScore += 15; riskFactors.push({ emoji: '🔥', positive: false, text: t('patterns.riskLevel.cravingYesterday') }); }
@@ -758,26 +762,31 @@ export function PatternsView({
 
                                                         riskScore = Math.max(0, Math.min(100, riskScore));
 
-                                                        // Classificar risco
+                                                        // Classificar o PADRÃO do dia — não o "risco".
+                                                        // Um dia de uso mais alto não é um perigo nem uma falha:
+                                                        // é um dia. O alarme (🚨 + vermelho) dizia o contrário e
+                                                        // contradizia o paradigma de redução de danos do projeto.
+                                                        // Fica a informação — "hoje parece-se com os teus dias
+                                                        // de uso mais alto" — numa paleta que não julga.
                                                         let riskLevel, riskColor, riskBg, riskBorder, riskEmoji;
                                                         if (riskScore >= 70) {
                                                             riskLevel = t('patterns.riskLevel.high');
-                                                            riskColor = 'text-red-400';
-                                                            riskBg = 'bg-red-900/30';
-                                                            riskBorder = 'border-red-700/50';
-                                                            riskEmoji = '🚨';
+                                                            riskColor = 'text-indigo-300';
+                                                            riskBg = 'bg-indigo-900/25';
+                                                            riskBorder = 'border-indigo-700/40';
+                                                            riskEmoji = '📊';
                                                         } else if (riskScore >= 55) {
                                                             riskLevel = t('patterns.riskLevel.moderate');
-                                                            riskColor = 'text-yellow-400';
-                                                            riskBg = 'bg-yellow-900/30';
-                                                            riskBorder = 'border-yellow-700/50';
-                                                            riskEmoji = '⚠️';
+                                                            riskColor = 'text-sky-300';
+                                                            riskBg = 'bg-sky-900/25';
+                                                            riskBorder = 'border-sky-700/40';
+                                                            riskEmoji = '📊';
                                                         } else {
                                                             riskLevel = t('patterns.riskLevel.low');
-                                                            riskColor = 'text-green-400';
-                                                            riskBg = 'bg-green-900/30';
-                                                            riskBorder = 'border-green-700/50';
-                                                            riskEmoji = '✅';
+                                                            riskColor = 'text-slate-300';
+                                                            riskBg = 'bg-slate-800/40';
+                                                            riskBorder = 'border-slate-600/40';
+                                                            riskEmoji = '📊';
                                                         }
 
                                                         return (
@@ -790,10 +799,10 @@ export function PatternsView({
                                                                 </div>
                                                                 <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
                                                                     <div className="flex items-center gap-2 mb-2">
-                                                                        <strong className={riskColor}>{t('patterns.riskLevel.label', { level: riskLevel })}</strong>
-                                                                        <div className={'text-xs px-2 py-0.5 rounded-full font-semibold ' + riskColor}>
-                                                                            {riskScore}%
-                                                                        </div>
+                                                                        {/* Sem percentagem: o número é um índice interno somado
+                                                                            à mão, NÃO uma probabilidade. Mostrar "71%" dava-lhe
+                                                                            uma precisão que ele não tem. */}
+                                                                        <strong className={riskColor}>{riskLevel}</strong>
                                                                     </div>
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
