@@ -50,6 +50,9 @@
   * Ao contar por permutação, usar sempre `(b+1)/(m+1)`: com 5000 baralhações e zero acertos diz-se **"menos de 1 em 5000"**, nunca "zero".
   * *Plano completo em `PLANO-ESTATISTICA.md` (ecrã → n mínimo → p por permutação → parcial com Freedman–Lane).*
 
+* **Nunca Ordenar Correlações por Força:** A tab das Correlações mostra os blocos por ordem FIXA no código, nunca por `|r|`. **Não mexer.** Ordenar pelas mais fortes é o tipo de melhoria que se propõe de boa-fé e que embute o problema das comparações múltiplas na própria interface: com 31 correlações no ecrã, a maior é quase sempre ruído, e quem lê lê-a como se fosse a única. Nenhum p-value salva uma interface que já escolheu a resposta.
+* **Regra Testável do "Não Sei":** Nenhum número vai para o ecrã se o código que o pôs lá **não pudesse ter decidido não o pôr**. Todo o caminho que mostra um valor tem de ter um ramo onde recusa mostrá-lo (dados insuficientes, sem meta, sem medição fiável). Verifica-se a ler o código — ao contrário do slogan, que não se testa.
+
 * **Medição de mg Sem Estimativas Inventadas:** NUNCA inventar ou estimar doses em mg para dias sem pesagem. O sistema usa apenas dias com medição real (`measured`).
 * **Segurança do PIN & Disfarce:** O PIN NUNCA é guardado em texto claro. Textos de ajuda ou email de recuperação NUNCA devem aparecer dentro do ecrã do modo disfarce (Calculadora).
 * **Privacidade / Research:** NUNCA enviar texto livre nem análise de sentimento para o modo de investigação/research — apenas dados quantitativos e agregados anónimos.
