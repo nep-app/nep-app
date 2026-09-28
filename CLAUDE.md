@@ -45,6 +45,11 @@
   * **Meta de aumentar → só descritivo, nunca celebração.** Não julgar ≠ encorajar: uma app não empurra ninguém para usar mais. O neutro está sempre disponível.
   * Isto vale para bem-estar (sono, humor, autocuidado) de forma mais solta — aí o elogio é sobre cuidar de si, não sobre a direção do consumo.
   * *Aplicado em v6.50.0. Tipos de meta existentes: `reduce_frequency`, `reduce_quantity`, `increase_interval`, `limit_last`, `sleep_hours`, `bedtime_before`. Não existe "manter" nem "aumentar" — se forem criados, a regra acima já decide o comportamento.*
+* **A App Tem de Poder Dizer "Não Sei":** A app pode dizer *"isto não se distingue do acaso"*, e **tem de o poder dizer antes de poder dizer o contrário**. Uma ferramenta que só sabe afirmar é uma ferramenta que só sabe convencer.
+  * Nenhum número apresentado como certeza sem a incerteza ao lado (ex.: o "75% probabilidade" fixo no texto, removido na v6.51.0).
+  * Ao contar por permutação, usar sempre `(b+1)/(m+1)`: com 5000 baralhações e zero acertos diz-se **"menos de 1 em 5000"**, nunca "zero".
+  * *Plano completo em `PLANO-ESTATISTICA.md` (ecrã → n mínimo → p por permutação → parcial com Freedman–Lane).*
+
 * **Medição de mg Sem Estimativas Inventadas:** NUNCA inventar ou estimar doses em mg para dias sem pesagem. O sistema usa apenas dias com medição real (`measured`).
 * **Segurança do PIN & Disfarce:** O PIN NUNCA é guardado em texto claro. Textos de ajuda ou email de recuperação NUNCA devem aparecer dentro do ecrã do modo disfarce (Calculadora).
 * **Privacidade / Research:** NUNCA enviar texto livre nem análise de sentimento para o modo de investigação/research — apenas dados quantitativos e agregados anónimos.
