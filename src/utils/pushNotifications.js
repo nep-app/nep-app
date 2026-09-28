@@ -19,7 +19,7 @@ import { logger } from './logger';
 // Enquanto estavam em `users/{uid}/push/prefs`, essa credencial tinha de entrar
 // na árvore onde também vivem o salt e o pinVerification de toda a gente. Numa
 // colecção de topo, o carteiro deixa de ter razão nenhuma para lá entrar.
-// (Ver docs/SEGURANCA.md: isto reduz o motivo, não a capacidade — a credencial
+// (Ver SEGURANCA.md: isto reduz o motivo, não a capacidade — a credencial
 // de admin continua a poder ler o projecto todo. O que fecha isso é o item 1.)
 const prefsRef = (db, uid) => doc(db, 'pushPrefs', uid);
 const legacyPrefsRef = (db, uid) => doc(db, 'users', uid, 'push', 'prefs');

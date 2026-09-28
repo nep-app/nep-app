@@ -28,8 +28,12 @@ service cloud.firestore {
     // 🪦 Lápide de item apagado: NÃO transporta conteúdo. Apagar tem de apagar
     // mesmo — o envelope cifrado do item sai do servidor e fica só a marca que
     // impede o item de ressuscitar a partir de outro dispositivo.
+    // Usa-se .get('deleted', false) e não .deleted: ler um campo que não existe
+    // é um ERRO na avaliação da regra, e um erro nega o pedido. Um documento sem
+    // o campo `deleted` passaria a ser recusado em vez de simplesmente não ser
+    // uma lápide.
     function isValidTombstone() {
-      return request.resource.data.deleted == true
+      return request.resource.data.get('deleted', false) == true
         && !request.resource.data.keys().hasAny(['data', 'iv']);
     }
 
@@ -75,7 +79,7 @@ service cloud.firestore {
     // regras; enquanto vivia em users/{uid}/push, essa credencial tinha de entrar
     // na árvore onde também estão o salt e o pinVerification de toda a gente.
     // Nota honesta: isto tira o MOTIVO, não a CAPACIDADE — a credencial de admin
-    // continua a poder ler o projecto inteiro. Ver docs/SEGURANCA.md.
+    // continua a poder ler o projecto inteiro. Ver SEGURANCA.md.
     match /pushPrefs/{userId} {
       allow read, write: if isOwner(userId);
     }
@@ -95,9 +99,10 @@ service cloud.firestore {
     // Como o anonId é um UUID v4 (122 bits), ninguém consegue ADIVINHAR o de
     // outra pessoa: o risco real não é contaminar uma pessoa específica, é
     // poluir o conjunto com participantes inventados.
-    // O que se faz aqui é reduzir o estrago: forma de UUID obrigatória, só
-    // documentos de semana, forma e tamanho validados, sem apagar.
-    // Ver docs/SEGURANCA.md.
+    // O que se faz aqui é reduzir o estrago: comprimento e alfabeto do anonId
+    // validados, só documentos de semana no caminho esperado, forma e tamanho
+    // validados, leitura e eliminação negadas.
+    // Ver SEGURANCA.md.
     // Propositadamente NÃO se usa hasOnly: a escrita é feita com merge, por isso
     // `request.resource.data` traz também os campos que já lá estivessem de
     // versões anteriores — uma lista fechada rejeitaria documentos legítimos e
