@@ -18,6 +18,7 @@ import { DataModeSelector } from './components/DataModeSelector';
 import { CalculatorDecoy } from './components/CalculatorDecoy';
 import { ConfirmModal } from './components/modals/ConfirmModal';
 import { getDataMode } from './services/researchService';
+import { countConsumptionsOnDate } from './db/localDB';
 
 import { validateSleepHours, validateMoodEnergy, validateText, sanitizeText, MAX_NOTE_LENGTH, MAX_THOUGHT_LENGTH } from './utils/validation';
 import { deriveDailyMg, typicalMgPerDose } from './utils/mgDerivation';
@@ -168,7 +169,7 @@ function HarmReductionTracker() {
  */
 export function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData } = useData();
+            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData, fullDataLoaded } = useData();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -538,9 +539,16 @@ export function AuthenticatedApp() {
                     // Usar timestamp REAL (hora atual de submissão)
                     const timestamp = new Date().toISOString();
 
-                    // Contar consumos do dia SELECIONADO (não de hoje)
-                    const consumptionsOnSelectedDate = consumptions.filter(c => c.date === selectedDate);
-                    const timesCount = consumptionsOnSelectedDate.length;
+                    // Contar consumos do dia SELECIONADO pelas DUAS vias e ficar
+                    // com a maior. Nenhuma das duas consegue contar a mais:
+                    //  - a memória conta a menos para dias fora da janela já
+                    //    carregada (fases 2/3 trazem o histórico aos poucos) — foi
+                    //    isto que pôs 23 registos de junho/julho a `times: 0`;
+                    //  - a base conta a menos no modo demonstração, onde os dados
+                    //    vivem só em memória.
+                    const emMemoria = consumptions.filter(c => c.date === selectedDate).length;
+                    const naBase = await countConsumptionsOnDate(selectedDate);
+                    const timesCount = naBase == null ? emMemoria : Math.max(emMemoria, naBase);
 
                     const item = {
                         id: genId(),
@@ -568,9 +576,18 @@ export function AuthenticatedApp() {
 
                     for (const log of dailyLogs) {
                         try {
-                            // Contar consumos do mesmo dia
-                            const consumptionsOnDate = consumptions.filter(c => c.date === log.date);
-                            const correctTimes = consumptionsOnDate.length;
+                            // Contar na BASE, não em memória. Antes, esta migração
+                            // corria 2 segundos após o arranque, quando só os últimos
+                            // 7 dias estavam carregados — e ESCREVIA o que contasse.
+                            // Ou seja: a função que existe para corrigir o `times`
+                            // podia pôr a zero o histórico todo, e marcar-se como
+                            // feita a seguir.
+                            const naBase = await countConsumptionsOnDate(log.date);
+                            if (naBase == null) continue; // não sei → não escrevo
+                            const correctTimes = Math.max(
+                                consumptions.filter(c => c.date === log.date).length,
+                                naBase
+                            );
 
                             // Se o times estiver errado, corrigir
                             if (log.times !== correctTimes) {
@@ -586,7 +603,7 @@ export function AuthenticatedApp() {
                     }
 
                     // Marcar migração como completa
-                    localStorage.setItem('dailyLogsMigrationV1', 'done');
+                    localStorage.setItem('dailyLogsMigrationV2', 'done');
 
                     if (fixed > 0) {
                         showToast(t('messages.mgFixed', { count: fixed }), 'success');
@@ -599,9 +616,11 @@ export function AuthenticatedApp() {
 
             // Executar migração automaticamente uma vez
             useEffect(() => {
-                const migrationDone = localStorage.getItem('dailyLogsMigrationV1');
+                // V2: a V1 contava em memória e podia gravar zeros. Esta corre de
+                // novo, já a ler da base, e repara os registos que ficaram errados.
+                const migrationDone = localStorage.getItem('dailyLogsMigrationV2');
 
-                if (!migrationDone && user && dailyLogs.length > 0 && consumptions.length > 0) {
+                if (!migrationDone && user && fullDataLoaded && dailyLogs.length > 0) {
                     // Esperar 2 segundos após carregar para não interferir com a UI
                     const timer = setTimeout(() => {
                         fixDailyLogsTimes();
@@ -609,7 +628,7 @@ export function AuthenticatedApp() {
 
                     return () => clearTimeout(timer);
                 }
-            }, [user, dailyLogs.length, consumptions.length]);
+            }, [user, fullDataLoaded, dailyLogs.length]);
 
             const submitWellbeing = async () => {
                 try {

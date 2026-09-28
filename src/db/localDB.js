@@ -132,6 +132,35 @@ export async function setMetadata(key, value) {
 /**
  * Limpar toda a base de dados (para logout)
  */
+/**
+ * Conta os consumos de um DIA, lendo directamente da base local.
+ *
+ * ⚠️ PORQUE EXISTE: contar a partir do array em memória (`consumptions`) dá
+ * valores ERRADOS, porque os dados entram por fases — a FASE 2 traz só os
+ * últimos 7 dias e a FASE 3 (o histórico todo) demora ~10s. Quem preenchesse
+ * um registo de um dia antigo antes de a FASE 3 acabar ficava com `times: 0`,
+ * mesmo em dias com 10 consumos. Aconteceu mesmo: 23 registos de 20/06 a 12/07
+ * de 2026, todos a zero, preenchidos de uma vez em 19/07.
+ *
+ * O campo `date` é um índice em CLARO (não é cifrado — ver INDEX_FIELDS em
+ * utils/dexieEncryption.js), por isso dá para contar sem desencriptar nada e
+ * sem depender do que já foi carregado para memória.
+ *
+ * @param {string} date - chave local 'YYYY-MM-DD' (usar getTodayKey/safeToISODate)
+ * @returns {Promise<number|null>} nº de consumos, ou null se não der para contar
+ */
+export async function countConsumptionsOnDate(date) {
+  if (!date) return null;
+  try {
+    const rows = await db.consumptions.where('date').equals(date).toArray();
+    return rows.filter(r => !r.deleted).length;
+  } catch (e) {
+    // Nunca inventar um número: null quer dizer "não sei", e quem mostra
+    // trata o null como ausente em vez de escrever 0.
+    return null;
+  }
+}
+
 export async function clearAllData() {
   await db.transaction('rw', [
     db.consumptions,
