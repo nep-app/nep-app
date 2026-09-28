@@ -31,8 +31,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         // ===== DYNAMIC THRESHOLDS BASED ON USER GOALS =====
         // Buscar meta de redução de frequência para thresholds personalizados
         const frequencyGoal = goals.find(g => g.type === 'reduce_frequency');
-        // Threshold para "dia difícil": meta + 2 (ou 10 se não houver meta)
-        const difficultThreshold = frequencyGoal ? frequencyGoal.target + 2 : 10;
+        // ⚠️ SEM META, NÃO HÁ LIMIAR. Isto era `: 10` — um número inventado pela
+        // app que definia o que conta como "dia difícil" para quem nunca pediu
+        // meta nenhuma, e sobre o qual se construíam correlações inteiras.
+        // A null obriga cada secção a não se mostrar em vez de assumir um alvo.
+        const difficultThreshold = frequencyGoal ? frequencyGoal.target + 2 : null;
 
         // Calculate all metrics for narrative
         const totalConsumptions = analysisConsumptions.length;
@@ -532,6 +535,20 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisConsumptions.length < 5) return null;
 
+                        // ⚠️ ISTO CALCULAVA A MEDIANA DOS PRÓPRIOS DIAS E CHAMAVA-LHE
+                        // "as tuas metas". Não havia meta nenhuma: a app inventava o
+                        // alvo a partir dos dados da pessoa e depois aplaudia-a por o
+                        // cumprir ("🎉 estás nessa streak AGORA!").
+                        // Pior do que uma opinião — parecia um número dela.
+                        // E por construção metade dos dias ficam sempre "dentro": a
+                        // mediana não é um alvo, é uma propriedade da distribuição. O
+                        // "recorde" até descia sozinho à medida que a mediana mudava.
+                        // Agora: só existe com uma meta REAL de frequência, e o limite
+                        // é o alvo que a pessoa definiu.
+                        if (!frequencyGoal) return null;
+                        const target = Math.max(1, parseInt(frequencyGoal.target, 10));
+                        if (!target || isNaN(target)) return null;
+
                         // Agrupar por dia
                         const consumptionsByDate = {};
                         analysisConsumptions.forEach(c => {
@@ -539,15 +556,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             consumptionsByDate[c.date]++;
                         });
 
-                        const dailyCounts = Object.values(consumptionsByDate).sort((a, b) => a - b);
-                        const median = dailyCounts[Math.floor(dailyCounts.length / 2)];
-
                         // Ordenar por data
                         const sortedDates = Object.keys(consumptionsByDate).sort();
                         let maxStreak = 0, currentStreak = 0, maxStreakEnd = null, isCurrentStreakActive = false;
 
                         sortedDates.forEach((date, idx) => {
-                            if (consumptionsByDate[date] <= median) {
+                            if (consumptionsByDate[date] <= target) {
                                 currentStreak++;
                                 if (currentStreak > maxStreak) {
                                     maxStreak = currentStreak;
@@ -565,7 +579,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         return (
                             <p>
                                 🔥 <strong className={('text-orange-400')}>{t('coach.momentumLabel')}</strong>{' '}
-                                {t('coach.momentumRecord', { n: maxStreak, label: t(maxStreak === 1 ? 'coach.day_singular' : 'coach.day_plural'), median })}
+                                {t('coach.momentumRecord', { n: maxStreak, label: t(maxStreak === 1 ? 'coach.day_singular' : 'coach.day_plural'), target })}
                                 {isCurrentStreakActive && maxStreak === currentStreak ? (
                                     <> <span className={'font-medium ' + ('text-green-400')}>{t('coach.momentumActiveStreak')}</span></>
                                 ) : maxStreakEnd ? (
@@ -631,6 +645,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Recovery Profile */}
                     {(() => {
                         if (analysisConsumptions.length < 20) return null;
+                        if (difficultThreshold == null) return null; // sem meta, sem "dia difícil"
 
                         // Agrupar por dia
                         const consumptionsByDate = {};
@@ -693,6 +708,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Cascade */}
                     {(() => {
                         if (analysisConsumptions.length < 15) return null;
+                        if (difficultThreshold == null) return null; // sem meta, sem "dia difícil"
 
                         // Agrupar por dia
                         const consumptionsByDate = {};
@@ -897,6 +913,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         }
 
                         // 2. Dias com alta frequência (≥threshold) vs triggers específicos
+                        // Sem meta não há limiar: este bloco não se mostra em vez de
+                        // usar um número inventado pela app.
+                        if (difficultThreshold == null) return null;
                         const consumptionsByDate = {};
                         analysisConsumptions.forEach(c => {
                             if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
@@ -1911,7 +1930,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const dailyCounts = Object.values(consumptionsByDate);
 
                         // Usar threshold global já definido (baseado em meta)
-                        const goodThreshold = frequencyGoal ? Math.max(1, frequencyGoal.target - 1) : 7;
+                        // Era `: 7` — outro alvo inventado. Sem meta não há "dia bom".
+                        if (!frequencyGoal || difficultThreshold == null) return null;
+                        const goodThreshold = Math.max(1, frequencyGoal.target - 1);
                         // difficultThreshold já definido globalmente no início (linha ~161)
 
                         const goodDays = dailyCounts.filter(c => c <= goodThreshold).length;
