@@ -103,15 +103,15 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
   return (
     <div className="rounded-lg p-4 border bg-gray-800 border-gray-700">
       <div className="mb-4">
+        {/* Título e botões na MESMA linha; a descrição por baixo, à largura toda.
+            Antes a descrição partilhava a linha com os botões: num telemóvel
+            sobravam-lhe uns 90px e o texto saía uma palavra por linha. */}
         <div className="flex flex-col gap-2">
-          <h3 className="text-lg font-bold text-gray-200">
-            {view === 'consumptions' ? t('patterns.heatmap.titleConsumptions') : t('patterns.heatmap.titleWellbeing')}
-          </h3>
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-gray-400">
-              {t('patterns.heatmap.desc', { days })}
-            </p>
-            <div className="flex gap-2 flex-shrink-0 ml-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h3 className="text-lg font-bold text-gray-200">
+              {view === 'consumptions' ? t('patterns.heatmap.titleConsumptions') : t('patterns.heatmap.titleWellbeing')}
+            </h3>
+            <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => setView('consumptions')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
@@ -130,6 +130,9 @@ const HeatmapChart = ({ consumptions, wellbeingLogs, days = 90 }) => {
               </button>
             </div>
           </div>
+          <p className="text-xs text-gray-400">
+            {t('patterns.heatmap.desc', { days })}
+          </p>
         </div>
       </div>
 

@@ -807,8 +807,12 @@ export function PatternsView({
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <div className={'text-xs font-semibold ' + 'text-gray-400'}>{t('patterns.riskLevel.factors')}</div>
+                                                                            {/* positive === null são os factores sobre a DIREÇÃO do consumo, que na
+                                                                                v6.50.0 deixaram de ser verdes/vermelhos. Ficavam a AMARELO, que
+                                                                                se lê como aviso — "menos consumos nos últimos 7 dias" aparecia
+                                                                                pintado de alerta. Neutro é cinzento. */}
                                                                             {riskFactors.map((rf, idx) => (
-                                                                                <div key={idx} className={'text-xs ' + (rf.positive === true ? 'text-green-400' : rf.positive === false ? 'text-red-300' : 'text-yellow-400')}>
+                                                                                <div key={idx} className={'text-xs ' + (rf.positive === true ? 'text-green-400' : rf.positive === false ? 'text-red-300' : 'text-gray-400')}>
                                                                                     {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}

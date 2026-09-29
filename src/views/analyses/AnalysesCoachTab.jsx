@@ -270,7 +270,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 {percentChange > 15 ? (
                                     <> <span className={('text-orange-400')}>{t('coach.microTrendIncrease')}</span></>
                                 ) : percentChange < -15 ? (
-                                    <> <span className={('text-green-400')}>{t('coach.microTrendDecrease')}</span></>
+                                    <> <span className={('text-gray-300')}>{t('coach.microTrendDecrease')}</span></>
                                 ) : percentChange > 0 ? (
                                     <> {t('coach.microTrendSlightIncrease')}</>
                                 ) : (
@@ -469,7 +469,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🏆 <strong className={('text-green-400')}>{t('coach.goodVsDifficultLabel')}</strong>
+                                📊 <strong className={('text-gray-200')}>{t('coach.goodVsDifficultLabel')}</strong>
                                 {goodDays.length > 0 && <> {t('coach.youHad')} <strong>{goodDays.length} {t(goodDays.length === 1 ? 'coach.goodDaysSingular' : 'coach.goodDaysPlural')}</strong> {t('coach.atMostUses', { n: goodThreshold })}{goodSleep && <><strong>{t('coach.withAvgSleep', { h: goodSleep })}</strong></>}{goodMood && <><strong>{t('coach.withMood', { n: goodMood })}</strong></>}.</>}
                                 {difficultDays.length > 0 && <> {goodDays.length > 0 && t('coach.onTheOtherHand')} {t('coach.thereWere')} <strong className={('text-orange-400')}>{difficultDays.length} {t(difficultDays.length === 1 ? 'coach.difficultDaySingular' : 'coach.difficultDayPlural')}</strong> {t('coach.atLeastUses', { n: difficultThreshold })}{difficultSleep && <><strong>{t('coach.withAvgSleep', { h: difficultSleep })}</strong></>}{difficultMood && <><strong>{t('coach.withMood', { n: difficultMood })}</strong></>}.</>}
                                 {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
@@ -691,7 +691,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 {avgRecovery ? (
                                     <> {t(parseFloat(avgRecovery) === 1 ? 'coach.recoveryAvgSingular' : 'coach.recoveryAvgPlural', { n: avgRecovery })}
                                     {parseFloat(avgRecovery) <= 1.5 ? (
-                                        <> <span className={('text-green-400')}>{t('coach.recoveryFast')}</span></>
+                                        <> <span className={('text-gray-300')}>{t('coach.recoveryFast')}</span></>
                                     ) : parseFloat(avgRecovery) <= 3 ? (
                                         <> <span className={('text-yellow-400')}>{t('coach.recoveryModerate')}</span></>
                                     ) : (
@@ -833,7 +833,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const concentrated = concentrationPercent >= 50;
                         return (
                             <p>
-                                ⏰ <strong className={concentrated ? 'text-red-400' : 'text-cyan-400'}>
+                                ⏰ <strong className={'text-cyan-400'}>
                                     {t(concentrated ? 'coach.vulnerabilityLabel' : 'coach.peakWindowLabel')}
                                 </strong>{' '}
                                 {t('coach.vulnerabilityText', { pct: concentrationPercent, window: formatWindow(maxWindowStart), type: t(windowTypeKey) })}
@@ -930,7 +930,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             if (percentLowSleep >= 60) {
                                 return (
                                     <p>
-                                        🔗 <strong className={('text-red-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
+                                        🔗 <strong className={('text-cyan-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
                                         {t('coach.triggerMappingLate', { pct: percentLowSleep })}
                                     </p>
                                 );
@@ -984,7 +984,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 if (percent >= 50) {
                                     return (
                                         <p>
-                                            🔗 <strong className={('text-red-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
+                                            🔗 <strong className={('text-cyan-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
                                             {t('coach.triggerMappingHighFreq', { pct: percent, threshold: difficultThreshold, emotion: topEmotion[0] })}
                                         </p>
                                     );
@@ -1788,13 +1788,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             <p>
                                 🔬 <strong className={('text-indigo-400')}>{t('coach.clustersLabel')}</strong>
                                 {clusters.altaPressao.length > 0 && (
-                                    <> <strong className={('text-red-400')}>{t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</strong></>
+                                    <> <strong className={('text-amber-300')}>{t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</strong></>
                                 )}
                                 {clusters.paradoxo.length > 0 && (
                                     <> <strong className={('text-yellow-400')}>{t('coach.clustersParadox', { n: clusters.paradoxo.length })}</strong></>
                                 )}
                                 {clusters.equilibrio.length > 0 && (
-                                    <> <strong className={('text-green-400')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
+                                    <> <strong className={('text-indigo-300')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
                                 )}
                             </p>
                         );
