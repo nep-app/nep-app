@@ -720,18 +720,46 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Ordenar por data
                         const sortedDates = Object.keys(consumptionsByDate).sort();
 
-                        // Detectar cascatas: dia difícil (≥threshold) seguido de mais dias difíceis
+                        // ⚠️ DUAS CORRECÇÕES AQUI.
+                        //
+                        // 1. Dias SEGUIDOS a sério. `sortedDates` são as datas COM
+                        //    registos, não o calendário: uma "cascata" podia ser
+                        //    dois dias difíceis separados por uma semana.
+                        //
+                        // 2. COMPARAR COM O ACASO. Contar sequências e chamar-lhes
+                        //    "padrão" não prova nada: se uma pessoa tem dias difíceis
+                        //    em 44% dos dias, sequências de 2 e 3 acontecem o tempo
+                        //    todo só por acaso. Nos dados reais da utilizadora um dia
+                        //    difícil é seguido de outro 42,8% das vezes, contra 46,2%
+                        //    depois de um dia normal — diferença NEGATIVA, p = 0,71.
+                        //    A app estava a avisá-la de um arrastamento que não existe.
+                        //    Agora mostra-se o esperado ao acaso ao lado do observado,
+                        //    e o texto só fala em padrão se o observado o ultrapassar.
+                        const saoSeguidos = (a, b) => Math.round(
+                            (new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000
+                        ) === 1;
+
                         let cascadeEvents = 0, longestCascade = 0, currentCascade = 0;
+                        let diasDificeis = 0;
 
                         sortedDates.forEach((date, idx) => {
-                            if (consumptionsByDate[date] >= difficultThreshold) {
-                                currentCascade++;
+                            const dificil = consumptionsByDate[date] >= difficultThreshold;
+                            if (dificil) diasDificeis++;
+                            const seguido = idx > 0 && saoSeguidos(sortedDates[idx - 1], date);
+                            if (dificil && (seguido || currentCascade === 0)) {
+                                currentCascade = (dificil && seguido) ? currentCascade + 1 : 1;
                                 if (currentCascade > longestCascade) longestCascade = currentCascade;
-                                if (currentCascade === 2) cascadeEvents++; // Conta quando começa cascata (2º dia)
+                                if (currentCascade === 2) cascadeEvents++;
                             } else {
-                                currentCascade = 0;
+                                currentCascade = dificil ? 1 : 0;
+                                if (currentCascade > longestCascade) longestCascade = currentCascade;
                             }
                         });
+
+                        // Quantas sequências de 2+ o ACASO daria, com a mesma taxa.
+                        const taxaDificil = sortedDates.length > 0 ? diasDificeis / sortedDates.length : 0;
+                        const esperadoAoAcaso = Math.round((sortedDates.length - 1) * taxaDificil * taxaDificil);
+                        const acimaDoAcaso = cascadeEvents > esperadoAoAcaso;
 
                         if (cascadeEvents === 0 && longestCascade < 2) return null;
 
@@ -739,12 +767,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             <p>
                                 🌊 <strong className={('text-purple-400')}>{t('coach.cascadeLabel')}</strong>
                                 {longestCascade >= 2 ? (
-                                    <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade })}
-                                    {longestCascade >= 3 ? (
-                                        <> <span className={('text-red-400')}>{t('coach.cascadeLongWarning')}</span></>
-                                    ) : (
-                                        <> <span className={('text-yellow-400')}>{t('coach.cascadeShortTip')}</span></>
-                                    )}</>
+                                    <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade, esperado: esperadoAoAcaso })}
+                                    <> <span className={('text-gray-400')}>{t(acimaDoAcaso ? 'coach.cascadeAboveChance' : 'coach.cascadeWithinChance')}</span></>
+                                    </>
                                 ) : (
                                     <> {t('coach.cascadeNone')}</>
                                 )}

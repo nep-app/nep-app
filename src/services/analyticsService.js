@@ -61,9 +61,24 @@ export const predictNextEpisode = (history) => {
 /**
  * Calculate Pearson correlation coefficient between two variables
  */
+/**
+ * Nº MÍNIMO de pontos para uma correlação poder ir para o ecrã.
+ *
+ * Era 3. Com 3 pontos sai sempre um número — e ficava ao lado de uma correlação
+ * feita com trezentos dias, sem nada que as distinguisse. Um r de três pontos
+ * não precisa de p-value para ser lixo: precisa de não aparecer.
+ *
+ * 20 é o piso em que o intervalo de confiança deixa de ser absurdo. Abaixo
+ * disso não dá sequer para distinguir +0,2 de −0,2, e mostrar o número dá-lhe
+ * uma autoridade que ele não tem.
+ *
+ * Ver PLANO-ESTATISTICA.md e a regra testável do "não sei" em CLAUDE.md.
+ */
+export const MIN_CORRELATION_N = 20;
+
 export const calculatePearsonCorrelation = (data, xKey, yKey) => {
     const clean = data.filter(d => d[xKey] != null && d[yKey] != null && !isNaN(d[xKey]) && !isNaN(d[yKey]));
-    if (clean.length < 3) return null;
+    if (clean.length < MIN_CORRELATION_N) return null;
     const n = clean.length;
     const sumX = clean.reduce((sum, d) => sum + d[xKey], 0);
     const sumY = clean.reduce((sum, d) => sum + d[yKey], 0);

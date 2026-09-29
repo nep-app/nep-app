@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
+import { MIN_CORRELATION_N } from '../../services/analyticsService';
 import { getEmotionCategory } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
+
+
+// ⚠️ DIAS SEGUIDOS A SÉRIO.
+// `sortedDates` são as datas QUE TÊM DADOS, não os dias do calendário. Usar
+// sortedDates[i+1] como "o dia seguinte" trata um buraco de uma semana como se
+// fosse amanhã. Nos dados reais há 108 de 317 dias sem valor de mg, por isso
+// isto não é hipotético: a análise "entre dias" estava a emparelhar dias que
+// não são seguidos.
+// Recebe duas chaves locais 'YYYY-MM-DD' e diz se a segunda é mesmo o dia a
+// seguir à primeira.
+const saoDiasSeguidos = (a, b) => {
+    if (!a || !b) return false;
+    const d1 = new Date(a + 'T12:00:00');
+    const d2 = new Date(b + 'T12:00:00');
+    if (isNaN(d1) || isNaN(d2)) return false;
+    return Math.round((d2 - d1) / 86400000) === 1;
+};
 
 export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab({
     analysisConsumptions,
@@ -102,7 +120,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // SONO
         const sleepData = daysWithData.filter(d => d.sleep !== null);
         if (sleepData.length >= 1) {
-            const correlation = sleepData.length >= 2 ? analyticsService.calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep') : null;
+            const correlation = sleepData.length >= MIN_CORRELATION_N ? analyticsService.calculatePearsonCorrelation(sleepData, 'consumptions', 'sleep') : null;
             const avgSleep = sleepData.reduce((sum, d) => sum + d.sleep, 0) / sleepData.length;
             correlations.push({
                 name: 'Consumo → Sono',
@@ -118,7 +136,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // HUMOR
         const moodData = daysWithData.filter(d => d.mood !== null);
         if (moodData.length >= 1) {
-            const correlation = moodData.length >= 2 ? analyticsService.calculatePearsonCorrelation(moodData, 'consumptions', 'mood') : null;
+            const correlation = moodData.length >= MIN_CORRELATION_N ? analyticsService.calculatePearsonCorrelation(moodData, 'consumptions', 'mood') : null;
             const avgMood = moodData.reduce((sum, d) => sum + d.mood, 0) / moodData.length;
             correlations.push({
                 name: 'Consumo → Humor',
@@ -134,7 +152,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // ENERGIA
         const energyData = daysWithData.filter(d => d.energy !== null);
         if (energyData.length >= 1) {
-            const correlation = energyData.length >= 2 ? analyticsService.calculatePearsonCorrelation(energyData, 'consumptions', 'energy') : null;
+            const correlation = energyData.length >= MIN_CORRELATION_N ? analyticsService.calculatePearsonCorrelation(energyData, 'consumptions', 'energy') : null;
             const avgEnergy = energyData.reduce((sum, d) => sum + d.energy, 0) / energyData.length;
             correlations.push({
                 name: 'Consumo → Energia',
@@ -157,6 +175,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         for (let i = 0; i < sortedDates.length - 1; i++) {
             const today = sortedDates[i];
             const tomorrow = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrow)) continue; // buraco no calendário
 
             if (dailyData[today].sleep !== null && dailyData[tomorrow].consumptions > 0) {
                 sleepToConsNextData.push({
@@ -166,7 +185,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         }
 
-        if (sleepToConsNextData.length >= 2) {
+        if (sleepToConsNextData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(sleepToConsNextData, 'sleep', 'consumptions');
             const avgSleep = sleepToConsNextData.reduce((sum, d) => sum + d.sleep, 0) / sleepToConsNextData.length;
             sleepToConsumptionNext.push({
@@ -187,6 +206,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         for (let i = 0; i < sortedDates.length - 1; i++) {
             const today = sortedDates[i];
             const tomorrow = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrow)) continue; // buraco no calendário
 
             if (dailyData[today].mood !== null && dailyData[tomorrow].consumptions > 0) {
                 moodToConsNextData.push({
@@ -196,7 +216,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         }
 
-        if (moodToConsNextData.length >= 2) {
+        if (moodToConsNextData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(moodToConsNextData, 'mood', 'consumptions');
             const avgMood = moodToConsNextData.reduce((sum, d) => sum + d.mood, 0) / moodToConsNextData.length;
             moodToConsumptionNext.push({
@@ -217,6 +237,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         for (let i = 0; i < sortedDates.length - 1; i++) {
             const today = sortedDates[i];
             const tomorrow = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrow)) continue; // buraco no calendário
 
             if (dailyData[today].energy !== null && dailyData[tomorrow].consumptions > 0) {
                 energyToConsNextData.push({
@@ -226,7 +247,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         }
 
-        if (energyToConsNextData.length >= 2) {
+        if (energyToConsNextData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(energyToConsNextData, 'energy', 'consumptions');
             const avgEnergy = energyToConsNextData.reduce((sum, d) => sum + d.energy, 0) / energyToConsNextData.length;
             energyToConsumptionNext.push({
@@ -284,6 +305,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         for (let i = 0; i < sortedDates.length - 1; i++) {
             const today = sortedDates[i];
             const tomorrow = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrow)) continue; // buraco no calendário
 
             if (dailyData[today].consumptions > 0 && dailyData[tomorrow].consumptions > 0) {
                 autocorrData.push({
@@ -293,7 +315,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         }
 
-        if (autocorrData.length >= 2) {
+        if (autocorrData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(autocorrData, 'yesterday', 'today');
             const avgYesterday = autocorrData.reduce((sum, d) => sum + d.yesterday, 0) / autocorrData.length;
 
@@ -311,7 +333,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // 6. CONSUMO → EMOÇÕES (impacto no estado emocional)
         const consumptionToEmotions = [];
 
-        if (emotionCorrelationData.length >= 2) {
+        if (emotionCorrelationData.length >= MIN_CORRELATION_N) {
             // Já calculamos emoções por dia antes
             const dataWithPercent = emotionCorrelationData.map(d => ({
                 negativePercent: (d.negative / d.total) * 100,
@@ -335,7 +357,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // 7. CONSUMO → AUTOCUIDADO
         const consumptionToSelfCare = [];
 
-        if (selfCareCorrelationData.length >= 2) {
+        if (selfCareCorrelationData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(selfCareCorrelationData, 'consumptions', 'count');
             const avgCons = selfCareCorrelationData.reduce((sum, d) => sum + d.consumptions, 0) / selfCareCorrelationData.length;
 
@@ -371,7 +393,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Dosagem → Sono
         const dosageSleepData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.sleep !== null);
-        if (dosageSleepData.length >= 2) {
+        if (dosageSleepData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(dosageSleepData, 'totalMg', 'sleep');
             const avgDosage = dosageSleepData.reduce((sum, d) => sum + d.totalMg, 0) / dosageSleepData.length;
 
@@ -389,7 +411,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Dosagem → Humor
         const dosageMoodData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.mood !== null);
-        if (dosageMoodData.length >= 2) {
+        if (dosageMoodData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(dosageMoodData, 'totalMg', 'mood');
             const avgDosage = dosageMoodData.reduce((sum, d) => sum + d.totalMg, 0) / dosageMoodData.length;
 
@@ -407,7 +429,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Dosagem → Energia
         const dosageEnergyData = Object.values(dosageData).filter(d => d.totalMg > 0 && d.energy !== null);
-        if (dosageEnergyData.length >= 2) {
+        if (dosageEnergyData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(dosageEnergyData, 'totalMg', 'energy');
             const avgDosage = dosageEnergyData.reduce((sum, d) => sum + d.totalMg, 0) / dosageEnergyData.length;
 
@@ -541,7 +563,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         const firstConsCorrelationData = Object.values(firstConsData).filter(d => d.total > 0);
 
-        if (firstConsCorrelationData.length >= 2) {
+        if (firstConsCorrelationData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(firstConsCorrelationData, 'firstHour', 'total');
             const avgFirstHour = firstConsCorrelationData.reduce((sum, d) => sum + d.firstHour, 0) / firstConsCorrelationData.length;
 
@@ -649,7 +671,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 }
             });
 
-            if (intervalData.length >= 5) {
+            if (intervalData.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(intervalData, 'avgInterval', 'total');
                 const avgInterval = intervalData.reduce((s, d) => s + d.avgInterval, 0) / intervalData.length;
 
@@ -780,7 +802,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             });
 
             // Calcular correlações
-            if (periodWellbeingData.morning.length >= 3) {
+            if (periodWellbeingData.morning.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.morning, 'cons', 'mood');
                 const avgCons = periodWellbeingData.morning.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.morning.length;
                 consumptionByPeriod.push({
@@ -794,7 +816,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 });
             }
 
-            if (periodWellbeingData.afternoon.length >= 3) {
+            if (periodWellbeingData.afternoon.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.afternoon, 'cons', 'mood');
                 const avgCons = periodWellbeingData.afternoon.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.afternoon.length;
                 consumptionByPeriod.push({
@@ -808,7 +830,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 });
             }
 
-            if (periodWellbeingData.evening.length >= 3) {
+            if (periodWellbeingData.evening.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(periodWellbeingData.evening, 'cons', 'mood');
                 const avgCons = periodWellbeingData.evening.reduce((s, d) => s + d.cons, 0) / periodWellbeingData.evening.length;
                 consumptionByPeriod.push({
@@ -1020,7 +1042,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         });
 
-        if (intervalDosageData.length >= 2) {
+        if (intervalDosageData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(intervalDosageData, 'interval', 'dosage');
             const avgInterval = intervalDosageData.reduce((sum, d) => sum + d.interval, 0) / intervalDosageData.length;
 
@@ -1042,6 +1064,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         for (let i = 0; i < sortedDates.length - 1; i++) {
             const today = sortedDates[i];
             const tomorrow = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrow)) continue; // buraco no calendário
 
             // Consumos hoje
             const todayConsumptions = dailyData[today]?.consumptions || 0;
@@ -1062,7 +1085,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             });
         }
 
-        if (consToBedtimeData.length >= 2) {
+        if (consToBedtimeData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(consToBedtimeData, 'consumptions', 'bedtime');
             const avgCons = consToBedtimeData.reduce((sum, d) => sum + d.consumptions, 0) / consToBedtimeData.length;
 
@@ -1090,6 +1113,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             if (!todayCycle?.bedtime) return;
 
             const tomorrowDate = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrowDate)) return; // buraco no calendário
             const tomorrowMood = dailyData[tomorrowDate]?.mood;
             if (tomorrowMood === null || tomorrowMood === undefined) return;
 
@@ -1104,7 +1128,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             });
         });
 
-        if (bedtimeToMoodData.length >= 2) {
+        if (bedtimeToMoodData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(bedtimeToMoodData, 'bedtime', 'mood');
             const avgBedtime = bedtimeToMoodData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeToMoodData.length;
 
@@ -1135,6 +1159,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             if (!todayCycle?.bedtime) return;
 
             const tomorrowDate = sortedDates[i + 1];
+            if (!saoDiasSeguidos(sortedDates[i], tomorrowDate)) return; // buraco no calendário
             const tomorrowEnergy = dailyData[tomorrowDate]?.energy;
             if (tomorrowEnergy === null || tomorrowEnergy === undefined) return;
 
@@ -1149,7 +1174,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             });
         });
 
-        if (bedtimeToEnergyData.length >= 2) {
+        if (bedtimeToEnergyData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(bedtimeToEnergyData, 'bedtime', 'energy');
             const avgBedtime = bedtimeToEnergyData.reduce((sum, d) => sum + d.bedtime, 0) / bedtimeToEnergyData.length;
 
@@ -1187,7 +1212,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 });
             });
 
-            if (emotionsDosageData.length >= 2) {
+            if (emotionsDosageData.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(emotionsDosageData, 'negativePercent', 'dosage');
                 const avgNegative = emotionsDosageData.reduce((sum, d) => sum + d.negativePercent, 0) / emotionsDosageData.length;
 
@@ -1219,7 +1244,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         const triggersDosageData = Object.values(triggersData).filter(d => d.dosage !== null && d.count > 0);
 
-        if (triggersDosageData.length >= 2) {
+        if (triggersDosageData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(triggersDosageData, 'count', 'dosage');
             const avgTriggers = triggersDosageData.reduce((sum, d) => sum + d.count, 0) / triggersDosageData.length;
 
@@ -1254,7 +1279,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             }
         });
 
-        if (dosageToSelfCareData.length >= 2) {
+        if (dosageToSelfCareData.length >= MIN_CORRELATION_N) {
             const corr = analyticsService.calculatePearsonCorrelation(dosageToSelfCareData, 'dosage', 'selfCareCount');
             const avgDosage = dosageToSelfCareData.reduce((sum, d) => sum + d.dosage, 0) / dosageToSelfCareData.length;
 
@@ -1284,7 +1309,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 });
             });
 
-            if (dosageToEmotionsData.length >= 2) {
+            if (dosageToEmotionsData.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(dosageToEmotionsData, 'dosage', 'negativePercent');
                 const avgDosage = dosageToEmotionsData.reduce((sum, d) => sum + d.dosage, 0) / dosageToEmotionsData.length;
 
@@ -1323,7 +1348,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Consumo → Sono amanhã
         const nextSleepData = bidirectional.filter(d => d.nextSleep !== null);
-        if (nextSleepData.length >= 2) {
+        if (nextSleepData.length >= MIN_CORRELATION_N) {
             const sleepCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextSleep');
             const avgNextSleep = nextSleepData.reduce((sum, d) => sum + d.nextSleep, 0) / nextSleepData.length;
             consumptionToNextDayWellbeing.push({
@@ -1340,7 +1365,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Consumo → Humor amanhã
         const nextMoodData = bidirectional.filter(d => d.nextMood !== null);
-        if (nextMoodData.length >= 2) {
+        if (nextMoodData.length >= MIN_CORRELATION_N) {
             const moodCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextMood');
             const avgNextMood = nextMoodData.reduce((sum, d) => sum + d.nextMood, 0) / nextMoodData.length;
             consumptionToNextDayWellbeing.push({
@@ -1357,7 +1382,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Consumo → Energia amanhã
         const nextEnergyData = bidirectional.filter(d => d.nextEnergy !== null);
-        if (nextEnergyData.length >= 2) {
+        if (nextEnergyData.length >= MIN_CORRELATION_N) {
             const energyCorr = analyticsService.calculatePearsonCorrelation(bidirectional, 'consumptions', 'nextEnergy');
             const avgNextEnergy = nextEnergyData.reduce((sum, d) => sum + d.nextEnergy, 0) / nextEnergyData.length;
             consumptionToNextDayWellbeing.push({
@@ -1395,7 +1420,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 }
             });
 
-            if (sameDaySleepMood.length >= 1) {
+            if (sameDaySleepMood.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(sameDaySleepMood, 'sleep', 'mood');
                 const avgSleep = sameDaySleepMood.reduce((s, d) => s + d.sleep, 0) / sameDaySleepMood.length;
                 const avgMood = sameDaySleepMood.reduce((s, d) => s + d.mood, 0) / sameDaySleepMood.length;
@@ -1410,7 +1435,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 });
             }
 
-            if (nextDaySleepMood.length >= 1) {
+            if (nextDaySleepMood.length >= MIN_CORRELATION_N) {
                 const corr = analyticsService.calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
                 const avgSleep = nextDaySleepMood.reduce((s, d) => s + d.sleep, 0) / nextDaySleepMood.length;
                 const avgMood = nextDaySleepMood.reduce((s, d) => s + d.mood, 0) / nextDaySleepMood.length;
@@ -1454,7 +1479,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
             });
         });
 
-        const bedtimeConsCorrelation = bedtimeConsumptionData.length >= 1 ? analyticsService.calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions') : null;
+        const bedtimeConsCorrelation = bedtimeConsumptionData.length >= MIN_CORRELATION_N ? analyticsService.calculatePearsonCorrelation(bedtimeConsumptionData, 'bedtime', 'consumptions') : null;
 
         const bedtimeToConsCard = bedtimeConsumptionData.length >= 1 ? {
             name: 'Bedtime → Consumo',
@@ -1693,8 +1718,14 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 </h3>
                 <div className="text-sm space-y-1 text-gray-400">
                     <p>{t('correlations.desc')}</p>
-                    <p><span className="text-green-400">{t('correlations.good')}</span> {t('correlations.goodList')}</p>
-                    <p><span className="text-red-400">{t('correlations.attention')}</span> {t('correlations.attentionList')}</p>
+                    {/* Era "✅ Padrões positivos: … → menos consumo" a verde e
+                        "⚠️ Padrões a vigiar: … → mais consumo" a vermelho. Isso
+                        dizia, no cabeçalho do ecrã, que menos consumo é o lado bom.
+                        Agora explica o que as setas mostram e qual é o mínimo de
+                        dias — a app a dizer "não sei" com um número, em vez de
+                        esconder em silêncio. */}
+                    <p><span className="text-gray-300">{t('correlations.good')}</span> {t('correlations.goodList')}</p>
+                    <p><span className="text-gray-300">{t('correlations.attention')}</span> {t('correlations.attentionList', { min: MIN_CORRELATION_N })}</p>
                     <p className="text-xs italic pt-1">{t('correlations.note')}</p>
                 </div>
             </div>

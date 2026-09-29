@@ -52,6 +52,17 @@ export function exportAllDataToJSON(data) {
       appName: 'NEP Harm Reduction Tracker',
       totalRecords,
       collectionsIncluded: EXPORTED_COLLECTIONS.map(([n]) => n),
+      // ⚠️ PARA QUEM ANALISAR ISTO FORA DO APARELHO:
+      // os `timestamp` estão em UTC; o campo `date` é a chave do dia em hora
+      // LOCAL. Para contas por hora do dia, converter para este fuso — ou usar
+      // o `date`. Portugal muda de UTC+0 (inverno) para UTC+1 (verão), por isso
+      // o desvio NÃO é constante ao longo do ficheiro: uma tabela de "a que
+      // horas faço o quê" calculada sobre o timestamp em bruto mistura dois
+      // relógios e desloca metade do ano numa hora.
+      timezone: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; } })(),
+      timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      timestampsAreUTC: true,
+      dateFieldIsLocalDay: true,
       ...(missing.length > 0 ? { warningNotProvided: missing } : {}),
     },
     collections,
