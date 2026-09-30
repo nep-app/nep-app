@@ -1530,15 +1530,15 @@
     "bedtimeGood": "That's a great time to go to bed! You're maintaining a healthy sleep routine.",
     "bedtimeMorning": "Going to bed in the morning may indicate sleep cycle inversion, which can affect your energy and mood during the day.",
     "bedtimeObserve": "Keep observing how this routine affects your overall wellbeing.",
-    "bedtimeDaysWithoutSleepSingular": "⚠️ Days without sleep: {{n}} day ({{pct}}% of days you used). Sleep deprivation can intensify effects and cravings — try to log sleep when this happens.",
-    "bedtimeDaysWithoutSleepPlural": "⚠️ Days without sleep: {{n}} days ({{pct}}% of days you used). Sleep deprivation can intensify effects and cravings — try to log sleep when this happens.",
-    "noSleepAnalysisLabel": "Sleepless days vs the rest:",
-    "noSleepCompare": "On the {{n}} days without sleep — avg {{avgCons}} uses/day (days with sleep: {{avgConsS}}/day).",
-    "noSleepMoodEnergy": "Mood {{mood}}/10 and energy {{energy}}/10 on no-sleep days (vs {{moodS}}/10 mood and {{energyS}}/10 energy on days with sleep).",
-    "noSleepMoreCons": "You tended to use more on sleepless days.",
-    "noSleepSameCons": "Consumption was similar whether or not you slept.",
-    "noSleepWorseMoodEnergy": "Mood and/or energy were lower on days without sleep.",
-    "noSleepNoWellbeing": "No wellbeing data for those days to compare mood/energy.",
+    "bedtimeDaysWithoutSleepSingular": "Nights with 3h or less of logged sleep: {{n}} day ({{pct}}% of days you used).",
+    "bedtimeDaysWithoutSleepPlural": "Nights with 3h or less of logged sleep: {{n}} days ({{pct}}% of days you used).",
+    "noSleepAnalysisLabel": "Low-sleep nights vs the rest:",
+    "noSleepCompare": "On the {{n}} nights you logged 3h or less — {{avgCons}} uses/day on average (on the others: {{avgConsS}}/day).",
+    "noSleepMoodEnergy": "Mood {{mood}}/10 and energy {{energy}}/10 on those days (against {{moodS}}/10 and {{energyS}}/10 on the others).",
+    "noSleepMoreCons": "You used more on those days.",
+    "noSleepSameCons": "Use was similar in both cases.",
+    "noSleepWorseMoodEnergy": "Lower mood and/or energy on those days.",
+    "noSleepNoWellbeing": "No wellbeing entries on those days to compare mood and energy.",
     "sleepScoreLabel": "Sleep Score:",
     "sleepScoreImproving": "↗️ Rising",
     "sleepScoreWorsening": "↘️ Worsening",
@@ -1628,6 +1628,7 @@
     "peakWindowLabel": "Busiest window:",
     "peakWindowSpread": "Your use is quite spread through the day, with no strong peak — which is also useful information about you.",
     "cascadeAboveChance": "That is more than chance would give — worth a look.",
-    "cascadeWithinChance": "That is within what chance would give: no sign here of one day pulling the next."
+    "cascadeWithinChance": "That is within what chance would give: no sign here of one day pulling the next.",
+    "noSleepUnlogged": "There are still {{n}} days with uses and no sleep hours logged — those stay out of this count, because there is no way to tell whether you slept little or simply did not log it."
   }
 }

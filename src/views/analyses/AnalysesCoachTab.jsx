@@ -1235,19 +1235,39 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const uniqueConsDates = new Set();
                         analysisConsumptions.forEach(c => { if (c.date) uniqueConsDates.add(c.date); });
 
-                        const noSleepDates = new Set();
-                        const withSleepDates = new Set();
+                        // ⚠️ AQUI ESTAVA O MESMO ERRO DE SEMPRE: "não há registo de
+                        // sono" era tratado como "não dormiu". Nos dados reais, dos
+                        // 29 dias que a app chamava "sem dormir", 25 não tinham
+                        // registo NENHUM de ciclo — ela só não registou. E o texto
+                        // acrescentava "a privação de sono pode intensificar efeitos
+                        // e craving", ou seja, uma afirmação clínica em cima de dados
+                        // que não existem.
+                        //
+                        // Agora: só conta como pouco sono o que foi MEDIDO. Dias sem
+                        // registo saem da comparação e são contados à parte, para a
+                        // pessoa poder preenchê-los se quiser.
+                        const LIMIAR_POUCO_SONO = 3; // horas
+
+                        const horasPorDia = new Map();
+                        analysisCycles.forEach(c => {
+                            const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
+                            const v = parseFloat(c.sleep);
+                            if (d && !isNaN(v)) horasPorDia.set(d, Math.min(horasPorDia.get(d) ?? Infinity, v));
+                        });
+                        analysisWellbeing.forEach(w => {
+                            const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
+                            const v = parseFloat(w.sleep);
+                            if (d && !isNaN(v)) horasPorDia.set(d, Math.min(horasPorDia.get(d) ?? Infinity, v));
+                        });
+
+                        const noSleepDates = new Set();   // pouco sono, MEDIDO
+                        const withSleepDates = new Set(); // sono normal, MEDIDO
+                        const semRegistoDeSono = new Set(); // não se sabe — fora das contas
 
                         uniqueConsDates.forEach(date => {
-                            const hasSleepC = analysisCycles.some(c => {
-                                const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
-                                return d === date && c.sleep != null && c.sleep !== '';
-                            });
-                            const hasSleepW = analysisWellbeing.some(w => {
-                                const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
-                                return d === date && w.sleep != null && w.sleep !== '';
-                            });
-                            if (!hasSleepC && !hasSleepW) noSleepDates.add(date);
+                            const h = horasPorDia.get(date);
+                            if (h == null) semRegistoDeSono.add(date);
+                            else if (h <= LIMIAR_POUCO_SONO) noSleepDates.add(date);
                             else withSleepDates.add(date);
                         });
 
@@ -1299,7 +1319,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                😴 <strong className={('text-orange-400')}>{t('coach.noSleepAnalysisLabel')}</strong>{' '}
+                                😴 <strong className={('text-cyan-400')}>{t('coach.noSleepAnalysisLabel')}</strong>{' '}
                                 {t('coach.noSleepCompare', {
                                     n: noSleepDates.size,
                                     avgCons: avgConsNoSleep.toFixed(1),
@@ -1314,9 +1334,12 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     })}</>
                                 )}
                                 {!hasMoodData && <> {t('coach.noSleepNoWellbeing')}</>}
-                                {consHigher && <> <span className={('text-orange-300')}>{t('coach.noSleepMoreCons')}</span></>}
+                                {consHigher && <> <span className={('text-gray-300')}>{t('coach.noSleepMoreCons')}</span></>}
                                 {!consHigher && <> <span className={('text-gray-400')}>{t('coach.noSleepSameCons')}</span></>}
-                                {(moodLower || energyLower) && <> <span className={('text-orange-300')}>{t('coach.noSleepWorseMoodEnergy')}</span></>}
+                                {(moodLower || energyLower) && <> <span className={('text-gray-300')}>{t('coach.noSleepWorseMoodEnergy')}</span></>}
+                                {semRegistoDeSono.size > 0 && (
+                                    <> <span className={('text-gray-500')}>{t('coach.noSleepUnlogged', { n: semRegistoDeSono.size })}</span></>
+                                )}
                             </p>
                         );
                     })()}

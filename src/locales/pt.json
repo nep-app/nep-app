@@ -1530,15 +1530,15 @@
     "bedtimeGood": "Essa é uma boa janela para deitar! Estás a manter uma rotina saudável de sono.",
     "bedtimeMorning": "Deitar de manhã pode indicar inversão do ciclo de sono, o que pode afetar a tua energia e humor durante o dia.",
     "bedtimeObserve": "Continua a observar como esta rotina afeta o teu bem-estar geral.",
-    "bedtimeDaysWithoutSleepSingular": "⚠️ Dias sem dormir: {{n}} dia ({{pct}}% dos dias em que consumiste). A privação de sono pode intensificar efeitos e craving — tenta registar o sono quando acontecer.",
-    "bedtimeDaysWithoutSleepPlural": "⚠️ Dias sem dormir: {{n}} dias ({{pct}}% dos dias em que consumiste). A privação de sono pode intensificar efeitos e craving — tenta registar o sono quando acontecer.",
-    "noSleepAnalysisLabel": "Dias sem dormir vs o resto:",
-    "noSleepCompare": "Nos {{n}} dias sem dormir — média de {{avgCons}} consumos/dia (dias com sono: {{avgConsS}}/dia).",
-    "noSleepMoodEnergy": "Humor {{mood}}/10 e energia {{energy}}/10 nos dias sem dormir (vs {{moodS}}/10 humor e {{energyS}}/10 energia nos dias com sono).",
-    "noSleepMoreCons": "Tendeste a consumir mais nos dias sem dormir.",
-    "noSleepSameCons": "O consumo foi semelhante com ou sem sono.",
-    "noSleepWorseMoodEnergy": "Humor e/ou energia mais baixos nos dias sem dormir.",
-    "noSleepNoWellbeing": "Sem dados de bem-estar nesses dias para comparar humor/energia.",
+    "bedtimeDaysWithoutSleepSingular": "Noites com 3h ou menos de sono registado: {{n}} dia ({{pct}}% dos dias em que consumiste).",
+    "bedtimeDaysWithoutSleepPlural": "Noites com 3h ou menos de sono registado: {{n}} dias ({{pct}}% dos dias em que consumiste).",
+    "noSleepAnalysisLabel": "Noites de pouco sono vs o resto:",
+    "noSleepCompare": "Nas {{n}} noites em que registaste 3h ou menos — média de {{avgCons}} consumos/dia (nas outras: {{avgConsS}}/dia).",
+    "noSleepMoodEnergy": "Humor {{mood}}/10 e energia {{energy}}/10 nesses dias (contra {{moodS}}/10 e {{energyS}}/10 nos outros).",
+    "noSleepMoreCons": "Consumiste mais nesses dias.",
+    "noSleepSameCons": "O consumo foi semelhante nos dois casos.",
+    "noSleepWorseMoodEnergy": "Humor e/ou energia mais baixos nesses dias.",
+    "noSleepNoWellbeing": "Sem registos de bem-estar nesses dias para comparar humor e energia.",
     "sleepScoreLabel": "Score de Sono:",
     "sleepScoreImproving": "↗️ A subir",
     "sleepScoreWorsening": "↘️ A piorar",
@@ -1628,6 +1628,7 @@
     "peakWindowLabel": "Janela de maior consumo:",
     "peakWindowSpread": "O teu consumo está bastante espalhado pelo dia, sem um pico marcado — o que também é informação útil sobre ti.",
     "cascadeAboveChance": "Isso é mais do que o acaso daria — vale a pena olhar.",
-    "cascadeWithinChance": "Isso está dentro do que o acaso daria: não há aqui sinal de um dia puxar o seguinte."
+    "cascadeWithinChance": "Isso está dentro do que o acaso daria: não há aqui sinal de um dia puxar o seguinte.",
+    "noSleepUnlogged": "Há ainda {{n}} dias com consumos e sem horas de sono registadas — esses ficam de fora desta conta, porque não dá para saber se dormiste pouco ou se só não registaste."
   }
 }
