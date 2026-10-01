@@ -1551,10 +1551,6 @@
     "sleepScorePoorIrregular": "{{avg}}h on average and with irregular bedtime — below the 7-8h usually recommended.",
     "quantityLabel": "Quantity Analysis:",
     "quantityText": "On average, you use {{mg}}mg per day (from {{n}} {{label}} where you recorded a dosage).",
-    "quantityHigh": "This is a high amount. Consider setting a gradual reduction goal.",
-    "quantityModHigh": "This is a moderate-high amount. There's room to reduce if that's your goal.",
-    "quantityMod": "This is a moderate amount. If you're working on reduction, you're on the right track.",
-    "quantityLow": "This is a relatively low amount! Good work on quantity management.",
     "quantityNoLateHighPct": "In {{pct}}% of days there was no use after midnight.",
     "quantityNoLateMedPct": "On {{pct}}% of days there was no use after midnight.",
     "quantityNoLateLowPct": "On {{pct}}% of days there was no use after midnight.",
@@ -1629,6 +1625,16 @@
     "peakWindowSpread": "Your use is quite spread through the day, with no strong peak — which is also useful information about you.",
     "cascadeAboveChance": "That is more than chance would give — worth a look.",
     "cascadeWithinChance": "That is within what chance would give: no sign here of one day pulling the next.",
-    "noSleepUnlogged": "There are still {{n}} days with uses and no sleep hours logged — those stay out of this count, because there is no way to tell whether you slept little or simply did not log it."
+    "noSleepUnlogged": "There are still {{n}} days with uses and no sleep hours logged — those stay out of this count, because there is no way to tell whether you slept little or simply did not log it.",
+    "gapTitle": "What times the uses happened",
+    "gapIntro": "There are {{n}} days with uses and no sleep hours logged. The app does not know whether you slept on those days — but it does know what times you used, and the longest gap between uses may help you remember.",
+    "gapRule": "Across your {{ref}} days with sleep logged: of the {{longN}} nights whose longest gap went past {{longH}}h, {{longSlept}} had more than {{thr}}h of sleep. But of the {{shortN}} nights with a gap under {{shortH}}h, only {{shortLittle}} had {{thr}}h or less. So: a long gap usually goes with a night of sleep, but a short gap is not enough to say you did not sleep — you can be awake for hours without using.",
+    "gapNoRule": "There are not enough days with sleep logged yet to compare gaps ({{ref}} of {{min}}). The times are here; the reading is yours.",
+    "gapRow": "{{n}} uses · {{gap}}h with no uses, from {{from}} to {{to}}",
+    "gapRowNoGap": "only one use that day — no gap can be computed",
+    "gapMore": "+ {{n}} older days in the same situation.",
+    "gapNoRuleGroups": "There are still too few nights of each kind to compare: {{longN}} with a gap above {{longH}}h and {{shortN}} below {{shortH}}h ({{min}} of each are needed). The times are here; the reading is yours.",
+    "quantityGoalWithin": "Your goal is {{target}}mg a day — this average is within it.",
+    "quantityGoalAbove": "Your goal is {{target}}mg a day — this average is above it."
   }
 }

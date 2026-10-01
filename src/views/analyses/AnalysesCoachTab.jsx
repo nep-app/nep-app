@@ -377,15 +377,27 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             <p>
                                 📊 <strong className={('text-cyan-400')}>{t('coach.quantityLabel')}</strong>{' '}
                                 {t('coach.quantityText', { mg: avgMgPerDay.toFixed(0), n: uniqueDaysWithMg, label: t(uniqueDaysWithMg === 1 ? 'coach.day_singular' : 'coach.day_plural') })}
-                                {avgMgPerDay > 300 ? (
-                                    <> {t('coach.quantityHigh')}</>
-                                ) : avgMgPerDay > 200 ? (
-                                    <> {t('coach.quantityModHigh')}</>
-                                ) : avgMgPerDay > 100 ? (
-                                    <> {t('coach.quantityMod')}</>
-                                ) : (
-                                    <> {t('coach.quantityLow')}</>
-                                )}
+                                {/* ⚠️ AQUI ESTAVAM QUATRO JUÍZOS INVENTADOS PELA APP.
+                                   Era: >300mg "quantidade elevada, considera estabelecer
+                                   uma meta de redução"; >200 "moderada-alta"; >100
+                                   "moderada, se estás a trabalhar na redução estás no
+                                   caminho certo"; abaixo disso "relativamente baixa! Bom
+                                   trabalho". Os limiares (100/200/300) não vêm de lado
+                                   nenhum e o elogio existia sem meta nenhuma definida.
+                                   Agora: o número mostra-se sempre; a comparação só
+                                   existe se ELA tiver uma meta de quantidade, e é
+                                   contra a meta dela. Sem meta, a app diz o valor e
+                                   cala-se. */}
+                                {(() => {
+                                    const metaQtd = goals.find(g => g.type === 'reduce_quantity' && g.target > 0);
+                                    if (!metaQtd) return null;
+                                    const dentro = avgMgPerDay <= metaQtd.target;
+                                    return (
+                                        <> <span className={dentro ? 'text-emerald-400' : 'text-gray-300'}>
+                                            {t(dentro ? 'coach.quantityGoalWithin' : 'coach.quantityGoalAbove', { target: metaQtd.target })}
+                                        </span></>
+                                    );
+                                })()}
                                 {analysisCycles.length >= 3 && <> {t(pctNoLate >= 70 ? 'coach.quantityNoLateHighPct' : pctNoLate >= 50 ? 'coach.quantityNoLateMedPct' : 'coach.quantityNoLateLowPct', { pct: pctNoLate })}</>}
                             </p>
                             {spanDays != null && (
@@ -1341,6 +1353,160 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     <> <span className={('text-gray-500')}>{t('coach.noSleepUnlogged', { n: semRegistoDeSono.size })}</span></>
                                 )}
                             </p>
+                        );
+                    })()}
+
+                    <hr className="border-gray-700/50" />
+
+                    {/* ===== HORAS DOS CONSUMOS NOS DIAS SEM SONO REGISTADO =====
+                       A pergunta da Teresa: nos dias sem horas de sono, "os consumos
+                       são a que horas? Não dá para perceber se são constantes e se
+                       realmente não dormi."
+
+                       Medido nos dados dela: dá, mas só num sentido. O maior intervalo
+                       sem consumos DENTRO do dia de calendário (é aí que o sono dela
+                       cai — deita-se de madrugada e acorda à tarde do mesmo dia)
+                       correlaciona-se com as horas de sono registadas: r = 0,43 em 288
+                       dias. Um intervalo de 8h ou mais aparece em 141 noites de sono
+                       normal e em 1 de sono curto. Mas o contrário não se sustenta: das
+                       noites com intervalo curto, a maioria tinha sono normal — pode
+                       estar acordada horas sem consumir.
+
+                       Por isso este bloco mostra o FACTO (o intervalo, e a que horas
+                       foi) e deixa a conclusão para ela. A regra de leitura não está
+                       escrita à mão: é contada nos dias dela, e se não houver dias
+                       suficientes o bloco diz que não dá para comparar. */}
+                    {(() => {
+                        const LIMIAR_POUCO_SONO = 3;   // horas de sono
+                        const INTERVALO_LONGO = 8;     // horas sem consumos
+                        const INTERVALO_CURTO = 4;
+                        const MIN_DIAS_REFERENCIA = 20;
+                        const MIN_SUBGRUPO = 5;        // noites de cada lado antes de falar
+                        const hoje = getTodayKey();
+
+                        const horasPorDia = new Map();
+                        analysisCycles.forEach(c => {
+                            const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
+                            const v = parseFloat(c.sleep);
+                            if (d && !isNaN(v)) horasPorDia.set(d, Math.min(horasPorDia.get(d) ?? Infinity, v));
+                        });
+                        analysisWellbeing.forEach(w => {
+                            const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
+                            const v = parseFloat(w.sleep);
+                            if (d && !isNaN(v)) horasPorDia.set(d, Math.min(horasPorDia.get(d) ?? Infinity, v));
+                        });
+
+                        // Consumos agrupados pelo dia de calendário, em hora local.
+                        const porDia = new Map();
+                        analysisConsumptions.forEach(c => {
+                            const d = c.date || (c.timestamp ? safeToISODate(c.timestamp) : null);
+                            if (!d || !c.timestamp) return;
+                            const ms = new Date(c.timestamp).getTime();
+                            if (isNaN(ms)) return;
+                            if (!porDia.has(d)) porDia.set(d, []);
+                            porDia.get(d).push(ms);
+                        });
+
+                        // Maior intervalo entre dois consumos seguidos do mesmo dia.
+                        // Com menos de 2 consumos não existe intervalo: fica a null e o
+                        // dia mostra-se sem número em vez de com um zero inventado.
+                        const intervaloPorDia = new Map();
+                        porDia.forEach((lista, d) => {
+                            if (lista.length < 2) { intervaloPorDia.set(d, null); return; }
+                            const ord = [...lista].sort((a, b) => a - b);
+                            let maior = 0, inicio = ord[0];
+                            for (let i = 1; i < ord.length; i++) {
+                                const h = (ord[i] - ord[i - 1]) / 3600000;
+                                if (h > maior) { maior = h; inicio = ord[i - 1]; }
+                            }
+                            intervaloPorDia.set(d, { horas: maior, inicio, fim: inicio + maior * 3600000, n: ord.length });
+                        });
+
+                        // Hoje fica de fora: o dia ainda não acabou e a noite ainda
+                        // não aconteceu, por isso o intervalo de hoje não quer dizer
+                        // nada sobre dormir.
+                        const semRegisto = [...porDia.keys()]
+                            .filter(d => d !== hoje && horasPorDia.get(d) == null)
+                            .sort((a, b) => b.localeCompare(a));
+
+                        if (semRegisto.length === 0) return null;
+
+                        // Referência: só dias em que o sono FOI registado e há intervalo.
+                        const ref = [...porDia.keys()]
+                            .filter(d => d !== hoje && horasPorDia.get(d) != null && intervaloPorDia.get(d))
+                            .map(d => ({ gap: intervaloPorDia.get(d).horas, sono: horasPorDia.get(d) }));
+
+                        const longos = ref.filter(r => r.gap >= INTERVALO_LONGO);
+                        const curtos = ref.filter(r => r.gap < INTERVALO_CURTO);
+                        const longosComSono = longos.filter(r => r.sono > LIMIAR_POUCO_SONO).length;
+                        const curtosComPouco = curtos.filter(r => r.sono <= LIMIAR_POUCO_SONO).length;
+
+                        // A app só explica como ler o intervalo se tiver dias dela para
+                        // o sustentar: 20 dias com sono registado E pelo menos 5 noites
+                        // de cada lado. Sem isso, mostra as horas e cala-se — dizer
+                        // "2 de 2" soaria a certeza e são duas noites.
+                        const temReferencia = ref.length >= MIN_DIAS_REFERENCIA
+                            && longos.length >= MIN_SUBGRUPO && curtos.length >= MIN_SUBGRUPO;
+
+                        const dm = d => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+                        const hm = ms => {
+                            const x = new Date(ms);
+                            return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`;
+                        };
+
+                        const MOSTRAR = 8;
+                        const visiveis = semRegisto.slice(0, MOSTRAR);
+
+                        return (
+                            <div>
+                                <p>
+                                    🕐 <strong className={('text-cyan-400')}>{t('coach.gapTitle')}</strong>{' '}
+                                    {t('coach.gapIntro', { n: semRegisto.length })}
+                                </p>
+                                <p className="mt-2 text-gray-400">
+                                    {temReferencia
+                                        ? t('coach.gapRule', {
+                                            ref: ref.length,
+                                            longH: INTERVALO_LONGO,
+                                            longN: longos.length,
+                                            longSlept: longosComSono,
+                                            shortH: INTERVALO_CURTO,
+                                            shortN: curtos.length,
+                                            shortLittle: curtosComPouco,
+                                            thr: LIMIAR_POUCO_SONO
+                                        })
+                                        : ref.length < MIN_DIAS_REFERENCIA
+                                            ? t('coach.gapNoRule', { ref: ref.length, min: MIN_DIAS_REFERENCIA })
+                                            : t('coach.gapNoRuleGroups', {
+                                                longH: INTERVALO_LONGO,
+                                                longN: longos.length,
+                                                shortH: INTERVALO_CURTO,
+                                                shortN: curtos.length,
+                                                min: MIN_SUBGRUPO
+                                            })}
+                                </p>
+                                <ul className="mt-2 space-y-1">
+                                    {visiveis.map(d => {
+                                        const iv = intervaloPorDia.get(d);
+                                        return (
+                                            <li key={d} className="text-gray-300">
+                                                <span className="font-medium">{dm(d)}</span>{' · '}
+                                                {iv
+                                                    ? t('coach.gapRow', {
+                                                        n: iv.n,
+                                                        gap: iv.horas.toFixed(1),
+                                                        from: hm(iv.inicio),
+                                                        to: hm(iv.fim)
+                                                    })
+                                                    : <span className="text-gray-500">{t('coach.gapRowNoGap')}</span>}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                {semRegisto.length > MOSTRAR && (
+                                    <p className="mt-1 text-gray-500">{t('coach.gapMore', { n: semRegisto.length - MOSTRAR })}</p>
+                                )}
+                            </div>
                         );
                     })()}
 

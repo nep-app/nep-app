@@ -1551,10 +1551,6 @@
     "sleepScorePoorIrregular": "{{avg}}h em média e com hora de deitar irregular — abaixo das 7-8h que costumam ser recomendadas.",
     "quantityLabel": "Análise de Quantidade:",
     "quantityText": "Em média, consomes {{mg}}mg por dia (de {{n}} {{label}} em que registaste dosagem).",
-    "quantityHigh": "Esta é uma quantidade elevada. Considera estabelecer uma meta de redução gradual.",
-    "quantityModHigh": "Esta é uma quantidade moderada-alta. Há espaço para redução se esse for um objetivo teu.",
-    "quantityMod": "Esta é uma quantidade moderada. Se estás a trabalhar na redução, estás no caminho certo.",
-    "quantityLow": "Esta é uma quantidade relativamente baixa! Bom trabalho na gestão de quantidade.",
     "quantityNoLateHighPct": "Em {{pct}}% dos dias não houve consumo após a meia-noite.",
     "quantityNoLateMedPct": "Em {{pct}}% dos dias não houve consumo depois da meia-noite.",
     "quantityNoLateLowPct": "Em {{pct}}% dos dias não houve consumo depois da meia-noite.",
@@ -1629,6 +1625,16 @@
     "peakWindowSpread": "O teu consumo está bastante espalhado pelo dia, sem um pico marcado — o que também é informação útil sobre ti.",
     "cascadeAboveChance": "Isso é mais do que o acaso daria — vale a pena olhar.",
     "cascadeWithinChance": "Isso está dentro do que o acaso daria: não há aqui sinal de um dia puxar o seguinte.",
-    "noSleepUnlogged": "Há ainda {{n}} dias com consumos e sem horas de sono registadas — esses ficam de fora desta conta, porque não dá para saber se dormiste pouco ou se só não registaste."
+    "noSleepUnlogged": "Há ainda {{n}} dias com consumos e sem horas de sono registadas — esses ficam de fora desta conta, porque não dá para saber se dormiste pouco ou se só não registaste.",
+    "gapTitle": "A que horas foram os consumos",
+    "gapIntro": "Há {{n}} dias com consumos e sem horas de sono registadas. A app não sabe se dormiste nesses dias — mas sabe a que horas consumiste, e o maior intervalo sem consumos pode ajudar-te a lembrar.",
+    "gapRule": "Nos teus {{ref}} dias com sono registado: das {{longN}} noites em que o maior intervalo passou das {{longH}}h, {{longSlept}} tinham mais de {{thr}}h de sono. Já das {{shortN}} noites com intervalo abaixo de {{shortH}}h, só {{shortLittle}} tinham {{thr}}h ou menos. Ou seja: um intervalo longo costuma acompanhar uma noite dormida, mas um intervalo curto não chega para dizer que não dormiste — podes estar acordada horas sem consumir.",
+    "gapNoRule": "Ainda não há dias suficientes com sono registado para comparar os intervalos ({{ref}} de {{min}}). Ficam as horas; a leitura é tua.",
+    "gapRow": "{{n}} consumos · {{gap}}h sem consumos, das {{from}} às {{to}}",
+    "gapRowNoGap": "só um consumo nesse dia — não dá para calcular intervalo",
+    "gapMore": "+ {{n}} dias mais antigos com a mesma situação.",
+    "gapNoRuleGroups": "Ainda há poucas noites de cada tipo para comparar: {{longN}} com intervalo acima das {{longH}}h e {{shortN}} abaixo das {{shortH}}h (são precisas {{min}} de cada lado). Ficam as horas; a leitura é tua.",
+    "quantityGoalWithin": "A tua meta é {{target}}mg por dia — esta média está dentro dela.",
+    "quantityGoalAbove": "A tua meta é {{target}}mg por dia — esta média está acima."
   }
 }
