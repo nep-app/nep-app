@@ -413,7 +413,9 @@
       "notesPlaceholder": "How was the cycle? What did you observe?",
       "lastBefore00": "✓ Last consumption of the cycle was before midnight (00h)",
       "submit": "Start New Cycle",
-      "submitEdit": "Save Cycle"
+      "submitEdit": "Save Cycle",
+      "noSleepButton": "Didn't sleep",
+      "noSleepNote": "Leaving it blank is not the same as zero — blank means the app does not know."
     },
     "emotions": {
       "title": "Emotions of the Day",

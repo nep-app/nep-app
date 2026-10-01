@@ -329,7 +329,7 @@ export function PatternsView({
                                                 // Dias com consumos E dados de ciclo (bedtime+sleep) para first_not_before
                                                 const datesWithCycleData = new Set();
                                                 filteredCycles.forEach(c => {
-                                                    if (c.bedtime && c.sleep) { const dk = getDateKeyFromItem(c); if (dk) datesWithCycleData.add(dk); }
+                                                    if (c.bedtime && c.sleep != null) { const dk = getDateKeyFromItem(c); if (dk) datesWithCycleData.add(dk); }
                                                 });
                                                 const daysWithConsumptionsAndCycle = new Set();
                                                 filteredConsumptions.forEach(c => {

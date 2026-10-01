@@ -89,11 +89,30 @@ export const CycleModal = ({
               min="0"
               max="24"
               step="any"
-              value={cycleForm.sleep || ''}
+              value={cycleForm.sleep ?? ''}
               onChange={(e) => setCycleForm({...cycleForm, sleep: e.target.value})}
               className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
               placeholder="Ex: 7.5"
             />
+            {/* Deixar em branco e dormir zero horas são coisas diferentes, e a app
+               não as consegue distinguir depois. Este botão é a única forma de
+               registar "não dormi" — sem ele, a noite em claro fica igual à noite
+               que só não foi registada. */}
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCycleForm({ ...cycleForm, sleep: String(cycleForm.sleep) === '0' ? '' : '0' })}
+                aria-pressed={String(cycleForm.sleep) === '0'}
+                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                  String(cycleForm.sleep) === '0'
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                😶‍🌫️ {t('modals.cycle.noSleepButton')}
+              </button>
+              <span className="text-xs text-gray-400">{t('modals.cycle.noSleepNote')}</span>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.cycle.triggersLabel')}</label>

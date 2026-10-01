@@ -136,7 +136,7 @@ const buildCSVs = (data, selected) => {
         end   ? end.toLocaleDateString('pt-PT')   : 'Em curso',
         days,
         c.bedtime || '',
-        c.sleep ? `${c.sleep}h` : '',
+        c.sleep != null ? `${c.sleep}h` : '',
         (c.triggers || []).join('; '),
         c.notes || '',
       ]));
@@ -216,7 +216,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
 
   const moodVals   = selected.wellbeing ? data.wellbeingLogs.map(w => parseFloat(w.mood)).filter(v => !isNaN(v)) : [];
   const energyVals = selected.wellbeing ? data.wellbeingLogs.map(w => parseFloat(w.energy)).filter(v => !isNaN(v)) : [];
-  const sleepVals  = selected.cycles    ? data.cycles.map(c => parseFloat(c.sleep)).filter(v => !isNaN(v) && v > 0) : [];
+  const sleepVals  = selected.cycles    ? data.cycles.map(c => parseFloat(c.sleep)).filter(v => !isNaN(v) && v >= 0) : [];
   const mgVals     = selected.dailyLogs ? data.dailyLogs.map(l => parseFloat(l.mg)).filter(v => !isNaN(v) && v > 0) : [];
 
   const avgMood   = fmtN(avg(moodVals));
@@ -457,7 +457,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
             const endD = c._computedEnd ? safeDate(c._computedEnd) : null;
             const parts = [
               c.bedtime ? `Deitou ${c.bedtime}` : null,
-              c.sleep   ? `Sono ${c.sleep}h` : null,
+              c.sleep != null ? `Sono ${c.sleep}h` : null,
               endD      ? `até ${endD.toLocaleDateString('pt-PT')}` : 'em curso',
               (c.triggers || []).length ? c.triggers.join(', ') : null,
               c.notes || null,

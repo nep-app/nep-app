@@ -45,7 +45,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
 
         // Wellbeing averages
-        const validSleep = analysisWellbeing.filter(w => w.sleep && !isNaN(parseFloat(w.sleep)));
+        const validSleep = analysisWellbeing.filter(w => w.sleep != null && !isNaN(parseFloat(w.sleep)));
         const avgSleep = validSleep.length > 0 ? (validSleep.reduce((sum, w) => sum + parseFloat(w.sleep), 0) / validSleep.length).toFixed(1) : null;
 
         const validMood = analysisWellbeing.filter(w => w.mood && !isNaN(parseInt(w.mood)));

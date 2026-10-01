@@ -713,7 +713,7 @@ export function HistoryView({
                                                                                     <span className="font-medium">{cycle.bedtime}</span>
                                                                                 </div>
                                                                             )}
-                                                                            {cycle.sleep && (
+                                                                            {cycle.sleep != null && (
                                                                                 <div className="text-sm mb-1 text-gray-300">
                                                                                     <span className="text-gray-400">{t('history.sleepHours')} </span>
                                                                                     <span className="font-medium">{cycle.sleep}h</span>
@@ -1643,7 +1643,7 @@ export function HistoryView({
                                                                             <span className="font-medium">{cycle.bedtime}</span>
                                                                         </div>
                                                                     )}
-                                                                    {cycle.sleep && (
+                                                                    {cycle.sleep != null && (
                                                                         <div className="text-sm mb-1 text-gray-300">
                                                                             <span className="text-gray-400">{t('history.sleepHours')} </span>
                                                                             <span className="font-medium">{cycle.sleep}h</span>

@@ -833,11 +833,22 @@ export function AuthenticatedApp() {
                 }
             };
 
+            // Campo vazio = não se sabe (fica null e o ciclo não guarda `sleep`).
+            // 0 = "não dormi", que é uma medição e tem de ser guardada como tal.
+            const parseSleepField = (v) => {
+                if (v === '' || v == null) return null;
+                const n = parseFloat(v);
+                return isNaN(n) ? null : n;
+            };
+
             const submitCycle = async () => {
                 try {
                     if (editingCycle) {
                         // UPDATE: Atualizar ciclo existente
-                        const sleepValueEdit = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+                        // ⚠️ ZERO NÃO É VAZIO. A condição era `cycleForm.sleep && ...`,
+                        // que só funcionava com '0' por acaso (string '0' é truthy).
+                        // Explícito, porque "não dormi" tem de chegar à base como 0.
+                        const sleepValueEdit = parseSleepField(cycleForm.sleep);
 
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
@@ -855,7 +866,7 @@ export function AuthenticatedApp() {
                         const timestampISO = customDateTime.toISOString();
                         const dateKey = (() => { const d = new Date(timestampISO); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(); // YYYY-MM-DD local
 
-                        const sleepValue = cycleForm.sleep && cycleForm.sleep !== '' ? parseFloat(cycleForm.sleep) : null;
+                        const sleepValue = parseSleepField(cycleForm.sleep);
 
                         const item = {
                             id: genId(),

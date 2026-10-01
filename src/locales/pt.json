@@ -413,7 +413,9 @@
       "notesPlaceholder": "Como foi o ciclo? O que observaste?",
       "lastBefore00": "✓ Último consumo do ciclo foi antes da meia-noite (00h)",
       "submit": "Iniciar Novo Ciclo",
-      "submitEdit": "Guardar Ciclo"
+      "submitEdit": "Guardar Ciclo",
+      "noSleepButton": "Não dormi",
+      "noSleepNote": "Deixar em branco não é o mesmo que zero — em branco, a app não sabe."
     },
     "emotions": {
       "title": "Emoções do Dia",

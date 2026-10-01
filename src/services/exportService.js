@@ -207,7 +207,7 @@ export function exportToCSV(data) {
   csv += 'Date,Bedtime,Sleep Hours,Triggers,Notes\n';
   cycles.forEach(c => {
     const triggers = (c.triggers || []).join('; ');
-    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep || ''},${csvCell(triggers)},${csvCell(c.notes)}\n`;
+    csv += `${c.date || ''},${c.bedtime || ''},${c.sleep != null ? c.sleep : ''},${csvCell(triggers)},${csvCell(c.notes)}\n`;
   });
 
   // CSV para wellbeingLogs
