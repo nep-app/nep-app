@@ -440,6 +440,11 @@ export function HistoryView({
         // apresenta como "Puseste:".
         const added = (typeof w.full === 'number' && typeof w.before === 'number')
             ? Math.round(w.full - w.before) : null;
+        // O que sobrava DENTRO do saco = peso na balança − peso do saco vazio.
+        // Sem a tara não se sabe, e aí não se mostra número nenhum.
+        const restante = (typeof w.before === 'number' && typeof w.empty === 'number')
+            ? Math.round(w.before - w.empty) : null;
+        const gasto = periodInfoForClosing(weighings || [], consumptions || [], w.id);
         return (
             <div key={`weigh-${w.id}`} className="bg-amber-900/25 border-amber-700/50 p-3 rounded-lg border">
                 <div className="flex justify-between items-start">
@@ -451,12 +456,45 @@ export function HistoryView({
                             </div>
                         ) : (
                             <div className="text-sm mt-1 text-amber-200">
-                                {added != null && added > 0 ? (
+                                {/* ⚠️ ESTE CARTÃO SÓ SABIA DIZER "mg postos no saco".
+                                   Numa pesagem SEM ENCHER não se põe nada, por isso
+                                   caía no "pesagem registada" — sem número nenhum,
+                                   como se o peso que ela mediu não existisse. Agora
+                                   cada caso diz o que tem; e quando não há pesos
+                                   mesmo, diz isso em vez de ficar vago. */}
+                                {w.noRefill ? (
+                                    restante != null ? (
+                                        <>{isEN ? 'Weighed without refilling · ' : 'Pesei sem encher · '}
+                                        <span className="font-bold">{restante}</span> mg {isEN ? 'left in the bag' : 'no saco'}</>
+                                    ) : (
+                                        <>{isEN ? 'Weighed without refilling' : 'Pesei sem encher'}
+                                        {typeof w.before === 'number' && (
+                                            <span className="text-gray-400"> · {isEN ? 'bag weighed' : 'o saco pesou'} {Math.round(w.before)}</span>
+                                        )}</>
+                                    )
+                                ) : added != null && added > 0 ? (
                                     <><span className="font-bold">{added}</span> mg {isEN ? 'added to the bag' : 'postos no saco'}</>
                                 ) : (
-                                    <span className="text-gray-400">{isEN ? 'weighing recorded' : 'pesagem registada'}</span>
+                                    <span className="text-gray-400">
+                                        {isEN ? 'weighing with no weights recorded' : 'pesagem sem pesos registados'}
+                                    </span>
                                 )}
                                 {w.isNewBag && <span className="text-gray-400"> · {isEN ? 'new bag' : 'saco novo'}</span>}
+                            </div>
+                        )}
+                        {/* Gasto desde a pesagem anterior. É a informação que torna
+                           útil pesar à mesma hora todos os dias, e não aparecia em
+                           lado nenhum. Fica de fora quando o período está marcado
+                           como enchimento esquecido (aí o número aparece em baixo,
+                           com o aviso, e não como se fosse bom). */}
+                        {!w.notWeighed && !w.forgottenRefill && gasto && gasto.consumed != null && (
+                            <div className="text-xs mt-1 text-gray-300">
+                                {isEN ? 'Since the previous weighing: ' : 'Desde a pesagem anterior: '}
+                                <span className="font-bold">{gasto.consumed}</span> mg
+                                {gasto.doseCount > 0 && (
+                                    <> {isEN ? 'in' : 'em'} {gasto.doseCount} {isEN ? 'uses' : 'toques'}
+                                    {gasto.mgPerDose != null && <> (~{gasto.mgPerDose} mg/{isEN ? 'use' : 'toque'})</>}</>
+                                )}
                             </div>
                         )}
                         {/* Marca de "enchimento esquecido": foi respondida uma vez à

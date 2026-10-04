@@ -120,7 +120,11 @@
     "oldBagEmpty": "Ficou vazio",
     "oldBagLeftover": "Ainda tinha resto",
     "leftoverGrossLabel": "Peso do saco antigo agora (na balança)",
-    "leftoverGrossHint": "Pesa o saco antigo como está, com o resto lá dentro. A app desconta o peso do saco vazio."
+    "leftoverGrossHint": "Pesa o saco antigo como está, com o resto lá dentro. A app desconta o peso do saco vazio.",
+    "weighOnlyBtn": "Só pesar (não enchi)",
+    "weighOnlyLabel": "Peso do saco agora",
+    "weighOnlyHint": "Pesa o saco como está. Não enches nada — serve para medir quanto gastaste desde a última pesagem.",
+    "weighOnlyExplain": "Pesagem sem encher. Útil para pesar sempre à mesma hora e ficares a saber o gasto de cada dia."
   },
   "weighingSuggestion": {
     "title": "Uma pequena confirmação",

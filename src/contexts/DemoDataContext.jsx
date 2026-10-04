@@ -16,6 +16,10 @@ export const DemoDataProvider = ({ children }) => {
   const [cycles,        setCycles]        = useState(_demoSeed.cycles);
   const [goals,         setGoals]         = useState(_demoSeed.goals);
   const [thoughts,      setThoughts]      = useState(_demoSeed.thoughts);
+  // As pesagens faltavam aqui por inteiro: no demo, guardar uma pesagem dava
+  // sempre "Não foi possível guardar a pesagem" e o Histórico nunca mostrava
+  // nenhuma — a parte dos mg da app era invisível a quem experimentasse.
+  const [weighings,     setWeighings]     = useState(_demoSeed.weighings || []);
 
   // Generic add/update/delete helpers
   const addTo   = (setter, item) => setter(prev => [item, ...prev]);
@@ -36,6 +40,9 @@ export const DemoDataProvider = ({ children }) => {
   const updateGoal      = useCallback(async (id, u) => { updateIn(setGoals, id, u); }, []);
   const deleteGoal      = useCallback(async (id)  => { removeFrom(setGoals, id); }, []);
   const addThought      = useCallback(async (item) => { addTo(setThoughts, item); return item; }, []);
+  const addWeighing     = useCallback(async (item) => { addTo(setWeighings, item); return item; }, []);
+  const updateWeighing  = useCallback(async (id, u) => { updateIn(setWeighings, id, u); }, []);
+  const deleteWeighing  = useCallback(async (id)  => { removeFrom(setWeighings, id); }, []);
 
   const setterMap = {
     consumptions:  setConsumptions,
@@ -45,6 +52,7 @@ export const DemoDataProvider = ({ children }) => {
     cycles:        setCycles,
     goals:         setGoals,
     thoughts:      setThoughts,
+    weighings:     setWeighings,
   };
 
   const updateItem = useCallback(async (col, id, updates) => {
@@ -75,6 +83,7 @@ export const DemoDataProvider = ({ children }) => {
     goals,
     copingStrategies: [],
     thoughts,
+    weighings,
     healthLogs: [],
 
     addConsumption, deleteConsumption,
@@ -82,6 +91,7 @@ export const DemoDataProvider = ({ children }) => {
     addCycle, updateCycle, deleteCycle,
     addGoal, updateGoal, deleteGoal,
     addThought,
+    addWeighing, updateWeighing, deleteWeighing,
     updateItem,
     deleteItem,
 

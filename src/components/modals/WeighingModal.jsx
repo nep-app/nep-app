@@ -35,6 +35,15 @@ const nowLocalInput = () => {
  *  - sobrou:  ficou resto → pede o peso ATUAL (com o resto) + o cheio.
  *  - novo:    saco fisicamente novo → pede o VAZIO novo + o cheio (opcional: resto do antigo).
  *  - naoPesei: encheu sem pesar → marca o intervalo como "sem peso" (não inventa mg).
+ *  - soPesar: PESOU SEM ENCHER. Faltava, e sem ela não havia forma de pôr no
+ *    registo uma medição isolada do saco (por exemplo, pesar todos os dias à
+ *    mesma hora para ter o gasto diário). Os quatro modos acima exigiam todos o
+ *    peso CHEIO, por isso não dava sequer para guardar.
+ *    Guarda-se `full` IGUAL a `before`, porque é isso que aconteceu: nada foi
+ *    acrescentado, o saco ficou com o que tinha. Assim o motor dos mg continua
+ *    a fechar o período anterior (cheio anterior − este peso) E a abrir o
+ *    seguinte com um peso de partida fiável, sem precisar de saber deste modo.
+ *    O `noRefill` serve só para o ecrã poder dizer a verdade do que ela fez.
  */
 export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => {
   const { t } = useTranslation();
@@ -74,11 +83,13 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
 
   // 'before' efetivo consoante o modo (o que o saco pesava mesmo antes de encher).
   const effectiveBefore =
+    mode === 'soPesar' ? num(before) :
     mode === 'sobrou' ? num(before) :
     mode === 'novo' ? num(empty) :
     known.lastEmpty; // normal → vazio guardado
 
-  const fullN = num(full);
+  // Pesar sem encher: o saco fica com o que já tinha, por isso cheio = atual.
+  const fullN = mode === 'soPesar' ? num(before) : num(full);
   const added = (fullN != null && effectiveBefore != null) ? fullN - effectiveBefore : null;
   // Consumo do saco ANTIGO ao trocar: a tara (peso do saco vazio) nunca conta.
   const oldTareRef = known.lastEmpty;
@@ -93,6 +104,7 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
 
   const canSave = () => {
     if (mode === 'naoPesei') return true;
+    if (mode === 'soPesar') return num(before) != null;
     if (fullN == null) return false;
     if (mode === 'sobrou' && num(before) == null) return false;
     if (mode === 'novo' && num(empty) == null) return false;
@@ -110,7 +122,10 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
       return;
     }
     const record = { timestamp, date, full: fullN, before: effectiveBefore };
-    if (mode === 'novo') {
+    if (mode === 'soPesar') {
+      record.noRefill = true;
+      record.empty = known.lastEmpty;
+    } else if (mode === 'novo') {
       record.isNewBag = true;
       record.empty = num(empty);
       record.before = num(empty);
@@ -147,6 +162,10 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
             <button onClick={() => setMode('novo')}
               className={'px-3 py-1.5 rounded-full text-xs font-medium border ' + (mode === 'novo' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300')}>
               {t('weighing.newBagBtn')}
+            </button>
+            <button onClick={() => setMode('soPesar')}
+              className={'px-3 py-1.5 rounded-full text-xs font-medium border ' + (mode === 'soPesar' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-300')}>
+              {t('weighing.weighOnlyBtn')}
             </button>
             {mode !== 'normal' && (
               <button onClick={() => setMode('normal')}
@@ -192,7 +211,16 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
               <WField label={t('weighing.currentLabel')} value={before} onChange={setBefore}
                 placeholder="0" hint={t('weighing.currentHint')} />
             )}
-            <WField label={t('weighing.fullLabel')} value={full} onChange={setFull} placeholder="0" />
+            {mode === 'soPesar' && (
+              <>
+                <p className="text-sm text-gray-300">{t('weighing.weighOnlyExplain')}</p>
+                <WField label={t('weighing.weighOnlyLabel')} value={before} onChange={setBefore}
+                  placeholder="0" hint={t('weighing.weighOnlyHint')} />
+              </>
+            )}
+            {mode !== 'soPesar' && (
+              <WField label={t('weighing.fullLabel')} value={full} onChange={setFull} placeholder="0" />
+            )}
             {mode === 'novo' && !firstEver && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-300">{t('weighing.oldBagQuestion')}</label>
@@ -216,7 +244,10 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
             {/* Pré-visualização do que a app calculou */}
             {(added != null || consumedPrev != null) && (
               <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3 text-sm space-y-1">
-                {added != null && added >= 0 && (
+                {/* No modo "só pesar" o acrescentado é sempre 0 — mostrar
+                   "Puseste: 0" seria dizer uma coisa que ela não fez. O que
+                   interessa aqui é o gasto desde a última pesagem, em baixo. */}
+                {mode !== 'soPesar' && added != null && added >= 0 && (
                   <div className="text-gray-300">{t('weighing.previewAdded')} <strong className="text-green-400">{Math.round(added)}</strong></div>
                 )}
                 {consumedPrev != null && consumedPrev >= 0 && (

@@ -269,8 +269,21 @@ export const goals = [
   { id: uid(), type: 'sleep_hours',       target: 7,       createdAt: ts(30, 10), completed: false }, // horas de sono
 ];
 
+// Pesagens do saco. Não havia nenhuma, e sem elas o modo demo não conseguia
+// mostrar nada do sistema de mg: o modal abria sempre em "primeira vez de
+// sempre" (sem os botões de modo) e o Histórico nunca mostrava um cartão de
+// pesagem. Três pesagens espaçadas chegam para o ciclo normal, para um
+// enchimento com resto, e para uma pesagem SEM ENCHER.
+// Pesos em mg líquidos (saco vazio = 0), como nos registos reais.
+const weighings = [
+  { id: uid(), timestamp: ts(12, 11, 0), date: dk(12), empty: 0, before: 0,   full: 1000, isNewBag: true },
+  { id: uid(), timestamp: ts(8, 11, 0),  date: dk(8),  empty: 0, before: 180, full: 1100 },
+  { id: uid(), timestamp: ts(4, 11, 0),  date: dk(4),  empty: 0, before: 420, full: 420, noRefill: true },
+];
+
 export function getAllDemoData() {
   return {
+    weighings:    [...weighings],
     consumptions: [...consumptions],
     dailyLogs:    [...dailyLogs],
     cycles:       [...cycles],
