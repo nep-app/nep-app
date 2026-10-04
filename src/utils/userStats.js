@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, typicalMgPerDose } from './mgDerivation';
-import { getTodayKey, safeToISODate, getDateDaysAgo } from './helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -485,27 +485,19 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
       if (lastCycle) {
-        const targetStr = typeof bedtimeGoal.target === 'string' ? bedtimeGoal.target : String(bedtimeGoal.target).padStart(2, '0') + ':00';
-        const bedtimeParts = lastCycle.bedtime.split(':');
-        let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-        const bedtimeOriginalMinutes = bedtimeMinutes;
+        // Uma só conta para toda a app (helpers.bedtimeMeetsTarget). Antes havia
+        // aqui uma "janela saudável 21h–02h" que contrariava a meta dela.
+        // null = não dá para ler a hora → não se diz nada.
+        const cumpriu = bedtimeMeetsTarget(lastCycle.bedtime, bedtimeGoal.target);
 
-        const targetParts = targetStr.split(':');
-        let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
-        if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
-        if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
-
-        const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-        if (bedtimeMinutes <= targetMinutes && isHealthyBedtime) {
+        if (cumpriu === true) {
           alerts.push({
             text: i18n.t('alerts.goodBedtime', { time: lastCycle.bedtime }),
             emoji: '💤',
             color: 'green',
             type: 'positive'
           });
-        } else {
+        } else if (cumpriu === false) {
           alerts.push({
             text: i18n.t('alerts.lateBedtime', { time: lastCycle.bedtime }),
             emoji: '🌃',
@@ -520,8 +512,6 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const limitLastGoal = (goals || []).find(g => g.type === 'limit_last');
     if (limitLastGoal && filteredConsumptions.length > 0) {
       const targetStr = typeof limitLastGoal.target === 'string' ? limitLastGoal.target : '00:00';
-      const [th, tm] = targetStr.split(':').map(Number);
-      const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
 
       const now = new Date();
 
@@ -542,17 +532,21 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
       if (cycleConsumptions.length > 0) {
         const lastCons = new Date(cycleConsumptions[0].timestamp);
-        const lastConsMinutes = lastCons.getHours() * 60 + lastCons.getMinutes();
         const lastTimeStr = `${String(lastCons.getHours()).padStart(2,'0')}:${String(lastCons.getMinutes()).padStart(2,'0')}`;
 
         // Frame de "noite alargada": a madrugada (00:00–05:59) conta como o FIM da
         // noite (+1440). O ALVO usa o MESMO frame — senão uma meta de madrugada
         // (ex.: "último consumo até 01:30") ficava quase sempre a vermelho.
         // Igual ao alvo = cumprido (verde).
-        const toExt = (m) => (m < 360 ? m + 1440 : m);
-        const isAfterTarget = toExt(lastConsMinutes) > toExt(targetMinutes);
+        // Prazo = hora da meta, a primeira vez depois de acordar (helpers).
+        // Sem ciclo registado, conta a partir da meia-noite de hoje.
+        const startMs = lastCycleTime ? lastCycleTime.getTime() : new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const deadlineMs = limitLastDeadline(startMs, targetStr);
+        const isAfterTarget = deadlineMs != null && lastCons.getTime() > deadlineMs;
 
-        if (isAfterTarget) {
+        if (deadlineMs == null) {
+          // não dá para ler a meta → não se diz nada
+        } else if (isAfterTarget) {
           alerts.push({
             text: i18n.t('alerts.limitLastFail', { time: lastTimeStr, target: targetStr }),
             emoji: '⏰',
@@ -582,13 +576,15 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
         if (prevCycleCons.length > 0) {
           const prevLast = new Date(prevCycleCons[0].timestamp);
-          const prevLastMinutes = prevLast.getHours() * 60 + prevLast.getMinutes();
           const lastTimeStr = `${String(prevLast.getHours()).padStart(2,'0')}:${String(prevLast.getMinutes()).padStart(2,'0')}`;
           // Mesmo frame de "noite alargada" do ramo do ciclo atual (igual ao alvo = OK).
-          const toExt = (m) => (m < 360 ? m + 1440 : m);
-          const wasAfterTarget = toExt(prevLastMinutes) > toExt(targetMinutes);
+          // Sem saber quando começou o ciclo anterior, não há prazo — não se julga.
+          const deadlineMs = prevCycleStart ? limitLastDeadline(prevCycleStart.getTime(), targetStr) : null;
+          const wasAfterTarget = deadlineMs != null && prevLast.getTime() > deadlineMs;
 
-          if (wasAfterTarget) {
+          if (deadlineMs == null) {
+            // não se sabe
+          } else if (wasAfterTarget) {
             // SEM urge: é o resultado de um ciclo JÁ FECHADO (retrospetivo). Não deve
             // abrir a janela do impulso quando se vai consumir num ciclo novo.
             alerts.push({

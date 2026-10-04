@@ -1,4 +1,4 @@
-import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline } from '../utils/helpers';
 import i18n from '../i18n';
 
 // ===== HELPER FUNCTIONS =====
@@ -339,7 +339,7 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
 
     if (goal.type === 'limit_last') {
         // O "dia" é definido pelo ciclo de sono, não pelo calendário.
-        // Para cada ciclo FECHADO: houve algum consumo depois da meia-noite desse ciclo? → falhou.
+        // Para cada ciclo FECHADO: houve algum consumo depois da hora da meta? → falhou.
         const sortedCycles = [...(cycles || [])]
             .filter(c => c.timestamp || c.date)
             .map(c => new Date(c.timestamp || c.date))
@@ -365,17 +365,13 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
             const cycleCons = consMs.filter(ms => ms > startMs && ms <= endMs);
             if (cycleCons.length === 0) continue;
 
-            // Meia-noite que cai dentro deste ciclo
-            // Procurar a primeira 00:00 depois de cycleStart
-            const midnight = new Date(boundaries[i]);
-            midnight.setDate(midnight.getDate() + 1);
-            midnight.setHours(0, 0, 0, 0);
-            const midnightMs = midnight.getTime();
-            // Se a meia-noite ainda não ocorreu dentro do ciclo, ignorar (ciclo ainda em aberto sem meia-noite)
-            if (midnightMs >= endMs) continue;
+            // Prazo = a hora da meta, a primeira vez que acontece depois de ela
+            // acordar. Antes era SEMPRE a meia-noite, fosse qual fosse a meta.
+            const deadlineMs = limitLastDeadline(startMs, goal.target);
+            // Se o prazo ainda não chegou dentro deste ciclo, não se avalia.
+            if (deadlineMs == null || deadlineMs >= endMs) continue;
 
-            // Houve consumo depois dessa meia-noite?
-            const violated = cycleCons.some(ms => ms >= midnightMs);
+            const violated = cycleCons.some(ms => ms > deadlineMs);
             if (!violated) achievedCount++;
         }
     }
@@ -451,37 +447,14 @@ export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, w
     }
 
     if (goal.type === 'bedtime_before') {
-        // REGRA: Conta todos os dias em que há hora de deitar registada (cycles com bedtime)
-        // Dias sem bedtime = não avaliados (não entram no total)
+        // Conta os dias com hora de deitar registada; dias sem hora não entram.
+        // A comparação é a de bedtimeMeetsTarget (ver helpers) — antes havia
+        // aqui uma "janela saudável 21h–02h" que passava por cima da meta dela.
         const today = getTodayKey();
-        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-        const targetParts = targetStr.split(':');
-        const targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-
         cycles.forEach(c => {
             const dateKey = getDateKeyFromItem(c);
             if (!dateKey || dateKey === today || !c.bedtime) return;
-
-            const bedtimeParts = c.bedtime.split(':');
-            let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-            const bedtimeOriginalMinutes = bedtimeMinutes;
-
-            // Meta SÓ é cumprida se hora for entre 21:00-02:00
-            const isHealthyBedtime = bedtimeOriginalMinutes >= 1260 || bedtimeOriginalMinutes <= 120;
-
-            // Ajustar madrugada (00:00-05:59 → 24:00-29:59)
-            if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) {
-                bedtimeMinutes += 1440;
-            }
-
-            // Ajustar target se for madrugada
-            let targetAdjusted = targetMinutes;
-            if (targetMinutes >= 0 && targetMinutes < 360) {
-                targetAdjusted += 1440;
-            }
-
-            const isAchieved = bedtimeMinutes <= targetAdjusted && isHealthyBedtime;
-            if (isAchieved) achievedCount++;
+            if (bedtimeMeetsTarget(c.bedtime, goal.target) === true) achievedCount++;
         });
     }
 

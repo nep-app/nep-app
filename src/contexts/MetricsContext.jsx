@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect } from '
 import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
-import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
 import { deriveDailyMg } from '../utils/mgDerivation';
 
@@ -383,35 +383,31 @@ export const MetricsProvider = ({ children }) => {
 
       // ALTERAÇÃO 7: Nova meta "Hora do último consumo diário"
       if (goal.type === 'limit_last') {
-        const targetStr = typeof goal.target === 'string' ? goal.target : '00:00';
-        const [th, tm] = targetStr.split(':').map(Number);
-        const targetMinutes = (th === 0 && (tm || 0) === 0) ? 1440 : th * 60 + (tm || 0);
+        // Por CICLO de sono (acordar → acordar), como no resto da app. Antes
+        // agrupava por dia de calendário: com quem se deita de madrugada, o
+        // "último consumo do dia" era o das 23h e os da madrugada iam parar ao
+        // dia seguinte como se fossem os primeiros. E só 00:00–05:59 contavam
+        // como madrugada. Últimos 15 ciclos fechados com consumos.
+        const starts = filteredCycles
+          .map(c => new Date(c.timestamp || c.date).getTime())
+          .filter(ms => !isNaN(ms))
+          .sort((a, b) => a - b);
+        const consMs = filteredConsumptions
+          .map(c => new Date(c.timestamp).getTime())
+          .filter(ms => !isNaN(ms));
 
-        const localDateKey = (ts) => {
-          const d = new Date(ts);
-          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        };
-
-        const byDay = {};
-        filteredConsumptions.forEach(c => {
-          const key = localDateKey(c.timestamp || c.createdAt);
-          if (!byDay[key]) byDay[key] = [];
-          byDay[key].push(c);
-        });
-
-        const sortedDays = Object.keys(byDay).sort().reverse().slice(0, 15);
-        if (sortedDays.length === 0) return 0;
-
-        const successDays = sortedDays.filter(day => {
-          const last = byDay[day].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-          const ld = new Date(last.timestamp);
-          let lastMinutes = ld.getHours() * 60 + ld.getMinutes();
-          // consumo antes das 6h da manhã conta como "após meia-noite" para esta meta
-          if (lastMinutes < 360) lastMinutes += 1440;
-          return lastMinutes < targetMinutes;
-        }).length;
-
-        return Math.min(100, (successDays / sortedDays.length) * 100);
+        let avaliados = 0, cumpridos = 0;
+        for (let i = starts.length - 2; i >= 0 && avaliados < 15; i--) {
+          const startMs = starts[i], endMs = starts[i + 1];
+          const doCiclo = consMs.filter(ms => ms > startMs && ms <= endMs);
+          if (doCiclo.length === 0) continue;
+          const deadlineMs = limitLastDeadline(startMs, goal.target);
+          if (deadlineMs == null || deadlineMs >= endMs) continue;
+          avaliados++;
+          if (!doCiclo.some(ms => ms > deadlineMs)) cumpridos++;
+        }
+        if (avaliados === 0) return 0;
+        return Math.min(100, (cumpridos / avaliados) * 100);
       }
 
       if (goal.type === 'sleep_hours') {
@@ -456,19 +452,12 @@ export const MetricsProvider = ({ children }) => {
         const cyclesWithBedtime = recentCycles.filter(c => c.bedtime);
         if (cyclesWithBedtime.length === 0) return 0;
 
-        const targetStr = typeof goal.target === 'string' ? goal.target : String(goal.target).padStart(2, '0') + ':00';
-        const targetParts = targetStr.split(':');
-        let targetMinutes = parseInt(targetParts[0]) * 60 + (targetParts[1] ? parseInt(targetParts[1]) : 0);
-        // Normalize early-morning targets (00:00-05:59) to after-midnight
-        if (targetMinutes >= 0 && targetMinutes < 360) targetMinutes += 1440;
-
+        // Mesma conta que o resto da app (helpers.bedtimeMeetsTarget). Antes só
+        // 00:00–05:59 contavam como "depois da meia-noite", e deitar às 07:00
+        // contava como cumprir uma meta de 03:00.
         let successCount = 0;
         cyclesWithBedtime.forEach(cycle => {
-          const bedtimeParts = cycle.bedtime.split(':');
-          let bedtimeMinutes = parseInt(bedtimeParts[0]) * 60 + parseInt(bedtimeParts[1]);
-          // Normalize early-morning bedtimes (00:00-05:59) to after-midnight
-          if (bedtimeMinutes >= 0 && bedtimeMinutes < 360) bedtimeMinutes += 1440;
-          if (bedtimeMinutes <= targetMinutes) successCount++;
+          if (bedtimeMeetsTarget(cycle.bedtime, goal.target) === true) successCount++;
         });
 
         return Math.min(100, (successCount / cyclesWithBedtime.length) * 100);
