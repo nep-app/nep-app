@@ -14,6 +14,8 @@ import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 
 import { OnboardingWelcome } from '../components/OnboardingWelcome';
+import { useDemoPrefs } from '../demo/DemoPrefsContext';
+import { HomeRelogio } from '../demo/HomeRelogio';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
@@ -32,6 +34,8 @@ export function HomeViewRefactored({
   const { t, i18n } = useTranslation();
   const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption } = useData();
   const metrics = useMetrics();
+  // Só no modo demo pode valer 'relogio' (experiência do novo Início).
+  const { layout: demoLayout } = useDemoPrefs();
   const { consumptionsByDate } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
@@ -236,6 +240,14 @@ export function HomeViewRefactored({
 
   return (
     <>
+    {demoLayout === 'relogio' ? (
+      <HomeRelogio
+        onMarkConsumption={handleMarkConsumption}
+        onLogPast={openPastModal}
+        currentReflection={currentReflection}
+        alerts={cachedAlerts}
+      />
+    ) : (
     <div className="space-y-6">
       {/* Aviso de nova funcionalidade (lembretes push) — fecha-se e não volta */}
       <FeatureAnnouncement />
@@ -479,6 +491,7 @@ export function HomeViewRefactored({
         </div>
       )}
     </div>
+    )}
 
     {showUrgeSurfing && (
       <Suspense fallback={null}>

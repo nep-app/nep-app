@@ -2,12 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthenticatedApp } from '../App';
 import { DEMO_THEMES, DEMO_THEME_KEY, applyDemoTheme } from '../demo/themes';
+import { DemoPrefsContext } from '../demo/DemoPrefsContext';
+
 // Letras dos temas de experiência, servidas pela própria app (a CSP não deixa
 // ir buscar letras a fora, e assim também não se avisa a Google de nada).
 // Só são descarregadas se um tema que as usa for escolhido.
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/700.css';
 import '@fontsource/unbounded/800.css';
+
+const DEMO_LAYOUT_KEY = 'nep_demo_layout';
+
+const readLayout = () => {
+  try { return localStorage.getItem(DEMO_LAYOUT_KEY) || 'atual'; } catch { return 'atual'; }
+};
 
 const readTheme = () => {
   try { return localStorage.getItem(DEMO_THEME_KEY) || 'atual'; } catch { return 'atual'; }
@@ -16,6 +24,10 @@ const readTheme = () => {
 export function DemoShell() {
   const { t } = useTranslation();
   const [theme, setTheme] = useState(readTheme);
+  const [layout, setLayout] = useState(readLayout);
+  useEffect(() => {
+    try { localStorage.setItem(DEMO_LAYOUT_KEY, layout); } catch { /* só nesta sessão */ }
+  }, [layout]);
 
   useEffect(() => {
     applyDemoTheme(theme);
@@ -24,7 +36,7 @@ export function DemoShell() {
 
   const exit = () => {
     applyDemoTheme('atual');
-    try { localStorage.removeItem(DEMO_THEME_KEY); } catch { /* nada a limpar */ }
+    try { localStorage.removeItem(DEMO_THEME_KEY); localStorage.removeItem(DEMO_LAYOUT_KEY); } catch { /* nada a limpar */ }
     localStorage.removeItem('nep_demo');
     window.location.reload();
   };
@@ -45,9 +57,9 @@ export function DemoShell() {
       >
         {/* Numa linha só: o texto longo do banner ficou no title (toque longo). */}
         <span title={t('firebase.demoBanner')} style={{ whiteSpace: 'nowrap' }}>🎭 Demo</span>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: '1 1 auto' }}>
-          <span style={{ whiteSpace: 'nowrap' }}>{t('firebase.demoTheme')}</span>
+        <label style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: '1 1 0' }}>
           <select
+            aria-label={t('firebase.demoTheme')}
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
             style={{
@@ -59,6 +71,18 @@ export function DemoShell() {
             {DEMO_THEMES.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
           </select>
         </label>
+        <select
+          value={layout}
+          onChange={(e) => setLayout(e.target.value)}
+          aria-label={t('firebase.demoLayout')}
+          style={{
+            background: 'rgba(255,255,255,0.95)', color: '#1f2937', border: 0,
+            borderRadius: '6px', padding: '3px 6px', fontSize: '12px', fontWeight: 600, flex: '1 1 0', minWidth: 0,
+          }}
+        >
+          <option value="atual">{t('firebase.demoLayoutCurrent')}</option>
+          <option value="relogio">{t('firebase.demoLayoutClock')}</option>
+        </select>
         <button
           onClick={exit}
           style={{
@@ -73,7 +97,9 @@ export function DemoShell() {
 
       {/* Espaço para o banner não tapar conteúdo */}
       <div style={{ paddingTop: '38px' }}>
-        <AuthenticatedApp />
+        <DemoPrefsContext.Provider value={{ layout }}>
+          <AuthenticatedApp />
+        </DemoPrefsContext.Provider>
       </div>
     </>
   );

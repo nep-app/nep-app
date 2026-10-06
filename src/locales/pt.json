@@ -775,7 +775,10 @@
     "demoHint": "Sem registo — dados de exemplo, nada é guardado",
     "demoBanner": "🎭 Modo Demo — os dados não são guardados",
     "demoExit": "Sair do demo",
-    "demoTheme": "Tema:"
+    "demoTheme": "Tema:",
+    "demoLayout": "Início",
+    "demoLayoutCurrent": "Início de agora",
+    "demoLayoutClock": "Relógio"
   },
   "patterns": {
     "title": "Padrões",
@@ -1643,5 +1646,34 @@
     "gapNoRuleGroups": "Ainda há poucas noites de cada tipo para comparar: {{longN}} com intervalo acima das {{longH}}h e {{shortN}} abaixo das {{shortH}}h (são precisas {{min}} de cada lado). Ficam as horas; a leitura é tua.",
     "quantityGoalWithin": "A tua meta é {{target}}mg por dia — esta média está dentro dela.",
     "quantityGoalAbove": "A tua meta é {{target}}mg por dia — esta média está acima."
+  },
+  "demoHome": {
+    "sinceLast": "desde o último",
+    "noneYet": "ainda sem consumos registados",
+    "openTimeline": "Ver as últimas 24 horas em linha",
+    "past": "consumo de outra hora",
+    "msgLastLabel": "último consumo",
+    "msgLast": "Foi às {{time}}, há {{ago}}.",
+    "msgTodayLabel": "hoje",
+    "msgToday": "{{count}} consumos hoje.",
+    "msgTodayGoal": "A tua meta é {{target}}.",
+    "msgWeighLabel": "pesagem",
+    "msgWeigh": "Na pesagem de {{when}} saíram {{mg}} mg desde a anterior, em {{n}} consumos.",
+    "msgSleepLabel": "sono",
+    "msgSleep": "No último ciclo dormiste {{h}}h.",
+    "msgNoSleep": "No último ciclo registaste que não dormiste.",
+    "msgGoalLabel": "a tua meta",
+    "nextMsg": "Mensagem seguinte",
+    "tlTitle": "As últimas 24 horas",
+    "tlBack": "voltar",
+    "tlSleep": "a dormir",
+    "tlUse": "consumo",
+    "tlState": "humor {{mood}} · energia {{energy}}",
+    "tlWeigh": "pesagem",
+    "tlWeighLeft": "pesagem · {{mg}} mg no saco",
+    "tlNow": "agora",
+    "tlSince": "{{ago}} desde o último",
+    "tlEmpty": "Sem registos nas últimas 24 horas.",
+    "legendState": "estado"
   }
 }

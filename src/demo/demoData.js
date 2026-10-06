@@ -142,6 +142,9 @@ for (let d = 1; d <= 45; d++) {
     bedtime, sleep, triggers, notes: cycleNotes[d] || '',
   });
 }
+// Ciclo de HOJE (acordou às 08:00): sem ele, o Início com relógio nunca
+// tinha sono para mostrar nas últimas 24 horas, porque o mais recente era de ontem.
+cycles.unshift({ id: uid(), timestamp: ts(0, 8), date: dk(0), bedtime: '01:30', sleep: 6.5, triggers: [], notes: '' });
 
 // ---------------------------------------------------------------------------
 // BEM-ESTAR — muitos registos, com AS CHAVES CERTAS de emoção (senão dava 0%),

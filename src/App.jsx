@@ -32,6 +32,7 @@ const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 
 // ⚡ HomeView: IMPORT NORMAL (12.6KB, user SEMPRE visita, boot instantâneo)
 import { HomeViewRefactored } from './views/HomeViewRefactored';
+import { useDemoPrefs } from './demo/DemoPrefsContext';
 
 // 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
 // - AnalysesView: 143KB + recharts 243KB = 386KB
@@ -170,6 +171,9 @@ function HarmReductionTracker() {
 export function AuthenticatedApp() {
             // Data and UI contexts
             const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData, fullDataLoaded } = useData();
+            // Experiência do modo demo: Início com relógio e cabeçalho leve.
+            const { layout: demoLayout } = useDemoPrefs();
+            const slimHeader = demoLayout === 'relogio';
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -1173,6 +1177,15 @@ export function AuthenticatedApp() {
             return (
                 <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24 overflow-x-hidden'>
                     <div className="max-w-2xl mx-auto">
+                        {slimHeader ? (
+                        <div className='flex items-baseline justify-between px-1 pt-2 mb-4'>
+                            <span className='text-xl font-semibold tracking-wide text-gray-100'>NEP</span>
+                            <span className='text-xs text-gray-400'>
+                                {new Date().toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}
+                                {streaks.current > 0 ? ` · ${streaks.current} ${t('common.day', { count: streaks.current })}` : ''}
+                            </span>
+                        </div>
+                        ) : (
                         <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>
                             <div className="flex justify-between items-center gap-8">
                                 {/* Título - Esquerda */}
@@ -1237,8 +1250,9 @@ export function AuthenticatedApp() {
                                 </div>
                             </div>
                         </div>
+                        )}
 
-                        <div className='bg-gray-800/50 rounded-3xl shadow-xl p-6 mb-6'>
+                        <div className={slimHeader ? 'mb-6' : 'bg-gray-800/50 rounded-3xl shadow-xl p-6 mb-6'}>
                             {currentView === 'home' && (
                                 <HomeViewRefactored
                                     currentReflection={currentReflection}

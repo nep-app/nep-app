@@ -1009,7 +1009,10 @@
     "demoHint": "No sign-up needed — sample data, nothing is saved",
     "demoBanner": "🎭 Demo Mode — nothing is saved",
     "demoExit": "Exit demo",
-    "demoTheme": "Theme:"
+    "demoTheme": "Theme:",
+    "demoLayout": "Home",
+    "demoLayoutCurrent": "Current home",
+    "demoLayoutClock": "Clock"
   },
   "history": {
     "title": "History",
@@ -1643,5 +1646,34 @@
     "gapNoRuleGroups": "There are still too few nights of each kind to compare: {{longN}} with a gap above {{longH}}h and {{shortN}} below {{shortH}}h ({{min}} of each are needed). The times are here; the reading is yours.",
     "quantityGoalWithin": "Your goal is {{target}}mg a day — this average is within it.",
     "quantityGoalAbove": "Your goal is {{target}}mg a day — this average is above it."
+  },
+  "demoHome": {
+    "sinceLast": "since the last one",
+    "noneYet": "no uses logged yet",
+    "openTimeline": "See the last 24 hours as a timeline",
+    "past": "use at another time",
+    "msgLastLabel": "last use",
+    "msgLast": "At {{time}}, {{ago}} ago.",
+    "msgTodayLabel": "today",
+    "msgToday": "{{count}} uses today.",
+    "msgTodayGoal": "Your goal is {{target}}.",
+    "msgWeighLabel": "weighing",
+    "msgWeigh": "At the {{when}} weighing, {{mg}} mg had left the bag since the previous one, across {{n}} uses.",
+    "msgSleepLabel": "sleep",
+    "msgSleep": "In your last cycle you slept {{h}}h.",
+    "msgNoSleep": "In your last cycle you logged that you did not sleep.",
+    "msgGoalLabel": "your goal",
+    "nextMsg": "Next message",
+    "tlTitle": "The last 24 hours",
+    "tlBack": "back",
+    "tlSleep": "asleep",
+    "tlUse": "use",
+    "tlState": "mood {{mood}} · energy {{energy}}",
+    "tlWeigh": "weighing",
+    "tlWeighLeft": "weighing · {{mg}} mg in the bag",
+    "tlNow": "now",
+    "tlSince": "{{ago}} since the last one",
+    "tlEmpty": "Nothing logged in the last 24 hours.",
+    "legendState": "state"
   }
 }
