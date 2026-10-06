@@ -774,7 +774,8 @@
     "demoButton": "🎭 Experimentar em modo demo",
     "demoHint": "Sem registo — dados de exemplo, nada é guardado",
     "demoBanner": "🎭 Modo Demo — os dados não são guardados",
-    "demoExit": "Sair do demo"
+    "demoExit": "Sair do demo",
+    "demoTheme": "Tema:"
   },
   "patterns": {
     "title": "Padrões",

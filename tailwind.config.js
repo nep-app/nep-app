@@ -1,3 +1,28 @@
+import defaultColors from 'tailwindcss/colors';
+
+// ===== CORES COMO VARIÁVEIS (para os temas de experiência do modo demo) =====
+// Cada cor do Tailwind passa a ler uma variável CSS, e a variável tem como
+// valor por defeito EXACTAMENTE a cor original. Sem tema aplicado, a app fica
+// pixel a pixel igual. O modo demo pode trocar as variáveis (src/demo/themes.js)
+// e a app inteira muda de paleta sem mexer nos ecrãs um a um.
+const FAMILIES = [
+  'gray', 'slate', 'zinc', 'neutral', 'stone',
+  'red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal',
+  'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose',
+];
+const hexToTriplet = (hex) => {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).join(' ');
+};
+const asVar = (name, hex) => `rgb(var(--c-${name}, ${hexToTriplet(hex)}) / <alpha-value>)`;
+const themedColors = { white: asVar('white', '#ffffff'), black: asVar('black', '#000000') };
+for (const fam of FAMILIES) {
+  themedColors[fam] = {};
+  for (const [shade, hex] of Object.entries(defaultColors[fam])) {
+    themedColors[fam][shade] = asVar(`${fam}-${shade}`, hex);
+  }
+}
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,6 +32,7 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      colors: themedColors,
       fontFamily: {
         // Fonte de destaque arredondada e quente — usa a do sistema (SF Pro
         // Rounded no iOS/macOS, fallback gracioso no resto). Sem webfonts (a CSP

@@ -1008,7 +1008,8 @@
     "demoButton": "🎭 Try demo mode",
     "demoHint": "No sign-up needed — sample data, nothing is saved",
     "demoBanner": "🎭 Demo Mode — nothing is saved",
-    "demoExit": "Exit demo"
+    "demoExit": "Exit demo",
+    "demoTheme": "Theme:"
   },
   "history": {
     "title": "History",

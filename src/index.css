@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Temas de experiência do modo demo (src/demo/themes.js). Sem o atributo,
+   nada disto se aplica — a app real não é tocada. */
+html[data-demo-font="vv"] body {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+html[data-demo-font="vv"] h1,
+html[data-demo-font="vv"] h2,
+html[data-demo-font="vv"] .font-display {
+  font-family: 'Unbounded', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}

@@ -1,7 +1,7 @@
 {
   "name": "nep-app",
   "private": true,
-  "version": "6.60.1",
+  "version": "6.61.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/unbounded": "^5.3.0",
     "dexie": "^4.2.1",
     "firebase": "^10.14.1",
     "i18next": "^25.8.18",
