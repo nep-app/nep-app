@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { DataContext } from './DataContext';
 import { getAllDemoData } from '../demo/demoData';
 import { genId, getTodayKey } from '../utils/helpers';
+import { countedConsumptions } from '../utils/substances';
 
 const DEMO_USER = { uid: 'demo-user', email: 'demo@nep.app', displayName: 'Demo' };
 
@@ -57,6 +58,12 @@ export const DemoDataProvider = ({ children }) => {
     substances:    setSubstances,
   };
 
+  const tagConsumptionsWithoutSubstance = useCallback(async (name, { dryRun = false } = {}) => {
+    const n = consumptions.filter(c => !(Array.isArray(c.substances) && c.substances.length)).length;
+    if (!dryRun && n) setConsumptions(prev => prev.map(c => (Array.isArray(c.substances) && c.substances.length ? c : { ...c, substances: [{ name }] })));
+    return n;
+  }, [consumptions]);
+
   const addItem = useCallback(async (col, item) => {
     if (setterMap[col]) addTo(setterMap[col], item);
     return item;
@@ -82,7 +89,9 @@ export const DemoDataProvider = ({ children }) => {
     user: DEMO_USER,
     loading: false,
 
-    consumptions,
+    consumptions: countedConsumptions(consumptions, substances),
+    allConsumptions: consumptions,
+    tagConsumptionsWithoutSubstance,
     dailyLogs,
     reflections,
     wellbeingLogs,

@@ -26,6 +26,8 @@ export function HomeViewRefactored({
   currentReflection,
   markConsumption,
   openEditConsumption,
+  openEditCycle,
+  openEditWellbeingLog,
   deleteItem,
   last7,
   copingStrategies,
@@ -254,6 +256,7 @@ export function HomeViewRefactored({
         onLogPast={openPastModal}
         currentReflection={currentReflection}
         alerts={cachedAlerts}
+        onEdit={{ consumption: openEditConsumption, cycle: openEditCycle, wellbeing: openEditWellbeingLog }}
       />
     ) : (
     <div className="space-y-6">

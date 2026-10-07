@@ -1680,7 +1680,8 @@
     "tlSince": "{{ago}} since the last one",
     "tlEmpty": "Nothing logged in the last 24 hours.",
     "legendState": "state",
-    "tapHint": "tap to see your day"
+    "tapHint": "tap to see your day",
+    "tlEdit": "Edit"
   },
   "substances": {
     "settingsTitle": "My substances",
@@ -1689,14 +1690,21 @@
     "namePlaceholder": "Name (e.g. Rivotril)",
     "add": "Add",
     "remove": "Remove {{name}} from the list",
-    "defaultLabel": "When I log, include right away:",
-    "defaultNone": "Nothing (I'll pick later, if I want)",
-    "defaultHint": "To change it on a log, tap the pencil in History.",
+    "defaultLabel": "Main substance",
+    "defaultNone": "None (everything counts)",
+    "defaultHint": "Only the main one counts in analyses, goals, alerts and mg — logs without a substance count as it. It's also added to quick logs. To change it on a log, tap the pencil in History.",
     "privacyNote": "Encrypted like the rest of your logs and never included in research mode. Removing a substance from the list doesn't change past logs.",
     "pickerLabel": "What it was (optional)",
     "pickerEmpty": "No substances on your list yet. Add one here or in Goals.",
     "addOther": "other",
     "amountPlaceholder": "amount",
-    "amountLabel": "Amount of {{name}}"
+    "amountLabel": "Amount of {{name}}",
+    "tagButton": "Mark past logs without a substance as {{name}}",
+    "tagCounting": "Counting…",
+    "tagNone": "There are no logs without a substance.",
+    "tagConfirm": "{{count}} logs have no substance. Mark them all as {{name}}? Logs that already have one won't change.",
+    "tagApply": "Mark",
+    "tagWorking": "Marking…",
+    "tagDone": "Done: {{count}} logs marked as {{name}}."
   }
 }

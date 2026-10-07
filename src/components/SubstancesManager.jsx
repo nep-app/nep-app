@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from './Icons';
 import { useSubstances } from '../hooks/useSubstances';
+import { useData } from '../contexts/DataContext';
 import { MAX_NAME } from '../utils/substances';
 
 // "As minhas substâncias" (vive dentro das Metas): a lista para escolher
@@ -13,6 +14,20 @@ export function SubstancesManager() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const current = substances.find(s => s.isDefault);
+  const { tagConsumptionsWithoutSubstance } = useData();
+  // Marcar registos antigos (sem substância) com a principal: 1.º toque conta,
+  // 2.º confirma. Nunca mexe em registos que já têm substância.
+  const [tagStep, setTagStep] = useState(null); // null | { count } | { done }
+  const [tagBusy, setTagBusy] = useState(false);
+  const countUntagged = async () => {
+    if (!current || !tagConsumptionsWithoutSubstance) return;
+    setTagBusy(true);
+    try { setTagStep({ count: await tagConsumptionsWithoutSubstance(current.name, { dryRun: true }) }); } finally { setTagBusy(false); }
+  };
+  const applyTag = async () => {
+    setTagBusy(true);
+    try { setTagStep({ done: await tagConsumptionsWithoutSubstance(current.name) }); } finally { setTagBusy(false); }
+  };
 
   const add = async () => {
     if (!name.trim() || busy) return;
@@ -69,6 +84,26 @@ export function SubstancesManager() {
             {substances.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
           <p className="text-xs text-gray-400 mt-1">{t('substances.defaultHint')}</p>
+          {current && tagConsumptionsWithoutSubstance && (
+            <div className="mt-3">
+              {!tagStep && (
+                <button onClick={countUntagged} disabled={tagBusy} className="w-full py-2 rounded-lg text-sm font-medium bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
+                  {tagBusy ? t('substances.tagCounting') : t('substances.tagButton', { name: current.name })}
+                </button>
+              )}
+              {tagStep && tagStep.count === 0 && <p className="text-xs text-gray-400">{t('substances.tagNone')}</p>}
+              {tagStep && tagStep.count > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-200">{t('substances.tagConfirm', { count: tagStep.count, name: current.name })}</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setTagStep(null)} disabled={tagBusy} className="flex-1 py-2 rounded-lg text-sm bg-gray-700 text-gray-300">{t('common.cancel')}</button>
+                    <button onClick={applyTag} disabled={tagBusy} className="flex-1 py-2 rounded-lg text-sm font-semibold bg-purple-600 text-white disabled:opacity-50">{tagBusy ? t('substances.tagWorking') : t('substances.tagApply')}</button>
+                  </div>
+                </div>
+              )}
+              {tagStep && tagStep.done != null && <p className="text-xs text-gray-300">{t('substances.tagDone', { count: tagStep.done, name: current.name })}</p>}
+            </div>
+          )}
         </div>
       )}
 

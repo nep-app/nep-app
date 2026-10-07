@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { logger } from '../utils/logger';
 import { useAuth } from './AuthContext';
 import { db } from '../db/localDB';
+import { countedConsumptions } from '../utils/substances';
 import {
   encryptItem,
   decryptItem,
@@ -442,7 +443,7 @@ export const LocalDataProvider = ({ children }) => {
       setUrgeEvents(urgeEventsFullData);
       setSubstances(substancesFullData);
 
-      await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData, weighingsFullData);
+      await updateUserStats(countedConsumptions(consumptionsFullData, substancesFullData), cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData, weighingsFullData);
       setFullDataLoaded(true);
       logger.log('[LocalData] ✅ FASE 3 completa - Todos os dados carregados!');
     } catch (error) {
@@ -467,10 +468,10 @@ export const LocalDataProvider = ({ children }) => {
    */
   const recalculateStats = useCallback(() => {
     // Ler estados atuais e recalcular (async mas não esperamos)
-    updateUserStats(consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings).catch(err =>
+    updateUserStats(countedConsumptions(consumptions, substances), cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings).catch(err =>
       logger.error('[LocalData] Erro ao recalcular stats:', err)
     );
-  }, [consumptions, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings]);
+  }, [consumptions, substances, cycles, dailyLogs, goals, wellbeingLogs, thoughts, reflections, weighings]);
 
   /**
    * CRUD: Adicionar item
@@ -594,6 +595,38 @@ export const LocalDataProvider = ({ children }) => {
   }, [encryptionKey, getCachedSalt, recalculateStats]);
 
   /**
+   * Marcar de uma vez os consumos SEM substância com uma substância (ex.: todos
+   * os registos antigos, de antes de existir a lista). Lê a base toda — não
+   * depende do que já foi carregado para o ecrã — e grava num só passo.
+   * Registos que não se conseguem decifrar não são tocados.
+   * Com { dryRun: true } só conta. Devolve o número de registos (a) mudar.
+   */
+  const tagConsumptionsWithoutSubstance = useCallback(async (name, { dryRun = false } = {}) => {
+    if (!encryptionKey) throw new Error('PIN não disponível');
+    const salt = await getCachedSalt();
+    const raw = await getAllItems('consumptions');
+    const plain = await decryptItems('consumptions', raw, encryptionKey, salt);
+    const targets = plain.filter(c => !c._decryptionError && !(Array.isArray(c.substances) && c.substances.length > 0));
+    if (dryRun || targets.length === 0) return targets.length;
+
+    const now = new Date().toISOString();
+    const changed = targets.map(c => ({ ...c, substances: [{ name }] }));
+    const toStore = [];
+    for (const c of changed) {
+      // eslint-disable-next-line no-unused-vars
+      const { _decryptionError, syncStatus, lastModified, ...clean } = c;
+      const enc = await encryptItem('consumptions', clean, encryptionKey, salt);
+      toStore.push({ ...enc, syncStatus: 'pending', lastModified: now });
+    }
+    await db.consumptions.bulkPut(toStore);
+
+    const byId = new Map(changed.map(c => [c.id, c]));
+    setConsumptions(prev => prev.map(c => (byId.has(c.id) ? { ...c, substances: byId.get(c.id).substances } : c)));
+    queueMicrotask(() => recalculateStats());
+    return changed.length;
+  }, [encryptionKey, getCachedSalt, recalculateStats]);
+
+  /**
    * CRUD: Deletar item (soft delete)
    */
   const deleteItem = useCallback(async (collectionName, id) => {
@@ -676,6 +709,7 @@ export const LocalDataProvider = ({ children }) => {
     addItem,
     updateItem,
     deleteItem,
+    tagConsumptionsWithoutSubstance,
 
     // Sync helpers
     getPendingSyncItems,
@@ -688,7 +722,7 @@ export const LocalDataProvider = ({ children }) => {
     loading, backgroundLoading, allDataLoaded, fullDataLoaded,
     consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
     thoughts, healthLogs, weighings, urgeEvents, substances,
-    addItem, updateItem, deleteItem, getPendingSyncItems, markItemAsSynced,
+    addItem, updateItem, deleteItem, tagConsumptionsWithoutSubstance, getPendingSyncItems, markItemAsSynced,
     loadAllCollections, loadFullData,
   ]);
 

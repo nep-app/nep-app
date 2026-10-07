@@ -173,7 +173,7 @@ function HarmReductionTracker() {
  */
 export function AuthenticatedApp() {
             // Data and UI contexts
-            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData, fullDataLoaded } = useData();
+            const { auth, db, user, loading: dataLoading, allDataLoaded, consumptions, allConsumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals, copingStrategies: copingStrategiesData, thoughts, healthLogs, urgeEvents, addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog, addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal, addThought, weighings, addWeighing, addItem, updateItem, deleteItem: deleteItemFromContext, manualSync, forcePushAll, isSyncing, lastSyncTime, loadFullData, fullDataLoaded } = useData();
             // Experiência do modo demo: Início com relógio e cabeçalho leve.
             const { layout: demoLayout } = useDemoPrefs();
             const slimHeader = demoLayout === 'relogio';
@@ -973,7 +973,7 @@ export function AuthenticatedApp() {
             // Export functions using new service
             const exportToCSV = () => {
                 const allData = {
-                    consumptions,
+                    consumptions: allConsumptions || consumptions, // todos, não só os da principal
                     cycles,
                     dailyLogs,
                     wellbeingLogs,
@@ -993,7 +993,7 @@ export function AuthenticatedApp() {
                 // uma única dose. Ao criar uma tabela nova, acrescentar aqui e em
                 // EXPORTED_COLLECTIONS (services/exportService.js).
                 const allData = {
-                    consumptions,
+                    consumptions: allConsumptions || consumptions, // todos, não só os da principal
                     cycles,
                     dailyLogs,
                     weighings,
@@ -1304,6 +1304,8 @@ export function AuthenticatedApp() {
                                     currentReflection={currentReflection}
                                     markConsumption={markConsumption}
                                     openEditConsumption={openEditConsumption}
+                                    openEditCycle={openEditCycle}
+                                    openEditWellbeingLog={openEditWellbeingLog}
                                     deleteItem={deleteItem}
                                     last7={last7}
                                     copingStrategies={copingStrategies}

@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { useUI } from '../contexts/UIContext';
+import * as Icons from '../components/Icons';
+import { formatSubstances } from '../utils/substances';
 import { getTodayKey, safeToISODate } from '../utils/helpers';
 import { periodInfoForClosing } from '../utils/mgDerivation';
 
@@ -63,9 +65,12 @@ const sleepInterval = (cycle) => {
 
 const OPTION = 'min-h-[64px] rounded-2xl border px-1 py-2 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-1 transition-colors';
 
-export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [] }) {
+export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [], onEdit = {} }) {
   const { t, i18n } = useTranslation();
-  const { consumptions = [], cycles = [], wellbeingLogs = [], weighings = [], goals = [] } = useData();
+  const { consumptions = [], allConsumptions, cycles = [], wellbeingLogs = [], weighings = [], goals = [] } = useData();
+  // A linha do dia mostra (e deixa editar) todos os registos; o relógio e as
+  // contas usam só os da substância principal.
+  const listCons = allConsumptions || consumptions;
   const { setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal, setShowThoughtsModal } = useUI();
 
   // Relógio a andar: recalcula de minuto a minuto.
@@ -78,13 +83,19 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     const last = cons.length ? cons[cons.length - 1] : null;
     const cons24 = cons.filter(x => x > from && x <= now);
 
+    const cons24Items = listCons
+      .map(c => ({ ms: tsOf(c), c }))
+      // Sem limite de cima: um registo acabado de gravar não pode ficar
+      // escondido até o relógio dar o minuto seguinte.
+      .filter(x => x.ms != null && x.ms > from);
+
     const sleeps = cycles
-      .map(c => sleepInterval(c))
+      .map(c => { const s = sleepInterval(c); return s ? { ...s, cycle: c } : null; })
       .filter(s => s && s.end > from && s.start < now)
       .map(s => ({ ...s, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
 
     const states24 = wellbeingLogs
-      .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy }))
+      .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, w }))
       .filter(w => w.ms != null && w.ms > from && w.ms <= now);
     const weigh24 = weighings
       .filter(w => !w.notWeighed)
@@ -93,8 +104,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 
     const todayKey = getTodayKey();
     const todayCount = consumptions.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
-    return { last, cons24, sleeps, states24, weigh24, todayCount };
-  }, [consumptions, cycles, wellbeingLogs, weighings, now, from]);
+    return { last, cons24, cons24Items, sleeps, states24, weigh24, todayCount };
+  }, [consumptions, listCons, cycles, wellbeingLogs, weighings, now, from]);
 
   // ----- Mensagens (cada uma só aparece se houver dados para ela) -----
   const messages = useMemo(() => {
@@ -230,25 +241,34 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </section>
       )}
 
-      {showLine && <DayTimeline data={data} now={now} weighings={weighings} onClose={() => setShowLine(false)} />}
+      {showLine && (
+        <DayTimeline
+          data={data}
+          now={now}
+          onClose={() => setShowLine(false)}
+          // Editar fecha a linha do dia primeiro (o modal de edição fica por baixo dela).
+          onEdit={(kind, record) => { const fn = onEdit[kind]; if (!fn) return; setShowLine(false); fn(record); }}
+          canEdit={(kind) => typeof onEdit[kind] === 'function'}
+        />
+      )}
     </div>
   );
 }
 
 // ===== LINHA DO DIA (as últimas 24 horas, por ordem) =====
-function DayTimeline({ data, now, onClose }) {
+function DayTimeline({ data, now, onClose, onEdit, canEdit = () => false }) {
   const { t } = useTranslation();
   const items = [
-    ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours })),
-    ...data.cons24.map(ms => ({ ms, kind: 'use' })),
-    ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy })),
+    ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
+    ...data.cons24Items.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
+    ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, record: s.w })),
     ...data.weigh24.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),
   ].sort((a, b) => a.ms - b.ms)
     // Vários consumos no mesmo minuto ficam numa linha só ("consumo × 3").
     .reduce((acc, it) => {
       const prev = acc[acc.length - 1];
-      if (it.kind === 'use' && prev && prev.kind === 'use' && Math.floor(prev.ms / 60000) === Math.floor(it.ms / 60000)) { prev.n += 1; return acc; }
-      acc.push(it.kind === 'use' ? { ...it, n: 1 } : it);
+      if (it.kind === 'use' && prev && prev.kind === 'use' && Math.floor(prev.ms / 60000) === Math.floor(it.ms / 60000)) { prev.n += 1; prev.records.push(it.record); return acc; }
+      acc.push(it.kind === 'use' ? { ...it, n: 1, records: [it.record] } : it);
       return acc;
     }, []);
 
@@ -265,7 +285,7 @@ function DayTimeline({ data, now, onClose }) {
 
         <ol className="flex flex-col">
           {items.map((it, i) => (
-            <li key={i} className="grid grid-cols-[52px_20px_1fr] items-center min-h-[42px]">
+            <li key={i} className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[42px]">
               <span className="text-xs text-gray-400">{hhmm(it.ms)}</span>
               <span className="flex justify-center">
                 {it.kind === 'use' && <span className="w-3 h-3 rounded-full bg-rose-300" />}
@@ -274,14 +294,28 @@ function DayTimeline({ data, now, onClose }) {
                 {it.kind === 'weigh' && <span className="w-3 h-3 rounded-sm bg-violet-300" />}
               </span>
               <span className="text-sm text-gray-200">
-                {it.kind === 'use' && <>{t('demoHome.tlUse')}{it.n > 1 ? ` × ${it.n}` : ''}</>}
+                {it.kind === 'use' && <>{t('demoHome.tlUse')}{it.n > 1 ? ` × ${it.n}` : ''}{(() => { const f = formatSubstances(it.records.flatMap(r => r?.substances || [])); return f ? <span className="text-xs text-gray-400"> · {f}</span> : null; })()}</>}
                 {it.kind === 'sleep' && <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-100">{t('demoHome.tlSleep')} · {it.hours}h</span>}
                 {it.kind === 'state' && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('demoHome.tlState', { mood: it.mood ?? '–', energy: it.energy ?? '–' })}</span>}
                 {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-100 text-xs">{leftInBag(it.w) != null ? t('demoHome.tlWeighLeft', { mg: leftInBag(it.w) }) : t('demoHome.tlWeigh')}</span>}
               </span>
+              {/* Editar directamente daqui (consumos, sono, estado) */}
+              <span className="flex gap-1 justify-end">
+                {it.kind === 'use' && canEdit('consumption') && it.records.map((r, k) => (
+                  <button key={k} type="button" onClick={() => onEdit('consumption', r)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100">
+                    <Icons.Edit className="w-4 h-4" />
+                  </button>
+                ))}
+                {it.kind === 'sleep' && it.record && canEdit('cycle') && (
+                  <button type="button" onClick={() => onEdit('cycle', it.record)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>
+                )}
+                {it.kind === 'state' && it.record && canEdit('wellbeing') && (
+                  <button type="button" onClick={() => onEdit('wellbeing', it.record)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>
+                )}
+              </span>
             </li>
           ))}
-          <li className="grid grid-cols-[52px_20px_1fr] items-center min-h-[52px]">
+          <li className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[52px]">
             <span className="text-xs font-semibold text-gray-200">{t('demoHome.tlNow')}</span>
             <span className="flex justify-center"><span className="w-3.5 h-3.5 rounded-full border-[3px] border-gray-200" /></span>
             <span className="text-sm text-gray-400">{hhmm(now)}{data.last != null ? ` · ${t('demoHome.tlSince', { ago: agoText(now - data.last) })}` : ''}</span>

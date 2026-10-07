@@ -50,3 +50,22 @@ export const cleanEntries = (entries) => {
 // "Rivotril 1 mg · Vinho do Porto 1 cálice"
 export const formatSubstances = (entries) =>
   cleanEntries(entries).map(e => (e.amount ? `${e.name} ${e.amount}` : e.name)).join(' · ');
+
+// ── O que conta para os cálculos ─────────────────────────────────────────────
+// Só a substância PRINCIPAL (a "por defeito") entra nas contas — análises,
+// metas, avisos, mg, investigação. Um registo SEM substância (todos os antigos,
+// de antes de existir a lista) conta como sendo dela. Um registo só com outras
+// (ex.: só medicação) aparece no Histórico mas fica fora das contas.
+// Sem principal escolhida, conta tudo, como sempre contou.
+export const countsForPrincipal = (consumption, principalName) => {
+  if (!principalName) return true;
+  const subs = consumption?.substances;
+  if (!Array.isArray(subs) || subs.length === 0) return true;
+  return subs.some(e => sameName(e?.name, principalName));
+};
+
+export const countedConsumptions = (consumptions, substances) => {
+  const principal = getDefaultSubstance(substances);
+  if (!principal) return consumptions || [];
+  return (consumptions || []).filter(c => countsForPrincipal(c, principal.name));
+};

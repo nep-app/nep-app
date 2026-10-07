@@ -1680,7 +1680,8 @@
     "tlSince": "{{ago}} desde o último",
     "tlEmpty": "Sem registos nas últimas 24 horas.",
     "legendState": "estado",
-    "tapHint": "toca para ver o dia"
+    "tapHint": "toca para ver o dia",
+    "tlEdit": "Editar"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",
@@ -1689,14 +1690,21 @@
     "namePlaceholder": "Nome (ex.: Rivotril)",
     "add": "Juntar",
     "remove": "Tirar {{name}} da lista",
-    "defaultLabel": "Ao marcar um consumo, levar já:",
-    "defaultNone": "Nada (escolho depois, se quiser)",
-    "defaultHint": "Para mudar num registo, toca no lápis no Histórico.",
+    "defaultLabel": "Substância principal",
+    "defaultNone": "Nenhuma (conta tudo)",
+    "defaultHint": "Só a principal conta nas análises, metas, avisos e mg — os registos sem substância contam como sendo dela. Também vai logo no registo rápido. Para mudar num registo, toca no lápis no Histórico.",
     "privacyNote": "Fica cifrado como o resto dos teus registos e nunca entra no modo de investigação. Tirar uma substância da lista não muda os registos antigos.",
     "pickerLabel": "O que foi (opcional)",
     "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou nas Metas.",
     "addOther": "outra",
     "amountPlaceholder": "quantidade",
-    "amountLabel": "Quantidade de {{name}}"
+    "amountLabel": "Quantidade de {{name}}",
+    "tagButton": "Marcar consumos antigos sem substância como {{name}}",
+    "tagCounting": "A contar…",
+    "tagNone": "Não há consumos sem substância.",
+    "tagConfirm": "Há {{count}} consumos sem substância. Marcá-los todos como {{name}}? Os que já têm substância não mudam.",
+    "tagApply": "Marcar",
+    "tagWorking": "A marcar…",
+    "tagDone": "Feito: {{count}} consumos marcados como {{name}}."
   }
 }

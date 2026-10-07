@@ -71,7 +71,10 @@ export function HistoryView({
     deleteItem,
     handleFillGap
 }) {
-    const { consumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, updateWeighing, db } = useData();
+    const { consumptions, allConsumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, updateWeighing, db } = useData();
+    // A lista mostra TODOS os registos (também os só de outras substâncias);
+    // as contas de mg usam só os da principal (consumptions).
+    const listConsumptions = allConsumptions || consumptions;
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
     // Em inglês, traduzir emoções (guardadas como '😌 Calmo/a') e gatilhos (guardados
@@ -173,9 +176,9 @@ export function HistoryView({
     );
 
     const tempFilteredConsumptions = useMemo(() =>
-        filterByDateRange(consumptions, dateRange)
+        filterByDateRange(listConsumptions, dateRange)
             .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
-        [consumptions, dateRange]
+        [listConsumptions, dateRange]
     );
 
     const tempFilteredCycles = useMemo(() =>

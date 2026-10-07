@@ -8,6 +8,7 @@ import { syncService } from '../services/syncService';
 import { getDataMode, syncResearchData } from '../services/researchService';
 import { getMetadata, setMetadata, clearDerivedStats } from '../db/localDB';
 import { migrateUrgeEventsToDexie } from '../utils/urgeLog';
+import { countedConsumptions } from '../utils/substances';
 
 export const DataContext = createContext();
 
@@ -48,7 +49,7 @@ export const DataProvider = ({ children }) => {
   // LocalData context (dados locais encriptados)
   const {
     loading: localLoading,
-    consumptions,
+    consumptions: allConsumptions,
     dailyLogs,
     reflections,
     wellbeingLogs,
@@ -67,7 +68,12 @@ export const DataProvider = ({ children }) => {
     getPendingSyncItems,
     allDataLoaded,
     fullDataLoaded,
+    tagConsumptionsWithoutSubstance,
   } = useLocalData();
+
+  // Para as CONTAS só entram os consumos da substância principal (ver
+  // utils/substances.js). O Histórico mostra todos (allConsumptions).
+  const consumptions = useMemo(() => countedConsumptions(allConsumptions, substances), [allConsumptions, substances]);
 
   // Coping strategies (legacy - vazio por agora)
   const [copingStrategies, setCopingStrategies] = useState([]);
@@ -461,7 +467,8 @@ export const DataProvider = ({ children }) => {
     loading,
 
     // Dados (do LocalData)
-    consumptions,
+    consumptions,       // só os que contam (substância principal)
+    allConsumptions,    // todos (Histórico)
     dailyLogs,
     reflections,
     wellbeingLogs,
@@ -491,6 +498,7 @@ export const DataProvider = ({ children }) => {
     updateWeighing,
     deleteWeighing,
     addUrgeEvent,
+    tagConsumptionsWithoutSubstance,
     addItem,    // Generic add for all collections (usado ao restaurar backups)
     updateItem, // Generic update for all collections
     deleteItem, // Generic delete for all collections
@@ -507,7 +515,7 @@ export const DataProvider = ({ children }) => {
     fullDataLoaded,
   }), [
     app, auth, db, user, loading,
-    consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
+    consumptions, allConsumptions, tagConsumptionsWithoutSubstance, dailyLogs, reflections, wellbeingLogs, cycles, goals,
     copingStrategies, thoughts, healthLogs, weighings, urgeEvents, substances,
     addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog,
     addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal,

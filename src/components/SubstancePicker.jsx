@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { sortSubstances, sameName, cleanName, MAX_NAME, MAX_AMOUNT } from '../utils/substances';
+import { sortSubstances, sameName, cleanName, getDefaultSubstance, MAX_NAME, MAX_AMOUNT } from '../utils/substances';
 
 // Escolher o que foi num consumo: toca-se nas substâncias da lista (pode ser
 // mais do que uma) e, se se quiser, escreve-se a quantidade de cada uma.
@@ -12,6 +12,10 @@ export function SubstancePicker({ value = [], onChange, substances = [], onAddSu
   const [newName, setNewName] = useState('');
 
   const list = sortSubstances(substances);
+  // A principal não pede quantidade: os mg dela vêm das pesagens (nunca de
+  // um número escrito à mão). A quantidade fica para as outras (ex.: 1 mg).
+  const principal = getDefaultSubstance(substances);
+  const withAmount = value.filter(e => !(principal && sameName(e.name, principal.name)));
   const isOn = (name) => value.some(e => sameName(e.name, name));
   // Nomes que estão no registo mas já não estão na lista (ex.: tirados nas
   // Definições) continuam a aparecer, para não se perderem ao gravar.
@@ -85,9 +89,9 @@ export function SubstancePicker({ value = [], onChange, substances = [], onAddSu
         </div>
       )}
 
-      {value.length > 0 && (
+      {withAmount.length > 0 && (
         <div className="space-y-2">
-          {value.map(e => (
+          {withAmount.map(e => (
             <div key={e.name} className="flex items-center gap-2">
               <span className="text-sm text-gray-200 flex-1 min-w-0 truncate">{e.name}</span>
               <input
