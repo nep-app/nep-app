@@ -1706,5 +1706,22 @@
     "tagApply": "Marcar",
     "tagWorking": "A marcar…",
     "tagDone": "Feito: {{count}} consumos marcados como {{name}}."
+  },
+  "home2": {
+    "sleepTitle": "Sono",
+    "consTitle": "Consumos",
+    "intervalTitle": "Intervalo",
+    "slept": "Dormiste",
+    "noSleep": "não dormiste",
+    "bedtime": "Deitaste-te",
+    "until": "até {{time}}",
+    "firstAfterWake": "1.º depois de acordar",
+    "firstValue": "{{time}} (+{{after}})",
+    "noneYet": "ainda nenhum",
+    "last": "Último",
+    "interval": "Entre os dois últimos",
+    "mgDay": "mg no último dia medido ({{date}})",
+    "goalOk": "meta {{target}}",
+    "goalOff": "fora da meta ({{target}})"
   }
 }

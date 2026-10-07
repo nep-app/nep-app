@@ -1706,5 +1706,22 @@
     "tagApply": "Mark",
     "tagWorking": "Marking…",
     "tagDone": "Done: {{count}} logs marked as {{name}}."
+  },
+  "home2": {
+    "sleepTitle": "Sleep",
+    "consTitle": "Uses",
+    "intervalTitle": "Interval",
+    "slept": "Slept",
+    "noSleep": "no sleep",
+    "bedtime": "Went to bed",
+    "until": "by {{time}}",
+    "firstAfterWake": "1st after waking",
+    "firstValue": "{{time}} (+{{after}})",
+    "noneYet": "none yet",
+    "last": "Last",
+    "interval": "Between the last two",
+    "mgDay": "mg on last measured day ({{date}})",
+    "goalOk": "goal {{target}}",
+    "goalOff": "outside goal ({{target}})"
   }
 }

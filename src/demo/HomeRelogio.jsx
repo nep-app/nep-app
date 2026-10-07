@@ -4,8 +4,9 @@ import { useData } from '../contexts/DataContext';
 import { useUI } from '../contexts/UIContext';
 import * as Icons from '../components/Icons';
 import { formatSubstances } from '../utils/substances';
-import { getTodayKey, safeToISODate } from '../utils/helpers';
-import { periodInfoForClosing } from '../utils/mgDerivation';
+import { getTodayKey, safeToISODate, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo } from '../utils/helpers';
+import { getUserStats } from '../utils/userStats';
+import { useMetrics } from '../contexts/MetricsContext';
 
 // ===== INÍCIO COM RELÓGIO (experiência do modo demo) =====
 // Desenho escolhido pela Teresa na tela "novas formas de mostrar" (A, versão 2):
@@ -107,39 +108,95 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     return { last, cons24, cons24Items, sleeps, states24, weigh24, todayCount };
   }, [consumptions, listCons, cycles, wellbeingLogs, weighings, now, from]);
 
-  // ----- Mensagens (cada uma só aparece se houver dados para ela) -----
-  const messages = useMemo(() => {
-    const out = [];
-    // A Mensagem de Hoje é sempre a primeira a aparecer (pedido da Teresa).
-    if (currentReflection) out.push({ label: t('home.dailyMessage'), text: currentReflection });
-    if (data.last != null) {
-      out.push({ label: t('demoHome.msgLastLabel'), text: t('demoHome.msgLast', { time: hhmm(data.last), ago: agoText(now - data.last) }) });
+  // ----- Estado do dia: sono / consumos / intervalo -----
+  // Tudo visível de uma vez (sem carrossel). Cada linha só aparece se houver
+  // dados; o "cumpre/não cumpre" só aparece onde ela definiu uma meta.
+  const [mgStats, setMgStats] = useState(null);
+  useEffect(() => {
+    getUserStats().then(st => setMgStats(st ? { mg: st.lastMg, ts: st.lastMgTs } : null)).catch(() => {});
+  }, [consumptions, weighings]);
+
+  const status = useMemo(() => {
+    const goal = (type) => goals.find(g => g.type === type && !g.completed);
+    const H = 3600000;
+    const fmtH = (h) => `${Math.round(h * 10) / 10}h`.replace('.', ',');
+    const out = { sleep: [], cons: [], interval: [] };
+
+    // Sono: último ciclo registado
+    const lastCycle = [...cycles].filter(c => tsOf(c) != null).sort((a, b) => tsOf(b) - tsOf(a))[0];
+    const cycleStale = lastCycle && now - tsOf(lastCycle) > 36 * H;
+    const staleNote = cycleStale ? ` (${new Date(tsOf(lastCycle)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })})` : '';
+    if (lastCycle && lastCycle.sleep != null && lastCycle.sleep !== '' && !isNaN(parseFloat(lastCycle.sleep))) {
+      const h = parseFloat(lastCycle.sleep);
+      const g = goal('sleep_hours');
+      out.sleep.push({
+        label: t('home2.slept'),
+        value: (h === 0 ? t('home2.noSleep') : fmtH(h)) + staleNote,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: h >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+      });
     }
-    const freqGoal = goals.find(g => g.type === 'reduce_frequency');
-    out.push({
-      label: t('demoHome.msgTodayLabel'),
-      text: t('demoHome.msgToday', { count: data.todayCount }) + (freqGoal ? ' ' + t('demoHome.msgTodayGoal', { target: freqGoal.target }) : ''),
-    });
-    const lastW = [...weighings].filter(w => !w.notWeighed && tsOf(w) != null).sort((a, b) => tsOf(b) - tsOf(a))[0];
-    if (lastW) {
-      const info = periodInfoForClosing(weighings, consumptions, lastW.id);
-      if (info && info.consumed != null && !lastW.forgottenRefill) {
-        out.push({ label: t('demoHome.msgWeighLabel'), text: t('demoHome.msgWeigh', { when: `${new Date(tsOf(lastW)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })} ${hhmm(tsOf(lastW))}`, mg: info.consumed, n: info.doseCount }) });
+    if (lastCycle && lastCycle.bedtime) {
+      const g = goal('bedtime_before');
+      const ok = g ? bedtimeMeetsTarget(lastCycle.bedtime, g.target) : null;
+      out.sleep.push({
+        label: t('home2.bedtime'),
+        value: lastCycle.bedtime + staleNote,
+        goal: g && ok != null ? { ok, target: t('home2.until', { time: g.target }) } : null,
+      });
+    }
+
+    // Consumos (só os da substância principal) desde que acordou
+    const cons = consumptions.map(tsOf).filter(x => x != null).sort((a, b) => a - b);
+    const wake = lastCycle && !cycleStale ? tsOf(lastCycle) : null;
+    if (wake != null) {
+      const first = cons.find(x => x >= wake);
+      const g = goal('first_not_before');
+      if (first != null) {
+        const after = first - wake;
+        out.cons.push({
+          label: t('home2.firstAfterWake'),
+          value: t('home2.firstValue', { time: hhmm(first), after: agoText(after) }),
+          goal: g && !isNaN(parseFloat(g.target)) ? { ok: after >= parseFloat(g.target) * H, target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+        });
+      } else {
+        out.cons.push({ label: t('home2.firstAfterWake'), value: t('home2.noneYet') });
       }
     }
-    const lastSleep = [...cycles].filter(c => c.sleep != null && c.sleep !== '' && tsOf(c) != null).sort((a, b) => tsOf(b) - tsOf(a))[0];
-    if (lastSleep) {
-      const h = parseFloat(lastSleep.sleep);
-      out.push({ label: t('demoHome.msgSleepLabel'), text: h === 0 ? t('demoHome.msgNoSleep') : t('demoHome.msgSleep', { h }) });
+    const lastC = cons.length ? cons[cons.length - 1] : null;
+    if (lastC != null) {
+      const g = goal('limit_last');
+      let gl = null;
+      if (g && wake != null && lastC >= wake) {
+        const deadline = limitLastDeadline(wake, g.target);
+        if (deadline != null) gl = { ok: lastC <= deadline, target: t('home2.until', { time: g.target }) };
+      }
+      out.cons.push({ label: t('home2.last'), value: hhmm(lastC) + (now - lastC > DAY_MS ? ` (${new Date(lastC).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })})` : ''), goal: gl });
     }
-    for (const a of alerts) {
-      if (a && a.text) out.push({ label: t('demoHome.msgGoalLabel'), text: a.text });
+
+    // Intervalo entre os dois últimos
+    if (cons.length >= 2) {
+      const gap = (cons[cons.length - 1] - cons[cons.length - 2]) / H;
+      const g = goal('increase_interval');
+      out.interval.push({
+        label: t('home2.interval'),
+        value: fmtH(gap),
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: gap >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+      });
+    }
+    // mg: só se houver uma pesagem dos últimos 3 dias (senão o número é velho)
+    const lastWms = Math.max(-Infinity, ...weighings.filter(w => !w.notWeighed).map(tsOf).filter(x => x != null));
+    if (mgStats && mgStats.mg != null && !isNaN(mgStats.mg) && now - lastWms <= 3 * DAY_MS) {
+      const g = goal('reduce_quantity');
+      const when = mgStats.ts ? new Date(mgStats.ts).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : '';
+      out.interval.push({
+        label: t('home2.mgDay', { date: when }),
+        value: `${Math.round(mgStats.mg)} mg`,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: mgStats.mg < parseFloat(g.target), target: `< ${g.target} mg` } : null,
+      });
     }
     return out;
-  }, [data, goals, weighings, consumptions, cycles, alerts, currentReflection, now, t, i18n.language]);
+  }, [cycles, consumptions, weighings, goals, mgStats, now, t, i18n.language]);
 
-  const [msgIdx, setMsgIdx] = useState(0);
-  const msg = messages[msgIdx % Math.max(1, messages.length)];
   const [showLine, setShowLine] = useState(false);
 
   const nowH = hourOf(now);
@@ -214,32 +271,43 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         <button type="button" onClick={() => setShowGoalModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">🎯</span>{t('home.goals')}</button>
       </div>
 
-      {/* Cartão de mensagens */}
-      {msg && (
-        <section className="w-full min-h-[140px] rounded-3xl bg-gray-800/70 border border-gray-700/60 p-4 flex flex-col justify-between gap-3">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-gray-400">{msg.label}</span>
-            <p className="text-base leading-snug text-gray-100">{msg.text}</p>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1.5" aria-hidden="true">
-              {messages.map((_, k) => (
-                <span key={k} className={k === msgIdx % messages.length ? 'w-4 h-1.5 rounded-full bg-gray-200' : 'w-1.5 h-1.5 rounded-full bg-gray-600'} />
-              ))}
-            </div>
-            {messages.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setMsgIdx(i => (i + 1) % messages.length)}
-                aria-label={t('demoHome.nextMsg')}
-                className="w-11 h-11 rounded-full bg-gray-700/70 text-gray-100 flex items-center justify-center hover:bg-gray-700"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-              </button>
-            )}
-          </div>
+      {/* Mensagem de Hoje (primeiro) e estado do dia, tudo à vista */}
+      {currentReflection && (
+        <section className="w-full rounded-2xl bg-gray-800/70 border border-gray-700/60 px-4 py-3">
+          <span className="text-[11px] text-gray-400">{t('home.dailyMessage')}</span>
+          <p className="text-sm leading-snug text-gray-100 mt-0.5">{currentReflection}</p>
         </section>
       )}
+      {[['sleep', '🌙', 'home2.sleepTitle'], ['cons', '☀️', 'home2.consTitle'], ['interval', '⏱', 'home2.intervalTitle']]
+        .filter(([k]) => status[k].length > 0).length > 0 && (
+        <div className="w-full grid grid-cols-1 gap-2">
+          {[['sleep', '🌙', 'home2.sleepTitle'], ['cons', '☀️', 'home2.consTitle'], ['interval', '⏱', 'home2.intervalTitle']]
+            .filter(([k]) => status[k].length > 0)
+            .map(([k, icon, title]) => (
+              <section key={k} className="rounded-2xl bg-gray-800/60 border border-gray-700/50 px-4 py-2.5">
+                <div className="text-[11px] text-gray-400 mb-1"><span aria-hidden="true">{icon}</span> {t(title)}</div>
+                <div className="space-y-1">
+                  {status[k].map((r, i) => (
+                    <div key={i} className="flex items-baseline justify-between gap-3">
+                      <span className="text-xs text-gray-400">{r.label}</span>
+                      <span className="text-sm text-gray-100 text-right">
+                        {r.value}
+                        {r.goal && (
+                          <span className={'ml-2 text-[11px] whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-300' : 'text-amber-300')}>
+                            {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+        </div>
+      )}
+
+      {/* Esta semana: bolinhas com os consumos de cada dia */}
+      <WeekDots goals={goals} />
 
       {showLine && (
         <DayTimeline
@@ -323,5 +391,46 @@ function DayTimeline({ data, now, onClose, onEdit, canEdit = () => false }) {
         </ol>
       </div>
     </div>
+  );
+}
+
+// Os consumos de cada um dos últimos 7 dias (só a substância principal), em
+// bolinhas pequenas. Cor de juízo só se ela tiver meta de frequência.
+function WeekDots({ goals }) {
+  const { t, i18n } = useTranslation();
+  const { consumptionsByDate = {} } = useMetrics();
+  const freqGoal = goals.find(g => g.type === 'reduce_frequency' && !g.completed);
+  const target = freqGoal ? parseFloat(freqGoal.target) : null;
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = getDateDaysAgo(6 - i);
+    const k = safeToISODate(d);
+    return {
+      k,
+      count: consumptionsByDate[k] || 0,
+      label: i === 6 ? t('home.today') : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d).replace(/\.$/, ''),
+      isToday: i === 6,
+    };
+  });
+  const total = days.reduce((s, d) => s + d.count, 0);
+  const dot = (n) => {
+    if (n === 0) return 'bg-gray-700/60 text-gray-500';
+    if (Number.isFinite(target)) return n < target ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
+    return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
+  };
+  return (
+    <section className="w-full rounded-2xl bg-gray-800/60 border border-gray-700/50 px-4 py-2.5">
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="text-[11px] text-gray-400">{t('home.thisWeek')}</span>
+        <span className="text-[11px] text-gray-500">{total}x{Number.isFinite(target) ? ` · ${t('home.goalTarget')}: ≤${target}x` : ''}</span>
+      </div>
+      <div className="flex justify-between">
+        {days.map(d => (
+          <div key={d.k} className="flex flex-col items-center gap-0.5">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
+            <span className={`text-[10px] ${d.isToday ? 'text-gray-100 font-semibold' : 'text-gray-400'}`}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

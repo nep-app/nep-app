@@ -716,6 +716,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       last7DaysCount,
       lastInterval,
       lastMg,
+      lastMgTs, // data do último dia medido (o Início só o mostra se houver pesagem recente)
       timeSinceLastConsumption, // ← Para badge "Sem consumir há"
       goals: goalsSimple,
       alerts, // ← PRÉ-CALCULADOS!
