@@ -114,6 +114,7 @@ export const LocalDataProvider = ({ children }) => {
   const [healthLogs, setHealthLogs] = useState([]);
   const [weighings, setWeighings] = useState([]);
   const [urgeEvents, setUrgeEvents] = useState([]);
+  const [substances, setSubstances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [allDataLoaded, setAllDataLoaded] = useState(false);
@@ -292,6 +293,11 @@ export const LocalDataProvider = ({ children }) => {
       loadCollectionWithFirst('weighings', 999999)
         .then(({ items }) => setWeighings(items))
         .catch(err => logger.error('[LocalData] Erro ao carregar pesagens cedo:', err));
+      // Lista de substâncias (poucas, sem filtro de data): é precisa logo para o
+      // registo rápido levar a substância por defeito.
+      loadCollection('substances', 999999)
+        .then(items => setSubstances(items))
+        .catch(err => logger.error('[LocalData] Erro ao carregar substâncias:', err));
 
       logger.log('[LocalData] ✅ FASE 1 completa - App pronta (<500ms)!');
 
@@ -408,7 +414,8 @@ export const LocalDataProvider = ({ children }) => {
         thoughtsFullData,
         healthLogsFullData,
         weighingsFullData,
-        urgeEventsFullData
+        urgeEventsFullData,
+        substancesFullData
       ] = await Promise.all([
         loadCollection('consumptions', 999999),
         loadCollection('dailyLogs', 999999),
@@ -419,7 +426,8 @@ export const LocalDataProvider = ({ children }) => {
         loadCollection('thoughts', 999999),
         loadCollection('healthLogs', 999999),
         loadCollection('weighings', 999999),
-        loadCollection('urgeEvents', 999999)
+        loadCollection('urgeEvents', 999999),
+        loadCollection('substances', 999999)
       ]);
 
       setConsumptions(consumptionsFullData);
@@ -432,6 +440,7 @@ export const LocalDataProvider = ({ children }) => {
       setHealthLogs(healthLogsFullData);
       setWeighings(weighingsFullData);
       setUrgeEvents(urgeEventsFullData);
+      setSubstances(substancesFullData);
 
       await updateUserStats(consumptionsFullData, cyclesFullData, dailyLogsFullData, goalsFullData, wellbeingLogsFullData, thoughtsFullData, reflectionsFullData, weighingsFullData);
       setFullDataLoaded(true);
@@ -493,7 +502,8 @@ export const LocalDataProvider = ({ children }) => {
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
       weighings: setWeighings,
-      urgeEvents: setUrgeEvents
+      urgeEvents: setUrgeEvents,
+      substances: setSubstances
     };
 
     const setter = setterMap[collectionName];
@@ -564,7 +574,8 @@ export const LocalDataProvider = ({ children }) => {
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
       weighings: setWeighings,
-      urgeEvents: setUrgeEvents
+      urgeEvents: setUrgeEvents,
+      substances: setSubstances
     };
 
     const setter = setterMap[collectionName];
@@ -604,7 +615,8 @@ export const LocalDataProvider = ({ children }) => {
       thoughts: setThoughts,
       healthLogs: setHealthLogs,
       weighings: setWeighings,
-      urgeEvents: setUrgeEvents
+      urgeEvents: setUrgeEvents,
+      substances: setSubstances
     };
 
     const setter = setterMap[collectionName];
@@ -658,6 +670,7 @@ export const LocalDataProvider = ({ children }) => {
     healthLogs,
     weighings,
     urgeEvents,
+    substances,
 
     // CRUD operations
     addItem,
@@ -674,7 +687,7 @@ export const LocalDataProvider = ({ children }) => {
   }), [
     loading, backgroundLoading, allDataLoaded, fullDataLoaded,
     consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
-    thoughts, healthLogs, weighings, urgeEvents,
+    thoughts, healthLogs, weighings, urgeEvents, substances,
     addItem, updateItem, deleteItem, getPendingSyncItems, markItemAsSynced,
     loadAllCollections, loadFullData,
   ]);

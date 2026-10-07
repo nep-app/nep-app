@@ -58,6 +58,7 @@ export const DataProvider = ({ children }) => {
     healthLogs,
     weighings,
     urgeEvents,
+    substances,
     addItem,
     updateItem,
     deleteItem,
@@ -471,6 +472,7 @@ export const DataProvider = ({ children }) => {
     healthLogs,
     weighings,
     urgeEvents,
+    substances,
 
     // CRUD operations
     addConsumption,
@@ -506,7 +508,7 @@ export const DataProvider = ({ children }) => {
   }), [
     app, auth, db, user, loading,
     consumptions, dailyLogs, reflections, wellbeingLogs, cycles, goals,
-    copingStrategies, thoughts, healthLogs, weighings, urgeEvents,
+    copingStrategies, thoughts, healthLogs, weighings, urgeEvents, substances,
     addConsumption, deleteConsumption, addDailyLog, addReflection, addWellbeingLog,
     addCycle, updateCycle, deleteCycle, addGoal, updateGoal, deleteGoal,
     addThought, addWeighing, updateWeighing, deleteWeighing, addUrgeEvent,

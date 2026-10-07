@@ -40,7 +40,11 @@ const COLLECTIONS = [
   'goals',
   'thoughts',
   'weighings',
-  'urgeEvents'
+  'urgeEvents',
+  // Lista de substâncias. Em último de propósito: enquanto as regras do
+  // Firestore não forem publicadas com 'substances', só esta falha (cada item
+  // tem o seu try/catch) e fica pendente até lá — o resto sincroniza igual.
+  'substances'
 ];
 
 class SyncService {

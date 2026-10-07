@@ -20,6 +20,7 @@ export const DemoDataProvider = ({ children }) => {
   // sempre "Não foi possível guardar a pesagem" e o Histórico nunca mostrava
   // nenhuma — a parte dos mg da app era invisível a quem experimentasse.
   const [weighings,     setWeighings]     = useState(_demoSeed.weighings || []);
+  const [substances,    setSubstances]    = useState([]);
 
   // Generic add/update/delete helpers
   const addTo   = (setter, item) => setter(prev => [item, ...prev]);
@@ -53,7 +54,13 @@ export const DemoDataProvider = ({ children }) => {
     goals:         setGoals,
     thoughts:      setThoughts,
     weighings:     setWeighings,
+    substances:    setSubstances,
   };
+
+  const addItem = useCallback(async (col, item) => {
+    if (setterMap[col]) addTo(setterMap[col], item);
+    return item;
+  }, []);
 
   const updateItem = useCallback(async (col, id, updates) => {
     if (setterMap[col]) updateIn(setterMap[col], id, updates);
@@ -84,6 +91,7 @@ export const DemoDataProvider = ({ children }) => {
     copingStrategies: [],
     thoughts,
     weighings,
+    substances,
     healthLogs: [],
 
     addConsumption, deleteConsumption,
@@ -92,6 +100,7 @@ export const DemoDataProvider = ({ children }) => {
     addGoal, updateGoal, deleteGoal,
     addThought,
     addWeighing, updateWeighing, deleteWeighing,
+    addItem,
     updateItem,
     deleteItem,
 

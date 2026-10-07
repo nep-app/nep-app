@@ -22,6 +22,7 @@ const EXPORTED_COLLECTIONS = [
   ['thoughts',         'Pensamentos registados'],
   ['goals',            'Objetivos definidos'],
   ['urgeEvents',       'Momentos de "surfar o impulso". NÃO era exportada até 28-09-2026.'],
+  ['substances',       'A lista de substâncias (nome e qual é a por defeito).'],
   ['healthLogs',       'Registos de saúde/sintomas. NÃO era exportada até 28-09-2026.'],
   ['copingStrategies', 'Estratégias de coping (pode estar vazia)'],
 ];
@@ -199,7 +200,11 @@ export function exportToCSV(data) {
   consumptions.forEach(c => {
     const date = c.date || '';
     const time = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('pt-PT') : '';
-    csv += `${date},${time},${csvCell(c.substance)},${csvCell(c.amount)},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
+    // Substâncias escolhidas (lista nova) — ou os campos antigos, se existirem.
+    const subs = Array.isArray(c.substances) ? c.substances : [];
+    const substance = subs.length ? subs.map(x => x.name).join(' + ') : c.substance;
+    const amount = subs.length ? subs.map(x => x.amount || '').join(' + ') : c.amount;
+    csv += `${date},${time},${csvCell(substance)},${csvCell(amount)},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
   });
 
   // CSV para cycles (SONO)

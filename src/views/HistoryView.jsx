@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
+import { formatSubstances } from '../utils/substances';
 import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
@@ -677,7 +678,8 @@ export function HistoryView({
                                                                                     <div className="font-medium text-white">
                                                                                         💊 {formatDateTime(c.timestamp)}
                                                                                     </div>
-                                                                                    {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
+                                                                                    {c.substances?.length > 0 && <div className="text-sm mt-1 text-gray-200">{formatSubstances(c.substances)}</div>}
+{c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
                                                                                 </div>
                                                                                 <div className="flex gap-2 ml-2">
                                                                                     <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
@@ -1593,7 +1595,8 @@ export function HistoryView({
                                                                                         <div className="font-medium text-white">
                                                                                             {formatDateTime(c.timestamp)}
                                                                                         </div>
-                                                                                        {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
+                                                                                        {c.substances?.length > 0 && <div className="text-sm mt-1 text-gray-200">{formatSubstances(c.substances)}</div>}
+{c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
                                                                                     </div>
                                                                                     <div className="flex gap-2 ml-2">
                                                                                         <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>

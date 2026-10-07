@@ -15,6 +15,9 @@ import { getUserStats, updateUserStats } from '../utils/userStats';
 
 import { OnboardingWelcome } from '../components/OnboardingWelcome';
 import { useDemoPrefs } from '../demo/DemoPrefsContext';
+import { useSubstances } from '../hooks/useSubstances';
+import { cleanEntries } from '../utils/substances';
+import { SubstancePicker } from '../components/SubstancePicker';
 import { HomeRelogio } from '../demo/HomeRelogio';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
@@ -66,13 +69,18 @@ export function HomeViewRefactored({
   const [showPastModal, setShowPastModal] = useState(false);
   const [pastDatetime, setPastDatetime] = useState('');
   const [pastNotes, setPastNotes] = useState('');
-  const openPastModal = () => { setPastDatetime(nowLocalInput()); setPastNotes(''); setShowPastModal(true); };
+  const { substances: substanceList, addSubstance, defaultEntries: defaultSubstanceEntries } = useSubstances();
+  const [pastSubstances, setPastSubstances] = useState([]);
+  const openPastModal = () => { setPastDatetime(nowLocalInput()); setPastNotes(''); setPastSubstances(defaultSubstanceEntries); setShowPastModal(true); };
   const savePastConsumption = async () => {
     if (!pastDatetime) return;
     const d = new Date(pastDatetime);
     if (isNaN(d)) return;
     try {
-      await addConsumption({ id: genId(), timestamp: d.toISOString(), date: safeToISODate(d), notes: pastNotes || '' });
+      const item = { id: genId(), timestamp: d.toISOString(), date: safeToISODate(d), notes: pastNotes || '' };
+      const chosen = cleanEntries(pastSubstances);
+      if (chosen.length) item.substances = chosen;
+      await addConsumption(item);
       showToast(t('messages.consumptionSaved'), 'success');
     } catch {
       showToast(t('messages.consumptionSaveError'), 'error');
@@ -515,7 +523,7 @@ export function HomeViewRefactored({
         aria-modal="true"
         onClick={(e) => { if (e.target === e.currentTarget) setShowPastModal(false); }}
       >
-        <div className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 motion-safe:animate-scaleIn"
+        <div className="w-full max-w-sm bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-5 max-h-[90vh] overflow-y-auto motion-safe:animate-scaleIn"
           style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-base font-bold text-white">🕓 {t('home.logPastTitle')}</h3>
@@ -531,6 +539,15 @@ export function HomeViewRefactored({
             onChange={(e) => setPastDatetime(e.target.value)}
             className="bg-gray-700 border border-gray-600 text-white w-full p-3 rounded-lg focus:ring-2 focus:ring-purple-400 mb-3"
           />
+
+          <div className="mb-3">
+            <SubstancePicker
+              value={pastSubstances}
+              onChange={setPastSubstances}
+              substances={substanceList}
+              onAddSubstance={addSubstance}
+            />
+          </div>
 
           <label className="block text-sm font-medium text-gray-300 mb-1">{t('home.logPastNotes')}</label>
           <textarea

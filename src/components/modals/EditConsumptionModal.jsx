@@ -2,6 +2,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
+import { SubstancePicker } from '../SubstancePicker';
+
+// Data LOCAL 'YYYY-MM-DD' (o toISOString dava a data em UTC: um consumo entre
+// a meia-noite e a 1h aparecia no dia anterior e, ao gravar, mudava de dia).
+const localDateKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export const EditConsumptionModal = ({
   isOpen,
@@ -9,7 +15,9 @@ export const EditConsumptionModal = ({
   editingConsumption,
   setEditingConsumption,
   onSubmit,
-  safeDate
+  safeDate,
+  substances = [],
+  onAddSubstance
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
@@ -18,7 +26,7 @@ export const EditConsumptionModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
-      <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className='text-xl font-bold text-white'>{t('modals.editConsumption.title')}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -31,13 +39,16 @@ export const EditConsumptionModal = ({
               <label className='block text-sm font-medium mb-1 text-gray-300'>{t('modals.editConsumption.dateLabel')}</label>
               <input
                 type="date"
-                value={editingConsumption.timestamp.split('T')[0]}
+                value={(() => {
+                  const d = safeDate(editingConsumption.timestamp);
+                  return d ? localDateKey(d) : '';
+                })()}
                 onChange={(e) => {
                   const currentDate = safeDate(editingConsumption.timestamp);
-                  if (!currentDate) return;
-                  const newDate = new Date(e.target.value);
-                  newDate.setHours(currentDate.getHours(), currentDate.getMinutes(), 0, 0);
-                  setEditingConsumption({...editingConsumption, timestamp: newDate.toISOString(), date: e.target.value});
+                  const [y, m, dd] = (e.target.value || '').split('-').map(Number);
+                  if (!currentDate || !y || !m || !dd) return;
+                  const newDate = new Date(y, m - 1, dd, currentDate.getHours(), currentDate.getMinutes(), 0, 0);
+                  setEditingConsumption({...editingConsumption, timestamp: newDate.toISOString(), date: localDateKey(newDate)});
                 }}
                 className='bg-gray-700 border-gray-600 text-white w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-400'
               />
@@ -61,6 +72,12 @@ export const EditConsumptionModal = ({
               />
             </div>
           </div>
+          <SubstancePicker
+            value={editingConsumption.substances || []}
+            onChange={(list) => setEditingConsumption({ ...editingConsumption, substances: list })}
+            substances={substances}
+            onAddSubstance={onAddSubstance}
+          />
           <div>
             <label className='block text-sm font-medium mb-1 text-gray-300'>{t('modals.editConsumption.notesLabel')}</label>
             <textarea

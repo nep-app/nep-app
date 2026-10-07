@@ -731,7 +731,9 @@ export const AuthProvider = ({ children }) => {
 
       // Todas as coleções com dados encriptados em repouso. Inclui copingStrategies e
       // healthLogs (sintomas) — senão ficariam indecifráveis após a mudança de PIN.
-      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'copingStrategies', 'thoughts', 'healthLogs'];
+      // Faltavam as pesagens e os impulsos surfados (ficavam cifrados com o PIN
+      // antigo e deixavam de se conseguir ler); entram agora, com as substâncias.
+      const collections = ['consumptions', 'dailyLogs', 'reflections', 'wellbeingLogs', 'cycles', 'goals', 'copingStrategies', 'thoughts', 'healthLogs', 'weighings', 'urgeEvents', 'substances'];
 
       // 1) Re-encriptar TUDO em memória primeiro. A criptografia tem yields assíncronos
       //    (setTimeout) que fechariam uma transação Dexie — por isso fica FORA da transação.
@@ -752,7 +754,8 @@ export const AuthProvider = ({ children }) => {
       //    Se algo falhar, há rollback e o utilizador permanece no PIN antigo — nunca trancado.
       await db.transaction('rw', [
         db.consumptions, db.dailyLogs, db.reflections, db.wellbeingLogs,
-        db.cycles, db.goals, db.copingStrategies, db.thoughts, db.healthLogs, db.metadata
+        db.cycles, db.goals, db.copingStrategies, db.thoughts, db.healthLogs,
+        db.weighings, db.urgeEvents, db.substances, db.metadata
       ], async () => {
         for (const [collectionName, items] of Object.entries(reencryptedByCollection)) {
           await db[collectionName].bulkPut(items);

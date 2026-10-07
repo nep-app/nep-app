@@ -1673,5 +1673,22 @@
     "tlEmpty": "Sem registos nas últimas 24 horas.",
     "legendState": "estado",
     "tapHint": "toca para ver o dia"
+  },
+  "substances": {
+    "settingsTitle": "As minhas substâncias",
+    "settingsSubtitle": "Uma lista para escolheres, se quiseres, o que foi em cada registo. O botão de registo rápido continua a ser um toque só.",
+    "settingsEmpty": "Ainda não tens nenhuma. Escreve o nome abaixo — pode ser medicação, álcool, o que fizer sentido para ti.",
+    "namePlaceholder": "Nome (ex.: Rivotril)",
+    "add": "Juntar",
+    "remove": "Tirar {{name}} da lista",
+    "defaultLabel": "Ao marcar um consumo, levar já:",
+    "defaultNone": "Nada (escolho depois, se quiser)",
+    "defaultHint": "Para mudar num registo, toca no lápis no Histórico.",
+    "privacyNote": "Fica cifrado como o resto dos teus registos e nunca entra no modo de investigação. Tirar uma substância da lista não muda os registos antigos.",
+    "pickerLabel": "O que foi (opcional)",
+    "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou nas Definições.",
+    "addOther": "outra",
+    "amountPlaceholder": "quantidade",
+    "amountLabel": "Quantidade de {{name}}"
   }
 }

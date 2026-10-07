@@ -33,6 +33,8 @@ const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 // ⚡ HomeView: IMPORT NORMAL (12.6KB, user SEMPRE visita, boot instantâneo)
 import { HomeViewRefactored } from './views/HomeViewRefactored';
 import { useDemoPrefs } from './demo/DemoPrefsContext';
+import { useSubstances } from './hooks/useSubstances';
+import { cleanEntries } from './utils/substances';
 
 // 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
 // - AnalysesView: 143KB + recharts 243KB = 386KB
@@ -174,6 +176,9 @@ export function AuthenticatedApp() {
             // Experiência do modo demo: Início com relógio e cabeçalho leve.
             const { layout: demoLayout } = useDemoPrefs();
             const slimHeader = demoLayout === 'relogio';
+            // Substâncias: a "por defeito" vai logo no registo rápido; escolhe-se
+            // ao editar o registo (e no "consumo de outra hora").
+            const { substances: substanceList, addSubstance, defaultEntries: defaultSubstanceEntries } = useSubstances();
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -335,6 +340,7 @@ export function AuthenticatedApp() {
                 try {
                     const now = new Date();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
+                    if (defaultSubstanceEntries.length) item.substances = defaultSubstanceEntries;
                     await addConsumption(item);
                     showToast(t('messages.consumptionSaved'), 'success');
                 } catch (error) {
@@ -487,7 +493,9 @@ export function AuthenticatedApp() {
                 if (!editingConsumption) return;
 
                 try {
-                    await updateItem('consumptions', editingConsumption.id, editingConsumption);
+                    const edited = { ...editingConsumption };
+                    if (Array.isArray(edited.substances)) edited.substances = cleanEntries(edited.substances);
+                    await updateItem('consumptions', edited.id, edited);
                     setShowEditConsumptionModal(false);
                     setEditingConsumption(null);
                     showToast(t('messages.consumptionEdited'), 'success');
@@ -978,6 +986,7 @@ export function AuthenticatedApp() {
                     thoughts,
                     goals,
                     urgeEvents,
+                    substances: substanceList,
                     healthLogs,
                     copingStrategies: copingStrategiesData || [],
                 };
@@ -1005,6 +1014,7 @@ export function AuthenticatedApp() {
                     thoughts: addThought,
                     goals: addGoal,
                     urgeEvents: (item) => addItem('urgeEvents', item),
+                    substances: (item) => addItem('substances', item),
                     healthLogs: (item) => addItem('healthLogs', item),
                     copingStrategies: (item) => addItem('copingStrategies', item),
                 };
@@ -1453,6 +1463,8 @@ export function AuthenticatedApp() {
                                 setEditingConsumption={setEditingConsumption}
                                 onSubmit={saveEditedConsumption}
                                 safeDate={safeDate}
+                                substances={substanceList}
+                                onAddSubstance={addSubstance}
                             />
                         </Suspense>
 

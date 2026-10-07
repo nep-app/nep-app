@@ -47,7 +47,7 @@ service cloud.firestore {
       return collectionId in [
         'consumptions', 'dailyLogs', 'reflections',
         'wellbeingLogs', 'cycles', 'goals', 'thoughts', 'weighings',
-        'urgeEvents'
+        'urgeEvents', 'substances'
       ];
     }
 

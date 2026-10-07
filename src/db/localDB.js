@@ -94,6 +94,13 @@ export class LocalDatabase extends Dexie {
       syncQueue: '++id, collection, documentId, operation, timestamp, retries'
     });
 
+    // Versão 5: a lista de substâncias de cada pessoa (nome + qual é a "por
+    // defeito"). Cifrada como o resto — só ficam em claro o id e as datas —
+    // e sincronizada, para não se perder ao trocar de telemóvel.
+    this.version(5).stores({
+      substances: '++id, createdAt, syncStatus, lastModified'
+    });
+
     // Referências tipadas para as tabelas
     this.consumptions = this.table('consumptions');
     this.dailyLogs = this.table('dailyLogs');
@@ -106,6 +113,7 @@ export class LocalDatabase extends Dexie {
     this.healthLogs = this.table('healthLogs');
     this.weighings = this.table('weighings');
     this.urgeEvents = this.table('urgeEvents');
+    this.substances = this.table('substances');
     this.metadata = this.table('metadata');
     this.syncQueue = this.table('syncQueue');
   }
@@ -174,6 +182,7 @@ export async function clearAllData() {
     db.healthLogs,
     db.weighings,
     db.urgeEvents,
+    db.substances,
     db.metadata,
     db.syncQueue
   ], async () => {
@@ -188,6 +197,7 @@ export async function clearAllData() {
     await db.healthLogs.clear();
     await db.weighings.clear();
     await db.urgeEvents.clear();
+    await db.substances.clear();
     await db.metadata.clear();
     await db.syncQueue.clear();
   });
@@ -210,6 +220,7 @@ export async function clearUserDataOnly() {
     db.healthLogs,
     db.weighings,
     db.urgeEvents,
+    db.substances,
     db.syncQueue
   ], async () => {
     await db.consumptions.clear();
@@ -223,6 +234,7 @@ export async function clearUserDataOnly() {
     await db.healthLogs.clear();
     await db.weighings.clear();
     await db.urgeEvents.clear();
+    await db.substances.clear();
     await db.syncQueue.clear();
     // NÃO limpa db.metadata - mantém userEmail, salt, pinVerification
   });
@@ -264,6 +276,7 @@ export async function getDatabaseStats() {
     thoughts: await db.thoughts.count(),
     healthLogs: await db.healthLogs.count(),
     urgeEvents: await db.urgeEvents.count(),
+    substances: await db.substances.count(),
     syncQueue: await db.syncQueue.count()
   };
 
