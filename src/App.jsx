@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFirebaseAuth } from './utils/firebase';
 import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
@@ -34,7 +34,7 @@ const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 import { HomeViewRefactored } from './views/HomeViewRefactored';
 import { useDemoPrefs } from './demo/DemoPrefsContext';
 import { useSubstances } from './hooks/useSubstances';
-import { applyDemoTheme, readAppTheme } from './demo/themes';
+import { applyDemoTheme, readAppTheme, subscribeAppTheme } from './demo/themes';
 import { cleanEntries } from './utils/substances';
 
 // 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
@@ -177,6 +177,10 @@ export function AuthenticatedApp() {
             // Experiência do modo demo: Início com relógio e cabeçalho leve.
             const { layout: demoLayout } = useDemoPrefs();
             const slimHeader = demoLayout === 'relogio';
+            // Com um tema de cores (letra mais larga) o cabeçalho grande ficava
+            // enorme: usa-se o compacto também no Início de sempre.
+            const appTheme = useSyncExternalStore(subscribeAppTheme, readAppTheme, () => 'atual');
+            const compactHeader = slimHeader || appTheme !== 'atual';
             // Substâncias: a "por defeito" vai logo no registo rápido; escolhe-se
             // ao editar o registo (e no "consumo de outra hora").
             const { substances: substanceList, addSubstance, defaultEntries: defaultSubstanceEntries } = useSubstances();
@@ -1199,28 +1203,33 @@ export function AuthenticatedApp() {
             return (
                 <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24 overflow-x-hidden'>
                     <div className="max-w-2xl mx-auto">
-                        {slimHeader ? (
+                        {compactHeader ? (
                         // Cabeçalho COMPACTO do Início relógio: o mesmo título N·E·P com as
                         // palavras à frente e o slogan, em menos de metade da altura. A
                         // Mensagem de Hoje é a primeira do cartão de mensagens, em baixo.
-                        <div className='bg-gray-800/60 rounded-2xl px-4 py-3 mb-4'>
-                            <div className='flex justify-between items-start gap-3'>
-                                <div className='leading-tight'>
-                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-purple-500 leading-none w-5'>N</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticN')}</span></div>
-                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-pink-500 leading-none w-5'>E</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticE')}</span></div>
-                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-blue-500 leading-none w-5'>P</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticP')}</span></div>
+                        <div className='bg-gray-800/60 rounded-2xl px-3 py-2 mb-3'>
+                            <div className='flex justify-between items-center gap-2'>
+                                <div className='leading-none space-y-0.5'>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-purple-500 leading-none w-4'>N</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticN')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-pink-500 leading-none w-4'>E</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticE')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-blue-500 leading-none w-4'>P</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticP')}</span></div>
                                 </div>
-                                <div className='flex flex-col items-end gap-1 text-right'>
-                                    <span className='text-[11px] text-gray-400'>
+                                <div className='flex flex-col items-end text-right text-[10px] leading-snug'>
+                                    <span className='text-gray-400 whitespace-nowrap'>
                                         <span className='text-purple-400 font-bold'>N</span>oticing. <span className='text-pink-400 font-bold'>E</span>xploring. <span className='text-blue-400 font-bold'>P</span>lanning.
                                     </span>
-                                    <span className='text-[11px] italic text-gray-500'>{t('home.motto')}</span>
-                                    <span className='text-[11px] text-gray-400'>
+                                    <span className='italic text-gray-500 whitespace-nowrap'>{t('home.motto')}</span>
+                                    <span className='text-gray-400 whitespace-nowrap'>
                                         {new Date().toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}
                                         {streaks.current > 0 ? ` · 🔥 ${streaks.current} ${t('common.day', { count: streaks.current })}` : ''}
                                     </span>
                                 </div>
                             </div>
+                            {/* No Início de sempre a Mensagem de Hoje vivia no cabeçalho grande;
+                                no relógio é a primeira do cartão de mensagens, em baixo. */}
+                            {!slimHeader && currentReflection && (
+                                <p className='text-[11px] italic text-gray-300 mt-1.5 pt-1.5 border-t border-gray-700'>💜 {currentReflection}</p>
+                            )}
                         </div>
                         ) : (
                         <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>

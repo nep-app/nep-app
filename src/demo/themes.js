@@ -57,10 +57,19 @@ const contrast = (a, b) => {
   return (l1 + 0.05) / (l2 + 0.05);
 };
 
+// `app: true` = também aparece nas Definições da app a sério. Os outros só
+// existem no demo, para comparar.
 export const DEMO_THEMES = [
-  { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv' },
-  { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#F07A52', b: '#7EA0F0', c: '#E9A1B9', d: '#6FBFA4', font: 'vv', light: true },
+  { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv', app: true },
+  { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#E2582E', b: '#4F78E0', c: '#D9628E', d: '#2E9E7C', font: 'vv', light: true, app: true },
+  { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
+  { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
+  { id: 'petroleo', name: 'Petróleo e laranja', bg: '#0B1A1A', ink: '#E9F0EE', a: '#FF8A3D', b: '#6EC1FF', c: '#FFB38A', d: '#4FD1C5', font: 'vv' },
+  { id: 'void', name: 'Void terminal', bg: '#05060A', ink: '#F2F2F0', a: '#9DFF3C', b: '#FF10D0', c: '#FF10D0', d: '#4FE8DE', font: 'vv' },
+  { id: 'amarelo', name: 'Amarelo rizoma (claro)', bg: '#F5CC00', ink: '#05060A', a: '#FF6FDF', b: '#B49BFF', c: '#FF6FDF', d: '#FFFFFF', font: 'vv', light: true },
+  { id: 'osso', name: 'Preto e osso', bg: '#0B0B0B', ink: '#EDEAE3', a: '#D8D4CB', b: '#B5B2AA', c: '#D8D4CB', d: '#B5B2AA', font: 'vv' },
 ];
+export const APP_THEMES = DEMO_THEMES.filter(t => t.app);
 
 export const DEMO_THEME_KEY = 'nep_demo_theme';
 
@@ -70,15 +79,19 @@ export const APP_THEME_KEY = 'nep_theme';
 export const readAppTheme = () => {
   try {
     const v = localStorage.getItem(APP_THEME_KEY);
-    return DEMO_THEMES.some(t => t.id === v) ? v : 'atual';
+    return APP_THEMES.some(t => t.id === v) ? v : 'atual';
   } catch { return 'atual'; }
 };
+const themeListeners = new Set();
 export const saveAppTheme = (id) => {
   try {
-    if (DEMO_THEMES.some(t => t.id === id)) localStorage.setItem(APP_THEME_KEY, id);
+    if (APP_THEMES.some(t => t.id === id)) localStorage.setItem(APP_THEME_KEY, id);
     else localStorage.removeItem(APP_THEME_KEY);
   } catch { /* fica só nesta sessão */ }
+  themeListeners.forEach(fn => fn());
 };
+// Para o React saber quando a escolha muda (ex.: o cabeçalho compacto).
+export const subscribeAppTheme = (fn) => { themeListeners.add(fn); return () => themeListeners.delete(fn); };
 
 const varsFor = (theme) => {
   const bg = rgb(theme.bg);
@@ -87,13 +100,22 @@ const varsFor = (theme) => {
   const ends = { ink, bg };
 
   for (const fam of NEUTRALS) {
-    for (const s of SHADES) out[`--c-${fam}-${s}`] = triplet(mix(ink, bg, NEUTRAL_T[s]));
+    for (const s of SHADES) {
+      let c = mix(ink, bg, NEUTRAL_T[s]);
+      // Cinzentos 400–500 são o texto secundário: têm de se ler no fundo.
+      if (s === '400' || s === '500') {
+        let k = 0;
+        while (contrast(c, bg) < 4.5 && k < 20) { c = mix(c, ink, 0.08); k++; }
+      }
+      out[`--c-${fam}-${s}`] = triplet(c);
+    }
   }
   // Os tons 500–700 são os dos botões e etiquetas cheias, quase sempre com
   // texto "branco" por cima (que aqui é o texto do tema). Um destaque claro
   // num tema escuro (ou escuro num claro) deixava o texto ilegível: estes tons
   // são empurrados para o fundo até o texto ter contraste de leitura (4,5:1).
   const FILL_SHADES = new Set(['500', '600', '700']);
+  const TEXT_SHADES = new Set(['200', '300', '400']);
   const accentScale = (base, prefix) => {
     for (const s of SHADES) {
       const [toward, t] = ACCENT_MIX[s];
@@ -101,6 +123,13 @@ const varsFor = (theme) => {
       if (FILL_SHADES.has(s)) {
         let k = 0;
         while (contrast(c, ink) < 4.5 && k < 20) { c = mix(c, bg, 0.08); k++; }
+      }
+      // Os tons 200–400 são quase sempre TEXTO de cor por cima do fundo. Num
+      // tema claro (creme), um pastel ficava ilegível: puxam-se para o texto
+      // até se lerem bem contra o fundo (4,5:1).
+      if (TEXT_SHADES.has(s)) {
+        let k = 0;
+        while (contrast(c, bg) < 4.5 && k < 20) { c = mix(c, ink, 0.08); k++; }
       }
       out[`--c-${prefix}-${s}`] = triplet(c);
     }

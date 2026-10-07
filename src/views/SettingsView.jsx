@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
 import { useSubstances } from '../hooks/useSubstances';
 import { MAX_NAME } from '../utils/substances';
-import { DEMO_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
+import { APP_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
 import { useDemoPrefs, saveAppLayout } from '../demo/DemoPrefsContext';
 /* global __APP_VERSION__ */
 // Versão vinda do package.json (injetada pelo Vite). Fonte única.
@@ -152,7 +152,7 @@ function ThemeSettings() {
         saveAppTheme(id);
         applyDemoTheme(id);
     };
-    const options = [{ id: 'atual', name: t('settings.themeCurrent') }, ...DEMO_THEMES.map(th => ({ id: th.id, name: th.name }))];
+    const options = [{ id: 'atual', name: t('settings.themeCurrent') }, ...APP_THEMES.map(th => ({ id: th.id, name: th.name }))];
     return (
         <div className="space-y-2">
             {options.map(o => (
