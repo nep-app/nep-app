@@ -5,8 +5,6 @@ import { PushRemindersSettings } from '../components/PushRemindersSettings';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
-import { useSubstances } from '../hooks/useSubstances';
-import { MAX_NAME } from '../utils/substances';
 import { APP_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
 import { useDemoPrefs, saveAppLayout } from '../demo/DemoPrefsContext';
 /* global __APP_VERSION__ */
@@ -39,79 +37,6 @@ function Section({ icon, title, subtitle, defaultOpen = false, children }) {
                     {children}
                 </div>
             )}
-        </div>
-    );
-}
-
-// ── As minhas substâncias ───────────────────────────────────────────────────
-// A lista para escolher depressa o que foi em cada registo, e qual vai logo
-// no registo rápido. Tirar daqui não mexe nos registos antigos.
-function SubstancesSettings() {
-    const { t } = useTranslation();
-    const { substances, addSubstance, removeSubstance, setDefaultSubstance } = useSubstances();
-    const [name, setName] = useState('');
-    const [busy, setBusy] = useState(false);
-    const current = substances.find(s => s.isDefault);
-
-    const add = async () => {
-        if (!name.trim() || busy) return;
-        setBusy(true);
-        try { await addSubstance(name); setName(''); } finally { setBusy(false); }
-    };
-
-    return (
-        <div className="space-y-4">
-            {substances.length === 0 ? (
-                <p className="text-sm text-gray-400">{t('substances.settingsEmpty')}</p>
-            ) : (
-                <ul className="space-y-2">
-                    {substances.map(s => (
-                        <li key={s.id} className="flex items-center justify-between gap-2 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2">
-                            <span className="text-sm text-white min-w-0 truncate">{s.name}</span>
-                            <button
-                                onClick={() => removeSubstance(s.id)}
-                                aria-label={t('substances.remove', { name: s.name })}
-                                className="text-gray-400 hover:text-gray-200 px-1 flex-shrink-0"
-                            >
-                                <Icons.X className="w-4 h-4" />
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            <div className="flex gap-2">
-                <input
-                    value={name}
-                    maxLength={MAX_NAME}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
-                    placeholder={t('substances.namePlaceholder')}
-                    aria-label={t('substances.namePlaceholder')}
-                    className="flex-1 min-w-0 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 p-2 rounded-lg focus:ring-2 focus:ring-purple-400"
-                />
-                <button onClick={add} disabled={busy || !name.trim()} className="px-4 rounded-lg bg-purple-600 text-white text-sm font-medium disabled:opacity-50">
-                    {t('substances.add')}
-                </button>
-            </div>
-
-            {substances.length > 0 && (
-                <div>
-                    <label htmlFor="default-substance" className="block text-sm font-medium text-gray-300 mb-1">{t('substances.defaultLabel')}</label>
-                    <select
-                        id="default-substance"
-                        value={current ? current.id : ''}
-                        onChange={(e) => setDefaultSubstance(e.target.value || null)}
-                        className="w-full bg-gray-700 border border-gray-600 text-white p-2 rounded-lg focus:ring-2 focus:ring-purple-400"
-                    >
-                        <option value="">{t('substances.defaultNone')}</option>
-                        {substances.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                    <p className="text-xs text-gray-400 mt-1">{t('substances.defaultHint')}</p>
-                </div>
-            )}
-
-            <p className="text-xs text-gray-400">{t('substances.privacyNote')}</p>
         </div>
     );
 }
@@ -336,43 +261,28 @@ export const SettingsView = ({
                 </div>
             </div>
 
-            {/* ── Cores (abre/fecha) — não aparece no demo ── */}
-            {!isDemo && (
-                <Section
-                    icon={<span aria-hidden="true">🎨</span>}
-                    title={t('settings.themeTitle')}
-                    subtitle={t('settings.themeSubtitle')}
-                >
-                    <ThemeSettings />
-                </Section>
-            )}
-            {!isDemo && (
-                <Section
-                    icon={<span aria-hidden="true">🕐</span>}
-                    title={t('settings.layoutTitle')}
-                    subtitle={t('settings.layoutSubtitle')}
-                >
-                    <LayoutSettings />
-                </Section>
-            )}
-
-            {/* ── As minhas substâncias (abre/fecha) ── */}
-            <Section
-                icon={<span aria-hidden="true">🧪</span>}
-                title={t('substances.settingsTitle')}
-                subtitle={t('substances.settingsSubtitle')}
-            >
-                <SubstancesSettings />
-            </Section>
-
-            {/* ── Notificações (abre/fecha) ── */}
+            {/* ── Início, cores e notificações (tudo junto) ── */}
             <Section
                 icon={<Icons.Bell className="w-5 h-5 text-purple-400" />}
-                title={pt ? 'Notificações' : 'Notifications'}
-                subtitle={pt
-                    ? 'Lembretes que chegam mesmo com a app fechada.'
-                    : 'Reminders that arrive even when the app is closed.'}
+                title={t('settings.screenTitle')}
             >
+                {/* Página inicial e cores não aparecem no demo: lá manda o selector de cima. */}
+                {!isDemo && (
+                    <>
+                        <p className="text-sm font-semibold text-white mb-1">🕐 {t('settings.layoutTitle')}</p>
+                        <p className="text-xs text-gray-400 mb-2">{t('settings.layoutSubtitle')}</p>
+                        <LayoutSettings />
+                        <div className="border-t border-gray-700 my-4" />
+                        <p className="text-sm font-semibold text-white mb-1">🎨 {t('settings.themeTitle')}</p>
+                        <p className="text-xs text-gray-400 mb-2">{t('settings.themeSubtitle')}</p>
+                        <ThemeSettings />
+                        <div className="border-t border-gray-700 my-4" />
+                    </>
+                )}
+                <p className="text-sm font-semibold text-white mb-1">🔔 {pt ? 'Notificações' : 'Notifications'}</p>
+                <p className="text-xs text-gray-400 mb-2">{pt
+                    ? 'Lembretes que chegam mesmo com a app fechada.'
+                    : 'Reminders that arrive even when the app is closed.'}</p>
                 <PushRemindersSettings />
 
                 {/* Surfar o impulso — ligado às metas: aparece quando consumir agora

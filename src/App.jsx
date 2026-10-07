@@ -179,7 +179,7 @@ export function AuthenticatedApp() {
             const slimHeader = demoLayout === 'relogio';
             // Com um tema de cores (letra mais larga) o cabeçalho grande ficava
             // enorme: usa-se o compacto também no Início de sempre.
-            const appTheme = useSyncExternalStore(subscribeAppTheme, readAppTheme, () => 'atual');
+            const appTheme = useSyncExternalStore(subscribeAppTheme, readAppTheme, () => 'riso');
             const compactHeader = slimHeader || appTheme !== 'atual';
             // Substâncias: a "por defeito" vai logo no registo rápido; escolhe-se
             // ao editar o registo (e no "consumo de outra hora").

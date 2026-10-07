@@ -1,7 +1,8 @@
 // ===== TEMAS DE CORES =====
 // Nasceram no demo, para a Teresa ver as direcções visuais com os ecrãs todos.
 // Os escolhidos (Riso e Bauhaus) passaram também para a app a sério, como
-// opção nas Definições (só deste dispositivo; 'atual' = as cores de sempre).
+// opção nas Definições (só deste dispositivo; Riso por defeito, 'atual' =
+// as cores de sempre).
 // Só se aplicam com a app destrancada: no PIN e na calculadora do disfarce a
 // app continua com o aspeto de sempre.
 //
@@ -61,7 +62,7 @@ const contrast = (a, b) => {
 // existem no demo, para comparar.
 export const DEMO_THEMES = [
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv', app: true },
-  { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#E2582E', b: '#4F78E0', c: '#D9628E', d: '#2E9E7C', font: 'vv', light: true, app: true },
+  { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#C4421C', b: '#2F56C2', c: '#BC3A72', d: '#17785C', font: 'vv', light: true, app: true },
   { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'petroleo', name: 'Petróleo e laranja', bg: '#0B1A1A', ink: '#E9F0EE', a: '#FF8A3D', b: '#6EC1FF', c: '#FFB38A', d: '#4FD1C5', font: 'vv' },
@@ -76,17 +77,20 @@ export const DEMO_THEME_KEY = 'nep_demo_theme';
 // Na app a sério (fora do demo) a escolha é só deste dispositivo e só muda o
 // aspeto: 'atual' (ou nada) = as cores de sempre.
 export const APP_THEME_KEY = 'nep_theme';
+// Por defeito (desde a v6.67.0) é o Riso para toda a gente; 'atual' (as
+// cores de sempre) só se a pessoa o escolher.
+export const DEFAULT_APP_THEME = 'riso';
 export const readAppTheme = () => {
   try {
     const v = localStorage.getItem(APP_THEME_KEY);
-    return APP_THEMES.some(t => t.id === v) ? v : 'atual';
-  } catch { return 'atual'; }
+    if (v === 'atual') return 'atual';
+    return APP_THEMES.some(t => t.id === v) ? v : DEFAULT_APP_THEME;
+  } catch { return DEFAULT_APP_THEME; }
 };
 const themeListeners = new Set();
 export const saveAppTheme = (id) => {
   try {
-    if (APP_THEMES.some(t => t.id === id)) localStorage.setItem(APP_THEME_KEY, id);
-    else localStorage.removeItem(APP_THEME_KEY);
+    localStorage.setItem(APP_THEME_KEY, APP_THEMES.some(t => t.id === id) ? id : 'atual');
   } catch { /* fica só nesta sessão */ }
   themeListeners.forEach(fn => fn());
 };

@@ -367,7 +367,8 @@
     "layoutTitle": "Home screen",
     "layoutSubtitle": "Only changes how Home looks, and only on this device.",
     "layoutClock": "Day clock",
-    "layoutCurrent": "The usual one"
+    "layoutCurrent": "The usual one",
+    "screenTitle": "Home, colours & notifications"
   },
   "modals": {
     "dailyLog": {
@@ -1693,7 +1694,7 @@
     "defaultHint": "To change it on a log, tap the pencil in History.",
     "privacyNote": "Encrypted like the rest of your logs and never included in research mode. Removing a substance from the list doesn't change past logs.",
     "pickerLabel": "What it was (optional)",
-    "pickerEmpty": "No substances on your list yet. Add one here or in Settings.",
+    "pickerEmpty": "No substances on your list yet. Add one here or in Goals.",
     "addOther": "other",
     "amountPlaceholder": "amount",
     "amountLabel": "Amount of {{name}}"

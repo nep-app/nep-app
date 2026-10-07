@@ -367,7 +367,8 @@
     "layoutTitle": "Página inicial",
     "layoutSubtitle": "Muda só a forma do Início, e só neste dispositivo.",
     "layoutClock": "Relógio do dia",
-    "layoutCurrent": "A de sempre"
+    "layoutCurrent": "A de sempre",
+    "screenTitle": "Início, cores e notificações"
   },
   "modals": {
     "dailyLog": {
@@ -1693,7 +1694,7 @@
     "defaultHint": "Para mudar num registo, toca no lápis no Histórico.",
     "privacyNote": "Fica cifrado como o resto dos teus registos e nunca entra no modo de investigação. Tirar uma substância da lista não muda os registos antigos.",
     "pickerLabel": "O que foi (opcional)",
-    "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou nas Definições.",
+    "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou nas Metas.",
     "addOther": "outra",
     "amountPlaceholder": "quantidade",
     "amountLabel": "Quantidade de {{name}}"
