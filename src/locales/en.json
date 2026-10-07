@@ -363,7 +363,11 @@
     ],
     "themeTitle": "Colours",
     "themeSubtitle": "Only changes the look, and only on this device. Your data isn't touched.",
-    "themeCurrent": "The usual ones"
+    "themeCurrent": "The usual ones",
+    "layoutTitle": "Home screen",
+    "layoutSubtitle": "Only changes how Home looks, and only on this device.",
+    "layoutClock": "Day clock",
+    "layoutCurrent": "The usual one"
   },
   "modals": {
     "dailyLog": {

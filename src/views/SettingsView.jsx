@@ -8,6 +8,7 @@ import { getDataMode, setDataMode } from '../services/researchService';
 import { useSubstances } from '../hooks/useSubstances';
 import { MAX_NAME } from '../utils/substances';
 import { DEMO_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
+import { useDemoPrefs, saveAppLayout } from '../demo/DemoPrefsContext';
 /* global __APP_VERSION__ */
 // Versão vinda do package.json (injetada pelo Vite). Fonte única.
 const APP_VERSION = __APP_VERSION__;
@@ -111,6 +112,33 @@ function SubstancesSettings() {
             )}
 
             <p className="text-xs text-gray-400">{t('substances.privacyNote')}</p>
+        </div>
+    );
+}
+
+// ── Página inicial (só fora do demo; o demo usa sempre o relógio) ───────────
+function LayoutSettings() {
+    const { t } = useTranslation();
+    const { layout } = useDemoPrefs();
+    const options = [
+        { id: 'relogio', name: t('settings.layoutClock') },
+        { id: 'atual', name: t('settings.layoutCurrent') },
+    ];
+    return (
+        <div className="space-y-2">
+            {options.map(o => (
+                <button
+                    key={o.id}
+                    onClick={() => saveAppLayout(o.id)}
+                    aria-pressed={layout === o.id}
+                    className={'w-full text-left px-4 py-3 rounded-lg border-2 transition-all ' +
+                        (layout === o.id
+                            ? 'bg-purple-600 border-purple-500 text-white font-semibold'
+                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')}
+                >
+                    {layout === o.id ? '✓ ' : ''}{o.name}
+                </button>
+            ))}
         </div>
     );
 }
@@ -316,6 +344,15 @@ export const SettingsView = ({
                     subtitle={t('settings.themeSubtitle')}
                 >
                     <ThemeSettings />
+                </Section>
+            )}
+            {!isDemo && (
+                <Section
+                    icon={<span aria-hidden="true">🕐</span>}
+                    title={t('settings.layoutTitle')}
+                    subtitle={t('settings.layoutSubtitle')}
+                >
+                    <LayoutSettings />
                 </Section>
             )}
 

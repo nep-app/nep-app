@@ -363,7 +363,11 @@
     ],
     "themeTitle": "Cores",
     "themeSubtitle": "Muda só o aspeto, e só neste dispositivo. Os teus dados não mexem.",
-    "themeCurrent": "As de sempre"
+    "themeCurrent": "As de sempre",
+    "layoutTitle": "Página inicial",
+    "layoutSubtitle": "Muda só a forma do Início, e só neste dispositivo.",
+    "layoutClock": "Relógio do dia",
+    "layoutCurrent": "A de sempre"
   },
   "modals": {
     "dailyLog": {
