@@ -775,10 +775,7 @@
     "demoHint": "Sem registo — dados de exemplo, nada é guardado",
     "demoBanner": "🎭 Modo Demo — os dados não são guardados",
     "demoExit": "Sair do demo",
-    "demoTheme": "Tema:",
-    "demoLayout": "Início",
-    "demoLayoutCurrent": "Início de agora",
-    "demoLayoutClock": "Relógio"
+    "demoTheme": "Tema:"
   },
   "patterns": {
     "title": "Padrões",

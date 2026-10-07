@@ -11,11 +11,10 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/700.css';
 import '@fontsource/unbounded/800.css';
 
+// Chave antiga do selector de início (já não existe: o demo usa sempre o
+// relógio). Só se limpa ao sair.
 const DEMO_LAYOUT_KEY = 'nep_demo_layout';
-
-const readLayout = () => {
-  try { return localStorage.getItem(DEMO_LAYOUT_KEY) || 'atual'; } catch { return 'atual'; }
-};
+const DEMO_PREFS = { layout: 'relogio' };
 
 const readTheme = () => {
   // No demo já não há 'Atual': um tema guardado que não esteja na lista
@@ -27,10 +26,6 @@ const readTheme = () => {
 export function DemoShell() {
   const { t } = useTranslation();
   const [theme, setTheme] = useState(readTheme);
-  const [layout, setLayout] = useState(readLayout);
-  useEffect(() => {
-    try { localStorage.setItem(DEMO_LAYOUT_KEY, layout); } catch { /* só nesta sessão */ }
-  }, [layout]);
 
   useEffect(() => {
     applyDemoTheme(theme);
@@ -74,18 +69,6 @@ export function DemoShell() {
             {DEMO_THEMES.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
           </select>
         </label>
-        <select
-          value={layout}
-          onChange={(e) => setLayout(e.target.value)}
-          aria-label={t('firebase.demoLayout')}
-          style={{
-            background: 'rgba(255,255,255,0.95)', color: '#1f2937', border: 0,
-            borderRadius: '6px', padding: '3px 6px', fontSize: '12px', fontWeight: 600, flex: '1 1 0', minWidth: 0,
-          }}
-        >
-          <option value="atual">{t('firebase.demoLayoutCurrent')}</option>
-          <option value="relogio">{t('firebase.demoLayoutClock')}</option>
-        </select>
         <button
           onClick={exit}
           style={{
@@ -100,7 +83,7 @@ export function DemoShell() {
 
       {/* Espaço para o banner não tapar conteúdo */}
       <div style={{ paddingTop: '38px' }}>
-        <DemoPrefsContext.Provider value={{ layout }}>
+        <DemoPrefsContext.Provider value={DEMO_PREFS}>
           <AuthenticatedApp />
         </DemoPrefsContext.Provider>
       </div>
