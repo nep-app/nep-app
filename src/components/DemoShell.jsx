@@ -18,7 +18,8 @@ const readLayout = () => {
 };
 
 const readTheme = () => {
-  try { return localStorage.getItem(DEMO_THEME_KEY) || 'atual'; } catch { return 'atual'; }
+  // Um tema que entretanto saiu da lista volta ao Atual.
+  try { const v = localStorage.getItem(DEMO_THEME_KEY); return DEMO_THEMES.some(t => t.id === v) ? v : 'atual'; } catch { return 'atual'; }
 };
 
 export function DemoShell() {

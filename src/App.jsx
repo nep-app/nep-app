@@ -1179,8 +1179,8 @@ export function AuthenticatedApp() {
                     <div className="max-w-2xl mx-auto">
                         {slimHeader ? (
                         // Cabeçalho COMPACTO do Início relógio: o mesmo título N·E·P com as
-                        // palavras à frente, o slogan e a Mensagem de Hoje — tudo o que o
-                        // cabeçalho grande tinha, em menos de metade da altura.
+                        // palavras à frente e o slogan, em menos de metade da altura. A
+                        // Mensagem de Hoje é a primeira do cartão de mensagens, em baixo.
                         <div className='bg-gray-800/60 rounded-2xl px-4 py-3 mb-4'>
                             <div className='flex justify-between items-start gap-3'>
                                 <div className='leading-tight'>
@@ -1199,11 +1199,6 @@ export function AuthenticatedApp() {
                                     </span>
                                 </div>
                             </div>
-                            {currentReflection && (
-                                <p className='mt-2 pt-2 border-t border-gray-700/60 text-xs text-gray-300'>
-                                    <span className='font-semibold text-purple-300'>💜 {t('home.dailyMessage')}:</span> <span className='italic'>{currentReflection}</span>
-                                </p>
-                            )}
                         </div>
                         ) : (
                         <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>

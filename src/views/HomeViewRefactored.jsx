@@ -244,6 +244,7 @@ export function HomeViewRefactored({
       <HomeRelogio
         onMarkConsumption={handleMarkConsumption}
         onLogPast={openPastModal}
+        currentReflection={currentReflection}
         alerts={cachedAlerts}
       />
     ) : (

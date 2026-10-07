@@ -1675,7 +1675,6 @@
     "tlSince": "{{ago}} since the last one",
     "tlEmpty": "Nothing logged in the last 24 hours.",
     "legendState": "state",
-    "tapHint": "tap to see your day",
-    "seeDay": "See my day (last 24h)"
+    "tapHint": "tap to see your day"
   }
 }

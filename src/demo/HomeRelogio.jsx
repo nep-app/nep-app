@@ -63,7 +63,7 @@ const sleepInterval = (cycle) => {
 
 const OPTION = 'min-h-[64px] rounded-2xl border px-1 py-2 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-1 transition-colors';
 
-export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
+export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [] }) {
   const { t, i18n } = useTranslation();
   const { consumptions = [], cycles = [], wellbeingLogs = [], weighings = [], goals = [] } = useData();
   const { setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal, setShowThoughtsModal } = useUI();
@@ -99,6 +99,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
   // ----- Mensagens (cada uma só aparece se houver dados para ela) -----
   const messages = useMemo(() => {
     const out = [];
+    // A Mensagem de Hoje é sempre a primeira a aparecer (pedido da Teresa).
+    if (currentReflection) out.push({ label: t('home.dailyMessage'), text: currentReflection });
     if (data.last != null) {
       out.push({ label: t('demoHome.msgLastLabel'), text: t('demoHome.msgLast', { time: hhmm(data.last), ago: agoText(now - data.last) }) });
     }
@@ -122,9 +124,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
     for (const a of alerts) {
       if (a && a.text) out.push({ label: t('demoHome.msgGoalLabel'), text: a.text });
     }
-    // A Mensagem de Hoje passou para o cabeçalho, à vista; aqui só repetia.
     return out;
-  }, [data, goals, weighings, consumptions, cycles, alerts, now, t, i18n.language]);
+  }, [data, goals, weighings, consumptions, cycles, alerts, currentReflection, now, t, i18n.language]);
 
   const [msgIdx, setMsgIdx] = useState(0);
   const msg = messages[msgIdx % Math.max(1, messages.length)];
@@ -143,7 +144,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
         type="button"
         onClick={() => setShowLine(true)}
         aria-label={t('demoHome.openTimeline')}
-        className="relative w-64 h-64 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+        className="relative w-64 h-64 rounded-full transition-transform active:scale-[0.97] hover:ring-2 hover:ring-violet-400/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
       >
         <svg width="256" height="256" viewBox="-20 -20 340 340" aria-hidden="true">
           <circle cx={C} cy={C} r={R} fill="none" className="stroke-gray-700" strokeWidth="22" />
@@ -164,23 +165,14 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
             <>
               <span className="text-3xl font-semibold text-gray-100 leading-none">{agoText(now - data.last)}</span>
               <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
-              <span className="text-[10px] text-violet-300 mt-1.5">{t('demoHome.tapHint')}</span>
+              <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/25 border border-violet-300/50 text-[11px] font-semibold text-violet-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
             </>
           ) : (
-            <span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span>
+            <><span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span><span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/25 border border-violet-300/50 text-[11px] font-semibold text-violet-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span></>
           )}
         </span>
       </button>
       {!hasAnything && <p className="text-xs text-gray-500 -mt-2">{t('demoHome.tlEmpty')}</p>}
-      <button
-        type="button"
-        onClick={() => setShowLine(true)}
-        className="-mt-1 inline-flex items-center gap-2 px-4 h-11 rounded-full bg-violet-500/15 border border-violet-400/40 text-violet-100 text-sm font-medium hover:bg-violet-500/25 transition-colors"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v18M7 7h10M7 12h10M7 17h6" /></svg>
-        {t('demoHome.seeDay')}
-        <span aria-hidden="true">›</span>
-      </button>
       {hasAnything && (
         <div className="-mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-gray-400" aria-hidden="true">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />{t('demoHome.tlUse')}</span>

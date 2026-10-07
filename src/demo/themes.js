@@ -50,14 +50,8 @@ const contrast = (a, b) => {
 
 export const DEMO_THEMES = [
   { id: 'atual', name: 'Atual' },
-  { id: 'osso', name: 'Preto e osso', bg: '#0B0B0B', ink: '#EDEAE3', a: '#D8D4CB', b: '#B5B2AA', c: '#D8D4CB', d: '#B5B2AA', font: 'vv' },
-  { id: 'void', name: 'Void terminal', bg: '#05060A', ink: '#F2F2F0', a: '#9DFF3C', b: '#FF10D0', c: '#FF10D0', d: '#4FE8DE', font: 'vv' },
-  { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
-  { id: 'petroleo', name: 'Petróleo e laranja', bg: '#0B1A1A', ink: '#E9F0EE', a: '#FF8A3D', b: '#6EC1FF', c: '#FFB38A', d: '#4FD1C5', font: 'vv' },
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv' },
-  { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#F07A52', b: '#7EA0F0', c: '#E9A1B9', d: '#6FBFA4', font: 'vv', light: true },
-  { id: 'amarelo', name: 'Amarelo rizoma (claro)', bg: '#F5CC00', ink: '#05060A', a: '#FF6FDF', b: '#B49BFF', c: '#FF6FDF', d: '#FFFFFF', font: 'vv', light: true },
 ];
 
 export const DEMO_THEME_KEY = 'nep_demo_theme';
