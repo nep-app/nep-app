@@ -63,7 +63,7 @@ const sleepInterval = (cycle) => {
 
 const OPTION = 'min-h-[64px] rounded-2xl border px-1 py-2 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-1 transition-colors';
 
-export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [] }) {
+export function HomeRelogio({ onMarkConsumption, onLogPast, alerts = [] }) {
   const { t, i18n } = useTranslation();
   const { consumptions = [], cycles = [], wellbeingLogs = [], weighings = [], goals = [] } = useData();
   const { setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal, setShowThoughtsModal } = useUI();
@@ -122,9 +122,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     for (const a of alerts) {
       if (a && a.text) out.push({ label: t('demoHome.msgGoalLabel'), text: a.text });
     }
-    if (currentReflection) out.push({ label: t('home.dailyMessage'), text: currentReflection });
+    // A Mensagem de Hoje passou para o cabeçalho, à vista; aqui só repetia.
     return out;
-  }, [data, goals, weighings, consumptions, cycles, alerts, currentReflection, now, t, i18n.language]);
+  }, [data, goals, weighings, consumptions, cycles, alerts, now, t, i18n.language]);
 
   const [msgIdx, setMsgIdx] = useState(0);
   const msg = messages[msgIdx % Math.max(1, messages.length)];
@@ -132,6 +132,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 
   const nowH = hourOf(now);
   const [hx, hy] = pt(nowH, 108);
+  // O ponteiro começa fora do centro, para não passar por cima do texto.
+  const [hx0, hy0] = pt(nowH, 74);
   const hasAnything = data.cons24.length + data.sleeps.length + data.states24.length + data.weigh24.length > 0;
 
   return (
@@ -151,7 +153,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
           {data.cons24.map((ms, i) => { const [x, y] = pt(hourOf(ms), 96); return <circle key={`c${i}`} cx={x} cy={y} r="8" className="fill-rose-300" />; })}
           {data.states24.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`w${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-sky-300" />; })}
           {data.weigh24.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`p${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-violet-300" />; })}
-          <line x1={C} y1={C} x2={hx} y2={hy} className="stroke-gray-200" strokeWidth="3" strokeLinecap="round" />
+          <line x1={hx0} y1={hy0} x2={hx} y2={hy} className="stroke-gray-200" strokeWidth="3" strokeLinecap="round" />
           <circle cx={hx} cy={hy} r="6" className="fill-gray-200" />
           {[['00h', 0, 'middle', 150, 2], ['06h', 6, 'start', 296, 155], ['12h', 12, 'middle', 150, 310], ['18h', 18, 'end', 4, 155]].map(([lbl, , anchor, x, y]) => (
             <text key={lbl} x={x} y={y} textAnchor={anchor} fontSize="14" className="fill-gray-500">{lbl}</text>
@@ -162,6 +164,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
             <>
               <span className="text-3xl font-semibold text-gray-100 leading-none">{agoText(now - data.last)}</span>
               <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
+              <span className="text-[10px] text-violet-300 mt-1.5">{t('demoHome.tapHint')}</span>
             </>
           ) : (
             <span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span>
@@ -169,6 +172,15 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </span>
       </button>
       {!hasAnything && <p className="text-xs text-gray-500 -mt-2">{t('demoHome.tlEmpty')}</p>}
+      <button
+        type="button"
+        onClick={() => setShowLine(true)}
+        className="-mt-1 inline-flex items-center gap-2 px-4 h-11 rounded-full bg-violet-500/15 border border-violet-400/40 text-violet-100 text-sm font-medium hover:bg-violet-500/25 transition-colors"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v18M7 7h10M7 12h10M7 17h6" /></svg>
+        {t('demoHome.seeDay')}
+        <span aria-hidden="true">›</span>
+      </button>
       {hasAnything && (
         <div className="-mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-gray-400" aria-hidden="true">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />{t('demoHome.tlUse')}</span>

@@ -1674,6 +1674,8 @@
     "tlNow": "agora",
     "tlSince": "{{ago}} desde o último",
     "tlEmpty": "Sem registos nas últimas 24 horas.",
-    "legendState": "estado"
+    "legendState": "estado",
+    "tapHint": "toca para ver o dia",
+    "seeDay": "Ver o meu dia (últimas 24h)"
   }
 }

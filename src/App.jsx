@@ -1178,12 +1178,32 @@ export function AuthenticatedApp() {
                 <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24 overflow-x-hidden'>
                     <div className="max-w-2xl mx-auto">
                         {slimHeader ? (
-                        <div className='flex items-baseline justify-between px-1 pt-2 mb-4'>
-                            <span className='text-xl font-semibold tracking-wide text-gray-100'>NEP</span>
-                            <span className='text-xs text-gray-400'>
-                                {new Date().toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}
-                                {streaks.current > 0 ? ` · ${streaks.current} ${t('common.day', { count: streaks.current })}` : ''}
-                            </span>
+                        // Cabeçalho COMPACTO do Início relógio: o mesmo título N·E·P com as
+                        // palavras à frente, o slogan e a Mensagem de Hoje — tudo o que o
+                        // cabeçalho grande tinha, em menos de metade da altura.
+                        <div className='bg-gray-800/60 rounded-2xl px-4 py-3 mb-4'>
+                            <div className='flex justify-between items-start gap-3'>
+                                <div className='leading-tight'>
+                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-purple-500 leading-none w-5'>N</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticN')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-pink-500 leading-none w-5'>E</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticE')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-2xl font-black font-display text-blue-500 leading-none w-5'>P</span><span className='text-sm text-gray-300 whitespace-nowrap'>{t('home.acrosticP')}</span></div>
+                                </div>
+                                <div className='flex flex-col items-end gap-1 text-right'>
+                                    <span className='text-[11px] text-gray-400'>
+                                        <span className='text-purple-400 font-bold'>N</span>otice it. <span className='text-pink-400 font-bold'>E</span>xplore it. <span className='text-blue-400 font-bold'>P</span>lan it.
+                                    </span>
+                                    <span className='text-[11px] italic text-gray-500'>{t('home.motto')}</span>
+                                    <span className='text-[11px] text-gray-400'>
+                                        {new Date().toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}
+                                        {streaks.current > 0 ? ` · 🔥 ${streaks.current} ${t('common.day', { count: streaks.current })}` : ''}
+                                    </span>
+                                </div>
+                            </div>
+                            {currentReflection && (
+                                <p className='mt-2 pt-2 border-t border-gray-700/60 text-xs text-gray-300'>
+                                    <span className='font-semibold text-purple-300'>💜 {t('home.dailyMessage')}:</span> <span className='italic'>{currentReflection}</span>
+                                </p>
+                            )}
                         </div>
                         ) : (
                         <div className='bg-gray-800 text-white rounded-3xl shadow-xl p-5 mb-6'>
