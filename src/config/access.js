@@ -12,8 +12,15 @@
  * um novo deploy). Pode haver vários em simultâneo. A comparação ignora
  * maiúsculas/minúsculas e espaços à volta.
  */
+// Códigos pessoais: um por pessoa convidada, para se poder retirar um sem
+// mexer nos outros. NUNCA pôr aqui nomes nem alcunhas — este ficheiro é
+// público (repositório e app publicada) e revelaria quem usa a NEP. Quem é
+// dono de que código fica só com a Teresa.
+// Retirar um código só impede contas NOVAS; uma conta já criada continua a
+// funcionar.
 export const INVITE_CODES = [
   'NAOSEI-2026',
+  'NEP-957W-8HX7', // convite pessoal (out/2026)
 ];
 
 const normalize = (s) => String(s || '').trim().toUpperCase();
