@@ -256,7 +256,7 @@
     "governance": "Ethical Governance",
     "about": "About the App",
     "appName": "NEP App - Notes of Experiences and Patterns",
-    "tagline": "Notice it. Explore it. Plan it.",
+    "tagline": "Noticing. Exploring. Planning.",
     "motto": "Navigate Every Problem.",
     "version": "Version {{version}}",
     "copyright": "Copyright © Teresa Castro",
@@ -360,7 +360,10 @@
         "title": "Tolerance & Breaks",
         "content": "The body adapts to substances over time — you need more to feel the same effect. Regular breaks (even a few days) help reduce tolerance and the risks associated with high doses. After a break, the body is more sensitive: start with smaller doses than usual."
       }
-    ]
+    ],
+    "themeTitle": "Colours",
+    "themeSubtitle": "Only changes the look, and only on this device. Your data isn't touched.",
+    "themeCurrent": "The usual ones"
   },
   "modals": {
     "dailyLog": {

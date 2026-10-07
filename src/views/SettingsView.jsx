@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
 import { useSubstances } from '../hooks/useSubstances';
 import { MAX_NAME } from '../utils/substances';
+import { DEMO_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
 /* global __APP_VERSION__ */
 // Versão vinda do package.json (injetada pelo Vite). Fonte única.
 const APP_VERSION = __APP_VERSION__;
@@ -114,6 +115,35 @@ function SubstancesSettings() {
     );
 }
 
+// ── Cores (só fora do demo; o demo tem o seu selector lá em cima) ───────────
+function ThemeSettings() {
+    const { t } = useTranslation();
+    const [theme, setTheme] = useState(readAppTheme);
+    const choose = (id) => {
+        setTheme(id);
+        saveAppTheme(id);
+        applyDemoTheme(id);
+    };
+    const options = [{ id: 'atual', name: t('settings.themeCurrent') }, ...DEMO_THEMES.map(th => ({ id: th.id, name: th.name }))];
+    return (
+        <div className="space-y-2">
+            {options.map(o => (
+                <button
+                    key={o.id}
+                    onClick={() => choose(o.id)}
+                    aria-pressed={theme === o.id}
+                    className={'w-full text-left px-4 py-3 rounded-lg border-2 transition-all ' +
+                        (theme === o.id
+                            ? 'bg-purple-600 border-purple-500 text-white font-semibold'
+                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')}
+                >
+                    {theme === o.id ? '✓ ' : ''}{o.name}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 // ── Guia de utilização (só a lista; entra dentro de "Sobre e ajuda") ────────
 function GuideAccordion() {
     const { t, i18n } = useTranslation();
@@ -195,6 +225,7 @@ export const SettingsView = ({
     };
 
     const { lockMode, setLockMode } = useAuth();
+    const isDemo = (() => { try { return localStorage.getItem('nep_demo') === '1'; } catch { return false; } })();
 
     const [dataMode, setDataModeState] = useState(() => getDataMode() || 'cloud');
     const handleDataModeChange = (mode) => {
@@ -276,6 +307,17 @@ export const SettingsView = ({
                     </button>
                 </div>
             </div>
+
+            {/* ── Cores (abre/fecha) — não aparece no demo ── */}
+            {!isDemo && (
+                <Section
+                    icon={<span aria-hidden="true">🎨</span>}
+                    title={t('settings.themeTitle')}
+                    subtitle={t('settings.themeSubtitle')}
+                >
+                    <ThemeSettings />
+                </Section>
+            )}
 
             {/* ── As minhas substâncias (abre/fecha) ── */}
             <Section

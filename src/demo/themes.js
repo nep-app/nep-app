@@ -1,7 +1,9 @@
-// ===== TEMAS DE EXPERIÊNCIA (SÓ MODO DEMO) =====
-// Para a Teresa ver as direcções visuais na app a sério, com os ecrãs todos,
-// antes de escolher uma. Não tocam na conta real: só se aplicam dentro do
-// DemoShell, e a escolha fica guardada em localStorage só para o demo.
+// ===== TEMAS DE CORES =====
+// Nasceram no demo, para a Teresa ver as direcções visuais com os ecrãs todos.
+// Os escolhidos (Riso e Bauhaus) passaram também para a app a sério, como
+// opção nas Definições (só deste dispositivo; 'atual' = as cores de sempre).
+// Só se aplicam com a app destrancada: no PIN e na calculadora do disfarce a
+// app continua com o aspeto de sempre.
 //
 // Como funciona: o tailwind.config.js põe cada cor do Tailwind a ler uma
 // variável CSS (--c-gray-800, --c-purple-600, …). Aqui calcula-se, para cada
@@ -14,6 +16,13 @@
 //  - Famílias com SIGNIFICADO (verde, vermelho, amarelo, laranja…): mantêm a
 //    cor original — avisos e metas continuam a ler-se como antes —, só se
 //    ajusta a claridade ao fundo do tema para não perder contraste.
+
+// Letras dos temas, servidas pela própria app (a CSP não deixa ir buscar
+// letras a fora, e assim também não se avisa a Google de nada). O CSS é
+// pequeno; os ficheiros das letras só descarregam se um tema as usar.
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/unbounded/800.css';
 
 // Tom 500 do Tailwind de cada família com significado (copiado para não
 // carregar a biblioteca de cores inteira na app).
@@ -51,10 +60,25 @@ const contrast = (a, b) => {
 export const DEMO_THEMES = [
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv' },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#F07A52', b: '#7EA0F0', c: '#E9A1B9', d: '#6FBFA4', font: 'vv', light: true },
-  { id: 'osso', name: 'Preto e osso', bg: '#0B0B0B', ink: '#EDEAE3', a: '#D8D4CB', b: '#B5B2AA', c: '#D8D4CB', d: '#B5B2AA', font: 'vv' },
 ];
 
 export const DEMO_THEME_KEY = 'nep_demo_theme';
+
+// Na app a sério (fora do demo) a escolha é só deste dispositivo e só muda o
+// aspeto: 'atual' (ou nada) = as cores de sempre.
+export const APP_THEME_KEY = 'nep_theme';
+export const readAppTheme = () => {
+  try {
+    const v = localStorage.getItem(APP_THEME_KEY);
+    return DEMO_THEMES.some(t => t.id === v) ? v : 'atual';
+  } catch { return 'atual'; }
+};
+export const saveAppTheme = (id) => {
+  try {
+    if (DEMO_THEMES.some(t => t.id === id)) localStorage.setItem(APP_THEME_KEY, id);
+    else localStorage.removeItem(APP_THEME_KEY);
+  } catch { /* fica só nesta sessão */ }
+};
 
 const varsFor = (theme) => {
   const bg = rgb(theme.bg);

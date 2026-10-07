@@ -4,12 +4,7 @@ import { AuthenticatedApp } from '../App';
 import { DEMO_THEMES, DEMO_THEME_KEY, applyDemoTheme } from '../demo/themes';
 import { DemoPrefsContext } from '../demo/DemoPrefsContext';
 
-// Letras dos temas de experiência, servidas pela própria app (a CSP não deixa
-// ir buscar letras a fora, e assim também não se avisa a Google de nada).
-// Só são descarregadas se um tema que as usa for escolhido.
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/700.css';
-import '@fontsource/unbounded/800.css';
+// As letras dos temas vêm com demo/themes.js.
 
 // Chave antiga do selector de início (já não existe: o demo usa sempre o
 // relógio). Só se limpa ao sair.

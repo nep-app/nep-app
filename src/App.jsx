@@ -34,6 +34,7 @@ const WellbeingChart = lazy(() => import('./components/WellbeingChart'));
 import { HomeViewRefactored } from './views/HomeViewRefactored';
 import { useDemoPrefs } from './demo/DemoPrefsContext';
 import { useSubstances } from './hooks/useSubstances';
+import { applyDemoTheme, readAppTheme } from './demo/themes';
 import { cleanEntries } from './utils/substances';
 
 // 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
@@ -179,6 +180,17 @@ export function AuthenticatedApp() {
             // Substâncias: a "por defeito" vai logo no registo rápido; escolhe-se
             // ao editar o registo (e no "consumo de outra hora").
             const { substances: substanceList, addSubstance, defaultEntries: defaultSubstanceEntries } = useSubstances();
+
+            // Cores escolhidas nas Definições. Só com a app destrancada: ao
+            // trancar (PIN/calculadora) este componente sai e as cores voltam
+            // às de sempre. No demo quem manda é o selector do próprio demo.
+            useEffect(() => {
+                let demo = false;
+                try { demo = localStorage.getItem('nep_demo') === '1'; } catch { /* sem storage */ }
+                if (demo) return undefined;
+                applyDemoTheme(readAppTheme());
+                return () => applyDemoTheme('atual');
+            }, []);
             const { darkMode, showDailyLogModal, setShowDailyLogModal, showWellbeingModal, setShowWellbeingModal, showEmotionsModal, setShowEmotionsModal, showReflectionModal, setShowReflectionModal, showCycleModal, setShowCycleModal, showGoalModal, setShowGoalModal, showEditConsumptionModal, setShowEditConsumptionModal, showThoughtsModal, setShowThoughtsModal, editingConsumption, setEditingConsumption, editingGoal, setEditingGoal, editingCycle, setEditingCycle } = useUI();
 
             // i18n
@@ -1200,7 +1212,7 @@ export function AuthenticatedApp() {
                                 </div>
                                 <div className='flex flex-col items-end gap-1 text-right'>
                                     <span className='text-[11px] text-gray-400'>
-                                        <span className='text-purple-400 font-bold'>N</span>otice it. <span className='text-pink-400 font-bold'>E</span>xplore it. <span className='text-blue-400 font-bold'>P</span>lan it.
+                                        <span className='text-purple-400 font-bold'>N</span>oticing. <span className='text-pink-400 font-bold'>E</span>xploring. <span className='text-blue-400 font-bold'>P</span>lanning.
                                     </span>
                                     <span className='text-[11px] italic text-gray-500'>{t('home.motto')}</span>
                                     <span className='text-[11px] text-gray-400'>
@@ -1235,7 +1247,7 @@ export function AuthenticatedApp() {
                                 <div className="flex flex-col items-end gap-3">
                                     <div className="text-right space-y-1">
                                         <p className='text-sm font-medium tracking-wide text-gray-400'>
-                                            <span className="text-purple-600 font-bold">N</span>otice it. <span className="text-pink-600 font-bold">E</span>xplore it. <span className="text-blue-600 font-bold">P</span>lan it.
+                                            <span className="text-purple-600 font-bold">N</span>oticing. <span className="text-pink-600 font-bold">E</span>xploring. <span className="text-blue-600 font-bold">P</span>lanning.
                                         </p>
                                         <p className='text-xs italic text-gray-500'>
                                             {t('home.motto').split(' ').map((word, i) => (

@@ -256,7 +256,7 @@
     "governance": "Governança Ética",
     "about": "Sobre a App",
     "appName": "NEP App - Notas de Experiências e Padrões",
-    "tagline": "Notice it. Explore it. Plan it.",
+    "tagline": "Noticing. Exploring. Planning.",
     "motto": "Não Estás Perdida.",
     "version": "Versão {{version}}",
     "copyright": "Copyright © Teresa Castro",
@@ -360,7 +360,10 @@
         "title": "Tolerância & Pausas",
         "content": "O corpo adapta-se às substâncias com o tempo — precisas de mais para sentir o mesmo efeito. Pausas regulares (mesmo de alguns dias) ajudam a reduzir a tolerância e os riscos associados a doses altas. Após uma pausa, o corpo é mais sensível: começa com doses menores do que habitual."
       }
-    ]
+    ],
+    "themeTitle": "Cores",
+    "themeSubtitle": "Muda só o aspeto, e só neste dispositivo. Os teus dados não mexem.",
+    "themeCurrent": "As de sempre"
   },
   "modals": {
     "dailyLog": {
