@@ -18,8 +18,10 @@ const readLayout = () => {
 };
 
 const readTheme = () => {
-  // Um tema que entretanto saiu da lista volta ao Atual.
-  try { const v = localStorage.getItem(DEMO_THEME_KEY); return DEMO_THEMES.some(t => t.id === v) ? v : 'atual'; } catch { return 'atual'; }
+  // No demo já não há 'Atual': um tema guardado que não esteja na lista
+  // (ou nenhum) passa ao primeiro da lista.
+  const first = DEMO_THEMES[0].id;
+  try { const v = localStorage.getItem(DEMO_THEME_KEY); return DEMO_THEMES.some(t => t.id === v) ? v : first; } catch { return first; }
 };
 
 export function DemoShell() {

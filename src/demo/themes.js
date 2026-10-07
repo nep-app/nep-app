@@ -49,9 +49,9 @@ const contrast = (a, b) => {
 };
 
 export const DEMO_THEMES = [
-  { id: 'atual', name: 'Atual' },
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv' },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#F07A52', b: '#7EA0F0', c: '#E9A1B9', d: '#6FBFA4', font: 'vv', light: true },
+  { id: 'osso', name: 'Preto e osso', bg: '#0B0B0B', ink: '#EDEAE3', a: '#D8D4CB', b: '#B5B2AA', c: '#D8D4CB', d: '#B5B2AA', font: 'vv' },
 ];
 
 export const DEMO_THEME_KEY = 'nep_demo_theme';
