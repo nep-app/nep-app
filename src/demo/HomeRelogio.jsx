@@ -67,7 +67,7 @@ const sleepInterval = (cycle) => {
 
 const OPTION = 'min-h-[52px] rounded-xl border px-1 py-1.5 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-0.5 transition-colors';
 
-export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [], onEdit = {} }) {
+export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [], onEdit = {}, onDelete }) {
   const { t, i18n } = useTranslation();
   const { consumptions = [], allConsumptions, cycles = [], wellbeingLogs = [], weighings = [], goals = [] } = useData();
   // A linha do dia mostra (e deixa editar) todos os registos; o relógio e as
@@ -346,6 +346,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
           // Editar fecha a linha do dia primeiro (o modal de edição fica por baixo dela).
           onEdit={(kind, record) => { const fn = onEdit[kind]; if (!fn) return; setShowLine(false); fn(record); }}
           canEdit={(kind) => typeof onEdit[kind] === 'function'}
+          // Apagar pergunta sempre antes (o aviso de confirmação fica por cima
+          // da linha do dia, que continua aberta).
+          onDelete={onDelete ? (kind, record) => onDelete(DELETE_COLLECTION[kind], record.id) : null}
         />
       )}
     </div>
@@ -353,8 +356,11 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 }
 
 // ===== LINHA DO DIA (as últimas 24 horas, por ordem) =====
-function DayTimeline({ data, now, onClose, onEdit, onNewCycle, canEdit = () => false }) {
+const DELETE_COLLECTION = { consumption: 'consumptions', cycle: 'cycles', wellbeing: 'wellbeingLogs' };
+
+function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit = () => false }) {
   const { t } = useTranslation();
+  const [openGroup, setOpenGroup] = useState(null);
   const items = [
     ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
     ...data.cons24Items.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
@@ -386,7 +392,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, canEdit = () => f
         {items.length === 0 && <p className="text-sm text-gray-400">{t('demoHome.tlEmpty')}</p>}
 
         <ol className="flex flex-col">
-          {items.map((it, i) => (
+          {items.map((it, i) => [
             <li key={i} className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[42px]">
               <span className="text-xs text-gray-400">{hhmm(it.ms)}</span>
               <span className="flex justify-center">
@@ -403,20 +409,38 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, canEdit = () => f
               </span>
               {/* Editar directamente daqui (consumos, sono, estado) */}
               <span className="flex gap-1 justify-end">
-                {it.kind === 'use' && canEdit('consumption') && it.records.map((r, k) => (
-                  <button key={k} type="button" onClick={() => onEdit('consumption', r)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100">
-                    <Icons.Edit className="w-4 h-4" />
+                {it.kind === 'use' && it.n > 1 && (
+                  <button type="button" onClick={() => setOpenGroup(g => (g === it.ms ? null : it.ms))} aria-expanded={openGroup === it.ms} className="px-2 py-1 text-xs text-gray-300 hover:text-gray-100">
+                    {openGroup === it.ms ? '▴' : '▾'}
                   </button>
+                )}
+                {it.kind === 'use' && it.n === 1 && it.records.map((r, k) => (
+                  <span key={k} className="flex">
+                    {canEdit('consumption') && <button type="button" onClick={() => onEdit('consumption', r)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>}
+                    {onDelete && <button type="button" onClick={() => onDelete('consumption', r)} aria-label={t('demoHome.tlDelete')} className="p-2 text-gray-500 hover:text-red-300"><Icons.Trash2 className="w-4 h-4" /></button>}
+                  </span>
                 ))}
-                {it.kind === 'sleep' && it.record && canEdit('cycle') && (
-                  <button type="button" onClick={() => onEdit('cycle', it.record)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>
-                )}
-                {it.kind === 'state' && it.record && canEdit('wellbeing') && (
-                  <button type="button" onClick={() => onEdit('wellbeing', it.record)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>
-                )}
+                {[['sleep', 'cycle'], ['state', 'wellbeing']].map(([kindIt, kind]) => (it.kind === kindIt && it.record) ? (
+                  <span key={kind} className="flex">
+                    {canEdit(kind) && <button type="button" onClick={() => onEdit(kind, it.record)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>}
+                    {onDelete && <button type="button" onClick={() => onDelete(kind, it.record)} aria-label={t('demoHome.tlDelete')} className="p-2 text-gray-500 hover:text-red-300"><Icons.Trash2 className="w-4 h-4" /></button>}
+                  </span>
+                ) : null)}
               </span>
-            </li>
-          ))}
+            </li>,
+            // Consumos do mesmo minuto, abertos: um por linha, cada um com lápis e caixote.
+            it.kind === 'use' && it.n > 1 && openGroup === it.ms && it.records.map((r, k) => (
+              <li key={`${i}-${k}`} className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[36px] text-xs">
+                <span />
+                <span className="flex justify-center"><span className="w-1.5 h-1.5 rounded-full bg-rose-300/70" /></span>
+                <span className="text-gray-300">{t('demoHome.tlUse')} {k + 1}{(() => { const f = formatSubstances(r?.substances || []); return f ? <span className="text-gray-400"> · {f}</span> : null; })()}</span>
+                <span className="flex">
+                  {canEdit('consumption') && <button type="button" onClick={() => onEdit('consumption', r)} aria-label={t('demoHome.tlEdit')} className="p-2 text-gray-400 hover:text-gray-100"><Icons.Edit className="w-4 h-4" /></button>}
+                  {onDelete && <button type="button" onClick={() => onDelete('consumption', r)} aria-label={t('demoHome.tlDelete')} className="p-2 text-gray-500 hover:text-red-300"><Icons.Trash2 className="w-4 h-4" /></button>}
+                </span>
+              </li>
+            )),
+          ])}
           <li className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[52px]">
             <span className="text-xs font-semibold text-gray-200">{t('demoHome.tlNow')}</span>
             <span className="flex justify-center"><span className="w-3.5 h-3.5 rounded-full border-[3px] border-gray-200" /></span>

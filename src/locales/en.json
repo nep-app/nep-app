@@ -1684,7 +1684,8 @@
     "tlEmpty": "Nothing logged in the last 24 hours.",
     "legendState": "state",
     "tapHint": "tap to see your day",
-    "tlEdit": "Edit"
+    "tlEdit": "Edit",
+    "tlDelete": "Delete"
   },
   "substances": {
     "settingsTitle": "My substances",

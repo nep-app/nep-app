@@ -259,6 +259,7 @@ export function HomeViewRefactored({
         currentReflection={currentReflection}
         alerts={cachedAlerts}
         onEdit={{ consumption: openEditConsumption, cycle: openEditCycle, wellbeing: openEditWellbeingLog }}
+        onDelete={deleteItem}
       />
     ) : (
     <div className="space-y-6">

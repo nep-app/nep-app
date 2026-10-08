@@ -1684,7 +1684,8 @@
     "tlEmpty": "Sem registos nas últimas 24 horas.",
     "legendState": "estado",
     "tapHint": "toca para ver o dia",
-    "tlEdit": "Editar"
+    "tlEdit": "Editar",
+    "tlDelete": "Apagar"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",
