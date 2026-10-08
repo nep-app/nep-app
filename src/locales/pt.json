@@ -1722,14 +1722,13 @@
     "firstValue": "{{time}} (+{{after}})",
     "noneYet": "ainda nenhum",
     "last": "Último",
-    "interval": "Entre os dois últimos",
+    "interval": "Último intervalo",
     "mgDay": "mg no último dia medido ({{date}})",
     "goalOk": "meta {{target}}",
     "goalOff": "fora da meta ({{target}})",
     "howAmI": "💙 Como estou",
     "summary": "Hoje",
     "reflect": "Fazer a reflexão de hoje",
-    "editGoals": "mudar",
-    "setGoals": "definir metas"
+    "substances": "Substâncias"
   }
 }

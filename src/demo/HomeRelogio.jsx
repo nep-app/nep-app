@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../contexts/DataContext';
 import { useUI } from '../contexts/UIContext';
 import * as Icons from '../components/Icons';
+import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { formatSubstances } from '../utils/substances';
 import { getTodayKey, safeToISODate, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
@@ -179,7 +180,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       const g = goal('increase_interval');
       out.interval.push({
         label: t('home2.interval'),
-        value: fmtH(gap),
+        value: agoText(gap * H),
         goal: g && !isNaN(parseFloat(g.target)) ? { ok: gap >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
       });
     }
@@ -198,6 +199,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   }, [cycles, consumptions, weighings, goals, mgStats, now, t, i18n.language]);
 
   const [showLine, setShowLine] = useState(false);
+  const [showSubstances, setShowSubstances] = useState(false);
 
   const nowH = hourOf(now);
   const [hx, hy] = pt(nowH, 108);
@@ -297,10 +299,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         return (
           <>
             <div className="w-full px-1">
-              <button type="button" onClick={() => setShowGoalModal(true)} className="w-full flex items-center justify-between mb-1.5">
-                <span className="text-sm font-semibold text-gray-100">🎯 {t('home.goals')}</span>
-                <span className="text-xs text-violet-200">{withGoal.length ? t('home2.editGoals') : t('home2.setGoals')} ›</span>
-              </button>
+              {withGoal.length > 0 && <div className="text-sm font-semibold text-gray-100 mb-1.5">🎯 {t('home.goals')}</div>}
               {withGoal.length > 0 && (
                 <div className="grid grid-cols-1 gap-1.5">
                   {withGoal.map((r, i) => (
@@ -331,6 +330,13 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 
       {/* Esta semana: bolinhas pequenas */}
       <WeekDots goals={goals} />
+
+      {/* Mesmo no fim: definir metas e substâncias, lado a lado */}
+      <div className="w-full grid grid-cols-2 gap-2 mt-2">
+        <button type="button" onClick={() => setShowGoalModal(true)} className="py-3 rounded-2xl text-sm font-semibold bg-violet-500/15 border border-violet-400/40 text-violet-100 hover:bg-violet-500/25">🎯 {t('home.goals')}</button>
+        <button type="button" onClick={() => setShowSubstances(true)} className="py-3 rounded-2xl text-sm font-semibold bg-teal-500/15 border border-teal-400/40 text-teal-100 hover:bg-teal-500/25">🧪 {t('home2.substances')}</button>
+      </div>
+      <SubstancesModal isOpen={showSubstances} onClose={() => setShowSubstances(false)} />
 
       {showLine && (
         <DayTimeline
