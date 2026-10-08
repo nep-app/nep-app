@@ -391,7 +391,10 @@
       "food": "🍽️ Ate nutritious meals",
       "notesLabel": "Notes (optional)",
       "notesPlaceholder": "How are you feeling today?",
-      "save": "Save"
+      "save": "Save",
+      "emotionsLabel": "Emotions (optional)",
+      "emotionsMore": "+ more",
+      "emotionsLess": "− fewer"
     },
     "reflection": {
       "title": "Daily reflection",
@@ -1725,6 +1728,8 @@
     "goalOff": "outside goal ({{target}})",
     "howAmI": "💙 How I am",
     "summary": "Today",
-    "reflect": "Do today's reflection"
+    "reflect": "Do today's reflection",
+    "editGoals": "change",
+    "setGoals": "set goals"
   }
 }

@@ -198,7 +198,6 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   }, [cycles, consumptions, weighings, goals, mgStats, now, t, i18n.language]);
 
   const [showLine, setShowLine] = useState(false);
-  const [group, setGroup] = useState(null); // 'well' | null
 
   const nowH = hourOf(now);
   const [hx, hy] = pt(nowH, 108);
@@ -269,20 +268,12 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </button>
       </div>
 
-      {/* Registos: uma fila só. Bem-estar abre "Como estou" e "Emoções" por baixo. */}
-      <div className="w-full">
-        <div className="grid grid-cols-4 gap-2">
-          <button type="button" onClick={() => setGroup(g => (g === 'well' ? null : 'well'))} aria-expanded={group === 'well'} className={`${OPTION} ${group === 'well' ? 'bg-sky-500/25 border-sky-400/50' : 'bg-sky-500/10 border-sky-500/25'} text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
-          <button type="button" onClick={() => setShowCycleModal(true)} className={`${OPTION} bg-amber-500/10 border-amber-500/25 text-amber-100 hover:bg-amber-500/20`}><span aria-hidden="true">🌙</span>{t('home.newCycle')}</button>
-          <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
-          <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
-        </div>
-        {group === 'well' && (
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <button type="button" onClick={() => { setGroup(null); setShowWellbeingModal(true); }} className="py-2 rounded-xl text-xs font-medium bg-sky-500/10 border border-sky-500/25 text-sky-100 hover:bg-sky-500/20">{t('home2.howAmI')}</button>
-            <button type="button" onClick={() => { setGroup(null); setShowEmotionsModal(true); }} className="py-2 rounded-xl text-xs font-medium bg-sky-500/10 border border-sky-500/25 text-sky-100 hover:bg-sky-500/20">🫧 {t('home.emotions')}</button>
-          </div>
-        )}
+      {/* Registos: uma fila só. As emoções estão dentro do Bem-estar; o Novo
+          Ciclo está no ecrã do dia (tocar no relógio). */}
+      <div className="w-full grid grid-cols-3 gap-2">
+        <button type="button" onClick={() => setShowWellbeingModal(true)} className={`${OPTION} bg-sky-500/10 border-sky-500/25 text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
+        <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
+        <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
       </div>
 
       {/* Mensagem de Hoje, sem caixa, com a reflexão diária logo à frente */}
@@ -297,28 +288,46 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </button>
       </div>
 
-      {/* Resumo do dia: linhas finas, sem caixas. As metas abrem daqui. */}
-      <div className="w-full px-1">
-        <div className="flex items-center justify-between border-b border-gray-700/60 pb-1 mb-1">
-          <span className="text-[11px] uppercase tracking-wide text-gray-500">{t('home2.summary')}</span>
-          <button type="button" onClick={() => setShowGoalModal(true)} className="text-xs text-violet-200 hover:text-violet-100">🎯 {t('home.goals')} ›</button>
-        </div>
-        {[['sleep', '🌙'], ['cons', '☀️'], ['interval', '⏱']].flatMap(([k, icon]) =>
-          status[k].map((r, i) => (
-            <div key={`${k}${i}`} className="flex items-baseline justify-between gap-3 py-1 border-b border-gray-800/80">
-              <span className="text-xs text-gray-400"><span aria-hidden="true" className="inline-block w-5">{i === 0 ? icon : ''}</span>{r.label}</span>
-              <span className="text-xs text-gray-100 text-right">
-                {r.value}
-                {r.goal && (
-                  <span className={'ml-1.5 text-[10px] whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-300' : 'text-amber-300')}>
-                    {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
-                  </span>
-                )}
-              </span>
+      {/* Metas: o que antes eram os avisos, bem à vista. Cada meta num cartão
+          com cor (só existe porque ela a definiu). Tocar no título muda-as. */}
+      {(() => {
+        const rows = [['sleep', '🌙'], ['cons', '☀️'], ['interval', '⏱']].flatMap(([k, icon]) => status[k].map(r => ({ ...r, icon })));
+        const withGoal = rows.filter(r => r.goal);
+        const plain = rows.filter(r => !r.goal);
+        return (
+          <>
+            <div className="w-full px-1">
+              <button type="button" onClick={() => setShowGoalModal(true)} className="w-full flex items-center justify-between mb-1.5">
+                <span className="text-sm font-semibold text-gray-100">🎯 {t('home.goals')}</span>
+                <span className="text-xs text-violet-200">{withGoal.length ? t('home2.editGoals') : t('home2.setGoals')} ›</span>
+              </button>
+              {withGoal.length > 0 && (
+                <div className="grid grid-cols-1 gap-1.5">
+                  {withGoal.map((r, i) => (
+                    <div key={i} className={'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ' + (r.goal.ok ? 'bg-emerald-500/10 border-emerald-400/30' : 'bg-amber-500/10 border-amber-400/30')}>
+                      <span className="text-xs text-gray-200"><span aria-hidden="true">{r.icon} </span>{r.label} <span className="font-semibold text-gray-50">{r.value}</span></span>
+                      <span className={'text-[11px] font-semibold whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-200' : 'text-amber-200')}>
+                        {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))
-        )}
-      </div>
+            {plain.length > 0 && (
+              <div className="w-full px-1">
+                <div className="text-[11px] uppercase tracking-wide text-gray-500 border-b border-gray-700/60 pb-1 mb-1">{t('home2.summary')}</div>
+                {plain.map((r, i) => (
+                  <div key={i} className="flex items-baseline justify-between gap-3 py-1 border-b border-gray-800/80">
+                    <span className="text-xs text-gray-400"><span aria-hidden="true" className="inline-block w-5">{r.icon}</span>{r.label}</span>
+                    <span className="text-xs text-gray-100 text-right">{r.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Esta semana: bolinhas pequenas */}
       <WeekDots goals={goals} />
@@ -328,6 +337,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
           data={data}
           now={now}
           onClose={() => setShowLine(false)}
+          onNewCycle={() => { setShowLine(false); setShowCycleModal(true); }}
           // Editar fecha a linha do dia primeiro (o modal de edição fica por baixo dela).
           onEdit={(kind, record) => { const fn = onEdit[kind]; if (!fn) return; setShowLine(false); fn(record); }}
           canEdit={(kind) => typeof onEdit[kind] === 'function'}
@@ -338,7 +348,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 }
 
 // ===== LINHA DO DIA (as últimas 24 horas, por ordem) =====
-function DayTimeline({ data, now, onClose, onEdit, canEdit = () => false }) {
+function DayTimeline({ data, now, onClose, onEdit, onNewCycle, canEdit = () => false }) {
   const { t } = useTranslation();
   const items = [
     ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
@@ -361,7 +371,12 @@ function DayTimeline({ data, now, onClose, onEdit, canEdit = () => false }) {
       <div className="max-w-md mx-auto px-5 pt-14 pb-10">
         <button type="button" onClick={onClose} className="text-sm text-gray-400 hover:text-gray-200 mb-3">‹ {t('demoHome.tlBack')}</button>
         <h2 className="text-2xl font-semibold text-gray-100 mb-1">{t('demoHome.tlTitle')}</h2>
-        <p className="text-sm text-gray-400 mb-5">{t('demoHome.msgToday', { count: data.todayCount })}</p>
+        <p className="text-sm text-gray-400 mb-4">{t('demoHome.msgToday', { count: data.todayCount })}</p>
+        {onNewCycle && (
+          <button type="button" onClick={onNewCycle} className="w-full mb-5 py-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-100 text-sm font-semibold hover:bg-amber-500/25">
+            🌙 {t('home.newCycle')}
+          </button>
+        )}
 
         {items.length === 0 && <p className="text-sm text-gray-400">{t('demoHome.tlEmpty')}</p>}
 

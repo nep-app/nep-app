@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { getTodayKey } from '../../utils/helpers';
+import { EMOTIONS_LIST, EMOTION_EN } from '../../constants/emotions';
 
 export const WellbeingModal = ({
   isOpen,
@@ -13,8 +14,24 @@ export const WellbeingModal = ({
   wellbeingLogs = [],
   editingId = null
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [symptomInput, setSymptomInput] = useState('');
+  const [allEmotions, setAllEmotions] = useState(false);
+  const showEmotion = (e) => (i18n.language === 'en' && EMOTION_EN[e]) ? EMOTION_EN[e] : e;
+  // Emoções dentro do bem-estar: primeiro só as que a pessoa usa mais (ou
+  // umas comuns, se ainda não usou nenhuma); "+ mais" mostra a lista toda.
+  const topEmotions = useMemo(() => {
+    const count = new Map();
+    wellbeingLogs.forEach(l => (l.emotions || []).forEach(e => count.set(e, (count.get(e) || 0) + 1)));
+    const used = [...count.entries()].sort((a, b) => b[1] - a[1]).map(([e]) => e).filter(e => EMOTIONS_LIST.includes(e));
+    const fallback = ['😌 Calmo/a', '😰 Ansioso/a', '😴 Cansado/a', '😢 Triste', '😊 Feliz', '😤 Irritado/a', '🔥 Com craving', '⚡ Okay'];
+    return [...new Set([...used, ...fallback])].slice(0, 8);
+  }, [wellbeingLogs]);
+  const chosenEmotions = wellbeingForm.emotions || [];
+  const toggleEmotion = (e) => setWellbeingForm({
+    ...wellbeingForm,
+    emotions: chosenEmotions.includes(e) ? chosenEmotions.filter(x => x !== e) : [...chosenEmotions, e],
+  });
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   const selectedDate = wellbeingForm.datetime
@@ -155,6 +172,28 @@ export const WellbeingModal = ({
               onChange={(e) => setWellbeingForm({...wellbeingForm, energy: e.target.value})}
               className="w-full"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.emotionsLabel')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...(allEmotions ? EMOTIONS_LIST : topEmotions), ...chosenEmotions])].map(e => {
+                const on = chosenEmotions.includes(e);
+                return (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => toggleEmotion(e)}
+                    aria-pressed={on}
+                    className={'px-2.5 py-1 rounded-full text-xs border transition-colors ' + (on ? 'bg-blue-600 border-blue-300 text-white font-semibold ring-2 ring-blue-300/60' : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')}
+                  >
+                    {on ? '✓ ' : ''}{showEmotion(e)}
+                  </button>
+                );
+              })}
+              <button type="button" onClick={() => setAllEmotions(v => !v)} className="px-2.5 py-1 rounded-full text-xs border border-dashed border-gray-500 text-gray-300">
+                {allEmotions ? t('modals.wellbeing.emotionsLess') : t('modals.wellbeing.emotionsMore')}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.selfcareLabel')}</label>

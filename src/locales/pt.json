@@ -391,7 +391,10 @@
       "food": "🍽️ Comi refeições nutritivas",
       "notesLabel": "Notas (opcional)",
       "notesPlaceholder": "Como te sentes hoje?",
-      "save": "Guardar"
+      "save": "Guardar",
+      "emotionsLabel": "Emoções (opcional)",
+      "emotionsMore": "+ mais",
+      "emotionsLess": "− menos"
     },
     "reflection": {
       "title": "Reflexão diária",
@@ -1725,6 +1728,8 @@
     "goalOff": "fora da meta ({{target}})",
     "howAmI": "💙 Como estou",
     "summary": "Hoje",
-    "reflect": "Fazer a reflexão de hoje"
+    "reflect": "Fazer a reflexão de hoje",
+    "editGoals": "mudar",
+    "setGoals": "definir metas"
   }
 }
