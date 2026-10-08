@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
-import { SubstancesManager } from '../SubstancesManager';
 
 export const GoalModal = ({
   isOpen,
@@ -175,13 +174,6 @@ export const GoalModal = ({
                   </button>
                 ));
               })()}
-            </div>
-
-            {/* As minhas substâncias — junto das metas, a pedido da Teresa */}
-            <div className="space-y-2 border-t border-gray-700 pt-4">
-              <div className="text-sm font-semibold text-gray-300">🧪 {t('substances.settingsTitle')}</div>
-              <p className="text-xs text-gray-400">{t('substances.settingsSubtitle')}</p>
-              <SubstancesManager />
             </div>
           </div>
         ) : (

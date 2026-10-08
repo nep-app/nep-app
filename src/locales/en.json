@@ -1698,7 +1698,7 @@
     "defaultHint": "Only the main one counts in analyses, goals, alerts and mg — logs without a substance count as it. It's also added to quick logs. To change it on a log, tap the pencil in History.",
     "privacyNote": "Encrypted like the rest of your logs and never included in research mode. Removing a substance from the list doesn't change past logs.",
     "pickerLabel": "What it was (optional)",
-    "pickerEmpty": "No substances on your list yet. Add one here or in Goals.",
+    "pickerEmpty": "No substances on your list yet. Add one here or in \"Substances\", at the bottom of Home.",
     "addOther": "other",
     "amountPlaceholder": "amount",
     "amountLabel": "Amount of {{name}}",

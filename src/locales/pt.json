@@ -1698,7 +1698,7 @@
     "defaultHint": "Só a principal conta nas análises, metas, avisos e mg — os registos sem substância contam como sendo dela. Também vai logo no registo rápido. Para mudar num registo, toca no lápis no Histórico.",
     "privacyNote": "Fica cifrado como o resto dos teus registos e nunca entra no modo de investigação. Tirar uma substância da lista não muda os registos antigos.",
     "pickerLabel": "O que foi (opcional)",
-    "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou nas Metas.",
+    "pickerEmpty": "Ainda não tens substâncias na lista. Junta aqui ou em \"Substâncias\", no fim do Início.",
     "addOther": "outra",
     "amountPlaceholder": "quantidade",
     "amountLabel": "Quantidade de {{name}}",

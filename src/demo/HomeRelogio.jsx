@@ -299,7 +299,6 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         return (
           <>
             <div className="w-full px-1">
-              {withGoal.length > 0 && <div className="text-sm font-semibold text-gray-100 mb-1.5">🎯 {t('home.goals')}</div>}
               {withGoal.length > 0 && (
                 <div className="grid grid-cols-1 gap-1.5">
                   {withGoal.map((r, i) => (

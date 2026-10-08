@@ -18,6 +18,7 @@ import { useDemoPrefs } from '../demo/DemoPrefsContext';
 import { useSubstances } from '../hooks/useSubstances';
 import { cleanEntries } from '../utils/substances';
 import { SubstancePicker } from '../components/SubstancePicker';
+import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { HomeRelogio } from '../demo/HomeRelogio';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
@@ -45,6 +46,7 @@ export function HomeViewRefactored({
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
+  const [showSubstances, setShowSubstances] = useState(false);
   const [cachedTimeSince, setCachedTimeSince] = useState(null);
   const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
   const [pendingConsumption, setPendingConsumption] = useState(false);
@@ -388,7 +390,7 @@ export function HomeViewRefactored({
       {/* Linha 2: Novo Ciclo, Registar mg, Metas.
           Superfícies suaves e tintadas (em vez de gradientes cheios) — mantêm a
           identidade de cor mas deixam os dois botões principais serem o destaque. */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <button onClick={() => setShowCycleModal(true)} className="bg-amber-500/10 border border-amber-500/25 text-amber-100 rounded-xl p-3 font-medium hover:bg-amber-500/20 transition-colors flex flex-col items-center">
           <div className="text-lg mb-1" aria-hidden="true">🌙</div>
           <div className="text-xs">{t('home.newCycle')}</div>
@@ -400,6 +402,10 @@ export function HomeViewRefactored({
         <button onClick={() => setShowGoalModal(true)} className="bg-violet-500/10 border border-violet-500/25 text-violet-100 rounded-xl p-3 font-medium hover:bg-violet-500/20 transition-colors flex flex-col items-center">
           <div className="text-lg mb-1" aria-hidden="true">🎯</div>
           <div className="text-xs">{t('home.goals')}</div>
+        </button>
+        <button onClick={() => setShowSubstances(true)} className="bg-teal-500/10 border border-teal-500/25 text-teal-100 rounded-xl p-3 font-medium hover:bg-teal-500/20 transition-colors flex flex-col items-center">
+          <div className="text-lg mb-1" aria-hidden="true">🧪</div>
+          <div className="text-xs">{t('home2.substances')}</div>
         </button>
       </div>
 
@@ -518,6 +524,8 @@ export function HomeViewRefactored({
     )}
 
     {showOnboarding && <OnboardingWelcome onDone={dismissOnboarding} />}
+
+    <SubstancesModal isOpen={showSubstances} onClose={() => setShowSubstances(false)} />
 
     {showPastModal && (
       <div
