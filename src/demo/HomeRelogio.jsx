@@ -64,7 +64,7 @@ const sleepInterval = (cycle) => {
   return best == null ? null : { start: best, end: best + h * 3600000, hours: h };
 };
 
-const OPTION = 'min-h-[64px] rounded-2xl border px-1 py-2 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-1 transition-colors';
+const OPTION = 'min-h-[52px] rounded-xl border px-1 py-1.5 text-[11px] leading-tight font-medium flex flex-col items-center justify-center gap-0.5 transition-colors';
 
 export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, alerts = [], onEdit = {} }) {
   const { t, i18n } = useTranslation();
@@ -198,6 +198,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   }, [cycles, consumptions, weighings, goals, mgStats, now, t, i18n.language]);
 
   const [showLine, setShowLine] = useState(false);
+  const [group, setGroup] = useState(null); // 'well' | null
 
   const nowH = hourOf(now);
   const [hx, hy] = pt(nowH, 108);
@@ -250,63 +251,76 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </div>
       )}
 
-      {/* Botão principal */}
-      <button
-        type="button"
-        onClick={onMarkConsumption}
-        className="w-full h-14 rounded-full bg-rose-500/25 border border-rose-400/50 text-rose-50 text-base font-semibold hover:bg-rose-500/35 transition-colors"
-      >
-        {t('home.markConsumption')}
-      </button>
-
-      {/* Todas as opções de registo */}
-      <div className="w-full grid grid-cols-4 gap-2">
-        <button type="button" onClick={onLogPast} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">🕓</span>{t('demoHome.past')}</button>
-        <button type="button" onClick={() => setShowCycleModal(true)} className={`${OPTION} bg-amber-500/10 border-amber-500/25 text-amber-100 hover:bg-amber-500/20`}><span aria-hidden="true">🌙</span>{t('home.newCycle')}</button>
-        <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
-        <button type="button" onClick={() => setShowWellbeingModal(true)} className={`${OPTION} bg-sky-500/10 border-sky-500/25 text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
-        <button type="button" onClick={() => setShowEmotionsModal(true)} className={`${OPTION} bg-sky-500/10 border-sky-500/25 text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">🫧</span>{t('home.emotions')}</button>
-        <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
-        <button type="button" onClick={() => setShowReflectionModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">📝</span>{t('home.dailyReflection')}</button>
-        <button type="button" onClick={() => setShowGoalModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">🎯</span>{t('home.goals')}</button>
+      {/* Botão principal + consumo de outra hora (link discreto, como antes) */}
+      <div className="w-full flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={onMarkConsumption}
+          className="w-full h-14 rounded-full bg-rose-500/25 border border-rose-400/50 text-rose-50 text-base font-semibold hover:bg-rose-500/35 transition-colors"
+        >
+          {t('home.markConsumption')}
+        </button>
+        <button
+          type="button"
+          onClick={onLogPast}
+          className="text-xs text-gray-400 hover:text-gray-200 underline decoration-dotted underline-offset-4 transition-colors"
+        >
+          {t('home.logPast')}
+        </button>
       </div>
 
-      {/* Mensagem de Hoje (primeiro) e estado do dia, tudo à vista */}
-      {currentReflection && (
-        <section className="w-full rounded-2xl bg-gray-800/70 border border-gray-700/60 px-4 py-3">
-          <span className="text-[11px] text-gray-400">{t('home.dailyMessage')}</span>
-          <p className="text-sm leading-snug text-gray-100 mt-0.5">{currentReflection}</p>
-        </section>
-      )}
-      {[['sleep', '🌙', 'home2.sleepTitle'], ['cons', '☀️', 'home2.consTitle'], ['interval', '⏱', 'home2.intervalTitle']]
-        .filter(([k]) => status[k].length > 0).length > 0 && (
-        <div className="w-full grid grid-cols-1 gap-2">
-          {[['sleep', '🌙', 'home2.sleepTitle'], ['cons', '☀️', 'home2.consTitle'], ['interval', '⏱', 'home2.intervalTitle']]
-            .filter(([k]) => status[k].length > 0)
-            .map(([k, icon, title]) => (
-              <section key={k} className="rounded-2xl bg-gray-800/60 border border-gray-700/50 px-4 py-2.5">
-                <div className="text-[11px] text-gray-400 mb-1"><span aria-hidden="true">{icon}</span> {t(title)}</div>
-                <div className="space-y-1">
-                  {status[k].map((r, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3">
-                      <span className="text-xs text-gray-400">{r.label}</span>
-                      <span className="text-sm text-gray-100 text-right">
-                        {r.value}
-                        {r.goal && (
-                          <span className={'ml-2 text-[11px] whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-300' : 'text-amber-300')}>
-                            {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+      {/* Registos: uma fila só. Bem-estar abre "Como estou" e "Emoções" por baixo. */}
+      <div className="w-full">
+        <div className="grid grid-cols-4 gap-2">
+          <button type="button" onClick={() => setGroup(g => (g === 'well' ? null : 'well'))} aria-expanded={group === 'well'} className={`${OPTION} ${group === 'well' ? 'bg-sky-500/25 border-sky-400/50' : 'bg-sky-500/10 border-sky-500/25'} text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
+          <button type="button" onClick={() => setShowCycleModal(true)} className={`${OPTION} bg-amber-500/10 border-amber-500/25 text-amber-100 hover:bg-amber-500/20`}><span aria-hidden="true">🌙</span>{t('home.newCycle')}</button>
+          <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
+          <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
         </div>
-      )}
+        {group === 'well' && (
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <button type="button" onClick={() => { setGroup(null); setShowWellbeingModal(true); }} className="py-2 rounded-xl text-xs font-medium bg-sky-500/10 border border-sky-500/25 text-sky-100 hover:bg-sky-500/20">{t('home2.howAmI')}</button>
+            <button type="button" onClick={() => { setGroup(null); setShowEmotionsModal(true); }} className="py-2 rounded-xl text-xs font-medium bg-sky-500/10 border border-sky-500/25 text-sky-100 hover:bg-sky-500/20">🫧 {t('home.emotions')}</button>
+          </div>
+        )}
+      </div>
 
-      {/* Esta semana: bolinhas com os consumos de cada dia */}
+      {/* Mensagem de Hoje, sem caixa, com a reflexão diária logo à frente */}
+      <div className="w-full px-1">
+        {currentReflection && (
+          <p className="text-sm italic leading-snug text-gray-300">
+            <span aria-hidden="true">💜 </span>{currentReflection}
+          </p>
+        )}
+        <button type="button" onClick={() => setShowReflectionModal(true)} className="mt-1 text-xs text-violet-200 hover:text-violet-100">
+          📝 {t('home2.reflect')} ›
+        </button>
+      </div>
+
+      {/* Resumo do dia: linhas finas, sem caixas. As metas abrem daqui. */}
+      <div className="w-full px-1">
+        <div className="flex items-center justify-between border-b border-gray-700/60 pb-1 mb-1">
+          <span className="text-[11px] uppercase tracking-wide text-gray-500">{t('home2.summary')}</span>
+          <button type="button" onClick={() => setShowGoalModal(true)} className="text-xs text-violet-200 hover:text-violet-100">🎯 {t('home.goals')} ›</button>
+        </div>
+        {[['sleep', '🌙'], ['cons', '☀️'], ['interval', '⏱']].flatMap(([k, icon]) =>
+          status[k].map((r, i) => (
+            <div key={`${k}${i}`} className="flex items-baseline justify-between gap-3 py-1 border-b border-gray-800/80">
+              <span className="text-xs text-gray-400"><span aria-hidden="true" className="inline-block w-5">{i === 0 ? icon : ''}</span>{r.label}</span>
+              <span className="text-xs text-gray-100 text-right">
+                {r.value}
+                {r.goal && (
+                  <span className={'ml-1.5 text-[10px] whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-300' : 'text-amber-300')}>
+                    {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
+                  </span>
+                )}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Esta semana: bolinhas pequenas */}
       <WeekDots goals={goals} />
 
       {showLine && (
@@ -418,15 +432,15 @@ function WeekDots({ goals }) {
     return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
   };
   return (
-    <section className="w-full rounded-2xl bg-gray-800/60 border border-gray-700/50 px-4 py-2.5">
-      <div className="flex justify-between items-center mb-1.5">
-        <span className="text-[11px] text-gray-400">{t('home.thisWeek')}</span>
+    <section className="w-full px-1">
+      <div className="flex justify-between items-center mb-1.5 border-b border-gray-700/60 pb-1">
+        <span className="text-[11px] uppercase tracking-wide text-gray-500">{t('home.thisWeek')}</span>
         <span className="text-[11px] text-gray-500">{total}x{Number.isFinite(target) ? ` · ${t('home.goalTarget')}: ≤${target}x` : ''}</span>
       </div>
       <div className="flex justify-between">
         {days.map(d => (
           <div key={d.k} className="flex flex-col items-center gap-0.5">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
             <span className={`text-[10px] ${d.isToday ? 'text-gray-100 font-semibold' : 'text-gray-400'}`}>{d.label}</span>
           </div>
         ))}

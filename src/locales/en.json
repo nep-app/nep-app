@@ -1722,6 +1722,9 @@
     "interval": "Between the last two",
     "mgDay": "mg on last measured day ({{date}})",
     "goalOk": "goal {{target}}",
-    "goalOff": "outside goal ({{target}})"
+    "goalOff": "outside goal ({{target}})",
+    "howAmI": "💙 How I am",
+    "summary": "Today",
+    "reflect": "Do today's reflection"
   }
 }
