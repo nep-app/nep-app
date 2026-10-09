@@ -4,7 +4,15 @@
 
 /* Temas de experiência do modo demo (src/demo/themes.js). Sem o atributo,
    nada disto se aplica — a app real não é tocada. */
+/* Texto corrido: letra redonda e suave. A "de máquina" (JetBrains Mono)
+   fica para o que é maior: títulos pequenos, botões, números. */
 html[data-demo-font="vv"] body {
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+html[data-demo-font="vv"] h3,
+html[data-demo-font="vv"] h4,
+html[data-demo-font="vv"] button,
+html[data-demo-font="vv"] .font-mono-theme {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 html[data-demo-font="vv"] h1,

@@ -233,7 +233,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         <span className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           {data.last != null ? (
             <>
-              <span className="text-3xl font-semibold text-gray-100 leading-none">{agoText(now - data.last)}</span>
+              <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">{agoText(now - data.last)}</span>
               <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
               <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/25 border border-violet-300/50 text-[11px] font-semibold text-violet-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
             </>

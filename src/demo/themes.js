@@ -24,6 +24,9 @@
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/700.css';
 import '@fontsource/unbounded/800.css';
+import '@fontsource/nunito/400.css';
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
 
 // Tom 500 do Tailwind de cada família com significado (copiado para não
 // carregar a biblioteca de cores inteira na app).
