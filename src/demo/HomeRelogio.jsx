@@ -97,8 +97,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       .map(s => ({ ...s, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
 
     const states24 = wellbeingLogs
-      .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, w }))
-      .filter(w => w.ms != null && w.ms > from && w.ms <= now);
+      .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, nap: w.napDuration > 0 ? w.napDuration : null, w }))
+      .filter(w => w.ms != null && w.ms > from); // sem limite de cima: um registo acabado de gravar aparece logo
     const weigh24 = weighings
       .filter(w => !w.notWeighed)
       .map(w => ({ ms: tsOf(w), w }))
@@ -130,9 +130,13 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     if (lastCycle && lastCycle.sleep != null && lastCycle.sleep !== '' && !isNaN(parseFloat(lastCycle.sleep))) {
       const h = parseFloat(lastCycle.sleep);
       const g = goal('sleep_hours');
+      // Sestas do dia do ciclo: somam-se e aparecem ao lado (nas Análises contam
+      // junto com o sono da noite). A meta continua a olhar só para a noite.
+      const cycDay = lastCycle.date || safeToISODate(lastCycle.timestamp);
+      const napMin = wellbeingLogs.filter(w => (w.date || safeToISODate(w.timestamp)) === cycDay && w.napDuration > 0).reduce((a, w) => a + w.napDuration, 0);
       out.sleep.push({
         label: t('home2.slept'),
-        value: (h === 0 ? t('home2.noSleep') : fmtH(h)) + staleNote,
+        value: (h === 0 ? t('home2.noSleep') : fmtH(h)) + (napMin > 0 ? ` + ${t('home2.napShort', { min: napMin })}` : '') + staleNote,
         goal: g && !isNaN(parseFloat(g.target)) ? { ok: h >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
       });
     }
@@ -196,7 +200,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       });
     }
     return out;
-  }, [cycles, consumptions, weighings, goals, mgStats, now, t, i18n.language]);
+  }, [cycles, consumptions, weighings, wellbeingLogs, goals, mgStats, now, t, i18n.language]);
 
   const [showLine, setShowLine] = useState(false);
   const [showSubstances, setShowSubstances] = useState(false);
@@ -364,7 +368,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
   const items = [
     ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
     ...data.cons24Items.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
-    ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, record: s.w })),
+    ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, nap: s.nap, record: s.w })),
     ...data.weigh24.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),
   ].sort((a, b) => a.ms - b.ms)
     // Vários consumos no mesmo minuto ficam numa linha só ("consumo × 3").
@@ -404,7 +408,13 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
               <span className="text-sm text-gray-200">
                 {it.kind === 'use' && <>{t('demoHome.tlUse')}{it.n > 1 ? ` × ${it.n}` : ''}{(() => { const f = formatSubstances(it.records.flatMap(r => r?.substances || [])); return f ? <span className="text-xs text-gray-400"> · {f}</span> : null; })()}</>}
                 {it.kind === 'sleep' && <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-100">{t('demoHome.tlSleep')} · {it.hours}h</span>}
-                {it.kind === 'state' && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('demoHome.tlState', { mood: it.mood ?? '–', energy: it.energy ?? '–' })}</span>}
+                {it.kind === 'state' && (
+                  <span className="inline-flex flex-wrap gap-1">
+                    {(it.mood != null || it.energy != null) && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('demoHome.tlState', { mood: it.mood ?? '–', energy: it.energy ?? '–' })}</span>}
+                    {it.nap != null && <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-100 text-xs">🛌 {t('demoHome.tlNap', { min: it.nap })}</span>}
+                    {it.mood == null && it.energy == null && it.nap == null && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('home.wellbeing')}</span>}
+                  </span>
+                )}
                 {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-100 text-xs">{leftInBag(it.w) != null ? t('demoHome.tlWeighLeft', { mg: leftInBag(it.w) }) : t('demoHome.tlWeigh')}</span>}
               </span>
               {/* Editar directamente daqui (consumos, sono, estado) */}

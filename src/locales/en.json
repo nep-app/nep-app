@@ -1113,7 +1113,9 @@
     "atypicalDesc": "Atypical days are excluded from goal and analysis calculations.",
     "atypicalBanner_one": "1 atypical day excluded from analyses and goals.",
     "atypicalBanner_other": "{{count}} atypical days excluded from analyses and goals.",
-    "atypicalTag": "Atypical"
+    "atypicalTag": "Atypical",
+    "napToday": "{{count}} nap(s) today · {{min}} min in total",
+    "napHint": "Just the minutes of this nap. If you nap again later, log it separately: naps on the same day add up, and in Analyses they count together with the night's sleep."
   },
   "analyses": {
     "dayNames": [
@@ -1685,7 +1687,8 @@
     "legendState": "state",
     "tapHint": "tap to see your day",
     "tlEdit": "Edit",
-    "tlDelete": "Delete"
+    "tlDelete": "Delete",
+    "tlNap": "nap · {{min}} min"
   },
   "substances": {
     "settingsTitle": "My substances",
@@ -1730,6 +1733,7 @@
     "howAmI": "💙 How I am",
     "summary": "Today",
     "reflect": "Do today's reflection",
-    "substances": "Substances"
+    "substances": "Substances",
+    "napShort": "nap {{min}} min"
   }
 }

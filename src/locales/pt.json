@@ -1113,7 +1113,9 @@
     "atypicalDesc": "Dias atípicos são excluídos dos cálculos de metas e análises.",
     "atypicalBanner_one": "1 dia atípico excluído das análises e metas.",
     "atypicalBanner_other": "{{count}} dias atípicos excluídos das análises e metas.",
-    "atypicalTag": "Atípico"
+    "atypicalTag": "Atípico",
+    "napToday": "{{count}} sesta(s) hoje · {{min}} min no total",
+    "napHint": "Põe só os minutos desta sesta. Se dormires outra mais tarde, regista-a à parte: as do mesmo dia somam-se, e nas Análises contam junto com o sono da noite."
   },
   "analyses": {
     "dayNames": [
@@ -1685,7 +1687,8 @@
     "legendState": "estado",
     "tapHint": "toca para ver o dia",
     "tlEdit": "Editar",
-    "tlDelete": "Apagar"
+    "tlDelete": "Apagar",
+    "tlNap": "sesta · {{min}} min"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",
@@ -1730,6 +1733,7 @@
     "howAmI": "💙 Como estou",
     "summary": "Hoje",
     "reflect": "Fazer a reflexão de hoje",
-    "substances": "Substâncias"
+    "substances": "Substâncias",
+    "napShort": "sesta {{min}} min"
   }
 }

@@ -130,7 +130,10 @@ export const WellbeingModal = ({
 
   if (!isOpen) return null;
 
-  const hasTodayContext = todayWater > 0 || todayExercises.length > 0 || todaySymptomsList.length > 0;
+  // Sestas já registadas neste dia (somam-se todas).
+  const todayNaps = selectedDateLogs.filter(l => l.napDuration > 0).map(l => l.napDuration);
+  const todayNapTotal = todayNaps.reduce((a, b) => a + b, 0);
+  const hasTodayContext = todayWater > 0 || todayExercises.length > 0 || todaySymptomsList.length > 0 || todayNapTotal > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
@@ -186,6 +189,9 @@ export const WellbeingModal = ({
                 {todayExercises.map((e, i) => (
                   <div key={i} className="text-xs text-green-300">🏃 {e}</div>
                 ))}
+                {todayNapTotal > 0 && (
+                  <div className="text-xs text-indigo-300">🛌 {t('wellbeing.napToday', { count: todayNaps.length, min: todayNapTotal })}</div>
+                )}
                 {todaySymptomsList.length > 0 && (
                   <div className="flex flex-wrap gap-1 items-center pt-0.5">
                     <span className="text-xs text-teal-400">🩺</span>
@@ -272,6 +278,7 @@ export const WellbeingModal = ({
                   />
                   <span className="text-gray-400 text-xs">min</span>
                 </div>
+                <p className="text-[11px] text-gray-500 mt-1">{t('wellbeing.napHint')}</p>
               </div>
 
               <label className={'flex items-center space-x-2 ' + (alreadyChecked.social ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
