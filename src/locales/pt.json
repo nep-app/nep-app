@@ -1682,7 +1682,7 @@
     "tlUse": "consumo",
     "tlState": "humor {{mood}} · energia {{energy}}",
     "tlWeigh": "pesagem",
-    "tlWeighLeft": "pesagem · {{mg}} mg no saco",
+    "tlWeighLeft": "pesei sem encher · {{mg}} mg no saco",
     "tlNow": "agora",
     "tlSince": "{{ago}} desde o último",
     "tlEmpty": "Sem registos nas últimas 24 horas.",
@@ -1690,7 +1690,11 @@
     "tapHint": "toca para ver o dia",
     "tlEdit": "Editar",
     "tlDelete": "Apagar",
-    "tlNap": "sesta · {{min}} min"
+    "tlNap": "sesta · {{min}} min",
+    "tlWeighAdded": "encheste · +{{mg}} mg",
+    "tlWeighWasEmpty": "o saco estava vazio",
+    "tlWeighHad": "tinha {{mg}} mg",
+    "tlWeighNoScale": "enchi sem pesar"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",

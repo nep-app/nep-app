@@ -1682,7 +1682,7 @@
     "tlUse": "use",
     "tlState": "mood {{mood}} · energy {{energy}}",
     "tlWeigh": "weighing",
-    "tlWeighLeft": "weighing · {{mg}} mg in the bag",
+    "tlWeighLeft": "weighed without refilling · {{mg}} mg in the bag",
     "tlNow": "now",
     "tlSince": "{{ago}} since the last one",
     "tlEmpty": "Nothing logged in the last 24 hours.",
@@ -1690,7 +1690,11 @@
     "tapHint": "tap to see your day",
     "tlEdit": "Edit",
     "tlDelete": "Delete",
-    "tlNap": "nap · {{min}} min"
+    "tlNap": "nap · {{min}} min",
+    "tlWeighAdded": "refilled · +{{mg}} mg",
+    "tlWeighWasEmpty": "the bag was empty",
+    "tlWeighHad": "had {{mg}} mg",
+    "tlWeighNoScale": "filled without weighing"
   },
   "substances": {
     "settingsTitle": "My substances",

@@ -47,9 +47,18 @@ export const WellbeingModal = ({
 
   // Accumulated today values (shown as read-only context)
   const todayWater = selectedDateLogs.reduce((sum, l) => sum + (l.waterGlasses || 0), 0);
-  const todayExercises = selectedDateLogs
+  // Exercícios do dia: os do mesmo tipo somam-se numa linha ("caminhar ·
+  // 60min (2×)") em vez de aparecerem repetidos.
+  const todayExercises = Object.values(selectedDateLogs
     .filter(l => l.exerciseType)
-    .map(l => `${l.exerciseType}${l.exerciseDuration ? ` · ${l.exerciseDuration}min` : ''}`);
+    .reduce((acc, l) => {
+      const k = l.exerciseType.trim().toLowerCase();
+      acc[k] = acc[k] || { type: l.exerciseType, min: 0, n: 0 };
+      acc[k].min += parseInt(l.exerciseDuration) || 0;
+      acc[k].n += 1;
+      return acc;
+    }, {}))
+    .map(e => `${e.type}${e.min ? ` · ${e.min}min` : ''}${e.n > 1 ? ` (${e.n}×)` : ''}`);
   const todaySymptomsList = [...new Set(
     selectedDateLogs.flatMap(l => [
       ...(l.symptoms || []),

@@ -379,7 +379,22 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
       return acc;
     }, []);
 
-  const leftInBag = (w) => (typeof w.before === 'number' && typeof w.empty === 'number') ? Math.round(w.before - w.empty) : null;
+  // O mesmo que o cartão da pesagem no Histórico: numa pesagem em que se
+  // enche, o que interessa é QUANTO se pôs (e se o saco já estava vazio);
+  // só numa pesagem sem encher é que o número é "o que há no saco".
+  const weighText = (w) => {
+    const left = (typeof w.before === 'number' && typeof w.empty === 'number') ? Math.round(w.before - w.empty) : null;
+    const added = (typeof w.full === 'number' && typeof w.before === 'number') ? Math.round(w.full - w.before) : null;
+    if (w.notWeighed) return t('demoHome.tlWeighNoScale');
+    if (w.noRefill) return left != null ? t('demoHome.tlWeighLeft', { mg: left }) : t('demoHome.tlWeigh');
+    if (added != null && added > 0) {
+      const base = t('demoHome.tlWeighAdded', { mg: added });
+      if (left === 0) return `${base} · ${t('demoHome.tlWeighWasEmpty')}`;
+      if (left != null && left > 0) return `${base} · ${t('demoHome.tlWeighHad', { mg: left })}`;
+      return base;
+    }
+    return t('demoHome.tlWeigh');
+  };
 
   return (
     <div className="fixed inset-0 z-[75] bg-gray-900 overflow-y-auto" role="dialog" aria-modal="true" aria-label={t('demoHome.tlTitle')}>
@@ -412,10 +427,12 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
                   <span className="inline-flex flex-wrap gap-1">
                     {(it.mood != null || it.energy != null) && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('demoHome.tlState', { mood: it.mood ?? '–', energy: it.energy ?? '–' })}</span>}
                     {it.nap != null && <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-100 text-xs">🛌 {t('demoHome.tlNap', { min: it.nap })}</span>}
-                    {it.mood == null && it.energy == null && it.nap == null && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('home.wellbeing')}</span>}
+                    {it.record?.exerciseType && <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-100 text-xs">🏃 {it.record.exerciseType}{it.record.exerciseDuration ? ` · ${it.record.exerciseDuration} min` : ''}</span>}
+                    {it.record?.waterGlasses > 0 && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-sky-100 text-xs">💧 {it.record.waterGlasses} ml</span>}
+                    {it.mood == null && it.energy == null && it.nap == null && !it.record?.exerciseType && !(it.record?.waterGlasses > 0) && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('home.wellbeing')}</span>}
                   </span>
                 )}
-                {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-100 text-xs">{leftInBag(it.w) != null ? t('demoHome.tlWeighLeft', { mg: leftInBag(it.w) }) : t('demoHome.tlWeigh')}</span>}
+                {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-100 text-xs">{weighText(it.w)}</span>}
               </span>
               {/* Editar directamente daqui (consumos, sono, estado) */}
               <span className="flex gap-1 justify-end">
