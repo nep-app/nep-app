@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFirebaseAuth } from './utils/firebase';
-import { getTodayKey, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
+import { getTodayKey, toLocalDatetimeInput, genId, safeToISODate, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
 import * as analyticsService from './services/analyticsService';
 import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV, parseImportJSON } from './services/exportService';
 import * as Icons from './components/Icons';
@@ -407,7 +407,7 @@ export function AuthenticatedApp() {
 
             const openEditWellbeingLog = (w) => {
                 setEditingWellbeingLog({...w});
-                const datetime = w.timestamp ? w.timestamp.slice(0, 16) : (w.date ? w.date + 'T12:00' : '');
+                const datetime = w.timestamp ? toLocalDatetimeInput(w.timestamp) : (w.date ? w.date + 'T12:00' : '');
                 setWellbeingForm({
                     mood: w.mood != null ? String(w.mood) : '',
                     energy: w.energy != null ? String(w.energy) : '',
@@ -431,7 +431,7 @@ export function AuthenticatedApp() {
             const openEditReflection = (r) => {
                 setEditingReflection({...r});
                 setReflectionAnswer(r.answer || '');
-                const datetime = r.timestamp ? r.timestamp.slice(0, 16) : (r.date ? r.date + 'T12:00' : '');
+                const datetime = r.timestamp ? toLocalDatetimeInput(r.timestamp) : (r.date ? r.date + 'T12:00' : '');
                 setReflectionDatetime(datetime);
                 setShowReflectionModal(true);
             };
@@ -439,7 +439,7 @@ export function AuthenticatedApp() {
             const openEditThought = (thought) => {
                 setEditingThought({...thought});
                 setThoughtInitialContent(thought.content || '');
-                const datetime = thought.timestamp ? thought.timestamp.slice(0, 16) : (thought.date ? thought.date + 'T12:00' : '');
+                const datetime = thought.timestamp ? toLocalDatetimeInput(thought.timestamp) : (thought.date ? thought.date + 'T12:00' : '');
                 setThoughtDatetime(datetime);
                 setShowThoughtsModal(true);
             };
@@ -462,7 +462,7 @@ export function AuthenticatedApp() {
                     case 'cycle':
                         // Para ciclos, o createdAt deve ser um datetime. Usamos o início do dia selecionado.
                         const cycleDate = new Date(dateKey + 'T08:00'); // 8h da manhã por defeito
-                        const cycleDatetimeStr = cycleDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        const cycleDatetimeStr = toLocalDatetimeInput(cycleDate); // YYYY-MM-DDTHH:mm
                         setCycleForm({ bedtime: '', sleep: '', triggers: [], notes: '', createdAt: cycleDatetimeStr });
                         setShowCycleModal(true);
                         break;
@@ -470,7 +470,7 @@ export function AuthenticatedApp() {
                     case 'wellbeing':
                         // Para wellbeing (estado), o datetime deve ser completo
                         const wbDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
-                        const wbDatetimeStr = wbDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        const wbDatetimeStr = toLocalDatetimeInput(wbDate); // YYYY-MM-DDTHH:mm
                         setWellbeingForm({ mood: '', energy: '', waterGlasses: 0, exerciseType: '',
                         exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: wbDatetimeStr, isAtypical: false, atypicalReason: '' });
                         setShowWellbeingModal(true);
@@ -479,7 +479,7 @@ export function AuthenticatedApp() {
                     case 'emotions':
                         // Para emoções, pré-preencher datetime com a data selecionada
                         const emDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
-                        const emDatetimeStr = emDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        const emDatetimeStr = toLocalDatetimeInput(emDate); // YYYY-MM-DDTHH:mm
                         setEmotionsForm({ datetime: emDatetimeStr, emotions: [], notes: '' });
                         setShowEmotionsModal(true);
                         break;
@@ -487,7 +487,7 @@ export function AuthenticatedApp() {
                     case 'reflection':
                         // Para reflexão DBT, pré-preencher datetime com a data selecionada
                         const reflDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
-                        const reflDatetimeStr = reflDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        const reflDatetimeStr = toLocalDatetimeInput(reflDate); // YYYY-MM-DDTHH:mm
                         setReflectionDatetime(reflDatetimeStr);
                         setShowReflectionModal(true);
                         break;
@@ -495,7 +495,7 @@ export function AuthenticatedApp() {
                     case 'thought':
                         // Para pensamentos, pré-preencher datetime com a data selecionada
                         const thDate = new Date(dateKey + 'T12:00'); // meio-dia por defeito
-                        const thDatetimeStr = thDate.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+                        const thDatetimeStr = toLocalDatetimeInput(thDate); // YYYY-MM-DDTHH:mm
                         setThoughtDatetime(thDatetimeStr);
                         setShowThoughtsModal(true);
                         break;

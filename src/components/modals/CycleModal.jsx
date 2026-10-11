@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { toLocalDatetimeInput } from '../../utils/helpers';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
@@ -22,7 +23,7 @@ export const CycleModal = ({
           sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
           triggers: editingCycle.triggers || [],
           notes: editingCycle.notes || '',
-          createdAt: editingCycle.timestamp ? editingCycle.timestamp.slice(0, 16) : ''
+          createdAt: editingCycle.timestamp ? toLocalDatetimeInput(editingCycle.timestamp) : ''
         });
       } else if (!cycleForm.createdAt) {
         const now = new Date();

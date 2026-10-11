@@ -80,6 +80,15 @@ export const WellbeingModal = ({
   useEffect(() => {
     if (!isOpen) return;
     setSymptomInput('');
+    // A EDITAR: o formulário já vem cheio com os valores DESTE registo (App.jsx,
+    // openEditWellbeingLog) — não se mexe. Antes, aqui copiava-se humor,
+    // energia, água, exercício, sesta, sintomas e notas do registo MAIS RECENTE
+    // desse dia (que nem é o que se está a editar), e ao guardar esses valores
+    // ficavam por cima: viam-se as mesmas sestas e caminhadas repetidas.
+    if (editingId) return;
+    // Registo NOVO: só humor e energia do último registo do dia, como ponto de
+    // partida (mexe-se nos cursores). Água, exercício, sesta e notas nunca se
+    // copiam — cada registo tem os seus.
     if (selectedDateLogs.length === 0) return;
     const existing = [...selectedDateLogs].sort((a, b) =>
       new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)
@@ -88,17 +97,6 @@ export const WellbeingModal = ({
       ...prev,
       mood: existing.mood ?? prev.mood,
       energy: existing.energy ?? prev.energy,
-      sleep: existing.sleep ?? prev.sleep,
-      notes: existing.notes || prev.notes,
-      // Only pre-populate water/exercise/symptoms when editing a specific entry
-      ...(editingId ? {
-        waterGlasses: existing.waterGlasses ?? prev.waterGlasses,
-        exerciseType: existing.exerciseType || prev.exerciseType,
-        exerciseDuration: existing.exerciseDuration || prev.exerciseDuration,
-        napDuration: existing.napDuration || prev.napDuration,
-        symptoms: existing.symptoms || prev.symptoms,
-        customSymptom: existing.customSymptom || prev.customSymptom,
-      } : {})
     }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, isOpen]);
@@ -182,7 +180,9 @@ export const WellbeingModal = ({
             {/* Today's accumulated context */}
             {hasTodayContext && (
               <div className="bg-gray-700/40 border border-gray-600/30 rounded-lg p-2.5 mb-3 space-y-1">
-                <div className="text-xs text-gray-400 font-medium">{t('wellbeing.todayAlreadyLogged')}</div>
+                <div className="text-xs text-gray-400 font-medium">
+                  {editingId ? t('wellbeing.otherLogsThisDay') : selectedDate === getTodayKey() ? t('wellbeing.todayAlreadyLogged') : t('wellbeing.thisDayAlreadyLogged')}
+                </div>
                 {todayWater > 0 && (
                   <div className="text-xs text-blue-300">💧 {todayWater}ml de água</div>
                 )}

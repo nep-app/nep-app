@@ -5,6 +5,17 @@ const localDateKey = (d) =>
 
 export const getTodayKey = () => localDateKey(new Date());
 
+// 'YYYY-MM-DDTHH:mm' na hora LOCAL, para os campos datetime-local dos
+// formulários. Nunca usar timestamp.slice(0, 16) nem toISOString() para isto:
+// dá a hora em UTC (1h a menos em Portugal no verão… ou 0h no inverno), e ao
+// gravar o registo mudava de hora — e, perto da meia-noite, de dia.
+export const toLocalDatetimeInput = (value) => {
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 export const genId = () => crypto.randomUUID();
 
 // Helper: Converter data para ISO string de forma segura

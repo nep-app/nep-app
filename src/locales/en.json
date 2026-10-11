@@ -1114,8 +1114,10 @@
     "atypicalBanner_one": "1 atypical day excluded from analyses and goals.",
     "atypicalBanner_other": "{{count}} atypical days excluded from analyses and goals.",
     "atypicalTag": "Atypical",
-    "napToday": "{{count}} nap(s) today · {{min}} min in total",
-    "napHint": "Just the minutes of this nap. If you nap again later, log it separately: naps on the same day add up, and in Analyses they count together with the night's sleep."
+    "napToday": "{{count}} nap(s) · {{min}} min in total",
+    "napHint": "Just the minutes of this nap. If you nap again later, log it separately: naps on the same day add up, and in Analyses they count together with the night's sleep.",
+    "otherLogsThisDay": "In this day's other logs (not this one):",
+    "thisDayAlreadyLogged": "On this day you already logged:"
   },
   "analyses": {
     "dayNames": [

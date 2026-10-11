@@ -1114,8 +1114,10 @@
     "atypicalBanner_one": "1 dia atípico excluído das análises e metas.",
     "atypicalBanner_other": "{{count}} dias atípicos excluídos das análises e metas.",
     "atypicalTag": "Atípico",
-    "napToday": "{{count}} sesta(s) hoje · {{min}} min no total",
-    "napHint": "Põe só os minutos desta sesta. Se dormires outra mais tarde, regista-a à parte: as do mesmo dia somam-se, e nas Análises contam junto com o sono da noite."
+    "napToday": "{{count}} sesta(s) · {{min}} min no total",
+    "napHint": "Põe só os minutos desta sesta. Se dormires outra mais tarde, regista-a à parte: as do mesmo dia somam-se, e nas Análises contam junto com o sono da noite.",
+    "otherLogsThisDay": "Nos outros registos deste dia (não neste):",
+    "thisDayAlreadyLogged": "Neste dia já registaste:"
   },
   "analyses": {
     "dayNames": [
