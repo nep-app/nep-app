@@ -247,6 +247,8 @@ const sortedMs = (arr, toMs) => {
     return v;
 };
 const itemMs = (x) => new Date(x.timestamp || x.createdAt || x.date).getTime();
+// Um "dia" de acordar a acordar com mais do que isto já junta várias noites.
+const MAX_CYCLE_MS = 36 * 3600000;
 
 /**
  * Cumprimento de uma meta: { achieved, possible } — os dias (ou ciclos) em que
@@ -283,7 +285,11 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
     const meets = (v) => meetsGoal(goal.type, v, target);
 
     let achieved = 0, possible = 0;
-    const count = (ok) => { possible++; if (ok) achieved++; };
+    // days: cada dia (ou ciclo) que contou, com o valor e se cumpriu — para a
+    // pessoa poder ver dia a dia de onde vem a percentagem.
+    const days = [];
+    const count = (ok, d, value) => { possible++; if (ok) achieved++; days.push({ d, ok: !!ok, value }); };
+    const hhmm = (msVal) => { const x = new Date(msVal); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
 
     if (goal.type === 'reduce_frequency') {
         // Todos os dias do período (até ontem). Um dia sem consumos só conta se
@@ -297,7 +303,7 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
             datesInRange(from, opts.toDate && opts.toDate < today ? opts.toDate : today).filter(inRange).forEach(d => {
                 const n = counts[d] || 0;
                 if (n === 0 && !otherRecordDays.has(d)) return;
-                count(meets(n));
+                count(meets(n), d, n);
             });
         }
     }
@@ -310,7 +316,7 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         dailyLogs.forEach(l => { if (l.mg != null && l.mg !== '') add(day(l), l.mg); });
         cycles.forEach(c => { if (c.mg) add(day(c), c.mg); });
         Object.entries(opts.measuredMgByDate || {}).forEach(([d, mg]) => { if (!(d in mgByDate)) add(d, mg); });
-        Object.values(mgByDate).forEach(mg => count(meets(mg)));
+        Object.entries(mgByDate).forEach(([d, mg]) => count(meets(mg), d, Math.round(mg)));
     }
 
     if (goal.type === 'limit_last' || goal.type === 'first_not_before') {
@@ -327,21 +333,25 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
             if (!inRange(wakes[i].d)) continue;
             if (goal.type === 'limit_last') {
                 // Ciclo FECHADO com consumos: algum depois da hora da meta → falhou.
-                if (i + 1 >= wakes.length) continue;
-                let k = j, any = false, late = false;
+                // Mais de 36h entre dois acordares quer dizer que falta registar
+                // um ciclo (ou houve noites sem dormir não marcadas): a janela
+                // juntaria várias noites — não se sabe, não se avalia.
+                if (i + 1 >= wakes.length || endMs - startMs > MAX_CYCLE_MS) continue;
+                let k = j, lastMs = null, firstLateMs = null;
                 const deadlineMs = limitLastDeadline(startMs, target);
                 for (; k < cons.length && cons[k].ms <= endMs; k++) {
                     if (cons[k].ms <= startMs) continue;
-                    any = true;
-                    if (deadlineMs != null && cons[k].ms > deadlineMs) late = true;
+                    lastMs = cons[k].ms;
+                    if (firstLateMs == null && deadlineMs != null && cons[k].ms > deadlineMs) firstLateMs = cons[k].ms;
                 }
-                if (!any || deadlineMs == null || deadlineMs >= endMs) continue;
-                count(!late);
+                if (lastMs == null || deadlineMs == null || deadlineMs >= endMs) continue;
+                count(firstLateMs == null, wakes[i].d, firstLateMs == null ? { last: hhmm(lastMs) } : { late: hhmm(firstLateMs) });
             } else {
                 // 1.º consumo DESTE ciclo (antes do acordar seguinte); sem
                 // consumo nesse ciclo, fica de fora.
                 if (j >= cons.length || cons[j].ms >= endMs) continue;
-                count(meets((cons[j].ms - startMs) / 3600000));
+                const after = (cons[j].ms - startMs) / 3600000;
+                count(meets(after), wakes[i].d, { time: hhmm(cons[j].ms), after: Math.round(after * 10) / 10 });
             }
         }
     }
@@ -351,36 +361,47 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         // chega à meta.
         const byDate = {};
         consumptions.forEach(c => { const d = day(c); if (inRange(d)) (byDate[d] = byDate[d] || []).push(new Date(c.timestamp).getTime()); });
-        Object.values(byDate).forEach(list => {
+        Object.entries(byDate).forEach(([d, list]) => {
             if (list.length < 2) return;
             list.sort((x, y) => x - y);
             let long = 0;
             for (let i = 1; i < list.length; i++) if (meets((list[i] - list[i - 1]) / 3600000)) long++;
-            count(long >= (list.length - 1) / 2);
+            count(long >= (list.length - 1) / 2, d, { long, total: list.length - 1 });
         });
     }
 
-    if (goal.type === 'sleep_hours') {
-        // Horas da NOITE (ciclo); bem-estar antigo só se não houver ciclo.
+    // Um ciclo por dia (o dia em que se acordou). Se houver mais do que um no
+    // mesmo dia, conta o registado MAIS TARDE — o mesmo para sono e deitar
+    // (antes o sono ficava com o mais antigo e o deitar com o mais recente).
+    const latestCycleByDay = (pick) => {
         const byDate = {};
-        const put = (x) => { const d = day(x); const h = parseFloat(x.sleep); if (inRange(d) && x.sleep != null && x.sleep !== '' && !isNaN(h)) byDate[d] = h; };
-        wellbeingLogs.forEach(put);
-        cycles.forEach(put);
-        Object.values(byDate).forEach(h => count(meets(h)));
+        cycles.forEach(c => {
+            const d = day(c);
+            if (!inRange(d) || !pick(c)) return;
+            if (!byDate[d] || itemMs(c) > itemMs(byDate[d])) byDate[d] = c;
+        });
+        return byDate;
+    };
+
+    if (goal.type === 'sleep_hours') {
+        // Horas da NOITE (ciclo; as sestas não entram); bem-estar antigo só se
+        // não houver ciclo nesse dia.
+        const hasSleep = (x) => x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
+        const byDate = {};
+        wellbeingLogs.forEach(w => { const d = day(w); if (inRange(d) && hasSleep(w)) byDate[d] = parseFloat(w.sleep); });
+        Object.entries(latestCycleByDay(hasSleep)).forEach(([d, c]) => { byDate[d] = parseFloat(c.sleep); });
+        Object.entries(byDate).forEach(([d, h]) => count(meets(h), d, h));
     }
 
     if (goal.type === 'bedtime_before') {
-        // Um ciclo por dia, com hora de deitar legível.
-        const seen = new Set();
-        cycles.forEach(c => {
-            const d = day(c);
-            if (!inRange(d) || !c.bedtime || seen.has(d)) return;
+        // Hora de deitar legível; o resto não se avalia.
+        Object.entries(latestCycleByDay(c => !!c.bedtime)).forEach(([d, c]) => {
             const ok = bedtimeMeetsTarget(c.bedtime, target);
             if (ok == null) return;
-            seen.add(d);
-            count(ok);
+            count(ok, d, c.bedtime);
         });
     }
 
-    return { achieved, possible };
+    days.sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0)); // mais recente primeiro
+    return { achieved, possible, days };
 };

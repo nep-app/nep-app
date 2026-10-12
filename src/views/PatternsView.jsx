@@ -1,4 +1,4 @@
-import React, { useMemo, lazy, Suspense } from 'react';
+import React, { useMemo, useState, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import * as analyticsService from '../services/analyticsService';
@@ -24,6 +24,9 @@ export function PatternsView({
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
+    // Cartão de meta com a lista dos dias aberta (id da meta) — para se ver dia
+    // a dia de onde vem a percentagem.
+    const [openGoalDays, setOpenGoalDays] = useState(null);
 
     // ===== MEMOIZED DATA COMPUTATION =====
     const patternsData = useMemo(() => {
@@ -288,7 +291,7 @@ export function PatternsView({
                                                     // O período começa no mais tarde de: início do período escolhido
                                                     // ou dia em que a meta foi criada.
                                                     const fromDate = [periodFrom, goalCreatedAt].filter(Boolean).sort().pop() || null;
-                                                    const { achieved: achievementCount, possible: totalPossible } = getGoalAchievement(
+                                                    const { achieved: achievementCount, possible: totalPossible, days: goalDays } = getGoalAchievement(
                                                         g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs,
                                                         {
                                                             fromDate,
@@ -307,7 +310,9 @@ export function PatternsView({
                                                         ...g,
                                                         achievementCount,
                                                         totalPossible,
-                                                        successRate
+                                                        successRate,
+                                                        goalDays,
+                                                        countsFrom: fromDate,
                                                     };
                                                 });
 
@@ -968,6 +973,38 @@ export function PatternsView({
                                                                                         ></div>
                                                                                     </div>
                                                                                 </div>
+                                                                                )}
+                                                                                {/* Desde quando conta e, ao tocar, cada dia com o valor e ✓/✗ */}
+                                                                                <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-gray-400">
+                                                                                    <span>
+                                                                                        {goal.countsFrom ? t('patterns.goals.since', { date: new Date(`${goal.countsFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' }) }) : ''}
+                                                                                    </span>
+                                                                                    {goal.goalDays?.length > 0 && (
+                                                                                        <button type="button" onClick={() => setOpenGoalDays(o => (o === goal.id ? null : goal.id))} className="text-purple-300 hover:text-purple-200 whitespace-nowrap">
+                                                                                            {openGoalDays === goal.id ? t('patterns.goals.hideDays') : t('patterns.goals.showDays')} ›
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                                {openGoalDays === goal.id && (
+                                                                                    <ul className="mt-2 max-h-72 overflow-y-auto divide-y divide-gray-700/60 text-xs">
+                                                                                        {goal.goalDays.map(dd => {
+                                                                                            const v = dd.value;
+                                                                                            const val = goal.type === 'reduce_frequency' ? t('patterns.goals.dayVal.freq', { count: v })
+                                                                                                : goal.type === 'reduce_quantity' ? `${v} mg`
+                                                                                                : goal.type === 'limit_last' ? (v?.late ? t('patterns.goals.dayVal.lastLate', { time: v.late }) : t('patterns.goals.dayVal.last', { time: v?.last }))
+                                                                                                : goal.type === 'first_not_before' ? t('patterns.goals.dayVal.first', { time: v?.time, after: v?.after })
+                                                                                                : goal.type === 'increase_interval' ? t('patterns.goals.dayVal.interval', { long: v?.long, total: v?.total })
+                                                                                                : goal.type === 'sleep_hours' ? `${v}h`
+                                                                                                : goal.type === 'bedtime_before' ? t('patterns.goals.dayVal.bedtime', { time: v })
+                                                                                                : String(v);
+                                                                                            return (
+                                                                                                <li key={dd.d} className="flex items-center justify-between py-1.5">
+                                                                                                    <span className="text-gray-300 capitalize">{new Date(`${dd.d}T12:00:00`).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                                                                                    <span className="text-gray-200">{val} <span className={dd.ok ? 'text-green-400' : 'text-orange-400'}>{dd.ok ? '✓' : '✗'}</span></span>
+                                                                                                </li>
+                                                                                            );
+                                                                                        })}
+                                                                                    </ul>
                                                                                 )}
                                                                             </div>
                                                                         );

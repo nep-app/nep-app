@@ -839,7 +839,19 @@
         "bedtime_before": "Nights in bed by {{target}}",
         "first_not_before": "Cycles with the 1st use ≥{{target}}h after waking"
       },
-      "noData": "Not enough days in this period to tell yet."
+      "noData": "Not enough days in this period to tell yet.",
+      "since": "Counts since {{date}}",
+      "showDays": "see the days",
+      "hideDays": "hide the days",
+      "dayVal": {
+        "freq_one": "{{count}} use",
+        "freq_other": "{{count}} uses",
+        "last": "last at {{time}}",
+        "first": "1st at {{time}} (+{{after}}h)",
+        "interval": "{{long}} of {{total}} intervals",
+        "bedtime": "bed at {{time}}",
+        "lastLate": "use at {{time}}, after the time"
+      }
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",

@@ -902,7 +902,19 @@
         "bedtime_before": "Noites a deitar até às {{target}}",
         "first_not_before": "Ciclos com o 1.º consumo ≥{{target}}h depois de acordar"
       },
-      "noData": "Ainda não há dias suficientes neste período para saber."
+      "noData": "Ainda não há dias suficientes neste período para saber.",
+      "since": "Conta desde {{date}}",
+      "showDays": "ver os dias",
+      "hideDays": "esconder os dias",
+      "dayVal": {
+        "freq_one": "{{count}} consumo",
+        "freq_other": "{{count}} consumos",
+        "last": "último às {{time}}",
+        "first": "1.º às {{time}} (+{{after}}h)",
+        "interval": "{{long}} de {{total}} intervalos",
+        "bedtime": "deitar às {{time}}",
+        "lastLate": "consumo às {{time}}, depois da hora"
+      }
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",
