@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import * as Icons from '../Icons';
 import { useData } from '../../contexts/DataContext';
+import { useMetrics } from '../../contexts/MetricsContext';
 import { safeDate, safeToISODate, getTodayKey } from '../../utils/helpers';
 import { EMOTION_CATEGORIES } from '../../constants/emotions';
 
 const SECTIONS = [
   { id: 'consumptions', label: 'Consumos individuais', emoji: '💊' },
-  { id: 'dailyLogs',    label: 'Registos diários (mg)',  emoji: '📋' },
+  { id: 'dailyLogs',    label: 'mg por dia',             emoji: '📋' },
   { id: 'cycles',       label: 'Ciclos / Pausas',        emoji: '🌙' },
   { id: 'wellbeing',    label: 'Estado de bem-estar',    emoji: '💚' },
   { id: 'reflections',  label: 'Reflexões / Diário',     emoji: '📝' },
@@ -112,11 +113,12 @@ const buildCSVs = (data, selected) => {
   }
 
   if (selected.dailyLogs && data.dailyLogs.length > 0) {
-    const rows = [csvRow(['Data', 'Dose (mg)', 'Nº consumos', 'Notas'])];
+    const rows = [csvRow(['Data', 'Dose (mg)', 'Origem', 'Nº consumos', 'Notas'])];
     data.dailyLogs.forEach(l => {
       rows.push(csvRow([
         fmtDate(l.date || l.timestamp),
         l.mg || '',
+        l.source === 'weighing' ? 'pesagem' : 'registo à mão',
         l.times != null ? l.times : '',
         l.notes || '',
       ]));
@@ -442,7 +444,7 @@ const buildPrintHTML = (data, selected, period, customFrom, customTo) => {
       if (selected.dailyLogs) {
         if (raw.dailyLogs.length > 0) {
           raw.dailyLogs.forEach(l => {
-            const parts = [l.mg ? `${l.mg}mg total` : null, l.notes || null].filter(Boolean);
+            const parts = [l.mg ? `${l.mg}mg total${l.source === 'weighing' ? ' (medido pelas pesagens)' : ''}` : null, l.notes || null].filter(Boolean);
             rows += entryLine('daily', '📋 Dose', parts.join(' · ') || '—');
           });
         } else {
@@ -592,6 +594,19 @@ ${timelineHTML}
 
 export const ExportModal = ({ isOpen, onClose }) => {
   const { consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts } = useData();
+  const metrics = useMetrics();
+
+  // mg por dia: o "Registar mg" à mão manda; nos outros dias, os mg MEDIDOS
+  // pelas pesagens (só dias 100% medidos — nunca estimativas). Antes só
+  // entrava o registo à mão: quem pesa via "0 registos" e nenhum mg.
+  const mgDays = useMemo(() => {
+    const manual = (dailyLogs || []).filter(l => !l?.notLogged && l.mg != null && l.mg !== '');
+    const manualDates = new Set(manual.map(l => l.date || safeToISODate(l.timestamp)));
+    const measured = Object.entries(metrics?.weighingMeasuredMgByDate || {})
+      .filter(([d, mg]) => !manualDates.has(d) && mg > 0)
+      .map(([d, mg]) => ({ id: `w-${d}`, date: d, mg: Math.round(mg), source: 'weighing' }));
+    return [...manual, ...measured].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  }, [dailyLogs, metrics?.weighingMeasuredMgByDate]);
 
   const [period,     setPeriod]     = useState('30d');
   const [customFrom, setCustomFrom] = useState('');
@@ -609,12 +624,12 @@ export const ExportModal = ({ isOpen, onClose }) => {
 
   const filteredData = useMemo(() => ({
     consumptions: filterByPeriod(consumptions,  period, customFrom, customTo, 'timestamp'),
-    dailyLogs:    filterByPeriod(dailyLogs,     period, customFrom, customTo, 'date'),
+    dailyLogs:    filterByPeriod(mgDays,        period, customFrom, customTo, 'date'),
     cycles:       filterByPeriod(cycles,        period, customFrom, customTo, 'timestamp'),
     wellbeingLogs:filterByPeriod(wellbeingLogs, period, customFrom, customTo, 'timestamp'),
     reflections:  filterByPeriod(reflections,   period, customFrom, customTo, 'timestamp'),
     thoughts:     filterByPeriod(thoughts,      period, customFrom, customTo, 'timestamp'),
-  }), [consumptions, dailyLogs, cycles, wellbeingLogs, reflections, thoughts, period, customFrom, customTo]);
+  }), [consumptions, mgDays, cycles, wellbeingLogs, reflections, thoughts, period, customFrom, customTo]);
 
   const counts = {
     consumptions: filteredData.consumptions.length,
