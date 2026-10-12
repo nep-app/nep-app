@@ -106,12 +106,12 @@ export function AnalysesView({
                         </button>
                     </div>
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="grid grid-cols-4 gap-1.5 pb-2">
                     {['hoje', 'semana', 'mes', 'tudo'].map(period => (
                         <button
                             key={period}
                             onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }}
-                            className={'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
+                            className={'px-1 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
                         >
                             {period === 'hoje' && t('analyses.periodHoje')}
                             {period === 'semana' && t('analyses.periodSemana')}

@@ -216,7 +216,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       out.interval.push({
         label: t('home2.mgDay', { date: when }),
         value: `${Math.round(mgStats.mg)} mg`,
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: mgStats.mg < parseFloat(g.target), target: `< ${g.target} mg` } : null,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: mgStats.mg <= parseFloat(g.target), target: `≤ ${g.target} mg` } : null,
       });
     }
     return out;
@@ -541,7 +541,7 @@ function WeekDots({ goals }) {
   const total = days.reduce((s, d) => s + d.count, 0);
   const dot = (n) => {
     if (n === 0) return 'bg-gray-700/60 text-gray-500';
-    if (Number.isFinite(target)) return n < target ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
+    if (Number.isFinite(target)) return n <= target ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
     return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
   };
   return (

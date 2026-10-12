@@ -431,7 +431,7 @@ export function HomeViewRefactored({
 
         const dotClass = (count) => {
           if (count === 0) return 'bg-gray-700/60 text-gray-500';
-          if (Number.isFinite(target)) return count < target
+          if (Number.isFinite(target)) return count <= target
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
           return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';

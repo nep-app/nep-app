@@ -380,7 +380,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       if (!dateLabel) dateLabel = (i18n.language || '').startsWith('en') ? 'recent' : 'há pouco';
       // Só mostramos valores MEDIDOS (sem estimativas), por isso sem "≈".
       const mgShown = `${lastMg}`;
-      if (lastMg >= targetMg) {
+      // Igual à meta conta como cumprido (como nos Padrões).
+      if (lastMg > targetMg) {
         alerts.push({
           text: i18n.t('alerts.watchDose', { mg: mgShown, date: dateLabel }),
           emoji: '📊',

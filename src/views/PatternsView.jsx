@@ -11,7 +11,7 @@ import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievementCount, getAllDaysSinceFirstRecord } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
 
 export function PatternsView({
     patternsPeriod,
@@ -68,9 +68,10 @@ export function PatternsView({
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border overflow-hidden">
                                         <div className="flex flex-col gap-2 mb-1">
-                                            <div className="flex gap-2 flex-wrap">
+                                            {/* Os 4 sempre numa linha */}
+                                            <div className="grid grid-cols-4 gap-1.5">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                    <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                                    <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-1 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                         {t('patterns.periods.' + period)}
                                                     </button>
                                                 ))}
@@ -272,75 +273,7 @@ export function PatternsView({
                                                 // (totalAchievements é calculado ABAIXO, a partir do goalBreakdown, para
                                                 //  respeitar a guarda createdAt e bater certo com a soma dos cartões.)
 
-                                                // Calcular dias únicos com consumos (base para TODAS as metas exceto sleep_hours/bedtime_before)
                                                 const today = getTodayKey(); // ISO format for consistent date comparisons
-                                                const daysWithConsumptions = new Set();
-                                                filteredConsumptions.forEach(c => {
-                                                    const dateKey = c.date || safeToISODate(c.timestamp);
-                                                    if (dateKey && dateKey !== today) daysWithConsumptions.add(dateKey);
-                                                });
-                                                const totalDaysWithConsumptions = daysWithConsumptions.size;
-
-                                                // Calcular dias únicos com sono (para sleep_hours)
-                                                const daysWithSleep = new Set();
-                                                filteredCycles.forEach(c => {
-                                                    const dateKey = c.date || safeToISODate(c.timestamp);
-                                                    if (dateKey && dateKey !== today && c.sleep != null && c.sleep !== '') {
-                                                        daysWithSleep.add(dateKey);
-                                                    }
-                                                });
-                                                filteredWellbeingLogs.forEach(w => {
-                                                    const dateKey = w.date || safeToISODate(w.timestamp);
-                                                    if (dateKey && dateKey !== today && w.sleep != null && w.sleep !== '') {
-                                                        daysWithSleep.add(dateKey);
-                                                    }
-                                                });
-                                                const totalDaysWithSleep = daysWithSleep.size;
-
-                                                // Dias com hora de deitar registada (para bedtime_before)
-                                                const daysWithBedtime = new Set();
-                                                filteredCycles.forEach(c => {
-                                                    const dateKey = c.date || safeToISODate(c.timestamp);
-                                                    if (dateKey && dateKey !== today && c.bedtime) {
-                                                        daysWithBedtime.add(dateKey);
-                                                    }
-                                                });
-                                                const totalDaysWithBedtime = daysWithBedtime.size;
-
-                                                // Dias com ≥2 consumos (para increase_interval — precisas de pelo menos 2 para calcular intervalo)
-                                                const countByDatePT = {};
-                                                filteredConsumptions.forEach(c => {
-                                                    const dateKey = timestampToPT(c.timestamp);
-                                                    if (dateKey && dateKey !== today) countByDatePT[dateKey] = (countByDatePT[dateKey] || 0) + 1;
-                                                });
-                                                const totalDaysWithMultipleConsumptions = Object.values(countByDatePT).filter(n => n >= 2).length;
-
-                                                // Dias com dados de mg (para reduce_quantity)
-                                                const daysWithMg = new Set();
-                                                filteredDailyLogs.forEach(log => {
-                                                    if (log.date && log.mg != null) daysWithMg.add(log.date);
-                                                });
-                                                filteredCycles.forEach(c => {
-                                                    if (c.mg) { const dk = getDateKeyFromItem(c); if (dk && dk !== today) daysWithMg.add(dk); }
-                                                });
-                                                daysWithMg.delete(today);
-                                                const totalDaysWithMg = daysWithMg.size;
-
-                                                // Dias com consumos E dados de ciclo (bedtime+sleep) para first_not_before
-                                                const datesWithCycleData = new Set();
-                                                filteredCycles.forEach(c => {
-                                                    if (c.bedtime && c.sleep != null) { const dk = getDateKeyFromItem(c); if (dk) datesWithCycleData.add(dk); }
-                                                });
-                                                const daysWithConsumptionsAndCycle = new Set();
-                                                filteredConsumptions.forEach(c => {
-                                                    const dateKey = c.date || safeToISODate(c.timestamp); // ISO format to match datesWithCycleData
-                                                    if (dateKey && dateKey !== today && datesWithCycleData.has(dateKey)) daysWithConsumptionsAndCycle.add(dateKey);
-                                                });
-                                                const totalDaysWithConsumptionsAndCycle = daysWithConsumptionsAndCycle.size;
-
-                                                // Para reduce_frequency, o denominador é TODOS os dias desde o primeiro registo
-                                                // (dias sem consumos também contam como sucesso na meta de frequência)
-                                                const allDaysCount = getAllDaysSinceFirstRecord(filteredConsumptions).length;
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     // Filter data by goal.createdAt to avoid inflating denominators
@@ -359,56 +292,15 @@ export function PatternsView({
                                                         ? filteredWellbeingLogs.filter(w => { const d = w.date || safeToISODate(w.timestamp); return !d || d >= goalCreatedAt; })
                                                         : filteredWellbeingLogs;
 
-                                                    const achievementCount = getGoalAchievementCount(g, gCons, gLogs, gCycles, gWellbeing);
-
-                                                    let totalPossible = 0;
-
-                                                    if (g.type === 'sleep_hours') {
-                                                        const s = new Set();
-                                                        gCycles.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today && c.sleep != null && c.sleep !== '') s.add(d); });
-                                                        gWellbeing.forEach(w => { const d = w.date || safeToISODate(w.timestamp); if (d && d !== today && w.sleep != null && w.sleep !== '') s.add(d); });
-                                                        totalPossible = s.size;
-                                                    } else if (g.type === 'bedtime_before') {
-                                                        const s = new Set();
-                                                        gCycles.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today && c.bedtime) s.add(d); });
-                                                        totalPossible = s.size;
-                                                    } else if (g.type === 'reduce_frequency') {
-                                                        totalPossible = getAllDaysSinceFirstRecord(gCons).length;
-                                                    } else if (g.type === 'increase_interval') {
-                                                        const cnt = {};
-                                                        gCons.forEach(c => { const d = safeToISODate(c.timestamp); if (d && d !== today) cnt[d] = (cnt[d] || 0) + 1; });
-                                                        totalPossible = Object.values(cnt).filter(n => n >= 2).length;
-                                                    } else if (g.type === 'reduce_quantity') {
-                                                        const s = new Set();
-                                                        gLogs.forEach(l => { if (l.date && l.mg != null && l.date !== today) s.add(l.date); });
-                                                        gCycles.forEach(c => { if (c.mg) { const d = getDateKeyFromItem(c); if (d && d !== today) s.add(d); } });
-                                                        totalPossible = s.size;
-                                                    } else if (g.type === 'limit_last') {
-                                                        // Denominador = ciclos fechados onde a meia-noite ocorreu
-                                                        const sortedC = [...gCycles]
-                                                            .filter(c => c.timestamp || c.date)
-                                                            .map(c => new Date(c.timestamp || c.date))
-                                                            .sort((a, b) => a - b);
-                                                        const now = new Date();
-                                                        const bounds = [...sortedC, now];
-                                                        let cyclesTotalPossible = 0;
-                                                        for (let i = 0; i < bounds.length - 1; i++) {
-                                                            const cStart = bounds[i];
-                                                            const cEnd = bounds[i + 1];
-                                                            const midnight = new Date(cStart);
-                                                            midnight.setDate(midnight.getDate() + 1);
-                                                            midnight.setHours(0, 0, 0, 0);
-                                                            if (midnight >= cEnd) continue;
-                                                            const hasCons = gCons.some(c => { const t = new Date(c.timestamp); return t > cStart && t <= cEnd; });
-                                                            if (hasCons) cyclesTotalPossible++;
+                                                    // Cumpridos e possíveis vêm da MESMA conta (analyticsService.getGoalAchievement),
+                                                    // para a percentagem não misturar regras diferentes.
+                                                    const { achieved: achievementCount, possible: totalPossible } = getGoalAchievement(
+                                                        g, gCons, gLogs, gCycles, gWellbeing,
+                                                        {
+                                                            excludedDates: new Set([...(atypicalDates || []), ...(metrics?.unloggedDates || [])]),
+                                                            measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
                                                         }
-                                                        totalPossible = cyclesTotalPossible;
-                                                    } else {
-                                                        // first_not_before, default: days with consumptions
-                                                        const s = new Set();
-                                                        gCons.forEach(c => { const d = c.date || safeToISODate(c.timestamp); if (d && d !== today) s.add(d); });
-                                                        totalPossible = s.size;
-                                                    }
+                                                    );
 
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;
 

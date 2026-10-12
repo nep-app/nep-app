@@ -619,16 +619,16 @@ export function HistoryView({
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex gap-2 flex-wrap">
+                                        <div className="flex flex-col gap-2 mb-3">
+                                            <div className="grid grid-cols-4 gap-1.5">
                                                 {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                    <button key={period} onClick={() => { setHistoryPeriod(period); setHistoryPeriodOffset(0); }} className={'px-4 py-2 rounded-lg font-medium transition-colors text-sm ' + (historyPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                                    <button key={period} onClick={() => { setHistoryPeriod(period); setHistoryPeriodOffset(0); }} className={'px-1 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap ' + (historyPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
                                                         {t(`patterns.periods.${period}`)}
                                                     </button>
                                                 ))}
                                             </div>
                                             {historyPeriod !== 'tudo' && (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className="text-purple-600 p-2 rounded-lg transition-colors hover:bg-gray-700">
                                                         <Icons.ChevronLeft className="w-5 h-5" />
                                                     </button>
