@@ -6,7 +6,7 @@ import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate, getTodayKey } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 
-const { getDateRangeForPeriod, filterByDateRange, getGoalAchievementCount } = analyticsService;
+const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
 
 export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisConsumptions,

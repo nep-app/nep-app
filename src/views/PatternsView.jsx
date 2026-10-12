@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayPT, getTodayKey, timestampToPT, subtractDays, getDateKeyFromItem } from '../utils/helpers';
+import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayKey, subtractDays, getDateKeyFromItem } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -273,7 +273,11 @@ export function PatternsView({
                                                 // (totalAchievements é calculado ABAIXO, a partir do goalBreakdown, para
                                                 //  respeitar a guarda createdAt e bater certo com a soma dos cartões.)
 
-                                                const today = getTodayKey(); // ISO format for consistent date comparisons
+                                                // Dias a deixar de fora (atípicos e "não registei") e o período
+                                                // escolhido, em 'YYYY-MM-DD' — iguais para todas as metas.
+                                                const goalExcluded = new Set([...(atypicalDates || []), ...(metrics?.unloggedDates || [])]);
+                                                const periodFrom = dateRange?.start ? safeToISODate(dateRange.start) : null;
+                                                const periodTo = dateRange?.end ? safeToISODate(dateRange.end) : null;
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
                                                     // Filter data by goal.createdAt to avoid inflating denominators
@@ -294,15 +298,23 @@ export function PatternsView({
 
                                                     // Cumpridos e possíveis vêm da MESMA conta (analyticsService.getGoalAchievement),
                                                     // para a percentagem não misturar regras diferentes.
+                                                    // O período começa no mais tarde de: início do período escolhido
+                                                    // ou dia em que a meta foi criada.
+                                                    const fromDate = [periodFrom, goalCreatedAt].filter(Boolean).sort().pop() || null;
                                                     const { achieved: achievementCount, possible: totalPossible } = getGoalAchievement(
                                                         g, gCons, gLogs, gCycles, gWellbeing,
                                                         {
-                                                            excludedDates: new Set([...(atypicalDates || []), ...(metrics?.unloggedDates || [])]),
+                                                            fromDate,
+                                                            toDate: periodTo,
+                                                            excludedDates: goalExcluded,
                                                             measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
+                                                            allCycles: cycles,
+                                                            allConsumptions: consumptions,
                                                         }
                                                     );
 
-                                                    const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : 0;
+                                                    // Sem dias que contem não há percentagem: "ainda não se sabe", não 0%.
+                                                    const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : null;
 
                                                     return {
                                                         ...g,
@@ -937,7 +949,7 @@ export function PatternsView({
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs italic ' + ('text-gray-400')}>
-                                                                                            {t('patterns.goals.target')} {goal.type === 'increase_interval' ? '50%' : goal.target + (goal.type === 'reduce_frequency' ? (i18n.language === 'en' ? 'x/day' : 'x/dia') : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
+                                                                                            {t('patterns.goals.target')} {goal.target + (goal.type === 'increase_interval' ? 'h' : goal.type === 'reduce_frequency' ? (i18n.language === 'en' ? 'x/day' : 'x/dia') : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
@@ -949,7 +961,10 @@ export function PatternsView({
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
-                                                                                {/* Progress Bar */}
+                                                                                {/* Progress Bar — só quando há dias que contem; senão diz que não sabe */}
+                                                                                {goal.successRate == null ? (
+                                                                                    <p className="text-xs text-gray-400">{t('patterns.goals.noData')}</p>
+                                                                                ) : (
                                                                                 <div>
                                                                                     <div className="flex items-center justify-between mb-1">
                                                                                         <span className={'text-xs font-medium ' + ('text-gray-400')}>
@@ -966,6 +981,7 @@ export function PatternsView({
                                                                                         ></div>
                                                                                     </div>
                                                                                 </div>
+                                                                                )}
                                                                             </div>
                                                                         );
                                                                     })}

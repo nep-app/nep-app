@@ -367,7 +367,7 @@ export const MetricsProvider = ({ children }) => {
       if (goal.type === 'reduce_quantity') {
         const avgLast7Mg = parseFloat(last7Days.avgMg);
         if (avgLast7Mg === 0) return 0;
-        if (avgLast7Mg < goal.target) return 100;
+        if (avgLast7Mg <= goal.target) return 100; // igual à meta = cumprido
         const baseline = Math.max(avgLast7Mg, goal.target * 2);
         const progress = ((baseline - avgLast7Mg) / (baseline - goal.target)) * 100;
         return Math.max(0, Math.min(100, progress));

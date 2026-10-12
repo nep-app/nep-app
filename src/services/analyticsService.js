@@ -1,36 +1,7 @@
-import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getTodayPT, timestampToPT, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline } from '../utils/helpers';
 import i18n from '../i18n';
 
 // ===== HELPER FUNCTIONS =====
-
-/**
- * Gera array de todos os dias desde o primeiro consumption até ontem
- * @param {Array} consumptions - Array de consumptions
- * @returns {Array} Array de datas em formato ISO (YYYY-MM-DD)
- */
-export const getAllDaysSinceFirstRecord = (consumptions) => {
-    if (!consumptions || consumptions.length === 0) return [];
-
-    // Encontrar primeiro consumption
-    const timestamps = consumptions.map(c => new Date(c.timestamp).getTime()).filter(t => !isNaN(t));
-    if (timestamps.length === 0) return [];
-
-    const firstTimestamp = Math.min(...timestamps);
-    const firstDate = new Date(firstTimestamp);
-    const today = new Date();
-
-    // Gerar todos os dias desde firstDate até ontem
-    const days = [];
-    const current = new Date(firstDate);
-    current.setHours(0, 0, 0, 0);
-
-    while (current < today) {
-        days.push(safeToISODate(current));
-        current.setDate(current.getDate() + 1);
-    }
-
-    return days;
-};
 
 // ===== ANALYTICS LOGIC =====
 
@@ -271,94 +242,118 @@ export const calculateAvgFrequencyLast7Days = (consumptions) => {
  * @param {Array} wellbeingLogs - Array of wellbeing logs (optional, defaults to all)
  * @returns {number} Number of times the goal was achieved
  */
-export const getGoalAchievementCount = (goal, consumptions, dailyLogs, cycles, wellbeingLogs, opts) =>
-    getGoalAchievement(goal, consumptions, dailyLogs, cycles, wellbeingLogs, opts).achieved;
-
 /**
  * Cumprimento de uma meta: { achieved, possible } — os dias (ou ciclos) em que
  * se cumpriu e os que CONTAM, calculados no MESMO ciclo, pela MESMA regra.
  *
- * Antes o "cumpridos" vinha daqui e o "possíveis" era contado à parte nos
- * Padrões, com regras diferentes — dava percentagens erradas:
- *  - frequência: dias sem consumos entravam no total mas nunca nos cumpridos;
- *  - quantidade: os mg das pesagens não entravam (só "Registar mg" à mão);
- *  - 1.º consumo depois de acordar: sem ciclo, inventava acordar às 08:00;
- *  - último consumo: o total contava ciclos pela meia-noite, não pela meta.
- *
  * Regras comuns: hoje não conta (o dia ainda não acabou); dias atípicos e
- * "não registei" (opts.excludedDates) ficam de fora; um dia sem dados para a
- * meta não conta nem como cumprido nem como falhado ("não sei").
- * "Igual à meta" conta como cumprido em todas.
+ * "não registei" ficam de fora; um dia sem dados para a meta não conta nem
+ * como cumprido nem como falhado ("não sei"); "igual à meta" é cumprido.
+ * Meta sem alvo legível → { 0, 0 } (não se avalia; não se inventa um alvo).
  *
- * @param {Object} opts { excludedDates?: Set<string>, measuredMgByDate?: {date: mg} }
+ * @param {Array} consumptions/dailyLogs/cycles/wellbeingLogs — já cortados ao
+ *        período e à data de criação da meta (os dias que se avaliam).
+ * @param {Object} opts
+ *   fromDate, toDate   'YYYY-MM-DD' — o período avaliado (inclusive). Sem
+ *                      fromDate começa no 1.º registo de qualquer tipo.
+ *   excludedDates      Set de dias a deixar de fora (atípicos, "não registei").
+ *   measuredMgByDate   { dia: mg } medidos pelas pesagens (todo o histórico;
+ *                      aqui é cortado ao período).
+ *   allCycles, allConsumptions — TODOS os ciclos/consumos (sem cortes), para as
+ *                      metas por ciclo de sono: os limites de cada ciclo e o
+ *                      que lhe pertence não podem depender do que se excluiu.
  */
 export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycles = [], wellbeingLogs = [], opts = {}) => {
     const today = getTodayKey();
-    const atypicalDates = new Set(
-        (wellbeingLogs || []).filter(w => w.isAtypical).map(w => w.date || getDateKeyFromItem(w)).filter(Boolean)
-    );
-    const excludedExtra = opts.excludedDates || new Set();
-    const isOut = (date) => !date || date === today || atypicalDates.has(date) || excludedExtra.has(date);
-    const dayOf = (x) => x.date || getDateKeyFromItem(x) || safeToISODate(x.timestamp);
+    const day = getDateKeyFromItem;
+    const atypicalDates = new Set((wellbeingLogs || []).filter(w => w.isAtypical).map(day).filter(Boolean));
+    const excluded = opts.excludedDates || new Set();
+    const isOut = (d) => !d || d >= today || atypicalDates.has(d) || excluded.has(d);
+    const inRange = (d) => !isOut(d) && (!opts.fromDate || d >= opts.fromDate) && (!opts.toDate || d <= opts.toDate);
 
-    consumptions = (consumptions || []).filter(c => !isOut(dayOf(c)) || dayOf(c) === today);
-    dailyLogs = (dailyLogs || []).filter(l => !l?.notLogged && !isOut(dayOf(l)));
-    cycles = (cycles || []).filter(c => !isOut(dayOf(c)) || dayOf(c) === today);
-    const target = goal.type === 'limit_last' || goal.type === 'bedtime_before' ? goal.target : parseFloat(goal.target);
+    const timeTarget = goal.type === 'limit_last' || goal.type === 'bedtime_before';
+    const target = timeTarget ? goal.target : parseFloat(goal.target);
+    if (timeTarget ? !target : !Number.isFinite(target)) return { achieved: 0, possible: 0 };
 
+    consumptions = consumptions || [];
+    dailyLogs = (dailyLogs || []).filter(l => !l?.notLogged);
+    cycles = cycles || [];
+    const ms = (x) => new Date(x.timestamp || x.createdAt || x.date).getTime();
     let achieved = 0, possible = 0;
 
     if (goal.type === 'reduce_frequency') {
-        // Dias desde o 1.º consumo até ontem. Um dia sem consumos só conta se
-        // houver OUTRO registo nesse dia (ciclo, bem-estar, mg) — aí sabe-se
-        // que foi um dia a zero; sem nenhum registo, não se sabe e fica de fora.
+        // Todos os dias do período (até ontem). Um dia sem consumos só conta se
+        // houver OUTRO registo nesse dia — aí sabe-se que foi um dia a zero;
+        // sem registo nenhum, não se sabe e fica de fora.
         const counts = {};
-        consumptions.forEach(c => { const d = dayOf(c); if (!isOut(d)) counts[d] = (counts[d] || 0) + 1; });
-        const otherRecordDays = new Set([
-            ...cycles.map(dayOf), ...dailyLogs.map(dayOf),
-            ...(wellbeingLogs || []).map(dayOf),
-        ].filter(d => !isOut(d)));
-        getAllDaysSinceFirstRecord(consumptions).forEach(d => {
-            if (isOut(d)) return;
-            const n = counts[d] || 0;
-            if (n === 0 && !otherRecordDays.has(d)) return;
-            possible++;
-            if (n <= target) achieved++;
-        });
+        consumptions.forEach(c => { const d = day(c); if (inRange(d)) counts[d] = (counts[d] || 0) + 1; });
+        const otherRecordDays = new Set([...cycles, ...dailyLogs, ...(wellbeingLogs || [])].map(day).filter(inRange));
+        const known = [...Object.keys(counts), ...otherRecordDays].sort();
+        const from = opts.fromDate || known[0];
+        if (from) {
+            const cur = new Date(`${from}T12:00:00`);
+            const last = opts.toDate && opts.toDate < today ? opts.toDate : null;
+            for (let d = safeToISODate(cur); d < today && (!last || d <= last); cur.setDate(cur.getDate() + 1), d = safeToISODate(cur)) {
+                if (!inRange(d)) continue;
+                const n = counts[d] || 0;
+                if (n === 0 && !otherRecordDays.has(d)) continue;
+                possible++;
+                if (n <= target) achieved++;
+            }
+        }
     }
 
     if (goal.type === 'reduce_quantity') {
-        // mg por dia: "Registar mg" à mão manda; senão, mg MEDIDOS pelas
-        // pesagens (só dias 100% medidos — nunca estimativas); e o campo
-        // antigo dos ciclos.
+        // "Registar mg" à mão manda; senão, mg MEDIDOS pelas pesagens (só dias
+        // 100% medidos — nunca estimativas); e o campo antigo dos ciclos.
         const mgByDate = {};
-        const add = (d, v) => { const n = typeof v === 'number' ? v : parseFloat(v); if (d && !isOut(d) && !isNaN(n)) mgByDate[d] = (mgByDate[d] || 0) + n; };
-        dailyLogs.forEach(l => { if (l.mg != null && l.mg !== '') add(l.date || dayOf(l), l.mg); });
-        cycles.forEach(c => { if (c.mg) add(dayOf(c), c.mg); });
+        const add = (d, v) => { const n = typeof v === 'number' ? v : parseFloat(v); if (inRange(d) && !isNaN(n)) mgByDate[d] = (mgByDate[d] || 0) + n; };
+        dailyLogs.forEach(l => { if (l.mg != null && l.mg !== '') add(day(l), l.mg); });
+        cycles.forEach(c => { if (c.mg) add(day(c), c.mg); });
         Object.entries(opts.measuredMgByDate || {}).forEach(([d, mg]) => { if (!(d in mgByDate)) add(d, mg); });
         Object.values(mgByDate).forEach(mg => { possible++; if (mg <= target) achieved++; });
     }
 
+    // Ciclos de sono: janelas de acordar → acordar seguinte, feitas com TODOS
+    // os ciclos; só se avaliam as que começam num dia do período.
+    const allCycles = opts.allCycles || cycles;
+    const allCons = opts.allConsumptions || consumptions;
+    const wakes = allCycles.map(c => ({ ms: ms(c), d: day(c) })).filter(w => !isNaN(w.ms)).sort((x, y) => x.ms - y.ms);
+    const consMs = allCons.map(c => new Date(c.timestamp).getTime()).filter(x => !isNaN(x)).sort((x, y) => x - y);
+
     if (goal.type === 'limit_last') {
-        // Por ciclo de sono FECHADO: algum consumo depois da hora da meta → falhou.
-        const starts = cycles.map(c => new Date(c.timestamp || c.date).getTime()).filter(ms => !isNaN(ms)).sort((a, b) => a - b);
-        const consMs = consumptions.map(c => new Date(c.timestamp).getTime()).filter(ms => !isNaN(ms));
-        for (let i = 0; i < starts.length - 1; i++) {
-            const startMs = starts[i], endMs = starts[i + 1];
-            const cycleCons = consMs.filter(ms => ms > startMs && ms <= endMs);
-            if (cycleCons.length === 0) continue;
+        // Ciclo FECHADO com consumos: algum depois da hora da meta → falhou.
+        for (let i = 0; i < wakes.length - 1; i++) {
+            if (!inRange(wakes[i].d)) continue;
+            const startMs = wakes[i].ms, endMs = wakes[i + 1].ms;
+            const inCycle = consMs.filter(x => x > startMs && x <= endMs);
+            if (inCycle.length === 0) continue;
             const deadlineMs = limitLastDeadline(startMs, target);
             if (deadlineMs == null || deadlineMs >= endMs) continue;
             possible++;
-            if (!cycleCons.some(ms => ms > deadlineMs)) achieved++;
+            if (!inCycle.some(x => x > deadlineMs)) achieved++;
+        }
+    }
+
+    if (goal.type === 'first_not_before') {
+        // Só ciclos com hora de acordar; o 1.º consumo tem de ser DESSE ciclo
+        // (antes do acordar seguinte). Sem consumo nesse ciclo, fica de fora.
+        for (let i = 0; i < wakes.length; i++) {
+            if (!inRange(wakes[i].d)) continue;
+            const startMs = wakes[i].ms;
+            const endMs = i + 1 < wakes.length ? wakes[i + 1].ms : Date.now();
+            const first = consMs.find(x => x >= startMs && x < endMs);
+            if (first == null) continue;
+            possible++;
+            if (first - startMs >= target * 3600000) achieved++;
         }
     }
 
     if (goal.type === 'increase_interval') {
         // Dias com ≥2 consumos: cumprido se pelo menos metade dos intervalos
-        // chega à meta (igual à meta conta).
+        // chega à meta.
         const byDate = {};
-        consumptions.forEach(c => { const d = dayOf(c); if (!isOut(d)) (byDate[d] = byDate[d] || []).push(new Date(c.timestamp).getTime()); });
+        consumptions.forEach(c => { const d = day(c); if (inRange(d)) (byDate[d] = byDate[d] || []).push(new Date(c.timestamp).getTime()); });
         Object.values(byDate).forEach(list => {
             if (list.length < 2) return;
             list.sort((x, y) => x - y);
@@ -372,36 +367,23 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
     if (goal.type === 'sleep_hours') {
         // Horas da NOITE (ciclo); bem-estar antigo só se não houver ciclo.
         const byDate = {};
-        (wellbeingLogs || []).forEach(w => { const d = dayOf(w); if (!isOut(d) && w.sleep != null && w.sleep !== '' && !isNaN(parseFloat(w.sleep))) byDate[d] = parseFloat(w.sleep); });
-        cycles.forEach(c => { const d = dayOf(c); if (!isOut(d) && c.sleep != null && c.sleep !== '' && !isNaN(parseFloat(c.sleep))) byDate[d] = parseFloat(c.sleep); });
+        const put = (x) => { const d = day(x); const h = parseFloat(x.sleep); if (inRange(d) && x.sleep != null && x.sleep !== '' && !isNaN(h)) byDate[d] = h; };
+        (wellbeingLogs || []).forEach(put);
+        cycles.forEach(put);
         Object.values(byDate).forEach(h => { possible++; if (h >= target) achieved++; });
     }
 
     if (goal.type === 'bedtime_before') {
-        // Um ciclo por dia com hora de deitar legível.
+        // Um ciclo por dia, com hora de deitar legível.
         const seen = new Set();
         cycles.forEach(c => {
-            const d = dayOf(c);
-            if (isOut(d) || !c.bedtime || seen.has(d)) return;
+            const d = day(c);
+            if (!inRange(d) || !c.bedtime || seen.has(d)) return;
             const ok = bedtimeMeetsTarget(c.bedtime, target);
             if (ok == null) return;
             seen.add(d);
             possible++;
             if (ok) achieved++;
-        });
-    }
-
-    if (goal.type === 'first_not_before') {
-        // Só dias em que se sabe a hora de acordar (há ciclo com hora). Sem
-        // ciclo NÃO se inventa uma hora de acordar — o dia fica de fora.
-        const cycleByDate = {};
-        cycles.forEach(c => { const d = dayOf(c); const ts = new Date(c.timestamp || c.createdAt).getTime(); if (!isOut(d) && !isNaN(ts) && !(d in cycleByDate)) cycleByDate[d] = ts; });
-        const consMs = consumptions.map(c => new Date(c.timestamp).getTime()).filter(ms => !isNaN(ms)).sort((x, y) => x - y);
-        Object.values(cycleByDate).forEach(wakeMs => {
-            const first = consMs.find(ms => ms >= wakeMs && ms < wakeMs + 24 * 3600000);
-            if (first == null) return; // nenhum consumo depois de acordar
-            possible++;
-            if (first - wakeMs >= target * 3600000) achieved++;
         });
     }
 

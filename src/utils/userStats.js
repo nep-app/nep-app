@@ -408,21 +408,16 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       if (lastCycleWithSleep) {
         const sleepHours = parseFloat(lastCycleWithSleep.sleep);
         const targetSleep = parseFloat(sleepGoal.target);
-        const maxHealthySleep = targetSleep + 2;
-
-        if (sleepHours >= targetSleep && sleepHours <= maxHealthySleep) {
+        // A meta é "pelo menos X horas": dormir mais conta como cumprido (como nos
+        // Padrões e no Início com relógio). Havia aqui um "sono excessivo" acima
+        // de meta + 2h — um juízo que a app tomava sozinha, sem a pessoa o ter
+        // definido (regra do elogio no CLAUDE.md).
+        if (sleepHours >= targetSleep) {
           alerts.push({
             text: i18n.t('alerts.goodSleep', { hours: sleepHours }),
             emoji: '🌙',
             color: 'green',
             type: 'positive'
-          });
-        } else if (sleepHours > maxHealthySleep) {
-          alerts.push({
-            text: i18n.t('alerts.excessiveSleep', { hours: sleepHours }),
-            emoji: '😴',
-            color: 'orange',
-            type: 'warning'
           });
         } else {
           alerts.push({
@@ -617,6 +612,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       const todayCount = todayConsumptions.length;
       const targetFrequency = parseInt(frequencyGoal.target);
 
+      // Igual à meta = cumprido (como nos Padrões e nas bolinhas): diz-se que se
+      // chegou ao limite, sem alarme. Só acima da meta é que é "Atenção".
       if (todayCount < targetFrequency) {
         alerts.push({
           text: i18n.t('alerts.goodFrequency', { count: todayCount }),
@@ -624,7 +621,14 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
           color: 'green',
           type: 'positive'
         });
-      } else if (todayCount >= targetFrequency) {
+      } else if (todayCount === targetFrequency) {
+        alerts.push({
+          text: i18n.t('alerts.atLimitFrequency', { count: todayCount }),
+          emoji: '🎯',
+          color: 'blue',
+          type: 'observational'
+        });
+      } else {
         alerts.push({
           text: i18n.t('alerts.highFrequency', { count: todayCount }),
           emoji: '⚠️',

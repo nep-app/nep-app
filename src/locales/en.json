@@ -214,7 +214,8 @@
     "limitLastFail": "Last use at {{time}} — target: before {{target}}",
     "limitLastSuccess": "before {{target}} ✓",
     "firstNotBeforeFail": "1st use at {{time}} — target: {{hours}}h after waking",
-    "firstNotBeforeSuccess": "{{hours}}h after waking ✓"
+    "firstNotBeforeSuccess": "{{hours}}h after waking ✓",
+    "atLimitFrequency": "You've reached your goal's limit: {{count}} uses today"
   },
   "nav": {
     "home": "Home",
@@ -831,14 +832,15 @@
         "first_not_before": "☀️ First use after"
       },
       "explain": {
-        "reduce_frequency": "Days with <{{target}} uses",
-        "reduce_quantity": "Days with <{{target}}mg",
-        "limit_last": "Days with last use before {{target}}",
-        "increase_interval": "Days with ≥50% intervals >{{target}}h",
-        "sleep_hours": "Nights with ≥{{target}}h sleep",
-        "bedtime_before": "Nights sleeping before {{target}}",
-        "first_not_before": "Days with 1st use ≥{{target}}h after waking"
-      }
+        "reduce_frequency": "Days with up to {{target}} uses",
+        "reduce_quantity": "Measured days with up to {{target}}mg",
+        "limit_last": "Cycles with the last use by {{target}}",
+        "increase_interval": "Days with at least half the intervals ≥{{target}}h",
+        "sleep_hours": "Nights with ≥{{target}}h of sleep",
+        "bedtime_before": "Nights in bed by {{target}}",
+        "first_not_before": "Cycles with the 1st use ≥{{target}}h after waking"
+      },
+      "noData": "Not enough days in this period to tell yet."
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",

@@ -214,7 +214,8 @@
     "limitLastFail": "Último consumo {{time}} — meta: até {{target}}",
     "limitLastSuccess": "antes das {{target}} ✓",
     "firstNotBeforeFail": "1º consumo {{time}} — meta: {{hours}}h após acordar",
-    "firstNotBeforeSuccess": "{{hours}}h após acordar ✓"
+    "firstNotBeforeSuccess": "{{hours}}h após acordar ✓",
+    "atLimitFrequency": "Chegaste ao limite da tua meta: {{count}} consumos hoje"
   },
   "nav": {
     "home": "Início",
@@ -894,14 +895,15 @@
         "first_not_before": "☀️ Primeiro consumo após"
       },
       "explain": {
-        "reduce_frequency": "Dias com <{{target}} consumos",
-        "reduce_quantity": "Dias com <{{target}}mg",
-        "limit_last": "Dias com último consumo antes das {{target}}",
-        "increase_interval": "Dias com ≥50% intervalos >{{target}}h",
+        "reduce_frequency": "Dias com até {{target}} consumos",
+        "reduce_quantity": "Dias medidos com até {{target}}mg",
+        "limit_last": "Ciclos com o último consumo até às {{target}}",
+        "increase_interval": "Dias com pelo menos metade dos intervalos ≥{{target}}h",
         "sleep_hours": "Noites com ≥{{target}}h de sono",
-        "bedtime_before": "Noites a dormir antes de {{target}}",
-        "first_not_before": "Dias com 1º consumo ≥{{target}}h após acordar"
-      }
+        "bedtime_before": "Noites a deitar até às {{target}}",
+        "first_not_before": "Ciclos com o 1.º consumo ≥{{target}}h depois de acordar"
+      },
+      "noData": "Ainda não há dias suficientes neste período para saber."
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",
