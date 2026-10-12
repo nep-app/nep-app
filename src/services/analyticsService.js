@@ -279,10 +279,14 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
     const inRange = (d) => !!d && d < today && !excluded.has(d)
         && (!opts.fromDate || d >= opts.fromDate) && (!opts.toDate || d <= opts.toDate);
 
+    // O alvo de CADA dia: o que estava em vigor nesse dia (opts.targetForDay,
+    // ver goalTargetForDay); sem isso, o alvo actual. Alvo ilegível → o dia
+    // não se avalia (não se inventa um alvo).
     const timeTarget = goal.type === 'limit_last' || goal.type === 'bedtime_before';
-    const target = timeTarget ? goal.target : parseFloat(goal.target);
-    if (timeTarget ? !target : !Number.isFinite(target)) return { achieved: 0, possible: 0 };
-    const meets = (v) => meetsGoal(goal.type, v, target);
+    const readTarget = (v) => (timeTarget ? (v || null) : (Number.isFinite(parseFloat(v)) ? parseFloat(v) : null));
+    const tgt = (d) => readTarget(opts.targetForDay ? opts.targetForDay(d) : goal.target);
+    if (!opts.targetForDay && tgt(null) == null) return { achieved: 0, possible: 0, days: [] };
+    const meetsOn = (d, v) => { const t = tgt(d); return t == null ? null : meetsGoal(goal.type, v, t); };
 
     let achieved = 0, possible = 0;
     // days: cada dia (ou ciclo) que contou, com o valor e se cumpriu — para a
@@ -303,7 +307,8 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
             datesInRange(from, opts.toDate && opts.toDate < today ? opts.toDate : today).filter(inRange).forEach(d => {
                 const n = counts[d] || 0;
                 if (n === 0 && !otherRecordDays.has(d)) return;
-                count(meets(n), d, n);
+                const ok = meetsOn(d, n);
+                if (ok != null) count(ok, d, n);
             });
         }
     }
@@ -316,7 +321,7 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         dailyLogs.forEach(l => { if (l.mg != null && l.mg !== '') add(day(l), l.mg); });
         cycles.forEach(c => { if (c.mg) add(day(c), c.mg); });
         Object.entries(opts.measuredMgByDate || {}).forEach(([d, mg]) => { if (!(d in mgByDate)) add(d, mg); });
-        Object.entries(mgByDate).forEach(([d, mg]) => count(meets(mg), d, Math.round(mg)));
+        Object.entries(mgByDate).forEach(([d, mg]) => { const ok = meetsOn(d, mg); if (ok != null) count(ok, d, Math.round(mg)); });
     }
 
     if (goal.type === 'limit_last' || goal.type === 'first_not_before') {
@@ -337,8 +342,10 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
                 // um ciclo (ou houve noites sem dormir não marcadas): a janela
                 // juntaria várias noites — não se sabe, não se avalia.
                 if (i + 1 >= wakes.length || endMs - startMs > MAX_CYCLE_MS) continue;
+                const dayTarget = tgt(wakes[i].d);
+                if (dayTarget == null) continue;
                 let k = j, lastMs = null, firstLateMs = null;
-                const deadlineMs = limitLastDeadline(startMs, target);
+                const deadlineMs = limitLastDeadline(startMs, dayTarget);
                 for (; k < cons.length && cons[k].ms <= endMs; k++) {
                     if (cons[k].ms <= startMs) continue;
                     lastMs = cons[k].ms;
@@ -351,7 +358,8 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
                 // consumo nesse ciclo, fica de fora.
                 if (j >= cons.length || cons[j].ms >= endMs) continue;
                 const after = (cons[j].ms - startMs) / 3600000;
-                count(meets(after), wakes[i].d, { time: hhmm(cons[j].ms), after: Math.round(after * 10) / 10 });
+                const ok = meetsOn(wakes[i].d, after);
+                if (ok != null) count(ok, wakes[i].d, { time: hhmm(cons[j].ms), after: Math.round(after * 10) / 10 });
             }
         }
     }
@@ -362,10 +370,10 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         const byDate = {};
         consumptions.forEach(c => { const d = day(c); if (inRange(d)) (byDate[d] = byDate[d] || []).push(new Date(c.timestamp).getTime()); });
         Object.entries(byDate).forEach(([d, list]) => {
-            if (list.length < 2) return;
+            if (list.length < 2 || tgt(d) == null) return;
             list.sort((x, y) => x - y);
             let long = 0;
-            for (let i = 1; i < list.length; i++) if (meets((list[i] - list[i - 1]) / 3600000)) long++;
+            for (let i = 1; i < list.length; i++) if (meetsOn(d, (list[i] - list[i - 1]) / 3600000)) long++;
             count(long >= (list.length - 1) / 2, d, { long, total: list.length - 1 });
         });
     }
@@ -390,13 +398,14 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         const byDate = {};
         wellbeingLogs.forEach(w => { const d = day(w); if (inRange(d) && hasSleep(w)) byDate[d] = parseFloat(w.sleep); });
         Object.entries(latestCycleByDay(hasSleep)).forEach(([d, c]) => { byDate[d] = parseFloat(c.sleep); });
-        Object.entries(byDate).forEach(([d, h]) => count(meets(h), d, h));
+        Object.entries(byDate).forEach(([d, h]) => { const ok = meetsOn(d, h); if (ok != null) count(ok, d, h); });
     }
 
     if (goal.type === 'bedtime_before') {
         // Hora de deitar legível; o resto não se avalia.
         Object.entries(latestCycleByDay(c => !!c.bedtime)).forEach(([d, c]) => {
-            const ok = bedtimeMeetsTarget(c.bedtime, target);
+            const t = tgt(d);
+            const ok = t == null ? null : bedtimeMeetsTarget(c.bedtime, t);
             if (ok == null) return;
             count(ok, d, c.bedtime);
         });

@@ -474,7 +474,9 @@
         "consumos": "uses",
         "horas": "hours",
         "hora": "hour"
-      }
+      },
+      "countsFromLabel": "Count from",
+      "countsFromHint": "Days before this date don't count with this value. If you changed the goal, put the day you changed it."
     }
   },
   "messages": {
@@ -851,7 +853,8 @@
         "interval": "{{long}} of {{total}} intervals",
         "bedtime": "bed at {{time}}",
         "lastLate": "use at {{time}}, after the time"
-      }
+      },
+      "targetSince": "Current goal ({{target}}) since {{date}}; earlier days count with the value at the time."
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",

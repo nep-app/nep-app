@@ -474,7 +474,9 @@
         "consumos": "consumos",
         "horas": "horas",
         "hora": "hora"
-      }
+      },
+      "countsFromLabel": "Contar a partir de",
+      "countsFromHint": "Os dias antes desta data não contam com este valor. Se mudaste a meta, põe aqui o dia em que mudaste."
     }
   },
   "messages": {
@@ -914,7 +916,8 @@
         "interval": "{{long}} de {{total}} intervalos",
         "bedtime": "deitar às {{time}}",
         "lastLate": "consumo às {{time}}, depois da hora"
-      }
+      },
+      "targetSince": "Meta actual ({{target}}) desde {{date}}; antes, os dias contam com o valor de então."
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
+import { getTodayKey } from '../../utils/helpers';
 
 export const GoalModal = ({
   isOpen,
@@ -185,12 +186,31 @@ export const GoalModal = ({
               <input
                 type={isTimeType ? 'time' : 'number'}
                 value={goalForm.target}
-                onChange={(e) => setGoalForm({...goalForm, target: e.target.value})}
+                onChange={(e) => {
+                  // A editar: mudar o valor passa a contar a partir de HOJE (os dias de
+                  // antes ficam com o valor antigo). Pode-se escolher outra data abaixo.
+                  const v = e.target.value;
+                  const changed = editingGoal && String(v) !== String(goalForm.originalTarget);
+                  setGoalForm({ ...goalForm, target: v, countsFrom: changed ? getTodayKey() : goalForm.originalFrom ?? goalForm.countsFrom });
+                }}
                 className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
                 placeholder={isTimeType ? '00:00' : `Ex: ${selectedOption?.unit === 'mg' ? '300' : selectedOption?.unit === 'consumos' ? '5' : '2'}`}
                 required
               />
             </div>
+            {editingGoal && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('modals.goal.countsFromLabel')}</label>
+                <input
+                  type="date"
+                  value={goalForm.countsFrom || ''}
+                  max={getTodayKey()}
+                  onChange={(e) => setGoalForm({ ...goalForm, countsFrom: e.target.value })}
+                  className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                />
+                <p className="text-xs text-gray-400 mt-1">{t('modals.goal.countsFromHint')}</p>
+              </div>
+            )}
             <button
               onClick={handleSubmit}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all font-medium"

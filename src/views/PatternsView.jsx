@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -284,8 +284,9 @@ export function PatternsView({
                                                 const periodTo = dateRange?.end ? safeToISODate(dateRange.end) : null;
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
-                                                    // Não contar história de antes de a meta existir (dia local).
-                                                    const goalCreatedAt = g.createdAt ? safeToISODate(g.createdAt) : null;
+                                                    // Não contar dias de antes de a meta existir; cada dia conta
+                                                    // com o alvo que estava em vigor nesse dia (goalTargetForDay).
+                                                    const goalCreatedAt = goalFirstDay(g);
                                                     // Cumpridos e possíveis vêm da MESMA conta (analyticsService.getGoalAchievement),
                                                     // para a percentagem não misturar regras diferentes.
                                                     // O período começa no mais tarde de: início do período escolhido
@@ -296,6 +297,7 @@ export function PatternsView({
                                                         {
                                                             fromDate,
                                                             toDate: periodTo,
+                                                            targetForDay: (d) => goalTargetForDay(g, d),
                                                             excludedDates,
                                                             measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
                                                             allCycles: cycles,
@@ -313,6 +315,7 @@ export function PatternsView({
                                                         successRate,
                                                         goalDays,
                                                         countsFrom: fromDate,
+                                                        currentFrom: goalCountsFrom(g),
                                                     };
                                                 });
 
@@ -978,6 +981,9 @@ export function PatternsView({
                                                                                 <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-gray-400">
                                                                                     <span>
                                                                                         {goal.countsFrom ? t('patterns.goals.since', { date: new Date(`${goal.countsFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' }) }) : ''}
+                                                                                        {(goal.targetHistory || []).length > 0 && goal.currentFrom && (
+                                                                                            <span className="block">{t('patterns.goals.targetSince', { target: goal.target, date: new Date(`${goal.currentFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) })}</span>
+                                                                                        )}
                                                                                     </span>
                                                                                     {goal.goalDays?.length > 0 && (
                                                                                         <button type="button" onClick={() => setOpenGoalDays(o => (o === goal.id ? null : goal.id))} className="text-purple-300 hover:text-purple-200 whitespace-nowrap">

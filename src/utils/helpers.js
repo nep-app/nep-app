@@ -191,3 +191,24 @@ export const datesInRange = (from, to) => {
   }
   return out;
 };
+
+// ===== METAS: QUE ALVO ESTAVA EM VIGOR NUM DIA =====
+// Uma meta guarda o alvo actual (target) desde countsFrom ('YYYY-MM-DD') e os
+// anteriores em targetHistory: [{ target, from, to }] (dias inclusive). Mudar
+// o valor de uma meta NÃO reescreve o passado: cada dia conta com o alvo que
+// tinha. Metas antigas sem countsFrom contam desde o dia em que foram criadas.
+export const goalCountsFrom = (goal) => goal?.countsFrom || safeToISODate(goal?.createdAt) || null;
+
+export const goalTargetForDay = (goal, day) => {
+  const from = goalCountsFrom(goal);
+  if (!day || !from) return goal?.target ?? null;
+  if (day >= from) return goal.target;
+  const seg = (goal.targetHistory || []).find(h => h && h.from && day >= h.from && (!h.to || day <= h.to));
+  return seg ? seg.target : null; // antes disso não havia esta meta → não se avalia
+};
+
+// O primeiro dia em que a meta (com qualquer alvo) contou.
+export const goalFirstDay = (goal) => {
+  const days = [goalCountsFrom(goal), ...(goal?.targetHistory || []).map(h => h?.from)].filter(Boolean).sort();
+  return days[0] || null;
+};
