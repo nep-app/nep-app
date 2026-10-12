@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateTime, getDateDaysAgo, getTodayKey, subtractDays, getDateKeyFromItem } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -45,7 +45,10 @@ export function PatternsView({
         // Padrões e as Análises davam números diferentes para o mesmo período —
         // e não há forma de a pessoa saber qual deles acreditar.
         const unloggedDates = metrics?.unloggedDates || new Set();
-        const excluded = (date) => atypicalDates.has(date) || unloggedDates.has(date);
+        // Um só conjunto de dias de fora (atípicos + "não registei"), usado
+        // aqui e nas metas.
+        const excludedDates = new Set([...atypicalDates, ...unloggedDates]);
+        const excluded = (date) => excludedDates.has(date);
         const unloggedCount = [...unloggedDates].filter(d => {
             if (!dateRange || !dateRange.start) return true;
             const t = new Date(`${d}T12:00:00`).getTime();
@@ -58,7 +61,7 @@ export function PatternsView({
         // A própria marca não é um registo.
         const filteredDailyLogs = allFilteredDailyLogs.filter(l => !l?.notLogged && !excluded(l.date || safeToISODate(l.timestamp)));
 
-        return { dateRange, atypicalDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
+        return { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
     }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset, metrics?.unloggedDates]);
 
     return (
@@ -101,7 +104,7 @@ export function PatternsView({
 
                                     {(() => {
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)
-                                        const { dateRange, atypicalDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
+                                        const { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
 
                                         // Nota dias atípicos (mostrar em qualquer view)
                                         const atypicalBanner = (atypicalCount > 0 || unloggedCount > 0) ? (
@@ -273,40 +276,24 @@ export function PatternsView({
                                                 // (totalAchievements é calculado ABAIXO, a partir do goalBreakdown, para
                                                 //  respeitar a guarda createdAt e bater certo com a soma dos cartões.)
 
-                                                // Dias a deixar de fora (atípicos e "não registei") e o período
-                                                // escolhido, em 'YYYY-MM-DD' — iguais para todas as metas.
-                                                const goalExcluded = new Set([...(atypicalDates || []), ...(metrics?.unloggedDates || [])]);
+                                                // O período escolhido, em 'YYYY-MM-DD' — igual para todas as metas.
                                                 const periodFrom = dateRange?.start ? safeToISODate(dateRange.start) : null;
                                                 const periodTo = dateRange?.end ? safeToISODate(dateRange.end) : null;
 
                                                 const goalBreakdown = uniqueGoals.map(g => {
-                                                    // Filter data by goal.createdAt to avoid inflating denominators
-                                                    // with history that predates the goal being set
-                                                    const goalCreatedAt = g.createdAt ? g.createdAt.split('T')[0] : null;
-                                                    const gCons = goalCreatedAt
-                                                        ? filteredConsumptions.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
-                                                        : filteredConsumptions;
-                                                    const gLogs = goalCreatedAt
-                                                        ? filteredDailyLogs.filter(l => !l.date || l.date >= goalCreatedAt)
-                                                        : filteredDailyLogs;
-                                                    const gCycles = goalCreatedAt
-                                                        ? filteredCycles.filter(c => { const d = c.date || safeToISODate(c.timestamp); return !d || d >= goalCreatedAt; })
-                                                        : filteredCycles;
-                                                    const gWellbeing = goalCreatedAt
-                                                        ? filteredWellbeingLogs.filter(w => { const d = w.date || safeToISODate(w.timestamp); return !d || d >= goalCreatedAt; })
-                                                        : filteredWellbeingLogs;
-
+                                                    // Não contar história de antes de a meta existir (dia local).
+                                                    const goalCreatedAt = g.createdAt ? safeToISODate(g.createdAt) : null;
                                                     // Cumpridos e possíveis vêm da MESMA conta (analyticsService.getGoalAchievement),
                                                     // para a percentagem não misturar regras diferentes.
                                                     // O período começa no mais tarde de: início do período escolhido
                                                     // ou dia em que a meta foi criada.
                                                     const fromDate = [periodFrom, goalCreatedAt].filter(Boolean).sort().pop() || null;
                                                     const { achieved: achievementCount, possible: totalPossible } = getGoalAchievement(
-                                                        g, gCons, gLogs, gCycles, gWellbeing,
+                                                        g, filteredConsumptions, filteredDailyLogs, filteredCycles, filteredWellbeingLogs,
                                                         {
                                                             fromDate,
                                                             toDate: periodTo,
-                                                            excludedDates: goalExcluded,
+                                                            excludedDates,
                                                             measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
                                                             allCycles: cycles,
                                                             allConsumptions: consumptions,
@@ -949,7 +936,7 @@ export function PatternsView({
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs italic ' + ('text-gray-400')}>
-                                                                                            {t('patterns.goals.target')} {goal.target + (goal.type === 'increase_interval' ? 'h' : goal.type === 'reduce_frequency' ? (i18n.language === 'en' ? 'x/day' : 'x/dia') : goal.type === 'reduce_quantity' ? 'mg' : goal.type === 'sleep_hours' ? 'h' : '')}
+                                                                                            {t('patterns.goals.target')} {goal.target + ({ increase_interval: 'h', sleep_hours: 'h', first_not_before: 'h', reduce_quantity: 'mg', reduce_frequency: i18n.language === 'en' ? 'x/day' : 'x/dia' }[goal.type] || '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">

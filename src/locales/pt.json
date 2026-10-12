@@ -198,7 +198,6 @@
     "watchDose": "Atenção ao consumo de {{date}}! {{mg}}mg",
     "goodDose": "Consumo de {{date}}: {{mg}}mg",
     "goodSleep": "Parabéns! {{hours}}h de sono",
-    "excessiveSleep": "Sono excessivo: {{hours}}h",
     "lowSleep": "Atenção ao sono: {{hours}}h",
     "highRisk": "Hoje: {{hours}}h de sono e humor {{mood}}/10",
     "highRiskDesc": "Dois registos baixos no mesmo dia. É o que está registado, não uma previsão do teu dia.",

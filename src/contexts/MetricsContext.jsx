@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect } from '
 import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
-import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
 import { deriveDailyMg } from '../utils/mgDerivation';
 
@@ -358,7 +358,7 @@ export const MetricsProvider = ({ children }) => {
       if (goal.type === 'reduce_frequency') {
         const avgLast7 = avgFrequencyLast7Days;
         if (avgLast7 === 0) return 100; // No consumptions = goal achieved
-        if (avgLast7 <= goal.target) return 100;
+        if (meetsGoal(goal.type, avgLast7, goal.target)) return 100;
         const baseline = Math.max(avgLast7, goal.target * 2);
         const progress = ((baseline - avgLast7) / (baseline - goal.target)) * 100;
         return Math.max(0, Math.min(100, progress));
@@ -367,7 +367,7 @@ export const MetricsProvider = ({ children }) => {
       if (goal.type === 'reduce_quantity') {
         const avgLast7Mg = parseFloat(last7Days.avgMg);
         if (avgLast7Mg === 0) return 0;
-        if (avgLast7Mg <= goal.target) return 100; // igual à meta = cumprido
+        if (meetsGoal(goal.type, avgLast7Mg, goal.target)) return 100;
         const baseline = Math.max(avgLast7Mg, goal.target * 2);
         const progress = ((baseline - avgLast7Mg) / (baseline - goal.target)) * 100;
         return Math.max(0, Math.min(100, progress));
@@ -376,7 +376,7 @@ export const MetricsProvider = ({ children }) => {
       if (goal.type === 'increase_interval') {
         if (!analysis.intervalStats) return 0;
         const avg = parseFloat(analysis.intervalStats.avgHours);
-        if (avg >= goal.target) return 100;
+        if (meetsGoal(goal.type, avg, goal.target)) return 100;
         const progress = (avg / goal.target) * 100;
         return Math.max(0, Math.min(100, progress));
       }

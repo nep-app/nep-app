@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/DataContext';
-import { genId, getTodayKey, safeToISODate } from '../../utils/helpers';
+import { genId, getTodayKey, safeToISODate, datesInRange } from '../../utils/helpers';
 
 const OPEN_KEY = 'nep-unlogged-open';
 const MAX_RANGE_DAYS = 120;
@@ -10,18 +10,6 @@ const MAX_RANGE_DAYS = 120;
 // NÃO corta no limite: se cortasse, a pré-visualização mostrava um número de
 // dias e uma data de fim que a pessoa não escolheu. Quem decide o que fazer com
 // um intervalo grande demais é quem chama (avisa em vez de mentir).
-const datesInRange = (from, to) => {
-  const out = [];
-  const d = new Date(`${from}T12:00:00`);
-  const last = new Date(`${to}T12:00:00`);
-  if (isNaN(d.getTime()) || isNaN(last.getTime()) || last < d) return out;
-  let guard = 0;
-  while (d.getTime() <= last.getTime() && guard++ <= 3700) {
-    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-};
 
 // Junta dias seguidos num intervalo só, para a lista não ficar quilométrica.
 const groupConsecutive = (sortedDates) => {

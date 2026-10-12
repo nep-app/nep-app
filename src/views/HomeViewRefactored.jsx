@@ -9,7 +9,7 @@ import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId } from '../utils/helpers';
+import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId, meetsGoal } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 
@@ -118,7 +118,7 @@ export function HomeViewRefactored({
       cons.forEach(c => { const tt = new Date(c.timestamp || c.createdAt).getTime(); if (tt > lastTime) lastTime = tt; });
       if (lastTime > 0) {
         const hoursSince = (now.getTime() - lastTime) / 3600000;
-        if (hoursSince < parseFloat(intervalGoal.target)) {
+        if (meetsGoal('increase_interval', hoursSince, intervalGoal.target) === false) {
           reasons.push({ text: t('alerts.shortInterval', { hours: parseFloat(hoursSince.toFixed(1)) }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
         }
       }
@@ -129,7 +129,8 @@ export function HomeViewRefactored({
     if (freqGoal) {
       const todayKey = getTodayKey();
       const todayCount = cons.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
-      if (todayCount >= parseInt(freqGoal.target)) {
+      // Consumir agora passaria a meta? (o próximo consumo já não cabe)
+      if (meetsGoal('reduce_frequency', todayCount + 1, freqGoal.target) === false) {
         reasons.push({ text: t('alerts.highFrequency', { count: todayCount }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
       }
     }
@@ -431,7 +432,7 @@ export function HomeViewRefactored({
 
         const dotClass = (count) => {
           if (count === 0) return 'bg-gray-700/60 text-gray-500';
-          if (Number.isFinite(target)) return count <= target
+          if (Number.isFinite(target)) return meetsGoal('reduce_frequency', count, target)
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
           return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';

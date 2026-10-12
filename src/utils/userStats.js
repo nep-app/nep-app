@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, typicalMgPerDose } from './mgDerivation';
-import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline } from './helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -349,7 +349,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const intervalGoal = (goals || []).find(g => g.type === 'increase_interval');
     if (lastInterval !== null && intervalGoal) {
       const targetInterval = parseFloat(intervalGoal.target);
-      if (lastInterval < targetInterval) {
+      if (meetsGoal('increase_interval', lastInterval, targetInterval) === false) {
         alerts.push({
           text: i18n.t('alerts.shortInterval', { hours: lastInterval }),
           emoji: '⚠️',
@@ -381,7 +381,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       // Só mostramos valores MEDIDOS (sem estimativas), por isso sem "≈".
       const mgShown = `${lastMg}`;
       // Igual à meta conta como cumprido (como nos Padrões).
-      if (lastMg > targetMg) {
+      if (meetsGoal('reduce_quantity', lastMg, targetMg) === false) {
         alerts.push({
           text: i18n.t('alerts.watchDose', { mg: mgShown, date: dateLabel }),
           emoji: '📊',
@@ -412,7 +412,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
         // Padrões e no Início com relógio). Havia aqui um "sono excessivo" acima
         // de meta + 2h — um juízo que a app tomava sozinha, sem a pessoa o ter
         // definido (regra do elogio no CLAUDE.md).
-        if (sleepHours >= targetSleep) {
+        if (meetsGoal('sleep_hours', sleepHours, targetSleep)) {
           alerts.push({
             text: i18n.t('alerts.goodSleep', { hours: sleepHours }),
             emoji: '🌙',

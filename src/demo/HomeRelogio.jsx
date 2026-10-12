@@ -5,7 +5,7 @@ import { useUI } from '../contexts/UIContext';
 import * as Icons from '../components/Icons';
 import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { formatSubstances } from '../utils/substances';
-import { getTodayKey, safeToISODate, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo, meetsGoal } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
 import { useMetrics } from '../contexts/MetricsContext';
 
@@ -85,48 +85,43 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     const last = cons.length ? cons[cons.length - 1] : null;
     const cons24 = cons.filter(x => x > from && x <= now);
 
-    const cons24Items = listCons
-      .map(c => ({ ms: tsOf(c), c }))
-      // Sem limite de cima: um registo acabado de gravar não pode ficar
-      // escondido até o relógio dar o minuto seguinte.
-      .filter(x => x.ms != null && x.ms > from);
-
-    const sleeps = cycles
-      .map(c => { const s = sleepInterval(c); return s ? { ...s, cycle: c } : null; })
-      .filter(s => s && s.end > from && s.start < now)
-      // start/end cortados à janela de 24h (para o arco do relógio); realStart
-      // guarda a hora a que se deitou de facto (para a lista do dia).
-      .map(s => ({ ...s, realStart: s.start, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
-
-    const states24 = wellbeingLogs
+    // As listas do "ver o dia" fazem-se UMA vez para 3 dias (hoje, ontem e
+    // anteontem, dias inteiros — a contagem de cada dia não fica a meio); as
+    // de 24 horas saem delas (from3 é sempre anterior a from). Sem limite de
+    // cima: um registo acabado de gravar não fica escondido até ao minuto
+    // seguinte.
+    const from3 = (() => { const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 2); return d.getTime() - 1; })();
+    const consAll = listCons.map(c => ({ ms: tsOf(c), c })).filter(x => x.ms != null && x.ms > from3);
+    const sleepsAll = cycles
+      .map(c => { const s = sleepInterval(c); return s ? { ...s, realStart: s.start, cycle: c } : null; })
+      .filter(s => s && s.end > from3 && s.start < now);
+    const statesAll = wellbeingLogs
       .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, nap: w.napDuration > 0 ? w.napDuration : null, w }))
-      .filter(w => w.ms != null && w.ms > from); // sem limite de cima: um registo acabado de gravar aparece logo
-    const weigh24 = weighings
-      .filter(w => !w.notWeighed)
-      .map(w => ({ ms: tsOf(w), w }))
-      .filter(x => x.ms != null && x.ms > from && x.ms <= now);
+      .filter(w => w.ms != null && w.ms > from3);
+    const weighAll = weighings.filter(w => !w.notWeighed).map(w => ({ ms: tsOf(w), w })).filter(x => x.ms != null && x.ms > from3);
+
+    // 24h: start/end cortados à janela (para o arco do relógio); realStart
+    // guarda a hora a que se deitou de facto (para a lista do dia).
+    const sleeps = sleepsAll.filter(s => s.end > from).map(s => ({ ...s, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
+    const r24 = {
+      cons: consAll.filter(x => x.ms > from),
+      sleeps,
+      states: statesAll.filter(w => w.ms > from),
+      weigh: weighAll.filter(x => x.ms > from && x.ms <= now),
+    };
 
     const todayKey = getTodayKey();
-    const todayCount = consumptions.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
+    const todayCount = consumptions.filter(c => getDateKeyFromItem(c) === todayKey).length;
 
-    // Vista de 3 dias (só para a lista do "ver o dia"; o relógio é sempre 24h).
-    // Dias inteiros: hoje, ontem e anteontem (desde a meia-noite de anteontem),
-    // para a contagem de cada dia não ficar a meio.
-    const from3 = (() => { const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 2); return d.getTime() - 1; })();
+    // Contas dos 3 dias (só substância principal), com o mesmo dia de registo
+    // que o "N consumos hoje".
+    const counted3 = consumptions.filter(c => { const t = tsOf(c); return t != null && t > from3; });
     const r3 = {
-      cons: listCons.map(c => ({ ms: tsOf(c), c })).filter(x => x.ms != null && x.ms > from3),
-      sleeps: cycles
-        .map(c => { const s = sleepInterval(c); return s ? { ...s, realStart: s.start, cycle: c } : null; })
-        .filter(s => s && s.end > from3 && s.start < now),
-      states: wellbeingLogs
-        .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, nap: w.napDuration > 0 ? w.napDuration : null, w }))
-        .filter(w => w.ms != null && w.ms > from3),
-      weigh: weighings.filter(w => !w.notWeighed).map(w => ({ ms: tsOf(w), w })).filter(x => x.ms != null && x.ms > from3),
-      // Contas (só substância principal): total dos 3 dias e por dia.
-      count: cons.filter(x => x > from3).length,
-      perDay: cons.filter(x => x > from3).reduce((acc, x) => { const k = safeToISODate(x); acc[k] = (acc[k] || 0) + 1; return acc; }, {}),
+      cons: consAll, sleeps: sleepsAll, states: statesAll, weigh: weighAll,
+      count: counted3.length,
+      perDay: counted3.reduce((acc, c) => { const k = getDateKeyFromItem(c); acc[k] = (acc[k] || 0) + 1; return acc; }, {}),
     };
-    return { last, cons24, cons24Items, sleeps, states24, weigh24, todayCount, r3 };
+    return { last, cons24, sleeps, r24, r3, todayCount };
   }, [consumptions, listCons, cycles, wellbeingLogs, weighings, now, from]);
 
   // ----- Estado do dia: sono / consumos / intervalo -----
@@ -157,7 +152,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       out.sleep.push({
         label: t('home2.slept'),
         value: (h === 0 ? t('home2.noSleep') : fmtH(h)) + (napMin > 0 ? ` + ${t('home2.napShort', { min: napMin })}` : '') + staleNote,
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: h >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('sleep_hours', h, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
       });
     }
     if (lastCycle && lastCycle.bedtime) {
@@ -181,7 +176,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         out.cons.push({
           label: t('home2.firstAfterWake'),
           value: t('home2.firstValue', { time: hhmm(first), after: agoText(after) }),
-          goal: g && !isNaN(parseFloat(g.target)) ? { ok: after >= parseFloat(g.target) * H, target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+          goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('first_not_before', after / H, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
         });
       } else {
         out.cons.push({ label: t('home2.firstAfterWake'), value: t('home2.noneYet') });
@@ -205,7 +200,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       out.interval.push({
         label: t('home2.interval'),
         value: agoText(gap * H),
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: gap >= parseFloat(g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('increase_interval', gap, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
       });
     }
     // mg: só se houver uma pesagem dos últimos 3 dias (senão o número é velho)
@@ -216,7 +211,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       out.interval.push({
         label: t('home2.mgDay', { date: when }),
         value: `${Math.round(mgStats.mg)} mg`,
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: mgStats.mg <= parseFloat(g.target), target: `≤ ${g.target} mg` } : null,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('reduce_quantity', mgStats.mg, g.target), target: `≤ ${g.target} mg` } : null,
       });
     }
     return out;
@@ -229,7 +224,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   const [hx, hy] = pt(nowH, 108);
   // O ponteiro começa fora do centro, para não passar por cima do texto.
   const [hx0, hy0] = pt(nowH, 74);
-  const hasAnything = data.cons24.length + data.sleeps.length + data.states24.length + data.weigh24.length > 0;
+  const hasAnything = data.cons24.length + data.sleeps.length + data.r24.states.length + data.r24.weigh.length > 0;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -246,8 +241,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
             <path key={`s${i}`} d={arcPath(hourOf(s.start), hourOf(s.end))} fill="none" className="stroke-amber-300/70" strokeWidth="22" strokeLinecap="round" />
           ))}
           {data.cons24.map((ms, i) => { const [x, y] = pt(hourOf(ms), 96); return <circle key={`c${i}`} cx={x} cy={y} r="8" className="fill-rose-300" />; })}
-          {data.states24.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`w${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-sky-300" />; })}
-          {data.weigh24.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`p${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-violet-300" />; })}
+          {data.r24.states.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`w${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-sky-300" />; })}
+          {data.r24.weigh.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`p${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-violet-300" />; })}
           <line x1={hx0} y1={hy0} x2={hx} y2={hy} className="stroke-gray-200" strokeWidth="3" strokeLinecap="round" />
           <circle cx={hx} cy={hy} r="6" className="fill-gray-200" />
           {[['00h', 0, 'middle', 150, 2], ['06h', 6, 'start', 296, 155], ['12h', 12, 'middle', 150, 310], ['18h', 18, 'end', 4, 155]].map(([lbl, , anchor, x, y]) => (
@@ -389,15 +384,13 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
   const [range, setRange] = useState(() => { try { return localStorage.getItem('nep_tl_range') === '3d' ? '3d' : '24h'; } catch { return '24h'; } });
   const chooseRange = (r) => { setRange(r); try { localStorage.setItem('nep_tl_range', r); } catch { /* só nesta sessão */ } };
   const three = range === '3d';
-  const src = three
-    ? { sleeps: data.r3.sleeps, cons: data.r3.cons, states: data.r3.states, weigh: data.r3.weigh }
-    : { sleeps: data.sleeps, cons: data.cons24Items, states: data.states24, weigh: data.weigh24 };
+  const src = three ? data.r3 : data.r24;
   const items = [
     ...src.sleeps.map(s => ({ ms: s.realStart ?? s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
     ...src.cons.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
     ...src.states.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, nap: s.nap, record: s.w })),
     ...src.weigh.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),
-  ].sort((a, b) => a.ms - b.ms)
+  ].map(it => ({ ...it, dk: safeToISODate(it.ms) })).sort((a, b) => a.ms - b.ms)
     // Vários consumos no mesmo minuto ficam numa linha só ("consumo × 3").
     .reduce((acc, it) => {
       const prev = acc[acc.length - 1];
@@ -448,10 +441,10 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
         <ol className="flex flex-col">
           {items.map((it, i) => [
             // Na vista de 3 dias, um cabeçalho quando muda o dia.
-            three && (i === 0 || safeToISODate(items[i - 1].ms) !== safeToISODate(it.ms)) && (
+            three && (i === 0 || items[i - 1].dk !== it.dk) && (
               <li key={`d${i}`} className="flex items-baseline justify-between pt-4 pb-1 mb-1 border-b border-gray-700/70">
                 <span className="text-sm font-semibold text-gray-100 capitalize">{new Date(it.ms).toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
-                <span className="text-xs text-gray-400">{t('demoHome.tlDayCount', { count: data.r3.perDay[safeToISODate(it.ms)] || 0 })}</span>
+                <span className="text-xs text-gray-400">{t('demoHome.tlDayCount', { count: data.r3.perDay[it.dk] || 0 })}</span>
               </li>
             ),
             <li key={i} className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[42px]">
@@ -541,7 +534,7 @@ function WeekDots({ goals }) {
   const total = days.reduce((s, d) => s + d.count, 0);
   const dot = (n) => {
     if (n === 0) return 'bg-gray-700/60 text-gray-500';
-    if (Number.isFinite(target)) return n <= target ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
+    if (Number.isFinite(target)) return meetsGoal('reduce_frequency', n, target) ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
     return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
   };
   return (

@@ -198,7 +198,6 @@
     "watchDose": "Watch the dose ({{date}}): {{mg}}mg",
     "goodDose": "Dose ({{date}}): {{mg}}mg",
     "goodSleep": "Great! {{hours}}h sleep",
-    "excessiveSleep": "Too much sleep: {{hours}}h",
     "lowSleep": "Sleep alert: {{hours}}h",
     "highRisk": "Today: {{hours}}h sleep and mood {{mood}}/10",
     "highRiskDesc": "Two low entries on the same day. It is what you logged, not a prediction of your day.",

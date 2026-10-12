@@ -154,3 +154,40 @@ export const limitLastDeadline = (cycleStartMs, target) => {
   if (d.getTime() <= cycleStartMs) d.setDate(d.getDate() + 1);
   return d.getTime();
 };
+
+// ===== METAS: UMA SÓ REGRA PARA "CUMPRIDO" =====
+// Cada tipo de meta tem um sentido fixo: 'max' = "no máximo X" (igual conta),
+// 'min' = "pelo menos X" (igual conta). Todos os ecrãs perguntam aqui, em vez
+// de cada um escrever o seu <, <=, > ou >= (eram 17 sítios e já se tinham
+// desencontrado). As metas de hora (deitar, último consumo) têm as suas
+// funções próprias acima.
+export const GOAL_DIRECTION = {
+  reduce_frequency: 'max',
+  reduce_quantity: 'max',
+  increase_interval: 'min',
+  first_not_before: 'min',
+  sleep_hours: 'min',
+};
+
+// true = cumprido, false = não, null = não dá para saber (alvo ou valor ilegível).
+export const meetsGoal = (type, value, target) => {
+  const v = typeof value === 'number' ? value : parseFloat(value);
+  const tg = typeof target === 'number' ? target : parseFloat(target);
+  const dir = GOAL_DIRECTION[type];
+  if (!dir || !Number.isFinite(v) || !Number.isFinite(tg)) return null;
+  return dir === 'max' ? v <= tg : v >= tg;
+};
+
+// Os dias de 'YYYY-MM-DD' a 'YYYY-MM-DD' (inclusive), em hora local.
+export const datesInRange = (from, to) => {
+  const out = [];
+  const d = new Date(`${from}T12:00:00`);
+  const last = new Date(`${to}T12:00:00`);
+  if (isNaN(d.getTime()) || isNaN(last.getTime()) || last < d) return out;
+  let guard = 0;
+  while (d.getTime() <= last.getTime() && guard++ <= 3700) {
+    out.push(localDateKey(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+};
