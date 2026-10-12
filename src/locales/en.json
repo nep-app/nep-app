@@ -1694,7 +1694,14 @@
     "tlWeighAdded": "refilled · +{{mg}} mg",
     "tlWeighWasEmpty": "the bag was empty",
     "tlWeighHad": "had {{mg}} mg",
-    "tlWeighNoScale": "filled without weighing"
+    "tlWeighNoScale": "filled without weighing",
+    "tlRange24": "24 hours",
+    "tlRange3d": "3 days",
+    "tlTitle3d": "The last 3 days",
+    "tl3dCount_one": "{{count}} use today, yesterday and the day before.",
+    "tl3dCount_other": "{{count}} uses today, yesterday and the day before.",
+    "tlDayCount_one": "{{count}} use",
+    "tlDayCount_other": "{{count}} uses"
   },
   "substances": {
     "settingsTitle": "My substances",

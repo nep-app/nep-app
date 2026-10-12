@@ -108,7 +108,25 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 
     const todayKey = getTodayKey();
     const todayCount = consumptions.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
-    return { last, cons24, cons24Items, sleeps, states24, weigh24, todayCount };
+
+    // Vista de 3 dias (só para a lista do "ver o dia"; o relógio é sempre 24h).
+    // Dias inteiros: hoje, ontem e anteontem (desde a meia-noite de anteontem),
+    // para a contagem de cada dia não ficar a meio.
+    const from3 = (() => { const d = new Date(now); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 2); return d.getTime() - 1; })();
+    const r3 = {
+      cons: listCons.map(c => ({ ms: tsOf(c), c })).filter(x => x.ms != null && x.ms > from3),
+      sleeps: cycles
+        .map(c => { const s = sleepInterval(c); return s ? { ...s, realStart: s.start, cycle: c } : null; })
+        .filter(s => s && s.end > from3 && s.start < now),
+      states: wellbeingLogs
+        .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, nap: w.napDuration > 0 ? w.napDuration : null, w }))
+        .filter(w => w.ms != null && w.ms > from3),
+      weigh: weighings.filter(w => !w.notWeighed).map(w => ({ ms: tsOf(w), w })).filter(x => x.ms != null && x.ms > from3),
+      // Contas (só substância principal): total dos 3 dias e por dia.
+      count: cons.filter(x => x > from3).length,
+      perDay: cons.filter(x => x > from3).reduce((acc, x) => { const k = safeToISODate(x); acc[k] = (acc[k] || 0) + 1; return acc; }, {}),
+    };
+    return { last, cons24, cons24Items, sleeps, states24, weigh24, todayCount, r3 };
   }, [consumptions, listCons, cycles, wellbeingLogs, weighings, now, from]);
 
   // ----- Estado do dia: sono / consumos / intervalo -----
@@ -365,13 +383,20 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 const DELETE_COLLECTION = { consumption: 'consumptions', cycle: 'cycles', wellbeing: 'wellbeingLogs' };
 
 function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit = () => false }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [openGroup, setOpenGroup] = useState(null);
+  // 24 horas ou 3 dias (para ver uma sessão de vários dias de uma vez).
+  const [range, setRange] = useState(() => { try { return localStorage.getItem('nep_tl_range') === '3d' ? '3d' : '24h'; } catch { return '24h'; } });
+  const chooseRange = (r) => { setRange(r); try { localStorage.setItem('nep_tl_range', r); } catch { /* só nesta sessão */ } };
+  const three = range === '3d';
+  const src = three
+    ? { sleeps: data.r3.sleeps, cons: data.r3.cons, states: data.r3.states, weigh: data.r3.weigh }
+    : { sleeps: data.sleeps, cons: data.cons24Items, states: data.states24, weigh: data.weigh24 };
   const items = [
-    ...data.sleeps.map(s => ({ ms: s.realStart ?? s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
-    ...data.cons24Items.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
-    ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, nap: s.nap, record: s.w })),
-    ...data.weigh24.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),
+    ...src.sleeps.map(s => ({ ms: s.realStart ?? s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
+    ...src.cons.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
+    ...src.states.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, nap: s.nap, record: s.w })),
+    ...src.weigh.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),
   ].sort((a, b) => a.ms - b.ms)
     // Vários consumos no mesmo minuto ficam numa linha só ("consumo × 3").
     .reduce((acc, it) => {
@@ -402,8 +427,16 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
     <div className="fixed inset-0 z-[75] bg-gray-900 overflow-y-auto" role="dialog" aria-modal="true" aria-label={t('demoHome.tlTitle')}>
       <div className="max-w-md mx-auto px-5 pt-14 pb-10">
         <button type="button" onClick={onClose} className="text-sm text-gray-400 hover:text-gray-200 mb-3">‹ {t('demoHome.tlBack')}</button>
-        <h2 className="text-2xl font-semibold text-gray-100 mb-1">{t('demoHome.tlTitle')}</h2>
-        <p className="text-sm text-gray-400 mb-4">{t('demoHome.msgToday', { count: data.todayCount })}</p>
+        <div className="flex gap-1 mb-3 bg-gray-800 rounded-full p-1 w-fit" role="tablist">
+          {[['24h', t('demoHome.tlRange24')], ['3d', t('demoHome.tlRange3d')]].map(([r, label]) => (
+            <button key={r} type="button" role="tab" aria-selected={range === r} onClick={() => chooseRange(r)}
+              className={'px-4 py-1.5 rounded-full text-sm ' + (range === r ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-300 hover:text-gray-100')}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-100 mb-1">{three ? t('demoHome.tlTitle3d') : t('demoHome.tlTitle')}</h2>
+        <p className="text-sm text-gray-400 mb-4">{three ? t('demoHome.tl3dCount', { count: data.r3.count }) : t('demoHome.msgToday', { count: data.todayCount })}</p>
         {onNewCycle && (
           <button type="button" onClick={onNewCycle} className="w-full mb-5 py-3 rounded-2xl bg-amber-500/15 border border-amber-400/40 text-amber-100 text-sm font-semibold hover:bg-amber-500/25">
             🌙 {t('home.newCycle')}
@@ -414,6 +447,13 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
 
         <ol className="flex flex-col">
           {items.map((it, i) => [
+            // Na vista de 3 dias, um cabeçalho quando muda o dia.
+            three && (i === 0 || safeToISODate(items[i - 1].ms) !== safeToISODate(it.ms)) && (
+              <li key={`d${i}`} className="flex items-baseline justify-between pt-4 pb-1 mb-1 border-b border-gray-700/70">
+                <span className="text-sm font-semibold text-gray-100 capitalize">{new Date(it.ms).toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                <span className="text-xs text-gray-400">{t('demoHome.tlDayCount', { count: data.r3.perDay[safeToISODate(it.ms)] || 0 })}</span>
+              </li>
+            ),
             <li key={i} className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[42px]">
               <span className="text-xs text-gray-400">{hhmm(it.ms)}</span>
               <span className="flex justify-center">

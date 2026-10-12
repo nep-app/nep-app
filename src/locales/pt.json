@@ -1694,7 +1694,14 @@
     "tlWeighAdded": "encheste · +{{mg}} mg",
     "tlWeighWasEmpty": "o saco estava vazio",
     "tlWeighHad": "tinha {{mg}} mg",
-    "tlWeighNoScale": "enchi sem pesar"
+    "tlWeighNoScale": "enchi sem pesar",
+    "tlRange24": "24 horas",
+    "tlRange3d": "3 dias",
+    "tlTitle3d": "Os últimos 3 dias",
+    "tl3dCount_one": "{{count}} consumo hoje, ontem e anteontem.",
+    "tl3dCount_other": "{{count}} consumos hoje, ontem e anteontem.",
+    "tlDayCount_one": "{{count}} consumo",
+    "tlDayCount_other": "{{count}} consumos"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",
