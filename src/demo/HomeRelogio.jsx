@@ -94,7 +94,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     const sleeps = cycles
       .map(c => { const s = sleepInterval(c); return s ? { ...s, cycle: c } : null; })
       .filter(s => s && s.end > from && s.start < now)
-      .map(s => ({ ...s, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
+      // start/end cortados à janela de 24h (para o arco do relógio); realStart
+      // guarda a hora a que se deitou de facto (para a lista do dia).
+      .map(s => ({ ...s, realStart: s.start, start: Math.max(s.start, from), end: Math.min(s.end, now) }));
 
     const states24 = wellbeingLogs
       .map(w => ({ ms: tsOf(w), mood: w.mood, energy: w.energy, nap: w.napDuration > 0 ? w.napDuration : null, w }))
@@ -366,7 +368,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
   const { t } = useTranslation();
   const [openGroup, setOpenGroup] = useState(null);
   const items = [
-    ...data.sleeps.map(s => ({ ms: s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
+    ...data.sleeps.map(s => ({ ms: s.realStart ?? s.start, kind: 'sleep', hours: s.hours, record: s.cycle })),
     ...data.cons24Items.map(x => ({ ms: x.ms, kind: 'use', record: x.c })),
     ...data.states24.map(s => ({ ms: s.ms, kind: 'state', mood: s.mood, energy: s.energy, nap: s.nap, record: s.w })),
     ...data.weigh24.map(x => ({ ms: x.ms, kind: 'weigh', w: x.w })),

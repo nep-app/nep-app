@@ -878,11 +878,18 @@ export function AuthenticatedApp() {
                         // Explícito, porque "não dormi" tem de chegar à base como 0.
                         const sleepValueEdit = parseSleepField(cycleForm.sleep);
 
+                        // A hora de acordar (createdAt) também se edita. Antes não era
+                        // gravada ao editar: mudava-se no formulário e ficava a antiga.
+                        const editedWake = cycleForm.createdAt ? new Date(cycleForm.createdAt) : null;
+                        const wakeFields = editedWake && !isNaN(editedWake.getTime())
+                            ? { timestamp: editedWake.toISOString(), date: safeToISODate(editedWake) }
+                            : {};
                         const updatedData = {
                             bedtime: cycleForm.bedtime,
                             triggers: cycleForm.triggers,
                             notes: sanitizeText(cycleForm.notes),
-                            ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {})
+                            ...(sleepValueEdit !== null ? { sleep: sleepValueEdit } : {}),
+                            ...wakeFields
                         };
                         await updateCycle(editingCycle.id, updatedData);
                         setEditingCycle(null);

@@ -15,23 +15,25 @@ export const CycleModal = ({
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
+  // A EDITAR: encher o formulário com o ciclo UMA vez, ao abrir. Antes este
+  // efeito também corria sempre que a data/hora mudava — e repunha logo a hora
+  // antiga, por isso a hora de acordar de um ciclo não se conseguia mudar.
   useEffect(() => {
-    if (isOpen) {
-      if (editingCycle) {
-        setCycleForm({
-          bedtime: editingCycle.bedtime || '',
-          sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
-          triggers: editingCycle.triggers || [],
-          notes: editingCycle.notes || '',
-          createdAt: editingCycle.timestamp ? toLocalDatetimeInput(editingCycle.timestamp) : ''
-        });
-      } else if (!cycleForm.createdAt) {
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
-          .toISOString()
-          .slice(0, 16);
-        setCycleForm(prev => ({ ...prev, createdAt: localDateTime }));
-      }
+    if (!isOpen || !editingCycle) return;
+    setCycleForm({
+      bedtime: editingCycle.bedtime || '',
+      sleep: editingCycle.sleep !== undefined && editingCycle.sleep !== null ? String(editingCycle.sleep) : '',
+      triggers: editingCycle.triggers || [],
+      notes: editingCycle.notes || '',
+      createdAt: editingCycle.timestamp ? toLocalDatetimeInput(editingCycle.timestamp) : ''
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingCycle, isOpen]);
+
+  // NOVO ciclo: sem hora escolhida, põe "agora" (hora local).
+  useEffect(() => {
+    if (isOpen && !editingCycle && !cycleForm.createdAt) {
+      setCycleForm(prev => ({ ...prev, createdAt: toLocalDatetimeInput(new Date()) }));
     }
   }, [editingCycle, isOpen, setCycleForm, cycleForm.createdAt]);
 
