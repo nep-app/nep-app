@@ -34,4 +34,4 @@
 * `src/utils/helpers.js` — Gestão de datas locais (`getTodayKey`, `safeToISODate`).
 * `src/utils/mgDerivation.js` — Algoritmo de distribuição de mg medidas entre ciclos de pesagem.
 * `src/utils/urgeLog.js` — Registo local de eventos do "Surfar o Impulso".
-* `src/utils/substances.js` + `src/hooks/useSubstances.js` + `src/components/SubstancePicker.jsx` — Lista de substâncias de cada pessoa (coleção cifrada `substances`, sincronizada) e escolha do que foi em cada consumo (`consumption.substances: [{ name, amount }]`). Nunca entra no modo de investigação.
+* `src/utils/substances.js` + `src/hooks/useSubstances.js` + `src/components/SubstancePicker.jsx` — Lista de substâncias de cada pessoa (coleção cifrada `substances`, sincronizada) e escolha do que foi em cada consumo (`consumption.substances: [{ name, amount }]`). Só a principal conta nas contas; a principal guarda datas (`principalSince` + `principalHistory`), por isso mudá-la não reescreve o passado (`countedConsumptions` usa a principal do dia de cada registo). Nunca entra no modo de investigação.

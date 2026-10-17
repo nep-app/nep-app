@@ -1,3 +1,5 @@
+import { getDateKeyFromItem, safeToISODate } from './helpers';
+
 // ===== SUBSTÂNCIAS =====
 // Cada pessoa tem a sua lista (coleção cifrada `substances`: { id, name,
 // isDefault, createdAt }). Um consumo pode levar `substances: [{ name, amount }]`.
@@ -23,8 +25,10 @@ export const cleanAmount = (s) => squash(s).slice(0, MAX_AMOUNT);
 export const sameName = (a, b) => cleanName(a).toLocaleLowerCase() === cleanName(b).toLocaleLowerCase();
 
 // Ordem em que foram acrescentadas (a lista é da pessoa; não se reordena por uso).
+// As "arquivadas" (tiradas da lista depois de terem sido principais) não
+// aparecem para escolher, mas guardam as datas em que foram principais.
 export const sortSubstances = (list) =>
-  [...(list || [])].filter(s => s && !s.deleted && s.name)
+  [...(list || [])].filter(s => s && !s.deleted && !s.archived && s.name)
     .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
 
 export const getDefaultSubstance = (list) => sortSubstances(list).find(s => s.isDefault) || null;
@@ -51,12 +55,44 @@ export const cleanEntries = (entries) => {
 export const formatSubstances = (entries) =>
   cleanEntries(entries).map(e => (e.amount ? `${e.name} ${e.amount}` : e.name)).join(' · ');
 
+// ── Qual era a principal em cada dia ─────────────────────────────────────────
+// Mudar a principal NÃO reescreve o passado (como nas metas): a actual vale
+// desde `principalSince` ('YYYY-MM-DD'; sem data = desde sempre) e cada
+// substância guarda em `principalHistory: [{ from, to }]` os períodos em que
+// já foi principal (from null = desde sempre). Num dia sem principal, conta tudo.
+export const dayBefore = (day) => {
+  const d = new Date(`${day}T12:00:00`);
+  d.setDate(d.getDate() - 1);
+  return safeToISODate(d);
+};
+
+export const principalPeriods = (list) => {
+  const out = [];
+  for (const s of list || []) {
+    if (!s || s.deleted || !s.name) continue;
+    for (const p of s.principalHistory || []) {
+      if (p && p.to) out.push({ name: s.name, from: p.from || null, to: p.to });
+    }
+    if (s.isDefault && !s.archived) out.push({ name: s.name, from: s.principalSince || null, to: null });
+  }
+  return out.sort((a, b) => String(a.from || '').localeCompare(String(b.from || '')));
+};
+
+// A actual ganha a partir do dia em que começou; antes disso, os períodos antigos.
+export const principalNameOn = (periods, day) => {
+  const current = periods.find(p => !p.to);
+  if (!day) return current ? current.name : null;
+  if (current && (!current.from || day >= current.from)) return current.name;
+  const past = periods.find(p => p.to && (!p.from || day >= p.from) && day <= p.to);
+  return past ? past.name : null;
+};
+
 // ── O que conta para os cálculos ─────────────────────────────────────────────
-// Só a substância PRINCIPAL (a "por defeito") entra nas contas — análises,
+// Só a substância PRINCIPAL (do dia do registo) entra nas contas — análises,
 // metas, avisos, mg, investigação. Um registo SEM substância (todos os antigos,
 // de antes de existir a lista) conta como sendo dela. Um registo só com outras
 // (ex.: só medicação) aparece no Histórico mas fica fora das contas.
-// Sem principal escolhida, conta tudo, como sempre contou.
+// Sem principal nesse dia, conta tudo, como sempre contou.
 export const countsForPrincipal = (consumption, principalName) => {
   if (!principalName) return true;
   const subs = consumption?.substances;
@@ -65,7 +101,7 @@ export const countsForPrincipal = (consumption, principalName) => {
 };
 
 export const countedConsumptions = (consumptions, substances) => {
-  const principal = getDefaultSubstance(substances);
-  if (!principal) return consumptions || [];
-  return (consumptions || []).filter(c => countsForPrincipal(c, principal.name));
+  const periods = principalPeriods(substances);
+  if (periods.length === 0) return consumptions || [];
+  return (consumptions || []).filter(c => countsForPrincipal(c, principalNameOn(periods, getDateKeyFromItem(c))));
 };

@@ -600,17 +600,20 @@ export const LocalDataProvider = ({ children }) => {
    * depende do que já foi carregado para o ecrã — e grava num só passo.
    * Registos que não se conseguem decifrar não são tocados.
    * Com { dryRun: true } só conta. Devolve o número de registos (a) mudar.
+   * `name` pode ser uma função (registo → nome ou null): assim cada registo
+   * leva a principal do SEU dia, e os de dias sem principal ficam como estão.
    */
   const tagConsumptionsWithoutSubstance = useCallback(async (name, { dryRun = false } = {}) => {
     if (!encryptionKey) throw new Error('PIN não disponível');
     const salt = await getCachedSalt();
     const raw = await getAllItems('consumptions');
     const plain = await decryptItems('consumptions', raw, encryptionKey, salt);
-    const targets = plain.filter(c => !c._decryptionError && !(Array.isArray(c.substances) && c.substances.length > 0));
+    const pick = typeof name === 'function' ? name : () => name;
+    const targets = plain.filter(c => !c._decryptionError && !(Array.isArray(c.substances) && c.substances.length > 0) && pick(c));
     if (dryRun || targets.length === 0) return targets.length;
 
     const now = new Date().toISOString();
-    const changed = targets.map(c => ({ ...c, substances: [{ name }] }));
+    const changed = targets.map(c => ({ ...c, substances: [{ name: pick(c) }] }));
     const toStore = [];
     for (const c of changed) {
       // eslint-disable-next-line no-unused-vars

@@ -59,8 +59,10 @@ export const DemoDataProvider = ({ children }) => {
   };
 
   const tagConsumptionsWithoutSubstance = useCallback(async (name, { dryRun = false } = {}) => {
-    const n = consumptions.filter(c => !(Array.isArray(c.substances) && c.substances.length)).length;
-    if (!dryRun && n) setConsumptions(prev => prev.map(c => (Array.isArray(c.substances) && c.substances.length ? c : { ...c, substances: [{ name }] })));
+    const pick = typeof name === 'function' ? name : () => name;
+    const untagged = (c) => !(Array.isArray(c.substances) && c.substances.length) && pick(c);
+    const n = consumptions.filter(untagged).length;
+    if (!dryRun && n) setConsumptions(prev => prev.map(c => (untagged(c) ? { ...c, substances: [{ name: pick(c) }] } : c)));
     return n;
   }, [consumptions]);
 
