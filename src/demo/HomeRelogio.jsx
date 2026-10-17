@@ -518,7 +518,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
 // bolinhas pequenas. Cor de juízo só se ela tiver meta de frequência.
 function WeekDots({ goals }) {
   const { t, i18n } = useTranslation();
-  const { consumptionsByDate = {} } = useMetrics();
+  const { consumptionsByDate = {}, unloggedDates } = useMetrics();
   const freqGoal = goals.find(g => g.type === 'reduce_frequency' && !g.completed);
   const target = freqGoal ? parseFloat(freqGoal.target) : null;
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -527,6 +527,8 @@ function WeekDots({ goals }) {
     return {
       k,
       count: consumptionsByDate[k] || 0,
+      // Marcado "não registei": fica de fora das contas, por isso não é um 0, é "não sei".
+      unknown: !!unloggedDates?.has(k),
       label: i === 6 ? t('home.today') : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d).replace(/\.$/, ''),
       isToday: i === 6,
     };
@@ -546,7 +548,11 @@ function WeekDots({ goals }) {
       <div className="flex justify-between">
         {days.map(d => (
           <div key={d.k} className="flex flex-col items-center gap-0.5">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
+            {d.unknown ? (
+              <div title={t('home.notLoggedDay')} aria-label={t('home.notLoggedDay')} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-dashed border-gray-600 text-gray-500 ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>?</div>
+            ) : (
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
+            )}
             <span className={`text-[10px] ${d.isToday ? 'text-gray-100 font-semibold' : 'text-gray-400'}`}>{d.label}</span>
           </div>
         ))}

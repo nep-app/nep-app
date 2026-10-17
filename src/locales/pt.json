@@ -190,7 +190,8 @@
     "acrosticN": "otas de",
     "acrosticE": "xperiências e",
     "acrosticP": "adrões",
-    "motto": "Não Estás Perdida."
+    "motto": "Não Estás Perdida.",
+    "notLoggedDay": "Dia marcado como \"não registei\""
   },
   "alerts": {
     "shortInterval": "Intervalo curto! {{hours}}h",

@@ -42,7 +42,7 @@ export function HomeViewRefactored({
   const metrics = useMetrics();
   // Só no modo demo pode valer 'relogio' (experiência do novo Início).
   const { layout: demoLayout } = useDemoPrefs();
-  const { consumptionsByDate } = metrics;
+  const { consumptionsByDate, unloggedDates } = metrics;
   const { darkMode, setShowThoughtsModal, setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal } = useUI();
 
   const [cachedAlerts, setCachedAlerts] = useState([]);
@@ -421,6 +421,8 @@ export function HomeViewRefactored({
           return {
             k,
             count: consumptionsByDate[k] || 0,
+            // Marcado "não registei": fica de fora das contas, por isso não é um 0, é "não sei".
+            unknown: !!unloggedDates?.has(k),
             label: i === 6
               ? t('home.today')
               : new Intl.DateTimeFormat(i18n.language, { weekday: 'short' }).format(d).replace(/\.$/, ''),
@@ -447,9 +449,13 @@ export function HomeViewRefactored({
             <div className="flex justify-between">
               {days.map((day) => (
                 <div key={day.k} className="flex flex-col items-center gap-1">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
-                    {day.count}
-                  </div>
+                  {day.unknown ? (
+                    <div title={t('home.notLoggedDay')} aria-label={t('home.notLoggedDay')} className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border border-dashed border-gray-600 text-gray-500 ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>?</div>
+                  ) : (
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
+                      {day.count}
+                    </div>
+                  )}
                   <span className={`text-[11px] ${day.isToday ? 'text-white font-semibold' : 'text-gray-400'}`}>
                     {day.label}
                   </span>

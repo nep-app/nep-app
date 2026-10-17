@@ -190,7 +190,8 @@
     "acrosticN": "otes of",
     "acrosticE": "xperiences and",
     "acrosticP": "atterns",
-    "motto": "Navigate Every Problem."
+    "motto": "Navigate Every Problem.",
+    "notLoggedDay": "Day marked as \"not logged\""
   },
   "alerts": {
     "shortInterval": "Short break! {{hours}}h",
