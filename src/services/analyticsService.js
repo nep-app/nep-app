@@ -1,5 +1,6 @@
 import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, datesInRange } from '../utils/helpers';
 import i18n from '../i18n';
+import { isUnknownLongCycle } from '../utils/mgDerivation';
 
 // ===== HELPER FUNCTIONS =====
 
@@ -247,8 +248,6 @@ const sortedMs = (arr, toMs) => {
     return v;
 };
 const itemMs = (x) => new Date(x.timestamp || x.createdAt || x.date).getTime();
-// Um "dia" de acordar a acordar com mais do que isto já junta várias noites.
-const MAX_CYCLE_MS = 36 * 3600000;
 
 /**
  * Cumprimento de uma meta: { achieved, possible } — os dias (ou ciclos) em que
@@ -346,10 +345,11 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
             if (!inRange(wakes[i].d)) continue;
             if (goal.type === 'limit_last') {
                 // Ciclo FECHADO com consumos: algum depois da hora da meta → falhou.
-                // Mais de 36h entre dois acordares quer dizer que falta registar
-                // um ciclo (ou houve noites sem dormir não marcadas): a janela
-                // juntaria várias noites — não se sabe, não se avalia.
-                if (i + 1 >= wakes.length || endMs - startMs > MAX_CYCLE_MS) continue;
+                // Mais de 36h entre dois acordares, depois de existir o botão
+                // "Não dormi", quer dizer que falta registar um ciclo — não se
+                // sabe, não se avalia. Antes do botão, era uma noite sem dormir
+                // (não havia outra forma de o dizer): conta como um ciclo só.
+                if (i + 1 >= wakes.length || isUnknownLongCycle(startMs, endMs)) continue;
                 const dayTarget = tgt(wakes[i].d);
                 if (dayTarget == null) continue;
                 let k = j, lastMs = null, firstLateMs = null;

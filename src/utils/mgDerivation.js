@@ -343,13 +343,25 @@ export function deriveDoseMg(weighings = [], consumptions = [], opts = {}) {
 }
 
 const MAX_SLEEP_CYCLE_MS = 36 * 3600000;
+// O botão "Não dormi" só existe desde a v6.58.0 (1 out 2026). Antes disso, não
+// dormir era simplesmente não registar ciclo — um acordar a mais de 36h do
+// anterior queria dizer "não dormi". Só depois desta data é que um buraco
+// longo pode ser esquecimento (e aí a app pergunta).
+export const NO_SLEEP_BUTTON_SINCE_MS = new Date('2026-10-01T00:00:00').getTime();
+
+// Um ciclo longo de que não se sabe nada: mais de 36h, depois de existir o
+// botão "Não dormi". (Antes do botão, conta como uma noite sem dormir.)
+export const isUnknownLongCycle = (startMs, endMs) =>
+  endMs - startMs > MAX_SLEEP_CYCLE_MS && startMs >= NO_SLEEP_BUTTON_SINCE_MS;
 
 /**
  * mg POR CICLO (de acordar a acordar), que é o "dia" vivido — consumir às 3h
  * antes de dormir conta no ciclo em que se está, não no dia seguinte.
  * - Só ciclos FECHADOS (já se acordou outra vez).
- * - Mais de 36h entre dois acordares: falta registar um acordar (quem não
- *   dorme carrega em "Não dormi", que também corta o ciclo) → não se sabe.
+ * - Mais de 36h entre dois acordares, depois de 1 out 2026: falta registar um
+ *   acordar (quem não dorme carrega em "Não dormi") → não se sabe. Antes
+ *   dessa data não havia o botão: um ciclo longo é uma noite sem dormir e conta.
+ * - Ciclo que passa por um dia atípico ou "não registei" → fica de fora.
  * - mg escrito à mão ("Registar mg", ou o campo antigo do ciclo) manda: conta
  *   no ciclo em que a HORA do registo cai, e vários no mesmo ciclo somam-se.
  *   Registos antigos cuja hora é de outro dia (era a hora em que se gravou)
@@ -382,7 +394,8 @@ export function mgBySleepCycle(doseMg = [], sleepCycles = [], { dailyLogs = [], 
     const start = wakes[i].ms, end = wakes[i + 1].ms;
     while (j < doses.length && doses[j].ms < start) j++;
     const day = localDay(start);
-    if (end - start > MAX_SLEEP_CYCLE_MS || (excluded && excluded.has(day))) continue;
+    if (isUnknownLongCycle(start, end)) continue;
+    if (excluded && datesBetween(start, end - 1).some(d => excluded.has(d))) continue;
     // Manual: o "Registar mg" cuja hora cai neste ciclo (somados); senão o
     // campo antigo do próprio ciclo.
     const inCycle = manualAt.filter(m => m.ms >= start && m.ms < end);
@@ -402,19 +415,24 @@ export function mgBySleepCycle(doseMg = [], sleepCycles = [], { dailyLogs = [], 
 }
 
 /**
- * Buracos entre ciclos: mais de 36h entre dois acordares registados. Aí a app
- * não sabe se a pessoa não dormiu ou só não registou — por isso pergunta
- * (lista no Histórico) em vez de adivinhar. Mais recente primeiro.
+ * Buracos entre ciclos: mais de 36h entre dois acordares registados, depois
+ * de existir o botão "Não dormi". Aí a app não sabe se a pessoa não dormiu ou
+ * só não registou — por isso pergunta (lista no Histórico) em vez de adivinhar.
+ * Não pergunta o que a pessoa já disse: buracos que passam por um dia marcado
+ * "não registei" ficam fora da lista. Mais recente primeiro.
  * @returns {Array<{ start:number, end:number }>}
  */
-export function sleepCycleGaps(sleepCycles = []) {
+export function sleepCycleGaps(sleepCycles = [], { unloggedDates } = {}) {
+  const unlogged = toDateSet(unloggedDates);
   const wakes = sleepCycles
     .map(c => (c ? toMs(c.timestamp || c.createdAt || c.date) : null))
     .filter(ms => ms != null)
     .sort((a, b) => a - b);
   const out = [];
   for (let i = 0; i + 1 < wakes.length; i++) {
-    if (wakes[i + 1] - wakes[i] > MAX_SLEEP_CYCLE_MS) out.push({ start: wakes[i], end: wakes[i + 1] });
+    if (!isUnknownLongCycle(wakes[i], wakes[i + 1])) continue;
+    if (unlogged && datesBetween(wakes[i], wakes[i + 1]).some(d => unlogged.has(d))) continue;
+    out.push({ start: wakes[i], end: wakes[i + 1] });
   }
   return out.reverse();
 }

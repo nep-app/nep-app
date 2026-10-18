@@ -101,7 +101,7 @@ export const MetricsProvider = ({ children }) => {
     try { return mgBySleepCycle(mgDerivation.doseMg, cycles, { dailyLogs, excludedDates }); } catch { return []; }
   }, [mgByCycleMode, mgDerivation.doseMg, cycles, dailyLogs, excludedDates]);
   // Mais de 36h sem acordar registado: a app pergunta em vez de adivinhar.
-  const cycleGaps = useMemo(() => (mgByCycleMode ? sleepCycleGaps(cycles) : []), [mgByCycleMode, cycles]);
+  const cycleGaps = useMemo(() => (mgByCycleMode ? sleepCycleGaps(cycles, { unloggedDates }) : []), [mgByCycleMode, cycles, unloggedDates]);
 
   const filteredConsumptions = useMemo(() =>
     consumptions.filter(c => !excludedDates.has(c.date || getDateKeyFromItem(c))),

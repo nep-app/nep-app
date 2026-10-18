@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { getTodayKey, safeToISODate } from '../../utils/helpers';
+import { isUnknownLongCycle } from '../../utils/mgDerivation';
 
 export const DailyLogModal = ({
   isOpen,
@@ -67,7 +68,7 @@ export const DailyLogModal = ({
                       {o.end == null
                         ? t('modals.dailyLog.cycleCurrent', { from: fmt(o.start) })
                         : t('modals.dailyLog.cycleRange', { from: fmt(o.start), to: fmt(o.end) })
-                          + (o.end - o.start > 36 * 3600000 ? ` ${t('modals.dailyLog.cycleTooLong')}` : '')}
+                          + (isUnknownLongCycle(o.start, o.end) ? ` ${t('modals.dailyLog.cycleTooLong')}` : '')}
                     </option>
                   ))}
                 </select>
