@@ -929,11 +929,10 @@
       },
       "targetSince": "Meta actual ({{target}}) desde {{date}}; antes, os dias contam com o valor de então.",
       "qtyDaily": "📅 Dia a dia (é isto que a meta conta): cada dia é estimado. A balança diz quanto saiu do saco entre duas pesagens e a app divide pelos toques, como se fossem todos do mesmo tamanho. Vê os picos.",
-      "qtyAvg": "⚖️ Média pela balança: ≈{{mg}} mg por dia",
-      "qtyAvgCover": "a balança cobre ~{{covered}} dos {{days}} dias",
-      "qtyAvgExplain": "Tudo o que saiu do saco a dividir pelo tempo entre pesagens. Não depende dos toques, mas esconde os picos: um dia muito alto fica diluído na média.",
-      "qtyAvgNone": "⚖️ Média pela balança: ainda não se sabe — as pesagens deste período cobrem menos de 2 dias.",
-      "qtyCycle": "🔁 Ciclo a ciclo (é isto que a meta conta): de quando acordas até voltares a acordar. Cada ciclo é estimado: a balança diz quanto saiu do saco entre duas pesagens e a app divide pelos toques, como se fossem todos do mesmo tamanho. Vê os picos."
+      "qtyCycle": "🔁 Ciclo a ciclo (é isto que a meta conta): de quando acordas até voltares a acordar. O número de cada ciclo vem do teu \"Registar mg\" desse ciclo; se não houver, da balança do saco, dividida pelos toques (aí é uma estimativa). Vê os picos.",
+      "qtyAvgCycles": "📊 Em média: ≈{{mg}} mg por ciclo (nos mesmos {{n}} ciclos)",
+      "qtyAvgDays": "📊 Em média: ≈{{mg}} mg por dia (nos mesmos {{n}} dias)",
+      "qtyAvgAllExplain": "Soma dos mg de todos os ciclos que a meta conta — do \"Registar mg\" ou da balança — a dividir pelo número de ciclos. Esconde os picos: um ciclo muito alto fica diluído na média."
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",

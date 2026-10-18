@@ -7,7 +7,6 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay } from '../utils/helpers';
-import { balanceAverage } from '../utils/mgDerivation';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -310,16 +309,15 @@ export function PatternsView({
                                                     // Sem dias que contem não há percentagem: "ainda não se sabe", não 0%.
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : null;
 
-                                                    // Meta de mg: ao lado do dia a dia (o que a meta conta), a média
-                                                    // só pela balança no mesmo intervalo. Descritiva, sem ✓/✗: a
-                                                    // meta é um teto por dia, não uma média.
-                                                    const balance = g.type === 'reduce_quantity'
-                                                        ? balanceAverage(
-                                                            metrics?.weighedPeriods || [],
-                                                            fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null,
-                                                            periodTo && periodTo < getTodayKey() ? new Date(`${periodTo}T00:00:00`).getTime() + 86400000 : Date.now(),
-                                                            { excludedDates: metrics?.atypicalDates }
-                                                        )
+                                                    // Meta de mg: a média dos MESMOS ciclos (ou dias) que a meta
+                                                    // conta — venham do "Registar mg" ou da balança. Descritiva, sem
+                                                    // ✓/✗: a meta é um teto por ciclo, não uma média. Com menos de 2
+                                                    // não há média que valha a pena (não se sabe).
+                                                    const mgVals = g.type === 'reduce_quantity'
+                                                        ? (goalDays || []).map(dd => Number(dd.value)).filter(v => Number.isFinite(v))
+                                                        : [];
+                                                    const mgAvg = mgVals.length >= 2
+                                                        ? { mg: Math.round(mgVals.reduce((a, v) => a + v, 0) / mgVals.length), n: mgVals.length }
                                                         : null;
 
                                                     return {
@@ -328,7 +326,7 @@ export function PatternsView({
                                                         totalPossible,
                                                         successRate,
                                                         goalDays,
-                                                        balance,
+                                                        mgAvg,
                                                         countsFrom: fromDate,
                                                         currentFrom: goalCountsFrom(g),
                                                     };
@@ -995,14 +993,11 @@ export function PatternsView({
                                                                                 {goal.type === 'reduce_quantity' && (
                                                                                     <div className="mt-2 space-y-1.5 text-[11px] leading-snug">
                                                                                         <p className="text-gray-400">{t(metrics?.mgByCycleMode ? 'patterns.goals.qtyCycle' : 'patterns.goals.qtyDaily')}</p>
-                                                                                        {goal.balance ? (
+                                                                                        {goal.mgAvg && (
                                                                                             <p className="text-gray-300">
-                                                                                                {t('patterns.goals.qtyAvg', { mg: goal.balance.mgPerDay })}{' · '}
-                                                                                                <span className="text-gray-500">{t('patterns.goals.qtyAvgCover', { covered: goal.balance.coveredDays, days: goal.balance.spanDays })}</span>
-                                                                                                <span className="block text-gray-500">{t('patterns.goals.qtyAvgExplain')}</span>
+                                                                                                {t(metrics?.mgByCycleMode ? 'patterns.goals.qtyAvgCycles' : 'patterns.goals.qtyAvgDays', { mg: goal.mgAvg.mg, n: goal.mgAvg.n })}
+                                                                                                <span className="block text-gray-500">{t('patterns.goals.qtyAvgAllExplain')}</span>
                                                                                             </p>
-                                                                                        ) : (
-                                                                                            <p className="text-gray-500">{t('patterns.goals.qtyAvgNone')}</p>
                                                                                         )}
                                                                                     </div>
                                                                                 )}
