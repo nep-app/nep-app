@@ -67,10 +67,12 @@ export const DEMO_THEMES = [
   // Riso (desde a v6.87.0 é o "mais vivo"; o antigo saiu — quem o tinha
   // escolhido, ou o "mais vivo", passa a este): lilás um pouco mais saturado
   // e os tons 500 (fundos dos botões) a escurecer menos.
-  { id: 'riso', name: 'Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#2CC5B5', font: 'vv', vivid: true, app: true,
-    // Avisos "fora da meta" num amarelo mais amarelo (menos alaranjado) e o
-    // verde de "cumpre" um pouco mais claro e vivo.
-    meaning: { yellow: '#FFD84A', emerald: '#3DDC97' } },
+  { id: 'riso', name: 'Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#00A99D', font: 'vv', vivid: true, app: true,
+    // Avisos das metas: "fora da meta" num amarelo mais amarelo (menos
+    // alaranjado); "cumpre" num verde um pouco mais claro e vivo. Os avisos
+    // usam a família 'green' (os outros verdes do Início usam 'emerald'/'teal'
+    // e ficam como estão).
+    meaning: { yellow: '#FFD84A', green: '#3DDC97' } },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#C4421C', b: '#2F56C2', c: '#BC3A72', d: '#17785C', font: 'vv', light: true, app: true },
   { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
