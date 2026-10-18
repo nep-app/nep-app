@@ -270,9 +270,13 @@ export function HistoryView({
                 const code = codes.includes('unloggedDaysInPeriod')
                     ? 'unloggedDaysInPeriod'
                     : codes.includes('missingTouches') ? 'missingTouches' : (codes[0] || 'unmeasured');
+                // Há um "Registar mg" para este dia, mas com a caixa dos mg vazia:
+                // dizer isso (é diferente de não haver registo nenhum).
+                const emptyLog = (code === 'beforeFirstWeighing' || code === 'unmeasured')
+                    && (dailyLogs || []).some(l => l && !l.notLogged && l.date === d && (l.mg == null || l.mg === ''));
                 arr.push({
                     date: d,
-                    reason: unloggedDates.has(d) ? 'unlogged' : atypicalDates.has(d) ? 'atypical' : code,
+                    reason: unloggedDates.has(d) ? 'unlogged' : atypicalDates.has(d) ? 'atypical' : emptyLog ? 'emptyMgLog' : code,
                     detail: gap?.detail || null,
                 });
             };
@@ -282,7 +286,21 @@ export function HistoryView({
             unloggedDates.forEach(d => consider(d));
             return filterByDateRange(arr, dateRange, 'date').sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
-    }, [consumptions, metrics?.dailySummary, metrics?.mgGapReasonsByDate, atypicalDates, unloggedDates, dateRange]);
+    }, [consumptions, dailyLogs, metrics?.dailySummary, metrics?.mgGapReasonsByDate, atypicalDates, unloggedDates, dateRange]);
+
+    // Dias seguidos com o MESMO motivo (e o mesmo período) num cartão só —
+    // "11 → 14 set." em vez de quatro cartões a repetir a mesma frase.
+    const missingMgGroups = useMemo(() => {
+        const next = (d) => { const x = new Date(`${d}T12:00:00`); x.setDate(x.getDate() + 1); return safeToISODate(x); };
+        const sig = (m) => `${m.reason}|${m.detail ? JSON.stringify([m.detail.consumed, m.detail.missingTs, (m.detail.dates || []).join(',')]) : ''}`;
+        const groups = [];
+        for (const m of missingMgDays) { // mais recente primeiro
+            const g = groups[groups.length - 1];
+            if (g && g.sig === sig(m) && next(m.date) === g.from) { g.from = m.date; g.count++; continue; }
+            groups.push({ ...m, sig: sig(m), from: m.date, to: m.date, count: 1 });
+        }
+        return groups;
+    }, [missingMgDays]);
 
     // Motivos em linguagem simples (o objetivo é a pessoa perceber o que fazer).
     const mgGapReasonText = (code) => {
@@ -301,6 +319,8 @@ export function HistoryView({
                 return isEN ? '⚖️ weights look swapped (negative result)' : '⚖️ pesos parecem trocados (deu negativo)';
             case 'missingTouches':
                 return isEN ? '➕ uses missing in this period' : '➕ faltam toques registados neste período';
+            case 'emptyMgLog':
+                return isEN ? '📊 "Log mg" saved without a number' : '📊 "Registar mg" guardado sem número';
             case 'unlogged':
                 return isEN ? '🕳️ you marked it as not logged' : '🕳️ marcaste como "não registei"';
             case 'unloggedDaysInPeriod':
@@ -1128,11 +1148,11 @@ export function HistoryView({
                                                                     </button>
                                                                     {showMissingMgDays && (
                                                                         <div className="mt-2 space-y-1">
-                                                                            {missingMgDays.map(d => (
-                                                                                <div key={`miss-${d.date}`} className="bg-gray-900/30 rounded px-3 py-1.5">
+                                                                            {missingMgGroups.map(d => (
+                                                                                <div key={`miss-${d.to}`} className="bg-gray-900/30 rounded px-3 py-1.5">
                                                                                     <div className="flex items-center justify-between gap-2">
-                                                                                        <span className="text-sm text-gray-400">
-                                                                                            {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
+                                                                                        <span className="text-sm text-gray-400 whitespace-nowrap">
+                                                                                            {(() => { const f = (k) => new Date(`${k}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }); return d.count > 1 ? `${f(d.from)} → ${f(d.to)}` : f(d.to); })()}
                                                                                         </span>
                                                                                         <span className="text-[11px] text-gray-500 text-right">
                                                                                             {mgGapReasonText(d.reason)}
@@ -1155,6 +1175,13 @@ export function HistoryView({
                                                                                             {isEN
                                                                                                 ? `At least ${d.detail.consumed} mg left the bag in a period that covers ${d.detail.dates.length} day(s) you marked as not logged (there may have been a refill that was never logged). There is no way to know how much was on each day — see the period under "Per weighed period".`
                                                                                                 : `Saíram pelo menos ${d.detail.consumed} mg do saco num período que apanha ${d.detail.dates.length} dia(s) que marcaste como "não registei" (pode ter havido um enchimento por registar). Não se sabe quanto foi em cada dia — vês o período em "Por período pesado".`}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {d.reason === 'emptyMgLog' && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN
+                                                                                                ? 'There is a "Log mg" record for this day, but with no number in it (only the number of uses). If you remember the mg, open it (pencil, under Records) and fill it in.'
+                                                                                                : 'Há um "Registar mg" deste dia, mas sem número lá dentro (só a contagem de consumos). Se te lembrares dos mg, abre-o (lápis, em Registos) e escreve-os.'}
                                                                                         </div>
                                                                                     )}
                                                                                     {d.reason === 'unlogged' && (
