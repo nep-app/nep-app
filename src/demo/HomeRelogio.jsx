@@ -278,7 +278,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         <button
           type="button"
           onClick={onMarkConsumption}
-          className="w-full h-14 rounded-full bg-white/75 border border-white/80 text-gray-900 text-base font-semibold hover:bg-white/85 transition-colors"
+          className="w-full h-14 rounded-full bg-white/75 border-2 border-white text-gray-900 text-base font-semibold hover:bg-white/85 transition-colors"
         >
           {t('home.markConsumption')}
         </button>
@@ -327,9 +327,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
               {withGoal.length > 0 && (
                 <div className="grid grid-cols-1 gap-1.5">
                   {withGoal.map((r, i) => (
-                    <div key={i} className={'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ' + (r.goal.ok ? 'bg-emerald-500/10 border-emerald-400/30' : 'bg-amber-500/10 border-amber-400/30')}>
+                    <div key={i} className={'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ' + (r.goal.ok ? 'bg-emerald-500/10 border-emerald-400/30' : 'bg-yellow-500/10 border-yellow-400/35')}>
                       <span className="text-xs text-gray-200"><span aria-hidden="true">{r.icon} </span>{r.label} <span className="font-semibold text-gray-50">{r.value}</span></span>
-                      <span className={'text-[11px] font-semibold whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-200' : 'text-amber-200')}>
+                      <span className={'text-[11px] font-semibold whitespace-nowrap ' + (r.goal.ok ? 'text-emerald-200' : 'text-yellow-200')}>
                         {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
                       </span>
                     </div>
@@ -566,7 +566,7 @@ function WeekDots({ goals }) {
   const total = days.reduce((s, d) => s + d.count, 0);
   const dot = (n) => {
     if (n === 0) return 'bg-gray-700/60 text-gray-500';
-    if (Number.isFinite(target)) return meetsGoal('reduce_frequency', n, target) ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-400/40';
+    if (Number.isFinite(target)) return meetsGoal('reduce_frequency', n, target) ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-yellow-500/20 text-yellow-200 ring-1 ring-yellow-400/40';
     return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
   };
   return (
