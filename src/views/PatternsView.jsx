@@ -301,6 +301,7 @@ export function PatternsView({
                                                             targetForDay: (d) => goalTargetForDay(g, d),
                                                             excludedDates,
                                                             measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
+                                                            mgCycles: metrics?.mgByCycleMode ? metrics.mgCycles : undefined,
                                                             allCycles: cycles,
                                                             allConsumptions: consumptions,
                                                         }
@@ -943,7 +944,7 @@ export function PatternsView({
                                                                         };
                                                                         const explanations = {
                                                                             'reduce_frequency': t('patterns.goals.explain.reduce_frequency', { target: goal.target }),
-                                                                            'reduce_quantity': t('patterns.goals.explain.reduce_quantity', { target: goal.target }),
+                                                                            'reduce_quantity': t(metrics?.mgByCycleMode ? 'patterns.goals.explain.reduce_quantity_cycle' : 'patterns.goals.explain.reduce_quantity', { target: goal.target }),
                                                                             'limit_last': t('patterns.goals.explain.limit_last', { target: goal.target }),
                                                                             'increase_interval': t('patterns.goals.explain.increase_interval', { target: goal.target }),
                                                                             'sleep_hours': t('patterns.goals.explain.sleep_hours', { target: goal.target }),
@@ -993,7 +994,7 @@ export function PatternsView({
                                                                                 )}
                                                                                 {goal.type === 'reduce_quantity' && (
                                                                                     <div className="mt-2 space-y-1.5 text-[11px] leading-snug">
-                                                                                        <p className="text-gray-400">{t('patterns.goals.qtyDaily')}</p>
+                                                                                        <p className="text-gray-400">{t(metrics?.mgByCycleMode ? 'patterns.goals.qtyCycle' : 'patterns.goals.qtyDaily')}</p>
                                                                                         {goal.balance ? (
                                                                                             <p className="text-gray-300">
                                                                                                 {t('patterns.goals.qtyAvg', { mg: goal.balance.mgPerDay })}{' · '}
@@ -1021,7 +1022,7 @@ export function PatternsView({
                                                                                 </div>
                                                                                 {openGoalDays === goal.id && (
                                                                                     <ul className="mt-2 max-h-72 overflow-y-auto divide-y divide-gray-700/60 text-xs">
-                                                                                        {goal.goalDays.map(dd => {
+                                                                                        {goal.goalDays.map((dd, ddi) => {
                                                                                             const v = dd.value;
                                                                                             const val = goal.type === 'reduce_frequency' ? t('patterns.goals.dayVal.freq', { count: v })
                                                                                                 : goal.type === 'reduce_quantity' ? `${v} mg`
@@ -1032,7 +1033,7 @@ export function PatternsView({
                                                                                                 : goal.type === 'bedtime_before' ? t('patterns.goals.dayVal.bedtime', { time: v })
                                                                                                 : String(v);
                                                                                             return (
-                                                                                                <li key={dd.d} className="flex items-center justify-between py-1.5">
+                                                                                                <li key={`${dd.d}-${ddi}`} className="flex items-center justify-between py-1.5">
                                                                                                     <span className="text-gray-300 capitalize">{new Date(`${dd.d}T12:00:00`).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                                                                                                     <span className="text-gray-200">{val} <span className={dd.ok ? 'text-green-400' : 'text-orange-400'}>{dd.ok ? '✓' : '✗'}</span></span>
                                                                                                 </li>

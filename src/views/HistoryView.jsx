@@ -87,6 +87,8 @@ export function HistoryView({
 
     // Edição de PESAGENS: data/hora + "mg postos no saco" (= cheio − antes).
     const [showAllDoseDays, setShowAllDoseDays] = useState(false);
+    const [showAllMgCycles, setShowAllMgCycles] = useState(false);
+    const [showCalendarDays, setShowCalendarDays] = useState(false);
     const [showMissingMgDays, setShowMissingMgDays] = useState(false);
     const [showPeriods, setShowPeriods] = useState(false);
     const [showAllPeriods, setShowAllPeriods] = useState(false);
@@ -470,7 +472,8 @@ export function HistoryView({
                                    como se o peso que ela mediu não existisse. Agora
                                    cada caso diz o que tem; e quando não há pesos
                                    mesmo, diz isso em vez de ficar vago. */}
-                                {w.noRefill ? (
+                                {/* Pesou sem encher (marcado ou não): há peso, só não se pôs nada. */}
+                                {(w.noRefill || (!(added > 0) && typeof w.before === 'number')) ? (
                                     restante != null ? (
                                         <>{isEN ? 'Weighed without refilling · ' : 'Pesei sem encher · '}
                                         <span className="font-bold">{restante}</span> mg {isEN ? 'left in the bag' : 'no saco'}</>
@@ -1015,12 +1018,50 @@ export function HistoryView({
                                                             )}
                                                         </div>
                                                     )}
+                                                    {/* POR CICLO (acordar → acordar): o que a meta de mg conta quando há
+                                                        ciclos registados. O "por dia" fica atrás de um toque. */}
+                                                    {metrics?.mgByCycleMode && (
+                                                        <div className="mb-5 pb-4 border-b border-gray-700">
+                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per cycle (wake → wake)' : 'Total por ciclo (acordar → acordar)'}</h4>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'From when you woke up until you woke up again — this is what your mg goal counts. The app splits what left the bag across your taps, as if they were all the same size, so it is an estimate. It shows peaks. Cycles without a reliable value (a tap without a weighing, a missing wake-up, more than 36h) are not shown.' : 'De quando acordaste até voltares a acordar — é isto que a meta de mg conta. A app divide o que saiu do saco pelos toques, como se fossem todos do mesmo tamanho: por isso é uma estimativa. Mostra os picos. Ciclos sem valor fiável (um toque sem pesagem, um acordar por registar, mais de 36h) não aparecem.'}</p>
+                                                            {(metrics.mgCycles || []).length === 0 ? (
+                                                                <p className="text-xs text-gray-400">{isEN ? 'No cycle with a reliable value yet.' : 'Ainda não há nenhum ciclo com valor fiável.'}</p>
+                                                            ) : (
+                                                                <div className="space-y-1">
+                                                                    {(showAllMgCycles ? metrics.mgCycles : metrics.mgCycles.slice(0, 7)).map(c => {
+                                                                        const f = (ms) => { const d = new Date(ms); return `${d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }).replace(/\.$/, '')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+                                                                        return (
+                                                                            <div key={`cy-${c.start}`} className="flex items-center justify-between gap-2 bg-gray-900/40 rounded px-3 py-1.5">
+                                                                                <span className="text-[13px] text-gray-300">{f(c.start)} → {f(c.end)}</span>
+                                                                                <span className="text-sm font-medium text-green-300 whitespace-nowrap">{c.mg} mg{c.manual ? ' ✍️' : ''}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                    {metrics.mgCycles.length > 7 && (
+                                                                        <button onClick={() => setShowAllMgCycles(v => !v)} className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline">
+                                                                            {showAllMgCycles ? (isEN ? 'Show fewer' : 'Mostrar menos') : (isEN ? `Show all ${metrics.mgCycles.length}` : `Ver todos os ${metrics.mgCycles.length}`)}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {derivedDaysList.length > 0 && (
                                                         <div className="mb-5 pb-4 border-b border-gray-700">
-                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per day' : 'Total por dia'}</h4>
-                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'How much on each day — this is what your mg goal counts. On weighed days, the app splits what left the bag across that period\'s taps, as if they were all the same size, so it is an estimate. It shows peaks. Days without a reliable value are not shown.' : 'Quanto foi em cada dia — é isto que a meta de mg conta. Nos dias pesados, a app divide o que saiu do saco pelos toques desse período, como se fossem todos do mesmo tamanho: por isso é uma estimativa. Mostra os picos. Dias sem valor fiável não aparecem.'}</p>
+                                                            {metrics?.mgByCycleMode ? (
+                                                                <button onClick={() => setShowCalendarDays(v => !v)} aria-expanded={showCalendarDays} className="text-sm font-semibold text-white hover:text-gray-200 mb-1">
+                                                                    {isEN ? 'Per calendar day (midnight to midnight)' : 'Por dia do calendário (meia-noite a meia-noite)'} {showCalendarDays ? '▴' : '▾'}
+                                                                </button>
+                                                            ) : (
+                                                                <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per day' : 'Total por dia'}</h4>
+                                                            )}
+                                                            {(!metrics?.mgByCycleMode || showCalendarDays) && (
+                                                            <p className="text-xs text-gray-500 mb-3">{metrics?.mgByCycleMode
+                                                                ? (isEN ? 'The same calculation, cut at midnight instead of when you wake up. Days without a reliable value are not shown.' : 'A mesma conta, cortada à meia-noite em vez de quando acordas. Dias sem valor fiável não aparecem.')
+                                                                : (isEN ? 'How much on each day — this is what your mg goal counts. On weighed days, the app splits what left the bag across that period\'s taps, as if they were all the same size, so it is an estimate. It shows peaks. Days without a reliable value are not shown.' : 'Quanto foi em cada dia — é isto que a meta de mg conta. Nos dias pesados, a app divide o que saiu do saco pelos toques desse período, como se fossem todos do mesmo tamanho: por isso é uma estimativa. Mostra os picos. Dias sem valor fiável não aparecem.')}</p>
+                                                            )}
                                                             <div className="space-y-1">
-                                                                {(showAllDoseDays ? derivedDaysList : derivedDaysList.slice(0, 7)).map(d => (
+                                                                {(metrics?.mgByCycleMode && !showCalendarDays ? [] : showAllDoseDays ? derivedDaysList : derivedDaysList.slice(0, 7)).map(d => (
                                                                     <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">
                                                                         <span className="text-sm text-gray-300">
                                                                             {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
@@ -1029,7 +1070,7 @@ export function HistoryView({
                                                                     </div>
                                                                 ))}
                                                             </div>
-                                                            {derivedDaysList.length > 7 && (
+                                                            {derivedDaysList.length > 7 && (!metrics?.mgByCycleMode || showCalendarDays) && (
                                                                 <button
                                                                     onClick={() => setShowAllDoseDays(v => !v)}
                                                                     className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline"
@@ -1145,18 +1186,22 @@ export function HistoryView({
                                                                                     <span className="text-sm font-medium text-green-300">{p.consumed} mg</span>
                                                                                 </div>
                                                                                 <div className="text-[11px] text-gray-500">
-                                                                                    {p.days} {p.days === 1 ? (isEN ? 'day' : 'dia') : (isEN ? 'days' : 'dias')}
+                                                                                    {/* Duração REAL entre as duas pesagens (não dias de calendário:
+                                                                                        "14 → 16" podiam ser 36h e apareciam como 3 dias). O mg por
+                                                                                        24h só com pelo menos ~1 dia — um período de poucas horas
+                                                                                        esticado a 24h dava um número que não aconteceu. */}
+                                                                                    {(() => { const h = (p.end - p.start) / 3600000; return h < 48 ? `~${Math.max(1, Math.round(h))} h` : `~${Math.round(h / 24)} ${isEN ? 'days' : 'dias'}`; })()}
                                                                                     {' · '}{p.doseCount} {isEN ? 'uses' : 'toques'}
-                                                                                    {p.mgPerDose != null && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
-                                                                                    {' · ≈'}{Math.round(p.consumed / p.days)} mg/{isEN ? 'day' : 'dia'}
+                                                                                    {p.mgPerDose != null && !(p.unloggedDays && p.unloggedDays.length > 0) && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
+                                                                                    {(p.end - p.start) >= 20 * 3600000 && <>{' · ≈'}{Math.round(p.consumed / ((p.end - p.start) / 86400000))} mg {isEN ? 'per 24h' : 'por 24h'}</>}
                                                                                 </div>
                                                                                 {/* O total continua fiável (veio da balança); o mg/toque
                                                                                     é que não, porque faltam os toques desses dias. */}
                                                                                 {p.unloggedDays && p.unloggedDays.length > 0 && (
                                                                                     <div className="text-[11px] text-amber-400/70 mt-0.5 leading-snug">
                                                                                         {isEN
-                                                                                            ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged — the ${p.consumed} mg total still holds, the per-use value does not.`
-                                                                                            : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como não registados — o total de ${p.consumed} mg continua a valer, o mg/toque é que não.`}
+                                                                                            ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged: the ${p.consumed} mg are still right, but there is no way to know how much each use was.`
+                                                                                            : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como não registados: os ${p.consumed} mg continuam certos, mas não dá para saber quanto foi cada toque.`}
                                                                                     </div>
                                                                                 )}
                                                                             </div>

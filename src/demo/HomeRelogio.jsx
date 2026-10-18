@@ -129,7 +129,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   // dados; o "cumpre/não cumpre" só aparece onde ela definiu uma meta.
   const [mgStats, setMgStats] = useState(null);
   useEffect(() => {
-    getUserStats().then(st => setMgStats(st ? { mg: st.lastMg, ts: st.lastMgTs } : null)).catch(() => {});
+    getUserStats().then(st => setMgStats(st ? { mg: st.lastMg, ts: st.lastMgTs, byCycle: !!st.lastMgByCycle } : null)).catch(() => {});
   }, [consumptions, weighings]);
 
   const status = useMemo(() => {
@@ -209,7 +209,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       const g = goal('reduce_quantity');
       const when = mgStats.ts ? new Date(mgStats.ts).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : '';
       out.interval.push({
-        label: t('home2.mgDay', { date: when }),
+        label: t(mgStats.byCycle ? 'home2.mgCycle' : 'home2.mgDay', { date: when }),
         value: `${Math.round(mgStats.mg)} mg`,
         goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('reduce_quantity', mgStats.mg, g.target), target: `≤ ${g.target} mg` } : null,
       });

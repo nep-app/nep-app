@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
-import { deriveDailyMg, typicalMgPerDose } from './mgDerivation';
+import { deriveDailyMg, deriveDoseMg, mgBySleepCycle, typicalMgPerDose } from './mgDerivation';
 import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
@@ -298,6 +298,20 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       lastMg = typeof mgValue === 'number' ? mgValue : parseFloat(mgValue);
       lastMgTs = allWithMg[0].timestamp;
       lastMgEstimated = !!allWithMg[0].estimated;
+    }
+
+    // Quem regista ciclos de sono: o mg é POR CICLO (acordar → acordar), como a
+    // meta nos Padrões. O último ciclo fechado com valor fiável; sem nenhum,
+    // não se mostra (não se volta ao dia do calendário — seriam duas regras).
+    let lastMgByCycle = false;
+    if (cycles.length >= 2) {
+      lastMgByCycle = true;
+      lastMg = null; lastMgTs = null; lastMgEstimated = false;
+      try {
+        const doseMg = weighings && weighings.length > 0 ? deriveDoseMg(weighings, consumptions, { unloggedDates }) : [];
+        const byCycle = mgBySleepCycle(doseMg, cycles, { dailyLogs: filteredDailyLogs, excludedDates: new Set([...atypicalDates, ...unloggedDates]) });
+        if (byCycle.length > 0) { lastMg = byCycle[0].mg; lastMgTs = byCycle[0].start; }
+      } catch (e) { /* best-effort: nunca parte os avisos */ }
     }
 
     // Consumos últimos 7 dias (excluindo dias atípicos)
@@ -722,6 +736,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       lastInterval,
       lastMg,
       lastMgTs, // data do último dia medido (o Início só o mostra se houver pesagem recente)
+      lastMgByCycle, // true → lastMg é de um ciclo de sono (acordar → acordar), lastMgTs = acordar
       timeSinceLastConsumption, // ← Para badge "Sem consumir há"
       goals: goalsSimple,
       alerts, // ← PRÉ-CALCULADOS!

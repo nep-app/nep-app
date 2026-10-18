@@ -840,7 +840,8 @@
         "increase_interval": "Days with at least half the intervals ≥{{target}}h",
         "sleep_hours": "Nights with ≥{{target}}h of sleep",
         "bedtime_before": "Nights in bed by {{target}}",
-        "first_not_before": "Cycles with the 1st use ≥{{target}}h after waking"
+        "first_not_before": "Cycles with the 1st use ≥{{target}}h after waking",
+        "reduce_quantity_cycle": "Measured cycles (wake → wake) with up to {{target}}mg"
       },
       "noData": "Not enough days in this period to tell yet.",
       "since": "Counts since {{date}}",
@@ -860,7 +861,8 @@
       "qtyAvg": "⚖️ Average from the scale: ≈{{mg}} mg per day",
       "qtyAvgCover": "the scale covers ~{{covered}} of {{days}} days",
       "qtyAvgExplain": "Everything that left the bag divided by the time between weighings. It does not depend on taps, but it hides peaks: one very high day gets diluted in the average.",
-      "qtyAvgNone": "⚖️ Average from the scale: not known yet — the weighings in this period cover less than 2 days."
+      "qtyAvgNone": "⚖️ Average from the scale: not known yet — the weighings in this period cover less than 2 days.",
+      "qtyCycle": "🔁 Cycle by cycle (this is what the goal counts): from when you wake up until you wake up again. Each cycle is an estimate: the scale says how much left the bag between two weighings and the app splits it across your taps, as if they were all the same size. It shows peaks."
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",
@@ -1786,6 +1788,7 @@
     "summary": "Today",
     "reflect": "Do today's reflection",
     "substances": "Substances",
-    "napShort": "nap {{min}} min"
+    "napShort": "nap {{min}} min",
+    "mgCycle": "mg in the last measured cycle (woke up {{date}})"
   }
 }

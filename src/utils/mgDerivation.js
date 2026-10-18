@@ -284,7 +284,11 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       const n = doseCountByCycle.get(cy) || 1;
       day.mg += cy.consumed / n;
       day.measuredDoses++;
-    } else if (unlogged) {
+      if (opts._doseOut) opts._doseOut.push({ ms: doses[di].ms, mg: cy.consumed / n });
+      continue;
+    }
+    if (opts._doseOut) opts._doseOut.push({ ms: doses[di].ms, mg: null });
+    if (unlogged) {
       // Período que atravessa dias "não registei": conta o toque, SEM mg.
       day.unknownDoses++;
       day.reasons.add('unloggedDaysInPeriod');
@@ -325,6 +329,71 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   }
 
   return perDay;
+}
+
+/**
+ * mg de CADA TOQUE (mesmo modelo do deriveDailyMg): { ms, mg } com mg = fatia
+ * do período pesado, ou null quando não se sabe (saco em aberto, "não pesei",
+ * faltam toques, período com dias "não registei"). Serve para somar por ciclo.
+ */
+export function deriveDoseMg(weighings = [], consumptions = [], opts = {}) {
+  const out = [];
+  deriveDailyMg(weighings, consumptions, { ...opts, _doseOut: out });
+  return out;
+}
+
+const MAX_SLEEP_CYCLE_MS = 36 * 3600000;
+
+/**
+ * mg POR CICLO (de acordar a acordar), que é o "dia" vivido — consumir às 3h
+ * antes de dormir conta no ciclo em que se está, não no dia seguinte.
+ * - Só ciclos FECHADOS (já se acordou outra vez).
+ * - Mais de 36h entre dois acordares: falta registar um acordar (quem não
+ *   dorme carrega em "Não dormi", que também corta o ciclo) → não se sabe.
+ * - mg escrito à mão ("Registar mg" do dia, ou o campo antigo do ciclo) manda
+ *   e conta no ciclo que começa nesse dia.
+ * - Senão, soma dos toques do ciclo; se algum toque não tiver mg, não se sabe
+ *   (nunca se inventam mg). Sem toques nem mg à mão → não entra.
+ * @param {Array} doseMg   saída de deriveDoseMg
+ * @param {Array} sleepCycles registos de ciclo (acordar = timestamp)
+ * @returns {Array<{ day, start, end, mg, manual }>} mais recente primeiro
+ */
+export function mgBySleepCycle(doseMg = [], sleepCycles = [], { dailyLogs = [], excludedDates } = {}) {
+  const excluded = toDateSet(excludedDates);
+  const localDay = (ms) => datesBetween(ms, ms)[0];
+  const wakes = sleepCycles
+    .map(c => ({ ms: c ? toMs(c.timestamp || c.createdAt || c.date) : null, mg: c && c.mg }))
+    .filter(w => w.ms != null)
+    .sort((a, b) => a.ms - b.ms);
+  const manualByDay = {};
+  for (const l of dailyLogs || []) {
+    const v = l && l.mg != null && l.mg !== '' ? parseFloat(l.mg) : NaN;
+    if (!isNaN(v) && l.date) manualByDay[l.date] = (manualByDay[l.date] || 0) + v;
+  }
+  const doses = [...doseMg].sort((a, b) => a.ms - b.ms);
+  const out = [];
+  const usedManual = new Set();
+  let j = 0;
+  for (let i = 0; i + 1 < wakes.length; i++) {
+    const start = wakes[i].ms, end = wakes[i + 1].ms;
+    while (j < doses.length && doses[j].ms < start) j++;
+    const day = localDay(start);
+    if (end - start > MAX_SLEEP_CYCLE_MS || (excluded && excluded.has(day))) continue;
+    // Manual: o "Registar mg" do dia vai para o 1.º ciclo que começa nesse dia.
+    let manual = null;
+    if (manualByDay[day] != null && !usedManual.has(day)) { manual = manualByDay[day]; usedManual.add(day); }
+    else if (wakes[i].mg != null && wakes[i].mg !== '' && !isNaN(parseFloat(wakes[i].mg))) manual = parseFloat(wakes[i].mg);
+    if (manual != null) { out.push({ day, start, end, mg: Math.round(manual), manual: true }); continue; }
+    let mg = 0, n = 0, unknown = false;
+    for (let k = j; k < doses.length && doses[k].ms < end; k++) {
+      n++;
+      if (doses[k].mg == null) { unknown = true; break; }
+      mg += doses[k].mg;
+    }
+    if (n === 0 || unknown) continue;
+    out.push({ day, start, end, mg: Math.round(mg), manual: false });
+  }
+  return out.reverse();
 }
 
 /**

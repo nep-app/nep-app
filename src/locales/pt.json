@@ -903,7 +903,8 @@
         "increase_interval": "Dias com pelo menos metade dos intervalos ≥{{target}}h",
         "sleep_hours": "Noites com ≥{{target}}h de sono",
         "bedtime_before": "Noites a deitar até às {{target}}",
-        "first_not_before": "Ciclos com o 1.º consumo ≥{{target}}h depois de acordar"
+        "first_not_before": "Ciclos com o 1.º consumo ≥{{target}}h depois de acordar",
+        "reduce_quantity_cycle": "Ciclos (acordar → acordar) medidos com até {{target}}mg"
       },
       "noData": "Ainda não há dias suficientes neste período para saber.",
       "since": "Conta desde {{date}}",
@@ -923,7 +924,8 @@
       "qtyAvg": "⚖️ Média pela balança: ≈{{mg}} mg por dia",
       "qtyAvgCover": "a balança cobre ~{{covered}} dos {{days}} dias",
       "qtyAvgExplain": "Tudo o que saiu do saco a dividir pelo tempo entre pesagens. Não depende dos toques, mas esconde os picos: um dia muito alto fica diluído na média.",
-      "qtyAvgNone": "⚖️ Média pela balança: ainda não se sabe — as pesagens deste período cobrem menos de 2 dias."
+      "qtyAvgNone": "⚖️ Média pela balança: ainda não se sabe — as pesagens deste período cobrem menos de 2 dias.",
+      "qtyCycle": "🔁 Ciclo a ciclo (é isto que a meta conta): de quando acordas até voltares a acordar. Cada ciclo é estimado: a balança diz quanto saiu do saco entre duas pesagens e a app divide pelos toques, como se fossem todos do mesmo tamanho. Vê os picos."
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",
@@ -1786,6 +1788,7 @@
     "summary": "Hoje",
     "reflect": "Fazer a reflexão de hoje",
     "substances": "Substâncias",
-    "napShort": "sesta {{min}} min"
+    "napShort": "sesta {{min}} min",
+    "mgCycle": "mg no último ciclo medido (acordaste a {{date}})"
   }
 }

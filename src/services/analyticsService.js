@@ -268,6 +268,8 @@ const MAX_CYCLE_MS = 36 * 3600000;
  *   excludedDates      Set de dias a deixar de fora (atípicos, "não registei").
  *   measuredMgByDate   { dia: mg } medidos pelas pesagens (todo o histórico;
  *                      aqui é cortado ao período).
+ *   mgCycles           [{ day, mg }] mg por ciclo de sono — se vier, a meta de
+ *                      mg conta por ciclo (acordar → acordar) e não por dia.
  *   allCycles, allConsumptions — TODOS os ciclos/consumos (sem cortes), para as
  *                      metas por ciclo de sono: os limites de cada ciclo e o
  *                      que lhe pertence não podem depender do que se excluiu.
@@ -313,9 +315,15 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         }
     }
 
-    if (goal.type === 'reduce_quantity') {
-        // "Registar mg" à mão manda; senão, mg MEDIDOS pelas pesagens (só dias
-        // 100% medidos — nunca estimativas); e o campo antigo dos ciclos.
+    if (goal.type === 'reduce_quantity' && Array.isArray(opts.mgCycles)) {
+        // POR CICLO DE SONO (acordar → acordar), já calculado em
+        // mgDerivation.mgBySleepCycle: só ciclos fechados, ≤36h, com todos os
+        // toques pesados (ou mg escrito à mão). Conta pelo dia em que se acordou.
+        opts.mgCycles.forEach(c => { if (!inRange(c.day)) return; const ok = meetsOn(c.day, c.mg); if (ok != null) count(ok, c.day, c.mg); });
+    } else if (goal.type === 'reduce_quantity') {
+        // POR DIA (quem não regista ciclos): "Registar mg" à mão manda; senão,
+        // mg MEDIDOS pelas pesagens (só dias 100% medidos — nunca estimativas);
+        // e o campo antigo dos ciclos.
         const mgByDate = {};
         const add = (d, v) => { const n = typeof v === 'number' ? v : parseFloat(v); if (inRange(d) && !isNaN(n)) mgByDate[d] = (mgByDate[d] || 0) + n; };
         dailyLogs.forEach(l => { if (l.mg != null && l.mg !== '') add(day(l), l.mg); });
