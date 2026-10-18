@@ -416,7 +416,8 @@ export function AuthenticatedApp() {
                 // a hora guardada se for do mesmo dia, senão o meio-dia do dia.
                 const placed = log.timestamp && safeToISODate(log.timestamp) === dateStr ? new Date(log.timestamp).getTime() : new Date(`${dateStr}T12:00`).getTime();
                 const cyc = (mgCycleOptions || []).find(o => placed >= o.start && (o.end == null || placed < o.end));
-                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr, cycleStart: cyc ? cyc.start : null });
+                // Fora dos ciclos da lista (registo antigo): mostra-se o dia.
+                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr, cycleStart: cyc ? cyc.start : null, otherDay: !cyc && !!mgCycleOptions });
                 setShowDailyLogModal(true);
             };
 
@@ -567,11 +568,12 @@ export function AuthenticatedApp() {
                         await updateItem('dailyLogs', editingDailyLog.id, {
                             mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
                             notes: sanitizeText(dailyForm.notes),
-                            date: dailyForm.cycleStart ? safeToISODate(dailyForm.cycleStart) : dailyForm.date,
-                            ...(dailyForm.cycleStart ? { timestamp: new Date(dailyForm.cycleStart + 60000).toISOString() } : {})
+                            date: dailyForm.cycleStart && !dailyForm.otherDay ? safeToISODate(dailyForm.cycleStart) : dailyForm.date,
+                            ...(dailyForm.cycleStart && !dailyForm.otherDay ? { timestamp: new Date(dailyForm.cycleStart + 60000).toISOString() }
+                                : dailyForm.otherDay ? { timestamp: new Date(`${dailyForm.date}T12:00`).toISOString() } : {})
                         });
                         setEditingDailyLog(null);
-                        setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null });
+                        setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null, otherDay: false });
                         setShowDailyLogModal(false);
                         showToast(t('messages.dailyLogSaved'), 'success');
                         return;
@@ -580,7 +582,8 @@ export function AuthenticatedApp() {
                     // Com ciclos: o total é DO CICLO escolhido (por defeito, o atual) —
                     // guarda-se 1 minuto depois de acordar, para cair nesse ciclo.
                     // Sem ciclos: o dia escolhido (hoje → agora; outro dia → meio-dia).
-                    const cycleStart = mgCycleOptions && mgCycleOptions.length ? (dailyForm.cycleStart || mgCycleOptions[0].start) : null;
+                    // "Outro dia mais antigo": o dia escolhido ao meio-dia (cai no ciclo desse dia).
+                    const cycleStart = mgCycleOptions && mgCycleOptions.length && !dailyForm.otherDay ? (dailyForm.cycleStart || mgCycleOptions[0].start) : null;
                     const selectedDate = cycleStart ? safeToISODate(cycleStart) : (dailyForm.date || getTodayKey());
                     const timestamp = cycleStart ? new Date(cycleStart + 60000).toISOString()
                         : selectedDate === getTodayKey() ? new Date().toISOString() : new Date(`${selectedDate}T12:00`).toISOString();
@@ -605,7 +608,7 @@ export function AuthenticatedApp() {
                         notes: sanitizeText(dailyForm.notes)
                     };
                     await addDailyLog(item);
-                    setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null });
+                    setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null, otherDay: false });
                     setShowDailyLogModal(false);
                     showToast(t('messages.dailyLogSaved'), 'success');
                 } catch (error) {
@@ -1434,7 +1437,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null }); }}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null, otherDay: false }); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}

@@ -26,7 +26,7 @@ export const DailyLogModal = ({
   const today = getTodayKey();
   const fmt = (ms) => new Date(ms).toLocaleString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // O que a balança deu para o ciclo escolhido (se se sabe) — para comparar.
-  const chosenStart = cycleOptions && cycleOptions.length ? (dailyForm.cycleStart || cycleOptions[0].start) : null;
+  const chosenStart = cycleOptions && cycleOptions.length && !dailyForm.otherDay ? (dailyForm.cycleStart || cycleOptions[0].start) : null;
   const scaleForCycle = chosenStart != null ? (cycleMg.find(c => c.start === chosenStart && !c.manual) || null) : null;
 
   return (
@@ -59,8 +59,12 @@ export const DailyLogModal = ({
                 <label htmlFor="mg-cycle" className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.cycleLabel')}</label>
                 <select
                   id="mg-cycle"
-                  value={dailyForm.cycleStart || cycleOptions[0].start}
-                  onChange={(e) => { const start = Number(e.target.value); setDailyForm({ ...dailyForm, cycleStart: start, date: safeToISODate(start) }); }}
+                  value={dailyForm.otherDay ? 'other' : (dailyForm.cycleStart || cycleOptions[0].start)}
+                  onChange={(e) => {
+                    if (e.target.value === 'other') { setDailyForm({ ...dailyForm, otherDay: true, cycleStart: null }); return; }
+                    const start = Number(e.target.value);
+                    setDailyForm({ ...dailyForm, otherDay: false, cycleStart: start, date: safeToISODate(start) });
+                  }}
                   className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
                 >
                   {cycleOptions.map(o => (
@@ -71,7 +75,20 @@ export const DailyLogModal = ({
                           + (isUnknownLongCycle(o.start, o.end) ? ` ${t('modals.dailyLog.cycleTooLong')}` : '')}
                     </option>
                   ))}
+                  <option value="other">{t('modals.dailyLog.cycleOtherDay')}</option>
                 </select>
+                {/* Para preencher dias antigos (fora dos 10 ciclos da lista): o
+                   valor vai para o ciclo em que o meio-dia desse dia cai. */}
+                {dailyForm.otherDay && (
+                  <input
+                    type="date"
+                    aria-label={t('modals.dailyLog.dateLabel')}
+                    value={dailyForm.date || today}
+                    onChange={(e) => e.target.value && setDailyForm({ ...dailyForm, date: e.target.value })}
+                    max={today}
+                    className="mt-2 bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                  />
+                )}
               </>
             ) : (
               <>

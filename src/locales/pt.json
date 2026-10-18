@@ -385,7 +385,8 @@
       "scaleForCycle": "Pela app (balança + toques), este ciclo deu ≈{{mg}} mg.",
       "cycleTooLong": "(mais de 36 h — falta registar um acordar; não conta)",
       "whatIsCycle": "É o total de um ciclo inteiro (de acordar a acordar), com as contas feitas por ti. Não é a quantidade de um consumo — isso a app calcula com os toques e a balança.",
-      "whatIsDay": "É o total de um dia inteiro, com as contas feitas por ti. Não é a quantidade de um consumo — isso a app calcula com os toques e a balança."
+      "whatIsDay": "É o total de um dia inteiro, com as contas feitas por ti. Não é a quantidade de um consumo — isso a app calcula com os toques e a balança.",
+      "cycleOtherDay": "Outro dia, mais antigo…"
     },
     "wellbeing": {
       "title": "Bem-Estar",
