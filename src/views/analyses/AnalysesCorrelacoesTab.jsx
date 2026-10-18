@@ -28,6 +28,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
     analysisWellbeing,
     analysisCycles,
     analysisDailyLogs,
+    analysisMgDays = [],
 }) {
     const { t, i18n } = useTranslation();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -46,7 +47,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
     };
 
     // Assinatura barata dos dados: muda quando há mais/menos registos ou muda o idioma.
-    const _sig = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${i18n.language}`;
+    const _sig = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${analysisMgDays.length}|${analysisMgDays.reduce((a, d) => a + d.mg, 0)}|${i18n.language}`;
     const correlacaoData = useCrossMountMemo('analises-correlacoes', _sig, () => {
         if (analysisConsumptions.length < 1) {
             return null;
@@ -377,7 +378,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
 
         // Agregar dosagem por dia
         const dosageData = {};
-        [...analysisCycles, ...analysisDailyLogs].forEach(item => {
+        // mg por dia da fonte unificada ("Registar mg" à mão manda; as pesagens
+        // do saco preenchem os outros dias) — antes só o registo à mão.
+        analysisMgDays.forEach(item => {
             const itemDate = item.date || safeToISODate(item.timestamp);
             if (!itemDate || !item.mg) return;
 
@@ -448,7 +451,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
         // DOSAGEM SEMANAL (gráfico de tendência)
         const weeklyDosage = [];
 
-        if (analysisDailyLogs.length >= 7) {
+        if (analysisMgDays.length >= 7) {
             // Helper: obter ISO week number
             const getISOWeek = (date) => {
                 const d = new Date(date);
@@ -459,9 +462,9 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                 return `${d.getFullYear()}-W${String(weekNo).padStart(2, '00')}`;
             };
 
-            // Agrupar dosagem por semana (usando DailyLogs)
+            // Agrupar dosagem por semana (mg por dia da fonte unificada)
             const weeklyData = {};
-            analysisDailyLogs.forEach(log => {
+            analysisMgDays.forEach(log => {
                 const mg = parseFloat(log.mg);
                 if (!mg || mg <= 0) return;
 

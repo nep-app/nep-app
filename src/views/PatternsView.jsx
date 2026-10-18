@@ -64,8 +64,16 @@ export function PatternsView({
         // A própria marca não é um registo.
         const filteredDailyLogs = allFilteredDailyLogs.filter(l => !l?.notLogged && !excluded(l.date || safeToISODate(l.timestamp)));
 
-        return { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs };
-    }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset, metrics?.unloggedDates]);
+        // mg POR DIA do período, da fonte unificada (metrics.dailySummary): o
+        // "Registar mg" à mão manda; as pesagens do saco preenchem os outros dias.
+        // Antes as secções de dosagem só viam o registo à mão.
+        const summary = metrics?.dailySummary || {};
+        const periodMgDays = [...new Set(filteredConsumptions.map(c => c.date || safeToISODate(c.timestamp)).filter(Boolean))]
+            .map(date => ({ date, mg: summary[date]?.mg, timestamp: `${date}T12:00:00` }))
+            .filter(r => r.mg != null && r.mg > 0);
+
+        return { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs, periodMgDays };
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset, metrics?.unloggedDates, metrics?.dailySummary]);
 
     return (
                                 <div className="space-y-6">
@@ -107,7 +115,7 @@ export function PatternsView({
 
                                     {(() => {
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)
-                                        const { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs } = patternsData;
+                                        const { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs, periodMgDays } = patternsData;
 
                                         // Nota dias atípicos (mostrar em qualquer view)
                                         const atypicalBanner = (atypicalCount > 0 || unloggedCount > 0) ? (
@@ -492,12 +500,11 @@ export function PatternsView({
                                                                 .reduce((sum, w) => sum + (w.napDuration || 0), 0);
                                                             dailyData[date].sleep = parseFloat(c.sleep) + napMins / 60;
                                                         });
-                                                        dailyLogs.forEach(l => {
-                                                            if (l.mg == null) return;
-                                                            const date = l.date || safeToISODate(l.timestamp);
-                                                            if (!date) return;
+                                                        // mg por dia da fonte unificada (à mão ou pesagens do saco).
+                                                        Object.entries(metrics?.dailySummary || {}).forEach(([date, sday]) => {
+                                                            if (!(sday?.mg > 0)) return;
                                                             ensureDay(date);
-                                                            dailyData[date].mg = (dailyData[date].mg || 0) + l.mg;
+                                                            dailyData[date].mg = sday.mg;
                                                         });
                                                         consumptions.forEach(c => {
                                                             const date = c.date || safeToISODate(c.timestamp);
@@ -1004,7 +1011,7 @@ export function PatternsView({
                                                                                         {goal.mgAvg && (
                                                                                             <p className="text-gray-300">
                                                                                                 {t(metrics?.mgByCycleMode ? 'patterns.goals.qtyAvgCycles' : 'patterns.goals.qtyAvgDays', { mg: goal.mgAvg.mg, n: goal.mgAvg.n })}
-                                                                                                <span className="block text-gray-500">{t('patterns.goals.qtyAvgAllExplain')}</span>
+                                                                                                <span className="block text-gray-500">{t(metrics?.mgByCycleMode ? 'patterns.goals.qtyAvgAllExplain' : 'patterns.goals.qtyAvgDaysExplain')}</span>
                                                                                             </p>
                                                                                         )}
                                                                                     </div>
@@ -2469,7 +2476,7 @@ export function PatternsView({
                                                 <div className="space-y-4">
                                                     {/* 📊 DOSAGEM SEMANAL */}
                                                     {(() => {
-                                                        if (filteredDailyLogs.length < 7) return null;
+                                                        if (periodMgDays.length < 7) return null;
                                                         const getISOWeek = (date) => {
                                                             const d = new Date(date);
                                                             d.setHours(0, 0, 0, 0);
@@ -2479,7 +2486,7 @@ export function PatternsView({
                                                             return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
                                                         };
                                                         const weeklyData = {};
-                                                        filteredDailyLogs.forEach(log => {
+                                                        periodMgDays.forEach(log => {
                                                             const mg = parseFloat(log.mg);
                                                             if (!mg || mg <= 0) return;
                                                             const logDate = log.date || safeToISODate(log.timestamp);
@@ -2634,9 +2641,9 @@ export function PatternsView({
 
                                                     {/* Análise de Dosagens */}
                                                     {(() => {
-                                                        // Usar APENAS dailyLogs.mg (dosagens diárias precisas)
-                                                        // NÃO usar cycles.mg porque representa dosagem total do ciclo (pode ser vários dias)
-                                                        const dailyDosageRecords = filteredDailyLogs.filter(log => log.mg != null);
+                                                        // mg por dia da fonte unificada ("Registar mg" à mão ou pesagens do
+                                                        // saco); não cycles.mg, que pode ser o total de vários dias.
+                                                        const dailyDosageRecords = periodMgDays;
 
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (

@@ -80,6 +80,12 @@ export function AnalysesView({
         }
         return out;
     }, [analysisConsumptions, dailySummary]);
+    // A mesma fonte, em lista, para as Correlações e o Impacto (antes só viam o
+    // "Registar mg" à mão e perdiam tudo o que vem das pesagens do saco).
+    const analysisMgDays = useMemo(
+        () => Object.entries(analysisMgByDate).map(([date, mg]) => ({ date, mg })),
+        [analysisMgByDate]
+    );
 
     return (
         <div className="space-y-6">
@@ -183,6 +189,7 @@ export function AnalysesView({
                 )}
                 {analysisSubView === 'correlacoes' && (
                     <AnalysesCorrelacoesTab
+                        analysisMgDays={analysisMgDays}
                         analysisConsumptions={analysisConsumptions}
                         analysisWellbeing={analysisWellbeing}
                         analysisCycles={analysisCycles}
@@ -191,6 +198,7 @@ export function AnalysesView({
                 )}
                 {analysisSubView === 'impacto' && (
                     <AnalysesImpactoTab
+                        analysisMgDays={analysisMgDays}
                         analysisConsumptions={analysisConsumptions}
                         analysisWellbeing={analysisWellbeing}
                         analysisCycles={analysisCycles}

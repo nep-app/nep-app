@@ -303,8 +303,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     // Quem regista ciclos de sono: o mg é POR CICLO (acordar → acordar), como a
     // meta nos Padrões. O último ciclo fechado com valor fiável; sem nenhum,
     // não se mostra (não se volta ao dia do calendário — seriam duas regras).
+    // Desligado desde a v6.89.0: os mg contam por DIA (ver MetricsContext).
     let lastMgByCycle = false;
-    if (cycles.length >= 2) {
+    if (false) { // eslint-disable-line no-constant-condition
       lastMgByCycle = true;
       lastMg = null; lastMgTs = null; lastMgEstimated = false;
       try {

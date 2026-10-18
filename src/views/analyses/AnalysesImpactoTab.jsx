@@ -11,6 +11,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     analysisWellbeing,
     analysisCycles,
     analysisDailyLogs,
+    analysisMgDays = [],
     selectedCycle,
 }) {
     const { t } = useTranslation();
@@ -24,7 +25,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const _sigImpacto = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${selectedCycle?.id || 'none'}`;
+    const _sigImpacto = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${analysisMgDays.length}|${analysisMgDays.reduce((a, d) => a + d.mg, 0)}|${selectedCycle?.id || 'none'}`;
     const impactoData = useCrossMountMemo('analises-impacto', _sigImpacto, () => {
         // Agrupar dados por dia para experimentalFeatures
         const dailyData = {};
@@ -54,7 +55,9 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
         // Agregar dosagem por dia
         const dosageData = {};
-        [...analysisCycles, ...analysisDailyLogs].forEach(item => {
+        // mg por dia da fonte unificada ("Registar mg" à mão manda; as pesagens
+        // do saco preenchem os outros dias) — antes só o registo à mão.
+        analysisMgDays.forEach(item => {
             const itemDate = item.date || safeToISODate(item.timestamp);
             if (!itemDate || !item.mg) return;
 

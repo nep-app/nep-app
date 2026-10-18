@@ -92,10 +92,12 @@ export const MetricsProvider = ({ children }) => {
     return s;
   }, [atypicalDates, unloggedDates]);
 
-  // mg POR CICLO DE SONO (acordar → acordar): é o "dia" vivido e é o que a
-  // meta de mg conta, quando a pessoa regista ciclos. Sem ciclos registados
-  // (menos de 2), a meta de mg continua a contar por dia do calendário.
-  const mgByCycleMode = (cycles || []).length >= 2;
+  // mg POR CICLO DE SONO (acordar → acordar). DESLIGADO desde a v6.89.0: para
+  // os mg conta o DIA (24 h certas). Por ciclo, uma noite sem dormir de 48 h
+  // pesava como um "dia" com o consumo de dois. As outras metas (último e 1.º
+  // consumo, sono, deitar) continuam por ciclo. O código fica para se um dia
+  // se quiser voltar a experimentar.
+  const mgByCycleMode = false;
   const mgCycles = useMemo(() => {
     if (!mgByCycleMode) return [];
     try { return mgBySleepCycle(mgDerivation.doseMg, cycles, { dailyLogs, excludedDates }); } catch { return []; }
