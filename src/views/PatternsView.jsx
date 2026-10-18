@@ -309,16 +309,24 @@ export function PatternsView({
                                                     // Sem dias que contem não há percentagem: "ainda não se sabe", não 0%.
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : null;
 
-                                                    // Meta de mg: a média dos MESMOS ciclos (ou dias) que a meta
-                                                    // conta — venham do "Registar mg" ou da balança. Descritiva, sem
-                                                    // ✓/✗: a meta é um teto por ciclo, não uma média. Com menos de 2
-                                                    // não há média que valha a pena (não se sabe).
-                                                    const mgVals = g.type === 'reduce_quantity'
-                                                        ? (goalDays || []).map(dd => Number(dd.value)).filter(v => Number.isFinite(v))
-                                                        : [];
-                                                    const mgAvg = mgVals.length >= 2
-                                                        ? { mg: Math.round(mgVals.reduce((a, v) => a + v, 0) / mgVals.length), n: mgVals.length }
-                                                        : null;
+                                                    // Meta de mg: a média POR 24 HORAS dos MESMOS ciclos (ou dias) que a
+                                                    // meta conta — venham do "Registar mg" ou da balança. Soma dos mg a
+                                                    // dividir pelo TEMPO que esses ciclos duram: um ciclo de 2 dias (noite
+                                                    // sem dormir) conta como 2 dias, em vez de pesar como um dia só.
+                                                    // Descritiva, sem ✓/✗. Com menos de 2, não se sabe.
+                                                    let mgAvg = null;
+                                                    if (g.type === 'reduce_quantity') {
+                                                        const counted = new Set((goalDays || []).map(dd => dd.d));
+                                                        const cyc = metrics?.mgByCycleMode ? (metrics.mgCycles || []).filter(c => counted.has(c.day)) : null;
+                                                        if (cyc && cyc.length >= 2) {
+                                                            const mg = cyc.reduce((a, c) => a + c.mg, 0);
+                                                            const days = cyc.reduce((a, c) => a + (c.end - c.start), 0) / 86400000;
+                                                            if (days > 0) mgAvg = { mg: Math.round(mg / days), n: cyc.length };
+                                                        } else if (!cyc) {
+                                                            const vals = (goalDays || []).map(dd => Number(dd.value)).filter(v => Number.isFinite(v));
+                                                            if (vals.length >= 2) mgAvg = { mg: Math.round(vals.reduce((a, v) => a + v, 0) / vals.length), n: vals.length };
+                                                        }
+                                                    }
 
                                                     return {
                                                         ...g,

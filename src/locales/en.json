@@ -867,9 +867,9 @@
       "targetSince": "Current goal ({{target}}) since {{date}}; earlier days count with the value at the time.",
       "qtyDaily": "📅 Day by day (this is what the goal counts): each day is an estimate. The scale says how much left the bag between two weighings and the app splits it across your taps, as if they were all the same size. It shows peaks.",
       "qtyCycle": "🔁 Cycle by cycle (this is what the goal counts): from when you wake up until you wake up again. Each cycle's number comes from your \"Log mg\" for that cycle; if there is none, from the bag scale, split across your taps (then it is an estimate). It shows peaks.",
-      "qtyAvgCycles": "📊 On average: ≈{{mg}} mg per cycle (over the same {{n}} cycles)",
+      "qtyAvgCycles": "📊 On average: ≈{{mg}} mg per day (24 h), over the same {{n}} cycles",
       "qtyAvgDays": "📊 On average: ≈{{mg}} mg per day (over the same {{n}} days)",
-      "qtyAvgAllExplain": "The mg of every cycle the goal counts — from \"Log mg\" or from the scale — divided by the number of cycles. It hides peaks: one very high cycle gets diluted in the average."
+      "qtyAvgAllExplain": "The mg of the cycles the goal counts — from \"Log mg\" or from the scale — divided by how long those cycles last. A 2-day cycle (a night without sleep) counts as 2 days. It hides peaks."
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",
