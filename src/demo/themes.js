@@ -64,10 +64,10 @@ const contrast = (a, b) => {
 // `app: true` = também aparece nas Definições da app a sério. Os outros só
 // existem no demo, para comparar.
 export const DEMO_THEMES = [
-  { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv', app: true },
-  // As mesmas cores do Riso, mais à vista: o lilás um pouco mais saturado e os
-  // tons 500 (fundos dos botões, sempre meio transparentes) sem escurecer.
-  { id: 'riso-vivo', name: 'Multicor · Riso (mais vivo)', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#2CC5B5', font: 'vv', vivid: true, app: true,
+  // Riso (desde a v6.87.0 é o "mais vivo"; o antigo saiu — quem o tinha
+  // escolhido, ou o "mais vivo", passa a este): lilás um pouco mais saturado
+  // e os tons 500 (fundos dos botões) a escurecer menos.
+  { id: 'riso', name: 'Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#2CC5B5', font: 'vv', vivid: true, app: true,
     // Avisos "fora da meta" num amarelo mais amarelo (menos alaranjado) e o
     // verde de "cumpre" um pouco mais claro e vivo.
     meaning: { yellow: '#FFD84A', emerald: '#3DDC97' } },

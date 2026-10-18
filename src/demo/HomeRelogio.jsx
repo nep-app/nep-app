@@ -254,10 +254,10 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
             <>
               <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">{agoText(now - data.last)}</span>
               <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
-              <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/25 border border-teal-300/60 text-[11px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
+              <span className="mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-teal-500/25 border border-teal-300/60 text-[9px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
             </>
           ) : (
-            <><span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span><span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/25 border border-teal-300/60 text-[11px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span></>
+            <><span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span><span className="mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-teal-500/25 border border-teal-300/60 text-[9px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span></>
           )}
         </span>
       </button>
