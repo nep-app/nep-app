@@ -67,7 +67,10 @@ export const DEMO_THEMES = [
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv', app: true },
   // As mesmas cores do Riso, mais à vista: o lilás um pouco mais saturado e os
   // tons 500 (fundos dos botões, sempre meio transparentes) sem escurecer.
-  { id: 'riso-vivo', name: 'Multicor · Riso (mais vivo)', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#00A99D', font: 'vv', vivid: true, app: true },
+  { id: 'riso-vivo', name: 'Multicor · Riso (mais vivo)', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#2CC5B5', font: 'vv', vivid: true, app: true,
+    // Avisos "fora da meta" num amarelo mais amarelo (menos alaranjado) e o
+    // verde de "cumpre" um pouco mais claro e vivo.
+    meaning: { yellow: '#FFD84A', emerald: '#3DDC97' } },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#C4421C', b: '#2F56C2', c: '#BC3A72', d: '#17785C', font: 'vv', light: true, app: true },
   { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
@@ -150,7 +153,8 @@ const varsFor = (theme) => {
   for (const [g, fams] of Object.entries(GROUPS)) {
     for (const fam of fams) accentScale(rgb(theme[g]), fam);
   }
-  for (const [fam, hex] of Object.entries(MEANING_500)) accentScale(rgb(hex), fam);
+  // Um tema pode afinar as cores de significado (ex.: "mais vivo").
+  for (const [fam, hex] of Object.entries({ ...MEANING_500, ...(theme.meaning || {}) })) accentScale(rgb(hex), fam);
 
   // Texto "branco" passa a ser o texto do tema (num tema claro, escuro).
   out['--c-white'] = triplet(ink);
