@@ -242,7 +242,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
           ))}
           {data.cons24.map((ms, i) => { const [x, y] = pt(hourOf(ms), 96); return <circle key={`c${i}`} cx={x} cy={y} r="8" className="fill-rose-300" />; })}
           {data.r24.states.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`w${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-sky-300" />; })}
-          {data.r24.weigh.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`p${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-violet-300" />; })}
+          {data.r24.weigh.map((s, i) => { const [x, y] = pt(hourOf(s.ms), R); return <rect key={`p${i}`} x={x - 6} y={y - 6} width="12" height="12" rx="3" className="fill-teal-300" />; })}
           <line x1={hx0} y1={hy0} x2={hx} y2={hy} className="stroke-gray-200" strokeWidth="3" strokeLinecap="round" />
           <circle cx={hx} cy={hy} r="6" className="fill-gray-200" />
           {[['00h', 0, 'middle', 150, 2], ['06h', 6, 'start', 296, 155], ['12h', 12, 'middle', 150, 310], ['18h', 18, 'end', 4, 155]].map(([lbl, , anchor, x, y]) => (
@@ -254,10 +254,10 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
             <>
               <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">{agoText(now - data.last)}</span>
               <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
-              <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/25 border border-violet-300/50 text-[11px] font-semibold text-violet-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
+              <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/25 border border-teal-300/60 text-[11px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
             </>
           ) : (
-            <><span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span><span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/25 border border-violet-300/50 text-[11px] font-semibold text-violet-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span></>
+            <><span className="text-xs text-gray-400 px-10">{t('demoHome.noneYet')}</span><span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-500/25 border border-teal-300/60 text-[11px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span></>
           )}
         </span>
       </button>
@@ -267,7 +267,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />{t('demoHome.tlUse')}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded bg-amber-300/70" />{t('demoHome.msgSleepLabel')}</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-sky-300" />{t('demoHome.legendState')}</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-violet-300" />{t('demoHome.tlWeigh')}</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-teal-300" />{t('demoHome.tlWeigh')}</span>
         </div>
       )}
 
@@ -278,7 +278,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         <button
           type="button"
           onClick={onMarkConsumption}
-          className="w-full h-14 rounded-full bg-rose-500/25 border border-rose-400/50 text-rose-50 text-base font-semibold hover:bg-rose-500/35 transition-colors"
+          className="w-full h-14 rounded-full bg-white/75 border border-white/80 text-gray-900 text-base font-semibold hover:bg-white/85 transition-colors"
         >
           {t('home.markConsumption')}
         </button>
@@ -291,12 +291,16 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </button>
       </div>
 
+      {/* Cores com um só significado (relógio e botões): consumo lilás,
+          pesagem verde-água, estado azul, sono amarelo. O botão principal é
+          creme (a cor do texto), meio transparente, para se destacar sem
+          competir; Metas e Substâncias — o que tu defines — laranja. */}
       {/* Registos: uma fila só. As emoções estão dentro do Bem-estar; o Novo
           Ciclo está no ecrã do dia (tocar no relógio). */}
       <div className="w-full grid grid-cols-3 gap-2">
-        <button type="button" onClick={() => setShowWellbeingModal(true)} className={`${OPTION} bg-sky-500/10 border-sky-500/25 text-sky-100 hover:bg-sky-500/20`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
-        <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/10 border-rose-500/25 text-rose-100 hover:bg-rose-500/20`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
-        <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/10 border-violet-500/25 text-violet-100 hover:bg-violet-500/20`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
+        <button type="button" onClick={() => setShowWellbeingModal(true)} className={`${OPTION} bg-sky-500/20 border-sky-400/60 text-sky-50 hover:bg-sky-500/30`}><span aria-hidden="true">💙</span>{t('home.wellbeing')}</button>
+        <button type="button" onClick={() => setShowDailyLogModal(true)} className={`${OPTION} bg-rose-500/20 border-rose-400/60 text-rose-50 hover:bg-rose-500/30`}><span aria-hidden="true">📊</span>{t('home.registerMg')}</button>
+        <button type="button" onClick={() => setShowThoughtsModal(true)} className={`${OPTION} bg-violet-500/20 border-violet-400/60 text-violet-50 hover:bg-violet-500/30`}><span aria-hidden="true">💭</span>{t('home.thoughts')}</button>
       </div>
 
       {/* Mensagem de Hoje, sem caixa, com a reflexão diária logo à frente */}
@@ -353,8 +357,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 
       {/* Mesmo no fim: definir metas e substâncias, lado a lado */}
       <div className="w-full grid grid-cols-2 gap-2 mt-2">
-        <button type="button" onClick={() => setShowGoalModal(true)} className="py-3 rounded-2xl text-sm font-semibold bg-violet-500/15 border border-violet-400/40 text-violet-100 hover:bg-violet-500/25">🎯 {t('home.goals')}</button>
-        <button type="button" onClick={() => setShowSubstances(true)} className="py-3 rounded-2xl text-sm font-semibold bg-teal-500/15 border border-teal-400/40 text-teal-100 hover:bg-teal-500/25">🧪 {t('home2.substances')}</button>
+        <button type="button" onClick={() => setShowGoalModal(true)} className="py-3 rounded-2xl text-sm font-semibold bg-orange-500/20 border border-orange-400/60 text-orange-50 hover:bg-orange-500/30">🎯 {t('home.goals')}</button>
+        <button type="button" onClick={() => setShowSubstances(true)} className="py-3 rounded-2xl text-sm font-semibold bg-orange-500/20 border border-orange-400/60 text-orange-50 hover:bg-orange-500/30">🧪 {t('home2.substances')}</button>
       </div>
       <SubstancesModal isOpen={showSubstances} onClose={() => setShowSubstances(false)} />
 
@@ -479,7 +483,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
                 {it.kind === 'use' && <span className="w-3 h-3 rounded-full bg-rose-300" />}
                 {it.kind === 'sleep' && <span className="w-2 h-8 rounded bg-amber-300/70" />}
                 {it.kind === 'state' && <span className="w-3 h-3 rounded-sm bg-sky-300" />}
-                {it.kind === 'weigh' && <span className="w-3 h-3 rounded-sm bg-violet-300" />}
+                {it.kind === 'weigh' && <span className="w-3 h-3 rounded-sm bg-teal-300" />}
               </span>
               <span className="text-sm text-gray-200">
                 {it.kind === 'use' && <>{t('demoHome.tlUse')}{it.n > 1 ? ` × ${it.n}` : ''}{(() => { const f = formatSubstances(it.records.flatMap(r => r?.substances || [])); return f ? <span className="text-xs text-gray-400"> · {f}</span> : null; })()}</>}

@@ -65,6 +65,9 @@ const contrast = (a, b) => {
 // existem no demo, para comparar.
 export const DEMO_THEMES = [
   { id: 'riso', name: 'Multicor · Riso', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#9F86D9', d: '#00A99D', font: 'vv', app: true },
+  // As mesmas cores do Riso, mais à vista: o lilás um pouco mais saturado e os
+  // tons 500 (fundos dos botões, sempre meio transparentes) sem escurecer.
+  { id: 'riso-vivo', name: 'Multicor · Riso (mais vivo)', bg: '#111111', ink: '#F4F1EA', a: '#FF48B0', b: '#6EC1FF', c: '#A98BF0', d: '#00A99D', font: 'vv', vivid: true, app: true },
   { id: 'bauhaus', name: 'Multicor · Bauhaus (claro)', bg: '#F1ECE2', ink: '#141414', a: '#C4421C', b: '#2F56C2', c: '#BC3A72', d: '#17785C', font: 'vv', light: true, app: true },
   { id: 'pastel', name: 'Multicor · Pastel', bg: '#15131A', ink: '#F2EEF5', a: '#C3B1E1', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
   { id: 'ameixa', name: 'Ameixa e lilás', bg: '#1A1220', ink: '#F1EAF5', a: '#C9B2EC', b: '#9CC7E8', c: '#E8A0C4', d: '#9ED9B9', font: 'vv' },
@@ -127,9 +130,12 @@ const varsFor = (theme) => {
     for (const s of SHADES) {
       const [toward, t] = ACCENT_MIX[s];
       let c = toward ? mix(base, ends[toward], t) : base;
+      // "Mais vivo": o 500 escurece menos (contraste 3:1 com o texto, que nos
+      // botões é sempre em negrito) — usa-se sobretudo meio transparente.
       if (FILL_SHADES.has(s)) {
+        const target = theme.vivid && s === '500' ? 3 : 4.5;
         let k = 0;
-        while (contrast(c, ink) < 4.5 && k < 20) { c = mix(c, bg, 0.08); k++; }
+        while (contrast(c, ink) < target && k < 20) { c = mix(c, bg, 0.08); k++; }
       }
       // Os tons 200–400 são quase sempre TEXTO de cor por cima do fundo. Num
       // tema claro (creme), um pastel ficava ilegível: puxam-se para o texto

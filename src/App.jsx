@@ -1249,9 +1249,9 @@ export function AuthenticatedApp() {
                         <div className='bg-gray-800/60 rounded-2xl px-3 py-2 mb-3'>
                             <div className='flex justify-between items-center gap-2'>
                                 <div className='leading-none space-y-0.5'>
-                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-purple-500 leading-none w-4'>N</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticN')}</span></div>
-                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-pink-500 leading-none w-4'>E</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticE')}</span></div>
-                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-blue-500 leading-none w-4'>P</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticP')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-purple-400 leading-none w-4'>N</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticN')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-pink-400 leading-none w-4'>E</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticE')}</span></div>
+                                    <div className='flex items-baseline gap-1'><span className='text-lg font-black font-display text-blue-400 leading-none w-4'>P</span><span className='text-xs text-gray-300 whitespace-nowrap'>{t('home.acrosticP')}</span></div>
                                 </div>
                                 <div className='flex flex-col items-end text-right text-[10px] leading-snug'>
                                     <span className='text-gray-400 whitespace-nowrap'>
@@ -1299,7 +1299,7 @@ export function AuthenticatedApp() {
                                         </p>
                                         <p className='text-xs italic text-gray-500'>
                                             {t('home.motto').split(' ').map((word, i) => (
-                                                <span key={i}>{i > 0 ? ' ' : ''}<span className={['text-purple-500','text-pink-500','text-blue-500'][i] || ''}>{word[0]}</span>{word.slice(1)}</span>
+                                                <span key={i}>{i > 0 ? ' ' : ''}<span className={['text-purple-400','text-pink-400','text-blue-400'][i] || ''}>{word[0]}</span>{word.slice(1)}</span>
                                             ))}
                                         </p>
                                     </div>
